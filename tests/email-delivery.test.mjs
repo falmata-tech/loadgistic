@@ -1,3 +1,7 @@
+// Injected GUEST_SUPPORT/assisted-template examples exercise retained adapter
+// compatibility, queue order and failure handling only. They do not prove a live
+// Guest intake; retirement denial and current Tracking/Capacity delivery have
+// separate tests below and in the retired-platform suites.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -224,15 +228,17 @@ test('Shared Capacity and Tracking use distinct customer-safe application templa
     shipment:{code:'LGX-TEST',providerName:'Example Transporter',origin:'Addis Ababa',destination:'Adama',cargoSummary:'Workshop inputs'}
   });
   assert.equal(tracking.subject,'Your Loadgistic tracking access');
-  assert.match(tracking.text,/Tracking code/);
-  assert.match(tracking.text,/LG-0000-1111-2222-3333/);
-  assert.match(tracking.text,/Ask the transporter to add each other person/i);
-  assert.doesNotMatch(tracking.text,/six-digit|sign-in|create an account/i);
+  assert.match(tracking.text,/verify this email/);
+  assert.doesNotMatch(tracking.text,/LG-0000-1111-2222-3333/);
+  assert.match(tracking.text,/you can share route and status updates with others/i);
+  assert.match(tracking.text,/will not see the vehicle’s current location/i);
+  assert.doesNotMatch(tracking.text,/Ask the transporter to add anyone else/i);
+  assert.match(tracking.text,/six-digit code/i);
 });
 
 test('completion email escapes customer-visible data and excludes private event fields',()=>{
   const message=buildEmailMessage({
-    template:'tracking-completed',to:'guest@example.test',review:{url:'https://loadgistic.example/track',code:'review-code'},
+    template:'tracking-completed',to:'guest@example.test',tracking:{url:'https://loadgistic.example/track',code:'LG-1111-2222-3333-4444'},review:{url:'https://loadgistic.example/track',code:'review-code'},
     shipment:{
       code:'LG-TEST',providerName:'Example <script>alert(1)</script>',origin:'Addis Ababa',destination:'Adama',
       cargoSummary:'Workshop inputs',events:[{
@@ -242,6 +248,9 @@ test('completion email escapes customer-visible data and excludes private event 
     }
   });
   assert.match(message.text,/Status timeline/);
+  assert.doesNotMatch(message.text,/LG-1111-2222-3333-4444/);
+  assert.doesNotMatch(message.text,/review-code/);
+  assert.match(message.text,/already verified, no new code/);
   assert.match(message.text,/In Transit/);
   assert.doesNotMatch(message.html,/<script>|<strong>safely<\/strong>/);
   assert.match(message.html,/&lt;script&gt;|&lt;strong&gt;/);
@@ -364,7 +373,7 @@ test('targeted Tracking OTP delivery uses the live challenge lease and Tracking 
   assert.deepEqual(recorded,[{id:'tracking-delivery',attempt:{leaseToken:'tracking-lease',sent:true}}]);
 });
 
-test('Guest access delivery uses the same live-lease fence before provider submission',async()=>{
+test('retained Guest delivery adapter fences an injected historical job before submission',async()=>{
   const sent=[];
   const recorded=[];
   const result=await deliverTargetedAccessEmail('GUEST_SUPPORT','conversation',{
@@ -447,9 +456,12 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
     deliverAccess:async limit=>{limits.push(limit);throw new Error('recipient guest@example.test failed');},
     purgeGuests:async limit=>{limits.push(limit);return {count:4,shipmentIds:['private-shipment-id']};},
     purgeSharedCapacity:async limit=>{limits.push(limit);return {otpCount:2,deliveryCount:3,recipientEmails:['private@example.test']};},
-    purgeRateLimits:async limit=>{limits.push(limit);return 6;}
+    purgeRateLimits:async limit=>{limits.push(limit);return 6;},
+    prepareFeatured:async()=>({created:3,skipped:4,empty:0,driverIds:['private-driver']}),
+    purgeAttachments:async limit=>{limits.push(limit);return {attempted:0,deleted:0,failed:0};},
+    purgePortraits:async limit=>{limits.push(limit);return {attempted:3,deleted:2,failed:1,filePaths:['secret']};}
   });
-  assert.deepEqual(limits,[7,7,9,9,9]);
+  assert.deepEqual(limits,[7,7,9,9,9,9,20]);
   assert.equal(result.ok,false);
   assert.deepEqual(result.operations[0],{
     name:'tracking-email',ok:true,result:{configured:true,provider:'resend',attempted:3,sent:2,failed:1,skipped:0}
@@ -458,6 +470,9 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
   assert.deepEqual(result.operations[2],{name:'tracking-guest-cleanup',ok:true,result:{count:4}});
   assert.deepEqual(result.operations[3],{name:'shared-capacity-cleanup',ok:true,result:{otpCount:2,deliveryCount:3}});
   assert.deepEqual(result.operations[4],{name:'rate-limit-cleanup',ok:true,result:{count:6}});
+  assert.deepEqual(result.operations[5],{name:'featured-rosters',ok:true,result:{created:3,skipped:4,empty:0}});
+  assert.deepEqual(result.operations[6],{name:'driver-portrait-cleanup',ok:true,result:{attempted:3,deleted:2,failed:1}});
+  assert.deepEqual(result.operations[7],{name:'support-attachment-cleanup',ok:true,result:{attempted:0,deleted:0,failed:0}});
   assert.doesNotMatch(JSON.stringify(result),/guest@example|private-shipment|secret/);
 });
 

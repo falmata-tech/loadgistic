@@ -1,4 +1,4 @@
-import {test,expect} from '@playwright/test';
+import {test,expect} from './browser-test';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -9,14 +9,22 @@ test('capture focused public application shell review',async({page}:{page:any})=
   const project=test.info().project.name;
 
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Open Transport Capacity',includeHidden:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1,exact:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1,exact:true})).toBeVisible();
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollHeight<=window.innerHeight+2)).toBe(true);
-  const controlsTop=await page.locator('.market-command-column').evaluate((element:any)=>element.getBoundingClientRect().top);
-  const headerBottom=await page.locator('.public-header').evaluate((element:any)=>element.getBoundingClientRect().bottom);
-  expect(controlsTop-headerBottom).toBeLessThan(32);
+  const introduction=await page.locator('.market-introduction').boundingBox();
+  const map=await page.locator('.public-map-canvas').boundingBox();
+  const controls=await page.locator('.capacity-map-controls').boundingBox();
+  expect(introduction&&map&&controls).toBeTruthy();
+  expect(map!.y).toBeGreaterThanOrEqual(introduction!.y+introduction!.height-1);
+  expect(controls!.x).toBeGreaterThanOrEqual(map!.x);
+  expect(controls!.x+controls!.width).toBeLessThanOrEqual(map!.x+map!.width);
+  expect(controls!.y).toBeGreaterThanOrEqual(map!.y);
+  expect(controls!.y+controls!.height).toBeLessThanOrEqual(map!.y+map!.height);
+  await page.getByRole('button',{name:'Vehicle filters',exact:true}).click({trial:true});
   await page.screenshot({path:path.join(output,`${project}-market.png`),fullPage:false});
 
   const navigation=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Public workspace navigation'}):page.getByRole('navigation',{name:'Public mobile navigation'});

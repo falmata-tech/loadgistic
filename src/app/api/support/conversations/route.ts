@@ -1,3 +1,4 @@
+import {isTransportSupportMember} from '@/lib/support-policy.js';
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { createSupportConversation } from '@/lib/support.js';
@@ -7,6 +8,7 @@ import { redirectWith, text } from '@/lib/redirects';
 export async function POST(request:NextRequest) {
   const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
+  if(!isTransportSupportMember(user))return NextResponse.json({error:'Forbidden'},{status:403});
   const form=await request.formData();
   try {
     const id=await createSupportConversation(user,{category:text(form,'category'),body:text(form,'body')});

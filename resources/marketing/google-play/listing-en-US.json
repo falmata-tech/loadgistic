@@ -1,0 +1,96 @@
+{
+  "package": "com.loadgistic.app",
+  "locale": "en-US",
+  "status": "copy_revision_pending_owner_review",
+  "appName": "Loadgistic",
+  "shortDescription": "See reported vehicle space from transporters you know and beyond.",
+  "fullDescription": "Know who has space before you call.\n\nA load comes in. Which transporter has room, and where can their vehicle go? Loadgistic brings reported capacity, routes and approximate locations into one map. Start with the providers you already work with, or explore public options when you need another.\n\nKEEP YOUR NETWORK IN VIEW\nAsk transporters to share capacity with your verified email and see their available vehicles together on a private map. A business workspace can help your authorized team coordinate the capacity shared with your company.\n\nSHOW WHERE YOU CAN WORK\nTransport Providers publish available space and usual routes for the vehicles they manage, from courier motorcycles and cars to vans and freight trucks. Choose whether a signal is public, shared with contacts, both, or for one recipient. Update availability and approximate location as work changes.\n\nFIND A USEFUL STARTING POINT\nSearch transporter profiles by account name, handle or manager's first name. Filter the capacity map by vehicle type, route, current load, location source and signal age. Open a vehicle to see what its provider reports, then contact the transporter to confirm fit, timing and terms directly.\n\nKEEP THE AGREED SHIPMENT VISIBLE\nAfter the work is agreed, share private status, route and loading or unloading proof with the people involved. Live vehicle location is limited to the shipment owner and staff they explicitly authorize; other invited viewers see route and status without the moving vehicle.\n\nBuilt for East African transport work. Available in English, Amharic and Afaan Oromo.\n\nThe app asks permission before sharing a driver's phone location. Active shipment tracking may continue when the app is closed. Capacity and shipment maps show approximate vehicle areas; connected GPS trackers send exact positions to the provider's restricted fleet workspace. Notifications are optional. Document badges identify specific records Loadgistic reviewed; they do not guarantee a service. Transport is agreed directly with the provider, without in-app transport payments.",
+  "featureGraphic": {
+    "source": "resources/marketing/google-play/feature-graphic.svg",
+    "export": "feature-graphic-1024x500.png",
+    "width": 1024,
+    "height": 500,
+    "alpha": false,
+    "altText": "Loadgistic beside dispatchers and working freight vehicles at an East African yard.",
+    "provenance": "Generated East African freight-yard illustration, composed with the current navy-and-cobalt Loadgistic identity. Not customer footage or an app screenshot. Exact prompts are in resources/marketing/prelaunch/regional-artwork-provenance.json.",
+    "aiAssistedCreation": true,
+    "proposedAiLabel": true,
+    "reviewed": false,
+    "artworkSource": "resources/marketing/prelaunch/east-africa-yard-wide-cobalt.png",
+    "exportScript": "resources/marketing/google-play/export-assets.mjs",
+    "sourceRole": "Transparent vector brand overlay; artworkSource is the decorative freight background.",
+    "artDirection": "Credible East African freight-yard operations, dispatchers and working vehicles; navy and cobalt brand identity with natural landscape colors. Capacity networks lead; Tracking is secondary.",
+    "approval": "The prior visual approval applies to the former color treatment; this cobalt recolor awaits owner review."
+  },
+  "icon": {
+    "source": "public/icon.svg",
+    "export": "icon-512.png",
+    "width": 512,
+    "height": 512,
+    "format": "32-bit PNG",
+    "maxBytes": 1048576,
+    "altText": "Loadgistic's white L and cobalt lines on a navy background.",
+    "provenance": "Existing approved Loadgistic identity, unchanged. The new feature graphic's authorship does not establish the original icon's authorship."
+  },
+  "phoneScreenshots": [
+    {
+      "id": "05-private-capacity",
+      "title": "Your transporter network",
+      "altText": "An authorized private capacity map with signals from the transporters sharing with this synthetic recipient.",
+      "status": "awaiting_final_standalone_capture",
+      "draftObservation": "Actual short-screen draft clips the lower entry action at the map edge. Review final standalone scrolling/keyboard clearance before selecting this optional store screenshot; see WEB-MOB-019.",
+      "captureRequirement": "Capture the authorized synthetic shared map after normal reviewer access; never lead with an empty email-entry form or reveal an email/code."
+    },
+    {
+      "id": "01-capacity",
+      "title": "Find your next option",
+      "altText": "Public vehicle capacity on the map, with transporter search and vehicle filters.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "02-truck-signals",
+      "title": "See where it can take your load",
+      "altText": "A selected vehicle’s approximate location, capacity route and signal details.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "03-driver-workspace",
+      "title": "Let them see your space",
+      "altText": "Driver Home with a map and controls for available space, usual routes and vehicle location.",
+      "status": "awaiting_final_standalone_capture",
+      "draftObservation": "Code7 screenshot contains internal reviewer profile/vehicle names. Replace with a genuine final native capture using purpose-specific synthetic display records; never edit image pixels or conceal valid user records in the app."
+    },
+    {
+      "id": "06-fleet",
+      "title": "Keep your vehicles working",
+      "altText": "A synthetic Transport Provider workspace with managed vehicles and assigned drivers.",
+      "status": "awaiting_final_standalone_capture"
+    },
+    {
+      "id": "04-tracking",
+      "title": "Keep everyone in the picture",
+      "altText": "An agreed synthetic shipment with its current status and next tracking action.",
+      "status": "awaiting_final_standalone_capture"
+    }
+  ],
+  "screenshotContract": {
+    "width": 1080,
+    "height": 1920,
+    "format": "24-bit PNG without alpha",
+    "minCount": 4,
+    "maxCount": 8,
+    "maxBytesPerExport": 8388608,
+    "source": "Actual Android display at this resolution, without cropping, stretching or invented UI.",
+    "privacy": "Use public or private synthetic records only. Exclude credentials, private contact addresses, developer menus and overlays.",
+    "requiredEvidence": "Source build/commit, exact image hash, actual device/capture dimensions, visible workflow, privacy inspection and owner review. Refresh from the final standalone binary before submission.",
+    "presentationReview": "October13 UI cleanup is local and awaiting owner visual approval. Earlier code7 captures predate the revised cards, search panel and map coverage; do not treat browser preview screenshots as final Android store exports."
+  },
+  "releaseNotes": {
+    "status": "draft_for_next_verified_binary",
+    "text": "Updated vehicle capacity maps, provider workspaces, shipment tracking, and GPS location-source controls."
+  },
+  "references": [
+    "https://support.google.com/googleplay/android-developer/answer/9866151?hl=en",
+    "https://support.google.com/googleplay/android-developer/answer/17262077?hl=en"
+  ]
+}

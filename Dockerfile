@@ -8,6 +8,8 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
+RUN test ! -e .local && test ! -e .netlify \
+  && test ! -e supabase/.temp && test ! -e supabase/.branches
 RUN npm run build
 
 FROM node:22.16.0-alpine AS runner

@@ -1,0 +1,12 @@
+.field{display:grid;grid-template-columns:24px minmax(0,1fr) 44px 44px;align-items:center;gap:3px;width:100%;min-width:0;padding:3px;border:1px solid #d7dfeb;border-radius:9px;background:#fff}
+.field>svg{width:18px;height:18px;justify-self:center;color:#526875}
+.field input{width:100%;min-width:0;height:44px;padding:8px 4px;border:0;outline:0;background:#fff;color:#0b1d3a;font:inherit;font-size:.82rem}
+.field input::-webkit-search-cancel-button{-webkit-appearance:none}
+.field:focus-within{border-color:#155eef;box-shadow:0 0 0 3px #155eef1f}
+.field button{display:flex;align-items:center;justify-content:center;width:44px;min-width:44px;height:44px;min-height:44px;margin:0;padding:0;border-radius:7px;cursor:pointer}
+.field button svg{width:20px;height:20px}
+.clear{grid-column:3;border:1px solid #cbd5e1;background:#f3f5f7;color:#526375}
+.clear:hover{background:#eaf1ff;border-color:#155eef;color:#155eef}
+.clear:disabled{background:#f3f5f7;color:#526375;cursor:default}
+.submit{grid-column:4;border:1px solid #155eef;background:#155eef;color:#fff}
+.field button:focus-visible{outline:2px solid #155eef;outline-offset:2px}

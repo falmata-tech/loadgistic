@@ -1,4 +1,5 @@
 import { contentSecurityPolicy } from './src/lib/security-headers.js';
+import {seoResponseHeaders} from './src/lib/seo.js';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -21,6 +22,7 @@ const nextConfig = {
   },
   async headers() {
     return [
+      ...seoResponseHeaders(process.env),
       {
         source: '/sw.js',
         headers: [

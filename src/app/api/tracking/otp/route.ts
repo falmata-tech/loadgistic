@@ -1,7 +1,7 @@
 import {after,NextRequest,NextResponse} from 'next/server.js';
 import {deliverTargetedAccessEmail,providerTrackingOtpRequestResponse} from '@/lib/email-delivery';
 import {checkOriginBeforeScopedLimit} from '@/lib/guest-rate-limit.js';
-import {requestProviderTrackingOtp} from '@/lib/provider-tracking.js';
+import {requestTrackingEmailSession} from '@/lib/provider-tracking.js';
 import {requestKey} from '@/lib/rate-limit';
 import {errorMessage} from '@/lib/errors';
 import {text} from '@/lib/redirects';
@@ -14,8 +14,7 @@ export async function POST(request:NextRequest){
     readScope:async()=>{
       const form=await request.formData();
       const email=text(form,'email').trim().toLowerCase();
-      const trackingCode=text(form,'trackingCode').trim().toUpperCase();
-      return {key:`tracking-otp-recipient:${email}:${trackingCode}`,value:{email,trackingCode}};
+      return {key:`tracking-otp-recipient:${email}`,value:{email}};
     }
   });
   if(!rate.allowed){
@@ -25,8 +24,8 @@ export async function POST(request:NextRequest){
     );
   }
   try{
-    const {email,trackingCode}=rate.scope||{email:'',trackingCode:''};
-    const challenge=await requestProviderTrackingOtp(email,trackingCode);
+    const {email}=rate.scope||{email:''};
+    const challenge=await requestTrackingEmailSession(email);
     if(challenge.deliveryQueued){
       after(async()=>{
         try{await deliverTargetedAccessEmail('TRACKING_OTP',challenge.challengeId);}

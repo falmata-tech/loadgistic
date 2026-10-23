@@ -1,0 +1,312 @@
+---
+id: FEAT-PLY-001
+title: Play policy workflows and review readiness
+related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-VER-001, FEAT-PRV-001, FEAT-SUP-001, FEAT-MKT-001, FEAT-TRK-001, FEAT-LNG-001, FEAT-SEC-001, FEAT-REV-001, FEAT-ENT-001]
+problem: A verified binary alone does not meet account deletion, location consent, public-content moderation or reviewer-access requirements.
+behavior: Provide verifiable deletion requests and fulfillment, explicit location consent, report and block controls, and restricted normal-authentication reviewer access without weakening customer permissions.
+contracts: [AccountDeletionRequest, ContentSafetyCommand, BackgroundLocationConsent, ReviewAccountAccess]
+observability: [account_deletion_requested, account_deletion_completed, content_report_created, content_moderated, location_consent_changed, review_login_denied]
+rollout: Implement and verify locally first. Owner visual approval precedes extensive release gates. New production SQL, review identity and configuration need exact reviewed target/backup/rollback evidence; no public Play rollout is authorized by implementation alone.
+---
+
+# Play requirements — verified Android test; Google review pending
+
+## October14 provider-fleet compatibility — accepted planned
+
+FEAT-FLT/IAM/VER-001 / ADR-079 extends personal-provider employers. Existing
+account deletion holds must protect their active employees just as organization
+members are protected. Resolve active memberships before erasure; preserve the
+existing unfinished-Tracking/file-cleanup/reauthentication requirements. Approved
+fulfillment removes that provider's private invitation contacts and source-linked
+authority notes, retaining pseudonymous truck/event/audit history. This grants no
+new deletion authority and does not promise that retained shipment history is
+erased. Tests: `tests/sql/provider-fleet-erasure.sql`,
+`tests/sql/provider-authority-erasure.sql` and existing deletion acceptance.
+Local isolated evidence is recorded separately from hosted installation.
+
+October13 local presentation cleanup (FEAT-UIX-001): retain privacy, terms,
+deletion, reporting/blocking and normal-authentication reviewer workflows.
+Reviewer access is reached from transporter sign-in in the unpublished revision,
+instead of cluttering About. Existing code7 continues to use its original entry;
+the replacement Console instructions must match the final binary before upload.
+Current store driver imagery visibly contains reviewer fixture names; replacement
+screenshots must use purpose-specific plausible synthetic records, real native
+captures and refreshed source/hash/owner-review evidence. Do not suppress valid
+user data in the app or retouch screenshots to hide unverified behavior.
+
+The owner requested all missing Play workflows on October 9. Console developer
+5256539403314542898 / app 4974969611761012361 is independently authenticated under
+marketvision.tech@gmail.com on October 10. The publisher is Active with Admin on
+Loadgistic only and zero account-wide grants. This identity
+does not replace the application's administrator or Expo identity. Package stays
+com.loadgistic.app. Never treat an app entry or draft upload as publication.
+
+October 12 current release: standalone source 04e27fe passes all eight CI jobs
+38297279274 and actual normal login/consent/grants/foreground-service restoration/
+sign-out acceptance. Internal 1.0.6/code 7 is available and the exact Alpha
+release is confirmed and in Google review. Both location declarations are saved
+and independently reloaded with anonymous real Android footage; approved icon,
+regional graphic and four actual native screenshots are saved. Twelve selected
+real tester addresses are confirmed. Temporary existing-key signing is explicitly
+approved/completed, with unchanged payloads/associations and private files removed.
+Google quick checks completed; approval, real opt-ins/14-day eligibility and physical
+GPS/push/16KB-device acceptance remain external/separate. Production stays empty.
+See MOBILE_IMPLEMENTATION and TRACEABILITY for immutable artifact/status evidence.
+
+October 11 historical release: runtime 3c13f4b / Netlify
+6acc19b721f9d03af4a8246c is verified live, CI 38180627163 all eight jobs pass.
+Owner-approved bounded local signing preserves the APK/AAB application entries
+and existing upload certificate; temporary private material is removed. Exact
+AAB c2b72c2dda77ddb0d8e40f5d969648d7fbea170cc88960ee4f355b88573c67d0
+is uploaded once, with the timeout resolved by exact-edit hash readback. Internal
+4700942405023499701/release 2 is independently available as 1.0.5/code 6,
+Not reviewed. Alpha stays inactive Draft at code 6; Production is empty. Existing
+owner/closed tester lists and countries are unchanged. The approved regional
+listing is saved, but Google confirms it is not yet submitted for review.
+
+Additional real synthetic disclosure/Android-grant footage does not complete the
+policy video: a native refresh timeout returns to sign-in; one data-preserving
+cold restart does not establish background-service proof. Host normal auth/
+refresh/logout pass. MOB-QA-001 records the source-confirmed mobile transient
+refresh response and remaining acceptance, without inventing a web defect.
+Final standalone store captures, qualifying video, physical GPS/alerts/16KB,
+Google review and closed enrollment remain pending. Internal/local tests do not
+start the 14-day clock. Historical checkpoints follow.
+
+October 9 rollout: approved SQL 131–136 committed; web runtime 9feab2d is live
+as deploy 6ac99d110f1f577818c9f7c9. Verification commit 068ac35 preserves all
+runtime/native/SQL inputs, and CI 38012117505 passes all eight latest jobs.
+Eighty live checks pass, including three new private normal-auth reviewers and
+company-driver denial of the transporter-profile editor. Protected credential
+files remain outside source/builds; no initial human consent or customer erasure
+was invented. Signed 1.0.3/code-4 APK/AAB are verified and available for testing.
+October 10: existing Google signing and unchanged Expo upload signer are verified.
+Exact EAS 066f028f-0cb0-4286-9830-40815264e11e FINISHED; internal
+4700942405023499701/release 1 is Active/available/Not reviewed. Alpha
+4699446366767369053/release 1 is Draft with the same bundle, the separate
+ten-address Loadgistic closed testers list and Ethiopia/US eligibility. The owner
+supplied the addresses; exact-set verification and an independent reload confirm
+the count and Alpha-only association. Internal owner eligibility is unchanged.
+Two more real testers are needed; no invitation email or enrollment is inferred.
+Those additional testers are required for production eligibility; Google permits
+starting closed testing after app setup before the roster reaches twelve.
+Privacy/private reviewers/IARC/Data safety and other
+source-backed metadata are saved; listing assets/copy stay Draft pending the
+specific AI-label reply after automatic review rejected incomplete provenance.
+Location/foreground-service video, physical GPS/alerts/16 KB acceptance, real
+closed enrollment and Google review remain pending. The owned emulator's System
+UI ANR and one bounded recovery failure are recorded; no complete permission video
+or full native/policy acceptance is inferred from an internal test release.
+
+## AC1 — Location consent before permission or collection
+
+Given a driver has agreed active shipment tracking
+When background location has not been explicitly accepted on this device
+Then a readable disclosure explains location collection while closed, approximate
+sharing with authorized shipment parties, use only for active shipments and OS
+permission controls before any location permission request or background task
+And the deliberate location-sharing action is visible and touchable below native
+status-bar/notch insets, including when it appears above the app's navigation
+And the notice and navigation consume the top inset once; independent modal
+windows retain their own safe-area protection
+And signing out or changing accounts immediately hides the prior actor's notice;
+polling or an old pending request cannot expose it to a guest or another actor
+And declining leaves other app functions available without starting collection
+And previously granted OS permission alone does not count as disclosure consent
+And shipment-screen instructions do not promise that locking the phone or leaving
+the screen stops an accepted active shipment's background location reporting
+And account changes, sign-out, revoked authority and completed tracking stop or
+revalidate collection without transferring consent or leases to another account.
+
+## AC2 — Real account/data deletion
+
+Given a person requests deletion from Account or the public deletion web page
+When their existing email is verified without creating an account
+Then a durable, idempotent deletion request is visible to authorized administrators
+And it remains requestable when active work prevents immediate fulfillment
+And the requester sees its status and any specifically explained retained data
+And fulfillment removes non-required account/public/contact/device data and files,
+revokes sessions and location leases, and preserves only justified scoped records
+And a failed file/Auth cleanup remains retryable rather than reported complete
+And an unrelated account, staff role or client-supplied ownership is never authority
+And deactivation is not presented as deletion.
+
+Given an administrator opens Account deletion requests with an invalid or out-of-range page\
+When its bounded authoritative read completes\
+Then invalid pages use page one and an empty later page recovers at most once to page one\
+And existing requests retain their exact account link, saved status and deletion confirmations\
+And genuine emptiness remains distinct from a failed read\
+And non-administrators cannot read the queue or perform deletion.
+
+Given an administrator requests a deletion queue page beyond its available records\
+When the authoritative API returns its specific later-range out-of-bounds response\
+Then the queue retries page one at most once\
+And first-page range errors, authorization failures and service failures remain visible failures rather than false empty or successful reads.
+
+October14 local queue repair (WEB-MOB-034, owner visual approval pending): the
+existing windowed-page reader now recovers both empty later pages and the exact
+HTTP416/PGRST103 later-range response. Actual page-component regressions retain
+first-page, authorization and503 failures and unchanged confirmation controls;
+all16 focused presentation checks pass. Four actual desktop/phone cases in
+`tests/e2e/admin-connected-queues.spec.ts` verify connected owner records and both
+queue recoveries with exact targets, preserved controls and permission denials;
+terminal receipt is `.local/internal-workflows-20261014/admin-connected-complete-runner.json`.
+This changes presentation/read pagination only, with no erasure command or
+permission change. Rollback restores the queue reader without changing requests.
+
+## AC3 — Public-content reporting, blocking and moderation
+
+Given a visitor sees a public provider profile, picture or shipment review
+When they report content or block the provider
+Then a bounded report can be reviewed and resolved by permitted web staff
+And blocked content disappears from that viewer's discovery without changing
+other viewers or disclosing private records
+And visitors can reverse their own block
+And terms prohibit objectionable content and are accepted before uploading
+And report spam, cross-tenant mutations and arbitrary target identifiers are denied
+And moderation is a persisted audited action, not merely an alert or placeholder.
+
+Given two or more reports target the same review, or that review also has a rating dispute\
+When authorized Trust staff hide or restore reported content or resolve the rating dispute\
+Then every independent HIDDEN report and terminal REMOVED rating decision continues to exclude the review from public text, count and average\
+And restoring one report never restores another report or overrides terminal rating removal\
+And upholding a dispute never overrides a HIDDEN report\
+And exact same-review decisions serialize, preserve notes and audit history, and leave unrelated records unchanged\
+And existing unauthorized, stale and terminal-command denials remain effective.
+
+October14 migration143 (WEB-MOB-035, installed locally) repairs the effective
+publication rule without adding permissions, broadening report targets or
+changing either queue's independent decision states. Isolated SQL, rollback,
+fresh restore and strict security checks pass; the local installation preserves
+business rows and permissions. Hosted installation needs exact owner review. Rollback
+restores exact previous functions and requires disabling conflicting moderation
+controls until repaired forward; it cannot reverse decisions already recorded.
+And excluding hidden/reviewer workspaces preserves the existing 5,000-truck
+query/payload limits without removing eligible signals or adding user steps.
+Existing workflow fixtures explicitly model already-consented synthetic identities
+on isolated local services. Fresh-consent tests create unaccepted identities and
+exercise the visible checkbox; no human or hosted consent is backfilled.
+
+## AC4 — Reviewer access without general authentication bypass
+
+Given the owner approves a dedicated synthetic demo identity
+When a reviewer signs in with reusable credentials
+Then normal provider authentication and all existing role/tenant checks apply
+And the account has only synthetic demo records, no staff powers/customer data
+And ordinary production accounts retain email-code sign-in
+And absent configuration, bad credentials, inactive users and staff roles fail
+closed with no session or token in logs, source or app payload
+And refresh, sign-out and credential revocation retain existing security behavior.
+
+### Business workspace coverage — planned local follow-up after schema175
+
+Given two existing registered synthetic Play-review identities use their normal
+reusable credentials
+When one creates a Broker/Shipper review workspace and invites the other as staff
+Then both can exercise the same business Capacity, Tracking and Team workflows
+their current membership grants, without receiving platform-staff authority
+And the review business and its synthetic shares do not appear in ordinary
+provider business search, recipient search, customer workspaces or public data.
+
+Given an ordinary account or review account guesses a business/workspace/grant ID
+When it reads, selects, invites, joins or shares across the review boundary
+Then the server denies before returning or mutating the foreign data, including
+by direct API/SQL command, expired invitation, disabled reviewer and stale member.
+
+Given an existing review account opens the installed Android review entry
+When it signs in and switches between provider and synthetic business workspaces
+Then the UI uses the existing Review access form and truthfully describes that
+only synthetic records are available; no separate public login or password bypass
+is introduced. The reviewer credentials and role paths are given privately to
+Google Play through App access, not in source, screenshots or logs.
+
+Migration176, new synthetic business membership and any changed Android binary
+are outside the approved 138–175/1.1.0-code8 rollout. They require separate
+local SQL/browser tests, visual review, exact hosted migration approval and
+new Android signing approval before claiming reviewer business coverage.
+
+## AC5 — Privacy, declarations and release evidence
+
+Given the preceding workflows are tested
+Then app and public policy explain actual data, optional permissions, responsible
+contact, deletion/retention, providers and authorized location sharing consistently
+And fixed UI text is covered in English, Amharic and Afaan Oromo
+And app-content/Data Safety answers derive from inspected runtime/provider behavior
+And store artwork uses the existing approved identity and real app screenshots
+And feature artwork prioritizes a striking freight visual with only the brand
+name as text, following the owner's October 10 direction; it adds no invented
+app interface, ratings, availability or transport guarantees
+And the reviewed phone listing shows at least four actual core-workflow screens
+at 1080 × 1920 with no developer overlays, credentials or private contact details
+And a 512 × 512 PNG icon and 1024 × 500 opaque feature graphic meet the current
+Google format limits, with short accessible descriptions and source-backed copy
+And each asset retains its source, exact hash, creation/AI provenance and review
+state; a development capture is not presented as a final standalone screenshot
+And prelaunch TikTok/Instagram materials use the same approved identity, short
+copy and genuine feature claims, distinguishing web availability, Android testing
+and future public Play availability without an invented launch date or endorsement
+And the October 10 campaign correction leads with a broker or shipping team's
+view of transporters' reported capacity, routes and availability; Tracking follows
+agreed transport and is secondary
+And artwork depicts credible East African road-freight operations, retaining AI
+provenance rather than posing as customer photographs or fabricated app screens
+And screenshot order first demonstrates authorized privately shared capacity,
+then public discovery and signal details, then provider controls and Tracking
+And following capacity does not imply a paid subscription or unimplemented alerts
+And an Android demonstration shows disclosure, permission and active tracking
+And a new exact signed APK/AAB includes the verified changes with an unused Play
+version code and preserved signing before Console upload
+And the standalone artifact's final merged manifest excludes unused overlay,
+broad photo/video storage, microphone and camera permissions, including those
+inherited from dependencies; shipment-location and notification permissions remain
+And an artifact with an unexpected package, debug runtime or missing shipment
+permissions fails the release check; developer tooling is checked separately
+And owner account/type, signing, reviewer credentials and Console declarations
+remain explicitly pending until their actual evidence exists.
+
+## Verification and operational boundary
+
+Tests: `tests/account-erasure.test.mjs`, `tests/content-blocks.test.mjs`,
+`tests/play-review-visitor.test.mjs`, `apps/mobile/tests/background-consent.test.mjs`,
+`tests/sql/account-deletion.sql`, `tests/sql/public-content-safety.sql`,
+`tests/sql/content-policy-acceptance.sql`, `tests/sql/app-review-accounts.sql`,
+`tests/sql/play-scope-safeguards.sql`, `tests/e2e/play-policy-workflows.spec.ts`.
+Additional projection/copy/manifest checks: `tests/sql/public-capacity-policy-scope.sql`,
+`tests/play-policy-copy.test.mjs`, `tests/content-policy-intent.test.mjs`,
+`apps/mobile/tests/play-notification-consent.test.mjs`.
+Native notice regressions: `apps/mobile/tests/background-notice-layout.test.mjs`
+and `apps/mobile/tests/background-notice-scope.test.mjs`.
+Privacy instruction regression: `apps/mobile/tests/tracking-location-copy.test.mjs`
+rejects the earlier screen/lock-pause promise and verifies the existing translated
+shipment-sharing explanation (NR-27).
+Final permission regression: `apps/mobile/tests/android-release-permissions.test.mjs`;
+run `apps/mobile/scripts/verify-android-permissions.mjs` on the exact APK and AAB
+with the installed Android SDK aapt2 or reviewed bundletool. The check consumes
+the compiled manifest, never substitutes app.json for artifact evidence (NR-25).
+An installed-device hierarchy must additionally place the actual action below the
+reported status-bar inset and show disclosure before the Android runtime prompt;
+static layout and browser checks do not replace that native acceptance.
+CI runs all six policy SQL suites alongside existing authorization regressions;
+local fixture import establishes only newly imported synthetic-user preconditions.
+Existing Account/onboarding/recovery regression gates also run in desktop and
+phone viewports: `tests/e2e/account-details.spec.ts`,
+`tests/e2e/fleet-onboarding.spec.ts`, `tests/e2e/launch-recovery.spec.ts`.
+Fresh onboarding accepts the actual visible terms checkbox. Existing Account
+fixtures declare prior consent locally and still verify persisted saves, native
+POST fallback, invalid input, inactive sessions and actor-forgery denial.
+The onboarding tile fixture proves renderer readiness, not public tile delivery.
+Document and multi-party Tracking regressions use separate local client buckets
+so unrelated sign-in tests cannot exhaust their request allowance. They assert
+the real successful OTP response and visible code-entry state before reading the
+isolated inbox; production limits and email delivery remain unchanged.
+The existing-content Tracking regression selects the known synthetic transporter
+and declares its prior consent; it must not choose an arbitrary newly created
+account whose pending terms dialog intercepts workflow actions.
+
+Focused domain, native, database and browser tests must cover each implemented AC.
+Record test paths/results in TRACEABILITY before marking verified. No new SDK,
+privileged authentication bypass, provider settings replacement, secret export or
+production erasure is required to make the local implementation reviewable.
+Roll back exposure first; completed deletion is irreversible and requires exact
+request/subject review. Report and retain ambiguous cleanup state, never restore
+unrelated records automatically.

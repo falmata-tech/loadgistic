@@ -1,0 +1,6 @@
+interface:
+  display_name: "Loadgistic Test Repair"
+  short_description: "Repair stale tests and diagnose CI efficiently"
+  default_prompt: "Use $loadgistic-test-repair to diagnose the failed checks and verify the smallest complete repair."
+policy:
+  allow_implicit_invocation: true

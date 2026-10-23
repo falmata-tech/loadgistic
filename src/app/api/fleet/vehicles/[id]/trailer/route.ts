@@ -11,8 +11,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const form=await request.formData();
   try{
     await setProviderVehicleAttachedTrailer(user,id,text(form,'cargoConfiguration'));
-    return redirectWith(request,`/app/fleet/${id}`,'success','Attached trailer updated.');
+    return redirectWith(request,`/app/fleet/${id}?view=details`,'success','Attached trailer updated.');
   }catch(error){
-    return redirectWith(request,`/app/fleet/${id}`,'error',errorMessage(error));
+    return redirectWith(request,`/app/fleet/${id}?view=details`,'error',errorMessage(error));
   }
 }

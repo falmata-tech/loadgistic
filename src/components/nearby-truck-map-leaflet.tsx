@@ -1,5 +1,7 @@
 "use client";
 
+
+import {Text} from '@/components/localization';
 import React from 'react';
 import { Circle, CircleMarker, MapContainer, Tooltip, useMap } from 'react-leaflet';
 import { BaseMapTiles } from '@/components/base-map-tiles';
@@ -18,8 +20,8 @@ export function NearbyTruckMapLeaflet({viewer,trucks}:{viewer:Point;trucks:Truck
     <MapContainer center={[viewer.lat,viewer.lng]} zoom={11} minZoom={6} maxZoom={16} scrollWheelZoom>
       <BaseMapTiles/>
       <MapCenter point={viewer}/>
-      <CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{color:'#8a3ffc',fillColor:'#8a3ffc',fillOpacity:1,weight:3}}><Tooltip permanent direction="top">You · private</Tooltip></CircleMarker>
-      {trucks.map(truck=><Circle key={truck.id} center={[truck.lat,truck.lng]} radius={truck.radiusKm*1000} pathOptions={{color:'#0b65d8',weight:3,fillColor:'#2f80ed',fillOpacity:.14}}><Tooltip direction="center">{truck.label}<br/>Approximate current location · {truck.radiusKm} km radius</Tooltip></Circle>)}
+      <CircleMarker center={[viewer.lat,viewer.lng]} radius={8} pathOptions={{color:'#8a3ffc',fillColor:'#8a3ffc',fillOpacity:1,weight:3}}><Tooltip permanent direction="top"><Text message="You · private"/></Tooltip></CircleMarker>
+      {trucks.map(truck=><Circle key={truck.id} center={[truck.lat,truck.lng]} radius={truck.radiusKm*1000} pathOptions={{color:'#0b65d8',weight:3,fillColor:'#2f80ed',fillOpacity:.14}}><Tooltip direction="center">{truck.label}<br/><Text message="Approximate current location · "/>{truck.radiusKm}<Text message=" km radius"/></Tooltip></Circle>)}
     </MapContainer>
   </div>;
 }

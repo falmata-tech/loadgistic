@@ -10,6 +10,7 @@ export {
   moderateAdminRecord,
   saveFeaturedProviderDay,
   saveProviderSponsorship,
+  setFeaturedTikTokBroadcast,
   setAdminRecordActive,
   updateFleetDriverPermissions
 } from './platform-admin/supabase.js';

@@ -1,0 +1,192 @@
+/* FEAT-UIX-001: staff presentation only; shared navigation and controls keep their contracts. */
+.workspace { max-width:1180px; }
+.workspace :global(.page-header) { align-items:center; gap:16px; margin-bottom:18px; }
+.workspace :global(.page-title) { font-size:1.5rem; line-height:1.25; }
+.workspace :global(.task-heading-icon) { width:38px; height:38px; }
+.workspace :global(.task-heading-icon svg) { width:21px; height:21px; }
+.workspace :global(.page-subtitle) { font-size:.85rem; line-height:1.45; }
+.workspace :global(.admin-overview-section) { border-radius:8px; }
+.workspace :global(.admin-overview-section > header) { padding:13px 16px; }
+.workspace :global(.admin-overview-records > a),.workspace :global(.admin-overview-work > a) { padding:14px 16px; }
+.workspace :global(.admin-overview-records small),.workspace :global(.admin-overview-work small) { font-size:.75rem; }
+.workspace :global(.admin-overview-records > a > span),.workspace :global(.admin-overview-work > a > span) { background:#f1f5f8; color:#34536c; border-radius:6px; }
+.workspace .compactCounts { display:flex; flex-wrap:wrap; gap:0; margin-bottom:16px; border:1px solid var(--line); border-radius:8px; background:white; }
+.compactCounts :global(.stat) { display:flex; flex:1 1 140px; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border:0; border-right:1px solid var(--line); border-radius:0; }
+.compactCounts :global(.stat:last-child) { border-right:0; }
+.compactCounts :global(.stat strong) { margin:0; font-size:1.1rem; }
+.compactCounts :global(.stat .meta) { font-size:.8rem; }
+.workspace :global(.admin-record-list article) { grid-template-columns:minmax(0,1fr) auto minmax(130px,max-content); gap:12px; }
+.workspace :global(.admin-record-list article) > .rowActions { display:flex; grid-column:3; grid-row:auto; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; min-width:0; }
+.rowActions form { margin:0; }
+.rowActions :global(.button) { min-height:44px; width:auto; font-size:.8rem; }
+.rowActions :global(.button.danger) { background:white; border-color:#e1c4c4; color:#953b3b; }
+.rowActions :global(.button.danger:hover) { background:#fff4f4; border-color:#bc7373; }
+.rowActions :global(.admin-inline-actions) { min-width:0; }
+.rowActions :global(.admin-inline-actions[open]) { flex-basis:100%; }
+.workspace :global(.admin-record-list article > div:first-child) { gap:4px; }
+.workspace :global(.admin-record-list article strong) { font-size:.93rem; }
+.workspace :global(.admin-record-list article small),.workspace :global(.admin-record-list article span:not(.status)) { font-size:.8rem; line-height:1.45; }
+.workspace :global(.admin-operation-record-card),.workspace :global(.admin-operation-timeline),.workspace :global(.admin-operation-actions) { border-radius:8px; padding:16px; }
+.workspace :global(.admin-operation-record-card h2),.workspace :global(.admin-operation-timeline h2) { font-size:1rem; }
+.workspace :global(.admin-operation-record-card dl > div) { padding:11px 8px; }
+.workspace :global(.admin-operation-record-card dt) { font-size:.78rem; font-weight:600; text-transform:none; letter-spacing:0; }
+.workspace :global(.admin-operation-record-card dd) { font-size:.88rem; line-height:1.4; }
+.workspace :global(.admin-record-links .button) { min-height:44px; font-size:.8rem; }
+.workspace :global(.admin-support-queue),.workspace :global(.admin-support-team) { padding:16px; box-shadow:none; }
+.workspace :global(.admin-support-heading) { align-items:center; }
+.workspace :global(.support-agent-create) { max-height:min(680px,75vh); overflow-y:auto; }
+.workspace :global(.workflow-step-heading) { grid-template-columns:26px 28px minmax(0,1fr); gap:8px; }
+.workspace :global(.workflow-step-heading > svg) { width:28px; height:28px; padding:5px; }
+.workspace :global(.workflow-step-heading h3) { font-size:.9rem; }
+.workspace :global(.admin-support-team > .meta) { font-size:.8rem; line-height:1.45; }
+.workspace :global(.support-safety-note) { justify-content:flex-start; line-height:1.45; }
+.workspace :global(.support-agent-edit) { align-items:start; }
+.workspace :global(.support-agent-edit .team-permission-grid) { padding-top:8px; border-top:1px solid var(--line); }
+.relatedReference { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+.reference { margin:0; font-size:.8rem; }
+.reference summary { display:flex; align-items:center; min-height:44px; cursor:pointer; color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
+.reference summary::before { content:'›'; margin-right:6px; font-size:1rem; }
+.reference[open] summary::before { transform:rotate(90deg); }
+.reference code { display:block; max-width:100%; padding:6px 0; overflow-wrap:anywhere; color:var(--muted); font-size:.78rem; }
+.caseRow { display:grid; gap:12px; padding:18px; margin:16px 0; border:1px solid var(--line); border-radius:8px; background:white; }
+.caseRow p { margin:0; line-height:1.45; overflow-wrap:anywhere; }
+.caseHeader { display:flex; justify-content:space-between; align-items:start; gap:14px; }
+.caseHeader > div { min-width:0; }
+.caseHeader h2 { margin:0 0 5px; font-size:1rem; overflow-wrap:anywhere; }
+.caseHeader p { color:var(--muted); font-size:.82rem; }
+.caseHeader :global(.status) { flex-shrink:0; }
+.decisionForm { display:grid; gap:12px; padding-top:14px; border-top:1px solid var(--line); }
+.decisionForm label { display:grid; gap:6px; font-size:.85rem; }
+.decisionForm label:has(input[type=checkbox]) { display:flex; align-items:start; gap:8px; }
+.decisionForm input[type=checkbox] { width:18px; min-height:18px; flex-shrink:0; }
+.decisionForm textarea { min-height:96px; }
+.decisionForm :global(.button) { min-height:44px; justify-self:start; }
+.safetyNote { padding:12px 14px; border-left:3px solid #ba8735; background:#faf8f3; font-size:.85rem; line-height:1.5; }
+.workspace :global(.featured-operation-overview) { padding:16px; border-radius:8px; box-shadow:none; }
+.workspace :global(.featured-operation-overview h2) { font-size:1.05rem; line-height:1.4; }
+.workspace :global(.featured-operation-overview dl) { gap:0; margin:14px 0; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.workspace :global(.featured-operation-overview dl > div) { padding:11px 13px; border-radius:0; background:#fafbfc; border-right:1px solid var(--line); }
+.workspace :global(.featured-operation-overview dl > div:last-child) { border-right:0; }
+.workspace :global(.featured-operation-overview dd) { margin-top:5px; font-size:1.2rem; }
+.workspace :global(.featured-upcoming-days) { grid-template-columns:repeat(7,minmax(0,1fr)); gap:0; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.workspace :global(.featured-upcoming-days > a) { padding:12px 10px; border:0; border-right:1px solid var(--line); border-radius:0; }
+.workspace :global(.featured-upcoming-days > a:last-child) { border-right:0; }
+.workspace :global(.featured-upcoming-days time),.workspace :global(.featured-upcoming-days small) { font-size:.76rem; }
+.workspace :global(.featured-operation-overview summary) { min-height:44px; }
+.workspace :global(.featured-settings-disclosure),.workspace :global(.featured-day-disclosure),.workspace :global(.featured-sponsor-disclosure) { border-radius:8px; }
+.workspace :global(.featured-settings-disclosure > summary),.workspace :global(.featured-day-disclosure > summary),.workspace :global(.featured-sponsor-disclosure > summary) { min-height:48px; padding-block:12px; }
+.workspace :global(.featured-admin-picker),.workspace :global(.featured-event-settings),.workspace :global(.featured-sponsor-admin) { padding:16px; border-radius:6px; box-shadow:none; }
+.workspace :global(.featured-sponsor-admin .section-heading h2),.workspace :global(.featured-event-settings .section-heading h2) { font-size:1.1rem; }
+.workspace :global(.featured-sponsor-admin .section-heading p) { font-size:.84rem; line-height:1.5; }
+.workspace :global(.featured-sponsor-form) { grid-template-columns:repeat(4,minmax(0,1fr)); background:#fafbfc; border-radius:6px; }
+.workspace :global(.featured-sponsor-form .form-group) { min-width:0; }
+.workspace :global(.featured-sponsor-form .button) { min-height:44px; }
+.workspace :global(.featured-sponsor-schedules article) { background:white; border-radius:6px; }
+.workspace :global(.featured-sponsor-schedules article > div) { flex-wrap:wrap; min-width:0; }
+.workspace :global(.featured-sponsor-schedules .button) { min-height:44px; }
+.staffQueue :global(.support-tabs) { gap:6px; margin-bottom:10px; }
+.staffQueue :global(.support-tabs:not(.transport-request-tabs)) { grid-template-columns:repeat(auto-fit,minmax(80px,1fr)); }
+.staffQueue :global(.support-tabs a) { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; min-width:0; min-height:44px; overflow-wrap:anywhere; }
+.staffQueue :global(.transport-request-list) { gap:12px; margin-top:16px; }
+.staffQueue :global(.transport-request-card) { padding:16px; border-radius:8px; box-shadow:none; }
+.staffQueue :global(.transport-request-card > p) { margin:10px 0; font-size:.83rem; color:var(--muted); }
+.staffQueue :global(.transport-request-contact) { margin:10px 0; }
+.staffQueue :global(.brokerage-assignment) { padding:10px 0; }
+.staffQueue :global(.transport-follow-up) { padding-top:12px; gap:10px; }
+.staffQueue :global(.transport-follow-up textarea) { min-height:72px; }
+.staffQueue :global(.brokerage-activity small) { color:var(--muted); font-size:.76rem; }
+.staffQueue :global(.brokerage-management) { margin-top:12px; border-top:1px solid var(--line); }
+.staffQueue :global(.brokerage-management > summary) { display:flex; align-items:center; min-height:44px; padding:10px 0; cursor:pointer; color:var(--blue-dark); font-weight:750; }
+.teamSection { margin-top:18px; }
+.teamRows { display:grid; margin-top:18px; }
+.teamRow { display:grid; grid-template-columns:minmax(180px,1.25fr) minmax(140px,1fr) 85px auto auto; align-items:center; gap:16px; padding:18px 0; border-top:1px solid var(--line); }
+.teamIdentity { display:flex; gap:10px; align-items:center; min-width:0; }
+.teamIdentity > div { display:grid; gap:5px; min-width:0; }
+.teamIdentity strong { font-size:.92rem; }
+.teamIdentity small { color:var(--muted); font-size:.78rem; overflow-wrap:anywhere; }
+.teamResponsibilities { display:flex; flex-wrap:wrap; gap:5px 10px; color:var(--muted); font-size:.77rem; line-height:1.4; }
+.teamWorkload { display:grid; gap:4px; font-size:.86rem; }
+.teamWorkload small { color:var(--muted); font-size:.74rem; }
+.memberForm > section { display:grid; gap:12px; padding-bottom:18px; border-bottom:1px solid var(--line); }
+.memberForm > section h3 { font-size:1rem; margin:0; }
+.memberForm label:not(:global(.checkbox-control)) { display:grid; gap:7px; }
+.memberForm :global(.team-permission-grid) { gap:12px; padding:0; }
+.requestIdentity { display:flex; justify-content:space-between; align-items:start; gap:14px; }
+.requestIdentity > div { min-width:0; }
+.requestIdentity h2 { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:0 0 8px; font-size:1rem; }
+.requestIdentity p { margin:0; font-size:.85rem; color:var(--muted); }
+.requestIdentity time { color:var(--muted); font-size:.76rem; }
+.requestFacts { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:18px 0; font-size:.82rem; }
+.requestFacts :global(.button) { min-height:44px; font-size:.82rem; }
+.requestActions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; border-top:1px solid var(--line); padding-top:14px; }
+.requestActions :global(.brokerage-chat-action) { margin:0; }
+.requestActivity { padding:0; margin:0; list-style:none; display:grid; gap:16px; }
+.requestActivity li { padding-bottom:14px; border-bottom:1px solid var(--line); font-size:.87rem; line-height:1.5; }
+.requestActivity time { display:block; color:var(--muted); font-size:.75rem; margin-top:5px; }
+.requestActivity p { margin:7px 0 0; }
+.recordActions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.reviewRow { padding:18px; }
+.reviewRow > header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.reviewRow > header > span:first-child { display:grid; gap:6px; min-width:0; }
+.reviewRow > header strong { font-size:.95rem; }
+.reviewRow > header small { color:var(--muted); font-size:.8rem; line-height:1.4; }
+.reviewRow :global(.admin-review-body) { display:grid; gap:14px; padding:14px 0 0; }
+.reviewRow :global(.admin-review-body > p) { margin:0; }
+.reviewRow :global(.admin-review-body > button),.reviewRow :global(.admin-review-body > a) { justify-self:start; }
+.featuredDay { margin:20px 0; padding:20px; background:white; border:1px solid var(--line); border-radius:12px; }
+.featuredDayHeading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:14px; margin-bottom:16px; }
+.featuredDayHeading h2 { margin:0; font-size:1.15rem; }
+.featuredReadRoster ol { padding:0; margin:0; list-style:none; }
+.featuredReadRoster li { display:flex; align-items:center; gap:14px; padding:14px 0; border-top:1px solid var(--line); }
+.featuredReadRoster li > span { color:var(--muted); font-size:.8rem; width:24px; }
+.featuredReadRoster li > div { flex:1; display:grid; gap:6px; min-width:0; }
+.featuredReadRoster strong { font-size:.92rem; }
+.featuredReadRoster small,.featuredReadRoster time { color:var(--muted); font-size:.8rem; line-height:1.4; }
+.featuredReadRoster p { color:var(--muted); padding:18px 0; }
+@media(max-width:1050px) {
+ .workspace :global(.featured-upcoming-days) { grid-template-columns:repeat(4,minmax(0,1fr)); }
+ .workspace :global(.featured-upcoming-days > a) { border-bottom:1px solid var(--line); }
+}
+@media(max-width:760px) {
+ .featuredDay { padding:14px; }
+ .featuredReadRoster li { flex-wrap:wrap; gap:10px; }
+ .featuredReadRoster time { margin-left:34px; }
+ .teamRow { grid-template-columns:minmax(0,1fr) auto; gap:12px; }
+ .teamIdentity { grid-column:1; }
+ .teamResponsibilities { grid-column:1/-1; grid-row:2; }
+ .teamWorkload { grid-column:1; grid-row:3; }
+ .teamRow > :global(.status) { grid-column:2; grid-row:1; }
+ .teamRow > :global(button) { grid-column:2; grid-row:3; }
+ .requestIdentity { flex-wrap:wrap; }
+ .workspace { padding:14px 12px 70px; }
+ .workspace :global(.page-header) { flex-wrap:wrap; gap:12px; }
+ .workspace :global(.page-title) { font-size:1.25rem; }
+ .workspace :global(.task-heading-icon) { width:34px; height:34px; }
+ .workspace :global(.admin-overview-records > a),.workspace :global(.admin-overview-work > a) { padding:12px; }
+ .compactCounts :global(.stat) { flex-basis:calc(50% - 1px); padding:10px 12px; }
+ .workspace :global(.admin-record-list article) { grid-template-columns:minmax(0,1fr) auto; gap:10px; padding:13px; }
+ .workspace :global(.admin-record-list article > div:first-child) { grid-column:1; grid-row:1; }
+ .workspace :global(.admin-record-list article) > .rowActions { grid-column:1/-1; grid-row:auto; justify-content:flex-start; padding-top:8px; border-top:1px solid var(--line); }
+ .rowActions > :global(.button),.rowActions > form,.rowActions > :global(details) { flex:0 1 auto; }
+ .rowActions form :global(.button),.rowActions :global(details > summary.button) { width:100%; }
+ .rowActions > :global(.button) { justify-content:center; }
+ .workspace :global(.admin-record-links) { display:flex; }
+ .workspace :global(.admin-record-links .button) { width:auto; flex:1 1 140px; }
+ .workspace :global(.admin-support-heading) { align-items:start; }
+ .workspace :global(.admin-support-queue),.workspace :global(.admin-support-team) { padding:14px; }
+ .workspace :global(.support-agent-list summary) { grid-template-columns:auto minmax(0,1fr) auto; gap:8px; padding:12px; }
+ .workspace :global(.support-agent-list summary > .status) { grid-column:2/-1; justify-self:start; }
+ .workspace :global(.support-agent-edit) { grid-template-columns:1fr; }
+ .caseRow { padding:14px; }
+ .caseHeader { flex-wrap:wrap; }
+ .decisionForm :global(.button) { width:100%; justify-content:center; }
+ .workspace :global(.featured-operation-overview dt) { font-size:.76rem; line-height:1.35; }
+ .workspace :global(.featured-operation-overview dl > div) { padding:10px; }
+ .workspace :global(.featured-upcoming-days) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .workspace :global(.featured-upcoming-days > a) { padding:12px; }
+ .workspace :global(.featured-sponsor-form) { grid-template-columns:1fr; }
+ .workspace :global(.featured-sponsor-form .sponsor-description),.workspace :global(.featured-sponsor-form .sponsor-provider) { grid-column:auto; }
+ .workspace :global(.featured-admin-picker),.workspace :global(.featured-event-settings),.workspace :global(.featured-sponsor-admin) { padding:12px; }
+ .staffQueue :global(.support-tabs a) { gap:6px; padding:8px 10px; font-size:.8rem; }
+ .staffQueue :global(.transport-request-card) { padding:14px; }
+}

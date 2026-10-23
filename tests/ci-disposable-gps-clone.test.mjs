@@ -1,0 +1,137 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  checkedLocalGpsPassword, checkedLocalRestoreRole, checkedMatchingPgMajor,
+  postgresErrorCategory, runGpsClonePipeline, splitPgGraphqlAclToc,
+} from '../scripts/ci-disposable-gps-clone.mjs';
+
+const child = (source) => [process.execPath, ['-e', source]];
+
+function run(dumpSource, restoreSource, options = {}) {
+  const [dumpCommand, dumpArgs] = child(dumpSource);
+  const [restoreCommand, restoreArgs] = child(restoreSource);
+  return runGpsClonePipeline({
+    dumpCommand, dumpArgs, restoreCommand, restoreArgs,
+    env: process.env, timeoutMs: 10_000, killAfterMs: 500, ...options,
+  });
+}
+
+test('GPS CI clone accepts a complete streamed dump and restore', async () => {
+  await run(
+    'process.stdout.write("fixture");',
+    'let text="";process.stdin.on("data",chunk=>text+=chunk);process.stdin.on("end",()=>process.exit(text==="fixture"?0:1));',
+  );
+});
+
+test('GPS CI clone stops dump promptly when restore fails and never prints raw stderr', async () => {
+  const started = Date.now();
+  await assert.rejects(
+    run(
+      'setInterval(()=>process.stdout.write("fixture"),10);',
+      'process.stderr.write("pg_restore: error: role private-credential does not exist\\n");process.exit(1);',
+    ),
+    (error) => {
+      assert.match(error.message, /GPS clone restore/);
+      assert.match(error.message, /restore=1/);
+      assert.match(error.message, /restore=role-missing/);
+      assert.doesNotMatch(error.message, /private-credential/);
+      return true;
+    },
+  );
+  assert.ok(Date.now() - started < 5000, 'peer failure must not wait for the full clone timeout');
+});
+
+test('GPS CI clone stops restore promptly when dump fails', async () => {
+  await assert.rejects(
+    run(
+      'process.stderr.write("pg_dump: error: server version mismatch\\n");process.exit(1);',
+      'process.stdin.resume();setInterval(()=>{},1000);',
+    ),
+    (error) => {
+      assert.match(error.message, /GPS clone dump/);
+      assert.match(error.message, /dump=1/);
+      assert.match(error.message, /dump=version-mismatch/);
+      return true;
+    },
+  );
+});
+
+test('GPS CI clone timeout reports bounded stage and child outcomes', async () => {
+  await assert.rejects(
+    run('setInterval(()=>{},1000);', 'process.stdin.resume();setInterval(()=>{},1000);', {
+      timeoutMs: 250, killAfterMs: 200,
+    }),
+    (error) => {
+      assert.match(error.message, /GPS clone timeout/);
+      assert.match(error.message, /exits dump=SIGTERM,restore=SIGTERM/);
+      return true;
+    },
+  );
+});
+
+test('GPS CI clone reports a missing client without waiting for its peer', async () => {
+  const [restoreCommand, restoreArgs] = child('process.stdin.resume();setInterval(()=>{},1000);');
+  await assert.rejects(
+    runGpsClonePipeline({
+      dumpCommand: '/missing-loadgistic-pg-dump', dumpArgs: [],
+      restoreCommand, restoreArgs, env: process.env,
+      timeoutMs: 5000, killAfterMs: 200,
+    }),
+    (error) => {
+      assert.match(error.message, /GPS clone dump/);
+      assert.match(error.message, /dump=spawn-ENOENT/);
+      return true;
+    },
+  );
+});
+
+test('PostgreSQL category classifier emits a fixed label for unknown sensitive output', () => {
+  assert.equal(postgresErrorCategory('secret=reviewer-password'), 'unclassified');
+  assert.equal(postgresErrorCategory('pg_restore: error: could not execute query: ERROR: duplicate'), 'restore-sql-error');
+  assert.equal(postgresErrorCategory('ERROR: permission denied to set parameter "deadlock_timeout"'), 'permission-denied');
+});
+
+test('GPS CI target accepts only the exact local Supabase database, without leaking its password', () => {
+  const secret = 'local-only-secret';
+  const valid = {DB_URL: `postgresql://postgres:${secret}@127.0.0.1:55322/postgres`};
+  assert.equal(checkedLocalGpsPassword(valid), secret);
+  for (const value of [
+    `postgresql://postgres:${secret}@localhost:55322/postgres`,
+    `postgresql://postgres:${secret}@127.0.0.1:5432/postgres`,
+    `postgresql://postgres:${secret}@127.0.0.1:55322/other`,
+    `postgresql://supabase_admin:${secret}@127.0.0.1:55322/postgres`,
+    `postgresql://postgres:${secret}@127.0.0.1:55322/postgres?sslmode=require`,
+    'postgresql://postgres@127.0.0.1:55322/postgres',
+  ]) {
+    assert.throws(() => checkedLocalGpsPassword({DB_URL: value}), (error) => {
+      assert.match(error.message, /GPS CI local database target mismatch/);
+      assert.doesNotMatch(error.message, /local-only-secret/);
+      return true;
+    });
+  }
+});
+
+test('GPS CI restore rejects a wrong authenticated role', () => {
+  assert.equal(checkedLocalRestoreRole('supabase_admin'), 'supabase_admin');
+  for (const role of ['postgres', 'anon', '']) {
+    assert.throws(() => checkedLocalRestoreRole(role), /GPS CI local restore role mismatch/);
+  }
+});
+
+test('GPS CI client matches only a reviewed local server major', () => {
+  assert.equal(checkedMatchingPgMajor(15, 15), 15);
+  assert.equal(checkedMatchingPgMajor(17, 17), 17);
+  for (const pair of [[17, 15], [15, 17], [16, 16], [18, 18]]) {
+    assert.throws(() => checkedMatchingPgMajor(...pair), /GPS CI PostgreSQL client\/server major mismatch/);
+  }
+});
+
+test('GPS CI defers only the PG15 GraphQL wrapper ACL and retains all other grants', () => {
+  const special = '3664; 0 0 ACL graphql_public FUNCTION graphql("operationName" text, query text, variables jsonb, extensions jsonb) supabase_admin';
+  const other = '3665; 0 0 ACL public TABLE vehicles postgres';
+  const result = splitPgGraphqlAclToc(`; archive\n${special}\n${other}\n`);
+  assert.equal(result.deferred, `${special}\n`);
+  assert.equal(result.main, `; archive\n${other}\n`);
+  assert.throws(() => splitPgGraphqlAclToc(other), /expected one Supabase pg_graphql wrapper ACL/);
+  assert.throws(() => splitPgGraphqlAclToc(`${special}\n${special}`), /expected one Supabase pg_graphql wrapper ACL/);
+});

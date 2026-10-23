@@ -1,6 +1,26 @@
 # Launch readiness
 
+## Unpublished audit candidate
+
+The 2026-09-14 candidate and exact migration source digests are in
+AUDIT_RELEASE_CANDIDATE_2026-09-14.md. Local migrations 090–095, seven SQL suites,
+six concurrency cases, the 5,000-truck scale audit, 34 affected desktop/phone
+cases across focused runs and final quality passed. BUILD_VERIFICATION records
+the final build. F22/F24 map feedback and narrow zoom repairs also passed local
+browser regression; F23 reconciles the controlling spec status. Hosted rollout and its
+verification remain outstanding; the historical launch evidence below does not
+cover this uncommitted candidate.
+
 ## Current verdict
+
+2026-09-13 audit: the live service still reports `upload-malware-scanner` as a
+blocker. The owner subsequently approved explicit antivirus-optional uploads;
+local code now supports `UPLOAD_SCANNER_BACKEND=validation-only` and the truthful
+`uploads-not-virus-scanned` warning (BASE-DEP-001 / ADR-052). This has not been
+promoted to Netlify. The historical managed-scanner requirement below applies to
+the previous policy or a deployment that still selects managed scanning. Other
+operational gates and the findings in `CURRENT_FEATURE_AUDIT_2026-09-13.md`
+remain; the new mode is not a blanket production-readiness approval.
 
 The repository, linked hosted database, and Netlify application support a
 controlled production pilot. The clean local `001`–`076` replay and guarded

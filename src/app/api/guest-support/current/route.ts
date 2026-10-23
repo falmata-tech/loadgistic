@@ -1,19 +1,4 @@
-import {NextRequest,NextResponse} from 'next/server.js';
-import {getGuestSupportSession} from '@/lib/auth';
-import {getAssistedMatchingAvailability,getGuestSupportConversationForGuest} from '@/lib/support.js';
-
-export const runtime='nodejs';
+import {NextResponse} from 'next/server.js';
+import {PUBLIC_SUPPORT_CLOSED_MESSAGE} from '@/lib/support-policy.js';
 export const dynamic='force-dynamic';
-
-export async function GET(request:NextRequest){
-  const presence=await getAssistedMatchingAvailability();
-  const session=await getGuestSupportSession();
-  if(!session)return NextResponse.json({conversation:null,presence},{headers:{'Cache-Control':'private, no-store'}});
-  try{
-    const markRead=new URL(request.url).searchParams.get('markRead')==='1';
-    const conversation=await getGuestSupportConversationForGuest(session.conversationId,session.emailDigest,{markRead});
-    return NextResponse.json({conversation,presence},{headers:{'Cache-Control':'private, no-store'}});
-  }catch{
-    return NextResponse.json({conversation:null,presence},{headers:{'Cache-Control':'private, no-store'}});
-  }
-}
+export async function GET(){return NextResponse.json({ok:false,error:PUBLIC_SUPPORT_CLOSED_MESSAGE},{status:410,headers:{'Cache-Control':'no-store'}});}

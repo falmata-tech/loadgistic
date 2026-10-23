@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 
 export const SMALL_LOCAL_VEHICLE_CONFIGURATIONS=new Set([
-  'Courier car','Cargo van','Pickup truck','Pickup stake body',
+  'Courier car','Courier motorcycle','Cargo van','Pickup truck','Pickup stake body',
   'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
 ]);
 
@@ -30,22 +30,30 @@ function stableRows(rows,count){
   return rows.filter(row=>ids.has(row.id));
 }
 
-const ORIGINAL_SMALL_CONFIGURATIONS=new Set([
-  'Cargo van','Pickup truck','Pickup stake body',
-  'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
-]);
-const LIGHT_CONFIGURATIONS=new Set(['Light Stake Body Truck','Light Box Truck']);
 const MEDIUM_CONFIGURATIONS=new Set(['Medium Stake Body Truck','Medium Box Truck']);
+
+// Fresh disposable imports only. Existing reviewed physical vehicles must use
+// the normal retirement/replacement workflow; this is not a live backfill.
+export const MANAGED_COURIER_FIXTURE_VEHICLES=Object.freeze([
+  ['veh-public-owner-01','Heavy Rigid Stake Body Truck','Courier car','Toyota','Vitz'],
+  ['veh-public-owner-04','Heavy Rigid Stake Body Truck','Courier car','Suzuki','Dzire'],
+  ['veh-public-owner-05','Heavy Rigid Stake Body Truck','Courier car','Toyota','Corolla'],
+  ['veh-public-owner-09','Heavy Rigid Stake Body Truck + Trailer','Courier motorcycle','Bajaj','Boxer 150'],
+  ['veh-public-owner-10','Heavy Rigid Stake Body Truck + Trailer','Courier motorcycle','TVS','HLX 150'],
+  ['veh-public-owner-11','Heavy Rigid Stake Body Truck + Trailer','Courier motorcycle','Honda','Ace 125'],
+  ['veh-public-fleet-01-8','Mini Open Body Truck','Courier car','Toyota','Vitz'],
+  ['veh-public-fleet-02-3','Mini Open Body Truck','Courier car','Suzuki','Dzire'],
+  ['veh-public-fleet-03-5','Mini Open Body Truck','Courier car','Toyota','Corolla'],
+  ['veh-public-fleet-04-6','Mini Open Body Truck','Courier motorcycle','Bajaj','Boxer 150'],
+  ['veh-public-fleet-05-5','Mini Stake Body Truck','Courier motorcycle','TVS','HLX 150'],
+  ['veh-public-fleet-06-3','Mini Open Body Truck','Courier motorcycle','Honda','Ace 125']
+].map(([id,previousConfiguration,configuration,make,model])=>Object.freeze({id,previousConfiguration,configuration,make,model})));
 
 export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){
   const userById=new Map(users.map(user=>[user.id,user]));
   const driverByVehicleId=new Map(assignments.filter(assignment=>Number(assignment.active)!==0)
     .map(assignment=>[assignment.vehicle_id,assignment.driver_user_id]));
   const iconOnly=vehicle=>!userById.get(driverByVehicleId.get(vehicle.id))?.driver_portrait_preset;
-  const courierLocal=stableTake(vehicles.filter(vehicle=>iconOnly(vehicle)
-    &&ORIGINAL_SMALL_CONFIGURATIONS.has(vehicle.cargo_configuration)),9);
-  const courierRegional=stableTake(vehicles.filter(vehicle=>iconOnly(vehicle)
-    &&LIGHT_CONFIGURATIONS.has(vehicle.cargo_configuration)),3);
   const tractorSources=[
     ...stableRows(vehicles.filter(vehicle=>iconOnly(vehicle)
       &&MEDIUM_CONFIGURATIONS.has(vehicle.cargo_configuration)),2),
@@ -54,22 +62,30 @@ export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){
     ...stableRows(vehicles.filter(vehicle=>iconOnly(vehicle)
       &&vehicle.cargo_configuration==='Heavy Rigid Stake Body Truck + Trailer'),2)
   ].sort((first,second)=>stableScore(first.id)-stableScore(second.id)||String(first.id).localeCompare(String(second.id)));
-  if(courierLocal.size!==9||courierRegional.size!==3||tractorSources.length!==6){
+  if(tractorSources.length!==6){
     throw new Error('MANAGED_FIXTURE_VEHICLE_CATALOG_SOURCE_MISSING');
   }
-  const courierIds=new Set([...courierLocal,...courierRegional]);
   const tractorConfigurationById=new Map(tractorSources.map((vehicle,index)=>[
     vehicle.id,TRACTOR_TRAILER_CONFIGURATIONS[index%TRACTOR_TRAILER_CONFIGURATIONS.length]
   ]));
-  const courierModels=[['Toyota','Corolla'],['Toyota','Vitz'],['Suzuki','Dzire']];
+  const courierById=new Map(MANAGED_COURIER_FIXTURE_VEHICLES.map(row=>[row.id,row]));
+  for(const expected of courierById.values()){
+    const vehicle=vehicles.find(row=>row.id===expected.id);
+    const suffix=expected.id.replace(/^veh-public-owner-/,'');
+    const ownerMatches=expected.id.startsWith('veh-public-owner-')
+      ?vehicle?.provider_profile_id===`profile-public-owner-${suffix}`&&!vehicle.organization_id
+        &&driverByVehicleId.get(vehicle.id)===`user-public-owner-${suffix}`
+      :vehicle?.organization_id===expected.id.replace(/^veh-/,'org-').replace(/-\d+$/,'')
+        &&!vehicle.provider_profile_id&&driverByVehicleId.has(vehicle.id);
+    if(!vehicle||vehicle.cargo_configuration!==expected.previousConfiguration||!ownerMatches
+      ||tractorConfigurationById.has(vehicle.id))throw new Error('MANAGED_FIXTURE_COURIER_SOURCE_MISMATCH');
+  }
 
   return vehicles.map(vehicle=>{
-    if(courierIds.has(vehicle.id)){
-      const [make,model]=courierModels[stableScore(vehicle.id)%courierModels.length];
-      return {...vehicle,label:`${make} ${model}`,category:'Courier car',make,model,
-        cargo_configuration:'Courier car',trailer_interchangeable:false,
-        supported_trailer_configurations:[]};
-    }
+    const courier=courierById.get(vehicle.id);
+    if(courier)return {...vehicle,label:`${courier.make} ${courier.model}`,category:courier.configuration,
+      make:courier.make,model:courier.model,cargo_configuration:courier.configuration,
+      trailer_interchangeable:false,supported_trailer_configurations:[]};
     const attachedTrailer=tractorConfigurationById.get(vehicle.id);
     if(attachedTrailer){
       const tractorModels=[['FAW','J6P'],['Shacman','X3000'],['Sinotruk','HOWO']];
@@ -101,10 +117,28 @@ export function applyManagedFixtureMarketPolicy(capacities,vehicles,{localEmptyP
   });
 }
 
-export function selectSharedFixtureVehicleIds(capacities,shareRatio=.25){
+export const HANDOVER_FIXTURE_VEHICLE_IDS=new Set([
+  'veh-public-fleet-01-1','veh-public-fleet-01-4'
+]);
+
+export function selectSharedFixtureVehicleIds(capacities,shareRatio=.25,{excludedVehicleIds=new Set()}={}){
   const ratio=Math.max(0,Math.min(1,Number(shareRatio)||0));
   const unique=[...new Map(capacities.map(capacity=>[capacity.vehicle_id,capacity])).values()];
-  return stableTake(unique,Math.ceil(unique.length*ratio),capacity=>capacity.vehicle_id);
+  const eligible=unique.filter(capacity=>!excludedVehicleIds.has(capacity.vehicle_id));
+  return stableTake(eligible,Math.min(eligible.length,Math.ceil(unique.length*ratio)),capacity=>capacity.vehicle_id);
+}
+
+export function managedFixtureSharingPolicies(capacities,sharedVehicleIds){
+  const latest=new Map();
+  for(const capacity of capacities){
+    const previous=latest.get(capacity.vehicle_id);
+    if(!previous||String(capacity.updated_at)>String(previous.updated_at)
+      ||capacity.updated_at===previous.updated_at&&String(capacity.id)>String(previous.id)){
+      latest.set(capacity.vehicle_id,capacity);
+    }
+  }
+  return [...latest.values()].map(capacity=>({vehicle_id:capacity.vehicle_id,
+    mode:capacity.visibility==='OPEN'?(sharedVehicleIds.has(capacity.vehicle_id)?'BOTH':'PUBLIC'):'PRIVATE'}));
 }
 
 export function normalizeDemoSharedEmails(value,{maximum=5}={}){
@@ -112,6 +146,13 @@ export function normalizeDemoSharedEmails(value,{maximum=5}={}){
   if(emails.length>maximum)throw new Error('DEMO_SHARED_EMAIL_LIMIT_EXCEEDED');
   if(emails.some(email=>!/^\S+@\S+\.\S+$/.test(email)))throw new Error('DEMO_SHARED_EMAIL_INVALID');
   return emails;
+}
+
+/** @param {Record<string,unknown[]>} tables @returns {Record<string,unknown[]>} */
+export function excludeRetiredGuestFixtureTables(tables){
+  // Public general-help is retired. Never let a later fixture export restore
+  // its conversations or dependent records as active Support work.
+  return Object.fromEntries(Object.entries(tables).filter(([table])=>!table.startsWith('guest_support_')));
 }
 
 export function ensureIndependentVehicleAssignments(vehicles,providerProfiles,assignments,{assignedAt}={}){

@@ -4,9 +4,14 @@ import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds
+  selectSharedFixtureVehicleIds,managedFixtureSharingPolicies,excludeRetiredGuestFixtureTables,HANDOVER_FIXTURE_VEHICLE_IDS
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
+import {readFixtureSchema} from './lib/fixture-schema.mjs';
+import {
+  assertLocalAuthorityFixtureTarget,prepareProviderAuthorityFixtures,
+  uploadAuthorityFixtureDocuments,confirmAuthorityFixtureReviews
+} from './fixture-provider-authority.mjs';
 
 const localEnvironmentPath=path.join(process.cwd(),'.env.local');
 if(fs.existsSync(localEnvironmentPath)){
@@ -26,10 +31,7 @@ const fixturePassword=String(process.env.SUPABASE_FIXTURE_PASSWORD||'Loadgistic1
 const resetRequested=process.argv.includes('--reset-local');
 
 if(!url||!serviceRoleKey)throw new Error('SUPABASE_FIXTURE_CONFIG_MISSING');
-if(process.env.NODE_ENV==='production')throw new Error('PRODUCTION_FIXTURE_IMPORT_REFUSED');
-const endpoint=new URL(url);
-const localHosts=new Set(['127.0.0.1','localhost','::1']);
-if(!localHosts.has(endpoint.hostname))throw new Error('REMOTE_FIXTURE_IMPORT_REFUSED');
+assertLocalAuthorityFixtureTarget(url);
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
 const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
@@ -59,8 +61,11 @@ function rebaseFixtureRow(row){
   }));
 }
 
-const fixtureTables=Object.fromEntries(Object.entries(fixtureDocument.tables)
+const rebasedTables=Object.fromEntries(Object.entries(excludeRetiredGuestFixtureTables(fixtureDocument.tables))
   .map(([table,rows])=>[table,Array.isArray(rows)?rows.map(rebaseFixtureRow):[]]));
+const authorityManifest=JSON.parse(fs.readFileSync(path.join(process.cwd(),'resources','fixtures','provider-authority.json'),'utf8'));
+const authorityPlan=prepareProviderAuthorityFixtures({...fixtureDocument,tables:rebasedTables},authorityManifest);
+const fixtureTables=authorityPlan.tables;
 fixtureTables.users=assignFixtureDriverPortraits(fixtureTables.users||[]);
 fixtureTables.driver_vehicle_assignments=ensureIndependentVehicleAssignments(
   fixtureTables.vehicles||[],fixtureTables.provider_profiles||[],fixtureTables.driver_vehicle_assignments||[],
@@ -103,8 +108,8 @@ function buildFeaturedFixtureTables(){
     expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],
     public_headline:'Daily Featured Trucks',
     public_introduction:`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
-    tiktok_url:null,broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule_mode:'AUTO',
-    schedule_config_json:{dayStart:'07:30',dayEnd:'09:00',targetCount:featured.length,sponsorBreakEvery:2,sponsorBreakMinutes:2},manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',
+    tiktok_url:null,broadcast_start_time:'08:30',broadcast_end_time:'12:00',schedule_mode:'AUTO',
+    schedule_config_json:{dayStart:'08:30',dayEnd:'12:00',targetCount:featured.length,sponsorBreakCount:4,sponsorBreakMinutes:2},manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',
     published_by:'user-admin',created_at:iso,updated_at:iso,published_at:iso
   };
   const slots=featured.map((candidate,index)=>({
@@ -144,12 +149,9 @@ function buildFeaturedFixtureTables(){
 Object.assign(fixtureTables,buildFeaturedFixtureTables());
 const supabase=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 
-const openApiResponse=await fetch(`${url}/rest/v1/`,{
-  headers:{apikey:serviceRoleKey,authorization:`Bearer ${serviceRoleKey}`}
-});
-if(!openApiResponse.ok)throw new Error(`SUPABASE_SCHEMA_READ_FAILED:${openApiResponse.status}`);
-const openApi=await openApiResponse.json();
-const definitions=openApi.definitions||openApi.components?.schemas||{};
+const definitions=await readFixtureSchema(url,serviceRoleKey);
+if(!definitions.provider_vehicle_authority_reviews||!definitions.vehicles?.properties?.publication_status
+  ||!definitions.profiles?.properties?.drives_truck)throw new Error('LOCAL_AUTHORITY_FIXTURE_SCHEMA_REQUIRED');
 
 const plan=[
   ['users','profiles'],
@@ -165,8 +167,8 @@ const plan=[
   ['subscriptions','subscriptions'],
   ['profile_routes','profile_routes'],
   ['service_areas','service_areas'],
-  ['capacities','capacities'],
   ['verification_requests','verification_requests'],
+  ['capacities','capacities'],
   ['support_agent_profiles','support_agent_profiles'],
   ['featured_provider_days','featured_provider_days'],
   ['featured_provider_slots','featured_provider_slots'],
@@ -185,7 +187,8 @@ const localResetTables=[
   'provider_sponsorships','sponsors','sponsor_placements','capacity_access_grants','shared_capacity_email_otps',
   'provider_tracking_recipients','provider_tracking_email_otps',
   'access_email_deliveries','guest_support_conversations','guest_support_messages','guest_support_attachments',
-  'guest_support_events','notifications','audit_logs'
+  'guest_support_events','notifications','audit_logs','vehicle_capacity_sharing',
+  'content_reports','user_policy_acceptances','app_review_accounts','account_deletion_requests','account_erasure_files'
 ].filter(table=>definitions[table]);
 
 const aliases={
@@ -205,7 +208,7 @@ function uuidFor(value){
 }
 
 async function deleteLocalFixtures(){
-  const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id'};
+  const deleteKeys={driver_permissions:'user_id',support_agent_profiles:'user_id',vehicle_capacity_sharing:'vehicle_id',user_policy_acceptances:'user_id',app_review_accounts:'user_id'};
   for(const table of [...localResetTables].reverse()){
     const deleteKey=deleteKeys[table]||'id';
     const {error}=await supabase.from(table).delete().not(deleteKey,'is',null);
@@ -336,7 +339,7 @@ function projectRow(sourceTable,targetTable,row){
     let sourceColumn=aliases[column]||column;
     let value=row[sourceColumn];
     if(sourceTable==='users'&&column==='id')value=userIds.get(row.id);
-    if(sourceTable==='verification_requests'&&column==='storage_path'&&value)value='demo/verification-document.jpg';
+    if(sourceTable==='verification_requests'&&column==='storage_path'&&value&&!String(value).startsWith('supabase://verification/fixture-authority/'))value='supabase://verification/demo/verification-document.jpg';
     if(value!==undefined)result[column]=convertValue(value,property);
   }
   if(sourceTable==='capacities'&&(result.market_status||result.status)==='PARTIAL'){
@@ -349,6 +352,7 @@ function projectRow(sourceTable,targetTable,row){
 for(const [sourceTable,targetTable] of plan){
   const sourceRows=sourceTable==='users'?sourceUsers:fixtureTables[sourceTable];
   if(!sourceRows.length)continue;
+  if(sourceTable==='verification_requests')await uploadAuthorityFixtureDocuments(supabase,url,authorityPlan,mapUuid);
   const rows=sourceRows.map(row=>projectRow(sourceTable,targetTable,row));
   for(let index=0;index<rows.length;index+=250){
     const batch=rows.slice(index,index+250);
@@ -359,6 +363,22 @@ for(const [sourceTable,targetTable] of plan){
     if(error)throw new Error(`FIXTURE_IMPORT_FAILED:${sourceTable}->${targetTable}:${error.message}`);
   }
   process.stdout.write(`${targetTable}: ${rows.length}\n`);
+  if(sourceTable==='verification_requests'){
+    await confirmAuthorityFixtureReviews(supabase,url,authorityPlan,mapUuid);
+    process.stdout.write(`provider_vehicle_authority_reviews: ${authorityPlan.attestations.length} fictional local reviews\n`);
+  }
+}
+
+// Imported synthetic users model existing, consented content scenarios. This
+// local-only importer must never backfill acceptance for real or hosted users.
+// Fresh-signup/Play-consent tests create separate unaccepted identities.
+if(definitions.user_policy_acceptances){
+  for(const user of sourceUsers.filter(user=>['TRANSPORTER','DRIVER'].includes(user.role))){
+    const {error}=await supabase.rpc('accept_content_policy',{
+      actor_user_id:userIds.get(user.id),policy_version:'2026-10-09'
+    });
+    if(error)throw new Error(`FIXTURE_POLICY_PRECONDITION_FAILED:${error.message}`);
+  }
 }
 
 if(definitions.provider_shipments&&definitions.provider_shipment_events){
@@ -393,8 +413,11 @@ if(definitions.provider_shipments&&definitions.provider_shipment_events){
 }
 
 const demoSharedEmails=normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS);
-const sharedVehicleIds=selectSharedFixtureVehicleIds(fixtureTables.capacities);
-const loadgisticDigest=privateContactDigest('loadgistic-platform');
+// The scheduled demo handover requires both exact vehicles to remain PUBLIC.
+// Select replacement shared examples so the private-feed cohort stays full.
+const sharedVehicleIds=selectSharedFixtureVehicleIds(fixtureTables.capacities,.25,{
+  excludedVehicleIds:HANDOVER_FIXTURE_VEHICLE_IDS
+});
 const capacityByVehicleId=new Map(fixtureTables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
 const grantRows=[];
 for(const vehicleId of sharedVehicleIds){
@@ -402,11 +425,6 @@ for(const vehicleId of sharedVehicleIds){
   if(!capacity)continue;
   const createdBy=mapUuid(capacity.updated_by);
   const createdAt=capacity.updated_at||new Date().toISOString();
-  grantRows.push({
-    id:uuidFor(`demo-capacity-grant:${vehicleId}:loadgistic`),vehicle_id:mapUuid(vehicleId),
-    audience_type:'LOADGISTIC',recipient_email:null,recipient_email_digest:loadgisticDigest,
-    created_by:createdBy,created_at:createdAt,expires_at:null,revoked_at:null,revoked_by:null
-  });
   for(const email of demoSharedEmails){
     grantRows.push({
       id:uuidFor(`demo-capacity-grant:${vehicleId}:email:${email}`),vehicle_id:mapUuid(vehicleId),
@@ -420,6 +438,16 @@ for(let index=0;index<grantRows.length;index+=250){
   if(error)throw new Error(`FIXTURE_IMPORT_FAILED:capacity_access_grants:${error.message}`);
 }
 process.stdout.write(`capacity_access_grants: ${grantRows.length} across ${sharedVehicleIds.size} vehicles\n`);
+
+// Migration 116 backfills existing rows; a fresh fixture reset runs after it.
+// Initialize only these local fixture trucks. Missing real policies stay private.
+if(definitions.vehicle_capacity_sharing){
+  const sharingRows=managedFixtureSharingPolicies(fixtureTables.capacities,demoSharedEmails.length?sharedVehicleIds:new Set())
+    .map(row=>({...row,vehicle_id:mapUuid(row.vehicle_id)}));
+  const {error}=await supabase.from('vehicle_capacity_sharing').insert(sharingRows);
+  if(error)throw new Error('FIXTURE_IMPORT_FAILED:vehicle_capacity_sharing');
+  process.stdout.write(`vehicle_capacity_sharing: ${sharingRows.length}\n`);
+}
 
 const demoDocument=fs.readFileSync(path.join(process.cwd(),'public','vehicle-configurations','cargo-van.jpg'));
 const {error:storageError}=await supabase.storage.from('verification').upload(

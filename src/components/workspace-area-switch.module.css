@@ -1,0 +1,6 @@
+.switcher.switcher{gap:6px;min-height:48px;padding:6px 12px;box-shadow:none}
+.switcher.switcher>a,.switcher.switcher>span{position:relative;min-height:44px;padding:9px 16px;border:1px solid transparent;border-radius:9px;background:transparent;font-size:.84rem;font-weight:700;color:#526375}
+.switcher.switcher>span[aria-current=page]{color:#fff;background:#155eef;border-color:#155eef;box-shadow:none;font-weight:850}
+.switcher.switcher>a:hover{color:#0b1d3a;background:#eaf1ff}
+@media(min-width:761px) and (max-width:1180px){:global(body):has(>.switcher) :global(.public-workspace-nav){top:110px}}
+@media(max-width:760px){.switcher.switcher{gap:6px;min-height:48px;padding:6px 10px}.switcher.switcher>a,.switcher.switcher>span{flex:1 1 0;font-size:.8rem;min-height:44px;padding:7px 6px;text-align:center}}

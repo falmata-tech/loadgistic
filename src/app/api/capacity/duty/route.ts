@@ -17,7 +17,7 @@ export async function POST(request:NextRequest) {
       locationPrecisionKm:text(form,'locationPrecisionKm'),
       locationSource:text(form,'locationSource')
     });
-    return redirectWith(request,'/app/home','success',onDuty?'Truck is On Duty.':'Truck is Off Duty.');
+    return redirectWith(request,'/app/home','success',onDuty?'Vehicle is On Duty.':'Vehicle is Off Duty.');
   } catch(error) {
     return redirectWith(request,'/app/home','error',errorMessage(error));
   }

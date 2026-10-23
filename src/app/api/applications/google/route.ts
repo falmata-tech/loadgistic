@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server.js';
-import {MANAGED_AUTH_UNAVAILABLE,managedAuthCallbackUrl} from '@/lib/auth-flow.js';
+import {MANAGED_AUTH_UNAVAILABLE,MANAGED_GOOGLE_LOGIN_ENABLED,MANAGED_EMAIL_ONLY_MESSAGE,managedAuthCallbackUrl} from '@/lib/auth-flow.js';
 import {
   createProviderSignupHandoff,MANAGED_SIGNUP_COOKIE,MANAGED_SIGNUP_MAX_AGE_SECONDS
 } from '@/lib/provider-signup.js';
@@ -13,10 +13,11 @@ import {createSupabaseRouteClient} from '@/lib/supabase/route';
 
 export const runtime='nodejs';
 
-function unavailable(request:NextRequest){
+function unavailable(request:NextRequest,message=MANAGED_AUTH_UNAVAILABLE){
   const location=redirectUrl(request,'/login');
-  location.searchParams.set('error',MANAGED_AUTH_UNAVAILABLE);
+  location.searchParams.set('error',message);
   const response=NextResponse.redirect(location,303);
+  response.headers.set('Cache-Control','no-store');
   for(const name of [MANAGED_OAUTH_COOKIE,MANAGED_SIGNUP_COOKIE])response.cookies.set(name,'',{
     httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
   });
@@ -24,6 +25,7 @@ function unavailable(request:NextRequest){
 }
 
 export async function POST(request:NextRequest){
+  if(!MANAGED_GOOGLE_LOGIN_ENABLED)return unavailable(request,MANAGED_EMAIL_ONLY_MESSAGE);
   const rate=await checkRateLimit(requestKey(request,'managed-account-google'),8,10*60_000);
   if(!rate.allowed)return unavailable(request);
   const callbackUrl=managedAuthCallbackUrl({requestUrl:redirectUrl(request,'/').toString()});

@@ -1,5 +1,830 @@
 # Architecture Decisions
 
+## ADR-081 — Business workspace context and explicit recipient authority (2026-10-18)
+
+Status: **design approved October18; local implementation under release review**, FEAT-ENT-001.
+Schema160–175 and the matching application are implemented and tested locally;
+hosted publication and commercial entitlement enforcement are not claimed. The
+user confirms retirement
+of platform Brokerage and special Loadgistic capacity access; paid provider and
+business workspaces; retained free recipient access; one primary Tracking owner;
+status-only invitations and owner-authorized staff location access. Smaller
+Capacity/Tracking circles and all-source current truck location are required.
+
+Use one verified customer identity with explicit active workspace membership and
+workspace-local roles/permissions. Preserve current provider organization/profile
+anchors and histories. Do not enable dormant SHIPPER/RECEIVER global roles as a
+shortcut: the older Auth/mobile projections chose one provider membership and
+excluded usable enterprise accounts. A business staff invitation is not platform
+Team creation; existing platform administrator/Support identities remain separate
+and web-only. Do not automatically convert retired Brokerage-only staff.
+
+For Google Play review, registered synthetic identities may exercise a normal
+business workspace only inside a durable synthetic partition. Membership,
+invitations, recipient discovery, Capacity email/team grants and Tracking
+attachment/read must reject real-to-sample and sample-to-real access, including
+stale or disabled reviewer records. A sample business is not public test data.
+Migration176 adds this local boundary after schema175; its hosted installation
+requires separate exact SQL review and release evidence under FEAT-PLY-001.
+
+Keep Marketplace/My workspace as the area model. The customer business opens its
+scoped Capacity map; Capacity/Tracking/Account are its primary destinations. Named
+workspace switching preserves position without combining records. Invitations,
+removal, last-owner handover/deletion, API authorization, cache/draft keys and
+notifications must all use actor plus workspace and current resource grants.
+
+Preserve email-only grants. Sharing offers Email address or Business account;
+the latter searches registered businesses and selects the exact public business
+identity. Saving it knowingly grants that workspace's permitted team access,
+including later permitted members, without another recipient acceptance gate or
+per-employee approval by the publisher. Company names and email domains are not
+authority. Do not silently convert personal/exclusive shares or the old
+privileged LOADGISTIC audience into business access.
+
+Separate Tracking route/status, live-position, viewer-management and owner
+approval authority. The primary owner can invite restricted email viewers and
+explicitly grant named current staff position access for a particular shipment.
+Business admin membership is insufficient; staff cannot grant themselves live
+position or unloading approval. Free recipient audit needs a typed recipient
+actor rather than a fictitious profile. Enforce projections before SQL/API/
+stream/client delivery, and clear cached position after revocation.
+
+Add an assignment/source-revision-bound Tracking location resolver for the
+current selected GPS/phone/manual report. Current telematics only feeds Capacity;
+the old independent phone Tracking contract cannot be silently treated as this
+integration. Preserve private raw telemetry, honest source/time/radius, location
+duty and terminal shutdown. The draft proposes maxima20km Capacity/10km Tracking
+and10km new defaults; obtain UI/radius review before altering runtime behavior.
+Old obscured fixes keep their original radius until a valid fresh fix/re-save.
+
+Introduce workspace commercial entitlements separately from user activity and
+shipment authorization. Do not revive retired billing adapters or block free
+recipient/safe-completion rights. Pricing, included seats, grace/lapse behavior,
+payment provider and Android purchase design remain open. Google Play digital
+software subscriptions need their own compliant checkout review.
+
+Retire platform Brokerage compatibly at RPC/HTTP, guest sessions, workload,
+notifications, old Expo and UI boundaries. Keep software Support/handover delivery
+and private history intact. Loadgistic's brokerage later has ordinary customer
+membership/grants; it receives no software-administrator private-data shortcut.
+
+Rejected alternatives: hiding buttons while endpoints remain usable; global role
+reenablement; company-name/email-domain based sharing; whole-inbox copying;
+position hidden only by CSS; automatic staff/plan privilege; forced paid recipient
+accounts; old plan-mode restoration; rewriting historical radii; database reset.
+Exact implementation, backups, privacy regressions, owner visual review and hosted
+rollout follow the ordered plan in FEAT-ENT-001. References are its primary-source
+navigation, workspace-switching and Play-payment documents.
+
+## ADR-080 — Isolated protocol gateway and provider-owned fleet devices (2026-10-15)
+
+Accepted implementation under FEAT-GPS-001. Use pinned official Traccar6.16.0
+for protocol decoding, network sessions and capability-specific command encoding.
+Keep a dedicated persistent PostgreSQL gateway database and a durable bounded
+bridge into private Loadgistic device/location/command records. Do not implement
+ad hoc vendor decoders, expose gateway administrator access to app clients, infer
+ownership from IMEI, or use an in-memory WebSocket subscription as ingestion
+durability. Protocol identity plus immutable gateway/device binding and provider
+assignment epoch define attribution. Only enabled protocol ports are exposed;
+unknown registration is disabled. Capacity projections remain approximate and
+display actual published GPS/phone/manual source. Raw telemetry is private and
+does not change agreed Tracking behavior, capacity status or sharing permissions.
+
+Providers manage their device assignment and selected location source in Fleet;
+admins provision exact identifiers. Engine cut/restore has separate fresh-owner,
+short-lived confirmation and device-side stationary-interlock requirements.
+Real engine cut is unavailable for unqualified hardware/firmware profiles; demo
+relay commands cannot enable it. Versioned model/protocol capability claims need
+actual packet evidence and physical tests; a simulator is not hardware approval.
+The isolated synthetic simulator is opt-in/local-only. Hosted infrastructure,
+credentials/firewall and SQL need exact reviewed rollout; no new billing or
+production-network change follows automatically from this ADR.
+
+Privacy-specific adapter exception: actual6.16.0 rehearsal proves its6.3
+changelog deliberately removes device foreign keys from positions/events. API
+DELETE204 therefore leaves raw positions behind. The previous4.0 cascade
+assumption is invalid. Keep provisioning, assignment and commands on documented
+APIs. For verified account erasure only, accept a separate janitor-only definer
+function that purges at most500 exact-device raw rows total/call, after durable
+pre-delete binding proof, independent administrator-owned scope and confirmed
+device-ID/unique-ID absence. Preserve every other device. Never report completion
+until exact raw history and bridge payload absence is verified.
+
+Prevent a cached tracker connection collecting new data after disable/erasure:
+an unlinked numeric-ID tombstone in the private gateway adapter blocks position
+and event inserts for that retired device. It retains no IMEI, unique ID, owner,
+coordinates or job linkage. This is collection suppression, not an engine action.
+Reopening an account never silently removes the tombstone or re-enables a device.
+The ordinary bridge cannot call these functions or edit scope/tombstones. Hosted
+installation still requires separate exact review, backup and monitored rollout.
+
+Primary references: [architecture](https://www.traccar.org/architecture/),
+[official containers](https://www.traccar.org/docker/),
+[protocol documents](https://www.traccar.org/protocols/),
+[configuration](https://www.traccar.org/configuration-file/),
+[scaling](https://www.traccar.org/horizontal-scaling/).
+Pinned retention evidence:
+[6.3 foreign-key removal](https://github.com/traccar/traccar/blob/v6.16.0/schema/changelog-6.3.xml).
+
+Hosting recommendation, October21 (provider choice remains open; this is not a
+deployment authorization): keep GT06 ingress on one Docker-capable Linux VM and
+keep the coordinated demo workflow as its own signed Netlify scheduled/background
+function pair, separate from managed operations. A GPS packet-test container may
+connect to Traccar over the VM's private Docker network; the workflow simulator
+does not use TCP. Netlify/Supabase are not the public device socket host. Compare
+provider-specific IPv4/TCP, persistent storage, firewall, backup and region
+support before any resource is created; see
+[DEMO-GPS-HOSTING.md](operations/DEMO-GPS-HOSTING.md). The workflow worker and
+remote test adapter remain unimplemented, and the local migration ledger must
+be reconciled before adding durable job receipts.
+
+## ADR-079 — Provider-owner fleets and truthful truck authority (2026-10-14)
+
+Accepted planned change; implementation/tested/visually approved/deployed remain
+separate. Supersedes ADR-076's one-truck **owner** limit, preserving its atomic
+lifecycle, current-driver, unfinished-Tracking and history safety requirements.
+
+Every provider owner is publicly Transport Provider and may manage multiple trucks
+and employees. Preserve both organization and personal-provider owner anchors,
+Auth IDs and histories. Extend employment with an exclusive alternative personal
+provider employer anchor; it must never masquerade as employee-owned scope. Use
+explicit current driver assignments for all trucks. A driving owner keeps map
+Home and only one current driving assignment; a fleet-only owner keeps fleet Home.
+
+A new truck is Draft. Going Live is separate from registration, retirement,
+availability and sharing audience. Every provider may take one active truck Live
+without document approval. More than one Live truck requires a current review
+confirming provider ownership,
+or confirming the operating licence in their name for an owned/financed purchase,
+qualifies fleet publication. The owner corrected 'lease' to mortgage/financing; ordinary
+rent/permission to drive/manage does not qualify. Ownership, financed licence and
+permission have separate evidence/badges; no universal licensing-law claim is made.
+
+Store additive private relationship attestations linked to exact approved source,
+truck and provider beneficiary, with audited revocation/expiry. Generic legacy
+approval and self-declaration do not establish title or licence holder. Public
+projection emits safe facts and full live/disclosable fleet counts, not private
+holder names/files or totals inferred from the displayed page. Assignment-specific
+driver permission remains distinct. Loss of qualification with multiple Live trucks withholds discovery until the
+owner withdraws all but one or supplies current qualification. A single Live truck
+remains eligible. Preserve Live choices, recipients, proof/history and ongoing
+Tracking access. Retired trucks restore to Draft; explicit serialized Go Live
+rechecks the unreviewed one-truck limit. No automatic choice of a surviving truck.
+
+Rollout requires exact legacy-publication impact, protected backup/restored clone,
+negative authorization/catalog/concurrency checks, compatible web/Expo and owner
+visual/hosted approval. No live change is authorized by this ADR. Rollback must not
+restore one-truck uniqueness after multi-truck writes or delete newly valid data.
+
+
+October13 local continuation (FEAT-FTR-001 / FEAT-TRK-001 / FEAT-MKT-001):
+Featured shares one turn history per actual truck type, including mixed Sunday,
+and restarts completed types to keep eligible days populated. Retain old global
+history and manual schedules; migration137 is independent of new mobile builds.
+New Tracking keeps catalog pickup/via/delivery snapshots behind the existing
+shipment authorization, with planned-route maps and the existing obscured point.
+No new routing provider, exact GPS collection or broader proof access is added.
+People search and truck filtering have separate state; applying a profile to the
+map is explicit. These changes are locally verified and await visual/release
+gates; they do not describe an already deployed replacement.
+
+ADR-071 follow-up, October 8: public HTTP discovery always uses the current
+profile/sharing-aware cursor query, including callers carrying the obsolete
+overview parameter. The older service-only raw aggregate is not an HTTP mode.
+Search eligibility may omit document-category work only when no document filter
+requires it; profile-card metadata retains complete default categories. This
+preserves the approved experience and authority while reducing measured SQL work.
+
+### ADR-078 — Android Expo push with a private committed-event outbox (2026-10-08)
+
+The owner selected Expo/FCM closed-app notifications. Reuse current Support,
+Brokerage and handover authority, not Realtime/publication or another chat system.
+Private service-only installations/bindings and an additive transaction outbox
+retain notification intent independently of a running mobile client. Small SQL
+triggers observe real committed incoming replies, assignment, visible staff join,
+end/resolution and handover; they contain no message/contact/proof data. Snapshot
+rechecks suppress stale/read/revoked events before attempts. Verified member Auth
+session and exact guest capability remain distinct; staff stays web-only.
+
+Use Expo's fixed HTTPS send/receipt endpoints through a bounded adapter, stable
+Android event tags, leased work, retry/backoff and invalid-token cleanup. A Netlify
+scheduled function runs once per minute in published deploys; its explicit flag
+starts off. It does not depend on a visitor poll or delay normal chat responses
+with provider HTTP. Registration starts a baseline, never replaying old history.
+At-least-once external transport and OS restrictions prevent an exactly-once or
+guaranteed-banner claim. The existing in-app feed/receipts remain authoritative.
+
+The phone's strict notification-destination contract is dependency-free shared
+domain code. Server registration schemas and provider adapters stay out of that
+native import graph. Expo-web substitutes a browser adapter; verify the actual
+Android bundle/startup in addition to typechecks and browser review. The first
+installed preview exposed and corrected a server-schema/Zod import that those
+earlier checks missed. Existing event/destination and authority rules are retained.
+
+Firebase project is loadgistic-f082a (59430603227), package com.loadgistic.app;
+EAS target falmatad/loadgistic a2d7e0a9-2fe4-4188-804e-40d8c3486ac7. Public config
+is validated locally; private FCM credentials go directly to EAS. No Firebase
+Auth/database or another project's settings are needed. Scoped native dependencies
+require a new APK. Implementation/tested/configured/device-approved/published are
+separate states; hosted migration/flag/credential/build gates remain owner-bound.
+
+### ADR-077 extension — Saved driver handover and browser delivery (2026-10-08)
+
+The existing 117 handover command already commits completion and releases device
+Tracking. Project that saved timestamp and OWNER/STAFF kind to the currently
+authorized assigned driver; preserve the command, proof/history and recipient
+semantics. Private migration 126 stores only per-driver alert acknowledgements,
+not another approval queue. Fetching cannot acknowledge it; an explicit Open
+Tracking action can acknowledge the exact saved version. Current active role,
+shipment access and assignment are checked in service-only commands. Health adds
+the driver-handover marker so new clients cannot silently run against old schema.
+
+Browser alerts use Notifications permission from an explicit control and a small
+notification-only service worker scoped to `/_loadgistic-alerts/`, which cannot
+control app-page navigation. No fetch handler, offline/private cache, push
+subscription, Realtime publication or new provider is added. Open-site polling
+continues in a background tab only when browser alerts are enabled; browser timer
+throttling/suspension still applies. Known routes are validated by sender and
+worker; clicking reauthorizes in the destination, never manufactures chat Seen.
+Generic system copy excludes messages, contacts, routes and proof. Permission or
+worker failures leave in-app alerts working. Per-identity hashed delivery records
+and browser locks suppress tab duplicates; obsolete scope/approval notifications
+are closed without changing backend state. Native foreground alerts use the same
+saved projection; Expo browser preview uses the browser adapter. Closed native
+apps still need separately configured push credentials, a new build and device
+acceptance. Keep these limits explicit in rollout evidence.
+
+## ADR-077 — Explicit chat reads and scoped alerts (2026-10-07)
+
+FEAT-NOT-001 adds visible-message Seen receipts to existing provider Support and
+visitor Brokerage chats. Fetching, queue previews, sending and assignment cannot
+prove a message was viewed. Clients acknowledge the highest displayed sequence
+only in a focused foreground chat; covering menus/documents block native reads.
+The exact signed guest capability or current verified member/team scope is
+reauthorized in service-only PostgreSQL commands. Read state stays separate from
+awaiting-reply work and no joined state claims continuous online availability.
+
+October14 visibility recovery: web dialogs can stop covering an already
+intersecting message without producing a new intersection or focus event.
+Reuse each successful authorized200/304 receipt poll to recheck the existing
+geometry/occlusion reporter. Keep its focus, current sequence, assignment frame,
+server acknowledgement and403 guards; fetching still does not itself prove
+reading. This adds no timer, polling frequency or optimistic Seen. The focused
+component regression fails before and passes after; the exact public
+Updates/consent/Seen browser flow and revoked-access reload now pass locally
+under FEAT-SUP-001. Production promotion remains separate.
+
+Support retains IDs/files/chronological historical order and UUID history links;
+new messages use a parent-row-serialized sequence. Per-side monotonic cursors
+retain truthful shared team Seen. Each new assignment has its own agent unread
+position, with an epoch that detects even A→B→A handoffs. The visible-frame command
+rejects a delayed old assignment. New private cursor tables have RLS, no browser
+ACLs and no Realtime publication. Health requires all four chat compatibility markers
+before a matching client is considered ready.
+
+Authorized bounded snapshots contain counters and safe state, never message
+bodies, routes, contacts or internal notes. Contextual bell/badge/toasts reuse
+existing navigation in workspace and signed-in public Marketplace headers.
+Private web surfaces hide on pagehide and reload persisted restores for current
+authority; this is covered with explicitly simulated lifecycle events and a real
+revoked-permission reload. An initial snapshot is silent; bounded event memory prevents
+replay sounds and ignores older work merely entering the 40-item feed. Optional
+web sound starts only through a user gesture; failure never blocks chat. Native
+foreground alerts are implemented without claiming OS push or sound delivery.
+
+Unread and the current worker’s assigned work take priority over a waiting backlog
+in the bounded feed; full totals remain untruncated. Message event time includes
+the latest actual message, since transport sends need not change request status
+timestamps. A failed-before/passing-after 45-chat SQL case proves this correction.
+
+Local migrations 122–125 extend local 121, with protected pre-122/pre-125 dumps and
+rollback-only command rehearsals. Applied migration files remain immutable.
+Hosted ledger is still 114. Do not deploy a new client against the old schema,
+roll it back across data migrations blindly, or describe a dump as restored proof.
+Full backup restoration, production plan/approval and matched artifacts remain
+separate release gates. Direct customer-to-provider inquiries and closed-app push
+remain pending scope decisions; no new communication or provider credential was
+installed. Focused evidence and unresolved acceptance are in MOBILE_IMPLEMENTATION
+and TRACEABILITY; owner visual review is still pending.
+
+
+## ADR-076 — One independent driver, one current truck (2026-10-07)
+
+The owner combines self-managed drivers and owner-operators into the visible
+Independent driver account. Canonical identity is SELF_MANAGED_DRIVER; legacy
+OWNER_OPERATOR inputs/projections remain compatible without re-creating Auth,
+providers or handles or rewriting historical applications. Fleet transporters
+and company drivers retain their existing scopes.
+
+Ownership is a truck declaration (OWNED or PERMISSION, including rent), separate
+from reviewed documents. Existing unknown declarations stay null until chosen;
+never infer ownership from an account category. An independent provider has zero
+trucks before registration and at most one active truck afterward. Enforce this
+with a partial unique index plus exact-provider row locking, not only menu hiding.
+No driver/fleet management, truck picker or direct restoration is offered.
+
+Change truck requires the expected current ID and explicit confirmation, then
+archives that truck and creates its replacement in one transaction. Unfinished
+Tracking blocks the change; validation failure rolls back the entire operation.
+Old signals go Off Duty and remain on the old vehicle with its documents,
+private grants, approximate locations and shipments. The replacement receives no
+old review, recipients or location. Concurrent/stale/foreign changes reject;
+administrative restoration cannot violate the active-truck constraint. Previous
+trucks remain visible as read-only history. Trailer changes remain separate.
+
+Migration 121 is additive and refuses pre-existing multiple-current-truck data;
+there is no automatic customer data correction or deletion. New app health checks
+require its private compatibility marker as well as migration 120 retirement.
+Retain a matched one-truck/no-plan rollback artifact and review exact live
+preflight/backup/restore evidence before rollout. Old apps cannot register another
+independent truck without the new declaration; do not weaken the database to
+keep an obsolete multi-truck control working. Local acceptance and rollout state
+are recorded in FEAT-FLT-001, TRACEABILITY and MOBILE_IMPLEMENTATION.
+
+## ADR-075 — Provider access without commercial plans (2026-10-07)
+
+Owner correction supersedes ADR-050's paid-activation option: the only current
+revenue service is arranging transport. Provider operating authority depends on
+active identity, linked workspace and role/driver permissions, never a trial,
+subscription row or paid period. Signup creates identity and workspace atomically
+without plan lookup or trial insertion. Web/native/admin UI offers no billing
+controls; stale HTTP/service/SQL charge and activation commands reject before
+uploads or mutations. Historical rows, private files and audits remain protected.
+
+Migration 120 preserves function signatures, ACLs and tenant/driver guards while
+retiring billing mutations. A private platform-control marker lets new app health
+fail closed against an unmigrated database. That marker is schema compatibility
+evidence only; it cannot substitute for behavioral, catalog or backup checks.
+Existing setup verifiers check historical read privacy and write retirement rather
+than enabling paid mode. FEAT-BIL-001 and traceability record current local evidence.
+
+Rollout requires an exact reviewed migration on a restored protected backup and
+a compatible no-plan application artifact. The earlier plan-gated production
+app is not a valid post-120 rollback for newly created no-subscription accounts.
+Fix forward or restore a reviewed compatible application; any database recovery
+needs its own exact owner authorization. Never fabricate trials, reactivate
+charging or delete history as a rollback shortcut. Local implementation only;
+hosted migration, exact release gates and publication are not claimed.
+
+## October 6 truck detail composition — FEAT-CAP-001 / FEAT-MOB-001
+
+Owner rejected a flat vertical truck-info stack. Use an illustrated identity header,
+parallel transporter/driver groups with related actions, paired update ages, and
+compact web document disclosures. Keep a centered modal and all existing details.
+Native reuses the same hierarchy for available projection fields; this visual task
+does not widen its API or invent unavailable call/document controls. The web
+fallback company phone belongs with the transporter, not the driver. Preserve
+entity-specific review meaning, translations, privacy and map-return behavior.
+Focused browser evidence is in `.local/truck-profile-verified.log`; owner review
+of this composition and native device verification remain outstanding.
+
+## October 6 map inspection revision — FEAT-CAP-001 / FEAT-MOB-001
+
+The owner replaced the automatic selected-truck drawer/sheet with one on-demand
+compact detail card shared by truck, location, capacity and regular-service info.
+Selection itself shows permitted geometry only. Closing details keeps selection;
+Results/selection close restores discovery. Preserve account-free/public and
+email-private access boundaries, map instance/camera, drafts and contact/profile
+and document access. Selected truck uses teal; signal colors retain their meanings.
+
+Owner accepted moving information controls to the side, then requested an X
+attached to the truck circle and a centered information modal with light dimming.
+The modal's close action retains selection. The truck's exit restores the camera
+saved before selection without clearing filters/search/drafts. These are separate
+actions; the results handle still opens results deliberately. Query/private scope
+changes remount the map and discard the old camera snapshot.
+
+Web uses native HTML dialog modality with an explicit keyboard focus loop and
+focus return. Native uses React Native Modal/onRequestClose, positioned from the
+map's measured frame. The modal blocks map gestures until dismissed. Ordinary
+content sizes naturally; only records exceeding available height scroll. Route
+places are ordered with direction connectors, area boundary places form a set,
+and update age is separate. Applications translate explanations, never record
+labels. These changes need fresh visual review and native device verification.
+
+Research: ArcGIS explicitly supports edge-docked popups, especially for mobile
+(https://developers.arcgis.com/javascript/latest/references/map-components/components/arcgis-popup/).
+Mapbox supports interaction-triggered contextual detail
+(https://docs.mapbox.com/mapbox-gl-js/example/popup/). The labeled side controls
+are our design inference for this task, not a prescription from either source.
+No map SDK or backend changes are required for this presentation.
+
+
+## ADR-072 — Driver location before owner-managed capacity
+
+FEAT-FLT-001 / FEAT-CAP-001: an assigned driver can save a device-obscured
+location without capacity-edit permission or an existing capacity record. A
+service-only RLS-protected per-truck latest-fix table separates this prerequisite
+from publication. Owners can reuse only the current active driver’s fix; their
+own device position remains denied. GPS does not publish capacity or refresh its
+availability age, route, visibility or load preferences. History stays in existing
+capacity/audit records; the new table is a latest snapshot, not a tracking trail.
+
+Migration 113 preserves current driver/vehicle/workspace checks and explicitly
+rejects missing GPS fields for publication and duty changes. The workspace reports
+whether owner-authored capacity exists so Off Duty does not hide the ability to
+resume that setup. Assigned location starts with an explicit driver action.
+
+The migration is local only. Before hosted release, rehearse 102–113 against a
+fresh protected backup and verify exact-candidate SQL/security/browser gates.
+An app rollback may leave the protected snapshot table and compatible RPC changes
+in place; do not delete fixes or weaken permissions to restore an older interface.
+
+## ADR-071 — Profile discovery over authorized capacity projections
+
+FEAT-MKT-001 / FEAT-LST-001: only profiles with matching available truck/driver
+pairs appear in discovery. Free text matches public profile identity, office city
+and published prose, never private contacts or truck-only facts. Companies and
+people appear in the results drawer; only truck/driver pairs appear on the map.
+All truck/document filters apply before both results and map eligibility.
+
+Migration 112 uses PostgreSQL simple text parsing and the existing extensions
+schema pg_trgm for conservative all-word matching and stable relevance ranking.
+No search vendor, new exposed table or copied search dataset is introduced.
+Service-only functions reuse the authorized public/private projection contracts,
+then group and paginate profiles at 15 per response. Explicit company/profile
+search loads matching map cursor pages independent of the starting viewport.
+Keep the internal search row projections aligned with any future capacity
+permission/projection changes. Local timing is not a production-scale benchmark;
+measure query cost with production-sized data before expanding scale assumptions.
+
+App rollback restores the former search presentation; read-only SQL helpers may
+remain until separately reviewed removal. Migration 112 is local only, with owner
+visual approval and fresh release rehearsal still required.
+
+## ADR-070 — Durable Brokerage conversations through authorized application APIs
+
+The owner superseded callback-only Arrange transport on 2026-09-27. FEAT-TRQ-001
+adds request-scoped private messages, preserving four-field intake and independent
+Brokerage assignment. Visitors receive a signed HttpOnly seven-day browser capability
+bound to a random submission secret; request IDs or matching contact data do not
+grant recovery. Existing callback rows cannot be adopted as chats. Staff reads and
+writes recheck current Brokerage permission and assignment; visitor projections
+exclude internal notes and identity credentials. Message retries are idempotent.
+
+Foreground delivery initially uses bounded three-second conditional API polling,
+visibility/panel pauses and durable cursor catch-up. No new browser SQL/RPC grant,
+Realtime publication, anonymous Auth identity or realtime signing credential is
+introduced. Supabase private Broadcast is a future adapter after scoped visitor
+identity, channel revocation and fallback evidence exists. Delivery failure never
+becomes an online-agent claim or automatic retry of an ambiguous write. NR-01–05,
+NR-08–10 and NR-13 apply. Additive migration 110 runs locally first; app rollback
+retains all messages and access history.
+
+Expo/React Native development builds are the recommended native direction;
+[mobile readiness](MOBILE_MONOREPO_READINESS.md) records shared-package boundaries
+and the staged migration. No application relocation or native app is claimed.
+
+## ADR-069 — One capacity page with separate public and recipient scopes
+
+FEAT-MKT-001 / FEAT-SHR-001 / FEAT-LUX-001: `/` defaults to Open to the public;
+`/?view=private` selects Privately shared with you under the same introduction.
+The old `/shared-capacity` route preserves query parameters and redirects to the
+private view. Locked private rendering contains only the base map and email form;
+it calls neither capacity projection. Existing email OTP and signed recipient
+sessions authorize the private projection. Switching audiences uses full navigation;
+logout/expiry returns to the private gate and browser-history restoration rechecks
+the session. Private metadata is noindex. This creates no group-membership model,
+database migration or hosted setting change. Rollback can restore the separate
+page/navigation while retaining all grants, OTP and session contracts.
+
+## ADR-068 — Assign an owner-added Driver before email-code verification
+
+FEAT-FLT-001 / FEAT-IAM-001: retain the actual email when adding a company Driver. An owner-scoped preflight checks eligibility before the supported Supabase Auth admin create-user call, with email confirmation false and no password/session. A locked registration command rechecks owner, exact Auth email and pristine/same-fleet identity before membership and conservative permissions. Existing assignment/publication/Tracking identities remain stable; no roster-to-account remapping is needed. Unconfirmed identities cannot obtain a current-user projection. Normal email OTP supplies login proof, without a second invitation-acceptance step for these new drivers. Older pending invitations retain their existing flow.
+
+Do not auto-confirm, change hosted Auth settings, adopt an existing provider/staff/other-fleet identity or delete an identity after an ambiguous provider response. Auth success followed by database failure leaves a harmless bootstrap for retry. Commands revoke browser execution; Auth/profile and organization locks serialize competing registrations. The Add UI can roll back while retaining records and the email-confirmation guard. Owner-only production rules remain in force. Supabase documents the supported [createUser API](https://supabase.com/docs/reference/javascript/auth-admin-createuser); local inbox/browser evidence must prove the actual login path.
+
+## ADR-067 — Persist random Featured rounds without changing saved rosters
+
+FEAT-FTR-001: the owner chose weekly subsets until every eligible exact truck-and-Driver pair has been selected. Migration 098 records selections in a private, RLS-enabled ledger and randomly draws unseen pairs under the existing generation lock. The round spans all seven existing truck-type themes; an exhausted theme waits rather than repeating while other eligible themes remain. Newly eligible pairs join the current round; inactive pairs do not block completion. This is random selection, without scoring or learned ranking.
+
+The existing daily ceiling (1–12), distinct-Driver rule and 07:30–09:00 window remain. Actual roster size determines equal presentation time. Saved days and manual drafts are preserved. Published historical pairs seed round one; manual curation can override automatic fairness. Selection is a reserved turn, not proof that a visitor watched it. Opaque pair IDs intentionally survive roster deletion so edits cannot reset rotation. No private profile data is duplicated in the ledger.
+
+RLS, explicit browser privilege revocation, service-only generation and the unique round/pair key are mandatory (NR-01/03). Apply 098 transactionally before worker rollout. Rollback restores the prior generator while retaining history; do not delete rosters or the ledger. Local rehearsal and application preserve existing roster fingerprints; hosted migration and release are separate. Focused SQL tests cover round exhaustion, random draws, changed eligibility, retries, history retention and denial.
+
+## ADR-066 — Restore automatic map loading; defer the aggregate UI integration
+
+FEAT-LST-001 / FEAT-GEO-001 / NR-13: the owner rejected the unapproved map modes
+and loading controls introduced with ADR-060. The local repair removes that
+integration and restores round clusters, truck markers and automatic sequential
+cursor loading for the filtered viewport. Panning cancels the prior chain;
+selected truck identity survives replacement. Do not silently truncate matching
+results at 140. Server page limits and existing SQL authorization/viewport filters
+remain; the aggregate RPC stays available but is no longer used by the map.
+
+This supersedes ADR-060's client modes and retention cap, not its SQL filtering
+or permission rules. Cumulative viewport memory is not capped; national-scale
+aggregation is deferred until it can preserve interaction and completeness.
+No schema or hosted configuration change is needed. Rollback restores the client.
+Focused tests precede owner local visual review; full release gates follow that
+approval, and deployment requires a separate explicit request.
+
+## ADR-065 — Deny direct browser Data API requests before SQL
+
+FEAT-SEC-001 / FEAT-IAM-001: migration 097 installs an invoker-rights request
+guard in a private schema. Only the actual service_role, or an authenticated
+request for the public caller-bound identity RPC, proceeds. Request headers
+cannot assert server authority. Auth, server persistence and geography remain
+compatible; direct REST and GraphQL calls by browser roles are denied.
+
+Reject existing unrelated hooks rather than replacing them. Verify activation
+through HTTP with bounded polling; PostgreSQL notification is not proof of
+effective API configuration. Keep RLS, grants and advisor gates as independent
+controls. This is an additional API boundary, not an owner-rights workaround,
+and it provides no guarantee for Realtime, Storage or direct SQL. An incident
+bootstrap may apply this same repeatable artifact before the ordinary ordered
+migrations. Retain containment on rollout failure; no automatic open-access
+rollback. Tests cover SQL roles, live local REST/GraphQL and browser workflows.
+
+## ADR-064 — Business data stays behind authorized server commands
+
+FEAT-SEC-001 / FEAT-IAM-001: browser roles have no direct privileges on public
+application tables, views, sequences or columns. Retained membership after
+account deactivation must not provide a second mutation path through old RLS
+policies. The existing caller-bound current_user_projection RPC remains available
+to authenticated sessions; server adapters retain service access and perform
+actor/tenant checks. RLS remains enabled as defense in depth.
+
+Migration 096 revokes application relation ACLs and the three legacy browser
+policy-helper RPCs, including independent column grants and future postgres
+public-table/sequence defaults. It excludes extension-owned objects and leaves
+provider ownership, Auth, Storage, data and history unchanged. A catalog gate
+rejects reintroduced grants or unapproved application definer RPCs; rollback-only
+role tests cover active/inactive sessions and preserved own-identity/service
+access. Apply before promotion. If compatibility fails, stop and repair the
+adapter; rollback must not restore broad browser grants.
+
+## ADR-063 — Separate agent inspection from production authority
+
+FEAT-SEC-001 makes routine production inspection read-only and project-scoped.
+The owner chose owner-only production changes on 2026-09-17; no automation
+identity is selected. The agent prepares/tests changes; the owner applies hosted
+writes, protection settings, merges and deployment. Future automation requires a
+new owner decision and verified credential/approval separation.
+A classic PAT, GitHub admin session or database-owner password in the same agent
+process defeats this separation; local scripts and token-prefix checks cannot
+provide it. Existing credentials must be replaced/revoked by the owner after
+recovery access and limited replacements are verified. Do not strand the owner.
+
+Provider-owned PostGIS metadata receives a narrow owner-executed RLS/ACL repair.
+No extension relocation, system catalog edits or ownership takeover is included.
+CI replays the owner step on isolated local services, rejects every unprotected
+public table and proves role denial plus service spatial operations. Production
+must receive the same verified owner repair before promotion. Routine advisor
+monitoring requests only project identity and security findings and fails closed
+on unavailable/malformed results or warning/error findings. The workflow has no
+production write secret. Provider protection/identity setup remains explicit
+owner work; it is not claimed complete by adding repository files.
+
+## ADR-062 — Public metadata is safe before rendering
+
+F19 / FEAT-PRV-001: final JavaScript filtering did not protect intermediate query
+results included in Next development RSC debug serialization. Migration 095 moves
+contact visibility into a service-only published-owner SQL projection and returns
+image presence without its private Storage path. A bounded name query returns
+only the first whitespace-delimited Driver name, including tabs/newlines, for
+active Drivers. Public rendering no longer fetches hidden contact values, image
+object paths or full Driver names. Authorized image delivery keeps its existing
+private adapter. Rollback-only SQL and independent/company public-profile HTML
+privacy checks passed on desktop and phone.
+Apply 095 before the adapter; preserve the additive functions during rollback.
+This local reproduction used synthetic data; hosted exposure was not observed.
+
+## ADR-061 — Incremental Support polling
+
+F05 selects incremental polling, the audit's supported alternative to push.
+Migration 094 supplies a service-only authorized conversation revision without
+transcript bodies or private file fields. HTTP compares a scoped ETag only after
+current actor/assignment or guest-digest verification. Unchanged requests return
+304; member/staff pages refresh only when their revision changes. Queue revisions
+use existing bounded authorized inbox ports. Launcher revisions also include
+presence, history cursor and read intent. Read receipts alone do not change a
+conversation revision. Hidden/history pauses, no overlap, failure backoff and
+unsent drafts remain part of the contract. No Realtime vendor or credentials.
+SQL and desktop/phone conditional-response/denial/draft assertions passed locally.
+
+## ADR-060 — Bounded spatial overviews and private database filtering
+
+F06 / FEAT-LST-001 / FEAT-MAT-001: migration 093 preserves existing public and
+private authorization, and filters private capacity in PostgreSQL before the
+page limit instead of scanning 1,000 candidates in application memory. Invalid
+bounds fail closed. Public overview requests return at most 200 status-separated
+power-of-two world-grid cells and no detailed trucks. Cell anchors represent
+actual intersecting published evidence. The visitor opens an area for bounded
+truck details and can return to the overview. Detailed windows retain at most
+140 trucks, including one selected truck; stale viewport responses are ignored.
+Private views use the same bounded viewport lifecycle with audience-scoped detail.
+
+Stored conservative map envelopes and GiST indexes narrow current/regular
+geometry before exact predicates and expensive detail projection. Generated
+columns require table rewrite/lock planning; their existence is not evidence
+that the planner uses the intended index at national scale. Latest-state
+eligibility still precedes projection so old public capacity never replaces a
+new private or Off Duty signal. Existing owner-scoped 12-truck fleet paging is
+preserved. Local SQL, representative EXPLAIN/scale and desktop/phone browser
+checks passed. Opposite-status label collisions take precedence over same-status
+neighbors; a failing unit reproduction and both dense-map browser regressions
+verify that fix. Apply 093 before the application; rollback the application
+first and retain additive geometry until separately reviewed removal.
+
+## ADR-059 — Confirmed email changes and retained account deactivation
+
+F09 / FEAT-IAM-001: the owner chose deactivation with retained history. Both
+account actions require a fresh current-email Auth code and a signed HttpOnly
+handoff bound to actor, action, target and phase. Email replacement uses the
+actor's own Auth session and provider confirmation links. Migration 092 mirrors
+only confirmed Auth email changes into the same profile identity; public contact
+channels, roles and memberships stay separate. No provider settings are changed.
+
+Closure requires literal confirmation, recent Auth proof and no active Tracking,
+owned trucks, assignments, other active fleet members, pending invitations or
+open member Support. It disables provider access and public visibility, retaining
+Auth identity, profiles, shipment/audit/file history and membership links.
+Platform-team accounts cannot self-close. Fleet organization/profile locks,
+post-lock invitation reauthorization and active-owner/participant triggers
+serialize new work with closure. Four observed-lock-wait concurrency cases passed.
+Global sign-out is attempted after persisted deactivation; application commands
+continue to check persisted activation. Account controls fail unavailable before
+an external Auth action if 092 is missing. Real local inbox/browser email and closure assertions passed on desktop/phone.
+Local Auth auto-confirm completes on the new-inbox link; hosted two-link
+enforcement remains a separate rollout check.
+
+## ADR-058 — Audited truck and Tracking recovery
+
+F10 / F04 / FEAT-FLT-001 / FEAT-TRK-001 / FEAT-ADM-001: migrations 090–091
+permit current owners and Operations-authorized staff to retire/restore trucks
+and correct, reassign or cancel nonterminal Tracking with reasons. Company
+drivers cannot perform owner recovery. Retirement blocks active Tracking,
+ends assignments and publishes a fresh Off Duty row; restoration does not
+resurrect a historical capacity signal. Tracking commands lock the shipment,
+require its observed revision, preserve private before/after audit history,
+revoke cancelled guest access and fence locations from the previous assignment.
+Status/location writers recheck authority after obtaining the shipment lock.
+Customers-authorized workspace corrections change a bounded business name only.
+The admin Tracking map uses current obscured coordinates and shares the same
+location fence and travel-phase rules. SQL rollback assertions passed after
+092–094, as did queued former-Driver status/location denials. Desktop/phone browser assertions passed. Apply schema
+before the client and preserve recovery/file history during rollback.
+
+## ADR-057 — Reserved private Support reply attachments
+
+FEAT-SUP-001 reuses the existing private upload inspection policy and bucket for
+one optional JPEG/PNG/WebP/PDF on a required member or staff reply. Migration 089
+reserves a service-only object reference after current conversation authorization,
+then repeats authority and atomically attaches the file to the audited message.
+Recent and historical projections expose only ID, display name and MIME; every
+download rechecks current conversation permission and disables caching/sniffing.
+
+Pending uploads are capped at five per actor. Failed reservations retire; stale
+pending rows become eligible after one hour. Failed/unacknowledged Storage writes
+also retain a one-hour grace period for late object arrival; only acknowledged
+uploads whose message commit failed are eligible for immediate cleanup. Cleanup claims at most 20, retries
+unacknowledged deletion after five minutes, and deletes metadata only after bytes.
+An ambiguous commit response cannot retire an ATTACHED row. Attached files retain
+closed-chat history. Foreign keys prevent silent metadata loss during a future
+account/conversation purge; that workflow must drain private objects explicitly.
+The existing quarantine inspection policy remains unchanged.
+
+Apply 089 before publishing the UI and cleanup worker. Rollback hides upload UI
+while retaining metadata and cleanup; do not drop the table or restore old read
+projections after files exist. No new vendor, credential scope, bucket, Realtime
+transport or retention policy. Local verification does not authorize hosted rollout.
+
+## ADR-056 — Explicit foreground Tracking location controls
+
+The assigned Driver chooses the existing 1, 3, 5, 10, 20 or 40 km privacy radius
+for the next saved travel location. Radius selection does not rewrite past events.
+The existing location RPC and its ten-minute cooldown remain authoritative; a
+throttled result is waiting, never a new successful save. Browser memory records
+only a confirmed save time, and a reload defers to the server cooldown.
+
+One browser runner serializes location acquisition and travel-status acquisition.
+Hiding or leaving the screen invalidates pending GPS callbacks and aborts any
+in-flight fetch where possible. A request already received by the server cannot
+be recalled. This is a browser lifecycle control, not a new server trust rule.
+Both Driver and recipient guidance state that location sharing requires an open,
+visible Tracking screen and pauses on phone lock or screen closure. No background
+service, vendor, database migration, permission or location frequency is added.
+Rollback can restore the UI without changing stored events.
+
+
+## ADR-055 — Complete public fleets through bounded server pages
+
+Public transporter profiles render 12 active trucks per page, ordered by platform
+number and ID, with an exact whole-fleet count. Server page input is an integer;
+invalid syntax starts at one and stale/out-of-range pages clamp to the last page.
+This follows existing list navigation and keeps browser history usable without
+accumulating the entire fleet in client state.
+
+Migration 088 adds one service-only owner-scoped fleet projection and active-fleet
+page indexes. Its bounded evidence summary keeps independent provider identity
+and reviewed truck evidence stable across pages. The existing capacity function
+receives an internal vehicle ID restriction before latest-state selection; all
+current privacy, Driver eligibility and publication predicates remain intact.
+The application no longer scans six capacity batches or stops at 96 signals.
+
+No business rows, ownership or permissions change. The prior capacity function
+definition was retained in ignored local recovery material before local apply.
+Deploy migration 088 before the app; application rollback can retain the additive
+read functions and indexes. Profile fleet paging does not implement national
+viewport discovery, private spatial filtering, or a concurrent-user benchmark.
+
+
+## ADR-054 — Driver-controlled public portraits with revocable image references
+
+Active Drivers own their public photo, including Company drivers and accounts
+with limited plan access. Publication needs explicit consent; there is no fleet
+owner/admin portrait editor. The public opaque image URL is distinct from account
+identity and is usable independent of roster placement. Replacements/removal and
+inactive identities deny subsequent no-store reads; downloaded copies remain
+outside the platform's control.
+
+Sharp 0.35.4 is already installed through Next and becomes a direct pinned runtime
+dependency. The server bounds decoding, rejects format mismatch/animation, applies
+orientation and re-encodes a 512-square JPEG with metadata stripped before private
+quarantine/inspection. No new bucket or vendor is added: driver-portrait objects
+use the existing private provider-profile bucket with a reserved UUID path.
+
+Migration 087 reserves PENDING metadata before Storage writes, then activates under
+profile/upload locks. Old images retire transactionally. Ambiguous activation
+responses can retire only still-pending uploads, never an active image. Bounded
+cleanup claims retired/stale pending objects into a terminal DELETING state before
+Storage deletion; the existing signed worker retries failures. Cancelled
+in-flight uploads retain metadata until their bounded Storage attempt finishes
+or ages out. Portrait Storage requests have a 30-second timeout. This prevents
+cleanup/activation races and retains operational retry evidence without public
+paths or personal audit payloads. Future account deletion must drain portraits.
+Schema precedes UI/worker rollout; UI rollback retains metadata and cleanup.
+Hosted publication remains a separate, unapproved step.
+
+## ADR-053 — Account maintenance separates shared names from private phones
+
+FEAT-IAM-001 and FEAT-FLT-001 retain the existing shared display name rather than
+introducing a second private alias. The editor states where the name may appear;
+a Company driver's active fleet copy follows self-editing. Account phone is
+private and optional. Neither self-editing nor owner fleet-contact editing may
+copy a newly entered phone across the private/public boundary. Existing signup
+and invitation initialization remain unchanged.
+
+A strict session-actor command with two editable fields is available during
+limited plan access. It grants no target-user, email, role or lifecycle authority.
+Service-only SQL repeats validation/activation under existing row-lock ordering,
+with contact-free audit details. There is no new Auth vendor operation or browser
+profile grant. Migration 086 precedes UI rollout; reverting UI retains saved data
+and the fleet phone-isolation repair. Email changes and account closure need
+separate identity/retention contracts. Hosted rollout remains unapproved.
+
+## ADR-052 — Explicit antivirus-optional pilot uploads
+
+On 2026-09-13 the owner explicitly removed mandatory antivirus as a pilot
+requirement. BASE-DEP-001 now permits `UPLOAD_SCANNER_BACKEND=validation-only`:
+size/signature/MIME validation, private staging/buckets and domain-authorized
+reads remain; no virus-free verdict is asserted. Health carries
+`uploads-not-virus-scanned`. Managed-scanner failures still deny uploads and
+never select this mode implicitly. Private PDF evidence is downloaded with
+no-sniff and restrictive document headers. See `UPLOAD_POLICY_2026-09-13.md`
+for residual risk, verification and reversible rollout requirements.
+
+No dependency, schema change, public bucket or relaxed tenant access is needed.
+This is a deliberate policy revision, not a claim that file signatures detect
+malware. Remote deployment and a real hosted upload remain separate gates.
+
+## ADR-051 — Verified company-driver invitations and complete Fleet lifecycle
+
+FEAT-FLT-001 / FEAT-IAM-001 use a separate seven-day, email-scoped invitation
+record. Creating it does not create a Driver, Auth identity, membership, truck
+assignment, or verification outcome. Email OTP and Google keep their existing
+identity proof; a verified recipient explicitly accepts into a single fleet.
+Only a pristine bootstrap or an explicitly offboarded driver returning to that
+same fleet is eligible. Existing providers, other fleets, suspended accounts and
+platform identities are not silently transferred. Acceptance locks organization,
+profile, identity and invitation state, rechecks the inviter's current authority,
+and commits membership/Driver/permissions/audit together.
+
+New operating permissions start off. Owners assign one active truck and choose
+Capacity/Tracking access. Driver listing and assignment now agree on active
+same-organization membership; all fleet assignment/removal writes serialize on
+the organization. Contact changes update the Driver and profile together.
+Confirmed removal revokes membership, assignments, permissions and profile access
+but retains history. Old invitation replay cannot restore removed access.
+Truck corrections preserve identity/ownership/history and never implicitly turn
+a rigid truck into an interchangeable tractor.
+
+Invitation notifications reuse the existing bounded managed email adapter and
+local Mailpit. A persisted invitation plus a leased delivery attempt gives honest
+sent/failed state, a rate-limited explicit retry, and cancellation. There is no
+new mail vendor or background queue. A notification carries no access token:
+the recipient must verify the invited email and accept. Delivery failure cannot
+erase the invitation. SMTP is not claimed to provide exactly-once delivery.
+
+Apply additive migrations 081–082 after 077–080 and before publishing the client.
+New functions/tables are service-only; direct browser Driver/member writes are
+revoked to prevent bypassing acceptance. Local schema and migration history are
+updated; hosted rollout is pending. Rollback restores the prior client and scoped
+function definitions while preserving invitations and history; do not restore
+unsafe browser mutation grants. The new-fleet desktop/phone workflow, rollback
+security matrix and existing Fleet/trailer verifier provide local evidence.
+
 ## ADR-001 — Next.js on Node.js
 
 The application uses Next.js App Router on Node.js. This corrects the prior bare-Node implementation and provides server rendering, structured routing, route handlers, PWA compatibility, and production deployment paths.
@@ -473,9 +1298,15 @@ query-preserving compatibility redirect. This removes competing public market
 pages while preserving existing links. The shared Map is the default view and
 List is secondary. On hydration the Board requests browser location; success
 centers a regional view around the visitor while denial preserves the whole
-market and exposes a retry action. The map keeps an Ethiopia-focused initial
-view while bounded panning allows practical East Africa context without opening
-Africa or the world. Unclustered markers use pointed location-pin shapes, reuse
+market and exposes a retry action. Owner correction October 21 supersedes the
+regional camera rule: when no restored viewport or explicit visitor/vehicle
+centering applies, the default market view centers on the densest group of
+available approximate vehicle locations so one distant outlier cannot shrink the
+active market to a world view. This only chooses the starting camera; all signals
+remain eligible and visitors can pan and zoom globally without a regional clamp.
+Desktop web, phone web and Expo use the same cluster-selection rule, adjusting
+zoom for the map engine's tile scale. Unclustered markers use
+pointed location-pin shapes, reuse
 the existing cargo-configuration artwork, and show a complete green Empty ring
 or complete bright-yellow Partial ring plus text. Public markers and filters do
 not display or evaluate remaining-space percentages; route and area meaning
@@ -603,6 +1434,11 @@ shows only provider-level summary facts, and links to filtered current trucks
 when available. Provider microsites remain reachable from truck details. Add
 schedule storage and authorization additively. Rollback disables the public
 projection and admin writes while retaining schedules and audit history.
+
+Owner clarification, October21: the public TikTok label reports the broadcast's
+explicit scheduled/live/ended state separately from the vehicle timetable.
+Only an authorized Featured manager can mark it Live after starting the stream
+in TikTok; programme time never implies that a broadcast is live.
 
 ## ADR-035 — Composed public marketplace, featured-transporter board, and sponsorship
 
@@ -997,3 +1833,358 @@ direct local-inbox link without returning a code in the application response.
 The adapter rejects remote hosts, credentials, non-root source paths, and every
 Production runtime. Removing the ignored local variable restores the explicit
 unconfigured-development fallback without weakening Production readiness.
+
+## ADR-048 — Focused capacity edits retain the map
+
+`FEAT-CAP-001` and `FEAT-UIX-001` use a native dialog per signal group instead
+of rendering a replacement editor page or an Edit all workflow. Local drafts
+exist only for the lifetime of the dialog; confirmed server facts drive the
+background map. Existing HTTP form routes also accept JSON response negotiation,
+so successful saves can refresh server-rendered data without document navigation.
+Native POST redirects remain supported and every mutation retains its existing
+server and PostgreSQL actor/ownership checks.
+
+The separate groups are status, current coverage, sharing, load preferences,
+regular service, and approximate location. Direct refresh remains independent.
+New signals start Private until explicitly opened through Sharing; separating
+that control must not silently expose a new truck. After a save, edit controls
+wait for the server-data refresh to finish before another draft can open.
+This prevents a rapid second edit from republishing a stale snapshot. Known
+validation failures have actionable messages; unexpected failures log only
+the operation and a safe SQL/PostgREST code, never submitted data.
+
+Migration `077` lets non-location Driver edits preserve the last confirmed fix
+and its timestamp through the same branch used by fleet owners. Regular-service
+replacement composes the existing scoped removal and addition commands in one
+PostgreSQL transaction; invalid input or denial restores the original signal
+and audit state. No new service or browser database authority is introduced.
+Deploy the migration before the client. Rollback can restore the former client
+without deleting capacity history or dropping the additive RPC.
+
+## ADR-050 — Launch access and durable Featured automation
+
+`FEAT-BIL-001` and `FEAT-FTR-001` use a singleton platform policy, not rewritten
+subscriptions or a client-only switch. The launch default is Free access.
+An active administrator can enable Trial, then payment only after confirming a
+fresh seven-day activation window for existing unpaid providers. Re-saving an
+unchanged mode does not restart it. Existing paid periods, sponsored access, and
+payment history remain intact. Returning to Free stops expiry enforcement and
+new payment-proof submission, not record retention. Server identity, workspace
+guards, and PostgreSQL operating scopes evaluate the same policy.
+
+Featured defaults to automatic selection with a configurable one-to-twelve
+Driver target. The existing signed Netlify scheduled worker fills missing dates
+through the next seven Ethiopia days. It uses the existing truck-type rotation,
+the active Driver-link resolver, published contactable profiles, configuration
+round-robin, and least-recently-featured ordering with stable tie-breaking. No
+document approval is required. It records exact truck/Driver slots, not random
+choices during public rendering. Advisory locking, date uniqueness, and one
+transaction make overlapping jobs and retries harmless. Every saved day is
+preserved, including manual drafts; Manual only stops generation. A separate
+administrator command runs the same bounded preparation immediately.
+
+`FEAT-UIX-001` shares neutral component skeletons and native-POST pending feedback
+without adding a dependency. Route placeholders keep existing shells; lazy maps
+and chat have their own bounded state. Submitters retain their names/values and
+are not disabled before the browser serializes the POST. Fetch-driven controls
+retain ownership of their existing pending/error behavior. Reduced motion and
+screen-reader status are supported without fake progress.
+
+Migrations `079` and `080` are additive and depend on `078`. Apply schema before
+the client/worker. No new vendor, scheduler, paid plan, or browser database grant
+is needed. Hosted rollout remains separate: verify the signed worker and actual
+public roster after publication. Rollback can first set Featured to Manual and
+restore reviewed prior functions/client; retain policy, payment, and roster rows.
+Do not delete rosters or downgrade schema to silence a failed check.
+
+## ADR-049 — Driver assignment is eligibility; documents are optional evidence
+
+`FEAT-FLT-001`, `FEAT-CAP-001`, and `FEAT-VER-001` distinguish publication
+eligibility from trust evidence. A fleet truck needs an active assigned Driver
+with active same-company membership; an independent provider's active Driver
+identity is the explicit link for their trucks. Document uploads and approvals
+remain optional throughout signup and authorized software use.
+
+Migration `078` shares one service-role-only Driver resolver across capacity
+publication, Driver location/duty writes, Open/Private reads, and the authorized
+workspace projection. Unassignment or deactivation removes discovery eligibility
+on subsequent reads without deleting history. A missing or expired approval stays
+neutral and means no current reviewed evidence, not that the document does not
+exist. Public review summaries expose category metadata, never uploaded files.
+
+Deploy after `077` and before the client. No new vendor, credential scope, or
+ordinary-browser database permission is introduced. Rollback restores prior
+functions/client while preserving records. Local database regression writes and
+the 5,000-truck/Driver performance fixture roll back in full; hosted release
+verification is separate and still pending.
+
+
+## Private transport callback requests — FEAT-TRQ-001 (local, 2026-09-23)
+
+The owner requests four-field transport enquiries and an admin-only Support list
+for offline calls and referrals. Keep these as private callback records, separate
+from email-recoverable chat, market capacity and shipments. No email, member
+identity, public demand or automated provider dispatch is created. Migration 103
+uses RLS, service-only commands, explicit active-ADMIN authorization, retry IDs
+and version-checked updates; audit details exclude contacts and notes. Retain
+original requests and history on app rollback. Local visual review and normal
+production migration/release gates remain required.
+
+### 2026-09-24 — launch journey recovery (FEAT-LUX-001)
+
+Owner placement correction: guest login is labeled Share your trucks; a joined
+floating Ask for help / Request transport control opens the respective panel
+directly. The owner subsequently requested one task per panel: remove internal
+tabs, keep the outside buttons as the only task selection, and preserve the selected
+task across reloads. Transport requests must not mark support messages read.
+Remove the added map-top action strip. Existing auth routes are retained;
+GPS requires an explicit visitor action. This accepted usability change does not
+alter capacity eligibility or require manual loading. Contextual language rules
+live in `resources/i18n/CONTEXTUAL_COPY.md`; user content is never translated.
+
+Access requests bound transport and response-body waits to 15 seconds. Tracking
+creation never automatically retries an uncertain write. Its committed shipment
+and existing outbox determine success; mail delivery runs through Next's existing
+post-response pattern and pending deliveries remain retryable by the dispatcher.
+No new queue, permission, hosted setting or server idempotency claim is introduced.
+
+
+### 2026-09-24 — independent Brokerage and Support (FEAT-TRQ-001 / FEAT-SUP-001 / FEAT-GST-001)
+
+The owner clarified that finding transport belongs to a separate Brokerage team.
+The initial admin-only callback design above is extended with an independent,
+default-off staff capability. Retain the existing internal staff identity instead
+of changing authentication role enums. Admin grants Support and Brokerage separately.
+General help copy explicitly covers questions, issues and disputes.
+
+Brokerage uses manual claims and admin handoff for offline work, with scoped
+contacts, versioned writes and private event snapshots. Support keeps its existing
+available-agent/chat-capacity assignment and gains admin guest-chat reassignment.
+Open brokerage work is released when access is revoked or an account is suspended.
+An admin can reopen closed work; invalid former ownership is cleared on reopening.
+Migration 104 and application changes are local only. Do not backfill staff access.
+See operations/TEAM_INQUIRY_WORKFLOWS.md for the staff workflow and rollout limits.
+
+### 2026-09-24 — understandable Featured operation and separate team access
+
+FEAT-FTR-001 / FEAT-LUX-001: preserve the random no-repeat algorithm and saved-day
+protection. Migration 105 wraps generation with private, bounded status and an
+atomic failure boundary; its admin/team overview describes actual latest checks,
+not a promise of future job execution. Public Featured timing is not a live-video
+or availability claim. Copy polish removes decorative/internal wording while
+retaining freshness, approximate-location and document-review limits.
+
+The owner explicitly chose a separate Featured permission. Migration 106 adds it
+default-off and limits access to roster/day/sponsor management, preparation and
+Featured selection settings. Separate settings RPCs cannot return or change
+billing/access controls. Identity/team projections retain existing capabilities;
+mutations lock current authority before work. Admin alone grants/revokes access.
+No existing staff grant or production setting is changed. The worker's service
+entry remains separate from authenticated staff preparation. See
+operations/FEATURED_PROGRAMME.md for daily operation and policy limits.
+
+
+## 2026-09-24 — Official Featured broadcast pacing (FEAT-FTR-001)
+
+Owner confirmed 08:30–12:00 Ethiopia time, a maximum of eight showcases and four
+two-minute sponsor mentions. Automatic timing reserves the closing mention too;
+eight trucks share 202 minutes. Sparse days keep actual pair counts and no-repeat
+fairness. Staff can seed Manual from Automatic, move trucks without moving slot
+times, and edit intervals. Manual gaps (including opening/closing) define mentions.
+This prepares a running order, not a TikTok broadcasting integration.
+
+Migration 107 validates the write boundary and retimes only future automatic days,
+leaving pairs/history and historical/manual days untouched. Legacy read support
+remains explicit; saving a legacy manual day requires resetting/reviewing its times.
+Local implementation only; visual approval and coordinated release remain separate.
+
+
+### 2026-09-24 — public assistance is request-only
+
+Owner retired public Ask for help to reserve live support for all transport-provider
+users, including company drivers. Keep one Arrange transport launcher, one dialog
+title and Send request. Four fields feed Brokerage; no guest chat or email is created.
+API and migration 108 enforce retirement even for stale clients. Existing guests
+retain authenticated-by-recovery-code read-only history and files; staff can finish
+old work. No bulk closure/deletion. Full checks and deployment follow visual review.
+
+
+## ADR-073 — Email-verified Tracking without reusable customer codes (2026-09-28)
+
+Owner requested simpler access and 30-minute sessions. One email OTP verifies a
+recipient for all shipments currently shared with that exact normalized email.
+The list is paginated and private; every detail, proof and review rechecks current
+recipient grants. A single result opens directly; multiple results show a short
+shipment list. No account is created. Public responses reveal no eligibility.
+
+Use a separate signed HttpOnly/SameSite cookie subject for email-wide access;
+legacy shipment-bound cookies are never upgraded to broader access. Expiry is
+server-enforced: 30 minutes idle, renewed only after deliberate foreground activity,
+with an eight-hour absolute maximum. Reads/polling cannot extend it. Logout and
+expiry hide private UI; browser history restores revalidate. Secrets stay out of URLs.
+
+A verified customer-owner email can review a completed shipment without another
+code. A recipient-scoped database wrapper rechecks owner role, current access,
+completion and uniqueness. Other recipients cannot review. Existing code-based
+RPCs remain for migration compatibility, but current UI/emails do not ask for codes
+other than the six-digit email OTP. No provider status transitions change.
+
+Migration 114 is additive, reusing private OTP/outbox tables and their existing
+expiry/attempt/cleanup controls. Deploy migration before app; rollback app first,
+retain data and helpers. Rehearse 102–114 together before hosted rollout.
+Reference: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html.
+
+## ADR-074 — Android-first native application alongside the deployed web
+
+Implement FEAT-MOB-001 with Expo/React Native and MapLibre, retaining the current
+web root and independent mobile dependency lock during the compatibility proof.
+Use existing server application services through versioned native adapters; do
+not open business-table grants or ship server secrets. Provider and visitor
+workflows are in scope; staff administration is excluded. Android development
+build and owner review precede complete workflow gates and test APK distribution.
+Google Play publishing is deferred by the owner. No production settings change
+is part of the development setup.
+
+
+ADR-074 implementation detail: native capacity uses the same existing pure
+location-privacy function as web, imported from the scoped shared source directory
+while dependencies remain separate. Foreground-only capture obscures coordinates
+before transmission. Native adapters reuse current assignment/permission commands;
+no new database grant or hosted Auth change is needed for the local proof.
+
+ADR-074 visitor implementation: mobile email-verified Tracking and capacity use
+separate signed subjects and SecureStore entries from provider login and browser
+cookies. Existing OTP, rate limits, recipient grants and review commands remain
+authoritative. Renewal follows foreground user activity, not background timers;
+Tracking retains an eight-hour maximum and both scopes expire after thirty minutes
+idle. Profile publication and private sharing reuse existing owner/assignment
+commands rather than granting broader native access or changing discovery rules.
+
+ADR-074 clock handling: native visitor credentials include server issue time.
+The client conservatively anchors server lifetime to local request start and keeps
+that clock offset in scoped secure storage. Device clocks need not exactly match
+the API clock. This changes display/session handling only; server expiry and grant
+checks retain their existing limits. Test both skew directions and restart before
+claiming native OTP completion; cold-start stateful controller changes after edits.
+
+ADR-074 native public services: reuse published Featured/provider projections and
+PostgreSQL capacity profile search through explicit mobile DTOs. Native private
+search uses only its capacity grant, never client-selected staff authority. Native
+geometry imports web’s pure display-offset logic; changes cannot alter matching
+coordinates. Native guest brokerage uses a separately purposed signed capability,
+SDK-matched Expo Crypto and SecureStore-persisted idempotency keys. Its request
+and messaging authority remains in the existing transport-chat services. No new
+hosted Realtime, search vendor, database grant or staff-native screen is required.
+
+
+ADR-074 native continuation: normalize external native intents before Router; known
+route identifiers never grant account or visitor authority. Preserve the unresolved
+transitive audit findings until compatible fixes are verified. Native translations
+reuse explicit shared app-copy catalogs bundled for offline use, with a separate
+device preference and native-only additions. Generic text components never translate
+user records. About is native; published legal documents remain browser links while
+WEB-MOB-006 awaits review. Full language coverage is tracked separately.
+
+ADR-074 navigation continuation (October 6): owner chose two native areas,
+Marketplace and My workspace. Stable Expo Router tabs own one Stack per area;
+the header switches the parent tab without choosing a new child screen. Existing
+public/provider URLs remain unchanged through route groups. Workspace navigation
+is keyed by account identity; tab visibility does not grant backend permissions.
+Native forms must not overwrite unsaved fields on refocus. Public browsing stays
+account-free; admin/staff operations remain web-only. This supersedes the earlier
+implicit Dashboard/public navigation switch, not the accepted resource grouping.
+
+
+ADR-074 release continuation (October 6): localhost Expo Web reuses native screens
+with browser-only MapLibre GL and tab-scoped storage; native keeps MapLibre Native
+and SecureStore. Browser evidence is distinct from Android permission/install
+checks. Pin patched decode-uri-component 0.5.0 with a hash-checked query-string
+7.1.3 export adapter until Router supplies a compatible upstream consumer. Native
+CI retains raw audit findings and rejects new/critical findings, version drift or
+affected npm packages in the actual Android bundle; reviewed tooling paths permit
+internal builds only. Expo target is @falmatad/loadgistic, ID
+a2d7e0a9-2fe4-4188-804e-40d8c3486ac7, package com.loadgistic.app. Google Play remains deferred.
+
+
+ADR-074 navigation refinement (October 7, local implementation): preserve the
+owner-approved Marketplace/My workspace areas and their native nested stacks,
+but expose both choices directly rather than behind a switch sheet. Keep no more
+than five primary destinations per area and move supplementary language/legal
+controls out of the primary destination list. Personal evidence belongs to the
+person; company evidence and usual service live with the transporter profile.
+Self-managed identity/license retain their authorized PROVIDER_PROFILE subject;
+presentation regrouping never migrates/reassigns documents. Web return bookmarks
+are actor-keyed, tab-local, allowlisted URLs; only public map camera numbers are
+stored. Do not cache private feed payloads or claim arbitrary web form drafts
+persist. No new routing package or permission boundary. New owner review and
+release evidence remain pending.
+
+ADR-074 Home clarification (October 7, local): role-based task Home is distinct
+from Account settings. Active TRANSPORTER Home directly reuses managed fleet
+controls; active DRIVER Home retains the map, including driving owner-operators.
+Remove the redundant owner Fleet primary destination while preserving deep links
+and their active Home indication. Do not infer driver identity from an email or
+reclassify the owner's company account to satisfy a test expectation. Native role
+labels now expose the verified operating model. Actual named local-account checks
+pass; browser evidence does not certify native background location or publication.
+
+October 7 browser map compatibility (FEAT-MOB-001): retain MapLibre GL JS6.13.0
+and its current UI/tile lifecycle. A temporary Loadgistic-mobile-only postinstall
+adapter aligns raster AbortError handling with existing vector/GeoJSON loaders.
+Validate package identity, local realpaths, exact version and full source/imported
+bundle hashes before either write; reinstallation is idempotent and unknown drift
+requires review. Genuine HTTP/decode errors remain failures; no global console
+filter, cache/cancellation disabling, map redesign or other-project repair. Remove
+the adapter when a reviewed compatible upstream release supplies this fix. The
+browser module changes; MapLibre Native and the unchanged worker do not.
+
+Browser raster transport refinement (October 7, FEAT-MOB-001): injected fetch
+observers can create side-promises that escape the map loader's cancellation
+catch. Use MapLibre's supported custom-protocol port with a typed bounded XHR
+adapter for canonical public OSM tile coordinates only. Preserve browser cache,
+expiry/attribution, image decoding and existing error feedback; allow no arbitrary
+host, proxy, credential or global fetch replacement. Read only headers exposed by
+CORS rather than asking XHR for an inaccessible ETag. The before/after browser
+regression deliberately models the broken observer and proves the same abortTile
+failure before repair. Native map style remains unchanged. Rollback restores the
+original HTTPS browser style and removes this port; it changes no stored data.
+
+
+## October 9 — Play privacy and review boundaries (FEAT-PLY-001)
+
+Account/data deletion is distinct from retained-history deactivation. Verify the
+existing account email, record an idempotent request, hold unresolved work/shared
+records with a reason, freeze the erasure scope, remove files before Auth and
+complete only after authoritative cleanup succeeds. Failed stages stay retryable.
+Administrators review the exact account; no autonomous production erasure worker.
+
+Public profile visibility and capacity signal sharing are independent. Moderation
+and synthetic review exclusion must guard all public projections before pagination;
+a profile-only hide is insufficient. Blocking is reversible on the viewer's device.
+
+Reviewer password login uses normal Auth plus trusted metadata and a live private
+workspace registry. Demo guest grants use unrelated digests, expire normally and
+recheck workspace/revocation; they cannot authorize customer records. Production
+provisioning/rollout require the existing reviewed-operation safeguards.
+
+Location disclosure consent is per account/device, separate from OS permission.
+Decline/stale identity/permission revocation prevent task start. Firebase startup
+registration is disabled until explicit notification opt-in. No keys or broad
+media permissions are added. All of these changes are locally verified only.
+
+## October 13 multi-option capacity filters (FEAT-MKT-001 / FEAT-CAP-001 / NR-37)
+
+Keep the existing query keys and encode each meaningful option group as one
+bounded canonical comma-separated value. A scalar remains a singleton, with no
+new provider or dependency. Alternatives within configuration, load, occupancy,
+stops and freshness match any chosen option; the other groups and every selected
+document requirement must still match. Shipment endpoints/direction/distances
+retain their existing coherent meaning. Profile search remains separate until
+the explicit profile-to-map action.
+
+Patch current public-page, public-profile and private-payload SQL predicates,
+preserving sharing, content policy, cost/cursor behavior and privileges. Validate
+unknown/oversized/repeated input before SQL and within SQL, and keep truck
+registration's configuration picker single-select.139 and the matching web/mobile
+controls are locally verified; their owner visual review and hosted rollout are
+pending. This does not expand the consumed Featured137 release exception.

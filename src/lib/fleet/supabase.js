@@ -1,7 +1,8 @@
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {verificationBadgesFromApproved,truckAuthorizationBadgeFromApproved} from '../verification-summary.js';
+import {readWindowedPage} from '../pagination.js';
 
-const FLEET_ERRORS=['FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','INVALID_DRIVER_ACCESS'];
+const FLEET_ERRORS=['FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','INVALID_DRIVER_ACCESS','DRIVER_ACCOUNT_CONFLICT','TRUCK_HAS_ACTIVE_TRACKING'];
 
 function fleetError(fallback,error){
   const message=String(error?.message||'');
@@ -9,21 +10,20 @@ function fleetError(fallback,error){
   return new Error(known||fallback,{cause:error});
 }
 
-function payload(value){
-  return value&&typeof value==='object'&&'payload' in value?value.payload:value;
-}
-
 export async function getSupabaseFleetDriverPage(user,options={}){
-  const pageSize=Math.max(1,Math.min(50,Number(options.pageSize)||10));
-  const page=Math.max(1,Number(options.page)||1);
+  const requestedSize=Number(options.pageSize);
+  const pageSize=Number.isSafeInteger(requestedSize)&&requestedSize>0?requestedSize:10;
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('fleet_driver_page',{
-    actor_user_id:user.id,requested_offset:(page-1)*pageSize,requested_limit:pageSize
-  });
-  if(error)throw fleetError('SUPABASE_FLEET_DRIVER_PAGE_FAILED',error);
-  const rows=data||[];
-  const items=rows.map(entry=>{
-    const driver=payload(entry)||{};
+  const result=await readWindowedPage(async(offset,limit)=>{
+    // Every read, including the one bounded stale-page recovery, repeats the
+    // current database owner check. A denial or outage is never an empty page.
+    const {data,error}=await client.rpc('fleet_driver_page',{
+      actor_user_id:user.id,requested_offset:offset,requested_limit:limit
+    });
+    if(error)throw fleetError('SUPABASE_FLEET_DRIVER_PAGE_FAILED',error);
+    return data||[];
+  },{page:options.page,pageSize});
+  const items=result.items.map(driver=>{
     return {...driver,
       verification_badges:verificationBadgesFromApproved('DRIVER',driver.driver_documents||[]),
       truck_verification_badges:driver.assigned_vehicle_id
@@ -33,8 +33,7 @@ export async function getSupabaseFleetDriverPage(user,options={}){
       driver_documents:undefined,authorization_documents:undefined
     };
   });
-  const total=Number(rows[0]?.total_count||0);
-  return {items,total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize))};
+  return {...result,items};
 }
 
 export async function updateSupabaseFleetDriverAccess(user,driverUserId,input){

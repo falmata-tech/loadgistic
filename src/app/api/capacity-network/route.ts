@@ -1,6 +1,7 @@
 import {NextRequest,NextResponse} from 'next/server.js';
 import {getCurrentUser} from '@/lib/auth';
-import {grantPrivateCapacityAccess,revokePrivateCapacityAccess,setLoadgisticCapacityAccess} from '@/lib/private-capacity.js';
+import {grantPrivateCapacityAccess,namePrivateCapacityContact,revokePrivateCapacityAccess} from '@/lib/private-capacity.js';
+import {retiredPlatformCapacityResponse} from '@/lib/retired-brokerage';
 import {errorMessage} from '@/lib/errors';
 import {redirectWith,text} from '@/lib/redirects';
 
@@ -13,11 +14,12 @@ export async function POST(request:NextRequest){
   try{
     const action=text(form,'action');
     if(action==='GRANT'){
-      await grantPrivateCapacityAccess(user,{vehicleId:text(form,'vehicleId'),email:text(form,'email')});
+      await grantPrivateCapacityAccess(user,{vehicleId:text(form,'vehicleId'),email:text(form,'email'),name:text(form,'name')});
     }
+    else if(action==='NAME')await namePrivateCapacityContact(user,{grantId:text(form,'grantId'),name:text(form,'name')});
     else if(action==='REVOKE')await revokePrivateCapacityAccess(user,text(form,'grantId'));
-    else if(action==='LOADGISTIC')await setLoadgisticCapacityAccess(user,text(form,'vehicleId'),text(form,'enabled')==='on');
+    else if(action==='LOADGISTIC')return retiredPlatformCapacityResponse();
     else throw new Error('INVALID_NETWORK_ACTION');
-    return redirectWith(request,'/app/network','success',action==='GRANT'?'Capacity access added.':action==='REVOKE'?'Capacity access removed.':'Loadgistic sharing updated.');
+    return redirectWith(request,'/app/network','success',action==='NAME'?'Contact name saved.':action==='GRANT'?'Capacity access added.':action==='REVOKE'?'Capacity access removed.':'Capacity access updated.');
   }catch(error){return redirectWith(request,'/app/network','error',errorMessage(error));}
 }

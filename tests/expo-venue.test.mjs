@@ -24,8 +24,9 @@ test('programme interludes never mark a truck as live',()=>{
 });
 
 test('schedule configuration fixes the concise morning window and bounds interludes',()=>{
-  assert.equal(validateFeaturedScheduleConfig({targetCount:6,sponsorBreakEvery:3,sponsorBreakMinutes:1}).targetCount,6);
+  assert.equal(validateFeaturedScheduleConfig({targetCount:6,sponsorBreakCount:3,sponsorBreakMinutes:1}).targetCount,6);
   assert.throws(()=>validateFeaturedScheduleConfig({dayStart:'08:00'}),/FEATURED_SCHEDULE_WINDOW_INVALID/);
   assert.throws(()=>validateFeaturedScheduleConfig({sponsorBreakMinutes:3}),/FEATURED_SPONSOR_BREAK_DURATION_INVALID/);
-  assert.throws(()=>validateFeaturedScheduleConfig({targetCount:13}),/FEATURED_TARGET_COUNT_INVALID/);
+  assert.throws(()=>validateFeaturedScheduleConfig({sponsorBreakCount:5}),/FEATURED_SPONSOR_BREAK_COUNT_INVALID/);
+  assert.throws(()=>validateFeaturedScheduleConfig({targetCount:9}),/FEATURED_TARGET_COUNT_INVALID/);
 });

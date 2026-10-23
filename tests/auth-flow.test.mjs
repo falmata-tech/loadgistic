@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  MANAGED_GOOGLE_LOGIN_ENABLED,
   isNumericEmailOtp,
   localFixturePasswordLoginEnabled,
   localAuthInboxUrl,
@@ -65,12 +66,15 @@ test('fixture passwords are explicitly non-production only',()=>{
 
 test('email-code inputs are bounded and normalized without account disclosure',()=>{
   assert.equal(normalizeManagedAuthEmail(' Provider@Example.COM '),'provider@example.com');
+  assert.equal(normalizeManagedAuthEmail(' Owner+Truck@Example.COM '),'owner+truck@example.com');
+  assert.notEqual(normalizeManagedAuthEmail('owner+truck@example.com'),normalizeManagedAuthEmail('owner+driver@example.com'));
   assert.equal(normalizeManagedAuthEmail('not-an-email'),null);
   assert.equal(isNumericEmailOtp('123456'),true);
   assert.equal(isNumericEmailOtp('12345678'),false);
   assert.equal(isNumericEmailOtp('12345'),false);
   assert.equal(isNumericEmailOtp('123 456'),false);
   assert.equal(managedWorkspaceDestination('SUPPORT'),'/support');
+  assert.equal(managedWorkspaceDestination('ADMIN'),'/admin');
   assert.equal(managedWorkspaceDestination('DRIVER'),'/app/home');
 });
 
@@ -119,7 +123,9 @@ test('local Google OAuth uses an ignored environment boundary and a dedicated ca
   assert.match(starter,/stdio:\['ignore','ignore','inherit'\]/);
   assert.match(starter,/local-google-not-configured\.apps\.googleusercontent\.com/);
   assert.doesNotMatch(starter,/console\.log\([^)]*clientSecret/);
-  assert.equal((workflow.match(/npm run supabase:start/g)||[]).length,2);
+  // Validation, ordinary browser shards and isolated Featured rotation cases
+  // each start their own Supabase instance through the guarded local wrapper.
+  assert.equal((workflow.match(/node scripts\/ci-start-local-supabase\.mjs/g)||[]).length,3);
 });
 
 test('local unified account access explains the isolated inbox before and after an OTP request',()=>{
@@ -155,4 +161,15 @@ test('signup uses the same managed identity choices but may create only an inact
   assert.match(setup,/authenticatedEmail===handoff\.email/);
   assert.match(config,/\[auth\.email\.template\.confirmation\][\s\S]*signup-code\.html/);
   assert.match(template,/\{\{ \.Token \}\}/);
+});
+
+
+test('email-only policy blocks Google entry and callback before identity side effects',()=>{
+  assert.equal(MANAGED_GOOGLE_LOGIN_ENABLED,false);
+  const start=readFileSync(new URL('../src/app/api/applications/google/route.ts',import.meta.url),'utf8');
+  const callback=readFileSync(new URL('../src/app/api/auth/callback/route.ts',import.meta.url),'utf8');
+  assert.ok(start.indexOf('if(!MANAGED_GOOGLE_LOGIN_ENABLED)')<start.indexOf('client.auth.signInWithOAuth'));
+  assert.ok(callback.indexOf('if(!MANAGED_GOOGLE_LOGIN_ENABLED)')<callback.indexOf('client.auth.exchangeCodeForSession'));
+  const login=readFileSync(new URL('../src/app/login/page.tsx',import.meta.url),'utf8');
+  assert.doesNotMatch(login,/Continue with Google|auth-divider/);
 });

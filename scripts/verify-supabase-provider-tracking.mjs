@@ -1,4 +1,5 @@
 import {createClient} from '@supabase/supabase-js';
+import {readFileSync} from 'node:fs';
 
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
@@ -14,7 +15,22 @@ process.env.SESSION_SECRET=process.env.SESSION_SECRET||'provider-tracking-local-
 const service=createClient(url,serviceRoleKey,{auth:{autoRefreshToken:false,persistSession:false}});
 const anon=createClient(url,anonKey,{auth:{autoRefreshToken:false,persistSession:false}});
 const tracking=await import('../src/lib/provider-tracking.js');
-const {reviewAccessCode}=await import('../src/lib/security.js');
+const {reviewAccessCode,providerTrackingRecipientDigest}=await import('../src/lib/security.js');
+
+// This verifier exercises global expiry cleanup and retains a synthetic
+// shipment until stack teardown. Never run it against a mixed user preview.
+let fixtureAccountCount=0;
+for(let page=1;;page+=1){
+  const {data,error}=await service.auth.admin.listUsers({page,perPage:1000});
+  if(error)throw new Error('SUPABASE_TRACKING_VERIFY_FIXTURE_SCOPE_UNAVAILABLE');
+  const accounts=data?.users||[];
+  if(accounts.some(account=>account.app_metadata?.fixture_source!=='loadgistic')){
+    throw new Error('SUPABASE_TRACKING_VERIFY_MIXED_PREVIEW_REFUSED');
+  }
+  fixtureAccountCount+=accounts.length;
+  if(accounts.length<1000)break;
+}
+if(!fixtureAccountCount)throw new Error('SUPABASE_TRACKING_VERIFY_FIXTURES_MISSING');
 
 async function profile(email){
   const {data,error}=await service.from('profiles').select('*').eq('email',email).maybeSingle();
@@ -40,18 +56,22 @@ const driverWorkspace=await tracking.getProviderTrackingWorkspace(driver,{limit:
 if(!driverWorkspace.access?.can_manage_tracking||!driverWorkspace.vehicles?.length)throw new Error('SUPABASE_TRACKING_VERIFY_DRIVER_WORKSPACE_FAILED');
 const companyWorkspace=await tracking.getProviderTrackingWorkspace(companyDriver,{limit:10});
 if(!companyWorkspace.access?.can_manage_tracking||!companyWorkspace.vehicles?.length)throw new Error('SUPABASE_TRACKING_VERIFY_COMPANY_DRIVER_WORKSPACE_FAILED');
-const [{data:origin,error:originError},{data:destination,error:destinationError}]=await Promise.all([
+const [{data:origin,error:originError},{data:destination,error:destinationError},{data:passing,error:passingError}]=await Promise.all([
   service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).maybeSingle(),
-  service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).maybeSingle()
+  service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).maybeSingle(),
+  service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).maybeSingle()
 ]);
-if(originError||destinationError||!origin||!destination)throw new Error('SUPABASE_TRACKING_VERIFY_PLACES_MISSING');
+if(originError||destinationError||passingError||!origin||!destination||!passing)throw new Error('SUPABASE_TRACKING_VERIFY_PLACES_MISSING');
 
-const created=await tracking.createProviderShipment(driver,{
-  vehicleId:driverWorkspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,
+const shipmentInput={
+  vehicleId:driverWorkspace.vehicles[0].id,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:passing.id,
   cargoSummary:'Managed Tracking verification cargo',customerEmail:'tracking-owner@example.test',
-  additionalRecipientEmails:['tracking-party@example.test'],
-  trackingMode:'LOCATION_AND_STATUS'
-});
+  trackingMode:'LOCATION_AND_STATUS',expectedDeliveryDate:new Date(Date.now()+86400000).toISOString().slice(0,10)
+};
+await expectCode(tracking.createProviderShipment(driver,{
+  ...shipmentInput,additionalRecipientEmails:['tracking-party@example.test']
+}),/TRACKING_OWNER_SHARES_ACCESS/);
+const created=await tracking.createProviderShipment(driver,shipmentInput);
 if(!created.id||!/^LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/.test(created.trackingCode))throw new Error('SUPABASE_TRACKING_VERIFY_CREATE_FAILED');
 const {data:storedShipment,error:storedError}=await service.from('provider_shipments')
   .select('review_code_hash,shipper_email').eq('id',created.id).maybeSingle();
@@ -61,11 +81,11 @@ if(storedError||grantError||!storedShipment||!storedGrant)throw new Error('SUPAB
 if(storedGrant.code_hash===created.trackingCode||storedShipment.review_code_hash===reviewAccessCode(created.id))throw new Error('SUPABASE_TRACKING_VERIFY_PLAINTEXT_CODE');
 
 const providerDetail=await tracking.getProviderShipment(driver,created.id);
-if(providerDetail.tracking_recipients.length!==2
-  ||providerDetail.tracking_recipients[0].recipient_role!=='OWNER'
-  ||providerDetail.tracking_recipients[1].recipient_role!=='TRACKING_PARTY'){
+if(providerDetail.tracking_recipients.length!==1
+  ||providerDetail.tracking_recipients[0].recipient_role!=='OWNER'){
   throw new Error('SUPABASE_TRACKING_VERIFY_RECIPIENTS_MISSING');
 }
+await expectCode(tracking.addProviderTrackingRecipient(driver,created.id,'tracking-party@example.test'),/TRACKING_OWNER_SHARES_ACCESS/);
 const beforeIneligibleChallenges=await service.from('provider_tracking_email_otps').select('id',{count:'exact',head:true});
 const beforeIneligibleDeliveries=await service.from('access_email_deliveries').select('id',{count:'exact',head:true}).eq('delivery_kind','TRACKING_OTP');
 const ineligible=await tracking.requestProviderTrackingOtp('unknown@example.test',created.trackingCode);
@@ -87,26 +107,38 @@ const unlocked=await tracking.verifyProviderTrackingOtp(
   'tracking-owner@example.test',created.trackingCode,ownerChallenge.challengeId,ownerChallenge.accessCode
 );
 if(unlocked.id!==created.id||unlocked.recipientRole!=='OWNER'||!unlocked.recipientDigest)throw new Error('SUPABASE_TRACKING_VERIFY_UNLOCK_FAILED');
+const ownerVerifiedAt=Date.now();
+const sharingProof={target_shipment_id:created.id,recipient_digest:unlocked.recipientDigest,verified_at:new Date(ownerVerifiedAt).toISOString()};
+const {data:sharing,error:sharingError}=await service.rpc('tracking_owner_sharing_command',{
+  ...sharingProof,command:{action:'ADD_VIEWER',expectedRevision:0,name:'Receiving desk',
+    email:'tracking-party@example.test',digest:providerTrackingRecipientDigest('tracking-party@example.test')}
+});
+if(sharingError||sharing?.viewers?.length!==1)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_SHARING_FAILED');
+const viewerId=sharing.viewers[0].id;
 const partyChallenge=await tracking.requestProviderTrackingOtp('tracking-party@example.test',created.trackingCode);
 const partyAccess=await tracking.verifyProviderTrackingOtp(
   'tracking-party@example.test',created.trackingCode,partyChallenge.challengeId,partyChallenge.accessCode
 );
 if(partyAccess.recipientRole!=='TRACKING_PARTY')throw new Error('SUPABASE_TRACKING_VERIFY_PARTY_UNLOCK_FAILED');
 let partyGuest=await tracking.getProviderGuestTracking(created.id,partyAccess.recipientDigest);
-if(!partyGuest||partyGuest.party_role!=='RECEIVER'||partyGuest.can_review)throw new Error('SUPABASE_TRACKING_VERIFY_PARTY_PROJECTION_FAILED');
-await tracking.revokeProviderTrackingRecipient(driver,created.id,providerDetail.tracking_recipients[1].id);
-partyGuest=await tracking.getProviderGuestTracking(created.id,partyAccess.recipientDigest);
-if(partyGuest!==null)throw new Error('SUPABASE_TRACKING_VERIFY_REVOKED_SESSION_ALLOWED');
-const revokedRequest=await tracking.requestProviderTrackingOtp('tracking-party@example.test',created.trackingCode);
-if(revokedRequest.deliveryQueued)throw new Error('SUPABASE_TRACKING_VERIFY_REVOKED_OTP_QUEUED');
+if(!partyGuest||partyGuest.party_role!=='RECEIVER'||partyGuest.can_review||partyGuest.can_share||partyGuest.can_view_location
+  ||partyGuest.current_location!==null||partyGuest.route?.length!==3)throw new Error('SUPABASE_TRACKING_VERIFY_PARTY_PROJECTION_FAILED');
+await expectCode(tracking.revokeProviderTrackingRecipient(driver,created.id,viewerId),/TRACKING_OWNER_SHARES_ACCESS/);
 const {error:anonymousUnlockError}=await anon.rpc('unlock_provider_tracking',{tracking_code_hash:'not-a-valid-digest'});
 if(!anonymousUnlockError)throw new Error('SUPABASE_TRACKING_VERIFY_ANONYMOUS_UNLOCK_ALLOWED');
 
 if(await tracking.getProviderShipment(owner,created.id)!==null)throw new Error('SUPABASE_TRACKING_VERIFY_CROSS_PROVIDER_READ');
+const beforeCrossProvider=await tracking.getProviderShipment(driver,created.id);
+// Device attribution checks the current driver assignment before the older
+// shipment lookup. A foreign provider is denied there, without changing data.
 await expectCode(tracking.updateProviderShipmentStatus(owner,created.id,'TO_PICKUP','',null,{
   locationArea:'Around Addis Ababa, Ethiopia',approximateLat:9.03,approximateLng:38.75,
   locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'
-}),/NOT_FOUND/);
+}),/^FORBIDDEN$/);
+const afterCrossProvider=await tracking.getProviderShipment(driver,created.id);
+if(JSON.stringify(afterCrossProvider)!==JSON.stringify(beforeCrossProvider)){
+  throw new Error('SUPABASE_TRACKING_VERIFY_CROSS_PROVIDER_MUTATION');
+}
 await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP'),/TRACKING_DEVICE_LOCATION_REQUIRED/);
 
 await tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP','Going to pickup',null,{
@@ -116,23 +148,54 @@ await tracking.updateProviderShipmentStatus(driver,created.id,'TO_PICKUP','Going
 let guest=await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest);
 if(!guest?.current_location||guest.current_location.location_precision_km!==10)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_LOCATION_MISSING');
 if(JSON.stringify(guest).includes('tracking-owner@example.test')||'assigned_driver_user_id' in guest)throw new Error('SUPABASE_TRACKING_VERIFY_GUEST_SECRET_LEAK');
-await tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading');
+partyGuest=await tracking.getProviderGuestTracking(created.id,partyAccess.recipientDigest);
+if(partyGuest?.current_location!==null||partyGuest?.can_view_location||partyGuest?.route?.length!==3
+  ||JSON.stringify(partyGuest).includes('location_source'))throw new Error('SUPABASE_TRACKING_VERIFY_VIEWER_LOCATION_LEAK');
+const {error:revokeError}=await service.rpc('tracking_owner_sharing_command',{
+  ...sharingProof,command:{action:'REVOKE_VIEWER',expectedRevision:sharing.revision,recipientId:viewerId}
+});
+if(revokeError)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_REVOKE_FAILED');
+if(await tracking.getProviderGuestTracking(created.id,partyAccess.recipientDigest)!==null)throw new Error('SUPABASE_TRACKING_VERIFY_REVOKED_SESSION_ALLOWED');
+const revokedRequest=await tracking.requestProviderTrackingOtp('tracking-party@example.test',created.trackingCode);
+if(revokedRequest.deliveryQueued)throw new Error('SUPABASE_TRACKING_VERIFY_REVOKED_OTP_QUEUED');
+const proofObject=`tracking-proof/${created.id}/local-verification.jpg`;
+const proofBytes=readFileSync('public/vehicle-configurations/cargo-van.jpg');
+const {error:proofUploadError}=await service.storage.from('shipment-proof').upload(proofObject,proofBytes,{contentType:'image/jpeg'});
+if(proofUploadError)throw new Error('SUPABASE_TRACKING_VERIFY_PROOF_UPLOAD_FAILED');
+const proof={path:`supabase://shipment-proof/${proofObject}`,originalName:'local-verification.jpg',mimeType:'image/jpeg'};
+await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading'),/TRACKING_HANDOVER_PROOF_REQUIRED/);
+await tracking.updateProviderShipmentStatus(driver,created.id,'LOADING','Loading',proof);
 guest=await tracking.getProviderGuestTracking(created.id,unlocked.recipientDigest);
-if(guest.current_location!==null)throw new Error('SUPABASE_TRACKING_VERIFY_LOCATION_STATE_LEAK');
+if(!guest.current_location||guest.current_location.location_precision_km!==10)throw new Error('SUPABASE_TRACKING_VERIFY_LOADING_LOCATION_MISSING');
+const loadingEvent=guest.events.find(event=>event.status==='LOADING');
+const loadingFile=await tracking.readProviderTrackingProof(null,created.id,loadingEvent.id,unlocked.recipientDigest);
+if(!loadingFile?.bytes.equals(proofBytes))throw new Error('SUPABASE_TRACKING_VERIFY_PROOF_READ_FAILED');
+if(await tracking.readProviderTrackingProof(owner,created.id,loadingEvent.id)!==null)throw new Error('SUPABASE_TRACKING_VERIFY_CROSS_PROVIDER_PROOF_LEAK');
 await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'IN_TRANSIT','',{
   path:'supabase://shipment-proof/tracking-proof/test.jpg',originalName:'test.jpg',mimeType:'image/jpeg'
 }),/PROOF_NOT_ALLOWED_FOR_STATUS/);
 await tracking.updateProviderShipmentStatus(driver,created.id,'IN_TRANSIT','En route',null,{
   locationArea:'Around Adama, Ethiopia',approximateLat:8.54,approximateLng:39.27,
-  locationPrecisionKm:20,locationSource:'DEVICE_OBSCURED'
+  locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'
 });
-const throttled=await tracking.updateProviderShipmentLocation(driver,created.id,{
+await expectCode(tracking.updateProviderShipmentLocation(driver,created.id,{
   locationArea:'Around Adama, Ethiopia',approximateLat:8.55,approximateLng:39.28,
   locationPrecisionKm:20,locationSource:'DEVICE_OBSCURED'
+}),/TRACKING_DEVICE_LOCATION_REQUIRED/);
+const throttled=await tracking.updateProviderShipmentLocation(driver,created.id,{
+  locationArea:'Around Adama, Ethiopia',approximateLat:8.55,approximateLng:39.28,
+  locationPrecisionKm:10,locationSource:'DEVICE_OBSCURED'
 });
 if(throttled.reason!=='THROTTLED')throw new Error('SUPABASE_TRACKING_VERIFY_LOCATION_THROTTLE_FAILED');
-await tracking.updateProviderShipmentStatus(driver,created.id,'UNLOADING','Unloading');
-await tracking.updateProviderShipmentStatus(driver,created.id,'COMPLETED','Complete');
+await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'UNLOADING','Unloading'),/TRACKING_HANDOVER_PROOF_REQUIRED/);
+await tracking.updateProviderShipmentStatus(driver,created.id,'UNLOADING','Unloading',proof);
+await expectCode(tracking.updateProviderShipmentStatus(driver,created.id,'COMPLETED','Complete'),/TRACKING_OWNER_APPROVAL_REQUIRED/);
+await expectCode(tracking.approveProviderHandover(created.id,unlocked.recipientDigest,Date.now()-300001),/TRACKING_SESSION_EXPIRED/);
+await expectCode(tracking.approveProviderHandover(created.id,partyAccess.recipientDigest,Date.now()),/TRACKING_APPROVAL_FORBIDDEN/);
+const approved=await tracking.approveProviderHandover(created.id,unlocked.recipientDigest,ownerVerifiedAt);
+if(!approved.approved)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_APPROVAL_FAILED');
+const completedShipment=await tracking.getProviderShipment(driver,created.id);
+if(completedShipment.operational_status!=='COMPLETED'||!completedShipment.handover_approved_at)throw new Error('SUPABASE_TRACKING_VERIFY_OWNER_APPROVAL_NOT_STORED');
 
 await expectCode(tracking.unlockProviderReview(created.id,created.trackingCode),/REVIEW_NOT_ALLOWED/);
 const reviewGrant=await tracking.unlockProviderReview(created.id,reviewAccessCode(created.id));
@@ -170,3 +233,4 @@ if(retainedRecipients.count!==0||retainedOtps.count!==0)throw new Error('SUPABAS
 const afterDemand=await service.from('shipments').select('id',{count:'exact',head:true});
 if(afterDemand.error||afterDemand.count!==beforeDemand.count)throw new Error('SUPABASE_TRACKING_VERIFY_DEMAND_MUTATED');
 process.stdout.write('Supabase provider Tracking recipients, email OTP, revocation, location, review, delivery, and cleanup checks passed.\n');
+// The disposable stack retains proof bytes with its tested history until teardown.

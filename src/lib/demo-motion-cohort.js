@@ -1,0 +1,16 @@
+// Exact, fictional fixture targets. A name or IMEI alone never authorizes a
+// vehicle: the database also checks its fixture owner, driver and assignment.
+export const DEMO_MOTION_COHORT=Object.freeze({
+ 'company-truck':Object.freeze({vehicleId:'caf1d0db-4d8e-4ce9-a879-6c7b6017de3a',imei:'990000000000001',source:'GPS',latitude:9.031,longitude:38.748}),
+ 'personal-truck':Object.freeze({vehicleId:'2f22cc5a-d654-4405-98b7-9a1a9cf42fe3',imei:'990000000000002',source:'MOBILE',latitude:9.03,longitude:38.76}),
+ 'fleet-01':Object.freeze({vehicleId:'2020967a-92d3-4b1d-8f40-3c670dc97a50',imei:'990000000000005',source:'GPS',latitude:9.015,longitude:38.704,vehicleFixtureKey:'veh-public-fleet-01-14',ownerFixtureKey:'user-public-fleet-01',driverFixtureKey:'user-public-fleet-driver-014',organizationFixtureKey:'org-public-fleet-01'}),
+ 'fleet-02':Object.freeze({vehicleId:'19838ed9-c898-43dd-a6d5-5d4c26d0e92d',imei:'990000000000006',source:'GPS',latitude:8.500,longitude:39.212,vehicleFixtureKey:'veh-public-fleet-02-3',ownerFixtureKey:'user-public-fleet-02',driverFixtureKey:'user-public-fleet-driver-018',organizationFixtureKey:'org-public-fleet-02'}),
+ 'fleet-03':Object.freeze({vehicleId:'2c449a7d-d26d-4eeb-aa64-7f4ba9f33c9d',imei:'990000000000007',source:'GPS',latitude:11.459,longitude:37.303,vehicleFixtureKey:'veh-public-fleet-03-7',ownerFixtureKey:'user-public-fleet-03',driverFixtureKey:'user-public-fleet-driver-037',organizationFixtureKey:'org-public-fleet-03'}),
+ 'fleet-04':Object.freeze({vehicleId:'0088dba7-04c7-425e-b5a9-64b721a753f0',imei:'990000000000008',source:'GPS',latitude:13.468,longitude:39.491,vehicleFixtureKey:'veh-public-fleet-04-14',ownerFixtureKey:'user-public-fleet-04',driverFixtureKey:'user-public-fleet-driver-059',organizationFixtureKey:'org-public-fleet-04'}),
+ 'fleet-05':Object.freeze({vehicleId:'5bf57d7a-2159-45f9-9f90-3cdef5ed43d8',imei:'990000000000009',source:'GPS',latitude:11.783,longitude:41.014,vehicleFixtureKey:'veh-public-fleet-05-13',ownerFixtureKey:'user-public-fleet-05',driverFixtureKey:'user-public-fleet-driver-073',organizationFixtureKey:'org-public-fleet-05'}),
+ 'fleet-06':Object.freeze({vehicleId:'0dc90cf6-7735-4ccc-b030-98a81c40ffd6',imei:'990000000000010',source:'GPS',latitude:9.350,longitude:42.793,vehicleFixtureKey:'veh-public-fleet-06-5',ownerFixtureKey:'user-public-fleet-06',driverFixtureKey:'user-public-fleet-driver-080',organizationFixtureKey:'org-public-fleet-06'}),
+ 'fleet-07':Object.freeze({vehicleId:'02c0a10d-3b4b-4b83-9f85-6272f8b6ce95',imei:'990000000000011',source:'GPS',latitude:9.299,longitude:41.867,vehicleFixtureKey:'veh-public-fleet-07-14',ownerFixtureKey:'user-public-fleet-07',driverFixtureKey:'user-public-fleet-driver-104',organizationFixtureKey:'org-public-fleet-07'}),
+ 'fleet-08':Object.freeze({vehicleId:'28b05503-eb24-4b78-8646-6a1813207813',imei:'990000000000012',source:'GPS',latitude:9.701,longitude:41.827,vehicleFixtureKey:'veh-public-fleet-08-2',ownerFixtureKey:'user-public-fleet-08',driverFixtureKey:'user-public-fleet-driver-107',organizationFixtureKey:'org-public-fleet-08'})
+});
+export const DEMO_MOTION_BASE_TARGETS=Object.freeze(['company-truck','personal-truck']);
+export const DEMO_MOTION_FLEET_TARGETS=Object.freeze(Object.keys(DEMO_MOTION_COHORT).filter(name=>name.startsWith('fleet-')));

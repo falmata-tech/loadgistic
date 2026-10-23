@@ -17,15 +17,16 @@ test('active provider profile images use only the managed storage lifecycle',()=
   assert.match(verifier,/SUPABASE_PROVIDER_PROFILE_IMAGE_OBJECT_RETAINED/);
 });
 
-test('every fixture transporter portrait resolves to a distinct repository asset',()=>{
+test('pictured fixture transporters have distinct assets and six deliberate blank icons',()=>{
   const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources/fixtures/managed-market.json'),'utf8'));
   const portraits=fixture.tables.company_pages
     .map(page=>page.profile_image_preset)
     .filter(Boolean)
     .sort();
 
-  assert.equal(portraits.length,30);
-  assert.equal(new Set(portraits).size,30);
+  assert.equal(portraits.length,24);
+  assert.equal(fixture.tables.company_pages.filter(page=>page.profile_image_preset===null).length,6);
+  assert.equal(new Set(portraits).size,24);
   for(const portrait of portraits){
     assert.match(portrait,/^[a-z0-9-]+\.png$/);
     assert.equal(

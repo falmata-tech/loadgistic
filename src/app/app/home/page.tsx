@@ -1,18 +1,21 @@
+
+import {FleetWorkspace} from '@/components/provider-fleet-workspace';
+import {Text} from '@/components/localization';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getDashboard, getWorkspaceAccess } from '@/lib/workspace.js';
+import { getDashboard, getWorkspaceAccess } from '@/lib/workspace.js';
 import { getProviderCapacityWorkspace } from '@/lib/provider-capacity.js';
 import { PageHeader } from '@/components/page-header';
 import { StatusPill } from '@/components/status-pill';
 import { Flash } from '@/components/flash';
 import { DriverCapacityHome } from '@/components/driver-capacity-home';
+import {providerWorkspaceCapabilities} from '@/lib/provider-workspace.js';
 import {
   ArrowRight,
   BadgeCheck,
   Boxes,
   CirclePlus,
-  CreditCard,
   Eye,
   Gauge,
   LayoutDashboard,
@@ -24,12 +27,6 @@ import {
   Users
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-
-function limitedAccessTitle(status:string){
-  if(status==='PAYMENT_UNDER_REVIEW')return 'Payment is under review';
-  if(status==='NO_SUBSCRIPTION')return 'A plan must be assigned';
-  return 'Your plan has expired';
-}
 
 function actionIcon(href:string):LucideIcon {
   if(href.includes('/shipments/new'))return CirclePlus;
@@ -46,36 +43,27 @@ function actionIcon(href:string):LucideIcon {
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(undefined,{allowLimited:true}); const query=await searchParams;
   if(user.role==='ADMIN')redirect('/admin');
+  if(user.role==='CUSTOMER')redirect(user.selected_business_workspace?.permissions.capacity?'/app/business/capacity':user.selected_business_workspace?.permissions.tracking?'/app/business/tracking':'/app/business/account');
+  if(!['DRIVER','TRANSPORTER'].includes(user.role))redirect('/workspaces');
   const access=await getWorkspaceAccess(user);
-  if(!access.granted){
-    const billing:any=await getBillingSummary(user);
-    const greeting=user.organization_name||user.provider_business_name||user.name;
-    return <div className="page billing-limited-home">
-      <PageHeader icon={LockKeyhole} title={greeting} subtitle="Restore access to continue managing transport operations."/>
-      <Flash error={query.error} success={query.success}/>
-      <section className="billing-access-panel">
-        <div className="billing-access-icon"><LockKeyhole aria-hidden="true"/></div>
-        <div><span className="status expired">ACCESS LIMITED</span><h2>{limitedAccessTitle(access.status)}</h2><p>{access.status==='PAYMENT_UNDER_REVIEW'?'Loadgistic is reviewing your payment. Operating screens will reopen after approval.':'Submit your payment information to restore Loadgistic operating access.'}</p></div>
-        <Link href="/app/more" className="button icon-button-label"><CreditCard aria-hidden="true"/>Open plan & billing</Link>
-      </section>
-      <div className="billing-limited-facts">
-        <section><span>Plan</span><strong>{billing.subscription?.plan_name||'Not assigned'}</strong></section>
-        <section><span>Access ended</span><strong>{access.ends_at?new Date(access.ends_at).toLocaleDateString():'Payment required'}</strong></section>
-        <section><span>Still available</span><strong>Home · Plan & billing · Log out</strong></section>
-      </div>
-    </div>;
-  }
-  if(user.role==='DRIVER') {
+  if(!access.granted)return <div className="page"><PageHeader icon={LockKeyhole} title={user.name}/><p><Text message="This account is not linked to a transport workspace."/></p><Link className="button" href="/app/support"><Text message="Support"/></Link></div>;
+  const capabilities=providerWorkspaceCapabilities(user);
+  if(capabilities.drivesTruck) {
     const plain=(value:any)=>JSON.parse(JSON.stringify(value));
     const workspace=await getProviderCapacityWorkspace(user);
-    return <DriverCapacityHome vehicles={plain(workspace.vehicles)} capacities={plain(workspace.capacities)} corridors={plain(workspace.corridors)} access={plain(workspace.access)} query={query} renderedAt={Date.now()}/>;
+    const vehicles=workspace.vehicles.filter((vehicle:any)=>(!capabilities.currentDrivenVehicleId||vehicle.id===capabilities.currentDrivenVehicleId)&&vehicle.assigned_driver?.id===(capabilities.currentDriverId||user.id));
+    const ids=new Set(vehicles.map((vehicle:any)=>vehicle.id));
+    return <DriverCapacityHome vehicles={plain(vehicles)} capacities={plain(workspace.capacities.filter((capacity:any)=>ids.has(capacity.vehicle_id)))} corridors={plain(workspace.corridors.filter((corridor:any)=>ids.has(corridor.vehicle_id)))} access={plain(workspace.access)} ownsFleet={capabilities.canManageFleet} query={query} renderedAt={Date.now()}/>;
   }
+  if(capabilities.canManageFleet)return <FleetWorkspace searchParams={Promise.resolve(query)}/>;
   const data:any=await getDashboard(user);
   const greeting=user.organization_name||user.provider_business_name||user.name;
-  return <div className="page"><PageHeader icon={LayoutDashboard} title={greeting} subtitle="Manage today&apos;s transport operations."/><Flash error={query.error} success={query.success}/>
-    <section className="action-grid">{data.actions.map((a:any)=>{const Icon=actionIcon(a.href);return <Link href={a.href} className="action-card" key={a.href}><span className="action-card-icon"><Icon aria-hidden="true"/></span><div><h3>{a.label}</h3><div className="meta">{a.description}</div></div><ArrowRight aria-hidden="true"/></Link>})}</section>
+  const firstTruck=user.role==='TRANSPORTER'&&(await getProviderCapacityWorkspace(user)).vehicles.length===0;
+  return <div className="page"><PageHeader icon={LayoutDashboard} title={greeting} subtitle={<Text message="Manage today's transport operations."/>}/><Flash error={query.error} success={query.success}/>
+    {firstTruck?<section className="card launch-first-truck"><h2><Text message="Add your first vehicle"/></h2><p><Text message="Add a vehicle and its driver, then choose who can see its availability."/></p><Link href="/app/fleet/new" className="button"><Truck aria-hidden="true"/><Text message="Add vehicle"/></Link></section>:null}
+    <section className="action-grid">{data.actions.map((a:any)=>{const Icon=actionIcon(a.href);return <Link href={a.href} className="action-card" key={a.href}><span className="action-card-icon"><Icon aria-hidden="true"/></span><div><h3><Text message={a.label}/></h3><div className="meta"><Text message={a.description}/></div></div><ArrowRight aria-hidden="true"/></Link>})}</section>
     <section className="stats">{Object.entries(data.counts).map(([label,value])=><div className="stat" key={label}><span className="meta">{label}</span><strong>{String(value)}</strong></div>)}</section>
-    <div className="two-col"><section className="card"><div className="page-header" style={{marginBottom:12}}><div><h2 className="panel-heading"><MapPin aria-hidden="true"/>Recent Tracking</h2><p className="page-subtitle">Latest shipment activity.</p></div><Link href="/app/provider-shipments" className="button secondary small"><Eye aria-hidden="true"/>View all</Link></div>{data.recent.length?<div className="list">{data.recent.map((item:any)=><Link href={`/app/provider-shipments/${item.id}`} className="list-row compact" key={item.id}><div><strong>{item.code}</strong><div className="meta">{item.cargo_summary||item.title}</div></div><div className="route">{item.origin}<span>→</span>{item.destination}</div><StatusPill status={item.operational_status}/></Link>)}</div>:<div className="empty-state">No tracking activity yet.</div>}</section>
-    <aside className="stack"><section className="card"><h3><ListChecks aria-hidden="true"/>Operating priorities</h3><p className="muted">{user.role==='TRANSPORTER'||user.role==='DRIVER'?'Keep truck availability, your public profile, and active tracking records current.':user.role==='ADMIN'?'Review the queues requiring platform action.':'Review current marketplace activity.'}</p></section>{data.notifications?.length?<section className="card"><h3><BadgeCheck aria-hidden="true"/>Notifications</h3><div className="stack">{data.notifications.slice(0,4).map((n:any)=><div key={n.id}><strong>{n.title}</strong><div className="meta">{n.body}</div></div>)}</div></section>:null}</aside></div>
+    <div className={data.notifications?.length?'two-col':'dashboard-recent'}><section className="card"><div className="page-header" style={{marginBottom:12}}><div><h2 className="panel-heading"><MapPin aria-hidden="true"/><Text message="Recent Tracking"/></h2><p className="page-subtitle"><Text message="Latest shipment activity."/></p></div><Link href="/app/provider-shipments" className="button secondary small"><Eye aria-hidden="true"/><Text message="View all"/></Link></div>{data.recent.length?<div className="list">{data.recent.map((item:any)=><Link href={`/app/provider-shipments/${item.id}`} className="list-row compact" key={item.id}><div><strong>{item.code}</strong><div className="meta">{item.cargo_summary||item.title}</div></div><div className="route">{item.origin}<span>→</span>{item.destination}</div><StatusPill status={item.operational_status}/></Link>)}</div>:<div className="empty-state"><Text message="No tracking activity yet."/></div>}</section>
+    <aside className="stack">{data.notifications?.length?<section className="card"><h3><BadgeCheck aria-hidden="true"/><Text message="Notifications"/></h3><div className="stack">{data.notifications.slice(0,4).map((n:any)=><div key={n.id}><strong>{n.title}</strong><div className="meta">{n.body}</div></div>)}</div></section>:null}</aside></div>
   </div>;
 }

@@ -3,12 +3,12 @@ import {createSupabaseAdminClient} from './supabase-adapter.js';
 import {getBillingSummaryData} from './billing.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
-  CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT'
+  CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT',FEATURED:'FEATURED'
 });
 
 const PLATFORM_PERMISSION_FIELDS=Object.freeze({
   CUSTOMERS:'can_manage_customers',OPERATIONS:'can_manage_operations',TRUST:'can_manage_trust',
-  BILLING:'can_manage_billing',SUPPORT:'can_manage_support'
+  BILLING:'can_manage_billing',SUPPORT:'can_manage_support',FEATURED:'can_manage_featured'
 });
 
 export function getWorkspaceAccess(user,at=new Date()){
@@ -27,14 +27,14 @@ export function assertPlatformPermission(user,permission){
 
 function dashboardActions(user){
   if(user.role==='ADMIN')return [
-    {href:'/admin/operations',label:'Open platform operations',description:'Inspect one focused client, truck, shipment, or capacity view.'},
+    {href:'/admin/operations',label:'Open platform operations',description:'Inspect one focused client, vehicle, shipment, or capacity view.'},
     {href:'/admin/reviews?tab=ratings',label:'Review rating disputes',description:'Investigate transporter disputes without hiding published customer ratings.'},
-    {href:'/admin/reviews?tab=documents',label:'Review trust documents',description:'Verify identities, licenses, drivers, and trucks.'},
+    {href:'/admin/reviews?tab=documents',label:'Review trust documents',description:'Verify identities, licenses, drivers, and vehicles.'},
     {href:'/',label:'View Open capacity',description:'Inspect published capacity and transporter pages as a visitor sees them.'}
   ];
   return [
     {href:'/app/provider-shipments/new',label:'Start Tracking',description:'Create a transporter-managed Tracking session after agreeing transport work offline.'},
-    {href:user.role==='TRANSPORTER'?'/app/fleet':'/app/home',label:'Update capacity',description:'Publish Empty or Partial truck availability.'},
+    {href:user.role==='TRANSPORTER'?'/app/fleet':'/app/home',label:'Update capacity',description:'Publish Empty or Partial vehicle availability.'},
     {href:'/app/company-page',label:'Update public page',description:'Keep your services, business information, and public contact choices current.'}
   ];
 }

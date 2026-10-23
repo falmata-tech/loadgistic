@@ -1,0 +1,16 @@
+.badges{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.summary{display:grid;gap:10px;padding:14px 0}
+.summary>strong{display:flex;align-items:center;gap:8px;font-size:15px}
+.summary>strong svg{width:19px;height:19px}
+.badge{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid;border-radius:9px;font-size:12px;font-weight:650;line-height:1.4}
+details.badge{display:block;max-width:100%}
+.badge summary{display:flex;align-items:center;gap:7px;cursor:pointer;list-style:none}
+.badge summary::-webkit-details-marker{display:none}
+.badge svg{width:17px;height:17px;flex-shrink:0}
+.ownership{color:#174c92;background:#edf4ff;border-color:#b9d0f1}
+.permission{color:#526375;background:#eaf1ff;border-color:#d7dfeb}
+.licence{color:#375572;background:#f0f5f9;border-color:#c5d4e0}
+.pending{color:#5b6872;background:#f3f5f7;border-color:#e5eaf1}
+.details{display:grid;gap:5px;margin-top:9px;max-width:300px;font-weight:400}
+.confirmation{min-height:44px;cursor:pointer}
+.confirmation input[type=checkbox]{width:18px;height:18px;min-height:0;margin:0;padding:0;flex:0 0 18px;accent-color:var(--blue)}

@@ -47,7 +47,7 @@ test('managed admin migration grants only the service role and excludes private 
   }
 });
 
-test('featured truck migration saves exact truck and Driver selections through a service-role-only command',()=>{
+test('historical Featured migration069 stores exact selections with its original hours and service-only command',()=>{
   const source=fs.readFileSync(path.join(root,'supabase/migrations/069_daily_featured_trucks.sql'),'utf8');
   assert.match(source,/add column if not exists vehicle_id uuid references public\.vehicles/);
   assert.match(source,/add column if not exists driver_user_id uuid references public\.profiles/);
@@ -71,7 +71,7 @@ test('managed admin detail projection is bounded, permissioned, and secret-free'
   }
 });
 
-test('administration overview counts every records inventory without browser RPC access',()=>{
+test('historical admin migration067 inventories its original records without browser RPC access',()=>{
   const source=fs.readFileSync(path.join(root,'supabase/migrations/067_admin_overview_counts.sql'),'utf8');
   for(const count of ["'users'","'workspaces'","'trucks'","'drivers'","'tracking'","'board_capacity'","'routes'","'subscriptions'"]){
     assert.match(source,new RegExp(count));
@@ -105,4 +105,20 @@ test('admin and Support lint correction removes retired storage and preserves bo
 test('the guarded local Supabase verification chain includes platform administration',()=>{
   const source=fs.readFileSync(path.join(root,'scripts/configure-local-supabase.mjs'),'utf8');
   assert.match(source,/runScript\('scripts\/verify-supabase-platform-admin\.mjs'\)/);
+});
+
+
+test('Featured authority does not imply any other platform responsibility',()=>{
+ const staff={role:'SUPPORT',can_manage_featured:true};
+ assert.equal(hasPlatformPermission(staff,PLATFORM_PERMISSIONS.FEATURED),true);
+ for(const permission of [PLATFORM_PERMISSIONS.CUSTOMERS,PLATFORM_PERMISSIONS.OPERATIONS,PLATFORM_PERMISSIONS.TRUST,PLATFORM_PERMISSIONS.BILLING,PLATFORM_PERMISSIONS.SUPPORT])assert.equal(hasPlatformPermission(staff,permission),false);
+ assert.equal(hasPlatformPermission({role:'SUPPORT'},PLATFORM_PERMISSIONS.FEATURED),false);
+ assert.equal(hasPlatformPermission({role:'DRIVER',can_manage_featured:true},PLATFORM_PERMISSIONS.FEATURED),false);
+});
+
+
+test('Featured combines with independently assigned staff responsibilities',()=>{
+ const staff={role:'SUPPORT',can_manage_featured:true,can_manage_customers:true,can_manage_billing:true,can_manage_support:true};
+ for(const permission of ['FEATURED','CUSTOMERS','BILLING','SUPPORT'])assert.equal(hasPlatformPermission(staff,permission),true);
+ assert.equal(hasPlatformPermission(staff,'OPERATIONS'),false);
 });

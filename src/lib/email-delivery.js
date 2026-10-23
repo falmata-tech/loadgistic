@@ -7,8 +7,8 @@ import {
 } from './access-email.js';
 import {buildEmailMessage} from './email-templates.js';
 import {emailDeliveryStatus,sendManagedEmail} from './email-provider.js';
-import {listPendingEmailDeliveries,recordEmailDeliveryAttempt} from './provider-tracking.js';
-import {guestSupportAccessCode,providerTrackingOtpCode,reviewAccessCode,sharedCapacityOtpCode,trackingAccessCode} from './security.js';
+import {getProviderGuestTracking,listPendingEmailDeliveries,recordEmailDeliveryAttempt} from './provider-tracking.js';
+import {guestSupportAccessCode,providerTrackingOtpCode,reviewAccessCode,sharedCapacityOtpCode,trackingAccessCode,providerTrackingRecipientDigest} from './security.js';
 
 export function emailDeliveryConfigured(environment=process.env){
   return emailDeliveryStatus(environment).configured;
@@ -20,7 +20,7 @@ export function localAccessCodeForDevelopment(challenge,delivery,environment=pro
 
 const SHARED_CAPACITY_REQUEST_MESSAGE='Check your email for a one-time code.';
 const SHARED_CAPACITY_NO_SHARE_MESSAGE='No transporter has shared capacity with this email yet. Ask a transporter to share capacity with this email address.';
-const TRACKING_OTP_REQUEST_MESSAGE='Request received. A one-time code is sent only when this exact email is approved for that shipment. If no code arrives, confirm the email and Tracking code with your transporter.';
+const TRACKING_OTP_REQUEST_MESSAGE='If shipments are shared with this email, a code will arrive shortly. If it does not arrive, check spam or confirm your email with the transporter.';
 
 export function sharedCapacityOtpRequestResponse(challenge,{
   configured=emailDeliveryConfigured(),
@@ -59,10 +59,13 @@ function safeFailure(error){
   return /^[A-Z0-9_:-]{1,120}$/.test(message)?message:'DELIVERY_FAILED';
 }
 
-export async function deliverPendingShipmentEmails(limit=10){
-  const configuration=emailDeliveryStatus();
+export async function deliverPendingShipmentEmails(limit=10,{
+  deliveryStatus=emailDeliveryStatus,listDeliveries=listPendingEmailDeliveries,
+  readTracking=getProviderGuestTracking,send=sendManagedEmail,recordAttempt=recordEmailDeliveryAttempt
+}={}){
+  const configuration=deliveryStatus();
   if(!configuration.configured)return {configured:false,provider:'none',attempted:0,sent:0,failed:0,skipped:0};
-  const deliveries=await listPendingEmailDeliveries(limit);
+  const deliveries=await listDeliveries(limit);
   let sent=0;
   for(const delivery of deliveries){
     try{
@@ -70,7 +73,7 @@ export async function deliverPendingShipmentEmails(limit=10){
         template:delivery.delivery_kind==='TRACKING_ACCESS'?'tracking-started':'tracking-completed',
         to:delivery.recipient_email,
         customerRole:delivery.party_role==='SHIPPER'?'OWNER':'TRACKING_PARTY',
-        tracking:delivery.delivery_kind==='TRACKING_ACCESS'?{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)}:undefined,
+        tracking:{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)},
         review:delivery.delivery_kind==='COMPLETION'?{url:publicUrl('/track'),code:reviewAccessCode(delivery.shipment_id)}:undefined,
         shipment:{
           code:delivery.code,providerName:delivery.provider_name,origin:delivery.origin,
@@ -78,11 +81,14 @@ export async function deliverPendingShipmentEmails(limit=10){
           completedAt:delivery.completed_at,events:Array.isArray(delivery.events)?delivery.events:[]
         }
       };
-      await sendManagedEmail(buildEmailMessage(payload),idempotencyKey('tracking',delivery.id));
-      await recordEmailDeliveryAttempt(delivery.id,{sent:true});
+      // Recheck a queued invitation immediately before the external send. A
+      // committed revocation must not expose the cargo summary through email.
+      if(delivery.delivery_kind==='TRACKING_ACCESS'&&!await readTracking(delivery.shipment_id,providerTrackingRecipientDigest(delivery.recipient_email)))throw Error('TRACKING_ACCESS_REVOKED');
+      await send(buildEmailMessage(payload),idempotencyKey('tracking',delivery.id));
+      await recordAttempt(delivery.id,{sent:true});
       sent+=1;
     }catch(error){
-      await recordEmailDeliveryAttempt(delivery.id,{sent:false,error:safeFailure(error)});
+      await recordAttempt(delivery.id,{sent:false,error:safeFailure(error)});
     }
   }
   return {configured:true,provider:configuration.provider,attempted:deliveries.length,sent,failed:deliveries.length-sent,skipped:0};

@@ -4,14 +4,31 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
-  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,MANAGED_COURIER_FIXTURE_VEHICLES,normalizeDemoSharedEmails,
+  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
 import {FEATURED_TRUCK_DAYS} from '../src/lib/featured-trucks.js';
 
 const root=path.resolve(import.meta.dirname,'..');
 const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
+
+test('fresh local fixtures preserve public, both and private sharing without opening absent policies',()=>{
+  const capacities=[
+    {id:'a',vehicle_id:'public',visibility:'OPEN',updated_at:'2026-10-08T00:00:00Z'},
+    {id:'b',vehicle_id:'both',visibility:'OPEN',updated_at:'2026-10-08T00:00:00Z'},
+    {id:'c',vehicle_id:'private',visibility:'PRIVATE',updated_at:'2026-10-08T00:00:00Z'},
+    {id:'d',vehicle_id:'private',visibility:'OPEN',updated_at:'2026-10-07T00:00:00Z'}
+  ];
+  assert.deepEqual(managedFixtureSharingPolicies(capacities,new Set(['both','private'])),[
+    {vehicle_id:'public',mode:'PUBLIC'},{vehicle_id:'both',mode:'BOTH'},{vehicle_id:'private',mode:'PRIVATE'}
+  ]);
+  assert.deepEqual(managedFixtureSharingPolicies([],new Set(['absent'])),[]);
+  const text=fs.readFileSync(importer,'utf8');
+  assert.ok(text.indexOf("from('vehicle_capacity_sharing').insert(sharingRows)")>text.indexOf("from('capacity_access_grants').insert"));
+  const migration=fs.readFileSync(path.join(root,'supabase/migrations/116_capacity_sharing_policy.sql'),'utf8');
+  assert.match(migration,/coalesce\(\(select mode from public\.vehicle_capacity_sharing where vehicle_id=target_vehicle_id\),'PRIVATE'\)/);
+});
 
 test('local managed signup verification uses only the isolated mail sink and numeric signup OTP',()=>{
   const configure=fs.readFileSync(path.join(root,'scripts','configure-local-supabase.mjs'),'utf8');
@@ -46,7 +63,10 @@ test('fixture importer uses a credential-free managed source and creates the cur
   assert.doesNotMatch(source,/node:sqlite|DATABASE_PATH|db\.js|repository\.js/);
   assert.match(source,/normalizeDemoSharedEmails\(process\.env\.LOADGISTIC_DEMO_SHARED_EMAILS\)/);
   assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_INCOMPLETE/);
-  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_INCOMPLETE/);
+  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_RETIRED_LOADGISTIC_GRANT_PRESENT/);
+  assert.match(verifier,/expectedPortraitCount=assignFixtureDriverPortraits\(fixtureDocument\.tables\.users\)/);
+  assert.doesNotMatch(source,/audience_type:'LOADGISTIC'|loadgistic-platform|demo-capacity-grant:\$\{vehicleId\}:loadgistic/);
+  assert.match(source,/demoSharedEmails\.length\?sharedVehicleIds:new Set\(\)/);
   assert.equal(fixture.schema_version,1);
   assert.equal(fixture.tables.users.length,154);
   assert.equal(fixture.tables.capacities.length,143);
@@ -77,12 +97,12 @@ test('managed import assigns every independent truck to its owning Driver and su
     assert.equal(assignment?.assigned_at,assignedAt,vehicle.id);
   }
   for(const theme of FEATURED_TRUCK_DAYS){
-    assert.equal(vehicles.some(vehicle=>Number(vehicle.active)!==0
-      &&theme.configurations.includes(vehicle.cargo_configuration)&&activeByVehicle.has(vehicle.id)),true,theme.key);
+    assert.ok(vehicles.filter(vehicle=>Number(vehicle.active)!==0
+      &&theme.configurations.includes(vehicle.cargo_configuration)&&activeByVehicle.has(vehicle.id)).length>=8,theme.key);
   }
 });
 
-test('managed vehicle policy reuses icon-only assignments for courier cars and interchangeable tractors',()=>{
+test('managed vehicle policy restores twelve exact courier fixtures and preserves the six tractors',()=>{
   const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
   const users=assignFixtureDriverPortraits(fixture.tables.users);
   const assignments=ensureIndependentVehicleAssignments(
@@ -95,29 +115,33 @@ test('managed vehicle policy reuses icon-only assignments for courier cars and i
   const assignmentByVehicle=new Map(assignments.filter(row=>Number(row.active)!==0)
     .map(row=>[row.vehicle_id,row.driver_user_id]));
   const userById=new Map(users.map(user=>[user.id,user]));
-  const courier=vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
+  const courier=vehicles.filter(vehicle=>['Courier car','Courier motorcycle'].includes(vehicle.cargo_configuration));
   const tractors=vehicles.filter(vehicle=>String(vehicle.cargo_configuration).startsWith('Tractor + '));
-  const changed=[...courier,...tractors];
 
   assert.equal(vehicles.length,143);
   assert.equal(courier.length,12);
+  assert.equal((counts['Courier car']||[]).length,6);
+  assert.equal((counts['Courier motorcycle']||[]).length,6);
   assert.equal(tractors.length,6);
   assert.equal((counts['Cargo van']||[]).length+(counts['Pickup truck']||[]).length
     +(counts['Pickup stake body']||[]).length+(counts['Mini Open Body Truck']||[]).length
-    +(counts['Mini Stake Body Truck']||[]).length+(counts['Mini Box Truck']||[]).length,91);
-  assert.equal((counts['Light Box Truck']||[]).length+(counts['Light Stake Body Truck']||[]).length,15);
+    +(counts['Mini Stake Body Truck']||[]).length+(counts['Mini Box Truck']||[]).length,94);
+  assert.equal((counts['Light Box Truck']||[]).length+(counts['Light Stake Body Truck']||[]).length,18);
   assert.equal((counts['Medium Box Truck']||[]).length+(counts['Medium Stake Body Truck']||[]).length,9);
-  assert.equal((counts['Heavy Rigid Stake Body Truck']||[]).length,5);
-  assert.equal((counts['Heavy Rigid Stake Body Truck + Trailer']||[]).length,5);
+  assert.equal((counts['Heavy Rigid Stake Body Truck']||[]).length,2);
+  assert.equal((counts['Heavy Rigid Stake Body Truck + Trailer']||[]).length,2);
   assert.equal((counts['Tractor + Container Trailer']||[]).length,2);
   assert.equal((counts['Tractor + Dry Van Trailer']||[]).length,2);
   assert.equal((counts['Tractor + Heavy Equipment Trailer']||[]).length,2);
-  assert.equal(courier.filter(vehicle=>SMALL_LOCAL_VEHICLE_CONFIGURATIONS.has(
-    originalById.get(vehicle.id)?.cargo_configuration
-  )).length,9);
-  assert.equal(courier.filter(vehicle=>String(originalById.get(vehicle.id)?.cargo_configuration)
-    .startsWith('Light ')).length,3);
-  assert.equal(changed.every(vehicle=>!userById.get(assignmentByVehicle.get(vehicle.id))
+  assert.deepEqual(tractors.map(vehicle=>[vehicle.id,vehicle.cargo_configuration]),[
+    ['veh-public-owner-02','Tractor + Container Trailer'],
+    ['veh-public-owner-03','Tractor + Heavy Equipment Trailer'],
+    ['veh-public-owner-08','Tractor + Heavy Equipment Trailer'],
+    ['veh-public-owner-14','Tractor + Container Trailer'],
+    ['veh-public-owner-16','Tractor + Dry Van Trailer'],
+    ['veh-public-owner-18','Tractor + Dry Van Trailer']
+  ]);
+  assert.equal(tractors.every(vehicle=>!userById.get(assignmentByVehicle.get(vehicle.id))
     ?.driver_portrait_preset),true);
   assert.equal(tractors.every(vehicle=>vehicle.trailer_interchangeable===true),true);
   assert.equal(tractors.every(vehicle=>vehicle.supported_trailer_configurations
@@ -125,7 +149,31 @@ test('managed vehicle policy reuses icon-only assignments for courier cars and i
   assert.equal(vehicles.filter(vehicle=>!tractors.includes(vehicle))
     .every(vehicle=>vehicle.trailer_interchangeable===false
       &&vehicle.supported_trailer_configurations.length===0),true);
-  assert.equal(vehicles.some(vehicle=>/motorcycle/i.test(String(vehicle.cargo_configuration))),false);
+  assert.deepEqual(courier.map(vehicle=>vehicle.id).sort(),MANAGED_COURIER_FIXTURE_VEHICLES.map(vehicle=>vehicle.id).sort());
+  for(const id of ['veh-trans-1','veh-trans-2','veh-driver-1']){
+    assert.equal(vehicles.find(vehicle=>vehicle.id===id).cargo_configuration,originalById.get(id).cargo_configuration,id);
+  }
+  assert.deepEqual(fixture.tables.driver_vehicle_assignments,assignments.slice(0,fixture.tables.driver_vehicle_assignments.length));
+  const before=JSON.stringify(fixture.tables.vehicles);
+  assert.deepEqual(applyManagedFixtureVehicleCatalog(fixture.tables.vehicles,assignments,users),vehicles);
+  assert.equal(JSON.stringify(fixture.tables.vehicles),before);
+  for(const change of [rows=>rows.filter(row=>row.id!=='veh-public-owner-01'),rows=>rows.map(row=>row.id==='veh-public-owner-01'?{...row,provider_profile_id:'other-provider'}:row),rows=>rows.map(row=>row.id==='veh-public-owner-01'?{...row,cargo_configuration:'Courier car'}:row)]){
+    assert.throws(()=>applyManagedFixtureVehicleCatalog(change(fixture.tables.vehicles),assignments,users),/MANAGED_FIXTURE_COURIER_SOURCE_MISMATCH/);
+  }
+});
+
+test('individual fixture Account names are first-name only without changing private identity or companies',()=>{
+  const {tables}=JSON.parse(fs.readFileSync(path.join(root,'resources','fixtures','managed-market.json'),'utf8'));
+  const users=new Map(tables.users.map(user=>[user.id,user])),profiles=new Map(tables.provider_profiles.map(profile=>[profile.id,profile]));
+  const personal=tables.company_pages.filter(page=>page.provider_profile_id);
+  assert.equal(personal.length,21);
+  for(const page of personal){
+    const profile=profiles.get(page.provider_profile_id),user=users.get(profile.user_id);
+    assert.equal(page.account_name,user.name.trim().split(/\s+/)[0]);
+    assert.ok(user.name.includes(' '),'private full name is retained');
+    assert.ok(profile.handle,'existing public handle is retained');
+  }
+  assert.equal(tables.company_pages.filter(page=>page.organization_id).every(page=>!Object.hasOwn(page,'account_name')),true);
 });
 
 test('existing Featured programme copy adopts current capacity language without replacing custom text',()=>{
@@ -154,10 +202,24 @@ test('managed import keeps Open capacity larger than each explicitly shared demo
   assert.equal(publicCapacity.filter(capacity=>capacity.market_status==='PARTIAL').length,35);
   assert.ok(publicCapacity.filter(capacity=>capacity.market_status==='EMPTY').length>15);
 
-  const shared=selectSharedFixtureVehicleIds(managed);
+  const shared=selectSharedFixtureVehicleIds(managed,.25,{excludedVehicleIds:HANDOVER_FIXTURE_VEHICLE_IDS});
   assert.equal(shared.size,Math.ceil(vehicles.length*.25));
   assert.ok(shared.size<publicCapacity.length);
   assert.equal([...shared].every(vehicleId=>vehicleById.has(vehicleId)),true);
+  for(const vehicleId of HANDOVER_FIXTURE_VEHICLE_IDS){
+    assert.equal(shared.has(vehicleId),false,'scheduled handover vehicle must stay public-only');
+  }
+  const withRecipient=new Map(managedFixtureSharingPolicies(managed,shared)
+    .map(policy=>[policy.vehicle_id,policy.mode]));
+  const withoutRecipient=new Map(managedFixtureSharingPolicies(managed,new Set())
+    .map(policy=>[policy.vehicle_id,policy.mode]));
+  for(const vehicleId of ['veh-public-fleet-02-3','veh-public-fleet-06-5']){
+    assert.equal(withRecipient.get(vehicleId),'BOTH','demo-world sharing requires a synthetic recipient');
+    assert.equal(withoutRecipient.get(vehicleId),'PUBLIC','an empty recipient list cannot satisfy that scenario');
+  }
+  for(const vehicleId of HANDOVER_FIXTURE_VEHICLE_IDS){
+    assert.equal(withRecipient.get(vehicleId),'PUBLIC');
+  }
   assert.deepEqual(normalizeDemoSharedEmails('TEST@example.com, test@example.com,second@example.com'),
     ['test@example.com','second@example.com']);
   assert.throws(()=>normalizeDemoSharedEmails('not-an-email'),/DEMO_SHARED_EMAIL_INVALID/);

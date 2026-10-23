@@ -1,3 +1,7 @@
+// Owner-selected email-only account access. Reenable only through a reviewed release.
+export const MANAGED_GOOGLE_LOGIN_ENABLED = false;
+export const MANAGED_EMAIL_ONLY_MESSAGE = 'Use your email to get a sign-in code.';
+
 export const MANAGED_AUTH_ERROR = 'We could not sign you in. Check your details or try again.';
 export const MANAGED_AUTH_UNAVAILABLE = 'Sign in is temporarily unavailable. Please try again shortly.';
 export const MANAGED_AUTH_CODE_SENT = 'Check your email for a six-digit code.';
@@ -17,7 +21,13 @@ export function isNumericEmailOtp(value) {
   return /^\d{6}$/.test(String(value || '').trim());
 }
 
-export function managedWorkspaceDestination(role) {
+/**
+ * @param {string} role
+ * @param {{permissions?:{capacity?:boolean,tracking?:boolean}}|null|undefined} [workspace]
+ */
+export function managedWorkspaceDestination(role,workspace=null) {
+  if(role==='CUSTOMER')return workspace&&!workspace.permissions?.capacity?(workspace.permissions?.tracking?'/app/business/tracking':'/app/business/account'):'/app/business/capacity';
+  if(role==='ADMIN')return '/admin';
   return role === 'SUPPORT' ? '/support' : '/app/home';
 }
 

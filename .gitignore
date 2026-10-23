@@ -1,7 +1,10 @@
 node_modules/
 .next/
 .next-dev/
+.next-dev-*/
 .next-e2e/
+.next-mobile-preview/
+.next-upload-audit/
 out/
 coverage/
 playwright-report/
@@ -32,3 +35,8 @@ deno.lock
 # Local Supabase CLI state
 supabase/.branches/
 supabase/.temp/
+
+# Private FCM keys; google-services.json is public Android configuration.
+*firebase-adminsdk*.json
+*service-account*.json
+*service_account*.json

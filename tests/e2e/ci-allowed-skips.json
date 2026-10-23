@@ -1,0 +1,335 @@
+{
+  "comment": "Reviewed intentional opt-in and one-project skips. Any new skip requires explicit inventory review; release shards fail closed.",
+  "allowed": [
+    {
+      "file": "account-read-first.spec.ts",
+      "title": "Account shows saved facts, explicit editing, isolated tasks and reversible navigation",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-account-overview.spec.ts",
+      "title": "Accounts joins exact owner and employee work and retains context through read/edit/cancel",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "read-only admin GPS desktop and phone review",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded local Admin Demo intake and provider web assignment",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded local Admin Demo intake and provider web assignment",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "read-only saved spare phone layout and GPS report",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "read-only saved spare phone layout and GPS report",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "Expo Web provider reads the saved spare, assignment, source and command limit",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "Expo Web provider reads the saved spare, assignment, source and command limit",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded Expo Web provider reassigns only the saved Demo spare",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded Expo Web provider reassigns only the saved Demo spare",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-workspace-view-mode.spec.ts",
+      "title": "Featured and GPS administration start in view mode and explicit tasks cancel without writes",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "driver-manual-capacity-location.spec.ts",
+      "title": "assigned driver chooses a manual Capacity point, sees its source, and can return to phone",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "driver-manual-mobile-preview.spec.ts",
+      "title": "assigned driver updates the Expo Capacity map manually, then switches back to phone",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "driver-off-duty-first-location.spec.ts",
+      "title": "an Off Duty fleet driver saves a private phone fix before the owner publishes capacity",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "featured-schedule-review.spec.ts",
+      "title": "capture focused featured schedule review",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "featured-schedule-review.spec.ts",
+      "title": "capture focused featured schedule review",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "fixture-contract-preflight.spec.ts",
+      "title": "synthetic provider setup follows current driver and publication rules",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "fleet-driver-off-page.spec.ts",
+      "title": "truck management opens its assigned driver beyond page one and denies another fleet",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "fleet-driver-off-page.spec.ts",
+      "title": "truck management opens its assigned driver beyond page one and denies another fleet",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "fleet-task-workspace.spec.ts",
+      "title": "provider Fleet separates saved trucks, drivers and devices and opens only deliberate editors",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "fleet-task-workspace.spec.ts",
+      "title": "provider Fleet separates saved trucks, drivers and devices and opens only deliberate editors",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "mobile-confirmation-actions.spec.ts",
+      "title": "Expo confirmations cancel safely and persist fleet, sharing and Tracking changes",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-map-entry-coverage.spec.ts",
+      "title": "Expo Capacity keeps full map and search controls without retired transport chat",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-map-entry-coverage.spec.ts",
+      "title": "Expo Tracking entry has an empty map behind verification without private shipment reads",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-personal-identity.spec.ts",
+      "title": "Expo signup saves an explicit compound First name and private Last or father name",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-personal-identity.spec.ts",
+      "title": "Expo unread account fields stay blocked until Retry loads the saved private surname and contacts",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-personal-identity.spec.ts",
+      "title": "Expo saved signup and fleet join recover by reading the session without repeating their committed commands",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-personal-identity.spec.ts",
+      "title": "Expo saved Driver photo with a failed preview read recovers through Refresh photo without another upload",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-personal-identity.spec.ts",
+      "title": "Expo personal account edits and separate profile and Driver photos preserve private data through replace and remove",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-tracking-map.spec.ts",
+      "title": "Expo phone Tracking uses a route-first map, existing progress and public contact modal that closes before profile navigation",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-tracking-map.spec.ts",
+      "title": "Expo phone verified Tracking shows only reported radius and opens private photo proof with revocation denial",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-tracking-map.spec.ts",
+      "title": "Expo phone Tracking fits the first reported area and preserves the camera on later refreshes",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-transporter-search.spec.ts",
+      "title": "Expo transporter search coalesces typing and clears inline without reloading the phone map",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-transporter-search.spec.ts",
+      "title": "Expo transporter search clear targets remain usable in English and Amharic on narrow phones",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-transporter-search.spec.ts",
+      "title": "Expo transporter profiles remain independent of applied truck filters until Show trucks",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-workspace-structure.spec.ts",
+      "title": "Expo provider Fleet separates work and opens saved information before editing",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-workspace-structure.spec.ts",
+      "title": "Expo provider Fleet separates work and opens saved information before editing",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "mobile-workspace-structure.spec.ts",
+      "title": "Expo employee Home remains a map with only assigned-truck work",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "mobile-workspace-structure.spec.ts",
+      "title": "Expo employee Home remains a map with only assigned-truck work",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "play-review-business.spec.ts",
+      "title": "Play reviewer owner and teammate use one private business workspace through the Expo UI",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "private-capacity-network.spec.ts",
+      "title": "capture focused private Capacity and Network review",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "private-capacity-network.spec.ts",
+      "title": "capture focused private Capacity and Network review",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "public-app-shell-review.spec.ts",
+      "title": "capture focused public application shell review",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "public-app-shell-review.spec.ts",
+      "title": "capture focused public application shell review",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "public-card-presentation.spec.ts",
+      "title": "native card labels translate in Amharic and Oromo while public record content stays unchanged",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "public-fleet-null-number.spec.ts",
+      "title": "existing local numbered and legacy null-number trucks keep closed maps and usable actions",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "public-fleet-null-number.spec.ts",
+      "title": "existing local numbered and legacy null-number trucks keep closed maps and usable actions",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "team-dashboard-cleanup.spec.ts",
+      "title": "admin support and Team controls fit desktop and phones while brokerage stays retired",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "team-dashboard-cleanup.spec.ts",
+      "title": "Support staff can reach sign-out from the phone header without additional queue access",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "team-dashboard-cleanup.spec.ts",
+      "title": "retired general Guest support remains unavailable after dashboard restructuring",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "fictional GPS fleet source saves worldwide manual coordinates, restores GPS and preserves owner/employee controls on web and Expo",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "fictional GPS fleet source saves worldwide manual coordinates, restores GPS and preserves owner/employee controls on web and Expo",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "fictional GPS capacity has an honest top-left source badge on its existing public and private audiences",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "fictional GPS capacity has an honest top-left source badge on its existing public and private audiences",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "saved Manual location reopens and changes accuracy without replacing its point on web and Expo",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "saved Manual location reopens and changes accuracy without replacing its point on web and Expo",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "fictional online GPS device acknowledges one visible Request location command",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "telematics-fleet.spec.ts",
+      "title": "fictional online GPS device acknowledges one visible Request location command",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "truck-regular-editors.spec.ts",
+      "title": "Expo selected fleet Usual routes saves updates removes without changing another truck or current capacity",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "workspace-record-view.spec.ts",
+      "title": "provider Tracking keeps its record visible and corrections require a deliberate task",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "workspace-shell-review.spec.ts",
+      "title": "capture focused responsive shell and Tracking review",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "workspace-shell-review.spec.ts",
+      "title": "capture focused responsive shell and Tracking review",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "workspace-task-dialog-hydration.spec.ts",
+      "title": "task triggers wait for hydration and Accounts directory uses human role labels",
+      "project": "mobile-chromium"
+    }
+  ]
+}

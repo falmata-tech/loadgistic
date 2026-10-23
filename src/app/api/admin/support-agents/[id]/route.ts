@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { updateSupportAgent } from '@/lib/support.js';
+import {retiredBrokerageResponse} from '@/lib/retired-brokerage';
 import { errorMessage } from '@/lib/errors';
 import { checked, redirectWith, text } from '@/lib/redirects';
 
@@ -10,6 +11,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const {id}=await params;
   const form=await request.formData();
   try {
+    if(checked(form,'canManageBrokerage'))return retiredBrokerageResponse();
     await updateSupportAgent(user,id,{
       active:checked(form,'active'),
       available:checked(form,'available'),
@@ -18,10 +20,12 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       canManageOperations:checked(form,'canManageOperations'),
       canManageTrust:checked(form,'canManageTrust'),
       canManageBilling:checked(form,'canManageBilling'),
-      canManageSupport:checked(form,'canManageSupport')
+      canManageSupport:checked(form,'canManageSupport'),
+      canManageBrokerage:false,
+      canManageFeatured:checked(form,'canManageFeatured')
     });
-    return redirectWith(request,'/admin/support','success','Support agent updated.');
+    return redirectWith(request,'/admin/support?tab=team','success','Support agent updated.');
   } catch(error) {
-    return redirectWith(request,'/admin/support','error',errorMessage(error));
+    return redirectWith(request,'/admin/support?tab=team','error',errorMessage(error));
   }
 }

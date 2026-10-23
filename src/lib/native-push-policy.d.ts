@@ -1,0 +1,10 @@
+import type {z} from 'zod';
+export type NativePushKind='SUPPORT'|'BROKERAGE'|'HANDOVER';
+export type NativePushEvent='MESSAGE'|'ASSIGNED'|'JOINED'|'ENDED'|'RESOLVED'|'APPROVED';
+export type NativePushContext={id:string;state:'SENDING'|'CHECKING';token:string;locale:string;kind:NativePushKind;sourceId:string;event:NativePushEvent;sequence:number;assignmentVersion:number;approvedAt:string|null;ticketId:string|null};
+export type NativePushOutcome={code:'ACCEPTED'|'DELIVERED'|'RETRY'|'NO_RECEIPT'|'DeviceNotRegistered'|'InvalidCredentials'|'MessageTooBig'|'MessageRateExceeded'|'PROVIDER_REJECTED';ticketId?:string};
+export type NativePushPayload={to:string;title:string;body:string;data:{app:string;eventId:string;kind:NativePushKind;sourceId:string;event:NativePushEvent};channelId:string;sound:string;priority:string;ttl:number;tag:string;collapseId:string};
+export const nativePushCommand:z.ZodType<{action:'REGISTER';installationId:string;secret:string;token:string;locale:'en'|'am'|'om'|'so'|'ti'}|{action:'REMOVE';installationId:string;secret:string;scope:'MEMBER'|'GUEST'|'ALL'}>;
+export {nativePushDestination} from './native-push-destination.js';
+export function nativePushMessage(row:NativePushContext,translate?:(message:string)=>string):NativePushPayload;
+export function nativePushOutcome(value:unknown,receipt?:boolean):NativePushOutcome;

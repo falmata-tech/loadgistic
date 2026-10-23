@@ -1,0 +1,11 @@
+.image{display:inline-grid;flex:none;place-items:center;overflow:hidden;border-radius:50%;background:#f3f5f7;color:#526375;vertical-align:middle}
+.image img{display:block;width:100%;height:100%;object-fit:cover}
+.image svg{width:52%;height:52%;stroke-width:1.7}
+.small{width:40px;height:40px}
+.normal{width:64px;height:64px}
+.large{width:112px;height:112px}
+.company{border-radius:12px}
+.person{border-radius:50%}
+.fleetRow.fleetRow{grid-template-columns:40px minmax(0,1fr) auto}
+.mapPerson.mapPerson{grid-template-columns:40px minmax(0,1fr)}
+@media(max-width:760px){.fleetRow.fleetRow{grid-template-columns:40px minmax(0,1fr)}}

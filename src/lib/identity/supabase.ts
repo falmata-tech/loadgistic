@@ -1,4 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {withBusinessContext} from './business-context.js';
+import {supabaseBusinessWorkspacePort} from '../business-workspaces/supabase';
+import {BusinessWorkspaceError} from '../business-workspaces/domain.js';
+import type {BusinessWorkspaceSummary,BusinessInvitation} from '../business-workspaces/contracts';
+import {independentOperatingModel} from '../independent-driver.js';
 
 export type WorkspaceSubscription = {
   id:string;
@@ -19,14 +24,30 @@ export type ManagedCurrentUser = {
   email:string;
   phone:string|null;
   name:string;
+  firstName?:string|null;
+  lastName?:string|null;
+  publicCallbackPhone?:string|null;
   role:string;
+  platform_role?:string;
+  provider_workspace_available?:boolean;
+  business_workspace_eligible?:boolean;
+  business_workspaces?:BusinessWorkspaceSummary[];
+  business_invitations?:BusinessInvitation[];
+  selected_business_workspace?:BusinessWorkspaceSummary|null;
   active:boolean;
   created_at:string;
   organization_id:string|null;
   organization_name:string|null;
+  provider_account_name?:string|null;
   organization_handle:string|null;
   organization_type:string|null;
   provider_profile_id:string|null;
+  employer_provider_profile_id?:string|null;
+  owns_provider_account?:boolean;
+  can_manage_fleet?:boolean;
+  drives_truck?:boolean;
+  current_driver_id?:string|null;
+  current_driven_vehicle_id?:string|null;
   provider_business_name:string|null;
   provider_handle:string|null;
   application_type:string|null;
@@ -42,7 +63,10 @@ export type ManagedCurrentUser = {
   can_manage_trust:boolean;
   can_manage_billing:boolean;
   can_manage_support:boolean;
+  can_manage_brokerage:boolean;
+  can_manage_featured:boolean;
   workspace_subscription:WorkspaceSubscription|null;
+  access_policy?:{mode:'FREE'|'TRIAL_PAYMENT';activated_at:string|null};
 };
 
 function isManagedCurrentUser(value:unknown):value is ManagedCurrentUser{
@@ -59,5 +83,14 @@ export async function getManagedCurrentUser(client:SupabaseClient,authUser:{id:s
   const {data,error}=await client.rpc('current_user_projection');
   if(error)throw new Error('MANAGED_IDENTITY_PROJECTION_FAILED',{cause:error});
   if(!isManagedCurrentUser(data)||data.id!==authUser.id)return null;
-  return data;
+  const base={...data,provider_operating_model:independentOperatingModel(data.provider_operating_model) as ManagedCurrentUser['provider_operating_model']};
+  if(['ADMIN','SUPPORT'].includes(base.role))return withBusinessContext(base,null);
+  try{return withBusinessContext(base,await supabaseBusinessWorkspacePort().context(base.id));}
+  catch(error){
+    // A suspended or otherwise ineligible placeholder retains its denied base
+    // identity. Adapter outages/invalid projections must not masquerade as an
+    // empty business roster or a successful provider-context switch.
+    if(error instanceof BusinessWorkspaceError&&error.code==='BUSINESS_IDENTITY_REQUIRED')return withBusinessContext(base,null);
+    throw error;
+  }
 }

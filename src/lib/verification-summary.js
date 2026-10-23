@@ -4,6 +4,11 @@ function ethiopiaDate(){
   }).format(new Date());
 }
 
+export function documentReviewSummary(badges=[]){
+  const reviewed=badges.filter(badge=>badge.verified&&!badge.expired).length;
+  return {reviewed,total:badges.length,complete:badges.length>0&&reviewed===badges.length};
+}
+
 export function verificationBadgesFromApproved(subjectType,records=[]){
   const latestByType=new Map();
   for(const record of records||[]){
@@ -12,12 +17,12 @@ export function verificationBadgesFromApproved(subjectType,records=[]){
     }
   }
   if(subjectType==='VEHICLE'){
-    const record=latestByType.get('VEHICLE_AUTHORIZATION')||latestByType.get('VEHICLE_OWNERSHIP');
-    const expired=Boolean(record?.expires_on&&record.expires_on<ethiopiaDate());
-    return [{
-      type:record?.verification_type||'VEHICLE_OWNERSHIP',verified:Boolean(record&&!expired),expired,
-      reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null
-    }];
+    const types=['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION','VEHICLE_OPERATING_LICENSE'].filter(type=>latestByType.has(type));
+    return (types.length?types:['VEHICLE_AUTHORITY']).map(type=>{
+      const record=latestByType.get(type),expired=Boolean(record?.expires_on&&record.expires_on<ethiopiaDate());
+      return {type,verified:Boolean(record&&!expired),expired,
+        reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null};
+    });
   }
   const required=subjectType==='ORGANIZATION'
     ?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']
@@ -39,4 +44,48 @@ export function truckAuthorizationBadgeFromApproved(records,vehicleId,vehicleLab
     reviewedAt:record?.reviewed_at||null,expiresOn:record?.expires_on||null,
     vehicleId,vehicleLabel
   };
+}
+
+export function projectVerificationSubject(subject,requests=[],options={}){
+  const verificationTypes=subject.verification_types||[];
+  const pending=requests.filter(request=>request.status==='PENDING'
+    &&(request.subject_type===subject.subject_type&&request.subject_id===subject.subject_id&&verificationTypes.includes(request.verification_type)
+      ||subject.subject_type==='VEHICLE'&&request.verification_type==='VEHICLE_AUTHORIZATION'&&request.related_vehicle_id===subject.subject_id));
+  const documents=subject.approved_documents||[];
+  const badges=verificationBadgesFromApproved(subject.subject_type,documents);
+  const pairingAuthorization=subject.subject_type!=='VEHICLE'&&verificationTypes.includes('VEHICLE_AUTHORIZATION');
+  const pairingBadges=pairingAuthorization
+    ?(subject.vehicles||[]).map(vehicle=>truckAuthorizationBadgeFromApproved(documents,vehicle.id,vehicle.label)):[];
+  // A terminal document review remains history after its exact truck authority
+  // expires, is revoked or no longer matches that truck/provider. Keep the
+  // reviewed badge, but let its owner submit new evidence through normal review.
+  const exactTruckAuthority=subject.subject_type==='VEHICLE'&&subject.authority;
+  const verifiedTypes=exactTruckAuthority
+    ?new Set([
+      ...(subject.authority.ownership?.verified?['VEHICLE_OWNERSHIP']:[]),
+      ...((options.driverPairingAuthorization?badges.some(badge=>badge.type==='VEHICLE_AUTHORIZATION'&&badge.verified)
+        :subject.authority.permission?.verified)?['VEHICLE_AUTHORIZATION']:[]),
+      ...(subject.authority.operatingLicence?.verified?['VEHICLE_OPERATING_LICENSE']:[])
+    ])
+    :new Set(badges.filter(badge=>badge.verified).map(badge=>badge.type));
+  const allowedTypes=verificationTypes.filter(type=>pairingAuthorization&&type==='VEHICLE_AUTHORIZATION'
+    ?pairingBadges.some(badge=>!badge.verified&&!pending.some(request=>request.verification_type===type&&request.related_vehicle_id===badge.vehicleId))
+    :!verifiedTypes.has(type)&&!pending.some(request=>request.verification_type===type));
+  const vehicles=pairingAuthorization
+    ?(subject.vehicles||[]).filter(vehicle=>!pairingBadges.find(badge=>badge.vehicleId===vehicle.id)?.verified
+      &&!pending.some(request=>request.verification_type==='VEHICLE_AUTHORIZATION'&&request.related_vehicle_id===vehicle.id))
+    :subject.vehicles||[];
+  return {...subject,vehicles,verification_types:undefined,approved_documents:undefined,
+    allowed_types:allowedTypes,pending_count:pending.length,badges:[...badges,...pairingBadges]};
+}
+
+/** Inputs have already been restricted to approved records for this authorized projection. */
+export function truckDocumentBadges(vehicleRecords=[],pairingRecords=[],vehicleId,vehicleLabel){
+  const direct=vehicleRecords.filter(record=>['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION','VEHICLE_OPERATING_LICENSE'].includes(record?.verification_type));
+  const pairing=pairingRecords.filter(record=>record?.verification_type==='VEHICLE_AUTHORIZATION'&&record.related_vehicle_id===vehicleId);
+  const records=[...direct,...pairing].sort((a,b)=>{
+    const aCurrent=!a.expires_on||a.expires_on>=ethiopiaDate(),bCurrent=!b.expires_on||b.expires_on>=ethiopiaDate();
+    return Number(bCurrent)-Number(aCurrent)||String(b.reviewed_at||'').localeCompare(String(a.reviewed_at||''));
+  });
+  return verificationBadgesFromApproved('VEHICLE',records).map(badge=>({...badge,vehicleId,vehicleLabel}));
 }

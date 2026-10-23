@@ -8,6 +8,7 @@ test('identity runtime always uses managed Supabase Auth without SQLite or signe
   const auth=read('src/lib/auth.ts');
   const login=read('src/app/api/auth/login/route.ts');
   const logout=read('src/app/api/auth/logout/route.ts');
+  const managedLogout=read('src/lib/supabase/logout.ts');
   const middleware=read('src/middleware.ts');
   const sessionMiddleware=read('src/lib/supabase/session-middleware.ts');
   const config=read('src/lib/supabase/config.ts');
@@ -15,10 +16,11 @@ test('identity runtime always uses managed Supabase Auth without SQLite or signe
   assert.match(auth,/createSupabaseServerClient/);
   assert.match(login,/auth\.signInWithPassword/);
   assert.match(login,/localFixturePasswordLoginEnabled/);
-  assert.match(logout,/auth\.signOut/);
+  assert.match(logout,/signOutSupabaseRoute/);
+  assert.match(managedLogout,/auth\.signOut/);
   assert.match(middleware,/refreshSupabaseSession/);
   assert.match(sessionMiddleware,/auth\.getUser\(\)/);
-  for(const source of [auth,login,logout,middleware,sessionMiddleware,config]){
+  for(const source of [auth,login,logout,managedLogout,middleware,sessionMiddleware,config]){
     assert.doesNotMatch(source,/repository\.js|AUTH_BACKEND|usesSupabaseAuth|lg_session/);
   }
 });

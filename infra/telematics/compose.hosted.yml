@@ -1,0 +1,152 @@
+name: loadgistic-telematics-hosted
+
+# Deployment template only. Real devices use the public GT06 listener. Fictional
+# devices have a distinct database, gateway and bridge on an internal network.
+# No listener is published until an approved bind address and firewall exist.
+services:
+  database:
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_DB: traccar
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: ${GATEWAY_DATABASE_PASSWORD:?Set a unique protected database password}
+    volumes:
+      - gateway-database:/var/lib/postgresql/data
+    networks: [gateway-backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U traccar -d traccar']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 512m
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+  traccar:
+    image: traccar/traccar:6.16.0-alpine
+    depends_on:
+      database: {condition: service_healthy}
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: 'true'
+      DATABASE_PASSWORD: ${GATEWAY_DATABASE_PASSWORD:?Set a unique protected database password}
+    volumes:
+      - ./traccar.xml:/opt/traccar/conf/traccar.xml:ro
+    ports:
+      # Qualify GT06 and the physical model before adding another protocol.
+      - '${GPS_INGRESS_BIND_ADDRESS:?Set the approved device-facing interface}:15023:5023/tcp'
+      # Operator access stays on host loopback; administer remotely over SSH/VPN.
+      - '127.0.0.1:18082:8082/tcp'
+    networks: [gateway-backend]
+    restart: unless-stopped
+    mem_limit: 1g
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+  bridge:
+    build: .
+    depends_on:
+      database: {condition: service_healthy}
+      traccar: {condition: service_started}
+    environment:
+      GATEWAY_DATABASE_URL: postgres://loadgistic_bridge:${GATEWAY_BRIDGE_PASSWORD:?Set a unique bridge database password}@database:5432/traccar
+      GATEWAY_ID: ${GATEWAY_ID:?Set the reviewed gateway ID}
+      GATEWAY_SECRET: ${GATEWAY_SECRET:?Set the separate protected gateway HMAC secret}
+      # Commands remain disabled on real hardware until a separate safety release.
+      GATEWAY_COMMANDS_ENABLED: 'false'
+      LOADGISTIC_GATEWAY_URL: ${LOADGISTIC_GATEWAY_URL:?Set the exact HTTPS Loadgistic gateway URL}
+    networks: [gateway-backend, gateway-egress]
+    restart: unless-stopped
+    mem_limit: 256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+  synthetic-database:
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_DB: traccar
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: ${SYNTHETIC_DATABASE_PASSWORD:?Set a distinct protected synthetic database password}
+    volumes:
+      - synthetic-database:/var/lib/postgresql/data
+    networks: [synthetic-backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U traccar -d traccar']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 512m
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+  synthetic-traccar:
+    image: traccar/traccar:6.16.0-alpine
+    depends_on:
+      synthetic-database: {condition: service_healthy}
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: 'true'
+      DATABASE_PASSWORD: ${SYNTHETIC_DATABASE_PASSWORD:?Set a distinct protected synthetic database password}
+    volumes:
+      - ./traccar-synthetic.xml:/opt/traccar/conf/traccar.xml:ro
+    # Deliberately no host ports: neither GT06 nor admin/API is Internet-facing.
+    networks: [synthetic-backend]
+    restart: unless-stopped
+    mem_limit: 1g
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+  synthetic-bridge:
+    build: .
+    depends_on:
+      synthetic-database: {condition: service_healthy}
+      synthetic-traccar: {condition: service_started}
+    environment:
+      GATEWAY_DATABASE_URL: postgres://loadgistic_bridge:${SYNTHETIC_BRIDGE_PASSWORD:?Set a distinct synthetic bridge database password}@synthetic-database:5432/traccar
+      GATEWAY_ID: ${SYNTHETIC_GATEWAY_ID:?Set the reviewed synthetic-only gateway ID}
+      GATEWAY_SECRET: ${SYNTHETIC_GATEWAY_SECRET:?Set a distinct protected synthetic gateway HMAC secret}
+      GATEWAY_COMMANDS_ENABLED: 'false'
+      LOADGISTIC_GATEWAY_URL: ${LOADGISTIC_GATEWAY_URL:?Set the exact HTTPS Loadgistic gateway URL}
+    networks: [synthetic-backend, synthetic-egress]
+    restart: unless-stopped
+    mem_limit: 256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+  synthetic-motion-worker:
+    # The profile and two independent flags keep motion inert by default.
+    profiles: [hosted-demo-motion]
+    build:
+      context: ../..
+      dockerfile: infra/telematics/Dockerfile.motion
+    depends_on:
+      synthetic-traccar: {condition: service_started}
+    environment:
+      NODE_ENV: production
+      LOADGISTIC_HOSTED_MOTION_WORKER_ENABLED: ${LOADGISTIC_HOSTED_MOTION_WORKER_ENABLED:-false}
+      LOADGISTIC_HOSTED_MOTION_WORKER_KILL_SWITCH: ${LOADGISTIC_HOSTED_MOTION_WORKER_KILL_SWITCH:-true}
+      LOADGISTIC_HOSTED_MOTION_SITE_ORIGIN: ${LOADGISTIC_HOSTED_MOTION_SITE_ORIGIN:-}
+      LOADGISTIC_HOSTED_MOTION_SITE_ID: ${LOADGISTIC_HOSTED_MOTION_SITE_ID:-}
+      LOADGISTIC_HOSTED_MOTION_SUPABASE_URL: ${LOADGISTIC_HOSTED_MOTION_SUPABASE_URL:-}
+      HOSTED_DEMO_MOTION_SECRET: ${HOSTED_DEMO_MOTION_SECRET:-}
+      SYNTHETIC_GT06_HOST: synthetic-traccar
+      SYNTHETIC_GT06_PORT: '5023'
+    networks: [synthetic-backend, synthetic-egress]
+    restart: unless-stopped
+    mem_limit: 128m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+networks:
+  gateway-backend:
+    internal: true
+  gateway-egress: {}
+  synthetic-backend:
+    internal: true
+  synthetic-egress: {}
+
+volumes:
+  gateway-database:
+  synthetic-database:

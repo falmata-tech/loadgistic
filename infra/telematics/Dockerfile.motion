@@ -1,0 +1,8 @@
+FROM node:22.22.0-alpine
+WORKDIR /app
+COPY package.json /app/package.json
+COPY src/lib/demo-motion-cohort.js src/lib/demo-motion-hosted-signature.mjs src/lib/demo-admin-spare.js /app/src/lib/
+COPY scripts/telematics/demo-manifest.mjs scripts/telematics/simulator.mjs /app/scripts/telematics/
+COPY infra/telematics/hosted-motion-route.mjs infra/telematics/hosted-motion-worker.mjs /app/infra/telematics/
+USER node
+CMD ["node", "/app/infra/telematics/hosted-motion-worker.mjs", "--run"]

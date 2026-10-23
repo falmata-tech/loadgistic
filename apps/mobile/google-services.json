@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "59430603227",
+    "project_id": "loadgistic-f082a",
+    "storage_bucket": "loadgistic-f082a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:59430603227:android:16eda384462f593ef33ffe",
+        "android_client_info": {
+          "package_name": "com.loadgistic.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA1TYRDZGV3sgnOYqt-ySPfLvmGhOrALs0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+  <entry key="database.driver">org.postgresql.Driver</entry>
+  <entry key="database.url">jdbc:postgresql://synthetic-database:5432/traccar</entry>
+  <entry key="database.user">traccar</entry>
+  <!-- DATABASE_PASSWORD is supplied by Compose; never store it here. -->
+  <entry key="web.port">8082</entry>
+  <entry key="web.enable">true</entry>
+  <entry key="database.registerUnknown">false</entry>
+  <entry key="database.saveOriginal">false</entry>
+  <entry key="protocols.enable">gt06</entry>
+  <entry key="gt06.port">5023</entry>
+  <entry key="geocoder.enable">false</entry>
+  <entry key="geolocation.enable">false</entry>
+  <entry key="logger.level">off</entry>
+  <entry key="logger.console">false</entry>
+  <entry key="logger.file">/dev/null</entry>
+  <entry key="logger.attributes"></entry>
+  <entry key="web.serviceAccountToken"></entry>
+</properties>

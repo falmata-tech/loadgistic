@@ -1,0 +1,6 @@
+interface:
+  display_name: "Loadgistic Engineering"
+  short_description: "Build and improve the web and mobile workflow"
+  default_prompt: "Use $loadgistic-engineering to make this change with focused verification and efficient tooling."
+policy:
+  allow_implicit_invocation: true

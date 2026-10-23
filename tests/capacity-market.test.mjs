@@ -22,7 +22,6 @@ const projectedVehicles=applyManagedFixtureVehicleCatalog(
 );
 const tables={...rawTables,users:projectedUsers,vehicles:projectedVehicles,
   driver_vehicle_assignments:projectedAssignments};
-const originalVehiclesById=new Map(rawTables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
 const vehiclesById=new Map(tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
 const smallVehicleTypes=new Set([
   'Cargo van','Pickup truck','Pickup stake body',
@@ -46,32 +45,33 @@ test('managed fixture presents a busy, supply-only Ethiopian freight market',()=
   for(const retired of ['shipments','partner_relationships','shipment_interests','business_reviews']){
     assert.equal(Object.hasOwn(tables,retired),false);
   }
-  assert.equal(tables.company_pages.every(page=>page.published===1&&page.profile_image_preset),true);
+  assert.equal(tables.company_pages.every(page=>page.published===1),true);
+  assert.ok(tables.company_pages.some(page=>page.profile_image_preset));
+  assert.ok(tables.company_pages.some(page=>!page.profile_image_preset),'blank demo portraits exercise the intended placeholder');
   assert.deepEqual(new Set(tables.capacities.map(capacity=>capacity.market_status)),new Set(['EMPTY','PARTIAL']));
   assert.equal(tables.capacities.every(capacity=>['OPEN','SAVED_PARTNERS'].includes(capacity.visibility)),true);
 });
 
-test('mini trucks lead a compact-delivery mix that includes courier cars but no motorcycles',()=>{
+test('compact freight leads a mixed market with restored couriers and ten heavy pairs',()=>{
   const small=tables.vehicles.filter(vehicle=>smallVehicleTypes.has(vehicle.cargo_configuration));
-  const courier=tables.vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
-  assert.equal(small.length,91);
+  const courier=tables.vehicles.filter(vehicle=>['Courier car','Courier motorcycle'].includes(vehicle.cargo_configuration));
+  assert.equal(small.length,94);
   assert.equal(courier.length,12);
-  assert.ok((small.length+courier.length)/tables.vehicles.length>=0.7);
+  assert.ok((small.length+courier.length)/tables.vehicles.length>=2/3);
   for(const type of smallVehicleTypes){
     assert.ok(small.some(vehicle=>vehicle.cargo_configuration===type),type);
   }
   const counts=Object.fromEntries([...new Set(tables.vehicles.map(vehicle=>vehicle.cargo_configuration))]
     .map(configuration=>[configuration,tables.vehicles.filter(vehicle=>vehicle.cargo_configuration===configuration).length]));
-  assert.equal((counts['Light Stake Body Truck']||0)+(counts['Light Box Truck']||0),15);
+  assert.equal((counts['Light Stake Body Truck']||0)+(counts['Light Box Truck']||0),18);
   assert.equal((counts['Medium Stake Body Truck']||0)+(counts['Medium Box Truck']||0),9);
-  assert.equal(counts['Heavy Rigid Stake Body Truck'],5);
-  assert.equal(counts['Heavy Rigid Stake Body Truck + Trailer'],5);
+  assert.equal(counts['Heavy Rigid Stake Body Truck'],2);
+  assert.equal(counts['Heavy Rigid Stake Body Truck + Trailer'],2);
   assert.equal(counts['Tractor + Container Trailer'],2);
   assert.equal(counts['Tractor + Dry Van Trailer'],2);
   assert.equal(counts['Tractor + Heavy Equipment Trailer'],2);
-  assert.equal(counts['Courier motorcycle'],undefined);
-  assert.equal(counts['Courier car'],12);
-  assert.equal(JSON.stringify(tables).includes('Courier motorcycle'),false);
+  assert.equal(counts['Courier motorcycle'],6);
+  assert.equal(counts['Courier car'],6);
   assert.equal(tables.vehicles.filter(vehicle=>vehicle.trailer_interchangeable).every(vehicle=>
     /^(FAW J6P|Shacman X3000|Sinotruk HOWO)$/.test(`${vehicle.make} ${vehicle.model}`)
   ),true);
@@ -107,9 +107,8 @@ test('local-vehicle signals remain local to their truck and connected market',()
   const managedCapacities=applyManagedFixtureMarketPolicy(tables.capacities,tables.vehicles);
   for(const capacity of managedCapacities){
     const vehicle=vehiclesById.get(capacity.vehicle_id);
-    const originalConfiguration=originalVehiclesById.get(vehicle?.id)?.cargo_configuration;
     if(!smallVehicleTypes.has(vehicle?.cargo_configuration)
-      &&!(vehicle?.cargo_configuration==='Courier car'&&smallVehicleTypes.has(originalConfiguration)))continue;
+      &&!['Courier car','Courier motorcycle'].includes(vehicle?.cargo_configuration))continue;
     assert.ok(capacity.location_precision_km<=5,`${capacity.id} has an oversized local privacy area`);
     const points=capacity.availability_geometry==='ROUTE'
       ?json(capacity.current_route_points_json)
@@ -165,12 +164,13 @@ test('demo truck locations are distributed across real markets without diagonal 
   assert.ok(Math.max(...publicByPlace.values())<=6);
 });
 
-test('every truck location and current signal stays on or beside its regular service',()=>{
+test('retained unbound legacy provider routes remain geographically coherent with the demonstration data',()=>{
   const regularByOwner=new Map(tables.profile_routes
     .map(route=>[route.organization_id||route.provider_profile_id,route]));
   for(const capacity of tables.capacities){
     const regular=regularByOwner.get(capacity.provider_organization_id||capacity.provider_profile_id);
     assert.ok(regular,capacity.id);
+    assert.equal(regular.assigned_vehicle_id,null);assert.equal(regular.assigned_driver_user_id,null);
     const distanceToRegular=point=>{
       if(regular.geometry==='ROUTE')return capacityRoutePointMatch(point,json(regular.route_points_json),{radiusKm:10}).distance_km;
       const match=serviceAreaGeometryMatch(point,json(regular.area_boundary_json),{searchRadiusKm:10});
@@ -188,10 +188,11 @@ test('every truck location and current signal stays on or beside its regular ser
   }
 });
 
-test('primary Driver demo keeps location, current capacity, and regular work in one local market',()=>{
+test('primary Driver demo retains its coherent unbound legacy route without assigning it to the current truck',()=>{
   const capacity=tables.capacities.find(item=>item.vehicle_id==='veh-driver-1');
   const regular=tables.profile_routes.find(item=>item.provider_profile_id==='provider-driver');
   assert.ok(capacity&&regular);
+  assert.equal(regular.assigned_vehicle_id,null);assert.equal(regular.assigned_driver_user_id,null);
   const location={lat:capacity.location_lat,lng:capacity.location_lng};
   const currentPoints=json(capacity.current_route_points_json);
   assert.equal(capacity.location_place_ref,'builtin:sebeta');
@@ -206,11 +207,12 @@ test('primary Driver demo keeps location, current capacity, and regular work in 
   assert.equal(serviceAreaGeometryMatch(location,json(regular.area_boundary_json),{searchRadiusKm:0}).inside,true);
 });
 
-test('each transporter fixture has one regular route or Service area record',()=>{
+test('legacy provider route and Service area records are retained unbound rather than guessed onto trucks',()=>{
   assert.equal(tables.profile_routes.length,30);
   const ownerKeys=tables.profile_routes.map(route=>route.organization_id||route.provider_profile_id);
   assert.equal(new Set(ownerKeys).size,ownerKeys.length);
   for(const route of tables.profile_routes){
+    assert.equal(route.assigned_vehicle_id,null);assert.equal(route.assigned_driver_user_id,null);
     assert.ok(['ROUTE','RADIUS'].includes(route.geometry));
     if(route.geometry==='ROUTE'){
       const points=json(route.route_points_json);

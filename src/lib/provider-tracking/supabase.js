@@ -1,6 +1,9 @@
+import {readWindowedPage} from '../pagination.js';
+import {phoneLocationCommand} from '../phone-location-command.js';
 import {randomUUID} from 'node:crypto';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {normalizePrivateContactEmail} from '../domain.js';
+import {readPrivateUpload} from '../private-storage.js';
 import {
   hashProviderTrackingCode,
   hashTrackingAccessCode,
@@ -12,6 +15,9 @@ import {
 } from '../security.js';
 
 const TRACKING_ERRORS=[
+  'PHONE_LOCATION_UNAVAILABLE','INVALID_PHONE_LOCATION','TRACKING_OWNER_SHARES_ACCESS',
+  'TRACKING_MODE_LOCKED','TRACKING_OWNER_APPROVAL_REQUIRED','TRACKING_HANDOVER_PROOF_REQUIRED','TRACKING_LOADING_PROOF_REQUIRED','TRACKING_SESSION_EXPIRED','TRACKING_APPROVAL_FORBIDDEN','TRACKING_NOT_READY_FOR_APPROVAL','TRACKING_APPEAL_NOT_READY','TRACKING_APPEAL_REASON_REQUIRED','TRACKING_INVESTIGATION_REQUIRED','TRACKING_APPEAL_CLOSED','TRACKING_STAFF_RELEASE_REQUIRED','TRACKING_DELIVERY_DATE_REQUIRED','TRACKING_DELIVERY_DATE_LOCKED',
+
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','NOT_FOUND','INVALID_TRACKING_INPUT',
   'INVALID_EMAIL','INVALID_CARGO_SUMMARY','INVALID_TRACKING_MODE','LOCALITY_REQUIRED',
   'ROUTE_LOCATIONS_MUST_DIFFER','INVALID_DELIVERY_DATE','INVALID_VEHICLE',
@@ -53,20 +59,18 @@ export async function createSupabaseProviderShipment(user,input){
   const ownerEmail=normalizePrivateContactEmail(input.customerEmail);
   const additionalEmails=[...new Set((Array.isArray(input.additionalRecipientEmails)?input.additionalRecipientEmails:[])
     .map(normalizePrivateContactEmail))].filter(email=>email!==ownerEmail);
-  if(additionalEmails.length>20)throw new Error('INVALID_TRACKING_RECIPIENTS');
+  if(additionalEmails.length)throw new Error('TRACKING_OWNER_SHARES_ACCESS');
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('create_provider_tracking_with_recipients',{
     actor_user_id:user.id,
     command:{
       id,code,vehicle_id:String(input.vehicleId||''),
       origin_place_ref:String(input.originPlaceRef||''),
+      passing_place_ref:String(input.passingPlaceRef||''),
       destination_place_ref:String(input.destinationPlaceRef||''),
       cargo_summary:String(input.cargoSummary||''),
       customer_email:ownerEmail,
       customer_email_digest:providerTrackingRecipientDigest(ownerEmail),
-      additional_recipients:additionalEmails.map(email=>({
-        email,digest:providerTrackingRecipientDigest(email)
-      })),
       expected_pickup_date:String(input.expectedPickupDate||''),
       expected_delivery_date:String(input.expectedDeliveryDate||''),
       tracking_mode:String(input.trackingMode||'STATUS_ONLY'),
@@ -112,9 +116,9 @@ export async function updateSupabaseProviderShipmentStatus(user,id,nextStatus,no
       next_status:String(nextStatus||''),note:String(note||''),
       proof:proof?{path:proof.path,original_name:proof.originalName,mime_type:proof.mimeType}:null,
       location:locationInput?{
-        area:String(locationInput.locationArea||''),lat:String(locationInput.approximateLat||''),
-        lng:String(locationInput.approximateLng||''),precision_km:String(locationInput.locationPrecisionKm||''),
-        source:String(locationInput.locationSource||'')
+        area:String(locationInput.locationArea||''),lat:String(locationInput.approximateLat??''),
+        lng:String(locationInput.approximateLng??''),precision_km:String(locationInput.locationPrecisionKm||''),
+        source:String(locationInput.locationSource||''),...(locationInput.phoneInstallation?{phone_installation:phoneLocationCommand(locationInput.phoneInstallation)}:{})
       }:null
     }
   });
@@ -127,9 +131,9 @@ export async function updateSupabaseProviderShipmentLocation(user,id,input){
   const {data,error}=await client.rpc('update_provider_tracking_location',{
     actor_user_id:user.id,target_shipment_id:String(id||''),
     command:{
-      area:String(input.locationArea||''),lat:String(input.approximateLat||''),
-      lng:String(input.approximateLng||''),precision_km:String(input.locationPrecisionKm||''),
-      source:String(input.locationSource||'')
+      area:String(input.locationArea||''),lat:String(input.approximateLat??''),
+      lng:String(input.approximateLng??''),precision_km:String(input.locationPrecisionKm||''),
+      source:String(input.locationSource||''),...(input.phoneInstallation?{phone_installation:phoneLocationCommand(input.phoneInstallation)}:{})
     }
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_LOCATION_FAILED',error);
@@ -184,6 +188,18 @@ export async function getSupabaseProviderGuestTracking(id,recipientDigest){
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_GUEST_TRACKING_FAILED',error);
   return data?payload(data):null;
+}
+
+export async function readSupabaseProviderTrackingProof(user,shipmentId,eventId,recipientDigest=/** @type {string|null} */(null)){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('provider_tracking_proof_file',{
+    actor_user_id:user?.id||null,target_shipment_id:shipmentId,target_event_id:eventId,
+    requested_recipient_digest:recipientDigest
+  });
+  if(error)throw trackingError('SUPABASE_TRACKING_PROOF_READ_FAILED',error);
+  if(!data)return null;
+  const bytes=await readPrivateUpload(data.storage_path);
+  return bytes?{bytes,mimeType:data.mime_type,originalName:data.original_name}:null;
 }
 
 export async function addSupabaseProviderTrackingRecipient(user,shipmentId,emailValue){
@@ -261,18 +277,15 @@ export async function disputeSupabaseProviderReview(user,reviewId,reason){
 }
 
 export async function listSupabaseProviderReviewModeration(user,status='PENDING',options={}){
-  const pageSize=Math.max(1,Math.min(100,Number(options.pageSize)||12));
-  const page=Math.max(1,Number(options.page)||1);
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('provider_review_moderation_queue',{
-    actor_user_id:user.id,requested_status:String(status||'PENDING').toUpperCase(),
-    requested_offset:(page-1)*pageSize,requested_limit:pageSize
-  });
-  if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_QUEUE_FAILED',error);
-  const rows=data||[];
-  const items=rows.map(row=>payload(row));
-  const total=Number(rows[0]?.total_count||0);
-  return {items,total,page,pageSize,pageCount:Math.max(1,Math.ceil(total/pageSize))};
+  return readWindowedPage(async(offset,limit)=>{
+    const {data,error}=await client.rpc('provider_review_moderation_queue',{
+      actor_user_id:user.id,requested_status:String(status||'PENDING').toUpperCase(),
+      requested_offset:offset,requested_limit:limit
+    });
+    if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_QUEUE_FAILED',error);
+    return data||[];
+  },options,100);
 }
 
 export async function resolveSupabaseProviderReview(user,reviewId,status,note=''){
@@ -282,4 +295,68 @@ export async function resolveSupabaseProviderReview(user,reviewId,status,note=''
     requested_resolution:String(status||'').toUpperCase(),requested_note:String(note||'')
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_RESOLUTION_FAILED',error);
+}
+
+
+export async function requestTrackingEmailSession(emailValue){
+ const email=normalizePrivateContactEmail(emailValue),challengeId=randomUUID();
+ const accessCode=providerTrackingOtpCode(challengeId);
+ const {data,error}=await createSupabaseAdminClient().rpc('request_tracking_email_session',{
+  challenge_id:challengeId,normalized_recipient_email:email,recipient_digest:providerTrackingRecipientDigest(email),
+  challenge_code_digest:hashTrackingAccessCode(accessCode),challenge_expires_at:new Date(Date.now()+10*60*1000).toISOString()
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_OTP_REQUEST_FAILED',error);
+ return data?{deliveryQueued:true,challengeId,accessCode}:{deliveryQueued:false,challengeId};
+}
+
+export async function verifyTrackingEmailSession(emailValue,challengeId,otp){
+ const {data,error}=await createSupabaseAdminClient().rpc('consume_tracking_email_session',{
+  challenge_id:String(challengeId||''),recipient_digest:providerTrackingRecipientDigest(normalizePrivateContactEmail(emailValue)),
+  submitted_code_digest:hashTrackingAccessCode(String(otp||'').trim())
+ });
+ if(error||!data)throw trackingError('TRACKING_ACCESS_DENIED',error);
+ return data;
+}
+
+/** @returns {Promise<{total:number,items:Array<{id:string,code:string,origin:string,destination:string,operational_status:string,created_at:string}>}>} */
+export async function listTrackingEmailShipments(recipientDigest,offset=0){
+ const {data,error}=await createSupabaseAdminClient().rpc('list_tracking_email_shipments',{
+  requested_recipient_digest:recipientDigest,requested_offset:offset
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_GUEST_TRACKING_FAILED',error);
+ return data;
+}
+
+export async function submitTrackingEmailReview(shipmentId,recipientDigest,rating,note){
+ const {data,error}=await createSupabaseAdminClient().rpc('submit_tracking_email_review',{
+  target_shipment_id:shipmentId,requested_recipient_digest:recipientDigest,requested_rating:rating,requested_note:note
+ });
+ if(error)throw trackingError('SUPABASE_PROVIDER_REVIEW_SUBMIT_FAILED',error);
+ return data;
+}
+
+export async function approveSupabaseProviderHandover(id,recipientDigest,verifiedAt){
+  if(!Number.isSafeInteger(verifiedAt))throw new Error('TRACKING_SESSION_EXPIRED');
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('approve_provider_handover',{target_shipment_id:id,requested_recipient_digest:recipientDigest,verified_at:new Date(verifiedAt).toISOString()});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPROVAL_FAILED',error);
+  return data;
+}
+export async function submitSupabaseProviderTrackingAppeal(user,id,reason){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('submit_provider_tracking_appeal',{actor_user_id:user.id,target_shipment_id:id,explanation:reason});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPEAL_FAILED',error);
+  return data;
+}
+export async function listSupabaseProviderTrackingAppeals(user,id=/** @type {string|null} */(null)){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('provider_tracking_appeals',{actor_user_id:user.id,target_shipment_id:id});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPEAL_FAILED',error);
+  return (data||[]).map(payload);
+}
+export async function resolveSupabaseProviderTrackingAppeal(user,id,decision,note){
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('resolve_provider_tracking_appeal',{actor_user_id:user.id,target_appeal_id:id,decision,investigation_note:note});
+  if(error)throw trackingError('SUPABASE_TRACKING_APPEAL_FAILED',error);
+  return data;
 }

@@ -7,12 +7,10 @@ const root=process.cwd();
 const activeFiles=[
   'src/app/api/capacity-network/route.ts',
   'src/app/app/network/page.tsx',
-  'src/app/shared-capacity/page.tsx',
-  'src/app/admin/capacity-network/page.tsx',
+  'src/app/page.tsx',
   'src/app/api/shared-capacity/route.ts',
   'src/app/api/shared-capacity/otp/route.ts',
-  'src/app/api/shared-capacity/access/route.ts',
-  'src/app/api/admin/capacity-network/route.ts'
+  'src/app/api/shared-capacity/access/route.ts'
 ];
 
 test('active private-capacity routes use the dedicated managed port',()=>{

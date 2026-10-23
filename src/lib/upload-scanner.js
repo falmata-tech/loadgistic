@@ -1,6 +1,6 @@
 const CLOUDMERSIVE_ENDPOINT='https://api.cloudmersive.com/virus/scan/file/advanced';
 const EICAR_MARKER='EICAR-STANDARD-ANTIVIRUS-TEST-FILE';
-const SCANNER_BACKENDS=new Set(['local','cloudmersive']);
+const SCANNER_BACKENDS=new Set(['local','cloudmersive','validation-only']);
 
 function scannerBackend(environment=process.env){
   const backend=String(environment.UPLOAD_SCANNER_BACKEND||'local').trim().toLowerCase();
@@ -11,7 +11,7 @@ function scannerBackend(environment=process.env){
 export function uploadScannerStatus(environment=process.env){
   const backend=scannerBackend(environment);
   const production=environment.NODE_ENV==='production';
-  const configured=backend==='local'
+  const configured=backend==='validation-only'?true:backend==='local'
     ?!production
     :Boolean(String(environment.CLOUDMERSIVE_API_KEY||'').trim());
   return {backend,configured,productionSafe:backend==='cloudmersive'&&configured};
@@ -55,6 +55,9 @@ async function scanWithCloudmersive(bytes,mimeType,{environment,fetchImpl}){
 export async function scanPrivateUpload(bytes,mimeType,{environment=process.env,fetchImpl=fetch}={}){
   if(!Buffer.isBuffer(bytes)||!bytes.length)throw new Error('UPLOAD_SCANNER_INVALID_INPUT');
   const backend=scannerBackend(environment);
+  // Deliberate operator policy, never a fallback from an unavailable scanner.
+  // MIME, signature, size and authorization checks remain in the storage port.
+  if(backend==='validation-only')return {clean:null,provider:'validation-only'};
   if(backend==='local'){
     if(environment.NODE_ENV==='production')throw new Error('UPLOAD_SCANNER_NOT_CONFIGURED');
     if(bytes.includes(Buffer.from(EICAR_MARKER,'ascii')))throw new Error('UPLOAD_REJECTED');

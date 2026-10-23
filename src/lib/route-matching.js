@@ -1,4 +1,5 @@
 import { distanceBetweenKm } from './domain.js';
+import {isValidCoordinate} from './location-privacy.js';
 
 export function normalizePlace(value) {
   return String(value || '')
@@ -12,7 +13,7 @@ function coordinate(record, endpoint) {
   if(record?.[`${endpoint}_lat`]===null||record?.[`${endpoint}_lat`]===undefined||record?.[`${endpoint}_lat`]===''||record?.[`${endpoint}_lng`]===null||record?.[`${endpoint}_lng`]===undefined||record?.[`${endpoint}_lng`]==='')return null;
   const lat = Number(record?.[`${endpoint}_lat`]);
   const lng = Number(record?.[`${endpoint}_lng`]);
-  return Number.isFinite(lat) && Number.isFinite(lng) ? {lat,lng} : null;
+  return isValidCoordinate(lat,lng) ? {lat,lng} : null;
 }
 
 function boundedRadius(value, fallback = 50) {
@@ -49,15 +50,16 @@ function validGeometryPoints(value){
   if(typeof source==='string'){
     try{source=JSON.parse(source);}catch{return [];}
   }
-  return Array.isArray(source)?source
-    .map(point=>({lat:Number(point?.lat),lng:Number(point?.lng),label:String(point?.label||''),place_ref:String(point?.place_ref||'')}))
-    .filter(point=>Number.isFinite(point.lat)&&Number.isFinite(point.lng)):[];
+  if(!Array.isArray(source)||source.length>1000)return [];
+  // A missing vertex must never invent a connecting leg or a point at (0,0).
+  if(source.some(point=>!point||typeof point.lat!=='number'||typeof point.lng!=='number'||!isValidCoordinate(point.lat,point.lng)))return [];
+  return source.map(point=>({lat:point.lat,lng:point.lng,label:String(point.label||''),place_ref:String(point.place_ref||'')}));
 }
 
-function pointToPolyline(point,routePoints){
+function pointToPolylineCandidates(point,routePoints,reference){
   const points=validGeometryPoints(routePoints);
-  if(points.length<2)return null;
-  const referenceLatitude=(Number(point?.lat)+points.reduce((sum,item)=>sum+item.lat,0)/points.length)/2;
+  if(points.length<2)return [];
+  const referenceLatitude=reference??(Number(point?.lat)+points.reduce((sum,item)=>sum+item.lat,0)/points.length)/2;
   const lengths=[];
   let totalLength=0;
   for(let index=0;index<points.length-1;index+=1){
@@ -66,32 +68,39 @@ function pointToPolyline(point,routePoints){
     const length=start&&end?Math.hypot(end.x-start.x,end.y-start.y):0;
     lengths.push(length);totalLength+=length;
   }
-  let traversed=0,best=null;
+  if(totalLength<=1e-9)return [];
+  let traversed=0;const candidates=[];
   for(let index=0;index<points.length-1;index+=1){
     const evidence=pointToSegment(point,points[index],points[index+1],referenceLatitude);
     const length=lengths[index];
     if(evidence){
       const progress=totalLength>0?(traversed+evidence.progress*length)/totalLength:0;
-      if(!best||evidence.distance_km<best.distance_km)best={...evidence,progress,segment_index:index};
+      if(length>0)candidates.push({...evidence,progress,segment_index:index});
     }
     traversed+=length;
   }
-  return best;
+  return candidates;
 }
+
+function pointToPolyline(point,points){return pointToPolylineCandidates(point,points).sort((a,b)=>a.distance_km-b.distance_km||a.progress-b.progress)[0]||null;}
 
 export function capacityRouteAlignmentMatch(query,routePoints,options={}){
   const queryOrigin=coordinate(query,'origin');
   const queryDestination=coordinate(query,'destination');
   const points=validGeometryPoints(routePoints);
   if(!queryOrigin||!queryDestination||points.length<2)return {matched:false,label:'Location needs confirmation',direction:null,origin_distance_km:null,destination_distance_km:null};
-  const originEvidence=pointToPolyline(queryOrigin,points);
-  const destinationEvidence=pointToPolyline(queryDestination,points);
-  if(!originEvidence||!destinationEvidence)return {matched:false,label:'Location needs confirmation',direction:null,origin_distance_km:null,destination_distance_km:null};
-  const originRadiusKm=boundedRadius(options.originRadiusKm);
-  const destinationRadiusKm=boundedRadius(options.destinationRadiusKm);
+  const originRadiusKm=boundedRadius(options.originRadiusKm),destinationRadiusKm=boundedRadius(options.destinationRadiusKm);
+  const reference=(queryOrigin.lat+queryDestination.lat+points.reduce((sum,p)=>sum+p.lat,0))/(points.length+2);
+  const origins=pointToPolylineCandidates(queryOrigin,points,reference),destinations=pointToPolylineCandidates(queryDestination,points,reference);
+  if(!origins.length||!destinations.length)return {matched:false,label:'Location needs confirmation',direction:null,origin_distance_km:null,destination_distance_km:null};
   const eitherDirection=options.directionMode==='EITHER';
-  const direct=originEvidence.progress<=destinationEvidence.progress+.000001;
-  const withinTolerance=originEvidence.distance_km<=originRadiusKm&&destinationEvidence.distance_km<=destinationRadiusKm;
+  const pairs=origins.flatMap(origin=>destinations.map(destination=>({origin,destination,
+    within:origin.distance_km<=originRadiusKm&&destination.distance_km<=destinationRadiusKm,
+    direct:origin.progress<=destination.progress+.000001})));
+  pairs.sort((a,b)=>Number(b.within&&(eitherDirection||b.direct))-Number(a.within&&(eitherDirection||a.direct))
+    ||Number(b.within)-Number(a.within)||a.origin.distance_km+a.destination.distance_km-b.origin.distance_km-b.destination.distance_km
+    ||a.origin.progress-b.origin.progress||a.destination.progress-b.destination.progress);
+  const {origin:originEvidence,destination:destinationEvidence,within:withinTolerance,direct}=pairs[0];
   const matched=withinTolerance&&(eitherDirection||direct);
   return {
     matched,
@@ -110,9 +119,10 @@ export function capacityRouteAlignmentMatch(query,routePoints,options={}){
 }
 
 export function capacityRoutePointMatch(point,routePoints,options={}){
+  const valid=point?.lat!==null&&point?.lat!==undefined&&point?.lat!==''&&point?.lng!==null&&point?.lng!==undefined&&point?.lng!=='';
   const query={lat:Number(point?.lat),lng:Number(point?.lng)};
   const points=validGeometryPoints(routePoints);
-  if(!Number.isFinite(query.lat)||!Number.isFinite(query.lng)||points.length<2)return {matched:false,label:'Capacity route needs confirmation',distance_km:null,segment_index:null};
+  if(!valid||!isValidCoordinate(query.lat,query.lng)||points.length<2)return {matched:false,label:'Capacity route needs confirmation',distance_km:null,segment_index:null};
   const evidence=pointToPolyline(query,points);
   if(!evidence)return {matched:false,label:'Capacity route needs confirmation',distance_km:null,segment_index:null};
   const radiusKm=boundedRadius(options.radiusKm);
@@ -126,6 +136,24 @@ export function capacityRoutePointMatch(point,routePoints,options={}){
     segment_index:evidence.segment_index,
     radius_km:radiusKm
   };
+}
+
+function validAreaBoundary(input){
+  const points=input.length>1&&input[0].lat===input.at(-1).lat&&input[0].lng===input.at(-1).lng?input.slice(0,-1):input;
+  if(points.length<3)return false;
+  const signedArea=points.reduce((sum,p,index)=>{const q=points[(index+1)%points.length];return sum+p.lng*q.lat-q.lng*p.lat;},0);
+  if(Math.abs(signedArea)<1e-12)return false;
+  const turn=(a,b,c)=>(b.lng-a.lng)*(c.lat-a.lat)-(b.lat-a.lat)*(c.lng-a.lng);
+  const on=(a,b,c)=>Math.abs(turn(a,b,c))<1e-12&&c.lng>=Math.min(a.lng,b.lng)&&c.lng<=Math.max(a.lng,b.lng)&&c.lat>=Math.min(a.lat,b.lat)&&c.lat<=Math.max(a.lat,b.lat);
+  for(let i=0;i<points.length;i++){
+    const a=points[i],b=points[(i+1)%points.length];if(a.lat===b.lat&&a.lng===b.lng)return false;
+    for(let j=i+1;j<points.length;j++){
+      if(j===i+1||i===0&&j===points.length-1)continue;
+      const c=points[j],d=points[(j+1)%points.length];
+      if(turn(a,b,c)*turn(a,b,d)<0&&turn(c,d,a)*turn(c,d,b)<0||on(a,b,c)||on(a,b,d)||on(c,d,a)||on(c,d,b))return false;
+    }
+  }
+  return true;
 }
 
 function pointInsidePolygon(point,boundary){
@@ -142,9 +170,10 @@ function pointInsidePolygon(point,boundary){
 }
 
 export function serviceAreaGeometryMatch(point,boundary,options={}){
+  const valid=point?.lat!==null&&point?.lat!==undefined&&point?.lat!==''&&point?.lng!==null&&point?.lng!==undefined&&point?.lng!=='';
   const query={lat:Number(point?.lat),lng:Number(point?.lng)};
   const points=validGeometryPoints(boundary);
-  if(!Number.isFinite(query.lat)||!Number.isFinite(query.lng)||points.length<3)return {matched:false,label:'Service area needs confirmation',inside:false,distance_km:null};
+  if(!valid||!isValidCoordinate(query.lat,query.lng)||!validAreaBoundary(points))return {matched:false,label:'Service area needs confirmation',inside:false,distance_km:null};
   const inside=pointInsidePolygon(query,points);
   const referenceLatitude=(query.lat+points.reduce((sum,item)=>sum+item.lat,0)/points.length)/2;
   const closed=[...points,points[0]];

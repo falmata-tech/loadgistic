@@ -1,7 +1,7 @@
 ---
 id: FEAT-UIX-001
 title: Low-friction public discovery and provider operations
-related_ids: [BASE-FE-001, FEAT-APP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-FLT-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-BIL-001, FEAT-LST-001, FEAT-MKT-001, FEAT-FTR-001, FEAT-SPN-001, FEAT-ADM-001, FEAT-SUP-001]
+related_ids: [BASE-FE-001, FEAT-APP-001, FEAT-SHP-001, FEAT-CAP-001, FEAT-FLT-001, FEAT-PRV-001, FEAT-TRK-001, FEAT-VER-001, FEAT-BIL-001, FEAT-LST-001, FEAT-MKT-001, FEAT-FTR-001, FEAT-SPN-001, FEAT-ADM-001, FEAT-SUP-001, FEAT-MOB-001, FEAT-TRQ-001, FEAT-GPS-001]
 problem: Capacity seekers need immediate, understandable discovery while transporters need simple mobile-first controls that represent their work professionally.
 behavior: Public, provider, support, and administration workflows use a confident professional freight voice, consistent icon-first visual language, short labels, strong task hierarchy, touch-sized controls, concise safety text, reversible navigation, and list/map continuity without requiring seeker registration.
 contracts: [LoadgisticBrandAsset, ProductVoice, PublicAppShell, SharedProviderTemplate, IconAction, TaskHeader, OrderedTaskStep, VisualChoice, TouchTarget, FactBlock, ReversibleDetail, EssentialHelpText, DiscoveryViewState]
@@ -9,7 +9,321 @@ observability: [ui_audit_unlabeled_control_count, ui_audit_overflow_count, brows
 rollout: Apply shared primitives before page-specific simplification; retain privacy and verification explanations; validate public, provider, Driver, support, and admin views at desktop and mobile sizes.
 ---
 
+## Featured remaining-viewport correction — October20
+
+Given Featured opens on desktop or a phone with the public header and navigation\
+When the actual header/navigation heights differ from an old fixed subtraction\
+Then the existing shell fills only the remaining viewport\
+And its content and footer remain above fixed phone navigation, without outer
+page overflow\
+And the vehicle board can scroll internally without losing its existing controls,
+cards, programme or sponsor content.
+
+Use the same actual-height flex sizing already used by Capacity. This corrects
+a measured36px desktop/46px phone overflow; it does not change the Featured
+schedule, visual composition, content or permissions. Verification pending:
+`tests/e2e/public-app-shell-review.spec.ts`, focused desktop/phone geometry and
+owner visual approval. No release readiness is inferred from this plan.
+
 # Low-friction interface
+
+## October20 vehicle-dialog height — locally verified and owner approved
+
+Given a normal vehicle detail includes its availability-confirmation notice\
+When the map canvas is shorter than the available phone screen\
+Then the centred dialog may use the available viewport height around the same
+map centre, rather than an artificial map-height cap\
+And the ordinary profile fits without scrolling when the screen has room\
+And all dialog edges remain inside the viewport, including after resizing\
+And unusually long content still scrolls within the bounded dialog without
+shrinking text, touch targets, or omitting notices and reviewed documents.
+
+Verification must include the real public-profile flow and a controlled
+confirmation-notice layout case in desktop/phone Chrome. The existing long-name
+case must still scroll. Focused visual approval precedes full release checks.
+All six affected cases pass in Chromium and in actual Google Chrome, including
+bounded320×640,390×844,412×839 and short-desktop resizing. Source/spec/type
+checks pass. Captures are under
+`.local/browser-repair-20261020/vehicle-dialog-height/chrome-results/`.
+The owner explicitly approved the phone/desktop repair and continuation of the
+release; the full same-source gates and rollout remain pending.
+
+The shared `map-feedback.spec.ts` workflow uses the same viewport boundary for
+the dialog while retaining canvas containment for inline feedback. Its full
+location-denial, outage, retry and selection-recovery flow passes on desktop and
+phone. The combined modal, public/private shell, drawer and map-interaction
+matrix passes18/18 in Chromium and18/18 in actual Google Chrome, with zero skips
+or retries. Evidence: `artifacts/map-feedback-contract-20261020/validation/summary.json`.
+This corrects the old test boundary; no interface or application code changed.
+
+## October18 provider account identity hierarchy — planned
+
+Provider signup starts with the chosen public Account name and unique handle,
+then private manager identity and account contact details. A saved provider
+profile and search card lead with Account name, put `@handle` directly beneath
+it, and show only the approved public manager first name as secondary context.
+All provider owners remain Transport Providers; names and icons do not imply a
+company category, fleet size or verification. The record remains read-first
+with explicit Edit, Save and Cancel. Customer business Team/Account and employed
+driver authority are unchanged. FEAT-PRV-001 defines public-data constraints.
+
+## October18 business discovery and document tasks — planned
+
+Network keeps two local views, Shared with and Find businesses, rather than
+adding another primary navigation item. Authorized providers can search a
+bounded business directory; cards show the saved business name, handle,
+explicit manager first name, city and the three document-review states. No
+email, private proof path or underlying verification identifier is displayed.
+
+Given a business member opens Account, then Business details shows document
+review states read-only. Only its owner can deliberately open Documents,
+choose an available category, submit a private file and read request history.
+Cancel sends no submission; a committed submission whose refresh fails retries
+the read rather than uploading again. Team members receive no request/file
+metadata. Administrator review labels name the business and document category
+in normal language while preserving existing Trust actions. FEAT-ENT-001 and
+FEAT-VER-001 own the authority and proof-file contracts.
+
+Focused client validation, owner/team and transport-provider UI checks precede
+actual desktop/phone/Expo Chrome review; backend installation and release
+remain separate gates. Rollback restores these task views without deleting
+businesses, memberships or review history.
+
+## October15 owner-rejected cleanup — task structure and read-first records
+
+The owner rejected the first replacement screenshots. Wrapping the old page in
+accordions did not organize work: duplicate actions/headings, empty history
+sections and immediately editable records remained. The following supersedes
+that presentation, without removing capabilities or changing authority.
+
+### Scenario: a workspace has predictable task hierarchy
+
+Given an authorized provider opens Fleet on web, phone web or Expo\
+Then Trucks, Drivers and GPS devices are separate named views within Fleet\
+And one contextual Add action appears in the relevant view, not twice\
+And rows show saved identity, assignment and state before editing\
+And empty retired history does not occupy a section\
+And a driving provider or employee still enters their current truck's map Home.
+
+### Scenario: viewing is distinct from changing
+
+Given a member opens a truck, driver, device, account or Tracking record\
+Then saved facts appear before forms, with deliberate named actions\
+When they choose Edit, Change assignment or another existing command\
+Then only that task's fields open with Save and Cancel\
+And Cancel or dismiss sends no mutation and restores the saved view\
+And existing revisions, pending drafts, conflict detection, permissions, document
+scope, command safeguards and publication constraints remain authoritative.
+
+### Scenario: operations use the same hierarchy
+
+Given an administrator or authorized staff member opens a queue or record\
+Then the request/record summary and primary next action are easy to identify\
+And Team membership, queue assignment and Tracking correction are deliberate
+focused tasks rather than a page of open forms\
+And Support and Brokerage remain distinct current services with existing
+permissions, history, assignment and read acknowledgements preserved.
+
+### Scenario: administration follows the account rather than database tables
+
+Given an administrator finds a user in the account directory\
+When they open that account\
+Then one organized account overview explains identity, provider/business context,
+related trucks/drivers, documents and related work where currently authorized\
+And saved summaries link to contextual management without requiring the
+administrator to reconstruct table relationships\
+And independent staff permissions still determine each visible section/action\
+And truck, driver and device inventories remain only as useful operational views\
+And no identities, ownership, memberships or records are merged as a UI shortcut\
+And every related list is bounded with explicit empty/unavailable states and a
+purposeful route to the full authorized list when necessary.
+
+Design basis: [Shopify customer profiles](https://help.shopify.com/en/manual/customers/manage-customers)
+group a person's identity and related work; [Microsoft list/details](https://learn.microsoft.com/en-us/windows/apps/design/controls/list-details)
+separates finding an entity from working with its details. Apply the account and
+fleet concepts of Loadgistic; do not copy unrelated commerce or desktop features.
+
+### Scenario: refreshing does not repeatedly replace a usable workspace
+
+Given the same signed-in member returns to a previously loaded workspace query\
+When a read refresh is in progress\
+Then saved content and navigation stay visible with local progress feedback\
+And a new query or identity never inherits another query's content\
+And obsolete requests cannot overwrite a newer response\
+And expired/revoked authority continues to deny private access.
+
+### Scenario: owner can test connected roles without guessing
+
+Given the changed local preview is ready\
+Then an owner-only test guide names the verified demo login addresses, their
+actual roles and related trucks/drivers/Tracking/chats\
+And it gives a short back-and-forth test sequence and local inbox instructions\
+And it distinguishes local preview, hosted site and installed Android versions\
+And passwords, OTPs, sessions, private keys and customer records are excluded.
+
+Design basis: [Carbon edit patterns](https://v10.carbondesignsystem.com/community/patterns/edit-pattern/),
+[related-content tabs](https://carbondesignsystem.com/components/tabs/usage/) and
+[loading guidance](https://carbondesignsystem.com/patterns/loading-pattern/).
+These inform task grouping and view/edit separation; they do not substitute for
+actual workflow checks or owner visual approval. No new design-system dependency.
+
+Tests: focused read/edit/cancel/navigation/render regressions and actual local
+web/Expo interactions, including 390px and desktop. Pending implementation and
+owner review; earlier focused evidence proves earlier logic, not this new layout.
+Full quality/build/CI gates follow explicit approval, and hosted operations remain
+separately bounded. See the active checklist in `docs/PROGRESS.md`.
+
+## October15 role dashboards — accepted cleanup, implementation in progress
+
+Owner approved the recorded dashboard audit and GPS fleet integration
+(FEAT-GPS-001). This is not visual approval of the replacement screens.
+
+Given an administrator opens Support\
+Then the default view is Transport Provider conversations with bounded refresh\
+And Team creation/permissions are a separate tab/section without polling that
+discards unsaved edits\
+And admin phone navigation makes both Support and transport requests easy to find.
+
+Given staff use the dashboard on phone or desktop\
+Then a visible account/sign-out control is reachable\
+And opening/returning from a conversation preserves validated queue/page context\
+And every independently assigned responsibility remains separately authorized.
+
+Given a provider opens Fleet\
+Then compact Trucks/Drivers summaries show actual assignment, Draft/Live and
+capacity as distinct facts\
+And existing editing, publication, retirement, documents and device controls open
+for the selected entity rather than expanding every entity at once\
+And a driving owner's Home remains their current truck map\
+And an employed driver retains map Home even without capacity-edit permission.
+
+Given a member opens Account\
+Then personal documents show only that member's correct historical subject\
+And other employees remain under their Fleet entity and provider/company papers
+appear once under the appropriate profile\
+And Support is directly discoverable without opening notification history\
+And sharing controls link to their existing named contacts.
+
+Owner's newest clarification: general Guest support and its old conversations
+need no dashboard entry or compatibility UI. Remove that third-service appearance;
+no new guest intake is permitted. This does not require deletion of unrelated
+provider Support or Brokerage records. Any actual database erasure is separately
+bounded/rehearsed; no old history is needed to justify keeping confusing controls.
+
+Focused permission/navigation/render checks and actual local screenshots precede
+explicit owner visual review and full release gates. No unrelated redesign,
+permission expansion, driver-page duplication or feature removal is authorized.
+
+### October 13 transporter-search controls — active local refinement
+
+Given a Capacity visitor opens Transporter search\
+When typing, clearing or waiting for matches\
+Then the input has an obvious touch-sized clear control, short-input guidance and existing horizontal loading feedback\
+And results appear without a required submit click after meaningful input settles\
+And the latest-query request bounds in FEAT-MKT-001 preserve map interaction and prevent outdated result actions\
+And the same controls and meaning exist across web, phone web and mobile in English, Amharic and Afaan Oromo.
+
+## October 13 presentation cleanup — local review pending
+
+Scope: presentation and plain-language copy across public web, phone web,
+native member screens and web administration. Preserve existing features,
+navigation, authorization, forms, map behavior and saved data. Related contracts:
+FEAT-MKT-001, FEAT-FTR-001, FEAT-PRV-001, FEAT-ADM-001, FEAT-SUP-001 and FEAT-PLY-001.
+
+### Scenario: About explains the benefit for each audience
+
+Given a visitor opens About on web or mobile\
+When they choose brokers/shipping teams, individual transporters or transport companies\
+Then concise audience-specific information explains the practical benefit\
+And a clear action leads to an existing capacity or transporter entry point\
+And the global language control remains available without another language selector on About\
+And privacy, terms and deletion remain reachable without developer or reviewer setup links dominating the page\
+And the existing normal-authentication reviewer entry remains reachable from transporter sign-in.
+
+### Scenario: transport details use a deliberate hierarchy
+
+Given a visitor opens Featured, a transporter profile or selected truck details\
+When the content renders at phone or desktop width\
+Then identity, truck artwork, configuration, current state and useful actions have distinct readable groups\
+And long names and translated labels wrap without cramped parallel columns or horizontal overflow\
+And existing profile, map, sponsor, contact, document and signal-detail actions remain usable\
+And no change is made to automatic Featured selection, map camera restoration or privacy rules.
+
+### Scenario: staff cleanup preserves operational control
+
+Given an authorized administrator or assigned team member opens a web workspace\
+When records, queues and management forms render\
+Then related facts and actions are grouped with concise human-readable labels\
+And unnecessary repeated explanations and prominent raw identifiers are reduced\
+And exact record references remain available where needed for investigation or safe confirmation\
+And every existing action, permission, assignment, validation and destructive-action safeguard remains intact\
+And staff accounts remain excluded from mobile.
+
+### Scenario: customer presentation never exposes working notes
+
+Given an ordinary user views product screens or Play screenshots\
+When copy, links, status labels and error feedback render\
+Then they describe the user's task without test names, schema names, internal identifiers or release instructions\
+And failure feedback still explains the practical next action without hiding permission or data-integrity failures\
+And store screenshots are recaptured from the real verified interface rather than altered to invent app behavior.
+
+Ordered implementation: inspect actual screens and copy; implement root-owned
+About/copy and isolated delegated admin/card changes; run focused navigation,
+permission and responsive checks; capture desktop/phone/native browser states;
+request owner visual approval. Full release gates and hosted SQL/signing remain
+separate subsequent gates. The earlier multi-filter review was rejected and does
+not authorize promotion. Evidence will be recorded after focused checks pass.
+Local evidence now recorded in PROGRESS/TRACEABILITY: all audience choices and
+policy/reviewer links pass desktop/phone checks in five languages; staff commands
+and navigation pass at1440/390/320, including translated actions; public/native
+cards retain actual contact/profile/map/document behavior and recover after failed
+Featured refreshes. The actual320px Brokerage overflow is repaired. Independent
+review confirms unchanged form/control and authorization contracts. Full gates,
+owner visual approval and new binaries remain pending. The null-number public
+profile failure is corrected under FEAT-PRV-001 with explicit validation/state
+regressions, not by hiding the failing record.
+
+### Scenario: map workspaces reserve navigation space
+
+Given a visitor opens Open capacity or an unlocked Private capacity map\
+When the viewport is resized across phone, tablet, desktop, or wide desktop sizes\
+Then the map and search panel remain beside the desktop navigation rail, never over it\
+And the map uses the remaining height below the header and tablet navigation\
+And phone navigation stays below the map without clipping its controls\
+And opening and closing Filters leaves the navigation and workspace geometry intact\
+And the unlocked Private capacity session bar and Log out remain above its map\
+And both maps retain at least 300 CSS pixels of height at 320 by 640\
+And the document has no horizontal overflow or forced vertical scrolling.
+
+Implementation plan: derive desktop content spacing from the same rail inset and
+width as navigation; let the map shell consume actual remaining flex height rather
+than subtracting a fixed header estimate. Verify bounding boxes, navigation clicks,
+and filter dialog dismissal in `tests/e2e/public-map-shell-layout.spec.ts`.
+No data, authorization, or deployment contracts change.
+Focused verification includes real local email-code entry for Private capacity,
+revocation of the synthetic access grant afterward, and Open/Private map and
+Filters screenshots at 320, 390, 1024, and 1920 CSS pixels. Release-wide visual
+audits remain a separate gate; these checks do not authorize deployment.
+
+### Scenario: loading stays local to the pending task
+
+Given a route, map module, conversation, search, or save is pending\
+When loading feedback appears\
+Then a shared neutral, geometry-matched skeleton or compact progress indicator
+occupies only that task's space\
+And authenticated navigation remains available during nested route loading\
+And existing map results remain visible while additional results load\
+And no fake percentage, full-screen blocking overlay, or large loading headline appears\
+And skeleton decoration is hidden from assistive technology with one concise status\
+And reduced-motion preference disables decorative animation\
+And a pending native POST form preserves its submitted button command and prevents
+duplicate submissions while announcing progress.
+
+Implementation plan: shared lightweight skeleton/status components, nested route
+fallbacks for provider/admin/support and public workflows, map-module and chat
+fallbacks, and a document-level native-form pending enhancement. Retain existing
+fetch-driven form state and errors. Verify phone/desktop layout, reduced motion,
+delayed navigation, and actual form payloads before claiming completion.
 
 ### Scenario: public value is usable immediately
 
@@ -21,7 +335,7 @@ And detailed explanatory storytelling is linked through About rather than repeat
 And the homepage itself contains an always-accessible truck search, dismissible filters, location controls, and the interactive Truck Map rather than separate listing pages\
 And no ranked Truck List competes with geographic discovery\
 And location permission is requested as soon as the Board becomes interactive so nearby supply can be shown without another setup step\
-And pointed pins with visible truck artwork, a complete green Empty ring, or a complete yellow Partial ring let visitors scan vehicle type and status before opening details without interpreting a percentage meter\
+And pointed pins with visible vehicle artwork, a complete cobalt Empty ring, or a complete amber Partial ring let visitors scan vehicle type and status before opening details without interpreting a percentage meter\
 And the map key stays visible while contextual map summaries appear only on hover or focus above the related marker\
 And Open capacity, Private capacity, Track, Featured, About, and transporter account access are easy to find while a new identity continues to provider setup only after proof\
 And no account prompt blocks browsing, filtering, map view, transporter details, or contact methods the transporter made public.
@@ -32,7 +346,7 @@ Given a visitor moves between public pages\
 When layout and color are rendered\
 Then the base uses warm white or off-white surfaces, generous spacing, and restrained borders\
 And public workspace titles use a compact application scale that leaves the primary tool visible rather than an oversized editorial scale\
-And the shared brand palette uses deep navy `#0B1D3A`, teal `#0D6B6E`, aqua `#27A5A1`, and restrained amber `#F2B01E` over white or `#F3F5F7` surfaces\
+And the shared brand palette uses deep navy `#0B1D3A`, cobalt `#155EEF`, and restrained amber `#F2B01E` over white or `#F3F5F7` surfaces; purple identifies GPS location sources, and green is not used for UI branding or capacity status\
 And saturated Loadgistic colors are reserved for clear actions, current state, small trust accents, and navigation focus\
 And large dark or heavily colored bands do not compete with the main page task.
 
@@ -96,9 +410,10 @@ And one summary shows how the truck appears publicly together with the same curr
 And the privacy-obscured truck-area marker remains obvious above overlapping area polygons and routes\
 And each summary section has a focused Edit action that opens only that section\
 And regular Capacity route controls live inside that same capacity console rather than in a second planning block\
-And Edit current capacity opens the full ordered current-capacity workflow\
+And each edit opens only the selected signal's inputs over the still-mounted map, with no Edit all action\
+And Capacity, Coverage, Sharing, Loads, Regular service, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
 And the selected truck, focused Edit actions, visible map key, and combined location controls occupy distinct top-left, top-right, bottom-left, and bottom-right map zones\
-And location refresh and approximate-location accuracy remain directly available from that combined dock without opening the capacity editor.
+And location refresh remains a direct action while the radius shortcut opens the focused Location modal.
 
 ### Scenario: Tracking uses one ordered status control
 
@@ -127,8 +442,9 @@ When route, capacity, truck, and nearby choices render\
 Then each section starts with a familiar icon and a short task label\
 And Empty, Partial, Service area, and Capacity route are presented as clear categorical choices rather than dense explanatory text\
 And the truck-configuration control shows the selected vehicle artwork and keeps its complete illustrated option set collapsed until requested\
-And opening that chooser provides keyboard-operable radio choices with each matching configuration image and name\
-And selecting Partial immediately prevents Service area without requiring submission\
+And opening that chooser provides keyboard-operable checkbox choices with each matching configuration image and name\
+And choices within each supported group match any selected value while other groups remain combined requirements\
+And the filter does not discard a valid alternative when both Empty and Partial are selected\
 And the modal remains within the available viewport, keeps Apply and Clear reachable, and avoids clipped labels or horizontal document overflow at desktop, phone, and 200% reflow widths.
 
 ### Scenario: map signal explanations feel connected to their geometry
@@ -169,7 +485,7 @@ Then one fixed bottom bar exposes no more than five direct destinations without 
 And a Driver sees Home, Tracking, Support, Account, and More\
 And a fleet transporter sees Home, Fleet, Tracking, Account, and More\
 And the active destination is clear by label, icon, shape, and contrast rather than color alone\
-And Account contains only private account and plan or payment information\
+And Account groups private details, security, provider information and documents\
 And More presents role-authorized profile, verification, support, public-market, featured-programme, and sign-out destinations without duplicating Account content\
 And Exit dashboard remains directly available without signing the member out\
 And page content reserves safe-area space so the bar never covers the final action.
@@ -218,7 +534,8 @@ And one compact selected-truck control stays at top-left while one aligned icon-
 And the complete map key stays visible at bottom-left while one combined approximate-location, radius, and refresh dock stays at bottom-right\
 And these floating zones do not overlap one another, required attribution, or essential capacity geometry\
 And automatic location refresh is silent while manual refresh feedback appears transiently beside the location dock\
-And focused or complete editing opens in an accessible modal whose Save or Cancel action returns to the map summary\
+And focused editing opens in a viewport-bounded native modal whose Save, Cancel, Close, or Escape action returns to the map summary with focus restored\
+And failed saves stay in that modal with the entered values and a readable error while successful saves refresh the server-owned map without page navigation\
 And no Tracking list, Tracking action panel, or Start Tracking prompt is embedded in Home\
 And the fixed Tracking navigation destination remains directly available.
 
@@ -235,7 +552,7 @@ And cards, controls, and map workspaces begin within the initial viewport withou
 Given an administrator enters the authenticated application on desktop or phone\
 When primary navigation and the administrator overview render\
 Then Overview is the single landing destination\
-And Records opens searchable Users, clients, trucks, Drivers, Tracking, Capacity, routes, and plans\
+And Records opens searchable Users, clients, trucks, Drivers, Tracking, Capacity and routes\
 And Review Center, private Capacity, Featured and sponsors, Support, and role-authorized More destinations use distinct task names\
 And no generic Home and vague Operations pair compete for the same administrative purpose.
 
@@ -263,7 +580,7 @@ When an action is activated\
 Then it reaches the route and task named by its label without a missing page, inert control, or unrelated fallback\
 And the administrator More destination opens the actual role-authorized menu on desktop and mobile\
 And the Featured administration preview opens the public Featured page rather than the Truck Market\
-And Account and plan remains distinctly named inside More instead of competing with a second ambiguous More destination.
+And Account remains distinctly named inside More instead of competing with a second ambiguous More destination.
 
 ### Scenario: one transporter account-access flow stays focused across devices
 
@@ -354,3 +671,61 @@ And every confirmed defect is recorded with its affected actor, viewport, route,
 - Public pages: homepage, Capacity, Providers, Track, About, account access, and provider setup
 - Provider pages: `/app/**` excluding `/admin/**`
 - Tests: E2E and visual audit
+
+
+### Scenario: loading feedback matches the surface being loaded
+
+Given content is loading in a map or search result surface\
+When the user waits for its response\
+Then a restrained cobalt horizontal activity indicator communicates ongoing work\
+And an accessible text label remains available without displaying a text-only loading notice\
+And the indicator does not fabricate a percentage or block existing controls\
+And reduced-motion preference replaces animation with a static treatment\
+And a map's initial skeleton resembles its canvas, zoom controls and map key rather than crossed diagonal bands\
+And route-level map loading preserves the desktop toolbar and phone overlay layout\
+And existing form, records, chat and Featured skeletons retain their content-shaped layouts.
+
+Scope: shared loading component, map/search loading feedback and map skeletons.
+Focused desktop/phone delayed-response captures precede owner review; full release
+gates follow approval. Rollback restores components/styles; no data changes.
+
+### Provider dashboard facts — 2026-09-21
+
+Given a provider opens Home after Tracking activity
+When a shipment is cancelled or completed
+Then it is excluded from Active Tracking; Completed Tracking counts only completion.
+And Recent Tracking orders by last update so an older shipment updated today is visible.
+And On-duty Trucks counts current Empty/Partial signals on active owned trucks.
+
+Implementation: scoped migration 100 corrects only the existing dashboard projection;
+its persisted authorization, tenant scope and six-row limit remain. Rollback restores
+the prior function without changing shipments. Verify rollback-only status/order/
+vehicle tests, denial and catalog checks, then the local browser presentation.
+
+### Scenario: email-only login stays focused
+
+Given a visitor opens login on desktop or phone
+When email-only account access is enabled
+Then one compact card contains the email field and primary code action
+And code entry uses the same card with a different-email action
+And no Google action, choice divider or large marketing panel competes with login
+And labels, inline errors, keyboard focus, 44px targets and public navigation remain usable.
+
+FEAT-IAM-001 preserves the real email-code identity contract. Capture request,
+code and invalid-code states locally; obtain owner visual review before release.
+
+### Scenario: workspace switching retains the selected location-source filter
+
+Given a visitor or provider has filtered a capacity map by one or more location
+sources alongside the current vehicle, load-status, document and route filters\
+When an authenticated provider switches to My workspace and returns to Marketplace\
+Then the saved return URL retains those applied filters, including `locationSource`\
+And an eligible business capacity return retains the same presentation query\
+And unknown query keys, credentials, external destinations and oversized values
+remain ineligible for saved navigation.
+
+Scope: the existing safe return-URL allowlist; no new interface, route or access
+permission. Verify `tests/workspace-area-navigation.test.mjs` and the existing
+web switch handler tests, plus the actual desktop/phone Chrome round trip in
+`tests/e2e/workspace-consolidation.spec.ts`. Rollback restores the previous allowlist without data
+changes; it would again lose location-source-filtered return positions.

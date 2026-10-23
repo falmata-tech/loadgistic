@@ -10,7 +10,18 @@ export function pilotUuid(value){
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
 }
 
-export function pilotEmail(fixtureKey){
+export function pilotEmail(fixtureKey,existingIdentity){
+  if(existingIdentity){
+    if(existingIdentity.app_metadata?.fixture_source!==PRODUCTION_PILOT_SOURCE
+      ||existingIdentity.user_metadata?.fixture_key!==fixtureKey
+      ||!['TRANSPORTER','DRIVER'].includes(existingIdentity.app_metadata?.role)
+      ||typeof existingIdentity.email!=='string'
+      ||existingIdentity.email.length>254
+      ||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(existingIdentity.email)){
+      throw new Error('PRODUCTION_PILOT_IDENTITY_MISMATCH');
+    }
+    return existingIdentity.email;
+  }
   const slug=String(fixtureKey||'driver').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,52)||'driver';
   return `pilot-${slug}@pilot.loadgistic.test`;
 }

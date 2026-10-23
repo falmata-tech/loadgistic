@@ -136,8 +136,31 @@ And the application does not reconstruct missing new geometry from the retired e
 
 ## Contract ownership
 
+### Scenario: private maps apply the complete geographic query
+
+Given a guest or authorized team member filters privately shared capacity\
+When both shipment endpoints and a Service-area place are supplied\
+Then both endpoints must match one eligible signal and the separate Service-area criterion must also match\
+And failing a two-endpoint query cannot fall back to a one-endpoint match\
+And an omitted proximity input never supplies match evidence\
+And result eligibility is a boolean decision independent of display wording.
+
+### Scenario: an unresolved supplied place never broadens a search
+
+Given a public, private, or team map query includes a place reference or place name\
+When the catalog cannot resolve that supplied value\
+Then the response contains no capacity results and a clear request to select a suggested place\
+And the supplied value remains available to correct or clear\
+And an invalid reference is not silently replaced by another place or ignored.
+
 - Domain: coordinate distance, every-segment route matching, polygon proximity, direction, uncertainty overlap, and explainable evidence selection without transporter ranking
 - Persistence: structured place collections and area boundaries plus geometry-consistent eligibility in managed Supabase PostgreSQL migration `073_public_capacity_filter_alignment.sql`
 - Application services: public Capacity Board and provider-profile projections
 - Frontend: browser-only visitor location, structured route controls, adjustable radii, direction, and match explanations
 - Tests: domain, capacity-market, E2E, and UI audit
+
+Audit repair evidence: `tests/audit-geographic-matching.test.mjs`,
+`tests/capacity-filter-places.test.mjs`, and
+`tests/e2e/capacity-filter-validation.spec.ts`. No schema change is required for
+these matching fixes; rollback restores the prior application artifact and its
+known incorrect private matching, not a data migration.

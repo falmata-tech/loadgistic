@@ -1,0 +1,13 @@
+.publicHeader.publicHeader{box-shadow:none;background:#fff}
+.publicHeader :global(.public-nav){height:66px;gap:12px}
+.providerFrame :global(.app-topbar){height:66px;box-shadow:none;background:#fff}
+.providerFrame :global(.workspace-title strong){font-size:.95rem;line-height:1.3}
+.providerFrame :global(.workspace-title .meta){font-size:.72rem;line-height:1.3}
+.providerFrame :global(.nav-link){font-size:.88rem;font-weight:650;padding:12px;border:1px solid transparent}
+.providerFrame :global(.nav-link.active){background:#155eef;color:#fff;border-color:transparent}
+@media(min-width:1101px){.providerFrame{grid-template-columns:220px minmax(0,1fr)}.providerFrame :global(.sidebar){padding-inline:13px}}
+@media(max-width:760px){.publicHeader :global(.public-nav){height:58px;gap:8px}.providerFrame :global(.app-topbar){height:calc(60px + env(safe-area-inset-top));padding-inline:10px}.providerFrame :global(.workspace-title strong){font-size:.8rem}.providerFrame :global(.workspace-title .meta){font-size:.66rem}.providerFrame :global(.mobile-nav a.active){background:#155eef;color:#fff;box-shadow:none}.publicHeader :global(.public-login-action){min-width:44px;font-size:.75rem}}
+
+.customerMain{padding-bottom:0;min-height:100dvh;display:flex;flex-direction:column}
+.customerMain>:global(.app-topbar),.customerMain>:global(.workspace-area-switch){flex-shrink:0}
+@media(max-width:1100px){.customerMain>:global(.page){padding-bottom:110px}}

@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {normalizeDemoSharedEmails} from './fixture-market-policy.mjs';
+import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
@@ -23,15 +25,23 @@ for(const [table,minimum] of Object.entries(expectedMinimums)){
   if((count||0)<minimum)throw new Error(`SUPABASE_FIXTURE_VERIFY_COUNT_FAILED:${table}:${count||0}<${minimum}`);
 }
 
+// A fresh local fixture import must never restore the retired third queue or
+// silently consume the Support team's available conversation slots.
+const {count:retiredGuestWorkload,error:retiredGuestError}=await service.from('guest_support_conversations')
+  .select('id',{count:'exact',head:true}).in('status',['WAITING','OPEN']);
+if(retiredGuestError)throw new Error('SUPABASE_FIXTURE_VERIFY_RETIRED_GUEST_READ_FAILED');
+if(retiredGuestWorkload!==0)throw new Error('SUPABASE_FIXTURE_VERIFY_RETIRED_GUEST_WORKLOAD_PRESENT');
+
 const {data:vehicleCatalog,error:vehicleCatalogError}=await service.from('vehicles')
   .select('id,cargo_configuration,trailer_interchangeable,supported_trailer_configurations').eq('active',true);
 if(vehicleCatalogError||vehicleCatalog.length!==143)throw new Error('SUPABASE_FIXTURE_VERIFY_VEHICLE_CATALOG_READ_FAILED');
 const vehicleCount=configuration=>vehicleCatalog.filter(vehicle=>vehicle.cargo_configuration===configuration).length;
-if(vehicleCount('Courier car')!==12
+if(vehicleCount('Courier car')!==6||vehicleCount('Courier motorcycle')!==6
+  ||vehicleCount('Heavy Rigid Stake Body Truck')!==2
+  ||vehicleCount('Heavy Rigid Stake Body Truck + Trailer')!==2
   ||vehicleCount('Tractor + Container Trailer')!==2
   ||vehicleCount('Tractor + Dry Van Trailer')!==2
-  ||vehicleCount('Tractor + Heavy Equipment Trailer')!==2
-  ||vehicleCatalog.some(vehicle=>/motorcycle/i.test(String(vehicle.cargo_configuration)))){
+  ||vehicleCount('Tractor + Heavy Equipment Trailer')!==2){
   throw new Error('SUPABASE_FIXTURE_VERIFY_VEHICLE_CATALOG_MIX_FAILED');
 }
 const tractors=vehicleCatalog.filter(vehicle=>String(vehicle.cargo_configuration).startsWith('Tractor + '));
@@ -42,8 +52,11 @@ if(tractors.some(vehicle=>!vehicle.trailer_interchangeable
 }
 const {data:driverPortraits,error:driverPortraitError}=await service.from('profiles')
   .select('id,driver_portrait_preset').eq('role','DRIVER').eq('active',true);
+const fixtureDocument=JSON.parse(readFileSync(new URL('../resources/fixtures/managed-market.json',import.meta.url),'utf8'));
+const expectedPortraitCount=assignFixtureDriverPortraits(fixtureDocument.tables.users)
+  .filter(driver=>driver.role==='DRIVER'&&driver.driver_portrait_preset).length;
 if(driverPortraitError||driverPortraits.length!==143
-  ||driverPortraits.filter(driver=>driver.driver_portrait_preset).length!==45){
+  ||driverPortraits.filter(driver=>driver.driver_portrait_preset).length!==expectedPortraitCount){
   throw new Error('SUPABASE_FIXTURE_VERIFY_DRIVER_PORTRAIT_MIX_FAILED');
 }
 
@@ -58,7 +71,7 @@ for(const email of normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_
 const {count:loadgisticGrantCount,error:loadgisticGrantError}=await service.from('capacity_access_grants')
   .select('*',{count:'exact',head:true}).eq('audience_type','LOADGISTIC').is('revoked_at',null);
 if(loadgisticGrantError)throw new Error(`SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_FAILED:${loadgisticGrantError.message}`);
-if((loadgisticGrantCount||0)<expectedSharedVehicles)throw new Error('SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_INCOMPLETE');
+if(loadgisticGrantCount!==0)throw new Error('SUPABASE_FIXTURE_VERIFY_RETIRED_LOADGISTIC_GRANT_PRESENT');
 
 const {data:session,error:loginError}=await anon.auth.signInWithPassword({
   email:'company-driver@loadgistic.local',
@@ -102,13 +115,33 @@ const firstPage=await listSupabasePublicCapacityCursor({},{pageSize:14});
 if(firstPage.items.length!==14||!firstPage.hasMore||!firstPage.nextCursor){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_CURSOR_FAILED');
 }
-if(firstPage.items.some(item=>item.recurring_corridors.length!==1
-  ||item.driver_verification_badges.length!==2||item.truck_verification_badges.length!==1)){
+// Imported legacy routes intentionally have no truck/Driver binding. Retain
+// those records, but never infer one route for every truck belonging to an owner.
+if(firstPage.items.some(item=>item.recurring_corridors.length!==0
+  ||item.driver_verification_badges.length!==2)){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_PROJECTION_FAILED');
+}
+// FEAT-VER-001: a truck can carry ownership and use-permission evidence together.
+// Check categories, uniqueness and neutral-state semantics, not the retired one-badge layout.
+for(const item of firstPage.items){
+  const truck=item.truck_verification_badges;
+  const types=truck.map(badge=>badge.type);
+  const neutral=types.includes('VEHICLE_AUTHORITY');
+  if(truck.length<1||truck.length>2||new Set(types).size!==types.length
+    ||types.some(type=>!['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION','VEHICLE_AUTHORITY'].includes(type))
+    ||neutral&&(truck.length!==1||truck[0].verified||truck[0].reviewedAt)
+    ||truck.some(badge=>badge.verified&&(!badge.reviewedAt||badge.expired))){
+    throw new Error('SUPABASE_FIXTURE_VERIFY_TRUCK_DOCUMENT_CATEGORIES_FAILED');
+  }
+  const expectedOwner=item.provider_organization_id
+    ?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']:['IDENTITY','DRIVER_IDENTITY'];
+  if(JSON.stringify(item.owner_verification_badges.map(badge=>badge.type))!==JSON.stringify(expectedOwner)){
+    throw new Error('SUPABASE_FIXTURE_VERIFY_OWNER_DOCUMENT_CATEGORIES_FAILED');
+  }
 }
 const privateSignal=firstPage.items.find(item=>item.current_signal_geometry_visible===false);
 if(privateSignal&&(privateSignal.location_lat!==null||privateSignal.current_route_points.length!==0
-  ||privateSignal.capacity_area_boundary.length!==0||privateSignal.recurring_corridors.length!==1
+  ||privateSignal.capacity_area_boundary.length!==0||privateSignal.recurring_corridors.length!==0
   ||privateSignal.location_update_stage!==null||privateSignal.location_updated_label!==null
   ||privateSignal.location_is_last_reported!==null)){
   throw new Error('SUPABASE_FIXTURE_VERIFY_PRIVATE_CAPACITY_LEAK');
@@ -177,13 +210,15 @@ try{
     available_percent:0,accepts_full_load:false,accepts_partial_load:false,
     accepts_multi_pick:false,accepts_multi_drop:false,accepts_multi_stop:false,
     updated_at:new Date(Date.now()+60_000).toISOString(),expires_at:new Date(Date.now()+60_000).toISOString()};
-  for(const generated of ['origin_geog','destination_geog','current_origin_geog','current_destination_geog','location_geog'])delete offDuty[generated];
+  for(const generated of ['origin_geog','destination_geog','current_origin_geog','current_destination_geog','location_geog','map_envelope'])delete offDuty[generated];
   const {error:offDutyError}=await service.from('capacities').insert(offDuty);
   if(offDutyError)throw new Error(`SUPABASE_FIXTURE_VERIFY_OFF_DUTY_INSERT_FAILED:${offDutyError.message}`);
   const hiddenAfterOffDuty=await listSupabasePublicCapacityCursor({capacityId:freshnessTarget.capacity.id},{pageSize:14});
   if(hiddenAfterOffDuty.items.length)throw new Error('SUPABASE_FIXTURE_VERIFY_OFF_DUTY_PUBLIC');
   const {data:afterOffDuty,error:afterOffDutyError}=await service.rpc('public_featured_provider_candidates',{
-    requested_region_codes:[freshnessTarget.candidate.base_region_code]
+    // Personal provider payloads deliberately omit their region. Use the same
+    // public region selection, then match the exact provider ID below.
+    requested_region_codes:regionCodes
   });
   if(afterOffDutyError)throw new Error(`SUPABASE_FIXTURE_VERIFY_OFF_DUTY_FEATURED_FAILED:${afterOffDutyError.message}`);
   const featuredAfter=(afterOffDuty||[]).find(row=>row.provider_profile_id===freshnessTarget.candidate.provider_profile_id);
@@ -202,6 +237,7 @@ for(const handle of ['blueline-transport','abebe-owner-operator']){
     !Array.isArray(truck.driver_verification_badges)||!Array.isArray(truck.truck_verification_badges))){
     throw new Error(`SUPABASE_FIXTURE_VERIFY_PROVIDER_PROJECTION_FAILED:${handle}`);
   }
+  if(provider.services!==''||provider.regular_service!==null)throw new Error('SUPABASE_FIXTURE_VERIFY_RETIRED_PROVIDER_FIELDS_EXPOSED');
   if(provider.trucks.some(truck=>truck.capacity&&(!truck.assigned_driver_first_name||!truck.driver_kind_label))){
     throw new Error(`SUPABASE_FIXTURE_VERIFY_PROVIDER_DRIVER_FAILED:${handle}`);
   }

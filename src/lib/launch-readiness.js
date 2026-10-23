@@ -30,7 +30,8 @@ export function launchReadiness(environment=process.env){
     if(!environment.SUPABASE_SERVICE_ROLE_KEY)blockers.push('supabase-service-config');
     if(!emailDelivery.configured)blockers.push('managed-email-delivery');
     if(!rateLimits.configured||!rateLimits.durable)blockers.push('shared-rate-limit-adapter');
-    if(!storage.scannerConfigured||!storage.scannerProductionSafe)blockers.push('upload-malware-scanner');
+    if(storage.scannerBackend==='validation-only')warnings.push('uploads-not-virus-scanned');
+    else if(!storage.scannerConfigured||!storage.scannerProductionSafe)blockers.push('upload-malware-scanner');
     if(emailDelivery.provider==='smtp')warnings.push('smtp-email-delivery-at-least-once');
     if(mapTiles.communityOsm)warnings.push('community-osm-tile-service');
   }else{

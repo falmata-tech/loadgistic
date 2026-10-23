@@ -13,23 +13,24 @@ const otpRequest=fs.readFileSync('src/app/api/applications/email-otp/request/rou
 const otpVerify=fs.readFileSync('src/app/api/applications/email-otp/verify/route.ts','utf8');
 const callback=fs.readFileSync('src/app/api/auth/callback/route.ts','utf8');
 const page=fs.readFileSync('src/app/apply/page.tsx','utf8');
+const detailsForm=fs.readFileSync('src/components/provider-signup-details-form.tsx','utf8');
 const accessPage=fs.readFileSync('src/app/login/page.tsx','utf8');
 
-test('managed signup accepts only the three provider operating models without a password',async()=>{
+test('managed signup has two canonical models and accepts the former owner-operator alias without a password',async()=>{
   const {normalizeProviderSignupInput}=await import('../src/lib/provider-signup.js');
   for(const applicationType of ['TRANSPORT_COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER']){
     const result=normalizeProviderSignupInput({
       name:'Aster Bekele',businessName:'Aster Transport',phone:'+251 911 000 000',applicationType
     });
     assert.equal(result.ok,true);
-    assert.equal(result.input.applicationType,applicationType);
+    assert.equal(result.input.applicationType,applicationType==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER':applicationType);
   }
   assert.equal(normalizeProviderSignupInput({name:'Aster',businessName:'Aster Transport',phone:'+251911000000',applicationType:'COMPANY_DRIVER'}).ok,false);
-  assert.doesNotMatch(page,/name="password"|type="password"/i);
-  assert.match(accessPage,/Continue with Google/i);
+  assert.doesNotMatch(page+detailsForm,/name="password"|type="password"/i);
+  assert.doesNotMatch(accessPage,/Continue with Google/i);
   assert.match(accessPage,/Email me a code/i);
-  assert.doesNotMatch(page,/Continue with Google|Email me a code/i);
-  assert.match(page,/provider-details-form/i);
+  assert.doesNotMatch(page+detailsForm,/Continue with Google|Email me a code/i);
+  assert.match(page,/ProviderSignupDetailsForm/);assert.match(detailsForm,/provider-details-form/i);
 });
 
 test('signup handoff is signed, short lived, and keeps the account email private',async()=>{
@@ -55,9 +56,7 @@ test('signup intent and provisioning commands are server-only and authority acti
   assert.match(migration,/expires_at>now\(\)[\s\S]*for update/i);
   assert.match(migration,/after insert on auth\.users/i);
   assert.match(migration,/values\(new\.id[\s\S]*'DRIVER',false/i);
-  assert.match(migration,/interval '7 days'/i);
   assert.match(migration,/insert into public\.company_pages/i);
-  assert.match(migration,/insert into public\.subscriptions/i);
   assert.match(migration,/insert into public\.applications/i);
   const activation=migration.indexOf('update public.profiles set');
   assert.ok(activation>migration.indexOf('insert into public.applications'));
@@ -89,7 +88,7 @@ test('signup intent and provisioning commands are server-only and authority acti
   assert.match(reconciliationMigration,/'DRIVER'::public\.user_role[\s\S]*false/i);
 });
 
-test('fresh managed databases receive the minimum idempotent signup plan catalogue',()=>{
+test('the historical plan catalogue migration remains idempotent for retained records',()=>{
   for(const [code,audience] of [
     ['BUSINESS_CAPACITY','BUSINESS'],
     ['FLEET_DEMAND','TRANSPORTER'],
@@ -112,10 +111,10 @@ test('public signup proves identity first and provisions only after an authentic
   assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'signup'\}\)/);
   assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'email'\}\)/);
   assert.match(otpVerify,/authenticatedEmail!==handoff\.email/);
-  assert.match(otpVerify,/redirectUrl\(request,'\/apply\?step=details'\)/);
+  assert.match(otpVerify,/redirectUrl\(request,'\/workspaces'\)/);
   assert.match(callback,/readProviderSignupHandoff/);
   assert.match(callback,/authenticatedEmail!==signupHandoff\.email/);
-  assert.match(callback,/\/apply\?step=details/);
+  assert.match(callback,/\/workspaces/);
   assert.doesNotMatch(callback,/completeManagedProviderSignup/);
   assert.match(route,/prepareManagedProviderSignup/);
   assert.match(route,/client\.auth\.getUser\(\)/);

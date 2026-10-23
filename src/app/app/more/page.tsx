@@ -1,47 +1,57 @@
-import { requireUser } from '@/lib/auth';
-import { getBillingSummary, getWorkspaceAccess } from '@/lib/workspace.js';
-import { PageHeader } from '@/components/page-header';
-import { Flash } from '@/components/flash';
-import { StatusPill } from '@/components/status-pill';
-import { formatEtb } from '@/lib/domain.js';
-import { BadgeCheck, CalendarClock, CreditCard, ShieldCheck, UserRound } from 'lucide-react';
-import { Pagination } from '@/components/pagination';
+import Link from 'next/link';
+import {UserRound, ShieldCheck, FileCheck2, Building2, Camera} from 'lucide-react';
+import {LogoutButton} from '@/components/logout-button';
+import {ProviderProfileWorkspace} from '@/components/provider-profile-workspace';
+import {SubjectDocuments} from '@/components/subject-documents';
+import {getVerificationCenter} from '@/lib/verification.js';
+import {Text,Localized} from '@/components/localization';
+import {createSupabaseServerClient} from '@/lib/supabase/server';
+import {AccountSecurityControls} from '@/components/account-security-controls';
+import {AccountDeletionForm} from '@/components/account-deletion-form';
+import {accountDeactivationBlockers} from '@/lib/identity/account-security';
+import {requireUser} from '@/lib/auth';
+import {getWorkspaceAccess} from '@/lib/workspace.js';
+import {PageHeader} from '@/components/page-header';
+import {Flash} from '@/components/flash';
+import {AccountDetailsForm} from '@/components/account-details-form';
+import {DriverPortraitEditor} from '@/components/driver-portrait-editor';
+import {getDriverPortraitWorkspace} from '@/lib/driver-portrait-storage.js';
+import {providerWorkspaceCapabilities} from '@/lib/provider-workspace.js';
+import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
+import styles from '@/components/account-workspace.module.css';
 
-function planDescription(user:any){
-  if(user.role==='TRANSPORTER')return 'Fleet workspace access for publishing capacity and managing Tracking.';
-  if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator workspace access for publishing capacity and managing Tracking.';
-  if(user.provider_operating_model==='COMPANY_DRIVER')return `Company Driver access managed by ${user.organization_name}.`;
-  if(user.role==='DRIVER')return 'Self-managed Driver access for publishing capacity and managing Tracking.';
-  return 'Platform administration access.';
+const roleLabels:Record<string,string>={TRANSPORTER:'Transport Provider',DRIVER:'Transport Provider',ADMIN:'Platform administrator'};
+function accountRoleLabel(user:Awaited<ReturnType<typeof requireUser>>){
+  return user.provider_operating_model==='COMPANY_DRIVER'?'Company driver':roleLabels[user.role]||user.role;
 }
-
-const roleLabels:Record<string,string>={TRANSPORTER:'Fleet transporter',DRIVER:'Self-managed driver',ADMIN:'Platform administrator'};
-
-function accountRoleLabel(user:any){
-  if(user.provider_operating_model==='COMPANY_DRIVER')return `Company driver · ${user.organization_name}`;
-  if(user.provider_operating_model==='OWNER_OPERATOR')return 'Owner-operator';
-  if(user.provider_operating_model==='SELF_MANAGED_DRIVER')return 'Self-managed driver';
-  return roleLabels[user.role]||user.role;
+function Fact({label,children}:{label:string;children:React.ReactNode}){
+  return <div className={styles.fact}><dt><Text message={label}/></dt><dd>{children||<Text message="Not set"/>}</dd></div>;
 }
-
-function accessLabel(status:string){
-  if(status==='TRIAL')return '7-day trial';
-  if(status==='ACTIVE')return 'Paid access';
-  if(status==='SPONSORED')return 'Sponsored access';
-  if(status==='PAYMENT_UNDER_REVIEW')return 'Payment under review';
-  if(status==='EXPIRED_UNPAID')return 'Expired · unpaid';
-  return status.replaceAll('_',' ');
-}
-
 export default async function AccountPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
-  const user=await requireUser(undefined,{allowLimited:true});
-  const query=await searchParams;
-  const billing:any=await getBillingSummary(user,{page:query.paymentPage,pageSize:10});
-  const access=await getWorkspaceAccess(user);
-  const proofResult:any=billing.proofPage;
-
-  return <div className="page account-page"><PageHeader icon={CreditCard} title="Account & plan" subtitle="Private account details and workspace access."/><Flash error={query.error} success={query.success}/><div className="two-col account-layout"><div className="stack account-primary-stack">
-    <section className="card account-private-card"><h2 className="panel-heading"><UserRound aria-hidden="true"/>Private account</h2><p><strong>{user.name}</strong></p><p className="meta">{user.email}<br/>{user.phone||'No account phone'}<br/>{accountRoleLabel(user)}</p><p className="meta">Login contacts stay private.</p></section>
-    {billing.subscription&&access.status!=='SPONSORED'?<section className="form-card account-payment-card"><h2 className="panel-heading"><CreditCard aria-hidden="true"/>Submit payment</h2><p className="meta">Add payment details. Never upload passwords, PINs, or one-time codes.</p><form action="/api/billing/payment-proof" method="post" encType="multipart/form-data" className="stack"><div className="form-group"><label htmlFor="payment-amount"><CreditCard aria-hidden="true"/>Amount paid (ETB)</label><input id="payment-amount" name="amountEtb" type="number" min="1" required/></div><div className="form-group"><label htmlFor="payment-reference"><ShieldCheck aria-hidden="true"/>Transfer reference</label><input id="payment-reference" name="reference"/></div><div className="form-group"><label htmlFor="payment-file"><BadgeCheck aria-hidden="true"/>Proof <span className="meta">(optional)</span></label><input id="payment-file" name="file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div><button className="button icon-button-label"><CreditCard aria-hidden="true"/>Submit for review</button></form></section>:null}
-  </div><aside className="stack account-plan-stack"><section className={`card plan-status-card ${access.granted?'':'limited'}`}><div className="section-heading-icon">{access.status==='SPONSORED'?<ShieldCheck aria-hidden="true"/>:<CalendarClock aria-hidden="true"/>}<div><h2>Plan</h2><p className="meta">{billing.subscription?.plan_name||'No plan assigned'}</p></div></div>{billing.subscription?<><p className="meta">{planDescription(user)}</p><StatusPill status={access.status}/><p className="plan-access-label">{accessLabel(access.status)}</p>{access.ends_at?<div className="plan-deadline"><span>{access.granted?'Access through':'Access ended'}</span><strong>{new Date(access.ends_at).toLocaleDateString()}</strong></div>:null}</>:<p className="muted">Contact support for a plan.</p>}</section>{proofResult.total?<section className="card account-proof-history"><h2 className="panel-heading"><CalendarClock aria-hidden="true"/>Payment history</h2><div className="stack">{proofResult.items.map((proof:any)=><div key={proof.id}><strong>{formatEtb(proof.amount_minor)}</strong> <StatusPill status={proof.status}/><div className="meta">{new Date(proof.submitted_at).toLocaleString()}{proof.has_file?<><br/><a href={`/api/files/payment-proof/${proof.id}`} target="_blank">Open proof</a></>:null}</div></div>)}</div><Pagination path="/app/more" query={{}} page={proofResult.page} pageCount={proofResult.pageCount} total={proofResult.total} pageParam="paymentPage"/></section>:null}</aside></div></div>;
+  const user=await requireUser(undefined,{allowLimited:true}),query=await searchParams;
+  const access=await getWorkspaceAccess(user),capabilities=providerWorkspaceCapabilities(user);
+  const ownsProfile=access.granted&&capabilities.ownsProviderAccount,member=['TRANSPORTER','DRIVER'].includes(user.role);
+  const tabs=[{id:'details',label:'Account details',Icon:UserRound},...(ownsProfile?[{id:'profile',label:'Transporter profile',Icon:Building2}]:[]),...(access.granted&&member?[{id:'documents',label:'Documents',Icon:FileCheck2}]:[]),...(member?[{id:'security',label:'Email and account security',Icon:ShieldCheck}]:[])];
+  const tab=tabs.some(item=>item.id===query.tab)?query.tab!:'details';
+  // Opening Account should not wait for every document, portrait and closure query.
+  const [portrait,documents,pendingEmail,security]=await Promise.all([
+    tab==='details'&&capabilities.drivesTruck?getDriverPortraitWorkspace(user):null,
+    tab==='documents'?getVerificationCenter(user):null,
+    tab==='security'?(async()=>((await (await createSupabaseServerClient()).auth.getUser()).data.user?.new_email||undefined))():undefined,
+    tab==='security'?accountDeactivationBlockers(user.id).then(blockers=>({available:true,blockers})).catch(()=>({available:false,blockers:[]})):null
+  ]);
+  const ownDriverSubject=documents?.subjects.find((subject:{subject_type:string;subject_id:string})=>subject.subject_type==='DRIVER'&&subject.subject_id===user.id);
+  const ownerSubject=ownsProfile?documents?.subjects.find((subject:{subject_type:string})=>subject.subject_type===(user.organization_id?'ORGANIZATION':'PROVIDER_PROFILE')):null;
+  return <div className={`page ${styles.page}`}><PageHeader icon={UserRound} title={<Text message="Account"/>}/><Flash error={query.error} success={query.success}/>
+    <Localized as="nav" copy={['aria-label']} className={styles.tabs} aria-label="Account sections">{tabs.map(({id,label,Icon})=><Link key={id} href={`/app/more?tab=${id}`} aria-current={tab===id?'page':undefined} className={tab===id?styles.active:''}><Icon aria-hidden="true"/><Text message={label}/></Link>)}</Localized>
+    {tab==='details'?<section className={styles.surface}><header className={styles.heading}><div><h2>{user.name}</h2><p><Text message={accountRoleLabel(user)}/></p></div><WorkspaceTaskDialog title="Account details" triggerLabel="Edit details"><AccountDetailsForm name={user.name} firstName={user.firstName??undefined} lastName={user.lastName??''} phone={user.phone} publicCallbackPhone={user.publicCallbackPhone??''} canEditPublicContact={capabilities.drivesTruck}/></WorkspaceTaskDialog></header>
+      <dl className={styles.facts}><Fact label="First name">{user.firstName||user.name.split(/\s+/)[0]}</Fact><Fact label="Last / father name">{user.lastName}</Fact><Fact label="Account email">{user.email}</Fact><Fact label="Account phone">{user.phone}</Fact>{capabilities.drivesTruck?<Fact label="Public contact phone">{user.publicCallbackPhone}</Fact>:null}</dl><p className={styles.note}><Text message="Your login email stays private."/></p>
+      {capabilities.canManageFleet?<div className={styles.relatedRow}><div><strong><Text message="I drive a vehicle"/></strong><p><Text message={capabilities.drivesTruck?'Yes':'No'}/></p></div><WorkspaceTaskDialog title="I drive a vehicle" triggerLabel="Change"><form action="/api/account/driving-mode" method="post" className="stack"><div className="form-group"><label htmlFor="owner-driving-mode"><Text message="I drive a vehicle"/></label><select id="owner-driving-mode" name="drivesTruck" defaultValue={capabilities.drivesTruck?'1':'0'}><option value="1"><Text message="Yes"/></option><option value="0"><Text message="No"/></option></select><small><Text message="Keep my driving controls on Home."/></small></div><button className="button"><Text message="Save"/></button></form></WorkspaceTaskDialog></div>:null}
+      {portrait?<div className={styles.relatedRow}><div><strong><Text message="Driver photo"/></strong><p><Text message={portrait.hasPortrait?'Your driver photo':'No photo yet'}/></p></div><WorkspaceTaskDialog title="Driver photo" triggerLabel="Change photo" icon={<Camera aria-hidden="true"/>}><DriverPortraitEditor portrait={portrait}/></WorkspaceTaskDialog></div>:null}
+    </section>:null}
+    {tab==='profile'&&ownsProfile?<ProviderProfileWorkspace user={user} embedded/>:null}
+    {tab==='documents'?<div className={styles.documentSections} id="documents">{ownDriverSubject?<section className={styles.surface}><h2><Text message="Driver documents"/></h2><SubjectDocuments readOnly center={documents} kind="DRIVER" id={user.id} returnTo="/app/more?tab=documents#documents"/></section>:null}{ownerSubject?<section className={styles.surface}><h2><Text message={user.organization_id?'Workspace documents':'Owner documents'}/></h2><SubjectDocuments readOnly center={documents} kind={ownerSubject.subject_type} id={ownerSubject.subject_id} returnTo="/app/more?tab=documents#documents"/></section>:null}</div>:null}
+    {tab==='security'&&security?<section className={styles.surface} id="security"><AccountSecurityControls {...security} pendingEmail={pendingEmail}/><div className={styles.relatedRow}><div><strong><Text message="Delete account and data"/></strong></div><WorkspaceTaskDialog title="Delete account and data" triggerLabel="Delete account and data" variant="danger"><AccountDeletionForm initialEmail={user.email} showHeading={false}/></WorkspaceTaskDialog></div></section>:null}
+    <div className={styles.signOut}><LogoutButton/></div>
+  </div>;
 }

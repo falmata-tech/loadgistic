@@ -18,3 +18,5 @@ export async function updateProviderProfileImage(user,file){
 export async function removeProviderProfileImage(user){
   return removeSupabaseProviderProfileImage(user);
 }
+
+export {readSupabaseOwnProviderProfileImage as readOwnProviderProfileImage} from './provider-profile/supabase.js';

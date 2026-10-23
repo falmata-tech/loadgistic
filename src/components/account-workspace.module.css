@@ -1,0 +1,12 @@
+.page{max-width:1120px;margin-inline:auto}
+.tabs{display:flex;gap:24px;overflow-x:auto;margin:0 0 24px;border-bottom:1px solid #e5eaf1}
+.tabs a{display:flex;align-items:center;gap:8px;flex-shrink:0;min-height:52px;padding:9px 2px;border-bottom:3px solid transparent;color:#536570;text-decoration:none;font-size:.9rem;font-weight:650}
+.tabs a svg{width:18px;height:18px}.tabs a.active{color:#155eef;border-bottom-color:#155eef}.tabs a:focus-visible{outline:3px solid #155eef;outline-offset:-3px}
+.surface{padding:24px;background:#fff;border:1px solid #e5eaf1;border-radius:14px;box-shadow:0 3px 12px #0b1d3a05}
+.surface h2{margin:0 0 8px;font-size:1.2rem}.heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px}.heading p{margin:4px 0 0;color:#596b76;font-size:.85rem}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 32px;margin:0}.fact{min-width:0}.fact dt{color:#62727c;font-size:.8rem;margin-bottom:6px}.fact dd{margin:0;color:#0b1d3a;font-size:.97rem;font-weight:600;overflow-wrap:anywhere}
+.note{color:#62727c;font-size:.8rem;margin:20px 0 0}.relatedRow{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:24px;padding-top:20px;border-top:1px solid #e5eaf1}.relatedRow strong{font-size:.92rem}.relatedRow p{font-size:.82rem;color:#62727c;margin:4px 0 0}
+.documentSections{display:grid;gap:20px}.signOut{display:flex;justify-content:flex-end;margin-top:24px}.surface>section.card{padding:0;border:0;box-shadow:none}
+@media(max-width:600px){.tabs{gap:20px;margin-bottom:16px}.tabs a{font-size:.8rem;min-height:48px}.surface{padding:18px 16px}.facts{gap:18px;grid-template-columns:1fr}.heading{gap:10px}.heading h2{font-size:1.1rem}.relatedRow{flex-wrap:wrap;margin-top:20px}.relatedRow>div{flex:1;min-width:150px}}
+
+.profileActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;padding-top:20px;border-top:1px solid #e5eaf1}.about{max-width:70ch;font-size:.94rem;line-height:1.65;color:#3e5360;margin-bottom:24px;white-space:pre-wrap}

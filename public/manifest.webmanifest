@@ -1,7 +1,7 @@
 {
   "name": "Loadgistic",
   "short_name": "Loadgistic",
-  "description": "Share transport capacity and track agreed shipments across Ethiopia.",
+  "description": "Share transport capacity and keep shipment partners informed across Ethiopia.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -9,7 +9,7 @@
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "background_color": "#f6f8fb",
-  "theme_color": "#0c2a43",
+  "theme_color": "#0b1d3a",
   "categories": ["business", "productivity", "navigation"],
   "shortcuts": [
     { "name": "Open transport capacity", "short_name": "Open", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
@@ -24,7 +24,7 @@
     { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "screenshots": [
-    { "src": "/landing/product-capacity-board.png", "sizes": "1440x900", "type": "image/png", "form_factor": "wide", "label": "Loadgistic Truck Board" },
-    { "src": "/landing/product-driver-home.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "Driver capacity controls" }
+    { "src": "/landing/capacity-marketplace-wide.png", "sizes": "1440x1000", "type": "image/png", "form_factor": "wide", "label": "Capacity marketplace map" },
+    { "src": "/landing/capacity-marketplace-phone.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "Capacity marketplace on mobile" }
   ]
 }

@@ -1,0 +1,51 @@
+import {isValidCoordinate} from './location-privacy.js';
+import {contentBlocks} from './content-blocks.js';
+import {canonicalCapacityFilters} from './capacity-filter-values.js';
+export const MAX_MAP_TRUCKS=140;
+// Wrapped world copies cannot be sent as invalid west/east filter coordinates.
+export function worldCapacityViewport([west,south,east,north]) {
+ const shift=Math.floor(((west+east)/2+180)/360)*360;
+ let left=west-shift,right=east-shift;
+ if(east-west>=360||left< -180||right>180){left=-180;right=180;}
+ return [left,Math.max(-85,Math.min(84.999999,south)),right,Math.min(85,Math.max(-84.999999,north))];
+}
+// Public map bounds contain no device location. Exact visitor GPS stays client-only.
+export function parseCapacityViewport(value){
+ if(value===undefined||value===null||value==='')return null;
+ const parts=Array.isArray(value)?value:String(value).split(',');
+ if(parts.length!==4||parts.some(part=>part===null||String(part).trim()===''))throw new Error('INVALID_CAPACITY_VIEWPORT');
+ const [west,south,east,north]=parts.map(Number);
+ if(![west,south,east,north].every(Number.isFinite)||west< -180||east>180||south< -85||north>85||west>=east||south>=north)throw new Error('INVALID_CAPACITY_VIEWPORT');
+ return [west,south,east,north];
+}
+export function retainMapTrucks(current,incoming,selectedId,{replace=false,limit=MAX_MAP_TRUCKS}={}){
+ const bound=Math.max(1,Math.min(MAX_MAP_TRUCKS,Number(limit)||MAX_MAP_TRUCKS));
+ const items=new Map((replace?[]:current).map(item=>[item.id,item]));
+ for(const item of incoming)items.set(item.id,item);
+ const selected=incoming.find(item=>item.id===selectedId)||current.find(item=>item.id===selectedId);
+ const result=[...items.values()].filter(item=>item.id!==selected?.id).slice(-(bound-(selected?1:0)));
+ if(selected)return [selected,...(bound===1?[]:result)];
+ return result;
+}
+export function capacityDatabaseFilters(filters={},places=[]){
+ const selections=canonicalCapacityFilters(filters);
+ const [origin,destination,area,truckCity]=places;
+ const radius=value=>{const n=Number(value);return Number.isFinite(n)&&n>=5&&n<=300?n:50;};
+ const lat=truckCity?.center_lat??Number(filters.nearLat),lng=truckCity?.center_lng??Number(filters.nearLng);
+ const provided=value=>value!==undefined&&value!==null&&String(value).trim()!=='';
+ const hasNear=(Boolean(truckCity)||(provided(filters.nearLat)&&provided(filters.nearLng)))&&isValidCoordinate(lat,lng);
+ const viewport=parseCapacityViewport(filters.viewport);
+ return {
+  ...(filters.blocked?{blocked_handles:contentBlocks(filters.blocked)}:{}),
+  owner_docs:filters.ownerDocs||null,driver_docs:filters.driverDocs||null,truck_docs:filters.truckDocs||null,
+  capacity_id:filters.capacityId||filters.truck||null,provider:filters.provider||null,status:selections.status||null,geometry:filters.geometry||null,
+  vehicle_category:selections.vehicleCategory||null,load_type:selections.loadType||null,stop_option:selections.stopOption||null,freshness:selections.freshness||null,
+  location_source:selections.locationSource||null,q:filters.q||null,
+  origin_lat:origin?.center_lat??null,origin_lng:origin?.center_lng??null,origin_radius_km:radius(filters.originRadiusKm),
+  destination_lat:destination?.center_lat??null,destination_lng:destination?.center_lng??null,destination_radius_km:radius(filters.destinationRadiusKm),
+  area_lat:area?.center_lat??null,area_lng:area?.center_lng??null,area_radius_km:radius(filters.currentAreaRadiusKm),
+  direction_mode:filters.directionMode==='EITHER'?'EITHER':'DIRECT',near_lat:hasNear?lat:null,near_lng:hasNear?lng:null,
+  near_radius_km:truckCity?radius(filters.truckLocationRadiusKm):[5,10,20,50,100].includes(Number(filters.nearRadiusKm))?Number(filters.nearRadiusKm):20,
+  ...(viewport?{viewport}:{})
+ };
+}

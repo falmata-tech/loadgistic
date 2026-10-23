@@ -1,110 +1,113 @@
 ---
 id: FEAT-GST-001
-title: Anonymous assisted-matching conversations
+title: Retained guest support history
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-SUP-001, FEAT-ADM-001, FEAT-IAM-001]
-problem: Account-free visitors may want Loadgistic to help identify suitable transporters without completing a shipment form or publishing demand.
-behavior: A visitor starts a private Assisted matching conversation with a required email, required callback phone, and bounded message. The persistent public-shell launcher is the primary chat surface; it opens a compact desktop dialog or mobile sheet and restores the active session across public route changes and browser refreshes. It enters the existing support assignment workflow without creating a user account or public demand record. Available agents are assigned immediately, active conversations refresh automatically at a fast bounded interval, and the guest may attach specifically requested private images or PDFs. The guest or team may end the chat; its retained transcript becomes read-only and the guest may start a distinct new session. Supabase Realtime replaces polling during managed deployment; the local adapter must not claim push delivery. Loadgistic presents this as assisted matching, not a service guarantee or transaction handler.
-contracts: [GuestSupportIdentity, GuestConversationAccess, AssistedMatchingConversation, GuestSupportMessage, GuestSupportAttachment, GuestSupportProjection, PersistentPublicChatLauncher]
-observability: [guest_conversation_created, guest_message_sent, guest_attachment_uploaded, guest_conversation_access_denied, guest_conversation_closed]
-rollout: Use service-only Supabase PostgreSQL commands plus private support-attachment and server-only quarantine buckets in the isolated local and managed stacks; managed failure never falls back to SQLite. Production exposure remains blocked until the managed scanner, email, and shared-rate-limit adapters pass remote readiness checks. Roll back by disabling guest creation while retaining private records for the retention window.
+problem: Public live support is retired; previous participants still need secure access to retained transcripts and attachments.
+behavior: Platform transport-arrangement chat is retired under FEAT-ENT/TRQ-001, alongside the earlier retired general public Help. No new general guest-support conversations or guest replies/uploads are accepted. Previous guests may recover read-only transcripts using their original email and recovery code. Retired guest-support staff pages return 404; existing records and assignment-scoped private-file authorization remain intact without a staff archive UI. Dashboard live support for transport providers is governed by FEAT-SUP-001.
+contracts: [GuestSupportIdentity, GuestConversationAccess, AssistedMatchingConversation, GuestSupportMessage, GuestSupportAttachment, GuestSupportProjection]
+observability: [guest_conversation_access_denied, guest_conversation_closed]
+rollout: Migration 108 retired new public chat; migration 152 retires its remaining staff workload by closing only old Waiting/Open guest records with audit. Verify HTTP and database denial, preserved history, authorized downloads, and no staff archive UI. Keep database policy during app rollback so old public clients still fail closed. Restoring public live support requires a new owner decision and reviewed function rollback. No history deletion is authorized.
 ---
 
-# Anonymous assisted matching
+## October18 planned supersession — retire platform Brokerage
 
-### Scenario: guest asks for help without a shipment form
+Implementation in progress under FEAT-ENT-001. The owner removed transport-
+arrangement chat from every public, web, Expo, staff and admin surface. Platform
+staff retain software Support and account management only. The separate brokerage
+business will use an ordinary customer workspace, without platform privileges.
+The special Share with Loadgistic grant and LOADGISTIC capacity audience retire.
 
-Given an account-free visitor wants help finding a transporter\
-When the visitor submits a valid email, valid callback phone, and one bounded written message\
-Then one private Assisted matching conversation is created and assigned through the existing bounded support queue\
-And the visitor receives a secure browser session plus a recovery code queued to the submitted email\
-And the contact details are available only to the assigned team for reconnecting after a disruption\
-And no Load, shipment request, public demand signal, ranking, transaction, or user account is created\
-And the UI explains that the visitor may still browse, call, and negotiate with transporters directly.
+Given old web/native clients, cookies, bearer sessions, URLs or service calls
+When they request Brokerage intake, replies, assignment, polling, receipts, push
+registration or special Loadgistic capacity
+Then the application returns a retired/unavailable result and database authority
+also denies the operation, preserving private history and audit records.
 
-Given the recovery message is queued but its immediate email attempt does not complete\
-When the scheduled managed-operations worker leases it later\
-Then the recovery email uses the same stable idempotency key and private conversation code\
-And delivery failure never publishes the conversation or contact details.
+Given a platform staff member previously had only Brokerage responsibility
+When the service retires
+Then no Support or customer-workspace permission is granted automatically.
 
-### Scenario: active conversation feels live and fails safely
+Given current software Support and unloading-approval notifications
+When Brokerage is retired
+Then their authorized workflows, read receipts and delivery remain available.
 
-Given a guest has an open conversation\
-When the guest or assigned team member sends a message\
-Then an available agent is assigned immediately and the visible conversation refreshes at most every two seconds\
-And the UI shows whether a team member is currently available without promising a response time\
-And managed deployment may replace polling with Supabase Realtime while preserving the same authorization checks\
-And a realtime disconnect falls back to bounded polling without losing stored messages\
-And messages are length bounded, rate limited, idempotent, and rejected after closure.
+New evidence planned: `tests/platform-brokerage-retirement.test.mjs`,
+`tests/sql/platform-brokerage-retirement.sql`; local rehearsal and actual browser
+checks precede any separately reviewed hosted rollout. Older scenarios below are
+historical and superseded for active Brokerage/LOADGISTIC behavior, not evidence
+of its continuing availability. No private history erasure is included.
 
-### Scenario: the public chat follows the visitor
 
-Given a guest started or recovered an open Assisted matching conversation\
-When the guest closes the chat surface, navigates between supported public routes, or refreshes the browser\
-Then a small persistent Ask Loadgistic launcher remains available without covering primary map or navigation controls\
-And reopening it restores the same authorized conversation and stored messages without asking for the contact details again\
-And desktop uses a bounded dialog while a phone uses a safe-area-aware sheet above the public navigation\
-And dismissing the dialog only minimizes it while an explicit guest or team End chat action ends further replies\
-And focus is trapped while open, Escape closes it, focus returns to the launcher, and new team messages are announced without stealing focus.
+# Retained guest support
 
-### Scenario: ending and restarting are explicit
+## October15 owner supersession — retire the remaining staff workload
 
-Given a guest has an active Assisted matching conversation\
-When the guest selects End chat and confirms the action\
-Then the same retained transcript becomes read-only for both parties\
-And the launcher offers Start a new chat using a new contact-and-message submission\
-And starting again creates a distinct conversation rather than reopening or overwriting the ended transcript\
-And ending or starting does not create a Load, demand record, member account, or public post.
+The owner authorized removing old Guest support rather than preserving its
+dashboard workflows. Current implementation work removes its staff entry pages
+and prominent links. Because retained open guest records also consume Support
+assignment capacity, a separate additive repair closes only those retired guest
+records and records an administrative retirement audit. Provider Support and
+Brokerage conversations, messages, assignments and limits remain unchanged.
+Do not merely hide the workload count or leave inaccessible old records consuming
+slots. Private records/files need not be destructively erased to retire this work;
+no old third-service UI is retained on their behalf. Guest recovery remains
+current; the earlier staff-completion scenario was superseded by this decision.
 
-### Scenario: requested files remain private
+Given old general guest-support conversations are Waiting or Open\
+When the reviewed retirement migration runs\
+Then only those retired conversations become Closed with retirement audit\
+And their assigned workload no longer prevents new Provider support assignment\
+And all Provider support/Brokerage statuses, messages and audit history remain\
+And public general-help creation/replies remain410\
+And applying the migration again cannot duplicate closure or audit.
 
-Given the team asks a guest for supporting information\
-When the guest uploads a JPEG, PNG, WebP, or PDF no larger than the configured limit\
-Then its signature is validated before storage under a private opaque reference\
-And it is quarantined and receives a clean scanner verdict before the conversation stores that reference\
-And only that guest session, the assigned Support actor, or an administrator with Support permission can download it\
-And every download reauthorizes the conversation relationship\
-And filenames are sanitized while passwords, PINs, and one-time codes are explicitly discouraged\
-And production upload acceptance fails closed without configured malware scanning and durable private storage.
+Tests: planned `tests/sql/retired-guest-workload.sql`; run an isolated rollback
+rehearsal before installation. Hosted application remains separately reviewed.
 
-### Scenario: guest access fails closed
+Current policy: transport-provider users retain live support in their dashboards
+under FEAT-SUP-001. Public transport-arrangement chat and general public help
+are retired. These retained transcripts are not a third current service;
+authorized guest read-only recovery remains, but the staff completion UI does not.
+Earlier contracts remain in Git history. October15 source review confirms retired
+creation/current endpoints return410; this correction changes documentation only.
 
-Given a browser lacks the conversation session or submits an invalid email/code pair\
-When it requests the conversation, messages, or an attachment\
-Then the response discloses no conversation existence, contact, message, assignment, or file\
-And repeated access or message attempts are rate limited\
-And submitted secrets are absent from logs and audit details.
+### Scenario: retired public chat cannot create staff work
 
-### Scenario: team triage remains least privilege
+Given a visitor or stale browser has an old guest session
+When it calls guest creation, message or polling endpoints
+Then the request returns 410 without creating messages, attachments or email
+And the public launcher never restores chat, requests presence or polls for replies
+And service-only create/reply commands also deny guest writes in PostgreSQL.
 
-Given guest and member conversations share the operational inbox\
-When a Support actor or administrator opens the queue\
-Then each guest row is clearly labeled Assisted matching and shows only the bounded safe contact summary needed to reply\
-And assignment limits, claiming, closure, pagination, unread state, and audit behavior remain consistent\
-And ordinary providers and unrelated support agents cannot open the conversation or files.
+### Scenario: authorized recovery preserves history
 
-### Scenario: language does not promise brokerage outcomes
+Given an existing conversation remains within its retention period
+When its guest submits the correct email and original recovery code at /help
+Then the private transcript opens read-only without a reply/upload composer
+And no live polling runs, even for records whose staff status is still Open
+And invalid recovery, other guests and unassigned staff cannot read it
+And no new recovery email or public contact record is created.
 
-Given Loadgistic helps connect a visitor with transporters\
-When public or conversation UI explains that help\
-Then it uses Assisted matching\
-And it does not claim Loadgistic guarantees a transporter, documents, cargo fit, price, payment, delivery, or legal brokerage outcome.
+### Scenario: retained messages and files remain reachable
 
-### Scenario: managed guest chat is private and durable
+Given an authorized guest opens a retained conversation
+When they page older messages
+Then bounded windows preserve chronological order and offer Latest messages
+And incoming staff messages do not shift the historical window
+And every attachment download checks current conversation authorization.
 
-Given local development, Preview, or Production uses the managed runtime\
-When a visitor creates, restores, reads, replies to, ends, or downloads a file from Assisted matching\
-Then the active application route uses the dedicated Support port, Supabase PostgreSQL, and private Supabase Storage\
-And PostgreSQL repeats the server-held guest digest or assigned Support authorization on every conversation, message, lifecycle, and file command\
-And a failed metadata command removes a newly released upload instead of leaving an unowned attachment object\
-And Storage references, contact digests, recovery codes, and delivery internals never appear in the browser projection\
-And browser roles cannot execute the service-only commands or read the private bucket directly\
-And managed failure never falls back to SQLite or a serverless local file.
+### Scenario: retired staff archive stays unavailable without exposing files
 
-## Contract ownership
+Given an old guest conversation has an assigned Support agent
+When the agent opens its former staff archive URL
+Then the route returns 404 without showing the retained transcript
+And an attachment request still requires the agent's current assignment
+And removing that assignment immediately revokes the agent's file access
+And the recovered guest's own read-only transcript and attachment access remain.
 
-- Public surface: persistent public-shell launcher; `/help` and `/help/[id]` remain recovery and shareable fallbacks rather than primary navigation destinations
-- Support/admin inboxes: existing `/support` and `/admin/support`
-- Inbound adapters: `/api/guest-support/*` and authorized private-file reads
-- Application service and persistence adapter: dedicated managed Support port and service-only Supabase PostgreSQL commands
-- Private storage adapter: quarantined/scanned Supabase private Storage through `src/lib/private-storage.js`
-- Tests: managed Support contract and live Supabase verifier, domain authorization/rate-limit, file authorization, desktop/mobile E2E
+Tests: `tests/provider-support-policy.test.mjs`,
+`tests/sql/provider-only-support.sql`, `tests/sql/support-history.sql`,
+`tests/e2e/assisted-chat-audit.spec.ts`, `tests/e2e/public-assistance-dock.spec.ts`,
+`tests/e2e/support-history.spec.ts`, `tests/e2e/brokerage-workflows.spec.ts`.
+NR-03/08/13: database denial and real browser flows must pass; owner visual review
+precedes full release checks. Local implementation does not claim hosted rollout.

@@ -9,6 +9,8 @@
 - [ ] `npm run quality`
 - [ ] Relevant permission and failure tests
 - [ ] Playwright tests for changed user workflows, or not applicable with reason
+- Affected test inputs/fixtures reviewed against the current contract:
+- Tooling/workflow change: negative checks and measured timing, or not applicable:
 
 ## Operational review
 
@@ -16,6 +18,9 @@
 - Rollout and rollback:
 - Data migration:
 - Security/tenant/public-field impact:
+- Applicable do-not-repeat lesson IDs from `docs/SECURITY_REGRESSION_REGISTER.md`:
+- Negative regression evidence, or not applicable with reason:
+- New findings recorded with owner/next action; local, hosted and monitoring states distinguished:
 
 ## Product invariants
 

@@ -1,0 +1,81 @@
+name: loadgistic-telematics
+services:
+  database:
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_DB: traccar
+      POSTGRES_USER: traccar
+      POSTGRES_PASSWORD: ${GATEWAY_DATABASE_PASSWORD:?Generate isolated gateway configuration first}
+    volumes:
+      - gateway-database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U traccar -d traccar']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    mem_limit: 512m
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+  traccar:
+    image: traccar/traccar:6.16.0-alpine
+    depends_on:
+      database: {condition: service_healthy}
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: 'true'
+      DATABASE_PASSWORD: ${GATEWAY_DATABASE_PASSWORD:?Generate isolated gateway configuration first}
+    volumes:
+      - ./traccar.xml:/opt/traccar/conf/traccar.xml:ro
+    ports:
+      - '127.0.0.1:18082:8082'
+      - '127.0.0.1:15023:5023'
+      - '127.0.0.1:15027:5027'
+      - '127.0.0.1:15013:5013'
+      - '127.0.0.1:15015:5015'
+    restart: unless-stopped
+    mem_limit: 1g
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+  bridge:
+    build: .
+    profiles: [bridge]
+    depends_on:
+      database: {condition: service_healthy}
+      traccar: {condition: service_started}
+    environment:
+      GATEWAY_DATABASE_URL: postgres://loadgistic_bridge:${GATEWAY_BRIDGE_PASSWORD}@database:5432/traccar
+      GATEWAY_ID: ${GATEWAY_ID}
+      GATEWAY_SECRET: ${GATEWAY_SECRET}
+      GATEWAY_COMMANDS_ENABLED: 'true'
+      TRACCAR_API_URL: http://traccar:8082/api/
+      TRACCAR_API_TOKEN: ${TRACCAR_API_TOKEN}
+      LOADGISTIC_GATEWAY_URL: ${LOADGISTIC_GATEWAY_URL:-http://host.docker.internal:3100/api/telematics/gateway}
+    extra_hosts: [host.docker.internal:host-gateway]
+    restart: unless-stopped
+    mem_limit: 256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+  janitor:
+    build: .
+    profiles: [privacy]
+    command: [node, janitor.mjs]
+    depends_on:
+      database: {condition: service_healthy}
+      traccar: {condition: service_started}
+    environment:
+      GATEWAY_JANITOR_DATABASE_URL: postgres://loadgistic_janitor:${GATEWAY_JANITOR_PASSWORD:-not-configured}@database:5432/traccar
+      GATEWAY_ID: ${GATEWAY_ID}
+      GATEWAY_PRIVACY_SECRET: ${GATEWAY_PRIVACY_SECRET:-not-configured}
+      TRACCAR_API_URL: http://traccar:8082/api/
+      TRACCAR_PRIVACY_API_TOKEN: ${TRACCAR_PRIVACY_API_TOKEN:-not-configured}
+      TRACCAR_PRIVACY_USER_ID: ${TRACCAR_PRIVACY_USER_ID:-0}
+      LOADGISTIC_PRIVACY_URL: ${LOADGISTIC_PRIVACY_URL:-http://host.docker.internal:3100/api/telematics/privacy}
+    extra_hosts: [host.docker.internal:host-gateway]
+    restart: 'no'
+    mem_limit: 256m
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+volumes:
+  gateway-database:

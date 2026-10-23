@@ -7,7 +7,8 @@ Specifications are the source of intent for Loadgistic changes. They describe ob
 - `base/`: cross-cutting frontend, backend, and deployment constraints.
 - `features/`: end-to-end business capabilities linked to one or more bases.
 - `templates/`: starting points for new specifications.
-- `TRACEABILITY.md`: feature-to-code-and-test coverage map.
+- `TRACEABILITY.md`: concise feature-to-code-and-test index; detailed dated
+  evidence is linked separately as history.
 
 Every specification is Markdown with YAML front matter containing `id`, `title`, `related_ids`, `problem`, `behavior`, `contracts`, `observability`, and `rollout`. Feature behavior uses Given/When/Then scenarios. IDs are stable and references must resolve.
 
@@ -22,3 +23,7 @@ Every specification is Markdown with YAML front matter containing `id`, `title`,
 7. `npm run check:specs` and `npm run quality` pass.
 
 See `docs/SPEC_DRIVEN_DEVELOPMENT.md` for the workflow and `docs/GUARDRAILS.md` for mandatory change controls.
+
+Read the active task in `docs/PROGRESS.md` and the current product overview in
+`docs/PRODUCT_MASTER_PROMPT.md`; use their historical links only for a relevant
+older decision or receipt. Do not load all three archives into ordinary context.

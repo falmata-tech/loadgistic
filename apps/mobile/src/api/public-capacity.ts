@@ -1,0 +1,131 @@
+import { discoveryParams, type TruckFilters } from './discovery.ts';
+import { capacityLoadPreference, type CapacityLoadPreference } from '../../../../src/lib/capacity-load-preferences.js';
+import {publicTruckAuthority} from '../../../../src/lib/public-truck-authority.js';
+import {publicAsset} from '../../../../src/lib/mobile/public-contract.js';
+import {externalDestination,type PublicBadge,type TruckAuthority} from './public-content.ts';
+import {locationSourceKind} from '../../../../src/lib/location-source.js';
+export type SignalPoint = {latitude:number;longitude:number;label:string};
+export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};
+export type CapacitySignal = {
+  authority?:TruckAuthority; id: string; provider: string; handle: string; driver: string;portrait:string;
+  truck: string; status: 'EMPTY' | 'PARTIAL';
+  driverPhone:string;providerPhone:string;driverKind:string;ownerDocumentsLabel:'Owner documents'|'Transport Provider documents';
+  ownerBadges:PublicBadge[];driverBadges:PublicBadge[];truckBadges:PublicBadge[];
+  acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
+  latitude: number | null; longitude: number | null;
+  capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|'MANUAL'|null;locationIsDemo?:boolean;
+  geometry:'ROUTE'|'RADIUS'|null; currentVisible:boolean; currentPoints:SignalPoint[];
+  precisionKm:number; regular:RegularSignal[];
+};
+export type CapacityPage = { items: CapacitySignal[]; nextCursor: string | null; hasMore: boolean };
+const record = (value: unknown): Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Invalid capacity response');
+  return value as Record<string, unknown>;
+};
+const text = (value: unknown) => typeof value === 'string' ? value : '';
+const publicPhone=(value:unknown)=>externalDestination(`tel:${text(value)}`)?.slice(4)||'';
+const documentTypes=new Set(['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_OPERATING_LICENSE','VEHICLE_AUTHORIZATION','VEHICLE_AUTHORITY','TRUCK_AUTHORIZATION']);
+const publicDate=(value:unknown)=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}(?:T[\d:.+-]+Z?)?$/.test(value)?value:'';
+function documentBadges(value:unknown):PublicBadge[]{
+ if(!Array.isArray(value))return[];
+ return value.flatMap(raw=>{
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return[];
+  const row=raw as Record<string,unknown>,type=text(row.type);if(!documentTypes.has(type))return[];
+  return [{type,reviewed:row.verified===true&&row.expired!==true,expired:row.expired===true,reviewedAt:publicDate(row.reviewedAt),expiresOn:publicDate(row.expiresOn)}];
+ });
+}
+const coordinate = (value: unknown, max: number): number | null =>
+  typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= max ? value : null;
+
+const points = (value:unknown):SignalPoint[] => {
+ if(!Array.isArray(value))return[];
+ const result:SignalPoint[]=[];
+ for(const raw of value){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return[];
+  const row=raw as Record<string,unknown>,latitude=coordinate(row.lat,90),longitude=coordinate(row.lng,180);
+  // Removing a bad vertex would invent a different route/boundary.
+  if(latitude===null||longitude===null)return[];
+  result.push({latitude,longitude,label:text(row.label)});
+ }
+ return result;
+};
+// Only explicitly public callback phones and review metadata accompany the map.
+export function parseCapacityPage(value: unknown): CapacityPage {
+  const page = record(value);
+  if (page.filterError) throw new Error('Choose valid cities and try your filters again.');
+  if (!Array.isArray(page.items) || typeof page.hasMore !== 'boolean') throw new Error('Invalid capacity response');
+  const items: CapacitySignal[] = [];
+  for (const raw of page.items) {
+    const row = record(raw);
+    if (row.status !== 'EMPTY' && row.status !== 'PARTIAL') continue;
+    const id = text(row.id), driver = text(row.assigned_driver_first_name);
+    if (!id || !driver) continue;
+    const latitude=coordinate(row.location_lat,90),longitude=coordinate(row.location_lng,180);
+    const currentVisible=row.current_signal_geometry_visible!==false;
+    items.push({ ...(row.authority?{authority:publicTruckAuthority(row.authority)}:{}),id, driver,portrait:publicAsset(row.assigned_driver_portrait_url), provider: text(row.provider_name), handle: text(row.provider_handle),
+      driverPhone:publicPhone(row.assigned_driver_phone),providerPhone:publicPhone(row.contact_phone),driverKind:text(row.driver_kind_label)||'Driver',
+      ownerDocumentsLabel:row.provider_organization_id?'Transport Provider documents':'Owner documents',
+      ownerBadges:documentBadges(row.owner_verification_badges),driverBadges:documentBadges(row.driver_verification_badges),truckBadges:documentBadges(row.truck_verification_badges),
+      truck: [text(row.vehicle_make), text(row.vehicle_model)].filter(Boolean).join(' '),
+      status: row.status, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
+      latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,
+      capacityAge: text(row.capacity_updated_label), locationAge: text(row.location_updated_label),locationSource:locationSourceKind(row.location_source),
+      configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':row.availability_geometry==='RADIUS'?'RADIUS':null,
+      currentVisible,
+      currentPoints:points(row.availability_geometry==='ROUTE'?row.current_route_points:row.capacity_area_boundary),
+      precisionKm:typeof row.location_precision_km==='number'&&Number.isFinite(row.location_precision_km)&&row.location_precision_km>0?row.location_precision_km:20,
+      regular:Array.isArray(row.recurring_corridors)?row.recurring_corridors.slice(0,1).flatMap(raw=>{
+       if(!raw||typeof raw!=='object')return[];const recurring=raw as Record<string,unknown>;
+       if(recurring.geometry!=='ROUTE'&&recurring.geometry!=='RADIUS')return[];
+       return [{geometry:recurring.geometry as 'ROUTE'|'RADIUS',points:points(recurring.geometry==='ROUTE'?recurring.route_points:recurring.area_boundary)}];
+      }):[], });
+  }
+  const nextCursor = text(page.nextCursor) || null;
+  if (page.hasMore && !nextCursor) throw new Error('Incomplete capacity pagination');
+  return { items, hasMore: page.hasMore, nextCursor };
+}
+
+export function capacityUrl(baseUrl: string, query: string, cursor = '', filters:TruckFilters = {}): string {
+  const base = new URL(baseUrl);
+  if (base.username || base.password || base.search || base.hash) throw new Error('Invalid API URL');
+  const octets = base.hostname.split('.').map(Number);
+  const ipv4 = octets.length === 4 && octets.every(part => Number.isInteger(part) && part >= 0 && part <= 255);
+  const local = base.hostname === 'localhost' || base.hostname === '127.0.0.1' || (ipv4 && (octets[0] === 10 || (octets[0] === 192 && octets[1] === 168) || (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31)));
+  if (base.protocol !== 'https:' && !(base.protocol === 'http:' && local)) throw new Error('HTTPS is required');
+  const url = new URL('/api/public/capacity', base);
+  url.search = discoveryParams(query,filters).toString();
+  if (cursor) url.searchParams.set('cursor', cursor);
+  return url.toString();
+}
+
+export async function loadCapacity(baseUrl: string, query: string, signal: AbortSignal,
+  onPage: (items: CapacitySignal[]) => void, request: typeof fetch = fetch, filters:TruckFilters = {}): Promise<void> {
+  let cursor = ''; const seen = new Set<string>(); const items = new Map<string, CapacitySignal>();
+  do {
+    const response = await request(capacityUrl(baseUrl, query, cursor, filters), { signal, credentials: 'omit', headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error('Capacity is temporarily unavailable. Please try again.');
+    const page = parseCapacityPage(await response.json());
+    if (signal.aborted) throw new Error('Request cancelled');
+    for (const item of page.items) items.set(item.id, item);
+    onPage([...items.values()]);
+    if (!page.hasMore) return;
+    cursor = page.nextCursor!;
+    if (seen.has(cursor)) throw new Error('Capacity could not finish loading. Please try again.');
+    seen.add(cursor);
+  } while (!signal.aborted);
+}
+
+export async function loadSharedCapacity(query: string, signal: AbortSignal, onPage: (items: CapacitySignal[]) => void, request: (path: string, signal: AbortSignal) => Promise<unknown>, filters:TruckFilters = {}): Promise<void> {
+ let cursor = ''; const seen = new Set<string>(), items = new Map<string, CapacitySignal>();
+ do {
+  const params = discoveryParams(query,filters); if(cursor)params.set('cursor',cursor);
+  const page = parseCapacityPage(await request(`/api/mobile/visitor/capacity/signals?${params}`, signal));
+  if (signal.aborted) throw new Error('Request cancelled');
+  for (const item of page.items) items.set(item.id, item);
+  onPage([...items.values()]);
+  if (!page.hasMore) return;
+  cursor = page.nextCursor!;
+  if (seen.has(cursor)) throw new Error('Capacity could not finish loading. Please try again.');
+  seen.add(cursor);
+ } while (!signal.aborted);
+}

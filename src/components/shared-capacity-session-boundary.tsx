@@ -1,5 +1,7 @@
 'use client';
 
+
+import {Text,Localized} from '@/components/localization';
 import {Clock3,LogOut} from 'lucide-react';
 import React from 'react';
 import {
@@ -9,6 +11,7 @@ import {
 } from '@/lib/shared-capacity-session';
 
 export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initialExpiresAt:number;children:React.ReactNode}){
+  const surface=React.useRef(null as HTMLDivElement|null);
   const lastActivityAt=React.useRef(Date.now());
   const lastRenewedAt=React.useRef(0);
   const serverExpiresAt=React.useRef(initialExpiresAt);
@@ -30,7 +33,7 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
         method:'DELETE',headers:{accept:'application/json'},keepalive:true,signal:controller.signal
       });
     }catch{}finally{window.clearTimeout(timer);}
-    window.location.replace(`/shared-capacity?session=${reason}`);
+    window.location.replace(`/?view=private&session=${reason}`);
   },[]);
 
   const renew=React.useCallback(async()=>{
@@ -84,6 +87,11 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
       if(sharedCapacitySessionExpired(Date.now(),lastActivityAt.current,serverExpiresAt.current))void endSession('inactive');
       else schedule();
     };
+    // Hide cached private results before history snapshots; recheck the session on restore.
+    const hideForHistory=()=>{if(surface.current)surface.current.style.visibility='hidden';};
+    const restoreFromHistory=(event:PageTransitionEvent)=>{if(event.persisted)window.location.reload();};
+    window.addEventListener('pagehide',hideForHistory);
+    window.addEventListener('pageshow',restoreFromHistory);
     const events:Array<keyof DocumentEventMap>=['pointerdown','keydown','touchstart','wheel','scroll'];
     for(const eventName of events)document.addEventListener(eventName,recordActivity,{passive:true});
     document.addEventListener('visibilitychange',checkAfterBackground);
@@ -93,16 +101,18 @@ export function SharedCapacitySessionBoundary({initialExpiresAt,children}:{initi
       window.clearTimeout(idleTimer);
       for(const eventName of events)document.removeEventListener(eventName,recordActivity);
       document.removeEventListener('visibilitychange',checkAfterBackground);
+      window.removeEventListener('pagehide',hideForHistory);
+      window.removeEventListener('pageshow',restoreFromHistory);
     };
   },[endSession,renew]);
 
-  if(locked)return <section className="container shared-capacity-session-ending" role="status"><Clock3 aria-hidden="true"/><strong>Closing private capacity…</strong></section>;
+  if(locked)return <section className="container shared-capacity-session-ending" role="status"><Clock3 aria-hidden="true"/><strong><Text message="Closing private capacity…"/></strong></section>;
 
-  return <div className="shared-capacity-session-workspace" aria-label="Private Transport Capacity session">
+  return <Localized as="div" ref={surface} copy={["aria-label"]} className="shared-capacity-session-workspace" aria-label="Private Transport Capacity session">
     <div className="container shared-capacity-session-bar">
-      <span aria-label="Private capacity access ends after 30 minutes without activity."><Clock3 aria-hidden="true"/><span><strong>Private session</strong><small>30-minute idle limit</small></span></span>
-      <button type="button" className="button secondary small" data-shared-capacity-logout onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/>Log out</button>
+      <Localized as="span" copy={["aria-label"]} aria-label="Private capacity access ends after 30 minutes without activity."><Clock3 aria-hidden="true"/><span><strong><Text message="Private session"/></strong><small><Text message="30-minute idle limit"/></small></span></Localized>
+      <button type="button" className="button secondary small" data-shared-capacity-logout onClick={()=>void endSession('logout')}><LogOut aria-hidden="true"/><Text message="Log out"/></button>
     </div>
     {children}
-  </div>;
+  </Localized>;
 }

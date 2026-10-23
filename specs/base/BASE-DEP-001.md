@@ -11,6 +11,91 @@ rollout: Promote immutable artifacts only after required checks; roll back appli
 
 # Deployment base specification
 
+## Delivery tooling quality
+
+### Scenario: broken delivery tooling fails before expensive setup
+
+Given the repository's pinned workflow linter has been explicitly installed\
+When `npm run check:workflow` runs locally or in CI validation\
+Then actionlint checks every GitHub Actions workflow for syntax and expression errors\
+And Node parses operational JavaScript under the root and mobile `scripts/` directories without importing or executing those scripts\
+And a missing linter, syntax error, failed check or timeout fails the command\
+And CI performs this check before starting Docker, importing fixtures or building the app.
+
+### Scenario: workflow tooling stays bounded and reproducible
+
+Given actionlint is absent from the project-local cache\
+When the operator explicitly runs the setup command\
+Then it downloads only the pinned release for a supported platform and verifies
+the archive's pinned SHA-256 before extracting its executable\
+And routine checks do not download software, install global packages, read
+application credentials or execute a deployment\
+And existing behavioral tests for runner failures, retries, safe diagnostics and
+release gates remain required by the root test suite.
+
+`check:workflow` is a static tripwire, not evidence that a browser workflow,
+remote service or production rollout works. ShellCheck integration is used when
+installed; its absence is reported explicitly and never represented as a pass
+for shell analysis. No new paid service or separate remote job is required.
+Local evidence: `scripts/check-workflow.mjs`, `tests/workflow-quality.test.mjs`,
+40 passing focused tooling/runner cases and a7.317-second workflow lint/script
+parse run with ShellCheck. The next exact-source CI remains pending. Rollback restores the
+previous npm check chain and removes the early static step; it never waives
+the existing required release jobs.
+
+### Scenario: project skills load only the relevant delivery procedure
+
+Given Codex is working inside the Loadgistic repository\
+When a request concerns stale tests/CI diagnosis or preparing a web/Android release\
+Then repo-scoped skills describe those triggers distinctly and remain available
+for implicit or explicit invocation\
+And their bodies point to the existing controlling specs, task checklist and
+operational authority rather than duplicating history or embedding credentials\
+And each task loads only its applicable procedure, preserving completed evidence,
+scope and existing authorization\
+And ordinary unrelated work does not require the complete release procedure.
+
+Validate skill metadata and references and review representative positive and
+negative task routing. Discovery depends on the running agent/client and project
+directory; a valid file alone does not prove it was selected. Skills are context
+and workflow guidance, not new permissions or a security sandbox. Actual token
+and time savings must be observed before reporting them.
+
+### Scenario: current engineering context is small and unambiguous
+
+Given dated task and verification records have accumulated in entry documents\
+When an agent resumes work or finds a feature's controlling contract\
+Then the product brief describes the current source and separates planned and
+hosted behavior, the task checklist names unfinished dependencies, and the
+traceability entry links the applicable specs and evidence\
+And older narrative remains linked as historical evidence rather than competing
+current instructions\
+And consolidation preserves the original text, unresolved gates and discoverable
+feature/spec references without requiring every task to load the archives.
+
+Documentation-only consolidation does not authorize a product change, declare
+old evidence current, or waive release checks. Validate archived content against
+its pre-move hash, local link targets and the size of the current entry documents.
+
+### Scenario: GitHub task isolation and merge readiness
+
+Given an agent is preparing a bounded Loadgistic change\
+When it selects a branch or prepares a pull request\
+Then it verifies the live default branch and exact head/base rather than relying
+on an old PR or branch name\
+And future independent tasks use short descriptive branches from the integrated
+baseline, with separate worktrees where parallel tasks would otherwise collide\
+And review evidence names the complete net change and the current tested revision\
+And merge, hosted branch protection and production publication remain separate
+operations under existing authorization, with no force push or bulk staging of
+unrelated work\
+And third-party skills are reviewed for provenance, included commands, access and
+compatibility before selection or installation; they cannot expand permissions.
+
+Existing long-lived release work is not silently rebased, squashed or replaced.
+Choose an integration method that preserves its verified commit/artifact history.
+Document planned provider enforcement separately from observed installed controls.
+
 ## Base scenarios
 
 ### Scenario: pull request validation
@@ -32,17 +117,31 @@ When it validates and stores the upload\
 Then the file's actual signature agrees with its permitted MIME type\
 And the complete multipart upload is limited to four mebibytes so it remains below Netlify's effective buffered binary-request boundary\
 And the untrusted object is first written to a dedicated private quarantine boundary\
-And a configured scanner returns an explicit clean verdict before the object is copied into its purpose-specific private bucket\
-And an infected, malformed, timed-out, quota-limited, unavailable, or unexpected scanner result deletes the quarantined object and returns no storage reference\
+And the operator explicitly selects managed antivirus or validation-only upload inspection\
+And managed antivirus requires an explicit clean verdict before release; an infected, malformed, timed-out, quota-limited, unavailable, or unexpected scanner result deletes the quarantined object and returns no storage reference\
+And validation-only mode retains signature, MIME, size, quarantine, and authorization checks but never claims a virus-free verdict\
 And the database stores an opaque released private-storage reference rather than a public URL or quarantine reference\
 And every download rechecks domain authorization before reading that reference\
 And every managed runtime uses private Supabase Storage buckets while local development uses an isolated EICAR-aware test scanner that cannot satisfy Production readiness\
 And scanner credentials, verdict details, original document content, and quarantine references are never written to application logs.
 
+### Scenario: operator-approved uploads without antivirus
+
+Given the owner explicitly selects `UPLOAD_SCANNER_BACKEND=validation-only`\
+When a permitted private upload passes the existing size and file-signature checks\
+Then it can be released without a third-party antivirus account\
+And health reports `uploads-not-virus-scanned` as a warning, not a clean scanner verdict\
+And this mode is never selected automatically after a managed scanner fails\
+And a missing mode still uses the local-test default which cannot satisfy Production readiness\
+And private PDF evidence is downloaded as an attachment with no-sniff and restrictive document headers\
+And restoring managed antivirus is a configuration-only rollback.
+
+This is the owner's explicit 2026-09-13 pilot risk decision, not equivalent malware protection. See `docs/UPLOAD_POLICY_2026-09-13.md`. Regression evidence: `tests/upload-scanner.test.mjs`, `tests/private-storage.test.mjs`, and `tests/launch-readiness.test.mjs`.
+
 ### Scenario: production readiness reports blockers truthfully
 
 Given health traffic reaches a production runtime\
-When durable database, private storage, session secret, distinct Tracking code secret, or upload-scanning configuration is incomplete\
+When durable database, private storage, session secret, distinct Tracking code secret, or the explicitly chosen upload inspection configuration is incomplete\
 Then readiness returns an unhealthy response with non-secret blocker names\
 And it never falls back to SQLite or local serverless files when Supabase is unavailable.
 
@@ -122,6 +221,31 @@ Then it resets and uses a dedicated local Supabase project on dedicated ports\
 And it does not reuse a running development server or its business records\
 And its generated Next.js artifacts are isolated from both the live development server and production build output.
 
+Given local fixture setup reads its schema before any reset or import\
+When that read times out or returns an error\
+Then setup stops before fixture mutations and reports only a sanitized status and provider code\
+And it never prints response messages, details, credentials or raw transport errors\
+And neither the read nor the destructive import is silently retried\
+And a malformed or empty schema is rejected before reset.
+
+Verification: `tests/fixture-schema.test.mjs`. This diagnostic does not establish
+the cause of a past intermittent HTTP 500 or waive clean CI setup evidence.
+
+### Scenario: browser API transport failures do not expose request secrets
+
+Given a browser test uses the scoped Playwright API request context\
+When a wrapped request method throws or rejects before returning an HTTP response\
+Then the request remains rejected with only its fixed method name and an allowlisted transport reason in the error message\
+And an unrecognized failure uses one fixed unknown reason\
+And no raw URL, request headers, cookies, tokens, contacts, body, original message, custom error fields or cause is copied into the replacement error\
+And the wrapper neither retries the request nor converts failure to success\
+And successful and unsuccessful HTTP responses are returned unchanged.
+
+Verification: `tests/browser-test-headers.test.mjs` exercises sentinel request and
+error secrets, fixed transport reasons, rejected outcomes and unchanged responses.
+This is test-harness diagnosis only; it does not change application requests or
+waive browser workflow or release checks.
+
 ### Scenario: local development uses incremental compilation
 
 Given a developer starts Loadgistic with the documented development command\
@@ -149,7 +273,7 @@ And the public browser credential is named `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 And `APP_URL` supplies one HTTPS deployment-owned origin for fixed Supabase Auth callbacks\
 And Supabase's Site URL and Redirect URL allowlists, Google provider, numeric email template, and verified SMTP are recorded as owner-managed controls\
 And secret values are entered in the deployment platforms rather than committed\
-And Netlify or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and upload scanning contracts pass.
+And Netlify or Docker deployment remains blocked from public production until the Supabase repository, managed identity, shared rate limit, and selected upload inspection contracts pass.
 
 ### Scenario: zero-cost pilot has explicit capacity boundaries
 
@@ -182,6 +306,7 @@ And no application path proxies, prefetches, or bulk-copies map tiles.
 Given a supported framework line receives security updates\
 When launch dependencies are reviewed\
 Then the lockfile has no high-severity advisories\
+And the pinned SMTP library parses adversarial address input within a bounded subprocess timeout without sending email\
 And Next.js runs on an Active or Maintenance LTS line\
 And major framework upgrades are not mixed into launch stabilization without their own migration evidence.
 
@@ -205,3 +330,154 @@ And generated identities, capacity, files, and reports are never written to Prod
 - `npm run quality`
 - `npm run build`
 - `npm run test:scale`
+
+
+### Scenario: local credentials and deployment state never enter container builds (F26)
+
+Given a developer checkout contains ignored credentials, backups, deployment
+artifacts and linked database state\
+When Docker sends the build context and constructs the application builder\
+Then `.local`, `.netlify`, every `.next*` build directory, and Supabase `.temp`
+or `.branches` directories are excluded before context transfer\
+And the builder fails before compilation if local credential/deployment or linked
+Supabase state is present\
+And the final runtime receives only the standalone application and public assets.
+
+Evidence: a local canary/context check plus the ordinary standalone Docker build.
+No hosted data is required for this check. Rollback must preserve these exclusions;
+this changes packaging only, not runtime authority or database behavior.
+
+### Scenario: production pilot documents use the private-storage contract
+
+Given the additive pilot importer substitutes a shared synthetic verification file
+When it maps a verification request for a namespaced pilot identity
+Then the stored reference includes the `supabase://verification/` bucket prefix
+And the existing private-storage reader retrieves the intended object
+And the document route still requires the authorized account.
+
+A repair of existing pilot references must match the exact fixture identity,
+original reference and reviewed row set; preserve file bytes and all other fields;
+retain a protected recovery snapshot; and reject drift before an atomic update.
+Do not rerun the bulk importer to correct these references. Production application
+still requires the owner's exact database-change approval. Regression evidence:
+`tests/production-pilot-policy.test.mjs`; deployment browser verification and the
+bounded repair rehearsal recorded in `docs/PROGRESS.md`.
+
+
+### Scenario: performance work preserves the approved experience
+
+Given a request authorizes performance improvements to an existing interface\
+When an optimization is proposed\
+Then its acceptance preserves appearance, action count, automatic behavior and result completeness\
+And any required UX tradeoff needs explicit owner agreement before implementation\
+And the agent exercises the running local preview on desktop and phone, records the changed workflow and visual evidence, and corrects observed defects before deployment\
+And a required UX tradeoff still needs owner agreement, while successful CI or an agent-authored spec does not replace the hands-on review or separate release authorization.
+
+NR-13 and `docs/MAP_PERFORMANCE_REGRESSION_2026-09-21.md` record the map incident,
+local evidence and remaining repair. Repository rules are workflow requirements,
+not installed provider-level enforcement.
+
+### Scenario: all browser shards must pass before release
+
+Given the complete desktop and phone Playwright suite runs across eight isolated CI runners\
+When any shard fails, is cancelled or is skipped\
+Then the aggregate `e2e` release gate fails\
+And each shard owns its Supabase fixtures and runs one worker without sharing mutable test data\
+And the selected desktop/phone test identities match the completed JSON report\
+And a shard with no passing tests, a retry/flaky result, or a skip outside the exact reviewed inventory fails.
+
+Evidence: `.github/workflows/ci.yml`, `scripts/ci-browser-shard.mjs`,
+`tests/e2e/ci-allowed-skips.json`, `tests/ci-browser-gate.test.mjs`, and the
+exact-candidate CI run recorded in the release handoff. Sharding changes scheduling,
+not test selection or the required all-tests-pass release outcome.
+
+### Scenario: unit scheduling preserves timeout evidence
+
+Given the complete root unit suite is selected\
+When it runs locally or in CI\
+Then at most two test-file workers execute at once\
+And the selected tests and existing per-test budgets remain unchanged\
+And the SMTP parser subprocess keeps its five-second containment budget.
+
+Run local browser and unit gates sequentially rather than competing for that
+same budget. CI's separate isolated job boundaries remain unchanged. Evidence:
+`package.json`, `tests/nodemailer-security.test.mjs` and the complete unit result.
+
+### Scenario: failed browser shards expose bounded safe diagnosis
+
+Given a browser shard cannot list its selected tests or fails its existing completed-report checks\
+When the runner reports the failed gate\
+Then it emits the same sanitized summary in its log and a GitHub Actions error annotation\
+And the summary contains only an existing static failure reason, the shard number, nonnegative safe-integer result counts, and at most ten source test filenames of at most 128 characters each using only letters, numbers, dots, underscores and hyphens\
+And unavailable or malformed count fields are replaced by `?` without stringifying their values\
+And up to twenty additional failed/flaky case annotations contain only a validated existing repository spec basename, an allowlisted desktop/phone project or `unknown`, a fixed result category, and validated source error/declaration line numbers or explicit `unknown`\
+And a source error line prefers a stack frame matching that failing spec over structured error locations; unrelated helper frames, missing results and absent locations never become invented source error lines\
+And annotation line numbers are positive safe integers no greater than one million; malformed field values are never stringified and unsafe/unknown filenames produce no case annotation\
+And only the two existing map-shell and vehicle-modal layout specs may additionally report allowlisted layout booleans and bounded nonnegative pixel measurements parsed from complete standalone comparison lines; unknown keys, strings, arbitrary message text and malformed values are discarded\
+And no test title, assertion body, contact, header, payload or raw report enters the annotation\
+And the existing selection, retry, skip and pass/fail requirements remain authoritative.
+
+Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.
+This changes failure diagnosis only; rollback removes the annotations without
+relaxing the browser gate or exposing the raw report.
+
+### Scenario: Featured Prepare browser writes are isolated and required
+
+Given the three always-on browser workflows that can call Prepare upcoming days persist Featured rotation history\
+When CI runs the desktop and phone suite\
+Then ordinary browser shards exclude only those three tagged workflows\
+And each tagged workflow runs on its own CI runner with freshly imported Supabase fixtures and one browser worker\
+And each isolated run requires exactly one desktop and one phone pass, with no skip, flaky result, or failed result\
+And failure, cancellation, or omission of any isolated run blocks both `e2e` and `release-ready`.
+
+Evidence: `.github/workflows/ci.yml`, `scripts/ci-featured-prepare.mjs`,
+`tests/ci-browser-gate.test.mjs`, and the exact-candidate CI run recorded in
+the release handoff. This isolates persistent rotation history; it does not
+remove either workflow from required browser coverage.
+
+### Scenario: the release gate combines every required CI boundary
+
+Given the same source commit starts Loadgistic validation, browser, mobile and container jobs\
+When any one job fails, is cancelled or is skipped\
+Then `release-ready` fails even if the remaining jobs pass\
+And a deployable artifact is never inferred from one successful job or an earlier commit.
+
+The current `feat/mobile-app` and `release/**` branches start CI on push;
+other feature branches require a pull request or an explicit dispatch of their
+exact source commit. Evidence: `.github/workflows/ci.yml` and
+`tests/ci-browser-gate.test.mjs`.
+
+### Scenario: fixture drift fails before the long browser matrix
+
+Given an isolated browser runner has imported the managed local fixtures\
+When it starts the browser gate\
+Then a short preflight first proves that a new provider vehicle is Draft with no assigned Driver, requires explicit assignment and publication, and exposes only its saved eligible capacity\
+And its dedicated CI invocation reports exactly one passed test, zero skipped, zero flaky and zero failed tests, even if Playwright itself exits successfully after a skip\
+And a failing preflight stops that shard before the long desktop and phone workflows\
+And a passing preflight never substitutes for those workflows or the all-shards-pass gate.
+
+Evidence: `tests/e2e/fixture-contract-preflight.spec.ts`,
+`scripts/ci-fixture-preflight.mjs`, `tests/ci-browser-gate.test.mjs`,
+`.github/workflows/ci.yml`, and NR-21 in
+`docs/SECURITY_REGRESSION_REGISTER.md`.
+
+### Scenario: isolated CI Supabase startup recovers from known runner failures
+
+Given a CI runner is starting the dedicated `loadgistic-local` Supabase stack before fixture import\
+When Docker Hub temporarily rejects an image pull or the fixed local mail port conflicts during startup\
+Then CI stops only that local stack and retries startup once after a short delay\
+And a failed cleanup, an unrelated startup error, or a second startup failure fails the job without further retries\
+And no database fixture import, hosted project or other project's containers are part of this recovery.
+
+Evidence: `.github/workflows/ci.yml` and `tests/ci-supabase-start.test.mjs`.
+
+
+### Scenario: cold local schema reads recover without repeating imports
+
+Given local PostgREST returns query timeout 57014 during its initial schema GET\
+When the fixture preflight reads the schema\
+Then it may retry that read once after one second, retaining both request timeouts\
+And a second failure or any other error fails before fixture writes begin.
+
+Evidence: `tests/fixture-schema.test.mjs`. This applies only to loopback local
+fixture preflight; it grants no hosted retries or repeated mutations.

@@ -1,0 +1,76 @@
+import {z} from 'zod';
+import {createSupabaseAdminClient} from './supabase-adapter.js';
+import {trackingRecoveryActions} from './domain.js';
+import {canManageProviderFleet} from './fleet.js';
+const uuid=z.string().uuid();
+const reason=z.string().trim().min(5).max(500);
+const revision=z.string().datetime({offset:true});
+const date=z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/);
+const base={reason,revision};
+const correction=z.object({...base,action:z.literal('CORRECT'),cargo_summary:z.string().trim().min(3).max(500),
+  origin_place_ref:z.string().min(1).max(100),destination_place_ref:z.string().min(1).max(100),
+  passing_place_ref:z.string().max(100).optional(),
+  expected_pickup_date:date,expected_delivery_date:date}).strict();
+const reassign=z.object({...base,action:z.literal('REASSIGN'),vehicle_id:z.string().trim().min(1).max(50)}).strict();
+const cancel=z.object({...base,action:z.literal('CANCEL'),confirm:z.literal('CANCEL')}).strict();
+const input=z.discriminatedUnion('action',[correction,reassign,cancel]);
+const allowed=['SINGLE_TRUCK_LIMIT','TRUCK_CHANGE_REQUIRED','VEHICLE_OWNER_INACTIVE','NOT_FOUND','FORBIDDEN','INVALID_LIFECYCLE_COMMAND','TRUCK_HAS_ACTIVE_TRACKING','TRACKING_TERMINAL',
+  'TRACKING_CHANGED','LIFECYCLE_CONFIRMATION_REQUIRED','INVALID_VEHICLE','DRIVER_REQUIRED_FOR_SHIPMENT',
+  'TRACKING_STAFF_RELEASE_REQUIRED','TRACKING_DELIVERY_DATE_REQUIRED','TRACKING_DELIVERY_DATE_LOCKED','TRACKING_ASSIGNMENT_UNCHANGED','INVALID_CARGO_SUMMARY','INVALID_DELIVERY_DATE','LOCALITY_REQUIRED',
+  'ROUTE_LOCATIONS_MUST_DIFFER','TRACKING_ROUTE_LOCKED','INVALID_WORKSPACE_CORRECTION','WORKSPACE_CHANGED'];
+async function rpc(name,args){const {data,error}=await createSupabaseAdminClient().rpc(name,args);
+  if(error)throw new Error(allowed.includes(error.message)?error.message:'LIFECYCLE_OPERATION_FAILED');return data;}
+export function lifecycleCommand(value){
+ const result=input.safeParse(value);if(!result.success)throw new Error('INVALID_LIFECYCLE_COMMAND');
+ if(result.data.action==='CORRECT'){
+  const places=[result.data.origin_place_ref,...(result.data.passing_place_ref?[result.data.passing_place_ref]:[]),result.data.destination_place_ref];
+  if(new Set(places).size!==places.length)throw new Error('ROUTE_LOCATIONS_MUST_DIFFER');
+  if(result.data.expected_pickup_date&&result.data.expected_delivery_date&&result.data.expected_delivery_date<result.data.expected_pickup_date)throw new Error('INVALID_DELIVERY_DATE');
+ }
+ return result.data;
+}
+export async function getTrackingRecovery(user,id){
+ const data=await rpc('tracking_recovery_context',{actor_user_id:user.id,target_shipment_id:uuid.parse(id)});
+ return data?{...data,actions:trackingRecoveryActions(data.status).filter(action=>(action!=='CANCEL'||data.cancel_allowed!==false)
+  &&(action!=='REASSIGN'||canManageProviderFleet(user)||['ADMIN','SUPPORT'].includes(user.role)))}:null;
+}
+export async function recoverTracking(user,id,value){
+ const command=lifecycleCommand(value);
+ if(command.action==='REASSIGN'&&!canManageProviderFleet(user)&&!['ADMIN','SUPPORT'].includes(user.role))throw new Error('FORBIDDEN');
+ return rpc('recover_provider_tracking',{actor_user_id:user.id,target_shipment_id:uuid.parse(id),command});
+}
+export async function setVehicleLifecycle(user,id,value){
+ const parsed=z.object({active:z.boolean(),reason}).strict().safeParse(value);
+ if(!parsed.success)throw new Error('INVALID_LIFECYCLE_COMMAND');
+ return rpc('set_vehicle_lifecycle',{actor_user_id:user.id,target_vehicle_id:uuid.parse(id),desired_active:parsed.data.active,reason:parsed.data.reason});
+}
+export async function retiredVehiclePage(user,page=1){
+ const number=Number(page);const current=Number.isSafeInteger(number)&&number>0?number:1;
+ const result=await rpc('retired_provider_vehicle_page',{actor_user_id:user.id,requested_offset:(Math.min(current,1000000)-1)*10,requested_limit:10});
+ return {...result,page:current,pageCount:Math.max(1,Math.ceil(result.total/10))};
+}
+
+export async function adminTrackingLocation(user,id){
+ const targetId=uuid.parse(id),args={actor_user_id:user.id,target_shipment_id:targetId};
+ // The existing command owns current Operations authority and eligible location.
+ // A denied or absent projection must not become a broader service-role read.
+ if(!await rpc('admin_tracking_location',args))return null;
+ const columns=['origin_place_ref','origin','origin_lat','origin_lng','passing_place_ref','passing','passing_lat','passing_lng',
+  'destination_place_ref','destination','destination_lat','destination_lng','tracking_mode'];
+ const {data,error}=await createSupabaseAdminClient().from('provider_shipments').select(columns.join(',')).eq('id',targetId).maybeSingle();
+ if(error)throw new Error('LIFECYCLE_OPERATION_FAILED');
+ if(!data)return null;
+ // Recheck after the route read: revocation, terminal state or a location reset
+ // cannot return the earlier location. Never derive public contacts from Records.
+ const current=await rpc('admin_tracking_location',args);
+ if(!current)return null;
+ const location=current.current_location;
+ return {...Object.fromEntries(columns.map(key=>[key,data[key]])),operational_status:current.operational_status,
+  current_location:location&&typeof location==='object'&&!Array.isArray(location)
+   ?Object.fromEntries(['location_area','location_lat','location_lng','location_precision_km','updated_at'].map(key=>[key,location[key]])):null};
+}
+export async function correctWorkspace(user,id,value){
+ const parsed=z.object({kind:z.enum(['ORGANIZATION','PROVIDER_PROFILE']),name:z.string().trim().min(2).max(120),previous_name:z.string().max(120),reason}).strict().safeParse(value);
+ if(!parsed.success)throw new Error('INVALID_WORKSPACE_CORRECTION');
+ return rpc('correct_admin_workspace',{actor_user_id:user.id,target_id:uuid.parse(id),command:parsed.data});
+}

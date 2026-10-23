@@ -1,25 +1,36 @@
+import {canSendSupportMessage} from '@/lib/support-policy.js';
+import {sendSupportAttachment} from '@/lib/support-attachments.js';
 import { NextRequest, NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
 import { sendSupportMessage } from '@/lib/support.js';
 import { errorMessage } from '@/lib/errors';
 import { redirectWith, text } from '@/lib/redirects';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
+import {supportConversationReturnPath,teamConversationHref} from '@/lib/team-navigation.js';
 
-function returnPath(user:any,id:string) {
-  return user.role==='SUPPORT'||user.role==='ADMIN'?`/support/${id}`:`/app/support?conversation=${id}`;
+function returnPath(user:any,id:string,request:NextRequest) {
+  if(user.role!=='SUPPORT'&&user.role!=='ADMIN')return `/app/support?conversation=${id}`;
+  const queue=supportConversationReturnPath(request.nextUrl.searchParams.get('returnTo'),user.role);
+  try{return teamConversationHref('support',id,queue);}catch{return queue;}
 }
 
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string}>}) {
   const user=await getCurrentUser({allowLimited:true});
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
+  if(!canSendSupportMessage(user))return NextResponse.json({error:'Forbidden'},{status:403});
   const {id}=await params;
   const rate=await checkRateLimit(`${requestKey(request,'support-message')}:${user.id}`,20,60_000);
-  if(!rate.allowed)return redirectWith(request,returnPath(user,id),'error','Too many messages. Wait a minute and try again.');
+  if(!rate.allowed)return redirectWith(request,returnPath(user,id,request),'error','Too many messages. Wait a minute and try again.');
   const form=await request.formData();
   try {
-    await sendSupportMessage(user,id,text(form,'body'));
-    return redirectWith(request,returnPath(user,id),'success','Message sent.');
+    const keys=[...form.keys()];
+    if(keys.length!==new Set(keys).size||keys.some(key=>!['body','file'].includes(key)))throw new Error('INVALID_SUPPORT_MESSAGE');
+    const file=form.get('file');
+    if(file!==null&&(!(file instanceof File)||(!file.size&&file.name)))throw new Error('INVALID_SUPPORT_MESSAGE');
+    if(file instanceof File&&file.size)await sendSupportAttachment(user,id,text(form,'body'),file);
+    else await sendSupportMessage(user,id,text(form,'body'));
+    return redirectWith(request,returnPath(user,id,request),'success','Message sent.');
   } catch(error) {
-    return redirectWith(request,returnPath(user,id),'error',errorMessage(error));
+    return redirectWith(request,returnPath(user,id,request),'error',errorMessage(error));
   }
 }

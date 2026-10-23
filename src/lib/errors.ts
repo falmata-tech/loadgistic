@@ -1,4 +1,91 @@
 const messages: Record<string,string> = {
+  BUSINESS_MANAGER_NAME_REQUIRED:'Add the account manager’s first name in Account details before submitting their National ID.',
+  VERIFICATION_SUBJECT_CHANGED:'The account details changed. Submit a new document for the current details.',
+  ACCOUNT_HANDLE_UNAVAILABLE:'That handle is already in use. Choose another.',
+  INVALID_ACCOUNT_HANDLE:'Use 2–64 lowercase letters, numbers, underscores or hyphens for your handle.',
+  INVALID_PUBLIC_ACCOUNT_NAME:'Enter a public account name of up to 140 characters.',
+  INVALID_PUBLIC_ACCOUNT_IDENTITY:'Enter a public account name and handle.',
+  CONTACT_NAME_REQUIRED:'Enter a person or company name (up to 100 characters).',
+  TRACKING_MODE_LOCKED:'The agreed tracking mode cannot be changed.',
+  TRACKING_OWNER_SHARES_ACCESS:'Enter one shipment owner email. That person can share tracking after verifying their email.',
+  TRACKING_OWNER_APPROVAL_REQUIRED:'The shipment owner must approve unloading before this shipment can finish.',
+  TRACKING_HANDOVER_PROOF_REQUIRED:'Attach photo proof when recording loading or unloading.',
+  TRACKING_LOADING_PROOF_REQUIRED:'Record loading with photo proof before continuing the shipment.',
+  TRACKING_SESSION_EXPIRED:'Verify your email again. Tracking access lasts five minutes.',
+  TRACKING_APPROVAL_FORBIDDEN:'Only the authorized shipment owner can approve unloading.',
+  TRACKING_NOT_READY_FOR_APPROVAL:'Unloading and its photo proof must be saved before approval.',
+  TRACKING_APPEAL_NOT_READY:'Appeals are available while waiting for unloading approval.',
+  TRACKING_APPEAL_REASON_REQUIRED:'Explain the approval problem in 5 to 1,000 characters.',
+  TRACKING_INVESTIGATION_REQUIRED:'Choose a decision and record what you checked.',
+  TRACKING_APPEAL_CLOSED:'This appeal has already been resolved. Refresh its history.',
+  TRACKING_STAFF_RELEASE_REQUIRED:'Ask the team to review and release this agreed tracking session.',
+  TRACKING_DELIVERY_DATE_REQUIRED:'Choose the expected delivery date agreed with the shipment owner.',
+  TRACKING_DELIVERY_DATE_LOCKED:'The agreed delivery date is locked after loading. Ask the team to review a change.',
+
+  INVALID_SHARING_MODE:'Choose who can see this vehicle.',
+  EXCLUSIVE_EMAIL_REQUIRED:'Enter the one email that can see this vehicle.',
+  EXCLUSIVE_RECIPIENT_ONLY:'This vehicle is exclusive to one email. Change its sharing setting before adding other access.',
+
+  SUPPORT_ASSIGNEE_UNAVAILABLE:'Choose an active, available support team member.',
+  SUPPORT_ASSIGNEE_AT_CAPACITY:'That team member is at their chat limit. Choose someone else.',
+  INVALID_BROKERAGE_ASSIGNEE:'Choose an active brokerage team member.',
+  INVALID_TRANSPORT_REQUEST:'Check your route, name and phone number.',
+  INVALID_TRANSPORT_FOLLOW_UP:'Choose a status and keep your note under 1,000 characters.',
+  TRANSPORT_REQUEST_CHANGED:'Another team member updated this record. Reload before saving your changes.',
+  TRANSPORT_REQUEST_UNAVAILABLE:'We could not confirm your request. Please try again.',
+  INVALID_TRANSPORT_VIEW:'Choose a valid request list.',
+  VEHICLE_OWNER_INACTIVE:'The provider account must be active before this vehicle can return to service.',
+  INVALID_WORKSPACE_CORRECTION:'Enter a business name of 2–120 characters and a reason of 5–500 characters.',
+  WORKSPACE_CHANGED:'The business name changed while you were editing. Reload and review it before trying again.',
+  INVALID_LIFECYCLE_COMMAND:'Check the fields and enter a reason of 5–500 characters.',
+  LIFECYCLE_CONFIRMATION_REQUIRED:'Confirm the action before continuing.',
+  LIFECYCLE_OPERATION_FAILED:'We could not confirm the change. Check the record before trying again.',
+  TRUCK_HAS_ACTIVE_TRACKING:'Resolve active Tracking before changing or retiring this vehicle.',
+  SINGLE_TRUCK_LIMIT:'You can use one vehicle at a time. Use Change vehicle for a replacement.',
+  TRUCK_CHANGED:'Your current vehicle changed. Refresh before trying again.',
+  TRUCK_CHANGE_REQUIRED:'Use Change vehicle to replace your current vehicle.',
+  TRUCK_CHANGE_CONFIRMATION_REQUIRED:'Confirm that you want to replace your current vehicle.',
+  INVALID_VEHICLE_USE_BASIS:'Choose whether the vehicle is owned, financed, or used with permission.',
+  INVALID_DRIVING_MODE:'Choose whether you drive a vehicle.',
+  DRIVER_ASSIGNED:'Unassign your current vehicle before switching to fleet-only work.',
+  DRIVING_MODE_UPDATE_FAILED:'We could not confirm your driving preference. Refresh and try again.',
+  PROVIDER_VERIFICATION_REQUIRED:'One vehicle can go live without reviewed documents. Verify ownership or an eligible operating licence before taking more vehicles live.',
+  TRUCK_NOT_LIVE:'This vehicle is still a draft. Its provider needs to choose Go live before sharing capacity.',
+  LOCATION_SOURCE_PENDING:'The selected GPS device needs a new location before capacity can be shared. Check its connection or choose another location source in Fleet.',
+  PROVIDER_AUTHORITY_UNAVAILABLE:'We could not check the vehicle verification right now. Refresh and try again.',
+  AUTHORITY_SOURCE_NOT_APPROVED:'Approve a current document before confirming this vehicle relationship.',
+  AUTHORITY_SOURCE_MISMATCH:'This document does not match the vehicle, provider or relationship being reviewed.',
+  AUTHORITY_ALREADY_CONFIRMED:'This relationship is already confirmed. Refresh its review history.',
+  AUTHORITY_ALREADY_REVOKED:'This relationship review has already been revoked.',
+  AUTHORITY_CONTEXT_CHANGED:'The vehicle or document changed. Reload and check the current details before confirming.',
+  AUTHORITY_REVIEW_NOTE_REQUIRED:'Record what you checked before confirming the relationship.',
+  AUTHORITY_EXPIRY_REQUIRED:'Enter the permission or licence expiry date.',
+  AUTHORITY_EXPIRY_INVALID:'Choose a current expiry date within the document’s validity.',
+  AUTHORITY_HOLDER_BASIS_REQUIRED:'Confirm whether the provider owns the vehicle or is buying it through financing.',
+  INVALID_AUTHORITY_FACT:'Choose the relationship supported by this document and confirm your checks.',
+  INVALID_PUBLICATION_STATE:'Choose Go live or Move to draft.',
+  INDEPENDENT_MULTIPLE_CURRENT_TRUCKS:'Your vehicle records need a correction. Contact Support.',
+  TRACKING_TERMINAL:'Completed or cancelled Tracking cannot be changed.',
+  TRACKING_CHANGED:'This Tracking changed while you were editing. Reload and review it before trying again.',
+  TRACKING_ASSIGNMENT_UNCHANGED:'Choose another vehicle or update its Driver assignment first.',
+  TRACKING_ROUTE_LOCKED:'The route cannot be changed after Loading begins.',
+
+  INVALID_PORTRAIT_COMMAND:'That photo action is not available. Reload and try again.',
+  PORTRAIT_REQUIRED:'Choose a Driver photo to upload.',
+  PORTRAIT_IMAGE_INVALID:'Choose a valid, still JPG, PNG or WebP photo under 25 megapixels.',
+  PORTRAIT_CONSENT_REQUIRED:'Confirm that you agree to make this photo public.',
+  PORTRAIT_UPLOAD_BUSY:'An earlier photo upload is still pending. Try again later.',
+  SUPPORT_UPLOAD_BUSY:'Several files are still uploading. Wait before trying again.',
+  SUPPORT_ATTACHMENT_FAILED:'We could not confirm the attachment. Check the conversation before trying again.',
+  PORTRAIT_OPERATION_FAILED:'We could not confirm the photo change. Reload to check your current photo.',
+  INVALID_ACCOUNT_DETAILS:'Enter a name of 2–100 characters and a valid phone number, or leave the phone blank.',
+  ACCOUNT_DETAILS_FAILED:'Account details could not be saved. Please try again.',
+  INVALID_DRIVER_CONTACT:'Enter a driver name, valid email, and contact phone number.',
+  DRIVER_ALREADY_IN_FLEET:'This driver already belongs to your fleet. Use Driver access to manage them.',
+  INVITATION_LIMIT_REACHED:'Your fleet has 100 pending invitations. Cancel unused invitations before adding more.',
+  INVITATION_NOT_AVAILABLE:'This invitation has expired, was cancelled, or belongs to another email. Ask the fleet owner for a new invitation.',
+  DRIVER_ACCOUNT_CONFLICT:'This account already belongs to a provider or another workspace. Contact support before changing fleets.',
+  FLEET_DRIVER_OPERATION_FAILED:'We could not save the driver change. Please try again.',
   INVALID_CREDENTIALS: 'The email or password is incorrect.',
   FORBIDDEN: 'You do not have permission to perform that action.',
   NOT_FOUND: 'The requested record was not found.',
@@ -15,7 +102,7 @@ const messages: Record<string,string> = {
   TRACKING_DEVICE_LOCATION_REQUIRED: 'Approximate tracking location accepts only the assigned Driver device location.',
   ASSIGNED_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must make this travel update from their workspace.',
   INVALID_APPROXIMATE_LOCATION: 'Refresh the approximate device location and try again.',
-  DEVICE_LOCATION_DRIVER_ONLY: 'Only the assigned Driver may update this truck location.',
+  DEVICE_LOCATION_DRIVER_ONLY: 'Only the assigned Driver may update this vehicle location.',
   TRACKING_ACCESS_DENIED: 'That email, Tracking code, and one-time code could not be verified.',
   INVALID_TRACKING_RECIPIENTS: 'Enter no more than 20 valid additional tracking emails.',
   TRACKING_RECIPIENTS_CLOSED: 'Tracking parties cannot be changed after this shipment is complete.',
@@ -41,20 +128,28 @@ const messages: Record<string,string> = {
   INVALID_STATUS_TRANSITION: 'That status change is not allowed from the current status.',
   NOTE_REQUIRED: 'Enter a note before saving.',
   INVALID_VEHICLE: 'Choose one of your active vehicles.',
-  INVALID_VEHICLE_INPUT: 'Complete the truck details and try again.',
-  INVALID_VEHICLE_MAKE: 'Enter a truck make between 2 and 60 characters.',
-  INVALID_VEHICLE_MODEL: 'Enter a truck model between 1 and 60 characters.',
+  INVALID_VEHICLE_INPUT: 'Complete the vehicle details and try again.',
+  INVALID_VEHICLE_MAKE: 'Enter a vehicle make between 2 and 60 characters.',
+  INVALID_VEHICLE_MODEL: 'Enter a vehicle model between 1 and 60 characters.',
   INVALID_VEHICLE_PLATE: 'Enter a plate number between 2 and 32 characters.',
   INVALID_VEHICLE_CONFIGURATION: 'Choose a supported cargo configuration.',
-  SHIPMENT_VEHICLE_REQUIRED: 'Choose a truck with an assigned driver before starting this shipment.',
-  CAPACITY_CONFIGURATION_REQUIRED: 'A fleet owner must configure this truck before it can return On Duty.',
-  CAPACITY_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must allow device location before this truck can be published.',
-  CAPACITY_LOCATION_ACTIVE_REQUIRED: 'Set this truck to Empty or Partial before refreshing its public location.',
+  SHIPMENT_VEHICLE_REQUIRED: 'Choose a vehicle with an assigned driver before starting this shipment.',
+  CAPACITY_CONFIGURATION_REQUIRED: 'A fleet owner must configure this vehicle before it can return On Duty.',
+  CAPACITY_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must allow device location before this vehicle can be published.',
+  CAPACITY_LOCATION_ACTIVE_REQUIRED: 'Set this vehicle to Empty or Partial before refreshing its public location.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
+  INVALID_CAPACITY_INPUT: 'Some capacity details are invalid. Check the selected route or area and try again.',
+  INVALID_AVAILABILITY_GEOMETRY: 'Choose an availability route or service area.',
+  PARTIAL_CAPACITY_ROUTE_REQUIRED: 'Partial capacity needs an availability route. Choose at least two cities.',
+  DRIVER_REQUIRED_FOR_CAPACITY: 'Assign a driver to this vehicle before publishing capacity.',
+  SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED: 'Capacity could not be saved right now. Your changes are still here; please retry.',
+  SUPABASE_PROVIDER_REGULAR_CAPACITY_ADD_FAILED: 'Regular service could not be saved right now. Your changes are still here; please retry.',
+  SUPABASE_PROVIDER_REGULAR_CAPACITY_REMOVE_FAILED: 'Regular service could not be removed right now. Please retry.',
   ACCEPTED_LOADS_REQUIRED: 'Choose Full Truckload, Partial Truckload, or Both.',
-  CAPACITY_AREA_REQUIRED: 'Allow the Driver device location before publishing this truck.',
+  CAPACITY_AREA_REQUIRED: 'Allow the Driver device location before publishing this vehicle.',
   INVALID_CAPACITY_RADIUS: 'Choose a valid Service area.',
   CAPACITY_ROUTE_POINTS_REQUIRED: 'Choose two to five cities for the Capacity route.',
+  CAPACITY_AREA_BOUNDARY_INVALID:'Choose surrounding cities in order around the edge, without crossing lines.',
   CAPACITY_AREA_BOUNDARY_REQUIRED: 'Choose three to five surrounding cities for the Service area.',
   CAPACITY_PLACE_DUPLICATE: 'Choose each city only once within this route or Service area.',
   INVALID_CAPACITY_VISIBILITY: 'Choose Public or Partners.',
@@ -70,7 +165,9 @@ const messages: Record<string,string> = {
   ROUTE_LOCATIONS_MUST_DIFFER: 'Origin and destination branches must be different.',
   CORRIDOR_ALREADY_EXISTS: 'That regular capacity route is already saved.',
   CAPACITY_ROUTE_ALREADY_EXISTS: 'That regular capacity route is already saved.',
-  REGULAR_CAPACITY_LIMIT: 'You can publish one regular service signal. Remove it before adding another.',
+  REGULAR_CAPACITY_LIMIT: 'This vehicle already has usual routes. Edit or remove them first.',
+  REGULAR_TRUCK_DRIVER_REQUIRED: 'Open Usual routes from your vehicle. Update Loadgistic if you cannot see it.',
+  TRUCK_DRIVER_CHANGED: 'Vehicle assignment changed. Refresh the vehicle, then try again.',
   INVALID_PROOF_TYPE: 'Choose a valid proof type.',
   FILE_REQUIRED: 'Choose a file to upload.',
   FILE_TOO_LARGE: 'The file is larger than the allowed limit.',
@@ -88,7 +185,7 @@ const messages: Record<string,string> = {
   APPLICATION_ALREADY_REVIEWED: 'This application already has a final review outcome.',
   PAYMENT_PROOF_ALREADY_REVIEWED: 'This payment proof already has a final review outcome.',
   INVALID_VERIFICATION_TYPE: 'Choose a verification type that matches this profile or Driver.',
-  TRUCK_AUTHORIZATION_DETAILS_REQUIRED: 'Choose the authorized truck and a future expiry date.',
+  TRUCK_AUTHORIZATION_DETAILS_REQUIRED: 'Choose the authorized vehicle and a future expiry date.',
   VERIFICATION_DOCUMENT_REQUIRED: 'Enter the document name and attach the verification document.',
   VERIFICATION_ALREADY_SUBMITTED: 'This verification already has a pending or approved request.',
   VERIFICATION_ALREADY_REVIEWED: 'This verification request already has a final decision.',
@@ -108,15 +205,22 @@ const messages: Record<string,string> = {
   EMAIL_ALREADY_EXISTS: 'An account already exists for that email.',
   INVALID_APPLICATION_TYPE: 'Choose a valid business or provider type.',
   SUBSCRIPTION_NOT_FOUND: 'No subscription is assigned to this workspace yet.',
-  SUBSCRIPTION_ACCESS_REQUIRED: 'Your trial or paid access has expired. Open Plan & billing to restore access.',
+  SUBSCRIPTION_ACCESS_REQUIRED: 'This account is not linked to a transport workspace.',
+  BILLING_RETIRED: 'This feature is no longer available.',
   SPONSORED_ACCESS_BUSINESS_ONLY: 'Sponsored free access is available only to approved Businesses.',
-  PAYMENT_NOT_REQUIRED: 'This sponsored Business does not need to submit payment.',
+  PAYMENT_NOT_REQUIRED: 'This feature is no longer available.',
+  PUBLIC_SUPPORT_CLOSED: 'Live support is available to transport providers in their dashboard.',
+  INVALID_PLATFORM_CONTROLS: 'Choose a valid mode and a daily count between 1 and 8.',
+  ACCESS_ACTIVATION_CONFIRMATION_REQUIRED: 'This feature is no longer available.',
+  PLATFORM_CONTROLS_FAILED: 'Settings could not be saved. Please try again.',
+  FEATURED_AUTOMATION_FAILED: 'The daily selection could not be prepared. Please try again.',
+  FEATURED_DRIVER_DUPLICATE: 'Choose each driver only once for this day.',
   INVALID_NETWORK_TARGET: 'Choose an eligible Business or transport provider.',
   INVALID_NETWORK_ACTION: 'Choose a valid network action.',
   NETWORK_RELATIONSHIP_NOT_FOUND: 'That network relationship was not found.',
   NETWORK_REQUEST_NOT_ACTIONABLE: 'That network request is no longer available.',
   ADMIN_SELF_SUSPENSION_DENIED: 'An administrator cannot suspend their own account.',
-  INVALID_ADMIN_RECORD_TYPE: 'Choose a supported account or truck record.',
+  INVALID_ADMIN_RECORD_TYPE: 'Choose a supported account or vehicle record.',
   INVALID_ADMIN_OPERATIONS_VIEW: 'Choose a supported platform record view.',
   INVALID_SUPPORT_CATEGORY: 'Choose what you need help with.',
   SUPPORT_MESSAGE_REQUIRED: 'Enter a message before sending.',
@@ -138,6 +242,14 @@ const messages: Record<string,string> = {
   ,GUEST_FILE_SCANNING_REQUIRED: 'File sharing is temporarily unavailable. Send the written message and our team will follow up.'
   ,FEATURED_DATE_INVALID: 'Choose a valid feature date.'
   ,FEATURED_TIKTOK_URL_INVALID: 'Enter a secure TikTok link, or leave it blank.'
+  ,FEATURED_DAY_NOT_FOUND: 'That featured day could not be found. Reload and try again.'
+  ,FEATURED_DAY_NOT_PUBLISHED: 'Publish this programme before changing its TikTok Live status.'
+  ,FEATURED_TIKTOK_REQUIRED: 'Add a TikTok Live link before changing its broadcast status.'
+  ,FEATURED_BROADCAST_STATE_INVALID: 'That TikTok Live status change is not available.'
+  ,FEATURED_BROADCAST_ALREADY_ENDED: 'This TikTok Live broadcast is already marked ended.'
+  ,FEATURED_BROADCAST_NOT_SCHEDULED: 'This day has no scheduled TikTok Live to start.'
+  ,FEATURED_BROADCAST_NOT_LIVE: 'Mark the TikTok broadcast Live before ending it.'
+  ,SUPABASE_FEATURED_BROADCAST_FAILED: 'We could not save the TikTok Live status. Reload and try again.'
   ,FEATURED_PROVIDER_REQUIRED: 'Choose at least one eligible transporter before publishing.'
   ,FEATURED_PROVIDER_DUPLICATE: 'Each transporter can appear only once per day.'
   ,FEATURED_PROVIDER_INVALID: 'One of the selected transporters is no longer based in this city or town.'
@@ -148,20 +260,21 @@ const messages: Record<string,string> = {
   ,FEATURED_BROADCAST_WINDOW_INVALID: 'The livestream end time must be later than its start time.'
   ,FEATURED_SCHEDULE_MODE_INVALID: 'Choose Automatic or Manual scheduling.'
   ,FEATURED_SCHEDULE_TIME_INVALID: 'Choose valid daily schedule times.'
-  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep the programme between 07:30 and 09:00 EAT.'
-  ,FEATURED_TARGET_COUNT_INVALID: 'Choose between 1 and 12 featured trucks.'
-  ,FEATURED_TARGET_COUNT_MISMATCH: 'Select the exact number of trucks set for this programme.'
-  ,FEATURED_TRUCK_THEME_INVALID: 'Choose the truck type assigned to this date.'
-  ,FEATURED_TRUCK_INVALID: 'One selected truck is no longer available.'
-  ,FEATURED_TRUCK_DUPLICATE: 'Each truck can appear only once in a programme.'
-  ,FEATURED_TRUCK_INELIGIBLE: 'One selected truck no longer has a public transporter contact.'
-  ,FEATURED_DRIVER_REQUIRED: 'Assign an active Driver to every featured truck.'
-  ,FEATURED_SPONSOR_BREAK_FREQUENCY_INVALID: 'Place an interlude after every 2, 3, or 4 trucks.'
+  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep the programme between 08:30 and 12:00 EAT.'
+  ,FEATURED_SPONSOR_BREAK_COUNT_INVALID: 'Choose between zero and four sponsor mentions.'
+  ,FEATURED_TARGET_COUNT_INVALID: 'Choose between 1 and 8 featured vehicles.'
+  ,FEATURED_TARGET_COUNT_MISMATCH: 'Select the exact number of vehicles set for this programme.'
+  ,FEATURED_TRUCK_THEME_INVALID: 'Choose the vehicle type assigned to this date.'
+  ,FEATURED_TRUCK_INVALID: 'One selected vehicle is no longer available.'
+  ,FEATURED_TRUCK_DUPLICATE: 'Each vehicle can appear only once in a programme.'
+  ,FEATURED_TRUCK_INELIGIBLE: 'One selected vehicle no longer has a public transporter contact.'
+  ,FEATURED_DRIVER_REQUIRED: 'Assign an active Driver to every featured vehicle.'
+  ,FEATURED_SPONSOR_BREAK_FREQUENCY_INVALID: 'Place an interlude after every 2, 3, or 4 vehicles.'
   ,FEATURED_SPONSOR_BREAK_DURATION_INVALID: 'Choose a one- or two-minute interlude.'
-  ,FEATURED_SCHEDULE_CAPACITY_EXCEEDED: 'These trucks and interludes do not fit inside the morning programme.'
-  ,FEATURED_MANUAL_SCHEDULE_INVALID: 'Give every selected truck a valid start and end time.'
-  ,FEATURED_MANUAL_SCHEDULE_INCOMPLETE: 'Give every selected truck one programme interval.'
-  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Manual intervals must stay between 07:30 and 09:00 EAT.'
+  ,FEATURED_SCHEDULE_CAPACITY_EXCEEDED: 'These vehicles and interludes do not fit inside the morning programme.'
+  ,FEATURED_MANUAL_SCHEDULE_INVALID: 'Give every selected vehicle a valid start and end time.'
+  ,FEATURED_MANUAL_SCHEDULE_INCOMPLETE: 'Give every selected vehicle one programme interval.'
+  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Manual intervals must stay between 08:30 and 12:00 EAT.'
   ,FEATURED_MANUAL_SCHEDULE_OVERLAP: 'Manual presentation intervals cannot overlap or change roster order.'
   ,FEATURED_MANUAL_BREAK_INVALID: 'Keep programme interludes to four or fewer, with no interlude longer than two minutes.'
   ,SPONSORSHIP_DATE_RANGE_INVALID: 'Choose an inclusive sponsored-placement period of no more than one year.'

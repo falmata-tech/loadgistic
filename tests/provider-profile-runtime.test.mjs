@@ -17,10 +17,18 @@ test('managed provider profile projection exposes an application image URL witho
   const preset=projectSupabaseOwnCompanyPage({handle:'preset-provider',profile_image_is_custom:false,profile_image_preset:'preset-provider.png'});
   assert.equal(preset.profile_image_url,'/marketing/transporters/preset-provider.png');
 });
+test('retired Services text is absent from the current owner editor projection',()=>{
+ const projected=projectSupabaseOwnCompanyPage({handle:'safe-provider',about:'Keep this About',services:'RETIRED-SERVICE'});
+ assert.equal(projected.about,'Keep this About');assert.equal(projected.services,'');assert.equal(JSON.stringify(projected).includes('RETIRED-SERVICE'),false);
+});
 
 test('managed profile routes use the dedicated application port instead of the SQLite repository',()=>{
+  const page=fs.readFileSync(path.join(root,'src/app/app/company-page/page.tsx'),'utf8');
+  assert.match(page,/requireUser\(\['TRANSPORTER','DRIVER'\]\)/);
+  assert.match(page,/components\/provider-profile-workspace/);
+  assert.doesNotMatch(page,/lib\/repository\.js/);
   for(const file of [
-    'src/app/app/company-page/page.tsx','src/app/api/company-page/route.ts','src/app/api/company-page/image/route.ts'
+    'src/components/provider-profile-workspace.tsx','src/app/api/company-page/route.ts','src/app/api/company-page/image/route.ts'
   ]){
     const source=fs.readFileSync(path.join(root,file),'utf8');
     assert.match(source,/lib\/provider-profile\.js/);

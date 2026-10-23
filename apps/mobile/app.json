@@ -1,0 +1,74 @@
+{
+  "expo": {
+    "name": "Loadgistic",
+    "slug": "loadgistic",
+    "version": "1.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/loadgistic-icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.loadgistic.app"
+    },
+    "android": {
+      "package": "com.loadgistic.app",
+      "versionCode": 10,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0b1d3a"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "RECORD_AUDIO",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Loadgistic to use your location when you choose to update your vehicle location or find nearby vehicles.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "isIosBackgroundLocationEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Allow Loadgistic to share an approximate shipment location until unloading is approved, including while the app is in the background.",
+          "androidForegroundServiceIcon": "./assets/tracking-notification.png"
+        }
+      ],
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      "expo-sharing",
+      "./plugins/with-notification-consent.cjs",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/push-notification.png",
+          "color": "#155eef",
+          "defaultChannel": "loadgistic-updates"
+        }
+      ]
+    ],
+    "owner": "falmatad",
+    "scheme": "loadgistic",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a2d7e0a9-2fe4-4188-804e-40d8c3486ac7"
+      }
+    }
+  }
+}

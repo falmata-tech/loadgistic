@@ -1,3 +1,4 @@
+import {parseTrackingSession,trackingSessionSubject,trackingSessionSeconds} from './tracking-session.js';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createSessionToken, verifySessionToken } from './security.js';
@@ -28,7 +29,7 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
   if (allowedRoles && !allowedRoles.includes(user.role)) redirect('/app/home?error=You+do+not+have+access+to+that+page');
   if (!options.allowLimited) {
     const access=getManagedWorkspaceAccess(user);
-    if(!access.granted)redirect('/app/home?billing=required');
+    if(!access.granted)redirect('/app/home?error=Workspace+not+available');
   }
   return user;
 }
@@ -40,11 +41,26 @@ export async function hasTrackingGrant(shipmentId: string) {
 }
 
 export async function getProviderTrackingGrant(shipmentId?:string) {
+  if(shipmentId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shipmentId))return null;
   const store=await cookies();
   const payload=verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  const match=String(payload?.sub||'').match(/^provider-tracking:([^:]+):([a-f0-9]{64})$/);
-  if(!match||shipmentId&&match[1]!==shipmentId)return null;
-  return {shipmentId:match[1],recipientDigest:match[2]};
+  const emailSession=parseTrackingSession(payload);
+  if(emailSession)return {...emailSession,shipmentId:shipmentId||null};
+  return null;
+}
+
+export async function getTrackingEmailSession(){
+  const store=await cookies();
+  return parseTrackingSession(verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value));
+}
+
+export async function setTrackingEmailSession(recipientDigest:string,startedAt=Date.now()){
+  const seconds=trackingSessionSeconds(startedAt);
+  if(seconds<=0)throw new Error('TRACKING_SESSION_EXPIRED');
+  const store=await cookies();
+  const token=createSessionToken(trackingSessionSubject(recipientDigest,startedAt),seconds);
+  store.set(TRACKING_GRANT_COOKIE,token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:seconds});
+  return {expiresAt:Number(verifySessionToken(token).exp)*1000};
 }
 
 export async function setProviderTrackingGrant(shipmentId:string,recipientDigest:string) {

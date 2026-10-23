@@ -1,0 +1,286 @@
+# UI and backend contract audit — 2026-09-21
+
+Scope: Loadgistic only. Local inspection and corrections; no production writes,
+push or deployment. Preserve the pending map/loading/Featured/driver work already
+in this worktree. Related contracts: FEAT-ADM-001, FEAT-UIX-001, FEAT-BIL-001.
+
+## Coverage and limits
+
+- 44 page/role visits: seven public destinations, 17 administrator destinations,
+  ten fleet-owner destinations, five self-managed Driver destinations, four
+  Company-driver destinations and the Support inbox.
+- Traced 151 distinct rendered POST form targets (including individual record
+  IDs) to matching route handlers. This proves routing, not every mutation's
+  success. Inspected the main home/Records/Account projections and their SQL.
+- Successful visits had no uncaught browser errors or horizontal overflow at the
+  audited desktop size. Fleet and two Network visits failed the first crawl;
+  one controlled retry loaded all three successfully in roughly 2.5 seconds.
+  No cause or product fix is claimed for those transient navigation failures.
+- Focused phone/desktop checks cover the changed presentation and a real admin
+  save with persisted state, plus the server's missing-record denial. Only an
+  exact disposable test truck is created and cleaned. Existing records used by
+  database regressions are changed only inside rolled-back transactions.
+- This is not exhaustive proof of every permission combination, empty state,
+  production email/OAuth/payment boundary, or external outage behavior. Full
+  release gates remain after owner visual review. Existing Supabase/PostGIS
+  operations follow-up is separate and is not closed by this audit.
+
+## Findings and corrections
+
+| ID | Observed mismatch | Correction and evidence |
+|---|---|---|
+| UIA-01 | Provider Home counted cancelled Tracking as active because the query excluded only COMPLETED. | Migration 100 excludes both terminal states. SQL regression failed before the change and passes after it; cancellation never increments completed counts. |
+| UIA-02 | Recent Tracking promised latest activity but sorted shipment creation time. | Migration 100 orders the six scoped rows by updated_at. Regression brings an old shipment with a new update to the top without cross-workspace rows. |
+| UIA-03 | On-duty Trucks could count a historical signal on an inactive vehicle. | Migration 100 requires an active vehicle. Rollback regression proves the count falls when the vehicle becomes inactive. |
+| UIA-04 | Admin Capacity described every non-Partial row, including Off Duty, as Empty truck. | Description now uses actual status. Browser regression deactivates its synthetic truck and verifies its Off Duty row is never described as Empty. |
+| UIA-05 | User/truck status forms omitted returnTo; other list actions omitted page. Saving could jump to Clients or the first page. | Every list action preserves view/search/page. Browser proves successful truck state persistence with retained search and denied missing-user mutation with retained page two. |
+| UIA-06 | Administrator Account said No plan assigned / Contact support despite role-granted access. | It now states Platform access and explains that no customer plan/payment is required. Provider billing is unchanged; browser checks payment form absence. |
+| UIA-07 | A stale/out-of-range Records offset returned zero rows and lost its window total, falsely claiming no matches; fractional page values could reach an integer RPC argument. | Validate page inputs and recover one bounded first page of the same search when an offset is empty. Never fetch an unbounded inventory. |
+| UIA-08 | Current regular-service areas are stored as PROFILE_ROUTE with RADIUS geometry, but admin rendering inferred geometry only from the older SERVICE_AREA record kind. An area appeared as a route from its city to itself. | Migration 101 adds the existing geometry discriminator to the bounded list. List/detail show Service area / Area around the center; actual routes retain endpoints. SQL proves area/route discrimination, detail agreement and provider/browser denial without projecting coordinates. |
+
+## Verification and rollout
+
+- Migration 100 and 101 each had a protected prior-function backup, rollback-only
+  rehearsal and successful catalog-security check before local application.
+- `tests/sql/dashboard-activity.sql` and `tests/sql/admin-service-geometry.sql`
+  cover changed query semantics and denial boundaries. Both are added to CI;
+  no remote CI execution is claimed.
+- `tests/e2e/ui-contract-audit.spec.ts` covers the corrected controls and facts.
+  All eight distinct desktop/phone cases pass. The admin-save pair was also
+  repeated successfully after the pagination adapter changed.
+- TypeScript and source/spec validation pass. Initial test failures were an
+  incorrect test-only alert selector and transient local browser navigation;
+  the controlled corrected run passed without weakening product assertions.
+- Captures: `artifacts/ui-contract-review-2026-09-21/` and
+  `artifacts/ui-contract-additional-review-2026-09-21/`. Protected local scan
+  evidence and function backups: `.local/ui-contract-audit/`.
+- Review at http://127.0.0.1:3100/admin, `/admin/operations`, `/app/home`, and
+  `/app/more` with the corresponding local role. Keep the server running.
+- Owner visual approval precedes extensive quality/build/release gates. Neither
+  browser evidence nor this audit authorizes deployment. Rollback can restore
+  the saved functions and prior presentation without deleting operational history.
+
+## Prevention
+
+When a lifecycle gains a state, review dashboard totals, recent activity,
+status descriptions and list/detail agreement alongside mutation authority.
+A successful page load and a matching POST route do not prove meaningful UI:
+assert what is persisted, the visible result, failure behavior and navigation
+context. Capture the original workflow and avoid redesigning it during an audit.
+
+Final UIA-08 screenshot review also caught the detail badge exposing the internal
+Profile Route kind for an area. List/detail badges now say Service Area; the
+focused browser checks assert this alongside the area description. Final area
+captures: `artifacts/ui-contract-area-final-review-2026-09-21/`.
+
+## Review workflow continuation
+
+Related contracts: FEAT-ADM-001, FEAT-VER-001, FEAT-BIL-001 and FEAT-REV-001.
+These changes are local; they require no new migration or privilege change.
+
+| ID | Observed mismatch | Correction |
+|---|---|---|
+| UIA-09 | Document, payment and rating decisions redirected to their default tab, discarding search/status/page. | Forms carry canonical queue context; success and denial retain it. Only the matching local Review Center tab is an accepted return destination; injected flash messages and external destinations are discarded. |
+| UIA-10 | All three review queues lost their window total at a stale offset; fractional page inputs could reach integer RPC arguments. | Shared page validation and at most one bounded first-page recovery preserve the same actor/filter. Query failures remain errors. |
+| UIA-11 | With mixed truck approvals, the authorization selector still offered already-approved pairings that the submission command rejected. | Only currently unapproved/expired pairings remain eligible; all pairing badges and history stay visible. Backend assignment/expiry/duplicate checks remain authoritative. |
+| UIA-12 | The empty verification form called documents required and implied verification was complete even when no subjects were eligible. | The message explains whether available categories have approval or there are no eligible subjects, retaining the optional-document contract. |
+| UIA-15 | A category selection made before client readiness was reset to National ID, leaving authorization fields absent. | Dependent subject/category selectors wait for readiness. A deliberately delayed-script browser check proves they cannot accept a lost early selection; normal selection then reveals the truck and expiry fields. |
+
+Focused evidence: `tests/review-workflows.test.mjs` checks bounded recovery,
+malformed inputs, propagated failures, redirect confinement and mixed truck
+approval/expiry. `tests/e2e/review-workflows.spec.ts` exercises actual visible
+decisions and persisted state using isolated synthetic local records. The older
+Fleet clarity test's obsolete Invite driver expectation now matches Add driver.
+All six desktop/phone review cases and two Fleet clarity cases pass. The final
+document/readiness captures are in `artifacts/review-workflow-readiness-2026-09-21/`;
+payment/rating captures remain in `artifacts/review-workflow-audit-2026-09-21/`.
+Eight focused pure/runtime tests, typecheck and source/spec checks also pass.
+Progress records the initial incorrect HTTP assertion, reproduced early-selection
+failure and corrected delayed-script harness. None of these results substitutes
+for owner visual approval or extensive release gates.
+
+### Recorded follow-ups, not claimed fixed
+
+- **UIA-13 — payment display precision:** a stored proof amount of 125050 minor
+  units displays as ETB 1,251 in Review Center. `formatEtb` in `src/lib/domain.js`
+  explicitly rounds to zero fractional digits. Preserve exact minor-unit value
+  in billing/review presentation and inspect other monetary callers before
+  changing shared formatting. Evidence: the synthetic payment desktop/phone
+  captures in `artifacts/review-workflow-audit-2026-09-21/`. Storage is unchanged.
+- **UIA-14 — pending document choices:** subject choices project approvals,
+  so a category/pairing with a pending request can still be selected. The server
+  correctly rejects a duplicate PENDING request. A follow-up should project
+  actor-scoped pending state and offer truthful in-review guidance; do not
+  represent pending evidence as approved or weaken duplicate protection.
+
+Remaining exploration includes Support decisions and delegated permission
+combinations. Queue correctness here is not exhaustive application completion.
+
+
+### QA-01 — Featured sponsor fixture assumption (drawer regression follow-up)
+
+The focused public-entry smoke on desktop and phone passes its revised capacity
+controls, then expects a Featured sponsor rail that is absent. Read-only local
+`getDailyFeaturedProviders()` returns zero sponsored providers; `SponsoredProviders`
+intentionally returns no rail for zero records. This is test-fixture/setup evidence,
+not proof of a disconnected sponsor feature. Before a full release gate, provide
+an isolated eligible sponsor fixture for the positive case and an explicit
+zero-sponsor case. Do not fabricate visible sponsors, weaken the assertion, or
+mutate real sponsor placements to pass an unrelated drawer check. Evidence:
+`artifacts/capacity-drawer-final-2026-09-21/`. No production failure is claimed.
+
+
+### UIA-16 — About phone action obstruction (recorded, not fixed)
+
+At Pixel 7 size, About's bottom actions sit beneath the fixed navigation/chat
+controls. After `Join as a transporter` is scrolled into view, its center does not
+receive pointer hits. The primary capacity button is also partly covered by the
+chat launcher in the capture. Evidence: `artifacts/narrative-review-2026-09-21/phone-about-actions.png`.
+Follow up on the public information-page scroll container and bottom safe space;
+verify both CTA centers and edges are reachable on short and tall phones without
+hiding chat access. Do not treat a no-horizontal-overflow check as proof that
+fixed overlays leave actions usable. Origin relative to earlier releases has
+not been established. This finding blocks a clean About usability claim.
+
+
+UIA-16 follow-up during the approved release: scrolling About to the actual end
+on Pixel 7 makes both action centers reachable (Find capacity and Join as a
+transporter). Earlier `scrollIntoViewIfNeeded` considered the button inside the
+viewport despite a fixed overlay and did not scroll. The failure is therefore
+not evidence that the actions cannot be reached. No layout redesign is included;
+retain the intermediate overlay observation for broader short-phone review.
+Capture: `artifacts/narrative-review-2026-09-21/phone-about-scroll-end.png`.
+
+
+QA-01 release correction: public-entry smoke now creates and removes its own
+local advertiser placement, so sponsor rendering no longer depends on stale
+date-bound fixtures. A separate no-sponsor browser case temporarily hides and
+restores only local placement state and verifies the board remains usable.
+Both cases pass at desktop and phone sizes. Legacy capacity redirect/search is
+an independent case and opens the phone drawer before inspecting its retained
+query; both viewport cases pass. Captures/results:
+`artifacts/release-preflight-browser-corrected-2026-09-21/` and
+`artifacts/release-redirect-2026-09-21/`. No production sponsorship changes.
+
+
+## Map release follow-up — 2026-09-22
+
+- **UIA-17 — map context label:** the decorative desktop “Ethiopia capacity”
+  label partly sits beneath the collapsed Filters handle. No blocked action was
+  observed. Recorded for a focused layout follow-up; not silently redesigned in
+  the requested outline fix. Evidence:
+  `artifacts/signal-overlap-fitted-20260922/desktop-areas.png`.
+- **UIA-18 — coincident closed outlines:** open routes had offsets; service-area
+  polygons did not. FEAT-GEO-001 adds bounded, winding-independent closed lanes,
+  a tiny-area inward limit and reconciliation with the initial fitted view.
+  Four pure geometry tests and desktop/phone direct touch/click/keyboard checks
+  pass with explicitly synthetic coincident geometry and real map tiles.
+  Captures: `artifacts/signal-overlap-fitted-20260922/`. Owner visual review is
+  pending; this is a local correction, not a deployed result.
+
+The selected truck/Filters/zoom collisions discovered during release E2E were
+also corrected and verified at 320–1280px. Initial CI run 35609759724 still has a
+failed E2E conclusion; the replacement candidate has not been pushed or deployed.
+
+
+- **UIA-19 — partial route overlap:** owner screenshot exposed the local JAC
+  X200 shared Dire Dawa–Shinile leg. Whole-route endpoint orientation chose the
+  same display side when regular service continued through other cities.
+  Comparing actual shared segments now selects a clear bounded lane; sharp
+  joins preserve it. Ten geometry tests include 96 direction/reversal variants,
+  extra intermediate points, partial overlap and mixed polygon edges. Native
+  desktop/phone tests measure and tap both strokes specifically along the shared
+  leg at two zoom levels. Evidence: `artifacts/shared-segment-pixel-20260922/`.
+  Earlier whole-outline tests were insufficient; visual approval remains pending.
+
+
+- **UIA-20 — Clear all retained map/filter state:** reproduced before repair on
+  both surfaces. Private capacity changed its URL but reused query-owned React
+  state; Open capacity's link to its already-unfiltered URL could not reset local
+  drafts or a zoomed view. The shared feed now keys its state to the complete
+  applied query and handles a same-query clear explicitly. Closing/reopening the
+  drawer still preserves drafts and map identity. Before evidence:
+  `artifacts/clear-all-before-20260923/` (two expected failures). After evidence:
+  `artifacts/login-clear-review-20260923/` (desktop/phone Open/Private workflows,
+  actual local private-email OTP and same-URL reset). The private session remains
+  authorized only for its original fixture recipient; logout still denies the API.
+  No database, grant or coordinate changes. Local correction; owner review and
+  release remain pending. Prevention: assert controls, viewport and result
+  requests after Clear, not just the resulting URL. Owner: map UI maintainer.
+
+- **UIA-21 — new Driver setup obscured by map overlays:** the current-truck
+  banner retained absolute positioning over the short no-capacity placeholder;
+  an actual new-fleet/new-Driver test reproduced the covered content. A separate
+  Location action opened a view without Save before capacity existed. The empty
+  state now keeps identity, controls and instructions in normal flow, exposes
+  Set capacity, and collects location in the existing first-publication editor.
+  It says Not published rather than incorrectly implying Open visibility.
+  Client controls also wait for their handlers; a held-script test checks the
+  first enabled click/tap. This readiness risk is not claimed as the proven
+  cause of the owner's particular failed click. Real local desktop/phone inbox
+  login, assigned-truck publication and stored actor/Private visibility pass;
+  removed-driver access still fails. No permission, customer-data or schema
+  change. Evidence: `artifacts/new-driver-before-20260923/` (expected geometry
+  failure) and `artifacts/new-driver-review-20260923/` (two passes).
+  Prevention: new-user tests must check empty-state geometry and native actions,
+  not merely publish through a floating control on a populated fixture.
+  Owner: capacity UI maintainer. Local correction; owner review/release pending.
+  Final evidence: `artifacts/new-driver-final-20260923/` adds 320px phone touch,
+  Cancel without a stored record, and actual map tiles after Save (two passes).
+  `artifacts/new-driver-dialog-regression-20260923/` passes all ten existing
+  desktop/phone capacity dialog cases, including permission restrictions.
+
+## Demo corrections — 2026-09-23
+
+The owner's “ok go ahead and fix deploy” authorizes these bounded corrections.
+UIA-13 now preserves fractional ETB in shared formatting; UIA-14 removes only
+actor-scoped pending categories/pairings and explains in-review status, retaining
+server duplicate denial and truthful badges. All six desktop/phone review
+workflows pass in `artifacts/demo-fixes-20260923/`, with stored state assertions.
+UIA-17's desktop label is moved below the Filters handle; both map workflows
+assert their rectangles do not overlap. Final serialized evidence and release
+status are tracked in PROGRESS and DEMO_READINESS_2026-09-23.md.
+
+Completion email now includes both access codes needed by a fresh guest, and
+restricted Drivers see the missing fleet-owner setup prerequisite before they
+can try Available. No new privilege or hosted configuration is introduced.
+Prevention: test customer email journeys from a fresh browser using only the
+received message, and test new assignments before any capacity record exists.
+
+### UIA-22 — floating support covers phone map recovery
+
+Full release CI exposed the chat launcher covering Try again on a narrow map
+with a selected truck and refresh failure. Earlier feedback checks measured
+containment and minimum size but omitted global overlays; a center-only hit test
+also misses partial obstruction. The phone map now reserves the compact support
+action in the header. The regression checks complete retry/launcher rectangles,
+header-link separation, normal retry and chat clicks, and existing zoom, summary
+and filter behavior. No forced click, hidden support feature or permission change.
+Focused verification and exact-candidate release are tracked in PROGRESS.
+
+CI also exposed a zoom-test race: another request for the old window satisfied a
+request-count wait before zoom finished. The assertion now waits for the actual
+changed viewport. Drawer gesture coordinates wait for a stable element, and
+admin login waits for its completed redirect rather than a five-second URL check.
+
+
+### UIA-23 — production SVG classes differ from development (open)
+
+The published 200c783 map renders yellow/brown paths with `leaflet-interactive`,
+correct stroke geometry, accessible button labels and tabindex, but without the
+custom classes supplied through React Leaflet `pathOptions`. Development tests
+see those classes. Inspection of the installed React Leaflet path hook shows
+`pathOptions` are applied through a later `setStyle`; Leaflet needs SVG classes
+at layer construction. Development remount behavior masks this difference.
+The intended custom hover/focus shadow therefore does not apply in production,
+and the local shared-segment test cannot locate its CSS hooks on the live build.
+This is not evidence that the drawn routes are absent or overlapping.
+
+Owner: capacity UI maintainer. Follow-up: supply class names at layer creation
+for all public-map shapes and verify pointer/keyboard highlights against a
+compiled production build on desktop/phone before a separately tested release.
+Do not add forced taps or remove the geometric separation assertions. Live
+interaction evidence uses existing accessible SVG labels instead of absent
+classes and retains both zoom levels, separation and native click/touch checks.
+Evidence: `.local/release-20260923-live-shared-route-final/` (class-based checks
+fail) and `.local/release-20260923-live-map-accessible/` (actual controls).

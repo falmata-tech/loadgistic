@@ -1,0 +1,101 @@
+import {test,expect} from './browser-test';
+import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
+import {createProviderVehicle} from '../../src/lib/fleet.js';
+import {addProviderRegularCapacity,publishProviderCapacity,removeProviderRegularCapacity} from '../../src/lib/provider-capacity.js';
+
+async function currentPairModalFixture(page:any){
+ const db=localAuditService(),actor=await auditProvider(db,'truck-modal');let vehicleId='',routeId='';
+ const scope=()=>({vehicleId,expectedDriverId:actor.id});
+ const cleanup=async()=>{
+  if(routeId)await removeProviderRegularCapacity(actor,routeId,scope());
+  const capacities=vehicleId?checked(await db.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
+  const entities=[vehicleId,routeId,...capacities.map((row:{id:string})=>row.id)].filter(Boolean);
+  if(entities.length)checked(await db.from('audit_logs').delete().in('entity_id',entities));
+  if(vehicleId){checked(await db.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await auditDeleteVehicles(db,'id',vehicleId));}
+  checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await db.auth.admin.deleteUser(actor.id));
+ };
+ try{
+  vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Synthetic',model:'Modal route',plate:`MOD-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  expect(checked(await db.from('vehicles').select('publication_status').eq('id',vehicleId).single()).publication_status).toBe('DRAFT');
+  expect(checked(await db.rpc('capacity_active_driver_id',{target_vehicle_id:vehicleId}))).toBeNull();
+  await auditAssignAndPublishSelfDrivenVehicle(db,actor,vehicleId);
+  checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
+  const places=checked(await db.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
+  const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
+  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:routePlaces});
+  routeId=await addProviderRegularCapacity(actor,{...scope(),geometry:'ROUTE',routePlaces,areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
+  const saved=checked(await db.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id,route_points_json').eq('id',routeId).single());
+  expect(saved).toMatchObject({assigned_vehicle_id:vehicleId,assigned_driver_user_id:actor.id});expect(saved.route_points_json).toHaveLength(2);
+  const response=await page.request.get(`/api/public/capacity?provider=${encodeURIComponent(`truck-modal-${actor.suffix}`)}&status=PARTIAL`);expect(response.ok()).toBe(true);
+  const result=await response.json();expect(result.items).toHaveLength(1);const truck=result.items[0];
+  expect(truck.vehicle_id).toBe(vehicleId);expect(truck.current_route_points).toHaveLength(2);expect(truck.recurring_corridors).toHaveLength(1);expect(truck.recurring_corridors[0].route_points).toHaveLength(2);
+  expect(JSON.stringify(result)).not.toMatch(/storage_path|original_name|supabase:\/\/verification/);
+  return {truck,cleanup};
+ }catch(error){await cleanup();throw error;}
+}
+
+// Leaflet's animation proxy encodes the projected center and zoom. Unlike
+// raster tiles it survives zoom transitions and does not depend on tile loading.
+async function cameraView(page:any){
+ await expect(page.locator('.leaflet-container')).not.toHaveClass(/leaflet-zoom-anim/);
+ return page.locator('.leaflet-proxy').evaluate((element:HTMLElement)=>{
+  const matrix=new DOMMatrix(element.style.transform);
+  return {zoom:Math.log2(matrix.a)+1,x:Math.round(matrix.e*100)/100,y:Math.round(matrix.f*100)/100};
+ });
+}
+
+test('selected truck has centered readable modals and a separate attached exit restoring filtered camera',async({page}:{page:any},info:any)=>{
+ test.setTimeout(120000);
+ const {truck,cleanup}=await currentPairModalFixture(page);
+ try{
+ await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
+ const drawer=page.locator('#capacity-filter-drawer'),card=page.locator('.capacity-info-card'),marker=page.locator('.capacity-truck-map-marker.selected'),exit=page.locator('.capacity-truck-exit');
+ await expect(marker).toBeVisible({timeout:30000});await expect(drawer).toBeHidden();await expect(card).toHaveCount(0);
+ const truckControl=page.locator('.map-info-bubble.truck'),location=page.locator('.map-info-bubble.location'),regular=page.locator('.map-info-bubble.regular'),capacity=page.locator('.map-info-bubble.partial');
+ const before=await cameraView(page);
+ await truckControl.click();await expect(card).toHaveClass(/truck/);await expect(card.getByRole('link',{name:'Profile',exact:true})).toHaveCount(1);
+ await expect(card).toHaveAttribute('open','');await expect(card).toHaveRole('dialog');
+ await page.keyboard.press('Escape');await expect(card).toHaveCount(0);await expect(truckControl).toBeFocused();await expect(marker).toBeVisible();
+ await capacity.click();await expect(card.locator('.signal-route-stops li')).toHaveCount(2);await expect(card).toContainText('Follow the route in the order shown.');
+ const bounds=await card.boundingBox(),mapBox=await page.locator('.public-capacity-map').boundingBox();
+ expect(Math.abs(bounds.x+bounds.width/2-mapBox.x-mapBox.width/2)).toBeLessThan(2);
+ expect(Math.abs(bounds.y+bounds.height/2-mapBox.y-mapBox.height/2)).toBeLessThan(2);
+ const overflow=await card.locator('.capacity-info-content').evaluate((el:HTMLElement)=>el.scrollHeight-el.clientHeight);expect(overflow).toBeLessThanOrEqual(1);
+ await expect(card).toHaveCSS('border-top-color','rgb(102, 112, 133)');
+ await page.screenshot({path:info.outputPath('route-modal.png')});
+ // Modal traps focus and blocks background map interactions.
+ await page.keyboard.press('Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
+ await page.keyboard.press('Shift+Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
+ await page.mouse.click(mapBox.x+5,mapBox.y+mapBox.height/2);await expect(card).toHaveCount(0);
+ await location.click();await expect(card).toHaveCSS('border-top-color','rgb(26, 115, 232)');
+ await card.getByRole('button',{name:'Close map signal details'}).click();
+ await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(192, 102, 32)');await expect(card).toContainText('both directions');
+ await page.screenshot({path:info.outputPath('regular-modal.png')});
+ await card.getByRole('button',{name:'Close map signal details'}).click();await expect(marker).toBeVisible();
+ expect(await cameraView(page)).toEqual(before);
+ const markerBox=await marker.boundingBox(),exitBox=await exit.boundingBox();expect(exitBox.width).toBe(44);expect(exitBox.height).toBe(44);
+ expect(exitBox.x).toBeGreaterThan(markerBox.x+markerBox.width/2);expect(exitBox.x).toBeLessThan(markerBox.x+markerBox.width);
+ await page.screenshot({path:info.outputPath('attached-exit.png')});
+ // Return from the direct link, pan/zoom the filtered map, then select and exit
+ // twice. Selection must not overwrite the original camera or the query/draft.
+ await exit.click();await expect(marker).toHaveCount(0);await expect(drawer).toBeHidden();
+ const url=page.url();await page.getByRole('button',{name:'Search transporters',exact:true}).click();
+ const search=drawer.getByRole('searchbox',{name:'Search transporters'});await search.fill('Unsubmitted draft');
+ await drawer.getByRole('button',{name:'Close transporter search'}).click();
+ for(let attempt=0;attempt<6&&await page.locator('.capacity-truck-map-marker').count()===0;attempt++)await page.locator('.leaflet-control-zoom-in').click();
+ await expect(page.locator('.capacity-truck-map-marker').first()).toBeVisible();
+ const canvas=await page.locator('.leaflet-container').boundingBox();
+ await page.mouse.move(canvas.x+30,canvas.y+canvas.height/2);await page.mouse.down();await page.mouse.move(canvas.x+65,canvas.y+canvas.height/2+25,{steps:8});await page.mouse.up();
+ // Let Leaflet's bounded inertia finish before recording the return camera.
+ await page.waitForTimeout(400);
+ for(let cycle=0;cycle<2;cycle++){
+  const camera=await cameraView(page);
+  await page.locator('.capacity-truck-map-marker').first().click();await expect(marker).toBeVisible();await expect(card).toHaveCount(0);
+  // Changing the selected camera must not change the saved return position.
+  await page.locator('.leaflet-control-zoom-in').click();
+  await exit.focus();await page.keyboard.press('Enter');await expect(marker).toHaveCount(0);await expect(drawer).toBeHidden();
+  await expect.poll(()=>cameraView(page)).toEqual(camera);expect(page.url()).toBe(url);
+ }
+ await page.getByRole('button',{name:'Search transporters',exact:true}).click();await expect(search).toHaveValue('Unsubmitted draft');
+ }finally{await cleanup();}
+});

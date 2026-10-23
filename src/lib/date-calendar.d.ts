@@ -1,0 +1,10 @@
+export type CalendarView='week'|'month';
+export function dateOnly(value:unknown):Date|null;
+export function todayDate(now?:Date):string;
+export function shiftDate(value:string,days:number):string;
+export function calendarDates(value:string,view?:CalendarView):string[];
+export function shiftCalendar(value:string,view:CalendarView,direction:number):string;
+export function dateAllowed(value:string,min?:string,max?:string):boolean;
+export function ethiopianDate(value:string,locale?:string):{day:string;month:string;year:string;label:string}|null;
+export function calendarDay(value:string,locale?:string):{weekday:string;day:string;label:string;ethiopian:ReturnType<typeof ethiopianDate>};
+export function calendarPeriod(value:string,view:CalendarView,locale?:string):string;
