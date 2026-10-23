@@ -59,15 +59,18 @@ vehicle slot. The assertion now chooses either affected vehicle or driver and
 requires one chosen day. Existing-slot and future driver-only rollback
 rehearsals pass; the actual handover guard still blocks either case.
 CI `39925563686` then reached the atomic rollback case but stopped before its
-forced-failure trigger. A bounded diagnostic in `27e650f` identified the exact
-fresh-import cause in CI `39928053423`: one handover vehicle had a public +
-private sharing policy, which the production handover correctly refuses. The
-import now reserves both handover vehicles as public-only and selects other
-vehicles for the same-size private-sharing demo cohort. A focused fixture test
-checks the exact policies and count; the SQL test now asserts this precondition
-before exercising rollback. Local fixture, specs, workflow static checks and
-rollback-only SQL tests pass. This latest repair still needs exact-source CI;
-no hosted database, web or Play write followed.
+forced-failure trigger. A bounded diagnostic in `27e650f` showed its audience
+guard refused one vehicle. CI `39931165048` narrowed the fresh-clone state to
+Both/Public. The managed import now reserves both handover vehicles as
+public-only while replacing their private-sharing examples; its focused test
+passes. The remaining cause was the earlier local shared-capacity verifier:
+its temporary grant changed Public to Both, but its cleanup removed only the
+grant. The verifier now snapshots and restores the policy through the normal
+owner command even after an error. A rollback-only clone proves the ordinary
+grant/revoke/restore commands return Public. The mixed local preview correctly
+refused the full verifier and changed zero sharing/Capacity rows. The exact
+fixture-only CI path still needs to prove this fix; no hosted database, web or
+Play write followed.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.

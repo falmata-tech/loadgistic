@@ -358,11 +358,13 @@ const {data:ownerProfile,error:ownerError}=await service.from('profiles').select
   .eq('id',ownerByOrganization.get(vehicle.organization_id)).maybeSingle();
 if(ownerError||!ownerProfile)throw new Error(`SUPABASE_SHARED_VERIFY_OWNER_MISSING:${ownerError?.message||''}`);
 const owner={...ownerProfile,organization_id:vehicle.organization_id,workspace_subscription:{status:'SPONSORED'}};
-
-await verifyConcurrentSharedCapacityOtpIssuance(owner,vehicle.id);
+const {data:originalSharing,error:originalSharingError}=await service.from('vehicle_capacity_sharing')
+  .select('mode,exclusive_email,exclusive_digest').eq('vehicle_id',vehicle.id).maybeSingle();
+if(originalSharingError||!originalSharing)throw new Error('SUPABASE_SHARED_VERIFY_POLICY_SNAPSHOT_MISSING');
 
 let grant,challenge;
 try{
+  await verifyConcurrentSharedCapacityOtpIssuance(owner,vehicle.id);
   grant=await grantPrivateCapacityAccess(owner,{vehicleId:vehicle.id,email:sharedEmail,name:'Synthetic shared recipient'});
   if(!grant?.id||!grant.created)throw new Error('SUPABASE_SHARED_VERIFY_GRANT_FAILED');
   const network=await listPrivateCapacityNetwork(owner);
@@ -419,8 +421,6 @@ try{
   if(revoked.items.length!==0)throw new Error('SUPABASE_SHARED_VERIFY_REVOCATION_FAILED');
 }finally{
   const cleanupErrors=[];
-  const {error:restoreError}=await service.from('capacities').update({visibility:capacity.visibility}).eq('id',capacity.id);
-  if(restoreError)cleanupErrors.push('VISIBILITY');
   if(challenge?.challengeId){
     const {error:deliveryCleanupError}=await service.from('access_email_deliveries').delete()
       .eq('delivery_kind','SHARED_CAPACITY').eq('entity_id',challenge.challengeId);
@@ -432,6 +432,31 @@ try{
     const {error:grantCleanupError}=await service.from('capacity_access_grants').delete().eq('id',grant.id);
     if(grantCleanupError)cleanupErrors.push('GRANT');
   }
+  const {data:currentSharing,error:currentSharingError}=await service.from('vehicle_capacity_sharing')
+    .select('mode,exclusive_email,exclusive_digest').eq('vehicle_id',vehicle.id).maybeSingle();
+  if(currentSharingError||!currentSharing){
+    cleanupErrors.push('POLICY_READ');
+  }else if(currentSharing.mode!==originalSharing.mode
+    ||currentSharing.exclusive_email!==originalSharing.exclusive_email
+    ||currentSharing.exclusive_digest!==originalSharing.exclusive_digest){
+    const {error:policyRestoreError}=await service.rpc('set_provider_capacity_sharing',{
+      actor_user_id:owner.id,target_vehicle_id:vehicle.id,sharing_mode:originalSharing.mode,
+      normalized_exclusive_email:originalSharing.exclusive_email,
+      recipient_digest:originalSharing.exclusive_digest
+    });
+    if(policyRestoreError)cleanupErrors.push('POLICY_RESTORE');
+  }
+  const {error:restoreError}=await service.from('capacities').update({visibility:capacity.visibility}).eq('id',capacity.id);
+  if(restoreError)cleanupErrors.push('VISIBILITY');
+  const [{data:verifiedPolicy,error:policyReadError},{data:verifiedCapacity,error:capacityReadError}]=await Promise.all([
+    service.from('vehicle_capacity_sharing').select('mode,exclusive_email,exclusive_digest')
+      .eq('vehicle_id',vehicle.id).maybeSingle(),
+    service.from('capacities').select('visibility').eq('id',capacity.id).maybeSingle()
+  ]);
+  if(policyReadError||!verifiedPolicy||verifiedPolicy.mode!==originalSharing.mode
+    ||verifiedPolicy.exclusive_email!==originalSharing.exclusive_email
+    ||verifiedPolicy.exclusive_digest!==originalSharing.exclusive_digest)cleanupErrors.push('POLICY_DRIFT');
+  if(capacityReadError||verifiedCapacity?.visibility!==capacity.visibility)cleanupErrors.push('VISIBILITY_DRIFT');
   if(cleanupErrors.length)throw new Error(`SUPABASE_SHARED_VERIFY_FIXTURE_CLEANUP_FAILED:${cleanupErrors.join(',')}`);
 }
 process.stdout.write(`Supabase Shared capacity grant, OTP concurrency, delivery, projection, retired platform denial, and revocation checks passed${retentionVerified?' with full retention coverage':' in bounded local mode; global retention NOT_TESTED'}.\n`);

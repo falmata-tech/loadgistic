@@ -957,6 +957,8 @@ And replay that day performs no additional write.
 The managed demo import keeps both handover vehicles public-only and chooses
 replacement vehicles for the private-sharing cohort. A fresh import must not
 make a scheduled handover fail its audience guard or shrink that cohort.
+Any local shared-capacity verification that grants temporary access to a demo
+vehicle restores its original audience before later simulator checks run.
 
 Given the handover control is disabled, the current time is outside the fixed
 fortnightly slot, or a lease is stale or held by another worker\
