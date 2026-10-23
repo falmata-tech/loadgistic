@@ -1,9 +1,8 @@
 import { discoveryParams, type TruckFilters } from './discovery.ts';
 import { capacityLoadPreference, type CapacityLoadPreference } from '../../../../src/lib/capacity-load-preferences.js';
 import {publicTruckAuthority} from '../../../../src/lib/public-truck-authority.js';
-import type {TruckAuthority} from './public-content';
 import {publicAsset} from '../../../../src/lib/mobile/public-contract.js';
-import {externalDestination,type PublicBadge} from './public-content.ts';
+import {externalDestination,type PublicBadge,type TruckAuthority} from './public-content.ts';
 import {locationSourceKind} from '../../../../src/lib/location-source.js';
 export type SignalPoint = {latitude:number;longitude:number;label:string};
 export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};

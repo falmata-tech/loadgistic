@@ -14,6 +14,10 @@ Resume the first incomplete dependency. Distinguish local implementation, focuse
 tests, agent-led visual/workflow review, terminal same-source CI, signing and
 actual publication. Follow the October 22 visual-review rule in `AGENTS.md`;
 do not turn its self-review into permission for a hosted write or deployment.
+For a candidate that changes Expo, run its own `typecheck`, `lint`, tests, strict
+translation audit and Android export before the first CI push; root `quality`
+does not cover the native job. Use explicit synthetic fixture inputs matching
+fresh CI when testing demo-world database scenarios.
 Do not restart completed preparation or infer green status from partial jobs.
 Use BASE-DEP-001 for required gates. Use the test-repair procedure only when an
 actual failing/stale test requires it, not as a fresh whole-repository audit.

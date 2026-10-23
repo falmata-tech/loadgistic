@@ -206,6 +206,14 @@ test('managed import keeps Open capacity larger than each explicitly shared demo
   assert.equal(shared.size,Math.ceil(vehicles.length*.25));
   assert.ok(shared.size<publicCapacity.length);
   assert.equal([...shared].every(vehicleId=>vehicleById.has(vehicleId)),true);
+  const withRecipient=new Map(managedFixtureSharingPolicies(managed,shared)
+    .map(policy=>[policy.vehicle_id,policy.mode]));
+  const withoutRecipient=new Map(managedFixtureSharingPolicies(managed,new Set())
+    .map(policy=>[policy.vehicle_id,policy.mode]));
+  for(const vehicleId of ['veh-public-fleet-02-3','veh-public-fleet-06-5']){
+    assert.equal(withRecipient.get(vehicleId),'BOTH','demo-world sharing requires a synthetic recipient');
+    assert.equal(withoutRecipient.get(vehicleId),'PUBLIC','an empty recipient list cannot satisfy that scenario');
+  }
   assert.deepEqual(normalizeDemoSharedEmails('TEST@example.com, test@example.com,second@example.com'),
     ['test@example.com','second@example.com']);
   assert.throws(()=>normalizeDemoSharedEmails('not-an-email'),/DEMO_SHARED_EMAIL_INVALID/);

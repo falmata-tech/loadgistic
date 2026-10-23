@@ -3,7 +3,7 @@ import {Image,Text,View} from 'react-native';
 import {Map,Camera,GeoJSONSource,Layer,Marker,type CameraRef} from './map-platform';
 import {mapStyle} from './map-style';
 import {trackingAreaGeometry,type TrackingArea} from '../location/tracking-area';
-import {Copy,ErrorText,palette} from './ui';
+import {Copy,ErrorText} from './ui';
 import {coverageBounds,coverageGeometry} from '../map/coverage-preview';
 import {useLanguage} from '../localization/provider';
 import {apiOrigin} from '../api/http';

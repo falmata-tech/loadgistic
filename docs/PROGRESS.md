@@ -30,6 +30,15 @@ query took 5.428s, then 5.119s on a controlled retry against a 5s limit.
 This service-only path also missed a local timing gate on the older, CI-green
 source; preserve the unchanged limit and use exact-source Linux CI to decide
 release fitness before changing the database function.
+Candidate commit `190d9d4` was pushed to `feat/mobile-app`. Its first same-source
+CI run, `39893225119`, failed before browser shards: Expo lint/tests and the
+disposable demo sharing fixture. No deployment followed. The local follow-up
+repairs remove the React render violation, fix the Featured empty-string case,
+refresh the affected native test harnesses, and give CI only a synthetic
+private-capacity recipient. The complete native command passes 328/328 tests
+with clean lint/typecheck; strict translations and Android export pass. The
+focused CI-fixture checks pass. These repairs still need their own commit and
+same-source CI before any release claim.
 CI39528806968 passes all16 required jobs oncad46f1. Repair181 is applied and
 independently verified on Loadgistic: the new search-path warning is gone;
 current catalog/Data API checks pass, with only the two previously approved

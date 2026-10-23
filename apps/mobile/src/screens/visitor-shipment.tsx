@@ -16,21 +16,23 @@ import { useVisitor } from '../session/visitor-provider';
 import { statusLabel } from '../api/tracking';
 import {parseVisitorShipment,type VisitorShipment as Shipment} from '../api/runtime-content';
 import {trackingRefreshAllowed,trackingRefreshDelay,trackingShipmentActiveStatus} from '../../../../src/lib/tracking-refresh-policy.js';
-export default function VisitorShipment() { const { id } = useLocalSearchParams<{ id: string }>(); return <View style={{flex:1}}><VisitorAccess scope="tracking"><ShipmentUpdates id={typeof id === 'string' ? id : ''} /></VisitorAccess></View>; }
+export default function VisitorShipment() { const { id } = useLocalSearchParams<{ id: string }>(); const shipmentId=typeof id === 'string' ? id : ''; return <View style={{flex:1}}><VisitorAccess scope="tracking"><ShipmentUpdates key={shipmentId} id={shipmentId} /></VisitorAccess></View>; }
 function ShipmentUpdates({ id }: { id: string }) {
  const {t}=useLanguage();
  const path = `/api/mobile/visitor/tracking/shipments/${encodeURIComponent(id)}`, query = useVisitorQuery<Shipment>('tracking', path,parseVisitorShipment), visitor = useVisitor();
- const lastActive=useRef(false),failures=useRef(0),activeId=useRef(id);
- if(activeId.current!==id){activeId.current=id;lastActive.current=false;failures.current=0;}
- if(query.data)lastActive.current=trackingShipmentActiveStatus(query.data.status);
- useEffect(()=>{if(query.error)failures.current=Math.min(2,failures.current+1);else if(query.data)failures.current=0;},[query.error,query.data]);
+ const lastActive=useRef(false),failures=useRef(0);
+ const {data:latest,loading,errorStatus,reload}=query;
+ const status=latest?.status;
+ useEffect(()=>{if(status)lastActive.current=trackingShipmentActiveStatus(status);},[status]);
+ useEffect(()=>{if(query.error)failures.current=Math.min(2,failures.current+1);else if(latest)failures.current=0;},[query.error,latest]);
  const grant=visitor.snapshot.tracking,expiresAt=grant?grant.expiresAt-grant.clockOffsetMs:0;
  useFocusEffect(useCallback(()=>{
-  const allowed=trackingRefreshAllowed({active:lastActive.current,visible:visitor.snapshot.foreground,expiresAt,now:Date.now()});
-  if(!allowed||query.loading||[401,403,404].includes(query.errorStatus))return;
-  const timer=setTimeout(()=>{void query.reload(true);},trackingRefreshDelay(failures.current));
+  const active=status?trackingShipmentActiveStatus(status):lastActive.current;
+  const allowed=trackingRefreshAllowed({active,visible:visitor.snapshot.foreground,expiresAt,now:Date.now()});
+  if(!allowed||loading||[401,403,404].includes(errorStatus))return;
+  const timer=setTimeout(()=>{void reload(true);},trackingRefreshDelay(failures.current));
   return()=>clearTimeout(timer);
- },[expiresAt,query.loading,query.error,query.errorStatus,query.data?.status,query.reload,visitor.snapshot.foreground]));
+ },[expiresAt,status,loading,errorStatus,reload,visitor.snapshot.foreground]));
  const [rating, setRating] = useState(''), [note, setNote] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState(''),[termsAccepted,setTermsAccepted]=useState(false);
  async function approve(){if(busy)return;setBusy(true);setError('');try{await visitor.controller.request('tracking',`${path}/approve`,{});await query.reload();}catch(error){setError(error instanceof Error?error.message:'Could not confirm approval. Refresh before trying again.');}finally{setBusy(false);}}
  async function review() { if (busy||!termsAccepted) return; setBusy(true); setError(''); try { await visitor.controller.request('tracking', path, { rating: Number(rating), note,termsAccepted:true }); await query.reload(); } catch (error) { setError(error instanceof Error ? error.message : 'Could not confirm the review. Refresh before trying again.'); } finally { setBusy(false); } }

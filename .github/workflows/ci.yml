@@ -122,6 +122,8 @@ jobs:
         run: node scripts/verify-database-security-gate.mjs
 
       - name: Import and verify managed fixtures
+        env:
+          LOADGISTIC_DEMO_SHARED_EMAILS: ci-capacity@example.test
         run: npm run supabase:local:configure
 
       - name: Install server-matched PostgreSQL host client for disposable GPS clone
@@ -567,6 +569,8 @@ jobs:
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
 
       - name: Import and verify managed fixtures
+        env:
+          LOADGISTIC_DEMO_SHARED_EMAILS: ci-capacity@example.test
         run: npm run supabase:local:configure
 
       - name: Verify the Data API guard through SQL, REST and GraphQL
@@ -645,6 +649,8 @@ jobs:
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
 
       - name: Import and verify managed fixtures
+        env:
+          LOADGISTIC_DEMO_SHARED_EMAILS: ci-capacity@example.test
         run: npm run supabase:local:configure
 
       - name: Verify the Data API guard through SQL, REST and GraphQL

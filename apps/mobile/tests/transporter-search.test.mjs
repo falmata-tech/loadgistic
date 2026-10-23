@@ -33,6 +33,7 @@ function harness({mode='open',verified=true,initialQuery='',blocked=[]}={}){
   '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by visitor Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},
   '../components/discovery-filters':{DiscoveryFilters:'DiscoveryFilters'},'../components/results-drawer':{ResultsDrawer:'ResultsDrawer'},'../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},'../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},'../../../../src/lib/transporter-search.js':searchContract,'../api/public-capacity':{loadCapacity:load,loadSharedCapacity:load}
  };
+ imports['../components/ui']={palette:{blue:'#155eef',border:'#d7dfeb',borderSoft:'#e5eaf1',muted:'#526375'}};
  const source=ts.transpileModule(readFileSync(new URL('../src/screens/capacity.tsx',import.meta.url),'utf8')+'\nexports.TestCapacity=Capacity;',{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const exports={};new Function('require','exports','setTimeout','clearTimeout',source)(name=>{assert.ok(name in imports,'Unexpected dependency '+name);return imports[name];},exports,clock.setTimeout,clock.clearTimeout);
  const props={initialQuery,initialMode:mode,initialFilters:{provider:'chosen-company',truck:truck.id,status:'EMPTY'}};
@@ -42,7 +43,7 @@ function harness({mode='open',verified=true,initialQuery='',blocked=[]}={}){
 const input=tree=>find(tree,node=>node.type==='TextInput');
 const results=tree=>find(tree,node=>node.type==='DiscoveryResults');
 const map=tree=>find(tree,node=>node.type==='CapacityMap');
-const open=tree=>find(tree,node=>node.type==='Pressable'&&text(node).trim()==='Transporter search').props.onPress();
+const open=tree=>find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Search transporters').props.onPress();
 const edit=(tree,value)=>input(tree).props.onChangeText(value);
 const submit=tree=>find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Search').props.onPress();
 
@@ -52,7 +53,7 @@ for(const mode of ['open','private'])test(`${mode} profile search ignores truck 
   const query=new URL(view.requests[0].path,'http://local.test').searchParams;
   assert.deepEqual([...query.keys()].sort(),['blocked','page','q'],'only profile text, bounded page and existing blocklist belong to search');assert.equal(query.get('blocked'),JSON.stringify(blocked));
   view.requests[0].resolve(payload('Independent public match'));await settle();tree=view.render();const baseline=results(tree).props.result;
-  find(tree,node=>node.type==='Pressable'&&text(node).trim().startsWith('Vehicle filters')).props.onPress();tree=view.render();
+  find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Vehicle filters').props.onPress();tree=view.render();
   const next={status:'PARTIAL',vehicleCategory:'Mini Box Truck',loadType:'PTL',stopOption:'MULTI_PICK',freshness:'UPDATE_NEEDED',nearLat:'9.0',nearLng:'38.0',nearRadiusKm:'20',ownerDocs:'IDENTITY,BUSINESS_LICENSE',driverDocs:'DRIVER_IDENTITY',truckDocs:'VEHICLE_OWNERSHIP,VEHICLE_AUTHORIZATION'};
   find(tree,node=>node.type==='DiscoveryFilters').props.onApply(next);tree=view.render();await settle();tree=view.render();view.clock.advance(500);tree=view.render();
   assert.equal(view.requests.length,1,'changing map filters must not restart profile lookup');assert.equal(input(tree).props.value,'Adama');assert.equal(results(tree).props.result,baseline,'current profile matches remain available');assert.equal(view.mapLoads.length,2,'the explicit map filter application still loads trucks');
