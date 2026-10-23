@@ -24,6 +24,25 @@ begin
     then raise exception 'HANDOVER_FORTNIGHT_SLOT_DRIFT';end if;
   if exists(select 1 from public.demo_world_claim_handover(gen_random_uuid()))
     then raise exception 'HANDOVER_WORKER_DISABLED_CLAIMED';end if;
+  -- A fresh managed fixture may feature either handover driver today. Keep
+  -- this worker's success path independent of that separate safety gate; the
+  -- atomic handover test verifies current/future Featured denial explicitly.
+  with affected as (
+    select day.id,row_number() over(order by day.id)::integer as ordinal
+    from public.featured_provider_days day
+    where day.feature_date>=current_date and exists(
+      select 1 from public.featured_provider_slots slot
+      where slot.day_id=day.id and (
+        slot.vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7',
+                           '49d736cb-cd47-47dd-9f8d-2f7c1e8199e7')
+        or slot.driver_user_id in(
+          select driver_user_id from public.driver_vehicle_assignments
+          where active and vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7',
+                                         '49d736cb-cd47-47dd-9f8d-2f7c1e8199e7'))))
+  )
+  update public.featured_provider_days day
+    set feature_date=current_date-1000-affected.ordinal
+  from affected where day.id=affected.id;
   denied:=false;
   begin perform public.demo_world_claim_handover(null);
   exception when others then denied:=sqlerrm='DEMO_HANDOVER_WORKER_REFUSED';end;

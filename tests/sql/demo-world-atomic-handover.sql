@@ -123,13 +123,17 @@ declare
   vehicle_a uuid:='54eb0674-4aa2-4975-bc1b-18999463a5b7';
   vehicle_b uuid:='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7';
   before_count bigint;before_assignment_count bigint;denied boolean:=false;
+  failure_code text;
 begin
   select count(*) into before_count from public.capacities where vehicle_id in(vehicle_a,vehicle_b);
   select count(*) into before_assignment_count from public.driver_vehicle_assignments
     where vehicle_id in(vehicle_a,vehicle_b);
   begin perform public.demo_world_execute_atomic_handover();
-  exception when others then denied:=sqlerrm='DEMO_HANDOVER_TEST_FORCED_FAILURE';end;
-  if not denied then raise exception 'HANDOVER_PARTIAL_COMMIT_NOT_BLOCKED';end if;
+  exception when others then
+    failure_code:=case when sqlerrm~'^DEMO_[A-Z0-9_]+$' then sqlerrm else 'OTHER_SQL_ERROR' end;
+    denied:=failure_code='DEMO_HANDOVER_TEST_FORCED_FAILURE';
+  end;
+  if not denied then raise exception 'HANDOVER_PARTIAL_COMMIT_NOT_BLOCKED: %',coalesce(failure_code,'NO_ERROR');end if;
   if (select count(*) from public.capacities where vehicle_id in(vehicle_a,vehicle_b))<>before_count
     or (select count(*) from public.driver_vehicle_assignments
       where vehicle_id in(vehicle_a,vehicle_b))<>before_assignment_count
