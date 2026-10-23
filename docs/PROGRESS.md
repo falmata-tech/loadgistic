@@ -33,10 +33,13 @@ release fitness before changing the database function.
 Candidate commit `190d9d4` was pushed to `feat/mobile-app`. Its first same-source
 CI run, `39893225119`, failed before browser shards: Expo lint/tests and the
 disposable demo sharing fixture. Follow-up `dca60b4` repaired those and passed
-the mobile job, but CI `39918207704` exposed a second fresh-fixture gap: its
-Tracking test expected a GPS position present only in a long-lived local clone.
-The revised SQL test now creates its own synthetic position and rolls back every
-write; the disposable local run passes and its original 654 fixes remain intact.
+the mobile job, but CI `39918207704` exposed a fresh-fixture gap: its Tracking
+test expected a GPS position present only in a long-lived local clone.
+Commit `9522fdc` created a synthetic position, but CI `39919541489` then
+showed that the same clone also supplied a missing GPS device assignment.
+The revised SQL test now creates and binds its own synthetic device when needed,
+then inserts the fix. Both an existing-GPS run and a no-assignment rehearsal
+pass and roll back every write; the original local fixes remain intact.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.

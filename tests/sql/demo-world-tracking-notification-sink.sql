@@ -23,6 +23,10 @@ declare
  denied boolean;
  command_result boolean;
  fix_rows integer;
+ gps_gateway_id uuid:=gen_random_uuid();
+ gps_device_id uuid:=gen_random_uuid();
+ gps_assignment_id uuid;
+ other_driver_id uuid;
 begin
  if current_database() not in ('loadgistic_demo_world_185_ci','loadgistic_demo_world_186_atomic_ci','loadgistic_telematics_ci') then
   raise exception 'ISOLATED_DEMO_TEST_DATABASE_REQUIRED';
@@ -159,8 +163,45 @@ begin
  on conflict (shipment_id,party_role) do nothing;
  select code_hash into strict tracking_code_digest from public.shipment_party_grants
  where shipment_id=demo_id and party_role='SHIPPER';
- -- Create the exact synthetic GPS fix in this transaction. A fresh CI fixture
- -- has no position history; a long-lived local clone may have old demo fixes.
+ -- Build the GPS agreement inside this transaction. A fresh fixture may have
+ -- neither an assigned tracker nor positions; a long-lived clone may have both.
+ select a.id into gps_assignment_id from public.telematics_device_assignments a
+ where a.vehicle_id=(select assigned_vehicle_id from public.provider_shipments where id=demo_id)
+  and a.ended_at is null;
+ if gps_assignment_id is null then
+  insert into public.telematics_gateways(id,label,token_digest,synthetic_only)
+  values(gps_gateway_id,'Isolated Tracking test',repeat('f',64),true);
+  insert into public.telematics_devices
+   (id,gateway_id,gateway_device_id,imei,protocol,protocol_device_id,
+    organization_id,label,model_profile,synthetic)
+  select gps_device_id,gps_gateway_id,980001,'869000000000321','gt06',
+    'demo-ci-gt06-0001',v.organization_id,'Isolated Tracking GPS',
+    'SYNTHETIC_GT06',true
+  from public.vehicles v where v.id=(select assigned_vehicle_id from public.provider_shipments where id=demo_id);
+  insert into public.telematics_device_assignments(id,device_id,vehicle_id)
+  select gen_random_uuid(),gps_device_id,assigned_vehicle_id
+  from public.provider_shipments where id=demo_id returning id into gps_assignment_id;
+ end if;
+ insert into public.telematics_location_sources(vehicle_id,source,precision_km)
+ select assigned_vehicle_id,'GPS',10 from public.provider_shipments where id=demo_id
+ on conflict (vehicle_id) do update set source='GPS',manual_latitude=null,
+  manual_longitude=null,selected_at=clock_timestamp(),revision=clock_timestamp();
+ if (select tracking_gps_assignment_id from public.provider_shipments where id=demo_id)
+   is distinct from gps_assignment_id then
+  select id into other_driver_id from public.profiles where id<>driver_id order by id limit 1;
+  if other_driver_id is null then raise exception 'ISOLATED_OTHER_DRIVER_MISSING';end if;
+  -- The normal reassignment trigger snapshots the selected GPS source. Return
+  -- immediately to the original driver so the demo fixture remains isolated.
+  update public.provider_shipments set assigned_driver_user_id=other_driver_id where id=demo_id;
+  update public.provider_shipments set assigned_driver_user_id=driver_id where id=demo_id;
+ end if;
+ if not public.demo_world_tracking_fixture_isolated(demo_id)
+  or (select tracking_location_source='GPS' and tracking_gps_assignment_id=gps_assignment_id
+      from public.provider_shipments where id=demo_id) is distinct from true then
+  raise exception 'ISOLATED_GPS_AGREEMENT_MISSING';
+ end if;
+ -- A fresh fixture has no position history; clear older test positions so the
+ -- owner projection must select the exact fix below.
  delete from public.telematics_positions where assignment_id=(
   select tracking_gps_assignment_id from public.provider_shipments where id=demo_id);
  insert into public.telematics_positions
