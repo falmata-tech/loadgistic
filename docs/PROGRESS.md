@@ -46,6 +46,13 @@ grant absent from the managed fixture. The test now creates that grant through
 the provider command inside its rollback transaction. Runs with and without an
 existing grant pass; the next GPS arbitration, handover and ordered-lock checks
 also pass locally on the disposable clone.
+CI `39922838582` passes Admin GPS and the native job, then stops in the
+handover test: fresh managed fixtures feature one handover vehicle today, so
+the real Featured safety guard runs before that test's phone-binding guard.
+The test now moves only affected current/future Featured days into the past
+inside its rollback transaction, then separately proves the Featured guard.
+Existing-date and deliberately future-dated local rehearsals pass. No product
+guard or release threshold was relaxed.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.

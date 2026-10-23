@@ -28,6 +28,22 @@ begin
     where vehicle_id=vehicle_b and active;
   if original_a is null or original_b is null or original_a=original_b
     then raise exception 'HANDOVER_FIXTURE_ASSIGNMENT_MISSING';end if;
+  -- Fresh managed fixtures may feature either driver today. Put only their
+  -- current/future days in the past within this rollback-only test, so the
+  -- device and sharing denials below are reached in the intended order. The
+  -- explicit Featured denial later restores a future day for this scenario.
+  with affected as (
+    select day.id,row_number() over(order by day.id)::integer as ordinal
+    from public.featured_provider_days day
+    where day.feature_date>=current_date and exists(
+      select 1 from public.featured_provider_slots slot
+      where slot.day_id=day.id and
+        (slot.vehicle_id in(vehicle_a,vehicle_b)
+         or slot.driver_user_id in(original_a,original_b)))
+  )
+  update public.featured_provider_days day
+    set feature_date=current_date-1000-affected.ordinal
+  from affected where day.id=affected.id;
   denied:=false;
   begin perform public.demo_world_execute_atomic_handover();
   exception when others then denied:=sqlerrm='DEMO_HANDOVER_DISABLED';end;
