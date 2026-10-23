@@ -24,8 +24,18 @@ begin
  select id into capacity_id from capacities where vehicle_id=truck order by updated_at desc limit 1;
  select recipient_email_digest into recipient_digest from capacity_access_grants
   where vehicle_id=truck and audience_type='EMAIL' and revoked_at is null order by id limit 1;
- if admin_id is null or provider_id is null or spare_gateway_id is null or capacity_id is null or recipient_digest is null
+ if admin_id is null or provider_id is null or spare_gateway_id is null or capacity_id is null
  then raise exception 'SPARE_PROVENANCE_FIXTURE_MISSING';end if;
+ -- Managed fixtures keep this private truck unshared. Create the test viewer
+ -- through the provider command, inside the rollback-only transaction.
+ if recipient_digest is null then
+  recipient_digest:=repeat('c',64);
+  perform grant_private_capacity_access(provider_id,truck,
+   'gps-provenance@example.test',recipient_digest);
+ end if;
+ if not exists(select 1 from capacity_access_grants where vehicle_id=truck
+   and audience_type='EMAIL' and recipient_email_digest=recipient_digest and revoked_at is null)
+ then raise exception 'SPARE_PRIVATE_VIEWER_MISSING';end if;
  select d.id,d.gateway_device_id into spare_device_id,gateway_device_number from telematics_devices d
   where d.imei='990000000000013' and d.gateway_id=spare_gateway_id and d.active and d.synthetic
    and d.protocol='gt06' and d.protocol_device_id='990000000000013'

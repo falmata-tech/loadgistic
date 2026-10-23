@@ -40,6 +40,12 @@ showed that the same clone also supplied a missing GPS device assignment.
 The revised SQL test now creates and binds its own synthetic device when needed,
 then inserts the fix. Both an existing-GPS run and a no-assignment rehearsal
 pass and roll back every write; the original local fixes remain intact.
+CI `39921189444` passes that Tracking check and the native job, then finds a
+different fixture dependency: Admin GPS provenance expected a private viewer
+grant absent from the managed fixture. The test now creates that grant through
+the provider command inside its rollback transaction. Runs with and without an
+existing grant pass; the next GPS arbitration, handover and ordered-lock checks
+also pass locally on the disposable clone.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.
