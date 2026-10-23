@@ -31,7 +31,9 @@ begin
   if (select count(*) from public.vehicle_capacity_sharing s
       where s.vehicle_id in(vehicle_a,vehicle_b) and s.mode='PUBLIC'
         and s.exclusive_email is null and s.exclusive_digest is null)<>2
-    then raise exception 'HANDOVER_FIXTURE_PUBLIC_SHARING_MISSING';end if;
+    then raise exception 'HANDOVER_FIXTURE_PUBLIC_SHARING_MISSING: %/%',
+      coalesce((select mode::text from public.vehicle_capacity_sharing where vehicle_id=vehicle_a),'MISSING'),
+      coalesce((select mode::text from public.vehicle_capacity_sharing where vehicle_id=vehicle_b),'MISSING');end if;
   -- Fresh managed fixtures may feature either driver today. Put only their
   -- current/future days in the past within this rollback-only test, so the
   -- device and sharing denials below are reached in the intended order. The
