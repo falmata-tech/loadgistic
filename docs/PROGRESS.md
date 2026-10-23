@@ -50,11 +50,17 @@ current task list.
 - Tests and sampled desktop/phone workflows do not prove every nested role flow
   or a fresh installed Android acceptance on the merged source. Keep these limits
   visible in any web/mobile launch decision.
+- Documentation PR21's first CI run, `40038949581`, stopped in a stale
+  rollback-only Featured permission fixture: it chose a tractor and changed its
+  cargo type to an incompatible courier configuration. The test now chooses a
+  non-trailer saved vehicle, changes its category and configuration together,
+  requires a usable fixture, and restores both fields. The exact local SQL test
+  passed with `ROLLBACK`; PR CI on this correction remains pending.
 
 ## Next steps
 
-1. Publish this concise GitHub status through a small documentation PR and check
-   its own CI. Keep the pre-existing dirty `next-env.d.ts` and
+1. Qualify and merge PR21's concise GitHub handoff and focused Featured SQL
+   test correction through its exact-head CI. Keep the pre-existing dirty `next-env.d.ts` and
    `apps/mobile/.claude/` files outside the task.
 2. Diagnose and harden the two intermittently slow browser workflows before
    the next product release: preserve the first assertion when cleanup also
