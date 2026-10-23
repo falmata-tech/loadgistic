@@ -44,6 +44,7 @@ services:
       GATEWAY_DATABASE_URL: postgres://loadgistic_bridge:${GATEWAY_BRIDGE_PASSWORD}@database:5432/traccar
       GATEWAY_ID: ${GATEWAY_ID}
       GATEWAY_SECRET: ${GATEWAY_SECRET}
+      GATEWAY_COMMANDS_ENABLED: 'true'
       TRACCAR_API_URL: http://traccar:8082/api/
       TRACCAR_API_TOKEN: ${TRACCAR_API_TOKEN}
       LOADGISTIC_GATEWAY_URL: ${LOADGISTIC_GATEWAY_URL:-http://host.docker.internal:3100/api/telematics/gateway}

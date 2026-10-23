@@ -1,6 +1,6 @@
 import { NextRequest,NextResponse } from 'next/server.js';
 import { getCurrentUser } from '@/lib/auth';
-import { hasPlatformPermission,disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship } from '@/lib/platform-admin.js';
+import { hasPlatformPermission,disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship,setFeaturedTikTokBroadcast } from '@/lib/platform-admin.js';
 import { redirectWith,text } from '@/lib/redirects';
 import { errorMessage } from '@/lib/errors';
 
@@ -12,6 +12,10 @@ export async function POST(request:NextRequest) {
   const featureDate=text(form,'featureDate');
   const command=text(form,'command');
   try{
+    if(command==='TIKTOK_LIVE'||command==='TIKTOK_ENDED'){
+      await setFeaturedTikTokBroadcast(user,featureDate,command==='TIKTOK_LIVE'?'LIVE':'ENDED');
+      return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success',command==='TIKTOK_LIVE'?'TikTok Live marked live.':'TikTok Live marked ended.');
+    }
     if(command==='SAVE_SPONSOR'){
       await saveProviderSponsorship(user,{
         featureDate,

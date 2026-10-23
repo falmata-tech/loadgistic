@@ -29,7 +29,7 @@ test('five current multi-option filter groups remain draft until apply and clear
   }
   await page.setViewportSize(original);
  }
- await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
+ await dialog.getByRole('button',{name:'Show vehicles',exact:true}).click();
  await expect(page).toHaveURL(url=>!url.searchParams.has('loadType')&&Object.entries(expected).every(([key,value])=>url.searchParams.get(key)===value&&url.searchParams.getAll(key).length===1));
  await expect(page.locator('.public-feed-overlay.loading')).not.toBeVisible({timeout:30_000});
  await openCapacityFilterDialog(page);await chooseCapacityOptions(dialog,'status',['EMPTY']);await expect(selection(page,'status')).toHaveValue('EMPTY');expect(new URL(page.url()).searchParams.get('status')).toBe('EMPTY,PARTIAL');
@@ -72,14 +72,14 @@ test('invalid multi-option deep links stay denied until an explicit filter corre
  const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
  const invalidBeforeApply=page.url();
  const previousDialog=await dialog.elementHandle();expect(previousDialog).toBeTruthy();
- await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click()]);
+ await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
  // Next Form changes the URL before its new query-keyed client tree commits.
  // Reopen the returned error state, rather than editing the outgoing form.
  await expect.poll(()=>previousDialog!.evaluate(element=>element.isConnected)).toBe(false);
  await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
  await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await expect(selection(page,'vehicleCategory')).toHaveValue('Mini Box Truck');
  const correctedAt=Date.now();
- await Promise.all([page.waitForURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck',{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click()]);
+ await Promise.all([page.waitForURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck',{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
  writeFileSync(info.outputPath('filter-correction-navigation.json'),JSON.stringify({scope:'LOCAL_BROWSER',elapsedMs:Date.now()-correctedAt,correctedCategory:true}),{mode:0o600});
  await expect(page).toHaveURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30_000});
  await page.goto('/?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');

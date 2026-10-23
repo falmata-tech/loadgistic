@@ -40,7 +40,7 @@ test('business invitation submits exact current business version and permitted f
 test('staff business Account hides team mutations and private teammate emails',()=>{
  const readonly={...directory,workspace:{...workspace,membershipRole:'STAFF',permissions:{capacity:true,tracking:false,team:false,owner:false}},members:directory.members.map(({email,...member})=>member)};
  const h=harness('src/components/business-account.tsx','BusinessAccount',{initial:readonly,name:'Team',email:'team@example.test'});
- try{const tree=h.render();for(const label of ['Edit','Invite teammate','Manage','Archive business'])assert.equal(tree.some(node=>node.type==='button'&&message(node,label)),false);
+ try{const tree=h.render();for(const label of ['Edit','Invite teammate','Manage','Archive workspace'])assert.equal(tree.some(node=>node.type==='button'&&message(node,label)),false);
   assert.equal(tree.some(node=>node.type==='input'),false);
  }finally{h.restore();}
 });
@@ -60,7 +60,7 @@ test('business selection resolves its home on the server for teammates without C
  }finally{h.restore();}
 });
 
-test('business admin can manage staff but cannot promote or manage another admin',()=>{
+test('workspace admin can manage staff but cannot promote or manage another admin',()=>{
  const adminDirectory={...directory,workspace:{...workspace,membershipRole:'ADMIN',permissions:{...workspace.permissions,owner:false}},members:[...directory.members,{userId:'44444444-4444-4444-8444-444444444444',firstName:'Other admin',role:'ADMIN',active:true,revision:1,capacity:true,tracking:true}]};
  const h=harness('src/components/business-account.tsx','BusinessAccount',{initial:adminDirectory,name:'Admin',email:'admin@example.test'});
  try{let tree=h.render();assert.equal(tree.filter(node=>node.type==='button'&&message(node,'Manage')).length,1);
@@ -75,4 +75,40 @@ test('erased teammates remain visible as former members without management actio
  const h=harness('src/components/business-account.tsx','BusinessAccount',{initial:erased,name:'Owner',email:'owner@example.test'});
  try{const tree=h.render();assert.ok(tree.some(node=>message(node,'Former team member')));assert.equal(tree.some(node=>node.type==='button'&&message(node,'Manage')),false);assert.equal(tree.some(node=>message(node,'Suspended')),false);}
  finally{h.restore();}
+});
+
+test('shipper/broker document tasks explain optional review and offline fees on web and Expo',()=>{
+ const guidance='Review is optional. Transport Providers can find and share Capacity with your account without documents. Approved documents add trust badges. Fees are paid offline.';
+ for(const path of ['src/components/business-documents.tsx','apps/mobile/src/components/business-documents.tsx'])
+  assert.ok(readFileSync(path,'utf8').includes(guidance),`${path} must explain optional review and offline fees`);
+});
+
+test('demand-side labels distinguish Shippers/brokers from receivers across navigation and admin records',()=>{
+ const shell=readFileSync('src/components/app-shell.tsx','utf8');
+ const account=readFileSync('src/components/business-account.tsx','utf8');
+ const admin=readFileSync('src/app/admin/operations/page.tsx','utf8');
+ const adminDetail=readFileSync('src/app/admin/operations/[view]/[id]/page.tsx','utf8');
+ const documents=readFileSync('src/app/app/more/page.tsx','utf8');
+ const vehicleDetails=readFileSync('src/components/map-truck-details.tsx','utf8');
+ assert.match(shell,/SHIPPER:\s*'Shipper \/ broker'/);
+ assert.match(shell,/RECEIVER:\s*'Receiver'/);
+ assert.match(account,/message="Workspace details"/);
+ assert.match(admin,/label:'Workspaces'/);
+ assert.match(admin,/type==='ENTERPRISE_SHIPPER'\)return 'Shipper \/ broker workspace'/);
+ assert.match(admin,/type==='ENTERPRISE_RECEIVER'\)return 'Receiver workspace'/);
+ assert.match(adminDetail,/record\.type==='ENTERPRISE_SHIPPER'\?'Shipper \/ broker workspace'/);
+ assert.match(adminDetail,/record\.type==='ENTERPRISE_RECEIVER'\?'Receiver workspace'/);
+ assert.match(documents,/message=\{user\.organization_id\?'Workspace documents'/);
+ assert.match(vehicleDetails,/label=\{truck\.provider_organization_id\?'Transport Provider documents'/);
+ assert.doesNotMatch(documents,/Company documents/);
+ assert.doesNotMatch(vehicleDetails,/Company documents/);
+});
+
+test('renaming the shipment owner link keeps the existing Accept and Express interest actions',()=>{
+ const card=readFileSync('src/components/load-board-card.tsx','utf8');
+ assert.match(card,/<Text message="Shipper \/ broker"\/>/);
+ assert.match(card,/canNegotiate&&pendingDirectRequest\?<form action=\{`\/api\/shipments\/\$\{load\.id\}\/accept`\}/);
+ assert.match(card,/:canNegotiate&&!load\.interested\?<form action=\{`\/api\/shipments\/\$\{load\.id\}\/interest`\}/);
+ assert.match(card,/<Text message="Accept"\/>/);
+ assert.match(card,/<Text message="Express interest"\/>/);
 });

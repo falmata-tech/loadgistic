@@ -2,7 +2,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {randomBytes} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
-import {DEMO_DEVICES,assertLoopback} from './demo-manifest.mjs';
+import {DEMO_DEVICES,DEMO_GPS_COHORT_DEVICES,assertLoopback} from './demo-manifest.mjs';
 const root=path.resolve(import.meta.dirname,'../..'),directory=path.join(root,'.local/telematics');
 const config=JSON.parse(await readFile(path.join(directory,'bootstrap.json'),'utf8'));
 const api=assertLoopback('http://127.0.0.1:18082/api/');
@@ -27,7 +27,8 @@ const token=await(await request('session/token',{method:'POST',headers:{'Content
  body:new URLSearchParams({expiration:new Date(Date.now()+7*86400000).toISOString()}).toString()})).text();
 if(token.length<16||/[\r\n]/.test(token))throw new Error('GATEWAY_TOKEN_INVALID');
 const devices=[];
-for(const demo of DEMO_DEVICES){
+const selectedDevices=process.env.LOADGISTIC_DEMO_GPS_COHORT==='true'?[...DEMO_DEVICES,...DEMO_GPS_COHORT_DEVICES]:DEMO_DEVICES;
+for(const demo of selectedDevices){
  const matches=await(await request(`devices?uniqueId=${demo.protocolDeviceId}`)).json();
  const expected={'loadgistic.imei':demo.imei,'loadgistic.protocol':demo.protocol,'loadgistic.synthetic':true};let device;
  if(matches.length){device=matches[0];if(matches.length!==1||device.uniqueId!==demo.protocolDeviceId

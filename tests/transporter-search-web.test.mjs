@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as searchContract from '../src/lib/transporter-search.js';
+import {CAPACITY_FILTER_PRESENTATION} from '../src/lib/capacity-filter-presentation.ts';
 
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];
 const find=(tree,type,predicate=()=>true)=>nodes(tree).find(node=>node.type===type&&predicate(node));
@@ -22,7 +23,7 @@ function harness(name){
  const node=(type,props,key)=>({type,props:props||{},key}),simple=new Proxy({},{get:(_target,key)=>key});
  const imports={react:{__esModule:true,default:react},'react/jsx-runtime':{jsx:node,jsxs:node,Fragment:'Fragment'},'next/link':{__esModule:true,default:'Link'},'next/form':{__esModule:true,default:'form'},'lucide-react':simple,
   '@/components/localization':{Text:'Text',Localized:'Localized'},'./localization':{Text:'Text',Localized:'Localized'},'./content-safety':{useBlockedProviders:()=>({blocked:[]})},
-  '@/lib/transporter-search.js':searchContract,'./transporter-search.module.css':{__esModule:true,default:simple},
+  '@/lib/transporter-search.js':searchContract,'@/lib/capacity-filter-presentation':{CAPACITY_FILTER_PRESENTATION},'./transporter-search.module.css':{__esModule:true,default:simple},
   '@/lib/capacity-map-loading.js':{loadCapacityMapWindow:()=>{throw Error('Unexpected map fetch');},reconcileCapacityMapWindow:()=>{throw Error('Unexpected map reconciliation');}},
   '@/lib/location-privacy.js':{BUSINESS_SEARCH_PRIVACY_KM:20,obscureCoordinate:()=>{throw Error('Unexpected location');},isValidCoordinate:()=>true},
   './capacity-configuration-picker':{CapacityConfigurationPicker:'Configuration'},'./capacity-multi-options':{CapacityMultiOptions:'Options'},'./ethiopia-place-input':{EthiopiaPlaceInput:'Place'},
@@ -31,7 +32,9 @@ function harness(name){
  };
  const source=readFileSync(new URL(`../src/components/${name}.tsx`,import.meta.url),'utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
- const exports={};new Function('require','exports',compiled)(key=>{assert.ok(key in imports,'Unexpected dependency '+key);return imports[key];},exports);
+ const browser={setTimeout:clock.setTimeout,setInterval:()=>0,clearInterval(){},isSecureContext:true};
+ const document={visibilityState:'visible',addEventListener(){},removeEventListener(){}};
+ const exports={};new Function('require','exports','window','document',compiled)(key=>{assert.ok(key in imports,'Unexpected dependency '+key);return imports[key];},exports,browser,document);
  let props,tree,childKey,hasChild=false;
  const render=value=>{props=value||props;for(let pass=0;pass<10;pass++){
   dirty=false;stateIndex=refIndex=effectIndex=memoIndex=0;tree=name==='public-capacity-feed'?exports.PublicCapacityFeed(props):exports.CapacitySearchResults(props);
@@ -50,7 +53,7 @@ function harness(name){
 const feedProps={initial:{items:[{id:'truck-1',provider_handle:'chosen'}],hasMore:false,nextCursor:null,pageSize:200},query:{status:'EMPTY',provider:'chosen',truck:'truck-1'}};
 const input=tree=>find(tree,'Localized',node=>node.props.id==='capacity-market-search');
 const form=tree=>find(tree,'form',node=>String(node.props.className).includes('capacity-people-search-form'));
-const open=tree=>find(tree,'button',node=>node.props['aria-controls']==='capacity-filter-drawer').props.onClick();
+const open=tree=>find(tree,'Localized',node=>node.props['aria-controls']==='capacity-filter-drawer').props.onClick();
 const edit=(tree,value)=>input(tree).props.onChange({target:{value},currentTarget:{value}});
 const submit=tree=>form(tree).props.onSubmit({preventDefault(){}});
 const results=tree=>{const result=find(tree,'Results');return result?.props.active===false?undefined:result;};
@@ -175,9 +178,9 @@ test('web map exposes location-source choices in open and shared filters without
    assert.ok(source);assert.equal(source.props.value,'GPS,MOBILE');
    assert.deepEqual(source.props.options,[['GPS','GPS device'],['MOBILE','Driver’s phone'],['MANUAL','Manually entered']]);
    assert.equal(find(tree,'Options',node=>node.props.name==='loadType'),undefined);
-   assert.equal(find(tree,'Link',node=>text(node)==='Clear').props.href,searchPath);
-   const trigger=find(tree,'button',node=>String(node.props.className).includes('capacity-filter-trigger'));
-   assert.equal(text(trigger).trim(),'Vehicle filters 1');
+   assert.equal(find(tree,'Link',node=>text(node).trim()==='Clear').props.href,searchPath);
+   const trigger=find(tree,'Localized',node=>String(node.props.className).includes('capacity-filter-trigger'));
+   assert.equal(trigger.props['aria-label'],'Vehicle filters');assert.equal(text(trigger).trim(),'Filter 1');
    source.props.onChange('MANUAL');tree=view.render();
    assert.equal(find(tree,'Options',node=>node.props.name==='locationSource').props.value,'MANUAL');
   }finally{view.close();}

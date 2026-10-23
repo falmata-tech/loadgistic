@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "fixture_source": "loadgistic",
+  "execution_scope": "local-dry-run",
+  "timezone": "UTC",
+  "actors": [
+    {
+      "key": "independent-driver",
+      "fixture_user_key": "user-driver",
+      "role": "DRIVER"
+    },
+    {
+      "key": "public-independent-driver",
+      "fixture_user_key": "user-public-owner-02",
+      "role": "DRIVER"
+    },
+    {
+      "key": "fleet-provider",
+      "fixture_user_key": "user-transporter",
+      "role": "TRANSPORTER"
+    },
+    {
+      "key": "fleet-provider-01",
+      "fixture_user_key": "user-public-fleet-01",
+      "role": "TRANSPORTER"
+    },
+    {
+      "key": "fleet-provider-02",
+      "fixture_user_key": "user-public-fleet-02",
+      "role": "TRANSPORTER"
+    },
+    {
+      "key": "fleet-provider-04",
+      "fixture_user_key": "user-public-fleet-04",
+      "role": "TRANSPORTER"
+    },
+    {
+      "key": "fleet-provider-06",
+      "fixture_user_key": "user-public-fleet-06",
+      "role": "TRANSPORTER"
+    }
+  ],
+  "targets": [
+    {
+      "key": "independent-partial",
+      "actor_key": "independent-driver",
+      "fixture_vehicle_key": "veh-driver-1",
+      "fixture_capacity_key": "cap-partial",
+      "baseline_status": "PARTIAL",
+      "expected_sharing_mode": "PRIVATE",
+      "mutable": true
+    },
+    {
+      "key": "public-independent-partial",
+      "actor_key": "public-independent-driver",
+      "fixture_vehicle_key": "veh-public-owner-02",
+      "fixture_capacity_key": "cap-public-221",
+      "baseline_status": "PARTIAL",
+      "mutable": false
+    },
+    {
+      "key": "fleet-empty",
+      "actor_key": "fleet-provider",
+      "fixture_vehicle_key": "veh-trans-1",
+      "fixture_capacity_key": "cap-empty",
+      "baseline_status": "EMPTY",
+      "mutable": false
+    },
+    {
+      "key": "fleet-01-partial",
+      "actor_key": "fleet-provider-01",
+      "fixture_vehicle_key": "veh-public-fleet-01-14",
+      "fixture_capacity_key": "cap-public-113",
+      "baseline_status": "PARTIAL",
+      "expected_sharing_mode": "PUBLIC",
+      "mutable": true
+    },
+    {
+      "key": "fleet-02-partial",
+      "actor_key": "fleet-provider-02",
+      "fixture_vehicle_key": "veh-public-fleet-02-3",
+      "fixture_capacity_key": "cap-public-117",
+      "baseline_status": "PARTIAL",
+      "expected_sharing_mode": "BOTH",
+      "mutable": true
+    },
+    {
+      "key": "fleet-04-partial",
+      "actor_key": "fleet-provider-04",
+      "fixture_vehicle_key": "veh-public-fleet-04-14",
+      "fixture_capacity_key": "cap-public-158",
+      "baseline_status": "PARTIAL",
+      "expected_sharing_mode": "PUBLIC",
+      "alternate_route_refs": [
+        "builtin:mekelle",
+        "builtin:wukro",
+        "builtin:adigrat"
+      ],
+      "mutable": true
+    },
+    {
+      "key": "fleet-06-partial",
+      "actor_key": "fleet-provider-06",
+      "fixture_vehicle_key": "veh-public-fleet-06-5",
+      "fixture_capacity_key": "cap-public-179",
+      "baseline_status": "PARTIAL",
+      "expected_sharing_mode": "BOTH",
+      "mutable": true
+    }
+  ],
+  "scenarios": [
+    {
+      "key": "capacity-signal-cycle",
+      "command": "capacity.set_status",
+      "daily_slots_utc": [
+        480,
+        840
+      ],
+      "transitions": [
+        {
+          "target_key": "independent-partial",
+          "from": "PARTIAL",
+          "to": "EMPTY"
+        },
+        {
+          "target_key": "independent-partial",
+          "from": "EMPTY",
+          "to": "PARTIAL"
+        }
+      ]
+    },
+    {
+      "key": "fleet-02-signal-cycle",
+      "command": "capacity.set_status",
+      "daily_slots_utc": [
+        510,
+        870
+      ],
+      "transitions": [
+        {
+          "target_key": "fleet-02-partial",
+          "from": "PARTIAL",
+          "to": "EMPTY"
+        },
+        {
+          "target_key": "fleet-02-partial",
+          "from": "EMPTY",
+          "to": "PARTIAL"
+        }
+      ]
+    },
+    {
+      "key": "fleet-04-signal-cycle",
+      "command": "capacity.set_status",
+      "daily_slots_utc": [
+        525,
+        885
+      ],
+      "transitions": [
+        {
+          "target_key": "fleet-04-partial",
+          "from": "PARTIAL",
+          "to": "EMPTY"
+        },
+        {
+          "target_key": "fleet-04-partial",
+          "from": "EMPTY",
+          "to": "PARTIAL"
+        }
+      ]
+    },
+    {
+      "key": "fleet-06-signal-cycle",
+      "command": "capacity.set_status",
+      "daily_slots_utc": [
+        540,
+        900
+      ],
+      "transitions": [
+        {
+          "target_key": "fleet-06-partial",
+          "from": "PARTIAL",
+          "to": "EMPTY"
+        },
+        {
+          "target_key": "fleet-06-partial",
+          "from": "EMPTY",
+          "to": "PARTIAL"
+        }
+      ]
+    },
+    {
+      "key": "fleet-01-signal-cycle",
+      "command": "capacity.set_status",
+      "daily_slots_utc": [
+        495,
+        855
+      ],
+      "transitions": [
+        {
+          "target_key": "fleet-01-partial",
+          "from": "PARTIAL",
+          "to": "EMPTY"
+        },
+        {
+          "target_key": "fleet-01-partial",
+          "from": "EMPTY",
+          "to": "PARTIAL"
+        }
+      ]
+    },
+    {
+      "key": "fleet-01-load-preference",
+      "command": "capacity.set_load_preference",
+      "daily_slots_utc": [
+        555,
+        840
+      ],
+      "transitions": [
+        {
+          "target_key": "fleet-01-partial",
+          "when_status": "EMPTY",
+          "from": "PTL",
+          "to": "BOTH"
+        },
+        {
+          "target_key": "fleet-01-partial",
+          "when_status": "EMPTY",
+          "from": "BOTH",
+          "to": "PTL"
+        }
+      ]
+    },
+    {
+      "key": "fleet-04-route",
+      "command": "capacity.set_route",
+      "daily_slots_utc": [
+        600,
+        870
+      ],
+      "transitions": [
+        {
+          "target_key": "fleet-04-partial",
+          "when_status": "EMPTY",
+          "from": "BASELINE",
+          "to": "ALTERNATE"
+        },
+        {
+          "target_key": "fleet-04-partial",
+          "when_status": "EMPTY",
+          "from": "ALTERNATE",
+          "to": "BASELINE"
+        }
+      ]
+    }
+  ]
+}

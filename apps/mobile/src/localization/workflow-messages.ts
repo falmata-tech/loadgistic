@@ -269,10 +269,6 @@ export const workflowRows: readonly (readonly string[])[] = [
     "አዲስ ጭነት",
     "Feʼumsa haaraa"],
   [
-    "Next payments",
-    "ቀጣይ ክፍያዎች",
-    "Kaffaltii itti aanu"],
-  [
     "Next profiles",
     "ቀጣይ መገለጫዎች",
     "Fuula itti aanu"],
@@ -296,10 +292,6 @@ export const workflowRows: readonly (readonly string[])[] = [
     "No other eligible truck is available. Assign a driver to a replacement truck in your fleet first.",
     "ሌላ ተስማሚ መኪና የለም። መጀመሪያ ለምትኩ መኪና ሹፌር ይመድቡ።",
     "Konkolaataan bakka buʼu hin jiru. Dura konkolaataa bakka buʼuuf konkolaachisaa ramadaa."],
-  [
-    "No payments submitted.",
-    "ክፍያ አልቀረበም።",
-    "Kaffaltiin hin dhiyaanne."],
   [
     "No pending invitation. Ask your fleet owner to invite this email.",
     "የሚጠብቅ ግብዣ የለም። ባለቤቱ ለዚህ ኢሜይል ግብዣ እንዲልክ ይጠይቁ።",
@@ -381,10 +373,6 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ቀዳሚ ሹፌሮች",
     "Konkolaachistoota duraanii"],
   [
-    "Previous payments",
-    "ቀዳሚ ክፍያዎች",
-    "Kaffaltii duraanii"],
-  [
     "Previous retired trucks",
     "ቀዳሚ ከሥራ የወጡ መኪናዎች",
     "Konkolaattota hojii irraa baʼan duraanii"],
@@ -448,10 +436,6 @@ export const workflowRows: readonly (readonly string[])[] = [
     "Refresh photo",
     "ፎቶ አድስ",
     "Suuraa haaromsi"],
-  [
-    "Refresh plan and history",
-    "የዕቅድና የክፍያ ታሪክ አድስ",
-    "Karooraa fi seenaa kaffaltii haaromsi"],
   [
     "Refresh regular service",
     "መደበኛ አገልግሎት አድስ",
@@ -561,6 +545,42 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ይፋዊ ፎቶ አስቀምጥ",
     "Suuraa ifaa kuusi"],
   [
+    "No signal on the map yet",
+    "ገና በካርታው ላይ ምልክት የለም",
+    "Ammaaf kaartaa irratti mallattoon hin jiru"],
+  [
+    "Add a location or publish capacity to see it here.",
+    "አካባቢ ያስገቡ ወይም ያለውን የጭነት ቦታ ያሳውቁ።",
+    "Bakka galchi yookaan iddoo feʼumsaa maxxansi."],
+  [
+    "Sharing settings",
+    "የማጋራት ቅንብር",
+    "Qindaaʼina qoodinsaa"],
+  [
+    "Update sharing settings",
+    "ማን እንደሚያየው ይቀይሩ",
+    "Eenyutu akka argu jijjiiri"],
+  [
+    "Set vehicle location",
+    "የተሽከርካሪውን አካባቢ ያስተካክሉ",
+    "Bakka konkolaataa qindeessi"],
+  [
+    "Close capacity editor",
+    "የጭነት ቦታ ማስተካከያውን ዝጋ",
+    "Gulaalaa iddoo feʼumsaa cufi"],
+  [
+    "Save sharing settings",
+    "የማጋራት ቅንብሩን አስቀምጥ",
+    "Qindaaʼina qoodinsaa kuusi"],
+  [
+    "Approximate location updates every 10 minutes while Capacity is open.",
+    "የጭነት ቦታ ገጽ ክፍት ሲሆን ግምታዊ አካባቢው በየ10 ደቂቃው ይዘምናል።",
+    "Iddoo feʼumsaa yeroo banamu, bakki tilmaamame daqiiqaa 10tti haaroma."],
+  [
+    "Regular routes",
+    "የተለመዱ መስመሮች",
+    "Karaawwan yeroo baayʼee tajaajiltan"],
+  [
     "Save regular service",
     "መደበኛ አገልግሎት አስቀምጥ",
     "Tajaajila idilee kuusi"],
@@ -641,13 +661,13 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ሰነድ አስገባ",
     "Sanada dhiyeessi"],
   [
-    "Submit documents for review. Each review belongs to the company, driver or truck shown below.",
-    "ሰነዶችን ለግምገማ ያቅርቡ። እያንዳንዱ ግምገማ ከታች ከሚታየው ኩባንያ፣ ሹፌር ወይም መኪና ጋር ይያያዛል።",
-    "Sanadoota sakattaʼinsaaf dhiyeessaa. Sakattaʼinsi tokkoon tokkoo dhaabbata, konkolaachisaa ykn konkolaataa armaan gadii ilaallata."],
+    "Submit documents for review. Each review belongs to the workspace, driver or vehicle shown below.",
+    "ሰነዶችን ለግምገማ ያቅርቡ። እያንዳንዱ ግምገማ ከታች ከሚታየው የሥራ ቦታ፣ ሹፌር ወይም ተሽከርካሪ ጋር ይያያዛል።",
+    "Sanadoota sakattaʼinsaaf dhiyeessaa. Sakattaʼinsi tokkoon tokkoo iddoo hojii, konkolaachisaa ykn konkolaataa armaan gadii ilaallata."],
   [
-    "Submit payment details",
-    "የክፍያ መረጃ አስገባ",
-    "Odeeffannoo kaffaltii galchi"],
+    "This workspace will stop receiving shared Capacity and Tracking. Its team will lose workspace access. Existing history is retained.",
+    "ይህ የሥራ ቦታ የተሽከርካሪ አቅምና የጭነት ክትትል ማግኘቱን ያቆማል። የቡድኑ አባላት መዳረሻ ያጣሉ። ያለው ታሪክ ግን ይቀራል።",
+    "Iddoon hojii kun dandeettii geejjibaa fi hordoffii qoodamu argachuu ni dhaaba. Miseensonni garee isaa seensa ni dhabu. Seenaan duraan jiru garuu ni tura."],
   [
     "Tell us where your load is going. We’ll help you find a transporter and discuss the details.",
     "ጭነትዎ ወዴት እንደሚሄድ ይንገሩን። አጓጓዥ ለማግኘትና ዝርዝሮቹን ለመወያየት እናግዝዎታለን።",
@@ -768,10 +788,6 @@ export const workflowRows: readonly (readonly string[])[] = [
     "You can still explore trucks with published capacity.",
     "የታተመ የጭነት ቦታ ያላቸውን መኪናዎች ማየት አሁንም ይችላሉ።",
     "Konkolaattota iddoo feʼumsaa isaanii maxxanfame ilaaluu ammallee dandeessu."],
-  [
-    "Your current plan needs attention before you can manage operations.",
-    "ሥራ ከማስተዳደርዎ በፊት የአሁኑን ዕቅድ ማስተካከል ያስፈልጋል።",
-    "Hojii bulchuu dura karoora tajaajilaa keessan sirreessuun barbaachisa."],
   [
     "Your documents",
     "የእርስዎ ሰነዶች",
@@ -968,5 +984,12 @@ export const workflowRows: readonly (readonly string[])[] = [
 [
   "Your approximate location updates every 10 minutes while Home or Truck capacity is open. Updates pause when you leave or lock your phone.",
   "መነሻ ወይም የጭነት ቦታ ገጽ ክፍት ሲሆን፣ ግምታዊ አካባቢዎ በየ10 ደቂቃው ይዘመናል። ገጹን ሲለቁ ወይም ስልኩን ሲቆልፉ ይቆማል።",
-  "Fuulli jalqabaa ykn iddoo feʼumsaa banaa yeroo taʼu, bakki tilmaamame keessan daqiiqaa 10tti haaroma. Fuula kana keessaa yoo baatan ykn bilbila cufattan ni dhaabata."]
+  "Fuulli jalqabaa ykn iddoo feʼumsaa banaa yeroo taʼu, bakki tilmaamame keessan daqiiqaa 10tti haaroma. Fuula kana keessaa yoo baatan ykn bilbila cufattan ni dhaabata."],
+ ["TikTok Live", "የTikTok ቀጥታ ስርጭት", "Tamsaasa kallattii TikTok"],
+ ["No TikTok LIVE broadcast planned today", "ዛሬ የTikTok LIVE ስርጭት አልታቀደም", "Harʼa tamsaasi LIVE TikTok hin karoorfamne"],
+ ["TikTok LIVE broadcast is on now", "የTikTok LIVE ስርጭት አሁን በቀጥታ እየተላለፈ ነው", "Tamsaasi LIVE TikTok amma kallattiin tamsaʼaa jira"],
+ ["TikTok LIVE broadcast planned · {time} EAT", "የTikTok LIVE ስርጭት ታቅዷል · {time} EAT", "Tamsaasi LIVE TikTok karoorfameera · {time} EAT"],
+ ["TikTok LIVE broadcast ended today", "የዛሬው የTikTok LIVE ስርጭት አብቅቷል", "Tamsaasi LIVE TikTok harʼaa xumurameera"],
+ ["Watch live on TikTok", "በTikTok LIVE ላይ ይመልከቱ", "TikTok LIVE irratti ilaali"],
+ ["View on TikTok", "በTikTok ይመልከቱ", "TikTok irratti ilaali"]
 ];

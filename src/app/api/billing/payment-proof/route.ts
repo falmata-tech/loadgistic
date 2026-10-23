@@ -4,5 +4,5 @@ export const runtime='nodejs';
 export async function POST(request:NextRequest){
  const user=await getCurrentUser({allowLimited:true});
  if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
- return NextResponse.json({error:'Platform payment plans are not offered.'},{status:410});
+ return NextResponse.json({error:'This feature is no longer available.'},{status:410});
 }

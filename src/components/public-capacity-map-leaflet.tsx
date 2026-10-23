@@ -11,9 +11,12 @@ import { buildCapacityMarkerGroups } from '@/lib/capacity-map-clustering';
 import { offsetSignalPath,signalLaneZoom,signalLaneLimit } from '@/lib/map-signal-offset';
 import {areaCamera} from '@/lib/workspace-area-navigation.js';
 import {worldCapacityViewport} from '@/lib/capacity-viewport';
+import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '@/lib/map-initial-camera.js';
 import {locationSourceLabel,locationSourceSvg,locationSourceColor} from '@/lib/location-source.js';
 import sourceStyles from './location-source-badge.module.css';
 import {localizedUpdateLabel} from '@/lib/i18n/update-label.js';
+import {capacityLoadLabel,capacityLoadPreference} from '@/lib/capacity-load-preferences';
+import {capacityStatusPresentation} from '@/lib/capacity-status-presentation';
 
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
@@ -169,21 +172,12 @@ function Bounds({items,viewer,selectedId,keepItemsInView,restored=false}:{items:
       return;
     }
     if(fittedInitial.current)return;
-    const bounds=L.latLngBounds([]);
-    for(const item of items){
-      if(hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng))bounds.extend([Number(item.location_lat),Number(item.location_lng)]);
-      (item.current_route_points||[]).forEach(point=>bounds.extend([point.lat,point.lng]));
-      (item.capacity_area_boundary||[]).forEach(point=>bounds.extend([point.lat,point.lng]));
-      (item.recurring_corridors||[]).forEach(signal=>{
-        (signal.route_points||[]).forEach((point:PlacePoint)=>bounds.extend([point.lat,point.lng]));
-        (signal.area_boundary||[]).forEach((point:PlacePoint)=>bounds.extend([point.lat,point.lng]));
-        if(hasCoordinate(signal.area_center_lat)&&hasCoordinate(signal.area_center_lng))bounds.extend([Number(signal.area_center_lat),Number(signal.area_center_lng)]);
-      });
-    }
-    if(bounds.isValid()){
+    const locations=items.map(item=>markerPoint(item)).filter((point):point is [number,number]=>Boolean(point))
+      .map(([latitude,longitude])=>({latitude,longitude}));
+    if(locations.length){
+      const camera=initialCapacityCamera(locations);
       fittedInitial.current=true;
-      if(map.getSize().x<=620)map.setView([9.1,40.2],6,{animate:false});
-      else map.fitBounds(bounds,{padding:[28,28],maxZoom:9,animate:false});
+      map.setView([camera.latitude,camera.longitude],camera.zoom,{animate:false});
     }
   },[items,keepItemsInView,map,selectedId,viewer]);
   return null;
@@ -203,8 +197,9 @@ function truckMarker(item:Signal,selected=false,zoom=10,visualOffset:[number,num
 
 function truckMarkerAccessibleLabel(item:Signal,t:(text:string)=>string=text=>text){
   const status=item.status==='PARTIAL'?'Partial capacity':'Empty vehicle';
+  const preference=capacityLoadPreference(item.status,item.accepts_full_load,item.accepts_partial_load);
   const source=hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)?locationSourceLabel(item.location_source):'';
-  return `${item.cargo_configuration||'Vehicle'} · ${status} · ${item.provider_name}${source?' · '+t(source):''}${hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)&&item.location_is_demo===true?' · '+t('Demo location'):''}`;
+  return `${item.cargo_configuration||'Vehicle'} · ${status}${preference?' · '+t(capacityLoadLabel(preference)):''} · ${item.provider_name}${source?' · '+t(source):''}${hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)&&item.location_is_demo===true?' · '+t('Demo location'):''}`;
 }
 
 function routePointAtFraction(points:PlacePoint[],fraction:number):[number,number]|null{
@@ -335,7 +330,7 @@ function MapInfoModal({accent,label,onClose,children}:{accent:MapSignalInfo['acc
   }} onCancel={event=>{event.preventDefault();onClose();}} onClick={event=>{if(event.target!==event.currentTarget)return;const box=event.currentTarget.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)onClose();}}>{children}</dialog>;
 }
 
-const signalColors={truck:'#0c7275',location:'#1a73e8',empty:'#16a34a',partial:'#eab308',regular:'#c06620'};
+const signalColors={truck:'#155eef',location:'#1a73e8',empty:capacityStatusPresentation.EMPTY.color,partial:capacityStatusPresentation.PARTIAL.color,regular:'#c06620'};
 export function PublicCapacityMapLeaflet({items,viewer,selectedId,rememberPublicView=false,keepItemsInView=false,onSelect,onDeselect,onExplore,truckDetails}:{items:Signal[];viewer:Point|null;selectedId:string|null;rememberPublicView?:boolean;keepItemsInView?:boolean;onSelect:(id:string)=>void;onDeselect:()=>void;onExplore?:(bounds:number[])=>void;truckDetails?:React.ReactNode}){
   const {t}=useTranslation();
   const [restoredView]=React.useState(()=>restoredPublicCamera(rememberPublicView));
@@ -365,7 +360,7 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,rememberPublic
       element.addEventListener('keydown',(keyboardEvent:KeyboardEvent)=>{if(keyboardEvent.key==='Enter'||keyboardEvent.key===' '){keyboardEvent.preventDefault();setPinnedInfo(info);}});
     }
   });
-  const currentSignalColor=availabilityAccent==='partial'?'#eab308':'#16a34a';
+  const currentSignalColor=availabilityAccent==='partial'?capacityStatusPresentation.PARTIAL.color:capacityStatusPresentation.EMPTY.color;
   const currentPoints=selected?.availability_geometry==='ROUTE'?selected.current_route_points:selected?.status==='EMPTY'?selected?.capacity_area_boundary:undefined;
   const currentClosed=selected?.availability_geometry==='RADIUS'||Boolean(currentPoints?.length&&currentPoints[0].lat===currentPoints.at(-1)?.lat&&currentPoints[0].lng===currentPoints.at(-1)?.lng);
   const currentPath:SignalPath|undefined=selected?.current_signal_geometry_visible!==false&&currentPoints&&currentPoints.length>=2?{positions:currentPoints.map(point=>[point.lat,point.lng]),closed:currentClosed,offset:currentClosed?-12:-6}:undefined;
@@ -378,7 +373,7 @@ export function PublicCapacityMapLeaflet({items,viewer,selectedId,rememberPublic
   const shortLabel=(info:MapSignalInfo)=>info.accent==='truck'?'Vehicle':info.accent==='location'?'Location':info.accent==='regular'?'Regular service':'Capacity';
   const activeInfo:MapSignalInfo|null=pinnedInfo&&selected&&pinnedInfo.id.startsWith(`${selected.id}:`)?pinnedInfo:null;
   return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available vehicles" onKeyDown={(event:React.KeyboardEvent<HTMLDivElement>)=>{if(event.key==='Escape'&&activeInfo){event.stopPropagation();setPinnedInfo(null);}}}>
-    <MapContainer center={restoredView?[restoredView.lat,restoredView.lng]:[9.1,40.2]} zoom={restoredView?.zoom||7} minZoom={2} maxZoom={15} scrollWheelZoom>
+    <MapContainer center={restoredView?[restoredView.lat,restoredView.lng]:[DEFAULT_CAPACITY_CAMERA.latitude,DEFAULT_CAPACITY_CAMERA.longitude]} zoom={restoredView?.zoom||DEFAULT_CAPACITY_CAMERA.zoom} minZoom={2} maxZoom={15} scrollWheelZoom>
       <BaseMapTiles/>
       <ResizeMap/>
       <ProgressiveCapacityLoader onExplore={onExplore}/>

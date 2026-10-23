@@ -11,7 +11,7 @@ function runtime(path){
  let state=[],cursor=0;
  const React={createElement:(type,props,...children)=>({type,props:{...props,children:children.flat(Infinity)}}),useState:initial=>{const index=cursor++;if(!(index in state))state[index]=initial;return[state[index],value=>{state[index]=typeof value==='function'?value(state[index]):value;}];},useEffect(){}};
  const hosts=Object.fromEntries(['View','Text','Button','Copy','WorkspaceFact','Pencil','Satellite','Smartphone','CapacityEditDialog'].map(name=>[name,name]));
- const args={React,useState:React.useState,useEffect:React.useEffect,...hosts,Platform:{OS:'android'},palette:{ink:'#172c46',teal:'#0c7275',border:'#cbdadb',muted:'#526875'},styles:new Proxy({},{get:(_value,key)=>String(key)}),useTranslation:()=>({t:message=>message,locale:'en-US'}),useLanguage:()=>({t:message=>message,locale:'en-US'})};
+ const args={React,useState:React.useState,useEffect:React.useEffect,...hosts,Platform:{OS:'android'},palette:{ink:'#0b1d3a',blue:'#155eef',border:'#cbd5e1',muted:'#526375'},styles:new Proxy({},{get:(_value,key)=>String(key)}),useTranslation:()=>({t:message=>message,locale:'en-US'}),useLanguage:()=>({t:message=>message,locale:'en-US'})};
  const file=readFileSync(path,'utf8'),parsed=ts.createSourceFile(path,file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))));
  const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText;

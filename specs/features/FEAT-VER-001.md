@@ -11,34 +11,74 @@ rollout: Document names remain extensible; use private Supabase Storage plus act
 
 # Verification
 
-## October18 optional business verification — planned local implementation
+## Native public vehicle document summaries
+
+Given the existing authorized Capacity projection contains public review badges\
+When native Vehicle details renders\
+Then Owner or Transport Provider, Driver and Vehicle documents remain separate\
+And only current verified, non-expired badges count as reviewed\
+And expired and unreviewed categories remain explicit, with available public
+review/expiry dates and the existing reminder to confirm documents directly\
+And empty evidence is labelled Not verified rather than claiming approval\
+And expanding a summary reveals only public metadata, never the private source,
+document number, reviewer identity, note, file reference or download action\
+And generic document review remains distinct from exact vehicle authority and
+does not grant publication, contact or private-Capacity access.
+
+## Optional shipper/broker document review
 
 FEAT-ENT-001 adds the BUSINESS_WORKSPACE subject, separately from providers,
-people and trucks. Business owners may submit IDENTITY (manager National ID),
-BUSINESS_LICENSE and BUSINESS_ADDRESS. Existing private upload validation,
-quarantine/scan behavior, PENDING/MORE_INFO/REJECTED/APPROVED states, audit and
-current Trust permission are reused; no truck authority or publishing gate is
-introduced. Documents remain optional for business access.
+people and vehicles. Shipper/broker workspace owners may optionally submit
+IDENTITY (manager National ID), BUSINESS_LICENSE and BUSINESS_ADDRESS. Existing
+private upload validation, quarantine/scan behavior,
+PENDING/MORE_INFO/REJECTED/APPROVED states, audit and current Trust permission
+are reused; no vehicle authority or publishing gate is introduced. Documents
+are optional for signup, workspace access, team management, provider-directory
+visibility, recipient search and Capacity sharing. Each current approved
+document may add its own safe badge. Missing, incomplete, pending, rejected,
+stale or expired documents never prevent discovery or sharing. Fees are arranged
+offline; Loadgistic stores no payment details or payment status, and review
+approval remains an explicit staff action.
 
 Each submission records a private context fingerprint of the relevant current
-company/manager identity. Only matching, current, approved, unexpired facts enter
-the provider-only business directory summary. A field edit, transfer, account
-suspension, expiry or archival cannot leave a misleading current badge. Histories
-remain immutable and replacement submissions do not overwrite previous files.
+workspace/manager identity. Only matching, current, approved, unexpired facts
+contribute to the matching trust badge in the provider-only directory summary.
+A field edit, transfer, account suspension, expiry or archival removes the
+affected badge without making an active workspace disappear from provider
+search or recipient selection. Histories remain immutable and replacement
+submissions do not overwrite previous files.
 Only the current owner can submit/read their business proofs; a manager National
 ID remains readable only to that manager while they are the current owner, or to
 currently authorized Trust staff. Teammates/providers receive metadata only.
 
-Given the exact owner submits a valid optional documentWhen Trust requests more information and the owner submits replacement proofThen the replacement is Pending and independently reviewable in the existing queueAnd the original private source/history is retainedAnd approval affects only that exact current business fact, never a truck.
+Given the exact owner submits a valid business document\
+When Trust requests more information and the owner submits replacement proof\
+Then the replacement is Pending and independently reviewable in the existing queue\
+And the original private source/history is retained\
+And approval affects only that exact current business fact, never a vehicle.
+
+Given an active shipper/broker workspace has no documents or incomplete, pending, rejected, stale or expired documents\
+When an authorized Transport Provider searches the directory or business recipients, or submits a Capacity share to its ID\
+Then the workspace remains discoverable and can be added as a recipient\
+And only the allowed team Capacity projection is returned.
+
+Given the current workspace owner, manager identity and address match their approved, unexpired documents\
+When an authorized Transport Provider searches or selects that business for a new Capacity share\
+Then it appears with safe identity and matching review badges and can be added\
+And no private document, manager surname, email, review note or payment data is exposed.
+
+Given a previously approved shipper/broker document becomes stale, expires or is replaced\
+When a Transport Provider views or searches that workspace\
+Then the affected badge is removed while the active workspace remains discoverable and shareable.
 
 Given a provider, foreign owner or ordinary business teammate requests the proofWhen they know a verification identifierThen the private file is denied even if the reviewed badge is visibleAnd neither direct table/RPC nor an old client bypasses current scope checks.
 
 Given an approved manager ID or business factWhen its relevant identity changes, expires or is no longer activeThen its badge is absent and normal replacement is availableAnd a new owner cannot read the previous manager's ID or inherit its badge.
 
-Local rollout needs169 enum then170 commands/projection, fresh backup/restore,
-negative SQL/API tests and actual owner/provider/Trust browser/file outcomes.
-Source/storage cleanup joins the existing account-erasure stages before completion
-is claimed. Hosted migration/rollout is separate.
+Verification uses the existing private upload, review, expiry, replacement and
+erasure workflow; this optional business review introduces no schema rollout.
+Local SQL/API tests and actual owner/provider/Trust browser/file outcomes prove
+the workflow before completion is claimed. Hosted rollout remains separate.
 
 ## October 14 provider truck authority — implemented locally
 
@@ -234,7 +274,7 @@ Then the category badge is neutral gray and states Not verified.
 Given an administrator approves the category\
 When a visitor opens the public Capacity Board, provider microsite, or public truck detail\
 Then that category badge uses a vivid, high-contrast category treatment designed to draw attention and states Verified\
-And identity, license, address, Driver, truck, and reputation categories use distinct bright colors such as blue, orange, green, violet, cyan, and gold\
+And identity, license, address, Driver, vehicle, and reputation categories use distinct cobalt, amber, violet, orange, and neutral treatments\
 And color is paired with an icon and visible text rather than carrying meaning alone\
 And its details explain the reviewed category, subject, status, review date, and expiry when applicable\
 And no member-facing badge opens the submitted private document.

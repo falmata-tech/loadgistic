@@ -6,6 +6,9 @@ import {focusedMarkers} from '../src/map/focused-markers.ts';
 import {markerLocation,signalBounds,signalPaths} from '../src/map/capacity-geometry.ts';
 import {capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,renderedCapacityPoints,capacityMarkerOffsets} from '../src/map/capacity-clusters.ts';
 import {locationSourceKind,locationSourceLabel,locationSourceColor} from '../../../src/lib/location-source.js';
+import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
+import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
+import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../src/lib/map-initial-camera.js';
 
 // Execute the real component/handlers with its native host and hooks substituted.
 // This proves the exit never enters MapLibre's first-match marker hit registry;
@@ -37,7 +40,7 @@ function fixture(currentVisible=true,topInset,bottomInset){
  const React={createElement:(type,props,...children)=>({type,props:props||{},children:flatten(children),text:children.flat(Infinity).filter(value=>typeof value==='string'||typeof value==='number')}),Fragment:'Fragment'};
  const parameters={...hooks,React,exports:{},capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,locationSourceKind,locationSourceLabel,locationSourceColor,focusedMarkers,
   capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,renderedCapacityPoints,capacityMarkerOffsets,
-  mapStyle:{},TruckAuthorityBadges:'TruckAuthorityBadges',AppIcon:'AppIcon',PublicCardImage:'PublicCardImage',Modal:'Modal',Link:'Link',useWindowDimensions:()=>({width:320,height:600}),Image:'Image',Pressable:'Pressable',ScrollView:'ScrollView',Text:'Text',View:'View',
+  mapStyle:{},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,palette:{success:capacityStatusPresentation.EMPTY.color},capacityStatusPresentation,capacityDetailFrame,CapacityTruckDetails:'CapacityTruckDetails',CapacityTruckContact:'CapacityTruckContact',AppIcon:'AppIcon',Modal:'Modal',useWindowDimensions:()=>({width:320,height:600}),Image:'Image',Pressable:'Pressable',ScrollView:'ScrollView',Text:'Text',View:'View',
   StyleSheet:{create:value=>value,absoluteFill:{}},Map:'NativeMap',Camera:'Camera',GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',
   markerLocation,signalBounds,signalPaths,createVisibleQuery:()=>({invalidate(){},moving(){},settled(){},refresh(){},close(){}}),
   vehicleConfigurationImage:()=>'/vehicle-configurations/mini-box-truck.png',apiOrigin:'https://loadgistic.example',useLanguage:()=>({t:value=>value})};
@@ -105,18 +108,14 @@ test('a custom bottom inset moves selected controls without shortening the map',
  assert.equal(style(nodes(fixture().tree).find(({node})=>node.type==='ScrollView').node).bottom,8,'other callers preserve the existing default');
 });
 
-test('narrow truck details give transporter and driver identities separate readable rows',()=>{
+test('truck details keep their selected public record and fixed contact outside scrolling evidence',()=>{
  const f=fixture(),button=nodes(f.tree).find(({node})=>node.props.accessibilityLabel==='Vehicle details').node;
  button.props.onPress();f.render();
- const all=nodes(f.tree),provider=all.find(({node})=>node.type==='Text'&&node.text.includes('Test fleet'));
- const driver=all.find(({node})=>node.type==='Text'&&node.text.includes('Public Driver'));
- assert.ok(provider&&driver,'both public identities remain present');
- const portrait=all.find(({node})=>node.type==='PublicCardImage');assert.equal(portrait.node.props.path,f.item.portrait);assert.equal(portrait.node.props.identity,'person','the Driver row uses its separate supplied portrait and person fallback');
- const group=provider.ancestors.find(ancestor=>driver.ancestors.includes(ancestor)&&ancestor.type==='View'&&Object.assign({},...[ancestor.props.style].flat()).borderTopWidth===1);
- assert.ok(group,'identity rows belong to one distinct details group');
- assert.equal(Object.assign({},...[group.props.style].flat()).flexDirection,'column','320px details must not compress identities into parallel columns');
- const profile=all.find(({node})=>node.type==='Link');
- assert.deepEqual(profile.node.props.href,{pathname:'/transporter',params:{handle:'test-fleet'}},'the existing public profile destination is retained');
+ const all=nodes(f.tree),details=all.find(({node})=>node.type==='CapacityTruckDetails'),contact=all.find(({node})=>node.type==='CapacityTruckContact');
+ assert.equal(details.node.props.truck,f.item);assert.equal(contact.node.props.truck,f.item);
+ assert.ok(details.ancestors.some(node=>node.type==='ScrollView'),'evidence can scroll inside the modal');
+ assert.ok(contact.ancestors.every(node=>node.type!=='ScrollView'),'primary contact remains outside scrolling evidence');
  assert.equal(all.filter(({node})=>node.type==='NativeMap').length,1,'opening details keeps the same map mounted');
- assert.ok(all.some(({node})=>node.type==='Text'&&node.text.includes('Confirm availability directly.')),'reported capacity keeps its freshness confirmation guidance');
+ const close=all.filter(({node})=>node.props.accessibilityLabel==='Close map signal details').at(-1).node;close.props.onPress();f.render();
+ assert.equal(nodes(f.tree).filter(({node})=>node.type==='Modal').length,0);assert.equal(f.selected,f.item,'closing details preserves selection');
 });

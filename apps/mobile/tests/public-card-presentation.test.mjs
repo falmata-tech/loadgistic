@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {publicFleetRowKey} from '../../../src/lib/public-fleet-row.js';
+import {featuredTikTokPresentation} from '../../../src/lib/featured-tiktok-presentation.js';
 const React={createElement:(type,props,...children)=>({type,props:{...props,children},children:children.flat(Infinity)}),Fragment:'Fragment'};
 const hooks={useState:initial=>[typeof initial==='function'?initial():initial,()=>{}],useMemo:compute=>compute(),useCallback:value=>value};
-const host={React,...hooks,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',StyleSheet:{create:value=>value},Text:'Text',View:'View',Image:'Image',Pressable:'Pressable',Link:'Link',AppIcon:'AppIcon',apiOrigin:'https://local.test',palette:{ink:'#172c46',teal:'#0c7275',muted:'#526875'},useLanguage:()=>({t:value=>value})};
+const host={React,...hooks,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',StyleSheet:{create:value=>value},Text:'Text',View:'View',Image:'Image',Pressable:'Pressable',Link:'Link',AppIcon:'AppIcon',apiOrigin:'https://local.test',palette:{ink:'#0b1d3a',muted:'#526875'},featuredTikTokPresentation,useLanguage:()=>({t:(value,values={})=>String(value).replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match))})};
 function compile(path,parameters){const parsed=ts.createSourceFile(path,readFileSync(new URL(path,import.meta.url),'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),stripped=ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))),code=ts.transpileModule(ts.createPrinter().printFile(stripped),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={};new Function(...Object.keys(parameters),'exports',code)(...Object.values(parameters),exports);return exports;}
 const presentation=compile('../src/components/public-card.tsx',host);
 function nodes(root){if(root===null||root===undefined||root===false)return[];if(Array.isArray(root))return root.flatMap(nodes);if(typeof root!=='object')return[{text:String(root)}];if(typeof root.type==='function')return nodes(root.type(root.props));return[root,...root.children.flatMap(nodes)];}
@@ -21,11 +22,13 @@ test('public card actions retain destinations and full touch targets, with bound
 
 test('Featured retains all public facts, conditional actions and content blocking in compact cards',()=>{
  const truck={slot:1,handle:'long-company',name:'Long commercial transporter name that must wrap',driver:'Public Driver',driverKind:'Company driver',portrait:'/portrait.jpg',truck:'Toyota Hiace',configuration:'Cargo van',image:'/vehicle-configurations/cargo-van.jpg',place:'Adama, Ethiopia',available:true};
- const feature={headline:'Daily Featured Trucks',introduction:'Today’s public programme.',date:'2026-10-13',theme:'Cargo vans',start:'08:30',end:'12:00',week:[],programme:[{kind:'TRUCK',slot:1,timeLabel:'08:30–12:00',startsAt:'',endsAt:''}],trucks:[truck,{...truck,slot:2,handle:'blocked-company',driver:'Hidden Driver'}],sponsors:[],tiktokUrl:''};
+ const feature={headline:'Daily Featured Trucks',introduction:'Today’s public programme.',date:'2026-10-13',theme:'Cargo vans',start:'08:30',end:'12:00',week:[],programme:[{kind:'TRUCK',slot:1,timeLabel:'08:30–12:00',startsAt:'',endsAt:''}],trucks:[truck,{...truck,slot:2,handle:'blocked-company',driver:'Hidden Driver'}],sponsors:[],tiktokUrl:'',tiktokStatus:'NOT_SCHEDULED'};
  const component=screen('../src/screens/featured.tsx',feature,{useBlockedProviders:()=>({blocked:['blocked-company']})}).default,tree=component(),all=nodes(tree),text=renderedText(tree);
- for(const value of [truck.name,truck.driver,truck.driverKind,truck.truck,truck.configuration,truck.place,'08:30–12:00','Finished'])assert.ok(text.includes(value),value);
+ for(const value of [truck.name,truck.driver,truck.driverKind,truck.truck,truck.configuration,truck.place,'08:30–12:00','Finished','No TikTok LIVE broadcast planned today'])assert.ok(text.includes(value),value);
  assert.ok(!text.includes('Hidden Driver'));const links=all.filter(node=>node.type==='Link');assert.deepEqual(links.map(node=>node.props.href),[{pathname:'/transporter',params:{handle:'long-company'}},{pathname:'/',params:{provider:'long-company'}}]);
  assert.ok(all.filter(node=>node.type==='Text'&&node.props.accessibilityRole==='header').every(node=>node.props.style.fontSize<=22),'card headings do not reuse the oversized global title');
+ const scheduledFeature={...feature,tiktokUrl:'https://www.tiktok.com/@loadgistic/live',tiktokStatus:'SCHEDULED'};const scheduledText=renderedText(screen('../src/screens/featured.tsx',scheduledFeature,{useBlockedProviders:()=>({blocked:[]})}).default());assert.ok(scheduledText.includes('TikTok LIVE broadcast planned · 08:30 EAT'));
+ const liveFeature={...feature,tiktokUrl:'https://www.tiktok.com/@loadgistic/live',tiktokStatus:'LIVE'};const liveTree=screen('../src/screens/featured.tsx',liveFeature,{useBlockedProviders:()=>({blocked:[]})}).default(),liveNodes=nodes(liveTree),liveText=renderedText(liveTree);assert.ok(liveText.includes('TikTok LIVE broadcast is on now'));assert.ok(liveNodes.some(node=>node.type==='ExternalButton'&&node.props.label==='Watch live on TikTok'));
 });
 
 test('transporter presentation retains contacts, documents, user content and truck map actions',()=>{

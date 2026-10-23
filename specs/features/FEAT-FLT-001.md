@@ -680,3 +680,32 @@ phone GPS as if they were the assigned driver.
 Reuse existing fleet ports/authorizers rather than copying management logic.
 Verify owner Home list and driver Home map using real local authenticated flows,
 plus their existing role denials, then owner visual approval before release gates.
+
+### Scenario: a fleet manager can manage one vehicle's capacity on a phone
+
+Given a Transport Provider owner opens a vehicle's Capacity workspace on a phone\
+When they review or update that vehicle's signal\
+Then one compact vehicle heading identifies the vehicle and its current
+publication state without wrapping the identity into a narrow column\
+And the map remains the primary work surface with four clear actions: Capacity,
+Sharing, Regular routes and Location\
+And Capacity groups availability, coverage and accepted-load preferences into
+one focused editor\
+And driver assignment and publication controls appear with Vehicle details,
+not as repeated actions above the Capacity map\
+And the four map actions stay distinct, reachable above phone navigation, and
+open only their matching editor while preserving the saved map and other values\
+And a vehicle with no saved location or signal still shows an interactive map,
+with a clear no-signal state and no invented truck marker or location\
+And saved coverage or regular-route geometry remains on the map even when the
+vehicle has no location report\
+And opening an action keeps the map task mounted at its current camera view and
+shows only that task in a safe-area editor with one clear close control\
+And account-level profile setup does not appear inside a selected vehicle's
+Capacity task\
+And the same record order is retained on desktop, using the available width for
+context without adding duplicate actions.
+
+Verification: the focused fleet/capacity browser workflows exercise the selected
+vehicle on phone and desktop, verify each action and editor, preserve unrelated
+capacity values, and confirm the map remains visible without horizontal overflow.

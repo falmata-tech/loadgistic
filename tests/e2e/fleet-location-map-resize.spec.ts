@@ -12,7 +12,7 @@ test('truck location remains in view after owner map container resizes',async({p
  checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:vehicleId,approximate_lat:9.03,approximate_lng:38.76,location_precision_km:20}}));
  await auditLogin(page,actor.email);await page.goto(`/app/fleet/${vehicleId}`);
  await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
- const firstCapacity=page.getByRole('dialog',{name:'Current capacity',exact:true});
+ const firstCapacity=page.getByRole('dialog',{name:'Capacity',exact:true});
  await firstCapacity.getByRole('button',{name:'Empty',exact:true}).click();
  await firstCapacity.getByRole('button',{name:'Capacity route',exact:true}).click();
  for(const [label,name] of [['City 1','Addis Ababa'],['City 2','Sebeta']]){
@@ -43,7 +43,7 @@ test('truck location remains in view after owner map container resizes',async({p
  const relative=async()=>{const point=(await marker.boundingBox())!,host=(await map.boundingBox())!;return {x:point.x-host.x,y:point.y-host.y};};
  const before=await relative();
  await page.getByRole('button',{name:/^Edit current capacity:/}).click();
- const dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(dialog).toHaveCount(0);
+ const dialog=page.getByRole('dialog',{name:'Capacity',exact:true});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(dialog).toHaveCount(0);
  await inView();const after=await relative();expect(Math.abs(after!.x-before!.x)).toBeLessThan(2);expect(Math.abs(after!.y-before!.y)).toBeLessThan(2);
  }finally{
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));

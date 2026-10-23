@@ -38,7 +38,7 @@ export function TrackingLocationMap({shipment,children}:{shipment:TrackingMapDat
     </div>
     <div className="tracking-map-caption">
       {location?<p className="tracking-reported-area" data-location-radius-km={location.radiusKm}><LocateFixed aria-hidden="true"/><span><strong><Text message="Reported approximate area"/> · {location.label}</strong><small><Text message="Within {radius} km" values={{radius:location.radiusKm}}/>{location.demo===true?<> · <Text message="Demo location"/></>:null}{locationSourceLabel(location.source)?<> · <Text message={locationSourceLabel(location.source)}/></>:null}{location.updatedAt?<> · <Text message="Updated"/> {new Date(location.updatedAt).toLocaleString()}</>:null}</small></span></p>:<p><Text message={shipment.trackingMode==='LOCATION_AND_STATUS'&&!['COMPLETED','CANCELLED'].includes(shipment.status)?'Waiting for the Driver’s approximate location':'Saved shipment route'}/></p>}
-      <p><Text message={location?"The line connects the saved cities. The vehicle and circle show a reported approximate area, not exact GPS or road navigation.":"The line connects the saved pickup, passing-through and delivery cities."}/></p>
+      <p><Text message={location?"Vehicle circle shows an approximate location, not exact GPS.":"The line connects the saved pickup, passing-through and delivery cities."}/></p>
     </div>
     {truckOpen&&truck?<TrackingDetailDialog title="Vehicle and driver" closeLabel="Close vehicle details" onClose={()=>setTruckOpen(false)}><TrackingTruckSummary truck={truck}/></TrackingDetailDialog>:null}
   </section>;

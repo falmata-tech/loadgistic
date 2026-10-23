@@ -21,7 +21,7 @@ test('assigned driver chooses a manual Capacity point, sees its source, and can 
   // Start with a new driver who can publish capacity but has no saved Capacity row.
   logout=await localSupportLogin(page,driver.id);await page.goto('/app/home',{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('button',{name:'Edit approximate location'}).first()).toBeVisible();
-  await page.getByRole('button',{name:'Set location'}).click();
+  await page.getByRole('button',{name:'Edit approximate location'}).click();
   const dialog=page.getByRole('dialog',{name:'Approximate location'});await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button',{name:'Choose on map'})).toBeVisible({timeout:20_000});
   await expect(dialog.getByText('Selected source:')).toContainText('Driver’s phone');
@@ -80,7 +80,7 @@ test('assigned driver chooses a manual Capacity point, sees its source, and can 
   await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('.capacity-map-controls .capacity-filter-trigger').click();
   const filters=page.getByRole('dialog',{name:'Vehicle filters'});await filters.locator('[data-filter-group="locationSource"] input[value="MANUAL"]').check();
   await page.screenshot({path:`${screenshots}/public-manual-source-filter-phone.png`});
-  await filters.getByRole('button',{name:'Show matching vehicles'}).click();
+  await filters.getByRole('button',{name:'Show vehicles'}).click();
   await expect(page).toHaveURL(url=>url.searchParams.get('locationSource')==='MANUAL',{timeout:20_000});
   await page.goto('/app/home',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Off Duty',exact:true}).click();

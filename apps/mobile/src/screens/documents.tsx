@@ -2,11 +2,11 @@ import {DatePicker} from '../components/date-picker';
 import {useLanguage} from '../localization/provider';
 import {documentSubjects,type DocumentScope} from '../navigation/document-scope';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
-import { Page, Title, Copy, Card, Field, Button, ErrorText } from '../components/ui';
+import { Page, Title, Copy, Card, Field, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
 import { FilePicker, PrivateFile, uploadBody, useFileSelection } from '../components/private-file';
 const labels: Record<string, string> = { IDENTITY: 'National ID', BUSINESS_LICENSE: 'Business license', BUSINESS_ADDRESS: 'Business address', DRIVER_IDENTITY: 'Driver license', VEHICLE_OWNERSHIP: 'Vehicle ownership', VEHICLE_OPERATING_LICENSE:'Vehicle operating licence', VEHICLE_AUTHORIZATION: 'Permission to use vehicle', VEHICLE_AUTHORITY: 'Ownership or permission to use', TRUCK_AUTHORIZATION: 'Permission to use vehicle' };
@@ -17,10 +17,10 @@ export default function Documents({embedded=false,scope}:{embedded?:boolean;scop
  const {t}=useLanguage();
  const account = useAccount(), query = useAccountQuery<Center>('/api/mobile/verification');
  const subjects=documentSubjects(query.data?.subjects||[],scope);
- if (account.busy) return <Page embedded={embedded}><ActivityIndicator /></Page>;
+ if (account.busy) return <Page embedded={embedded}><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
- return <Page embedded={embedded}>{!embedded&&<Title message={"Your documents"}/>}<Copy message={"Submit documents for review. Each review belongs to the company, driver or vehicle shown below."}/><ErrorText message={query.error} /><Button secondary message="Refresh documents" busy={query.loading} onPress={() => { void query.reload(); }} />
-  {subjects.map(subject => <Card key={subject.kind + subject.id}><Title>{scope?.kind==='ACCOUNT'&&scope.includeDriver&&subject.kind==='PROVIDER_PROFILE'&&account.session!.user.role==='DRIVER'?account.session!.user.name:subject.name}</Title><Copy>{t(scope?.kind==='ACCOUNT'&&scope.includeDriver&&subject.kind==='PROVIDER_PROFILE'&&account.session!.user.role==='DRIVER'?'Driver':subject.kind === 'ORGANIZATION' ? 'Company' : subject.kind === 'VEHICLE' ? 'Vehicle' : subject.kind === 'DRIVER' ? 'Driver' : 'Transporter')}</Copy>
+ return <Page embedded={embedded}>{!embedded&&<Title message={"Your documents"}/>}<Copy message={"Submit documents for review. Each review belongs to the workspace, driver or vehicle shown below."}/><ErrorText message={query.error} /><Button secondary message="Refresh documents" busy={query.loading} onPress={() => { void query.reload(); }} />
+  {subjects.map(subject => <Card key={subject.kind + subject.id}><Title>{scope?.kind==='ACCOUNT'&&scope.includeDriver&&subject.kind==='PROVIDER_PROFILE'&&account.session!.user.role==='DRIVER'?account.session!.user.name:subject.name}</Title><Copy>{t(scope?.kind==='ACCOUNT'&&scope.includeDriver&&subject.kind==='PROVIDER_PROFILE'&&account.session!.user.role==='DRIVER'?'Driver':subject.kind === 'ORGANIZATION' ? 'Workspace' : subject.kind === 'VEHICLE' ? 'Vehicle' : subject.kind === 'DRIVER' ? 'Driver' : 'Transporter')}</Copy>
    {subject.badges.map((badge, index) => <Copy key={badge.type + index}>{t(labels[badge.type] || badge.type)}{badge.vehicleLabel ? ` · ${badge.vehicleLabel}` : ''}: {t(badge.verified ? 'Loadgistic reviewed' : badge.expired ? 'Expired' : 'Not reviewed')}{badge.expiresOn ? ' · '+t('Expires {date}.',{date:badge.expiresOn}) : ''}</Copy>)}
    {query.data?.requests.filter(item => item.subjectId === subject.id && item.subjectKind === subject.kind).map(item => <View key={item.id} style={{ gap: 6, paddingVertical: 12 }}><Copy>{item.name || t(labels[item.type])} · {t(item.status === 'PENDING' ? 'Awaiting review' : item.status === 'APPROVED' ? 'Reviewed' : 'Not approved')}</Copy>{!!item.note && <Copy>{item.note}</Copy>}<PrivateFile label={`Open ${item.name || t(labels[item.type])}`} load={() => account.request(`/api/mobile/verification/${item.id}`)} /></View>)}
    {!!subject.allowedTypes.length && <Submit key={subject.allowedTypes.join(',')} subject={subject} reload={query.reload} />}

@@ -20,6 +20,13 @@ export interface TelemetryIngestPort{
 export function getTelematicsWorkspace(user:ProviderActor,options?:{page?:number}):Promise<unknown>;
 export function getCapacityLocationEditor(user:ProviderActor,vehicleId:string):Promise<unknown>;
 export function adminProvisionDevice(user:ProviderActor,input:unknown):Promise<unknown>;
+export function assertPhysicalGatewayAvailable(user:ProviderActor&{role:string;active:boolean},gatewayId:string):Promise<void>;
+export function assertSyntheticGatewayAvailable(user:ProviderActor&{role:string;active:boolean},gatewayId:string):Promise<void>;
+export function getAdminDemoFixtureChoices(user:ProviderActor&{role:string;active:boolean},ownerId:string,kind:'ORGANIZATION'|'PROVIDER_PROFILE'):Promise<Array<{imei:string;label:string;linked:boolean;registration:'CREATE'|'READ'}>>;
+export function assertAdminDemoFixtureBinding(user:ProviderActor&{role:string;active:boolean},command:{imei:string;protocol:string;protocolDeviceId:string;synthetic:boolean;ownerOrganizationId?:string;ownerProviderProfileId?:string}):Promise<{label:string;registration:'CREATE'|'READ'}>;
+export function reconcileAdminProvisionedDevice(user:ProviderActor&{role:string;active:boolean},command:{gatewayId:string;gatewayDeviceId:number;ownerOrganizationId?:string;ownerProviderProfileId?:string;imei:string;protocol:string;protocolDeviceId:string;label:string;synthetic:boolean;modelProfile:string}):Promise<{id:string;revision:string;reused:true}|null>;
+export function getAdminProviderDevices(user:ProviderActor&{role:string;active:boolean},ownerId:string,kind:'ORGANIZATION'|'PROVIDER_PROFILE',page?:number):Promise<{owner:{id:string;name:string;record_kind:string;type:string};items:Array<{id:string;label:string;imei:string;protocol:string;synthetic:boolean;active:boolean;last_seen_at:string|null;revision:string;assignedVehicleLabel:string|null}>;total:number;page:number;pageCount:number}>;
+export function searchAdminTransportProviders(user:ProviderActor&{role:string;active:boolean},term:string,page?:number,pageSize?:number):Promise<{items:Array<{id:string;name:string;record_kind:'ORGANIZATION'|'PROVIDER_PROFILE';type:string}>;pagination:{page:number;pageCount:number;total:number}}>;
 export function assignOwnedDevice(user:ProviderActor,input:unknown):Promise<unknown>;
 export function selectVehicleLocationSource(user:ProviderActor,input:unknown):Promise<unknown>;
 export function requestDeviceCommand(user:ProviderActor,input:unknown):Promise<unknown>;

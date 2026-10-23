@@ -5,7 +5,7 @@ import {getFeaturedOverview} from '@/lib/featured-automation.js';
 import styles from '@/app/admin/admin-presentation.module.css';
 import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
-import { BadgeDollarSign,CalendarDays,CheckCircle2,ExternalLink,Save,ShieldAlert,Sparkles,Truck } from 'lucide-react';
+import { BadgeDollarSign,CalendarDays,CheckCircle2,ExternalLink,Play,Radio,Save,ShieldAlert,Sparkles,Truck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { getAdminFeaturedProviderDay } from '@/lib/platform-admin.js';
 import { PageHeader } from '@/components/page-header';
@@ -17,6 +17,7 @@ import {getFeaturedControls} from '@/lib/platform-controls.js';
 import {hasPlatformPermission} from '@/lib/platform-admin.js';
 import {notFound} from 'next/navigation';
 import {FeaturedControlsForm,FeaturedPrepareForm} from '@/components/platform-controls-form';
+import {featuredTikTokPresentation} from '@/lib/featured-tiktok-presentation.js';
 
 export const dynamic='force-dynamic';
 
@@ -42,6 +43,9 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   const selectedProviderKeys=stored.slots.filter((slot:any)=>slot.vehicle_id).map((slot:any)=>`vehicle:${slot.vehicle_id}`);
   const excluded=candidates.filter((item:any)=>!item.eligible);
   const rosterGaps=stored.slotEvaluations.filter((slot:any)=>!slot.eligible);
+  const tiktokStatus=stored.day?.tiktok_broadcast_status||'NOT_SCHEDULED';
+  const tiktok=featuredTikTokPresentation(tiktokStatus,Boolean(stored.day?.tiktok_url));
+  const tiktokStart=stored.schedule?.config?.dayStart||'08:30';
   return <div className={"page featured-admin-page "+styles.workspace}>
     <PageHeader title={<Text message="Daily Featured Vehicles"/>}/>
     <Flash error={query.error} success={query.success}/>
@@ -67,6 +71,12 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
       <div className="sticky-form-actions"><button className="button secondary" name="command" value="DRAFT"><Save aria-hidden="true"/><Text message="Save draft"/></button><button className="button" name="command" value="PUBLISH"><CheckCircle2 aria-hidden="true"/><Text message="Publish this day"/></button><Link className="button ghost" href="/featured"><Text message="View public programme"/></Link></div>
     </form>:<div className={styles.featuredReadRoster}>{stored.slotEvaluations.length?<ol>{stored.slotEvaluations.map((slot:any,index:number)=><li key={slot.id||slot.vehicle_id}><span>{index+1}</span><div><strong>{slot.candidate?.cargo_configuration||<Text message="Vehicle unavailable"/>}</strong><small>{slot.eligible?`${slot.candidate.driver_first_name} · ${slot.candidate.name}`:<Text message="Needs review"/>}</small></div><time>{stored.walkthroughs?.find((entry:any)=>entry.provider_key===`vehicle:${slot.vehicle_id}`)?.time_label||''}</time></li>)}</ol>:<p><Text message="Not prepared yet"/></p>}</div>}
     </section>
+    {!editing&&stored.day?.status==='PUBLISHED'?<section className="panel featured-broadcast-admin" aria-labelledby="featured-broadcast-admin-title">
+      <header><Radio aria-hidden="true"/><h2 id="featured-broadcast-admin-title"><Text message="TikTok Live"/></h2><span className={`featured-broadcast-admin-state ${tiktok.state}`}><Text message={tiktok.message} values={{time:tiktokStart}}/></span></header>
+      {stored.day.tiktok_url?<><p><Text message="The vehicle schedule does not start TikTok. Start the broadcast in TikTok, then mark it Live here."/></p><a className="button secondary small" href={stored.day.tiktok_url} target="_blank" rel="noreferrer"><ExternalLink aria-hidden="true"/><Text message="Open TikTok link"/></a>
+        {tiktokStatus==='LIVE'?<form action="/api/admin/featured" method="post"><input type="hidden" name="featureDate" value={date}/><button className="button secondary" name="command" value="TIKTOK_ENDED"><Radio aria-hidden="true"/><Text message="End TikTok Live"/></button></form>:tiktokStatus==='SCHEDULED'?<form action="/api/admin/featured" method="post"><input type="hidden" name="featureDate" value={date}/><button className="button" name="command" value="TIKTOK_LIVE"><Play aria-hidden="true"/><Text message="Mark TikTok LIVE"/></button></form>:null}
+      </>:<p><Text message="No TikTok Live link saved. Add one while editing this programme."/></p>}
+    </section>:null}
     {!editing?<>
     <section className="panel featured-sponsor-admin"><div className="section-heading"><div><span className="section-kicker"><BadgeDollarSign aria-hidden="true"/><Text message="Sponsored"/></span><h2><Text message="Sponsors"/></h2><p><Text message="Schedule up to five Loadgistic transporters or outside advertisers. Sponsorship never changes capacity results or featured-vehicle order."/></p></div></div>
       <WorkspaceTaskDialog title="Schedule sponsor" triggerLabel="Schedule sponsor"><SponsorAdminForm featureDate={date} candidates={(stored as any).providerCandidates||[]}/></WorkspaceTaskDialog>

@@ -1,19 +1,19 @@
 # Verify the deployed Netlify artifact
 
-BASE-DEP-001 / FEAT-SEC-001 / NR-08 / NR-10 / NR-11.
+BASE-DEP-001 / FEAT-SEC-001 / NR-08 / NR-10 / NR-11 / NR-69.
 Scope: Loadgistic only. This runbook grants no production authority; follow
 [PRODUCTION_AUTHORITY.md](../PRODUCTION_AUTHORITY.md).
 
 ## Required release checks
 
-Prerequisite for visible changes (NR-13): provide a running local Loadgistic URL
-with local services, focused desktop/phone evidence and an interaction checklist.
-Wait for explicit owner visual approval of that version before full release
-gates or deployment. Earlier deployment permission and passing automation do not
-replace this approval. Keep the local preview available during review.
-The sequence is local owner visual testing, explicit visual approval, extensive
-tests, then deployment only when explicitly requested. Visual approval by itself
-does not authorize publication.
+Prerequisite for visible changes (NR-13; owner update October 22): keep a running
+local Loadgistic URL with local services, focused desktop/phone/Expo evidence and
+an interaction checklist. The agent must complete and record actual browser
+tasks and saved-result checks before full release gates. Ask the owner only when
+a product decision or access is unresolved. Keep the local preview available.
+The sequence is focused tests, agent-led visual/workflow review, extensive
+tests, then deployment only under the owner's explicit request and the separate
+production authorization gates. Self-review does not authorize publication.
 
 1. Bind the release to an immutable Git commit with successful required CI.
    Export only that commit into a fresh directory; compare every source blob
@@ -26,6 +26,11 @@ does not authorize publication.
 3. Run the maintained Netlify build/deploy lifecycle against the exact site,
    initially creating an unpublished draft. Do not upload the full restored
    `.next` directory as static content or alter generated adapter code manually.
+   For a prebuilt/no-build upload, prove which configuration the installed CLI
+   actually consumes. Its root configuration may omit adapter-generated image
+   routes. Preserve the exact build's required routing explicitly and compare
+   the semantic delta; do not substitute all generated settings or assume an
+   unsupported CLI flag works. Keep the frozen payload unchanged.
 4. Inspect the final function ZIP, not just the intermediate build directory.
    Confirm the adapter's `nodeBundler: none` manifest is respected, its module
    paths resolve to included files, and `run-config.json` is in the expected
@@ -44,11 +49,15 @@ does not authorize publication.
    credential-source substitution explicitly; only the production check proves
    the values actually loaded by the provider.
 6. Before declaring the release successful, verify desktop and phone public
-   discovery, filters and chat; verify an
+   discovery, filters and any affected software-support flow; verify an
    existing synthetic pilot's authenticated workspace and account security.
    Click the private-document control, compare returned bytes to the expected
    synthetic document and confirm an unauthenticated request is denied. Keep
    credentials, session cookies and document content out of evidence logs.
+   Exercise actual optimized vehicle images at two supported widths; direct
+   source-image200 is insufficient. Confirm invalid/nonimage requests are denied
+   and private-file URLs cannot be laundered through the image proxy or cache.
+   Inspect fully decoded images and image request errors in desktop/phone Chrome.
 7. Recheck database/application security, the API guard and required service
    access. Any narrowly approved exception must remain separately visible;
    do not mark an unchanged failing security gate as passing.

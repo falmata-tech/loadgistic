@@ -2,7 +2,7 @@
 export const businessDocumentTypes=['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS'];
 export const businessDocumentLabel=type=>({IDENTITY:'Account manager National ID',BUSINESS_LICENSE:'Business license',BUSINESS_ADDRESS:'Business address'})[type]||'Document';
 export const businessDocumentState=badge=>badge.verified?'Loadgistic reviewed':badge.expired?'Expired':'Not reviewed';
-const invalid=()=>new Error('Could not load business details. Please try again.');
+const invalid=()=>new Error('Could not load workspace details. Please try again.');
 const uuid=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value);
 const plain=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
 const exact=(value,keys)=>plain(value)&&Object.keys(value).length===keys.length&&keys.every(key=>Object.hasOwn(value,key));

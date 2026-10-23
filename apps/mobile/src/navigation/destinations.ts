@@ -24,7 +24,7 @@ export function workspaceCapabilities(session:AccountSession|null){
 }
 export function workspaceRoleLabel(session:AccountSession|null):string{
  if(!hasWorkspace(session))return '';
- if(session!.user.role==='CUSTOMER')return session!.user.selectedBusinessWorkspace?.membershipRole==='OWNER'?'Owner':session!.user.selectedBusinessWorkspace?.membershipRole==='ADMIN'?'Business admin':'Team member';
+ if(session!.user.role==='CUSTOMER')return session!.user.selectedBusinessWorkspace?.membershipRole==='OWNER'?'Owner':session!.user.selectedBusinessWorkspace?.membershipRole==='ADMIN'?'Workspace admin':'Team member';
  if(session!.user.operatingModel==='COMPANY_DRIVER')return 'Company driver';
  return 'Transport Provider';
 }

@@ -18,11 +18,12 @@ export function syntheticReply(command,serial=3){
  const text=Buffer.from(`${command}:ACK`,'ascii'),payload=Buffer.alloc(5+text.length);payload[0]=4+text.length;text.copy(payload,5);
  return gt06Packet(0x15,payload,serial);
 }
-export async function simulate({imei='990000000000001',host='127.0.0.1',port=15023,durationMs=30000,onEvent=()=>{},motion=false,beforeReport,signal}={}){
+export async function simulate({imei='990000000000001',host='127.0.0.1',port=15023,durationMs=30000,onEvent=()=>{},motion=false,beforeReport,signal,reportIntervalSeconds:initialReportIntervalSeconds=5}={}){
  const device=assertDemoDevice(imei);if(!['127.0.0.1','localhost','::1'].includes(host)||port!==15023)throw new Error('REMOTE_TELEMATICS_DEMO_REFUSED');
- if(signal?.aborted)return {login:false,positions:0,commands:0,syntheticRelayCut:false,syntheticReboots:0,reportIntervalSeconds:5};
+ if(!Number.isInteger(initialReportIntervalSeconds)||initialReportIntervalSeconds<5||initialReportIntervalSeconds>3600)throw new Error('INVALID_REPORT_INTERVAL');
+ if(signal?.aborted)return {login:false,positions:0,commands:0,syntheticRelayCut:false,syntheticReboots:0,reportIntervalSeconds:initialReportIntervalSeconds};
  return new Promise((resolve,reject)=>{
-  const socket=net.createConnection({host,port});let stopping=false,pending=Buffer.alloc(0),serial=10,login=false,commands=0,positions=0,relayCut=false,reboots=0,reportIntervalSeconds=5,reporting=false;
+  const socket=net.createConnection({host,port});let stopping=false,pending=Buffer.alloc(0),serial=10,login=false,commands=0,positions=0,relayCut=false,reboots=0,reportIntervalSeconds=initialReportIntervalSeconds,reporting=false;
   const report=async()=>{if(stopping||socket.destroyed||socket.writableEnded||reporting)return;reporting=true;
    try{const offset=motion?Math.sin(positions*Math.PI/4)*0.012:0;
     const candidate={...device,latitude:device.latitude+offset,longitude:device.longitude+offset,speedKph:motion?20:0,ignition:motion};
@@ -35,7 +36,7 @@ export async function simulate({imei='990000000000001',host='127.0.0.1',port=150
   const reportSafely=()=>{void report().catch(()=>socket.destroy(new Error('SIMULATION_REPORT_DENIED')));};
   const abort=()=>{stopping=true;clearInterval(interval);socket.end();};
   let interval;const timer=setTimeout(()=>{stopping=true;clearInterval(interval);socket.end();},durationMs);
-  interval=setInterval(()=>{if(login)reportSafely();},5000);signal?.addEventListener('abort',abort,{once:true});
+  interval=setInterval(()=>{if(login)reportSafely();},reportIntervalSeconds*1000);signal?.addEventListener('abort',abort,{once:true});
   socket.on('connect',()=>socket.write(loginPacket(imei)));
   socket.on('data',chunk=>{if(stopping||socket.destroyed||socket.writableEnded)return;pending=Buffer.concat([pending,chunk]);if(pending.length>4096){socket.destroy(new Error('GATEWAY_PACKET_INVALID'));return;}
    while(pending.length>=5){if(pending[0]!==0x78||pending[1]!==0x78){socket.destroy(new Error('GATEWAY_PACKET_INVALID'));return;}

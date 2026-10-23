@@ -21,6 +21,12 @@ another long gate. Preserve denial, private-data, persistence, recovery, scale,
 viewport and touch-target assertions. Own synthetic fixtures and clean exact
 records/uploads in finally; never borrow mutable customer records or sweep data.
 
+For changed UI, search E2E assertions for retired button text, section roles,
+palette values and height bounds before the first broad browser run. Compare
+each with the reviewed live screen. Launch one browser test first; if Chromium
+fails before page load, classify the runtime restriction rather than treating
+every resulting test as a product failure.
+
 Run focused cases with their actual preconditions and bounded reports. Use
 `npm run check:workflow` for delivery scripts/CI and existing `npm run quality`
 for the complete local gate when due. Read `docs/AGENT_LESSONS.md` only for the

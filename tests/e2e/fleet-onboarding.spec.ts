@@ -201,7 +201,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.route(scriptPattern,async(route:any)=>{await scriptsReady;await route.continue();});
     try{
       await driverPage.goto('/app/home',{waitUntil:'commit'});
-      await expect(driverPage.getByRole('button',{name:'Set location',exact:true})).toBeDisabled();
+      await expect(driverPage.getByRole('button',{name:'Set capacity',exact:true})).toBeDisabled();
       await expect(driverPage.getByRole('button',{name:/^Edit current capacity:/})).toBeDisabled();
     }finally{releaseScripts();}
     checkpoint('FIRST_CAPACITY');const firstAction=driverPage.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true});
@@ -214,7 +214,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     expect(await driverPage.evaluate(({x,y}:any)=>Boolean(document.elementFromPoint(x,y)?.closest('.capacity-summary-toolrail button')),{x:box.x+box.width/2,y:box.y+box.height/2})).toBe(true);
     await driverPage.screenshot({path:info.outputPath('new-driver-ready-to-set-capacity.png')});
     if(info.project.name.includes('mobile'))await firstAction.tap();else await firstAction.click();
-    const capacity=driverPage.getByRole('dialog',{name:'Current capacity',exact:true});
+    const capacity=driverPage.getByRole('dialog',{name:'Capacity',exact:true});
     await expect(capacity).toBeVisible();
     await expect(capacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await expect(capacity.getByRole('button',{name:'Save',exact:true})).toBeEnabled();
@@ -277,7 +277,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.goto(truckPath);await page.getByRole('button',{name:'Move to draft',exact:true}).click();
     await page.goto(secondPath);await page.getByRole('button',{name:'Go live',exact:true}).click();
     await page.getByRole('button',{name:'Set capacity',exact:true}).click();
-    const ownerCapacity=page.getByRole('dialog',{name:'Current capacity',exact:true});
+    const ownerCapacity=page.getByRole('dialog',{name:'Capacity',exact:true});
     await expect(ownerCapacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await ownerCapacity.getByRole('button',{name:'Empty',exact:true}).click();
     await expect(ownerCapacity).toContainText('Ask the assigned driver to open Home');
@@ -449,7 +449,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    const self=await openFleetDriver(page,{id:userId},true);await self.getByRole('combobox',{name:'Vehicle',exact:true}).selectOption(vehicleId);await self.getByRole('button',{name:'Save driver',exact:true}).click();await expect(page).toHaveURL(new RegExp(truckPath));
    expect((await service.from('driver_vehicle_assignments').select('driver_user_id').eq('vehicle_id',vehicleId).eq('active',true).single()).data?.driver_user_id).toBe(userId);await page.getByRole('button',{name:'Go live',exact:true}).click();
    await page.goto('/app/home');await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
-   const dialog=page.getByRole('dialog',{name:'Current capacity',exact:true});
+   const dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
    await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
    await dialog.getByRole('button',{name:'Capacity route',exact:true}).click();

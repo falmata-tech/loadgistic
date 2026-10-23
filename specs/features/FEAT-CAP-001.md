@@ -11,6 +11,49 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## October 21 filter and posting hierarchy — presentation-only
+
+Given a visitor opens the Capacity map filters on web or Expo\
+When the filter controls are presented\
+Then related choices are grouped in this order: Vehicle, Location, Route, More\
+And Vehicle type appears before Load status inside Vehicle\
+And Location presents a chosen city and distance, then optional device-nearby
+search, and location source last\
+And Route presents origin and destination before their range, direction and
+stop options\
+And More presents update age before reviewed-document filters\
+And each group has a distinct, accessible icon and a concise localized heading\
+And the most-used Vehicle and Location choices are immediately visible while
+Route and More can be opened without losing the draft\
+And applying or clearing still sends the same canonical values, defaults and
+multi-select groups defined below; transporter search remains independent.
+
+Given a provider opens the capacity editor on web or Expo\
+When availability is being created or updated\
+Then current availability and the accepted load type when Empty are presented
+together as one decision, with the load choice immediately beside or below the
+current status at every viewport size\
+And public and workspace vehicle summaries show the accepted load type beside
+the current capacity status when the vehicle is on duty\
+And route stops follow the selected route or service area, then who can see the
+signal is managed separately\
+And related headings use the same concise icon-led visual language on both
+clients\
+And helper text does not repeat a heading when it adds no further guidance\
+And the existing required fields, validation, permission checks, API payload,
+save, cancel and first-publication behavior remain unchanged.
+
+This is a presentation change only. Verification is mapped to the focused web
+filter/editor and Expo filter/editor tests in `specs/TRACEABILITY.md`; it does
+not change search semantics, publication authority, sharing or persistence.
+
+Given a visitor or account member uses any public or workspace screen\
+When the interface describes Loadgistic's services or asks what help is needed\
+Then it does not present platform billing, payment plans or payment support as
+an available product feature\
+And a prior support conversation with a retired category remains readable under
+a neutral support category without changing its stored history.
+
 ## October20 private map height — locally verified and owner approved
 
 Given an email viewer has unlocked private Capacity on a short phone viewport\
@@ -71,8 +114,8 @@ hosted mutation is implied by restoring choices.
 ### October18 filter-source selection and illustrated choices — local implementation
 
 Given a visitor, verified email viewer or permitted business teammate opens the
-Capacity vehicle filters, when they select GPS device, Driver’s phone or Entered
-by provider, then `locationSource=GPS,MOBILE,MANUAL` carries one canonical
+Capacity vehicle filters, when they select GPS device, Driver’s phone or Manually
+entered, then `locationSource=GPS,MOBILE,MANUAL` carries one canonical
 comma-separated OR group and remains ANDed with other truck criteria. Selecting
 Any clears only this group. Edits stay in the draft until Show matching vehicles;
 transporter profile search remains independent of the map filters.
@@ -91,6 +134,32 @@ eagerly without changing submitted single/multiple selection values.
 
 Verification: focused native draft/encoding/selection tests and actual desktop
 and phone Chrome artwork/map checks; backend filtering follows FEAT-MKT-001.
+
+### October21 web and Expo filter parity — local implementation
+
+Given a visitor opens public or authorized Capacity filters on web or Expo
+When they choose a city radius, approximate-area radius, route tolerance, stops,
+freshness, location source or reviewed document
+Then both clients present the same canonical choices, labels and default values
+And city distance offers 5, 10, 25, 50, 100, 200 and 300 km, defaulting to 50 km
+And approximate-area distance offers 5, 10, 20, 50 and 100 km, defaulting to 20 km
+And route endpoint tolerance offers 10, 25, 50, 100 and 200 km, defaulting to 50 km
+And the existing multi-select OR-within and AND-across-group query contract is
+  unchanged.
+
+Expo may progressively reveal a radius only after the associated location is
+selected; the available choices and serialized values must still match web.
+This is a presentation/default correction and does not change location privacy,
+matching, account scope, map markers or server permissions.
+
+Verification: `apps/mobile/tests/multiple-truck-filters.test.mjs` checks the
+shared choices, labels, defaults and native draft contract. Actual Chrome
+workflow tests cover web filter drawer behavior on desktop and phone,
+transporter search isolation on desktop and phone, web nearby-location privacy,
+and Expo multi-option apply/reset plus route/nearby API values. The focused
+backend filter-value/SSR/place tests pass. Current desktop and phone captures
+are under `.local/product-audit-20261021/filter-parity-review/`. Owner visual
+approval and full release gates remain pending.
 
 ## October 14 live-truck qualification — implemented locally
 
@@ -133,11 +202,10 @@ full-only, shared-only and either; this visual change does not alter matching.
 
 Owner map-view correction, October 7: public/private discovery maps permit panning
 beyond Ethiopia/East Africa, including other African regions and the Middle East.
-Keep a useful initial camera, filters/selection restoration, valid world viewport
-coordinates and normal zoom limits; a regional camera clamp must not recenter the
-user's exploration. This changes map navigation, not catalog or location-command
-coverage. Empty viewports do not invent trucks or reset the camera. Check both
-desktop and phone navigation and the native/browser adapter.
+Keep valid world coordinates and normal zoom limits; regional camera limits must
+not recenter the user's exploration. This changes map navigation, not catalog or
+location-command coverage. Empty viewports do not invent trucks or reset the
+camera. Check desktop, phone web and Expo.
 
 Owner location correction, October 7: authorized driver-submitted approximate
 locations accept finite worldwide latitude [-90,90] and longitude [-180,180],
@@ -233,8 +301,8 @@ And the Driver is not asked for a capacity percentage and no percentage is displ
 Given a public current-capacity projection is selected on the map\
 When its Driver location is available\
 Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
-And when Empty uses a Service area a separate labeled green hollow polygon joins the selected surrounding cities and identifies the center city\
-And when its geometry is Capacity route a labeled green Empty or yellow Partial polyline joins every selected city in order\
+And when Empty uses a Service area a separate labeled cobalt hollow polygon joins the selected surrounding cities and identifies the center city\
+And when its geometry is Capacity route a labeled cobalt Empty or amber Partial polyline joins every selected city in order\
 And color is reinforced by text and shape rather than being the only meaning\
 And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
 
@@ -374,7 +442,11 @@ Given a visitor opens the Capacity Board\
 When the result surface renders\
 Then one shared interactive map is the only public result view\
 And search, filters, and the location action remain available in their established command area above the map\
-And the map starts at a useful Ethiopia-level zoom, permits bounded panning across a practical East Africa envelope, and never falls back to a world or Africa-wide view\
+And when no restored viewport or explicit visitor/vehicle centering applies, its initial camera centers on the densest group of available approximate vehicle locations, so one distant outlier cannot shrink the working market to a world view\
+And when no located signal is available it uses the established East Africa market camera\
+And desktop web, phone web and Expo choose the same default market cluster for the same signals, with zoom adjusted for each map engine's tile scale\
+And the camera choice changes no signal visibility, search result, filter result, or map query\
+And visitors may pan and zoom across the world without a regional clamp, and an empty viewport never resets their camera\
 And no ranked or paginated truck-list surface is offered\
 And before selection the map clusters crowded signals that separate as the visitor zooms\
 And each cluster contains only Empty trucks or only Partial trucks, names that status, and is visibly offset from an opposite-status cluster occupying the same map cell\
@@ -384,7 +456,7 @@ And the complete map key remains visible without another action and uses pointed
 And each unclustered truck marker is a sufficiently large pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types before selecting it\
 And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
 And a tractor marker and detail use only its currently attached trailer configuration rather than combining every compatible trailer into one public signal\
-And the marker uses a complete green ring and tail for Empty or a complete bright-yellow ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
+And the marker uses a complete cobalt ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
 And no percentage or percentage-progress ring appears in a public truck marker\
 And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
 And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
@@ -411,7 +483,7 @@ And no hidden list-view state is required to select or revisit a truck.
 Given a provider microsite lists an active truck\
 When that truck has a current public Empty or Partial projection\
 Then its lazily opened microsite map uses the same safe projection and approximate-location, Service area, Capacity route, regular-route, visitor-marker, and map-key semantics as Capacity Market selection\
-And it keeps an Ethiopia-focused initial view while permitting the same bounded East Africa panning as the public Market\
+And it uses the same initial-camera rule as the public Market while permitting unrestricted world panning and zooming\
 And a truck without a current public signal has no microsite location map\
 And neither surface exposes plate, assigned Driver, private contact, exact truck coordinate, or proof files.
 
@@ -440,12 +512,13 @@ Given a truck has saved capacity facts\
 When its authorized provider opens the editor\
 Then a map-centered summary appears before the full editor\
 And one compact selected-truck control occupies the map's reserved top-left zone without repeating a Capacity title\
-And focused current-capacity, current-coverage, sharing, load-preference, regular-service, and location actions remain in one aligned top-right rail without an Edit all action\
+And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Routes and Location\
+And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Routes and Location stay separate\
 And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
-And the Driver map uses the same Empty green, Partial yellow, Approximate location violet, and Regular service blue signal language and readable hover summaries as the public Market\
+And the Driver map uses the same Empty cobalt, Partial amber, Approximate location violet, and Regular service blue signal language and readable hover summaries as the public Market\
 And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
 And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
-And current capacity, current geometry, and regular service facts each open only their relevant editor\
+And Capacity, Sharing, Routes, and Location each open only their relevant editor\
 And no separate future-or-recurring planning section appears below the capacity console\
 And every edit opens a native modal over the still-mounted map with only that signal's inputs, while regular service retains its own explicit save\
 And focused saves preserve unopened values\
@@ -459,7 +532,8 @@ Given an authorized Driver opens Capacity management on a supported phone\
 When published capacity exists\
 Then the map occupies the primary remaining workspace beneath the compact application bars\
 And the current truck selector remains compact in the reserved top-left map zone instead of becoming a page-sized card\
-And a compact top-right rail preserves current capacity, current geometry, regular service, and location actions with recognizable icons and accessible names\
+And a compact top-right rail has four recognizable, accessibly named actions: Capacity, Sharing, Routes and Location\
+And Capacity opens one editor for availability, coverage and accepted-load preferences; the other three actions open only sharing, regular-service and location controls\
 And the complete map key remains visible at bottom-left while Approximate location radius and Refresh truck location share one bottom-right dock\
 And every floating zone stays aligned, distinct, and clear of the other zones, required attribution, and essential map interaction\
 And a focused edit opens an accessible modal over the map rather than replacing the map or navigating to another page\
@@ -470,19 +544,19 @@ And the page does not repeat a visible Capacity title, detached Updating card, s
 ### Scenario: a focused edit is isolated and reversible
 
 Given an authorized provider is viewing a saved truck on Driver Home or its Fleet detail\
-When Capacity, Coverage, Sharing, Loads, Regular service, or Location is selected\
+When Capacity, Sharing, Regular service, or Location is selected\
 Then only the selected group's inputs open in a labelled modal with trapped keyboard focus\
-And Current capacity contains only Empty, Partial, and Off Duty choices; Sharing owns public/private visibility, while Loads owns accepted load types and multiple pickup/drop-off preferences\
-And Coverage contains only the current route or area inputs\
-And each available group has its own compact, labelled floating button rather than an Edit all action or a combined settings button\
-And a first publication defaults to Private with a concise visible notice, so separating Sharing cannot silently publish a new truck's location openly; existing visibility is preserved\
+And Capacity contains Empty, Partial, and Off Duty choices, current route or area inputs, accepted load types, and multiple pickup/drop-off preferences\
+And Sharing owns public/private visibility, Routes owns the separate regular-service signal, and Location owns the approximate point and privacy radius\
+And each available group has its own compact, labelled floating button, with no duplicate action or Edit all control\
+And a first publication defaults to Private with a concise visible notice; changing Capacity does not silently change Sharing\
 And the underlying map remains mounted at its current pan and zoom\
 And Cancel, Close, or Escape discards the draft and returns focus to the triggering control\
 And a save prevents duplicate submissions, retains the draft on denial or network failure, and announces a safe error inside the modal\
 And successful current-capacity or regular-service saves refresh server-owned map facts without document navigation\
 And another editor cannot open until that refresh finishes, so a rapid second edit cannot submit the previous snapshot and overwrite the first save\
-And unopened pickup, drop-off, geometry, load, and visibility values survive a focused save\
-And saving a non-location group preserves the last confirmed Driver location and its timestamp\
+And Capacity saves the complete current availability, route/area, load preferences and stop choices from that editor\
+And Capacity, Sharing, Routes and Location saves preserve values owned by the other groups, including visibility and the last confirmed Driver location and timestamp\
 And a fleet owner can inspect but cannot overwrite the assigned Driver's location\
 And a new on-duty signal or an Empty-area-to-Partial transition includes only the missing required coverage or Driver-location inputs in that same modal before publication\
 And regular service opens with its saved inputs and can be edited atomically or explicitly removed from its own modal without exposing an Edit all workflow\
@@ -612,7 +686,7 @@ Supersedes the earlier automatic truck-details drawer: it obscured selected sign
 GIVEN a public or authorized private capacity map, WHEN a truck is selected,
 THEN close the results drawer and retain only the selected truck and its permitted
 lines/circles/polygons, with small white information buttons outlined in each
-signal's color. The truck's information button uses distinct teal. No details
+signal's color. The truck's information button uses distinct cobalt. No details
 card opens automatically, including via a truck deep link.
 
 WHEN a truck or signal information button (or the signal itself) is activated,
@@ -671,13 +745,32 @@ place/profile labels unchanged and localize application explanations.
 GIVEN the selected truck information modal, WHEN it opens, THEN use an intentional
 visual hierarchy: configuration illustration beside truck identity/status, clearly
 identified transporter and driver with adjacent existing actions, grouped freshness
-information, and compact entity-specific document summaries on web. Use available
-native projection fields only; do not invent contact/review data or widen APIs.
+information, and compact entity-specific document summaries on web and native.
+Native uses the same already-authorized public callback phone and document-review
+metadata from the existing Capacity API; it does not invent missing evidence or
+widen server authorization.
 Keep all existing profile/call/document actions and hidden-location safeguards.
 Ordinary collapsed content should use horizontal space before requiring scrolling;
 long names, translations and expanded evidence must wrap/scroll without clipping.
 Preserve the centered modal, dismiss/return behavior and unchanged map camera.
 Focused desktop/phone review plus native static checks precede owner visual review.
+
+### Scenario: public vehicle details preserve contact and review tasks on native
+
+Given the same eligible vehicle is selected on web, Expo Web or Android\
+When Vehicle details opens\
+Then the assigned Driver's published first name and valid public callback phone
+appear with a reachable Call driver action\
+And only when that phone is absent may an explicitly published provider phone
+offer the existing provider Call action\
+And Owner or Transport Provider, Driver and Vehicle document groups show the
+same available review counts, categories, dates and expired/unreviewed states\
+And each group expands inside the bounded modal without hiding its close action\
+And missing contacts or reviews remain unavailable rather than invented\
+And surnames, private account contacts, internal IDs, document numbers, file paths
+and proof URLs never enter the mobile presentation\
+And FULL, Off Duty, unassigned, revoked or unauthorized private vehicles remain
+excluded by the existing API and client eligibility checks.
 
 ### Scenario: signal inspection does not become a map zoom gesture
 

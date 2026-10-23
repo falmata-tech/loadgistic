@@ -2,14 +2,16 @@ import pg from 'pg';
 import {randomUUID} from 'node:crypto';
 import {signedHeaders,syntheticCommand,correlatedSyntheticResult} from './bridge-contract.mjs';
 import {processPositionBatch,runBridgeLanes} from './bridge-processing.mjs';
+import {commandsEnabled} from './bridge-command-mode.mjs';
 const config={id:process.env.GATEWAY_ID,secret:process.env.GATEWAY_SECRET};
-const endpoint=new URL(process.env.LOADGISTIC_GATEWAY_URL||''),api=new URL(process.env.TRACCAR_API_URL||'');
+const endpoint=new URL(process.env.LOADGISTIC_GATEWAY_URL||''),commandMode=commandsEnabled(process.env.GATEWAY_COMMANDS_ENABLED);
+const api=commandMode?new URL(process.env.TRACCAR_API_URL||''):null;
 if(!config.id||!config.secret||config.secret.length<32||endpoint.pathname!=='/api/telematics/gateway'
  ||!['https:','http:'].includes(endpoint.protocol)||endpoint.username||endpoint.password||endpoint.search||endpoint.hash
  ||endpoint.protocol==='http:'&&!['127.0.0.1','localhost','host.docker.internal'].includes(endpoint.hostname))throw new Error('GATEWAY_CONFIG_INVALID');
-if(!['https:','http:'].includes(api.protocol)||api.username||api.password||api.search||api.hash
+if(commandMode&&(!['https:','http:'].includes(api.protocol)||api.username||api.password||api.search||api.hash
  ||api.protocol==='http:'&&!['127.0.0.1','localhost','traccar','host.docker.internal'].includes(api.hostname)
- ||!process.env.TRACCAR_API_TOKEN||process.env.TRACCAR_API_TOKEN.length<16)throw new Error('GATEWAY_API_CONFIG_INVALID');
+ ||!process.env.TRACCAR_API_TOKEN||process.env.TRACCAR_API_TOKEN.length<16))throw new Error('GATEWAY_API_CONFIG_INVALID');
 const pool=new pg.Pool({connectionString:process.env.GATEWAY_DATABASE_URL,max:3,connectionTimeoutMillis:5000});
 let stopping=false,round=0;const counts={accepted:0,historical:0,duplicate:0,denied:0,retried:0,acknowledged:0};
 async function application(message){
@@ -81,7 +83,7 @@ async function maintenance(){
 }
 process.on('SIGTERM',()=>{stopping=true;});process.on('SIGINT',()=>{stopping=true;});
 await runBridgeLanes({shouldStop:()=>stopping,
- priorityCycle:async()=>{await deliverResults();await dispatch();await deliverResults();},
+ priorityCycle:async()=>{if(commandMode){await deliverResults();await dispatch();await deliverResults();}},
  telemetryCycle:async()=>{await deliverPositions();if(round++%30===0)await maintenance();},
  onError:()=>console.log(JSON.stringify({event:'gateway_unavailable'}))});
 await pool.end();

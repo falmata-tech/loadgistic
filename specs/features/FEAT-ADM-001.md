@@ -41,6 +41,15 @@ And the administrator receives an appropriate inspect, correct, moderate, activa
 And immutable shipment events, audit records, message history, and accepted evidence are preserved as history rather than silently rewritten\
 And every mutation is validated, attributed, timestamped, and audited.
 
+### Scenario: provider fleet and its registered devices read as one account
+
+Given an administrator opens a Transport Provider account with Operations access\
+When the account overview is rendered\
+Then the provider's vehicles, assigned drivers and GPS-device inventory are grouped in the Fleet area of that same account\
+And a provider with no registered GPS devices sees a concise empty state there\
+And device rows remain read-only and omit IMEI values and raw location\
+And a staff member without the required current Operations access sees no device inventory or device-empty state.
+
 ### Scenario: operation rows open bounded record details
 
 Given an administrator or delegated platform team member can open one Records inventory\
@@ -81,6 +90,14 @@ And entering a search narrows the selected record type and resets its page\
 And switching record type preserves a useful search term but does not render hidden inventory rows\
 And the server reads the selected projection through a service-role-only Supabase function that independently verifies the actor's current platform permission\
 And no local SQLite repository or fallback is consulted.
+
+### Scenario: permitted operations sections remain reachable on phones
+
+Given an administrator or staff member has permission for multiple operations sections\
+When they open `/admin/operations` at a phone width\
+Then every permitted section remains visible in the responsive record navigation\
+And Accounts, Vehicles, Driver Access, Tracking, Capacity, and Routes remain directly operable without a hidden replacement picker\
+And selecting a section opens its matching record query without horizontal page overflow.
 
 ### Scenario: Review Center keeps related queues together
 

@@ -1,6 +1,6 @@
-import {Page,Title,Copy,Button,ErrorText} from '../components/ui';
+import { Page, Title, Copy, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import {useState} from 'react';
-import {ActivityIndicator,Switch,View} from 'react-native';
+import { Switch, View } from 'react-native';
 import {Redirect,router} from 'expo-router';
 import {useAccount} from '../session/provider';
 import {useLanguage} from '../localization/provider';
@@ -20,7 +20,7 @@ const sections:Record<AccountSection,{message:string;icon:IconName}>={
 export default function AccountSettings(){
  const account=useAccount(),{t}=useLanguage();
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[task,setTask]=useState('');
- if(account.busy)return <Page><ActivityIndicator/></Page>;
+ if(account.busy)return <Page><LoadingSpinner/></Page>;
  if(!hasWorkspace(account.session))return <Redirect href="/account"/>;
  if(account.session!.user.role==='CUSTOMER')return <Redirect href="/business-account"/>;
  const capabilities=workspaceCapabilities(account.session);

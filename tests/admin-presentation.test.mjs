@@ -5,6 +5,8 @@ import ts from 'typescript';
 import {z} from 'zod';
 import {statusLabel} from '../src/lib/domain.js';
 import * as featuredStatus from '../src/lib/featured-status.js';
+import * as featuredTikTok from '../src/lib/featured-tiktok-presentation.js';
+import * as demoTrackingIdentity from '../src/lib/demo-tracking-identity.js';
 import {readWindowedPage} from '../src/lib/pagination.js';
 import * as accountNavigation from '../src/lib/admin-account-navigation.js';
 import * as teamNavigation from '../src/lib/team-navigation.js';
@@ -24,6 +26,7 @@ function load(file,overrides={}){
   'next/navigation':{redirect:path=>{throw Error('REDIRECT:'+path);},notFound:()=>{throw Error('NOT_FOUND');}},
   '@/components/localization':{Text:'Text',Localized:'Localized'},'./localization':{Text:'Text',Localized:'Localized'},'@/components/page-header':{PageHeader:'PageHeader'},'@/components/flash':{Flash:'Flash'},'@/components/status-pill':{StatusPill:'StatusPill'},'@/components/pagination':{Pagination:'Pagination'},
   '@/components/transport-request-queue-summary':{TransportRequestQueueSummary:'TransportSummary'},'@/components/lifecycle-controls':{TrackingRecoveryControls:'Recovery'},'@/components/tracking-location-map':{TrackingLocationMap:'TrackingMap'},'@/components/tracking-proof-link':{TrackingProofLink:'Proof'},
+  '@/components/demo-tracking-label':{DemoTrackingLabel:'DemoTrackingLabel'},'@/lib/demo-tracking-identity.js':demoTrackingIdentity,
   '@/components/provider-authority-review':{ProviderAuthorityReview:'AuthorityReview'},'@/components/workspace-task-dialog':{WorkspaceTaskDialog:'TaskDialog'},'@/components/admin-record-documents':{AdminRecordDocuments:'RecordDocuments'},'@/lib/admin-account-navigation.js':accountNavigation,'@/components/admin-account-overview':{AdminAccountOverviewView:'AccountOverview'},'@/lib/platform-admin/account':{getAdminAccountOverview:async()=>{throw Error('UNEXPECTED_ACCOUNT_OVERVIEW');},getAdminRecordDocuments:async()=>({permitted:false,items:[],total:0,page:1,pageCount:1})},
   '@/components/tracking-map-data':{trackingMapData:()=>{throw Error('Unexpected map projection without authorized test data');}},
   '@/lib/auth':{requireUser:async()=>user},'@/lib/ui':{displayStatus:statusLabel,relativeTime:()=> '1h ago'},
@@ -32,6 +35,7 @@ function load(file,overrides={}){
   '@/lib/lifecycle.js':{getTrackingRecovery:async()=>({actions:[]}),adminTrackingLocation:async()=>null},'@/lib/provider-tracking.js':{listProviderTrackingAppeals:async()=>[]},
   '@/lib/review-navigation.js':{reviewQueueStatus:()=> 'PENDING',reviewQueuePath:()=> '/admin/reviews?tab=documents'},
   '@/lib/featured-status.js':featuredStatus,
+  '@/lib/featured-tiktok-presentation.js':featuredTikTok,
   '@/lib/pagination.js':{readWindowedPage},'@/lib/team-navigation.js':teamNavigation,'@/lib/support-polling.js':{supportRevisionTag},'@/components/support-refresh':{SupportRefresh:'Refresh'},
   '@/app/admin/admin-presentation.module.css':{__esModule:true,default:simple},...overrides
  };

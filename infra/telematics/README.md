@@ -5,6 +5,61 @@ application database and never receives the application's Supabase service key.
 The bridge has its own restricted PostgreSQL role and scoped HMAC credential.
 Only new fictional, allowlisted devices are used in local simulation.
 
+GT06 is the first physical protocol to qualify, based on the owner's available
+tracker. The device speaks binary TCP to Traccar on port 5023; it does not call
+the Loadgistic REST API. Traccar decodes the protocol, and the restricted bridge
+sends normalized events to the internal HMAC endpoint. See
+[GT06_API_MODEL.md](GT06_API_MODEL.md) for the precise event/API contract and
+physical qualification steps. The physical model/firmware is still unconfirmed;
+no command capability is enabled for real hardware.
+
+## Hosted deployment template
+
+`compose.hosted.yml` is a portable deployment template for a dedicated Linux
+host. It is **not deployed or production-ready by itself**. Before activation,
+select the host and device network/APN, approve a source firewall policy and
+public address, complete the reviewed application gateway/device provisioning,
+and qualify backups, retention and recovery on that host. Do not expose the
+Traccar API or PostgreSQL. The API port is host-loopback only for operator access
+through SSH/VPN; GPS protocol ports bind only to the explicitly supplied
+`GPS_INGRESS_BIND_ADDRESS`, and the host firewall must further restrict them to
+the approved device network. Prefer a private APN/VPN or a provider-supported
+source allowlist. IMEI is not device authentication.
+
+Create a protected environment file outside the repository and load its values
+from the selected deployment secret manager. It must define
+`GPS_INGRESS_BIND_ADDRESS`, unique `GATEWAY_DATABASE_PASSWORD` and
+`GATEWAY_BRIDGE_PASSWORD`, reviewed non-synthetic `GATEWAY_ID`, separate
+`GATEWAY_SECRET`, and the exact `LOADGISTIC_GATEWAY_URL` using HTTPS. The second
+stack requires distinct `SYNTHETIC_DATABASE_PASSWORD`, `SYNTHETIC_BRIDGE_PASSWORD`,
+`SYNTHETIC_GATEWAY_ID` and `SYNTHETIC_GATEWAY_SECRET`, with that gateway registered
+in the application as `synthetic_only`. Neither hosted bridge receives a Traccar
+API token or dispatches tracker commands. Database passwords use URL-safe
+characters because the restricted bridge passes them in a PostgreSQL URI.
+Never put values in this guide, shell history or Git. Run the offline
+`node --env-file=/protected/path/telematics.env infra/telematics/hosted-config.mjs`
+preflight and validate the rendered Compose configuration without starting
+containers. That preflight only checks shapes and separation; it cannot prove
+the selected host, database, gateway registration or authorization. Then follow the separately
+reviewed backup/provisioning/restore runbook before starting the stack. The
+template keeps real and synthetic databases and service traffic on separate
+private Docker networks, gives only the respective bridges outbound network
+access, pins image versions, bounds container memory and rotates container logs.
+The synthetic GT06 listener and admin API have no host port. A firewall/DNS/credential change or actual
+deployment remains an owner-reviewed operation.
+
+The demo marketplace workflow simulator has a separate signed scheduled/background
+function pair in the Loadgistic Netlify source, separate from the existing
+managed-operations functions and using its own HMAC. It does not need TCP or
+another host, and must not join GPS protocol ingress or receive gateway database,
+device-command or Traccar API credentials. It remains disabled and uninstalled
+on the hosted site. The opt-in recurring GPS/phone movement worker and its
+hosted app authorization exist in source and have local checks, but neither is
+deployed or enabled; the isolated synthetic stack must not be presented as a
+moving hosted demo. See
+FEAT-SIM-001 and [the hosting comparison](../../docs/operations/DEMO-GPS-HOSTING.md)
+for the planned bounded, no-listener design.
+
 ## Local rehearsal
 
 Run from the Loadgistic root. Generated credentials remain in ignored
@@ -33,12 +88,41 @@ After owner-controlled application migration rehearsal and local installation,
 provide the protected application-env.json array as the server-only
 `TELEMATICS_GATEWAYS_JSON` environment value and restart the application. Register
 the gateway token's SHA256 digest with register_telematics_gateway as an active
-administrator. The separate local provisioning script performs that registration
-and verifies named managed fictional owners; normal HTTP provisioning refuses
-synthetic profiles. Both source and exact fixture key plus an owner-approved email
+administrator. The separate local provisioning script registers the recurring
+fictional cohort and verifies named managed owners. With
+`TELEMATICS_DEMO_GATEWAY_ID` set, Admin can register the one unlinked spare
+fixture `990000000000013` for the original fictional Transporter provider, then
+link it to that provider. The server chooses the synthetic-only gateway and
+exact Traccar name, model, IMEI and GT06 attributes; gateway readback and the
+database independently verify the binding and fixture owner. Ambiguous gateway
+registration or app linking remains pending for an exact retry, without deleting
+the gateway record. This spare is separate from the recurring ten-target motion
+cohort: adding or assigning it does not start a simulator or claim live telemetry.
+The Admin form cannot mint arbitrary synthetic identifiers or grant the bridge
+command API permission. Both source and exact fixture key plus an owner-approved email
 must match. Migration153 preserves those checks for the owner's approved demo
-email aliases without rewriting151. Start the
-bridge only after those exact bindings exist:
+email aliases without rewriting151. Start the bridge only after those exact
+bindings exist.
+
+For the local demo web preview, stop the prior server on port 3100, then run the
+protected gateway preflight and launcher from the repository root:
+
+```sh
+node --env-file=.env.local --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/start-local-web.mjs --check
+node --env-file=.env.local --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/start-local-web.mjs
+```
+
+The launcher reads the protected `.local/telematics/application-env.json` and
+`application-demo-manifest.json`, requires their gateway IDs to match, and marks
+that single local gateway as Demo-only in the web child environment. It clears
+any inherited physical default gateway, validates the loopback database and
+Traccar targets, and prints no credential values. Plain `npm run dev` omits
+that protected gateway configuration:
+the demo runner can reserve and send GPS packets while the bridge receives 401
+from the app and leaves fixes queued, so public GPS markers stay stale. A fresh
+saved fix in the app and Capacity API is required before claiming movement.
+
+Then start the restricted bridge:
 
 ```sh
 docker compose --env-file .local/telematics/compose.env -f infra/telematics/compose.yml --profile bridge up -d --build bridge
@@ -51,8 +135,15 @@ to these commands; the scripts never discover application credentials from files
 node scripts/telematics/provision-local.mjs
 node scripts/telematics/verify-bridge-local.mjs
 node scripts/telematics/verify-restart-local.mjs
-node scripts/telematics/motion-demo-local.mjs 60
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs start 60
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs status
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs stop
 ```
+
+After a fresh bounded GPS run, `node scripts/telematics/verify-demo-gps-local.mjs 180`
+checks decoded Traccar fixes, delivered bridge rows, matched app reservations,
+saved positions and the public Capacity source/time. It reads only the two local
+databases and local API, and prints counts and ages without identifiers or points.
 
 Run provisioning before starting the bridge. The integrated verification proves
 signed ingestion, actual published GPS, locate and both fictional relay actions,
@@ -61,10 +152,15 @@ the allowlisted local fixture's normal Auth OTP verification and signs out only
 that temporary session; it never resets or stores a password. The restart check
 briefly stops only the isolated bridge, queues actual protocol updates, restarts
 it and checks those exact upstream events reached the app. The motion demo then
-leaves three explicit sources visible: company truck GPS, personal truck phone,
-and second company truck owner-entered location. GPS motion reports nonzero speed
-and ignition on, so engine interlocks must reject engine commands during motion.
-Verification scripts retain sanitized source-hash receipts in ignored .local/telematics.
+uses only the two fixed synthetic targets: one selected-GPS vehicle and one
+selected-phone vehicle. Its duration is bounded to 10–3600 seconds; status
+compares the local process with both exact backend leases, so a start
+acknowledgement cannot be mistaken for running movement. Stop addresses only
+the active run. Manual locations remain static and are not
+changed by this runner. It does not rotate assignments, capacity state, routes,
+sharing, shipments or documents; the coordinated demo-world scheduler remains
+planned in FEAT-SIM-001. Verification scripts retain sanitized source-hash
+receipts in ignored `.local/telematics/`.
 
 The default application ingest target is the host's loopback app on 3100 through
 Docker's host.docker.internal gateway. A hosted deployment must use HTTPS,
@@ -83,7 +179,9 @@ does not cryptographically authenticate it.
 
 The bridge API identity is a separate non-administrator with no user-management
 or device-registration privilege, read-only device configuration, and permission
-only for the two linked fictional devices. Its token is separate from the
+only for the provisioned recurring fictional devices. A newly registered Admin
+spare can send telemetry through the database outbox, but bridge API commands
+need a separately reviewed exact device permission. Its token is separate from the
 server-side administrator token used for exact provisioning readback.
 
 The dedicated gateway database uses a small AFTER INSERT trigger to append a

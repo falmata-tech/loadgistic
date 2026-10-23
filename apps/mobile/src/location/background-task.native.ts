@@ -13,7 +13,7 @@ export const taskName='loadgistic.shipment-location.v1';
 const serviceLifecycle=createLocationServiceLifecycle({
  available:TaskManager.isAvailableAsync,
  registered:()=>Location.hasStartedLocationUpdatesAsync(taskName),
- start:copy=>Location.startLocationUpdatesAsync(taskName,{accuracy:Location.Accuracy.Balanced,timeInterval:600000,distanceInterval:0,deferredUpdatesInterval:600000,pausesUpdatesAutomatically:false,showsBackgroundLocationIndicator:true,foregroundService:{notificationTitle:copy.title,notificationBody:copy.body,notificationColor:'#0c7275',killServiceOnDestroy:false}}),
+ start:copy=>Location.startLocationUpdatesAsync(taskName,{accuracy:Location.Accuracy.Balanced,timeInterval:600000,distanceInterval:0,deferredUpdatesInterval:600000,pausesUpdatesAutomatically:false,showsBackgroundLocationIndicator:true,foregroundService:{notificationTitle:copy.title,notificationBody:copy.body,notificationColor:'#155eef',killServiceOnDestroy:false}}),
  stop:()=>Location.stopLocationUpdatesAsync(taskName),
 });
 const leaseKey='loadgistic.shipment.location.leases.v1';

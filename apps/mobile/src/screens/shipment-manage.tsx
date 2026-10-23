@@ -1,11 +1,11 @@
 import {DatePicker} from '../components/date-picker';
 import { useRef, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+
 import {ConfirmationButton} from '../components/confirmation-button';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
-import { Page, Title, Copy, Card, Field, Button, ErrorText } from '../components/ui';
+import { Page, Title, Copy, Card, Field, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import { PlacePicker, type Place } from '../components/place-picker';
 import { Choices } from '../components/choices';
 import { ApiError } from '../api/http';
@@ -15,7 +15,7 @@ type Recovery = { id: string; revision: string; status: string; cargo: string; o
 export default function ManageShipment() {
  const { id } = useLocalSearchParams<{ id: string }>(), account = useAccount();
  const query = useAccountQuery<Recovery>(`/api/mobile/shipments/${encodeURIComponent(typeof id === 'string' ? id : '')}/recovery`);
- if (account.busy) return <Page><ActivityIndicator /></Page>;
+ if (account.busy) return <Page><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
  return <Page><Title message={"Manage shipment"}/><ErrorText message={query.error} /><Button secondary message="Reload current details" busy={query.loading} onPress={() => { void query.reload(); }} />{query.data && <RecoveryForm key={query.data.revision} data={query.data} />}</Page>;
 }

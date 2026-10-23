@@ -34,7 +34,7 @@ Then Empty chooses Available in a Service area or Available on a Capacity route\
 And Partial chooses Available on a Capacity route only\
 And the choice is independent from the approximate current-location controls\
 And immediate Service-area and Capacity-route signals do not require a date\
-And an Empty current Service area or Capacity route is green while a Partial current Capacity route is yellow\
+And an Empty current Service area or Capacity route is cobalt while a Partial current Capacity route is amber\
 And geometry shape, status text, and the map key communicate the same state without relying on color alone.
 
 ### Scenario: current radius uses a Driver-obscured position
@@ -45,7 +45,7 @@ Then the exact device coordinate is displaced in the browser before submission\
 And only the displaced center, chosen privacy radius, safe general-area label, and timestamp are stored\
 And the public map always shows a blue privacy circle sized by that chosen accuracy\
 And all user-facing copy names that circle the Approximate current location or Approximate location radius rather than exposing the internal privacy-control term\
-And Empty Service-area availability adds a separate green hollow working polygon whose interior does not block route interaction\
+And Empty Service-area availability adds a separate cobalt hollow working polygon whose interior does not block route interaction\
 And Fleet owners may preserve but cannot replace that Driver location with their own device position.
 
 ### Scenario: current Capacity route uses structured points
@@ -53,7 +53,7 @@ And Fleet owners may preserve but cannot replace that Driver location with their
 Given the Driver selects Capacity-route availability\
 When two to five ordered route points are saved\
 Then every point is selected from the reviewed place catalog\
-And the public map shows a green Empty or yellow Partial route relationship with direction\
+And the public map shows a cobalt Empty or amber Partial route relationship with direction\
 And no travel date is requested or inferred.
 
 ### Scenario: regular service is clearly labeled and limited
@@ -169,7 +169,7 @@ And unresolved data stays preserved for rollback without inventing coordinates o
 - Frontend: provider editor, public Capacity Board filters, cards, and one shared map
 - Tests: domain, repository, authorization, E2E, and visual audit
 
-September 21 owner-requested palette and interaction update: blue identifies location; muted orange identifies regular service, with green/yellow availability unchanged. FEAT-LST-001 defines compact map-key, non-blocking details and catalog-city proximity acceptance. Local verification precedes owner visual approval and rollout.
+September 21 owner-requested palette and interaction update: blue identifies location; muted orange identifies regular service. The October 21 brand revision uses cobalt for Empty capacity and amber for Partial, with status labels and shapes carrying the meaning. FEAT-LST-001 defines compact map-key, non-blocking details and catalog-city proximity acceptance. Local verification precedes owner visual approval and rollout.
 
 ## Location privacy across multiple views
 

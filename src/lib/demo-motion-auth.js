@@ -1,13 +1,11 @@
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
+import {DEMO_MOTION_COHORT} from './demo-motion-cohort.js';
 
 export const DEMO_MOTION_PATH='/api/telematics/demo-motion';
 export const DEMO_MOTION_BODY_LIMIT=4096;
-export const DEMO_MOTION_TARGETS=Object.freeze({
- 'company-truck':'caf1d0db-4d8e-4ce9-a879-6c7b6017de3a',
- 'personal-truck':'2f22cc5a-d654-4405-98b7-9a1a9cf42fe3'
-});
-const target=z.enum(['company-truck','personal-truck']);
+export const DEMO_MOTION_TARGETS=Object.freeze(Object.fromEntries(Object.entries(DEMO_MOTION_COHORT).map(([name,row])=>[name,row.vehicleId])));
+const target=z.enum(Object.keys(DEMO_MOTION_TARGETS));
 const lease={target,leaseId:z.string().uuid(),epoch:z.number().int().positive().safe()};
 export const demoMotionCommand=z.discriminatedUnion('action',[
  z.object({action:z.literal('CONFIGURE'),target}).strict(),

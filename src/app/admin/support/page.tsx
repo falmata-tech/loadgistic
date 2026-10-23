@@ -13,6 +13,8 @@ import {StatusPill} from '@/components/status-pill';
 import {SupportRefresh} from '@/components/support-refresh';
 import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
 
+function supportCategoryName(value:string){return value==='PAYMENT'?'Other':value.replaceAll('_',' ');}
+
 export default async function AdminSupportPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['ADMIN'],{allowLimited:true}),query=await searchParams;
   const tab=query.tab==='team'?'team':'chats';
@@ -39,7 +41,7 @@ export default async function AdminSupportPage({searchParams}:{searchParams:Prom
       <SupportRefresh endpoint={`/api/support/updates?view=${view}&page=${queue.page}&pageSize=10`} initialRevision={supportRevisionTag(queue)}/>
       <Localized as="nav" copy={["aria-label"]} className="support-tabs admin-support-tabs" aria-label="Conversation queue filter">{queueViews.map(item=>{const Icon=item.icon;return <Link className={view===item.id?'active':''} href={teamQueuePath('support',user.role,{view:item.id})} key={item.id} aria-current={view===item.id?'page':undefined}><Icon aria-hidden="true"/><Text message={item.label}/><strong>{item.count}</strong></Link>;})}</Localized>
       <section className="card admin-support-queue">
-        <div className="support-conversation-list">{queue.items.map((item:any)=><article key={item.id}><Link className="support-conversation-main" href={teamConversationHref('support',item.id,returnTo)}><span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span><span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.category.replaceAll('_',' ')}</small><small className="support-queue-preview">{item.last_message_preview||'No message yet'}</small><small>{new Date(item.updated_at).toLocaleString()} · {item.assigned_agent_name?<><Text message="Assigned to"/> {item.assigned_agent_name}</>:<Text message="Not assigned"/>}</small></span></Link><StatusPill status={item.status}/><Link className="button secondary small" href={teamConversationHref('support',item.id,returnTo)}><Inbox aria-hidden="true"/><Text message="Open"/></Link></article>)}</div>
+        <div className="support-conversation-list">{queue.items.map((item:any)=><article key={item.id}><Link className="support-conversation-main" href={teamConversationHref('support',item.id,returnTo)}><span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span><span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {supportCategoryName(item.category)}</small><small className="support-queue-preview">{item.last_message_preview||'No message yet'}</small><small>{new Date(item.updated_at).toLocaleString()} · {item.assigned_agent_name?<><Text message="Assigned to"/> {item.assigned_agent_name}</>:<Text message="Not assigned"/>}</small></span></Link><StatusPill status={item.status}/><Link className="button secondary small" href={teamConversationHref('support',item.id,returnTo)}><Inbox aria-hidden="true"/><Text message="Open"/></Link></article>)}</div>
         {!queue.items.length?<div className="empty-state compact"><Inbox aria-hidden="true"/><Text message="No support conversations."/></div>:null}
         <Pagination path="/admin/support" query={{tab:'chats',view}} page={queue.page} pageCount={queue.pageCount} total={queue.total} pageParam="queuePage"/>
       </section>

@@ -58,12 +58,12 @@ export function createVisitorController(port: Port) {
   async restore(scope: VisitorScope) { const epoch = epochs[scope]; try { const raw = await port.read(scope); if (raw && epochs[scope] === epoch) await accept(scope, JSON.parse(raw), epoch); } catch { if (epoch === epochs[scope]) await clear(scope); } },
   async verify(scope: VisitorScope, handoff: string, code: string) { await clear(scope); const epoch = epochs[scope], requestedAt = port.now(); const value = await port.request(`/api/mobile/visitor/${scope}/verify`, { body: { handoff, code } }); await accept(scope, value, epoch, requestedAt); },
   async review(scope:VisitorScope,memberToken:string){await clear(scope);const epoch=epochs[scope],requestedAt=port.now();const value=await port.request('/api/mobile/review-access/visitor',{token:memberToken,body:{scope}});await accept(scope,value,epoch,requestedAt);},
-  async request(scope: VisitorScope, path: string, body?: unknown, signal?: AbortSignal) {
+  async request(scope: VisitorScope, path: string, body?: unknown, signal?: AbortSignal, passive=false) {
    if (!path.startsWith(`/api/mobile/visitor/${scope}/`) || path.includes('..')) throw new Error('Invalid request.');
    const epoch = epochs[scope], grant = live(scope);
    if (!grant || !foreground) { if (!grant && grants[scope]) await clear(scope); throw new Error('Verify your email to continue.'); }
-   // Reading is user activity; background timers never invoke this method.
-   void touch(scope).catch(() => undefined);
+   // Foreground polling checks access without counting as deliberate activity.
+   if(!passive)void touch(scope).catch(() => undefined);
    try { const result = await port.request(path, { token: grant.token, body, signal });
     if (epochs[scope] !== epoch || !foreground || !live(scope) || signal?.aborted) throw new Error('This email session is no longer active.');
     return result;

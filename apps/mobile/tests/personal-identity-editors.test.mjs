@@ -17,9 +17,9 @@ function renderer(){
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];
 const find=(tree,type,match=()=>true)=>nodes(tree).find(node=>node.type===type&&match(node));
 const settle=async()=>{for(let index=0;index<8;index++)await Promise.resolve();};
-const native=Object.fromEntries(['ActivityIndicator','Redirect','Page','Title','Copy','Card','Button','ErrorText','View','Text','Pressable','Image','Field','Security','Profile','WorkspaceSection','WorkspaceFact','WorkspaceTaskHeader','WorkspaceTaskPane','WorkspaceAction','AppIcon','PublicImage','PublicCardImage','FilePicker','Switch'].map(name=>[name,name]));
+const native=Object.fromEntries(['ActivityIndicator','LoadingSpinner','Redirect','Page','Title','Copy','Card','Button','ErrorText','View','Text','Pressable','Image','Field','Security','Profile','WorkspaceSection','WorkspaceFact','WorkspaceTaskHeader','WorkspaceTaskPane','WorkspaceAction','AppIcon','PublicImage','PublicCardImage','FilePicker','Switch'].map(name=>[name,name]));
 class ApiError extends Error{constructor(status){super('Synthetic access response');this.status=status;}}
-const common={...native,useLocalSearchParams:()=>({setup:'provider'}),ApiError,workspaceCapabilities,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',useLanguage:()=>({t:message=>message}),StyleSheet:{create:value=>value},apiOrigin:'https://local.test',palette:{teal:'#0c7275',ink:'#172c46'}};
+const common={...native,useLocalSearchParams:()=>({setup:'provider'}),ApiError,workspaceCapabilities,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',useLanguage:()=>({t:message=>message}),StyleSheet:{create:value=>value},apiOrigin:'https://local.test',palette:{ink:'#0b1d3a'}};
 
 test('native onboarding submits structured private identity and one Transport Provider category',async()=>{
  const view=renderer(),requests=[],account={session:{state:'ONBOARDING',user:{id:'new-provider'}},request:async(path,body)=>{requests.push({path,body});},reload:async()=>account.session};

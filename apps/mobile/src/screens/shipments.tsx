@@ -3,30 +3,32 @@ import {DatePicker} from '../components/date-picker';
 import {useLanguage} from '../localization/provider';
 import { AppLink } from '../components/app-link';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
 import { Redirect, router } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
 import { ApiError } from '../api/http';
 import { statusLabel, type TrackingWorkspace } from '../api/tracking';
-import { Page, Title, Copy, Card, Field, Button, ErrorText } from '../components/ui';
+import { Page, Title, Copy, Card, Field, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
+import {TrackingDemoLabel} from '../components/tracking-demo-label';
+import {isDemoTrackingShipment} from '../../../../src/lib/demo-tracking-identity.js';
 import {workspaceCapabilities} from '../navigation/destinations';
 import { PlacePicker, emptyPlace } from '../components/place-picker';
 export default function Shipments() {
  const {t}=useLanguage();
  const account = useAccount(), query = useAccountQuery<TrackingWorkspace>('/api/mobile/shipments');
  const [creating, setCreating] = useState(false);
- if (account.busy) return <Page><ActivityIndicator /></Page>;
+ if (account.busy) return <Page><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
  return <Page><Title message={"Tracking"}/><Copy message={"Keep customers informed after you agree the transport work."}/><ErrorText message={query.error} />
-  {!query.data && !query.error && <ActivityIndicator accessibilityLabel="Loading shipments" />}
+  {!query.data && !query.error && <LoadingSpinner accessibilityLabel="Loading shipments" />}
   <Button secondary message="Refresh shipments" onPress={() => { void query.reload(); }} busy={query.loading} />
   {query.data?.canManage && !creating && <Button message="Start tracking" onPress={() => setCreating(true)} />}
   {creating && query.data && <CreateTracking workspace={query.data} onClose={() => { setCreating(false); void query.reload(); }} />}
   {query.data && !query.data.canManage && <Copy message={"Your fleet owner can enable Tracking access for you."}/>}
   {query.data?.shipments.length === 0 && <Copy message={"No shipments yet."}/>}
-  {query.data?.shipments.map(item => <Card key={item.id}><Title>{item.origin} → {item.destination}</Title><Copy>{item.code} · {t(statusLabel(item.status))}</Copy><Copy>{item.truck} · {item.driver}</Copy><Copy>{item.cargo}</Copy><AppLink href={{ pathname: '/shipment-detail', params: { id: item.id } }} style={{ color: '#0c7275', paddingVertical: 12 }} message={"Open shipment"}/></Card>)}
+  {query.data?.shipments.map(item => <Card key={item.id}><Title>{item.origin} → {item.destination}</Title>{isDemoTrackingShipment(item.id)&&<TrackingDemoLabel/>}<Copy>{item.code} · {t(statusLabel(item.status))}</Copy><Copy>{item.truck} · {item.driver}</Copy><Copy>{item.cargo}</Copy><AppLink href={{ pathname: '/shipment-detail', params: { id: item.id } }} style={{ color: '#155eef', paddingVertical: 12 }} message={"Open shipment"}/></Card>)}
   {!!query.data?.shipments.length && <Copy>{t('Showing the latest {count} shipments.',{count:query.data.shipments.length})}</Copy>}
  </Page>;
 }

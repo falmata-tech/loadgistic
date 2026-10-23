@@ -30,6 +30,10 @@ test('review login leaves a usable Marketplace and preserves both area destinati
   await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Marketplace',exact:true}).click();
   await expect(page).toHaveURL(aboutUrl);
+  await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toHaveCount(1);
+  await page.getByRole('button',{name:'Open menu',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Close menu',exact:true}).click();
   await page.getByRole('button',{name:'Open menu',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
   await expect(page.getByRole('button',{name:'Send code',exact:true})).toBeVisible();

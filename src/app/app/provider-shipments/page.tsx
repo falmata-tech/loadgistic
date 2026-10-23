@@ -1,5 +1,7 @@
 
 import {Text} from '@/components/localization';
+import {DemoTrackingLabel} from '@/components/demo-tracking-label';
+import {isDemoTrackingShipment} from '@/lib/demo-tracking-identity.js';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowRight, CalendarClock, ClipboardList, CirclePlus, MapPin, PackageCheck } from 'lucide-react';
@@ -21,7 +23,7 @@ export default async function ProviderShipmentsPage({searchParams}:{searchParams
   return <div className="page"><PageHeader icon={ClipboardList} title={<Text message="Tracking"/>} subtitle={<Text message="Keep brokers and customers informed with private shipment updates."/>} action={mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/><Text message="Start Tracking"/></Link>:undefined}/><Flash error={query.error} success={query.success}/>
     <div className="tracking-list provider-shipment-list">{shipments.map((shipment:any)=><Link href={`/app/provider-shipments/${shipment.id}`} className="tracking-row" key={shipment.id}>
       <div className="tracking-row-icon"><PackageCheck aria-hidden="true"/></div>
-      <div><strong>{shipment.code}</strong><div className="meta">{shipment.cargo_summary}</div></div>
+      <div><strong>{shipment.code}</strong>{isDemoTrackingShipment(shipment.id)?<DemoTrackingLabel/>:null}<div className="meta">{shipment.cargo_summary}</div></div>
       <div><div className="route"><MapPin aria-hidden="true"/>{shipment.origin}<span>→</span>{shipment.destination}</div><div className="meta"><CalendarClock aria-hidden="true"/><Text message=" Updated "/>{new Date(shipment.updated_at).toLocaleString()}</div></div>
       <div><strong>{shipment.platform_number}</strong><div className="meta">{shipment.driver_name}</div></div>
       <StatusPill status={shipment.operational_status}/><ArrowRight aria-hidden="true"/>

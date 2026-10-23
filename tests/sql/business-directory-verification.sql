@@ -53,7 +53,6 @@ begin
   values(reviewer_id,true,false,false,true),(nontrust_id,true,false,true,false);
  insert into public.provider_profiles(id,user_id,business_name,handle,public_visibility)
   values(provider_profile,provider_id,'Synthetic directory provider','dir-provider-'||substr(token,1,16),'PUBLIC');
- perform public.accept_content_policy(provider_id,'2026-10-09');
  workspace:=(public.business_workspace_create(owner_id,jsonb_build_object('name',business_name,'handle','dir-business-'||substr(token,1,16),'kind','BROKER','city','Addis Ababa'))->>'id')::uuid;
  foreign_workspace:=(public.business_workspace_create(foreign_id,jsonb_build_object('name','Synthetic unrelated company','handle','dir-other-'||substr(token,1,16),'kind','SHIPPER'))->>'id')::uuid;
  invitation:=(public.business_workspace_command(owner_id,workspace,jsonb_build_object('action','INVITE','expectedVersion',1,
@@ -126,10 +125,11 @@ begin
  address_id:=public.submit_managed_verification(owner_id,pg_temp.business_document_command(workspace,'BUSINESS_ADDRESS',token||'-address'));
  perform public.review_managed_verification(reviewer_id,licence_id,'APPROVED','Fictional business licence checked.');
  perform public.review_managed_verification(reviewer_id,address_id,'APPROVED','Fictional business address checked.');
+ perform pg_temp.assert_business_verification(exists(select 1 from public.business_workspace_search(provider_id,business_name,10)d where d->>'id'=workspace::text),'APPROVED_BUSINESS_RECIPIENT_SEARCH_MISSING');
  item:=pg_temp.business_directory_item(provider_id,workspace);
+ perform pg_temp.assert_business_verification(item->>'name'=business_name and item->>'managerName'=manager_first,'DIRECTORY_NAME_OR_FIRST_NAME_WRONG');
  select count(*) into badge_count from jsonb_array_elements(item->'documents')d where (d->>'verified')::boolean;
  perform pg_temp.assert_business_verification(badge_count=3 and item::text not like '%'||private_note||'%' and item::text !~ 'supabase://|fictional-business.pdf|request_id|manager_user_id','DIRECTORY_BADGE_OR_FILE_PRIVACY_WRONG');
-
  -- Private identity changes, business rename/city changes and expiry immediately
  -- invalidate only the affected proof; stale forms cannot certify new facts.
  update public.profiles set last_name=private_last||'_CHANGED' where id=owner_id;
@@ -149,6 +149,8 @@ begin
  perform pg_temp.business_verification_denied(format('select public.review_managed_verification(%L,%L,''APPROVED'',''Stale business address.'')',reviewer_id,stale_address),'VERIFICATION_SUBJECT_CHANGED');
  update public.verification_requests set expires_on=current_date-1 where id=licence_id;
  perform pg_temp.assert_business_verification(not pg_temp.business_badge(workspace,'BUSINESS_LICENSE'),'EXPIRED_DOCUMENT_BADGE_RETAINED');
+ perform pg_temp.assert_business_verification(pg_temp.business_directory_item(provider_id,workspace) is not null
+  and not pg_temp.business_badge(workspace,'BUSINESS_LICENSE'),'EXPIRED_PROOF_REMOVED_BUSINESS_OR_BADGE_RETAINED');
  expired_id:=public.submit_managed_verification(owner_id,pg_temp.business_document_command(workspace,'BUSINESS_LICENSE',token||'-expiry-stale'));
  update public.verification_requests set expires_on=current_date-1 where id=expired_id;
  perform pg_temp.business_verification_denied(format('select public.review_managed_verification(%L,%L,''APPROVED'',''Expired pending document.'')',reviewer_id,expired_id),'VERIFICATION_SUBJECT_CHANGED');
@@ -239,6 +241,6 @@ begin
  end loop;
  perform pg_temp.assert_business_verification(has_function_privilege('service_role','public.provider_business_directory(uuid,text,integer,integer)','EXECUTE')
   and has_function_privilege('service_role','public.business_verification_center(uuid,uuid)','EXECUTE'),'SERVICE_DIRECTORY_ADAPTER_UNAVAILABLE');
- raise notice 'PASS: provider-only minimized business directory, optional document lifecycle, private files, stale/transfer/expiry/archive denials, provider compatibility, erasure cleanup/shared-path hold and browser ACLs';
+ raise notice 'PASS: businesses remain discoverable without documents; optional Trust review badges, private files, stale/transfer/expiry/archive states, provider compatibility, erasure cleanup/shared-path hold and browser ACLs';
 end $test$;
 rollback;

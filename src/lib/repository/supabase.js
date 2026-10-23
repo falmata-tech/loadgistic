@@ -621,7 +621,7 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   const featureDate=String(date||'');const theme=featuredTruckTypeForDate(featureDate);const sponsorGroup=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
   const [dayResult,providerRows]=await Promise.all([
-    client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,schedule_mode,schedule_config_json,manual_schedule_json,target_count,status').eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
+    client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,tiktok_broadcast_status,schedule_mode,schedule_config_json,manual_schedule_json,target_count,status').eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
     readFeaturedRows(()=>client.rpc('public_featured_provider_candidates',{requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)}),
       'SUPABASE_PUBLIC_FEATURED_FAILED')
   ]);
@@ -632,7 +632,7 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   const truckByKey=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
   const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
     headline:'Daily Featured Vehicles',introduction:`${theme.label} · 08:30–12:00 EAT`,tiktok_url:null,
-    broadcast_start_time:'08:30',broadcast_end_time:'12:00',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
+    broadcast_start_time:'08:30',broadcast_end_time:'12:00',tiktok_broadcast_status:'NOT_SCHEDULED',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
   const day=dayResult.data;if(!day||day.expo_group_key!==theme.key)return empty();
   const {data:slots,error:slotError}=await client.from('featured_provider_slots').select('slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id').eq('day_id',day.id).order('slot_position');
   if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});
@@ -654,5 +654,5 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,truckKeys,aliases),sponsoredProviders);
   return {feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
     headline:day.public_headline||'Daily Featured Vehicles',introduction:day.public_introduction||`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
-    tiktok_url:day.tiktok_url,broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers:featured,published:true};
+    tiktok_url:day.tiktok_url,tiktok_broadcast_status:day.tiktok_broadcast_status||'NOT_SCHEDULED',broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers:featured,published:true};
 }

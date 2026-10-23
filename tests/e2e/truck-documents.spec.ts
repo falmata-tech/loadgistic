@@ -58,7 +58,7 @@ test('truck document alternatives submit private evidence and show only its revi
  }
 });
 
-test('public truck separates company, Driver and truck evidence without exposing private files',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('public truck separates Transport Provider, Driver and vehicle evidence without exposing private files',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(45000);
  const response=await page.request.get('/api/public/capacity');expect(response.ok()).toBe(true);
  const result=await response.json();const truck=result.items.find((item:{provider_organization_id?:string})=>item.provider_organization_id);
@@ -66,7 +66,7 @@ test('public truck separates company, Driver and truck evidence without exposing
  expect(truck.owner_verification_badges.map((badge:{type:string})=>badge.type)).toEqual(['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']);
  expect(JSON.stringify(result)).not.toMatch(/storage_path|original_name|supabase:\/\/verification/);
  await page.goto(`/?truck=${truck.id}`);await page.locator('.map-info-bubble.truck').click({timeout:30000});const sheet=page.locator('.map-capacity-sheet');await expect(sheet).toBeVisible();
- await expect(sheet.getByText('Company documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Driver documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Vehicle documents',{exact:true})).toBeVisible();
- await sheet.getByText('Company documents',{exact:true}).click();await expect(sheet.locator('.badge-business_license, .badge-business-license')).toContainText('Business License');
+ await expect(sheet.getByText('Transport Provider documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Driver documents',{exact:true})).toBeVisible();await expect(sheet.getByText('Vehicle documents',{exact:true})).toBeVisible();
+ await sheet.getByText('Transport Provider documents',{exact:true}).click();await expect(sheet.locator('.badge-business_license, .badge-business-license')).toContainText('Business License');
  await page.screenshot({path:info.outputPath('public-entity-documents.png'),fullPage:true});
 });

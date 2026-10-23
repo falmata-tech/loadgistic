@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as locationSource from '../src/lib/location-source.js';
 import * as trackingMap from '../src/lib/tracking-map.js';
+import * as demoTrackingIdentity from '../src/lib/demo-tracking-identity.js';
+import * as trackingRefresh from '../src/lib/tracking-refresh-revision.js';
 
 function load(file,imports){
  const compiled=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText,exports={};
@@ -17,8 +19,9 @@ async function render(canViewLocation,source){
  const {default:Page}=load('src/app/track/[id]/page.tsx',{
   'react/jsx-runtime':{jsx:node,jsxs:node},'next/link':{__esModule:true,default:'Link'},'next/navigation':{redirect(){throw Error('Unexpected redirect');}},
   '@/components/localization':{Text:'Text'},'@/components/tracking-proof-link':{TrackingProofLink:'Proof'},'@/components/public-header':{PublicHeader:'Header'},'@/components/flash':{Flash:'Flash'},
+  '@/components/demo-tracking-label':{DemoTrackingLabel:'DemoTrackingLabel'},'@/lib/demo-tracking-identity.js':demoTrackingIdentity,
   '@/lib/provider-tracking.js':{getProviderGuestTracking:async()=>shipment},'@/components/status-pill':{StatusPill:'Status'},'@/lib/auth':{getProviderTrackingGrant:async()=>({recipientDigest:'protected',expiresAt:1}),getCurrentUser:async()=>null},
-  '@/components/tracking-idle-guard':{TrackingSessionBoundary:'Session'},'@/components/tracking-location-map':{TrackingLocationMap:'Map'},'@/components/tracking-map-data':{trackingMapData},'@/components/tracking-sharing':{TrackingSharing:'Sharing'},'@/lib/security.js':{},'@/lib/location-source.js':locationSource
+  '@/components/tracking-idle-guard':{TrackingSessionBoundary:'Session'},'@/components/tracking-location-map':{TrackingLocationMap:'Map'},'@/components/tracking-auto-refresh':{TrackingAutoRefresh:'AutoRefresh'},'@/lib/tracking-refresh-revision.js':trackingRefresh,'@/components/tracking-map-data':{trackingMapData},'@/components/tracking-sharing':{TrackingSharing:'Sharing'},'@/lib/security.js':{},'@/lib/location-source.js':locationSource
  });
  return nodes(await Page({params:Promise.resolve({id:'shipment'}),searchParams:Promise.resolve({})}));
 }

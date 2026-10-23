@@ -1,5 +1,5 @@
 export const accountClosureBlockers={
- BUSINESS_OWNER_HANDOVER_REQUIRED:{text:'Transfer ownership or archive your business before closing your account.',href:'/workspaces'},
+ BUSINESS_OWNER_HANDOVER_REQUIRED:{text:'Transfer ownership or archive your workspace before closing your account.',href:'/workspaces'},
  ACTIVE_TRACKING:{text:'Complete, cancel or reassign active Tracking.',href:'/app/provider-shipments'},
  ACTIVE_TRUCKS:{text:'Retire your active vehicles.',href:'/app/fleet'},
  DRIVER_ASSIGNMENT:{text:'Ask your fleet owner to end your current vehicle assignment.',href:'/app/support'},

@@ -1,6 +1,7 @@
 import {expect,test} from './browser-test';
 import {auditLogin} from './audit-helpers';
 import type {Page} from 'playwright-core';
+import {chmodSync} from 'node:fs';
 async function capture(page:Page,info:{outputPath:(name:string)=>string},name:string){
  await page.evaluate(()=>window.scrollTo(0,0));await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBe(0);
  await page.screenshot({path:info.outputPath(name),fullPage:true});
@@ -45,6 +46,21 @@ test('admin record actions and connected details remain usable at desktop and na
   await capture(page,info,`admin-driver-actions-${locale}-320.png`);
  }
  expect(errors).toEqual([]);
+});
+
+test('admin operations sections stay visible and usable on phone widths',async({page},info)=>{
+ test.setTimeout(90000);await auditLogin(page,'admin@loadgistic.local');
+ for(const width of[390,320]){
+  await page.setViewportSize({width,height:844});await page.goto('/admin/operations');
+  const navigation=page.getByRole('navigation',{name:'Platform record type',exact:true});await expect(navigation).toBeVisible();
+  for(const label of['Accounts','Vehicles','Driver Access','Tracking','Capacity','Routes']){
+   const link=navigation.getByRole('link',{name:label,exact:true});await expect(link).toBeVisible();
+   const bounds=await link.boundingBox();expect(bounds).not.toBeNull();expect(bounds!.width).toBeGreaterThanOrEqual(44);expect(bounds!.height).toBeGreaterThanOrEqual(44);expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width+1);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  const screenshot=info.outputPath(`admin-sections-${width}.png`);await page.screenshot({path:screenshot,fullPage:false});chmodSync(screenshot,0o600);
+  await navigation.getByRole('link',{name:'Routes',exact:true}).click();await expect(page).toHaveURL(/\/admin\/operations\?view=ROUTES$/);await expect(navigation.getByRole('link',{name:'Routes',exact:true})).toHaveClass(/active/);
+ }
 });
 
 test('admin team controls and review queues retain their bounded forms and navigation',async({page},info)=>{

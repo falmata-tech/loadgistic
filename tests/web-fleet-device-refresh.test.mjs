@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint} from '../src/lib/telematics-workspace.ts';
 import {nextCapacityPrivacyRadius} from '../src/lib/location-privacy.js';
+import {isDemoAdminSpare,gpsDeviceDisplayLabel} from '../src/lib/demo-admin-spare.js';
 const workspace=page=>({canManage:true,page,pageSize:20,total:1,pageCount:1,devices:[],vehicles:[],commands:[]});
 function harness(fetcher){
  let slots=[],cursor=0;const effects=[],timers=new Set();
@@ -13,7 +14,7 @@ function harness(fetcher){
  const file=readFileSync('src/components/fleet-devices.tsx','utf8'),parsed=ts.createSourceFile('fleet-devices.tsx',file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))))+'\nexport {useFleetDevices,SourceForm,SourceSummary,DeviceRow};';
  const exports={},code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText;
- const ports={React,window:{setInterval:fn=>{timers.add(fn);return fn;},clearInterval:fn=>timers.delete(fn)},document,fetch:fetcher,parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint,nextCapacityPrivacyRadius,useTranslation:()=>({t:value=>value,locale:'en'}),Text:'Text',ManualTruckLocation:'ManualTruckLocation',Satellite:'Satellite',Smartphone:'Smartphone',Pencil:'Pencil',RefreshCw:'RefreshCw',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',Truck:'Truck',CapacityEditDialog:'CapacityEditDialog',styles:new Proxy({},{get:(_target,key)=>String(key)}),telematicsAlarmLabel:()=>null,commandStateLabel:value=>value,exports};
+ const ports={React,window:{setInterval:fn=>{timers.add(fn);return fn;},clearInterval:fn=>timers.delete(fn)},document,fetch:fetcher,parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint,nextCapacityPrivacyRadius,isDemoAdminSpare,gpsDeviceDisplayLabel,useTranslation:()=>({t:value=>value,locale:'en'}),Text:'Text',ManualTruckLocation:'ManualTruckLocation',Satellite:'Satellite',Smartphone:'Smartphone',Pencil:'Pencil',RefreshCw:'RefreshCw',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',Truck:'Truck',CapacityEditDialog:'CapacityEditDialog',styles:new Proxy({},{get:(_target,key)=>String(key)}),telematicsAlarmLabel:()=>null,commandStateLabel:value=>value,exports};
  new Function(...Object.keys(ports),code)(...Object.values(ports));
  return {document,host,render(name='useFleetDevices',props){cursor=0;const value=exports[name](props);if(value?.host)value.host.current=host;while(effects.length)effects.shift()();return value;},tick(){for(const fn of timers)fn();},close(){for(const slot of slots)slot?.cleanup?.();}};
 }

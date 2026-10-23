@@ -12,7 +12,7 @@ async function currentProfileSignal(page:any,predicate:(item:any)=>boolean){
  throw Error('CURRENT_TRUCK_PROFILE_FIXTURE_REQUIRED');
 }
 
-test('truck modal groups identity, contacts, updates and entity documents without a long stack',async({page}:{page:any},info:any)=>{
+test('truck modal groups identity, contacts, updates and readable phone document rows',async({page}:{page:any},info:any)=>{
  test.setTimeout(90000);
  const truck=await currentProfileSignal(page,item=>Boolean(item.assigned_driver_first_name)&&item.owner_verification_badges?.length>0);
  await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
@@ -32,8 +32,8 @@ test('truck modal groups identity, contacts, updates and entity documents withou
   const people=[...el.querySelectorAll('.truck-inspection-person')].map(el=>el.getBoundingClientRect());
   const docs=[...el.querySelectorAll('.truck-document-summary')].map(el=>el.getBoundingClientRect());
   const content=el.closest('.capacity-info-content')!;
-  return {peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,peopleStacked:people[0].bottom<=people[1].top&&Math.abs(people[0].left-people[1].left)<1,docsSideBySide:docs.every(rect=>Math.abs(rect.top-docs[0].top)<1),horizontalOverflow:content.scrollWidth-content.clientWidth,verticalOverflow:content.scrollHeight-content.clientHeight};
- })).toEqual({peopleSideBySide:!narrow,peopleStacked:narrow,docsSideBySide:true,horizontalOverflow:0,verticalOverflow:0});
+  return {peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,peopleStacked:people[0].bottom<=people[1].top&&Math.abs(people[0].left-people[1].left)<1,docsSideBySide:docs.every(rect=>Math.abs(rect.top-docs[0].top)<1),docsStacked:docs[0].bottom<=docs[1].top&&docs[1].bottom<=docs[2].top,horizontalOverflow:content.scrollWidth-content.clientWidth};
+ })).toEqual({peopleSideBySide:!narrow,peopleStacked:narrow,docsSideBySide:!narrow,docsStacked:narrow,horizontalOverflow:0});
  for(const link of await sheet.locator('a').all()){const box=await link.boundingBox();expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);}
  await page.screenshot({path:info.outputPath('truck-profile.png')});
  const documents=sheet.locator('.truck-document-summary').first();await documents.locator(':scope>summary').click();

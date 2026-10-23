@@ -250,6 +250,31 @@ And the owning provider has a published public profile with at least one public 
 And available Driver and truck document-review states are shown as reviewed, pending, missing, rejected, or expired rather than turning placement into a guarantee\
 And private contacts, plates, evidence files, exact coordinates, account data, and administrative notes remain absent.
 
+### Scenario: optional documents do not exclude a one-vehicle provider
+
+Given an active personal Transport Provider has one Live vehicle, a current
+assigned Driver and a published profile with a public contact and base place\
+And the provider has no approved identity, permission or ownership documents\
+When Featured evaluates that exact vehicle and Driver\
+Then the pair is eligible without creating or approving a document\
+And missing ownership, permission and operating-licence facts remain unverified\
+And an additional unqualified Live vehicle excludes the provider's fleet until
+the normal qualifying-authority rule is satisfied or only one vehicle is Live\
+And revoking or expiring authority never leaves a verified badge behind.
+
+Given an AUTO day already contains the exact vehicle and Driver\
+When the owning provider loses and then legitimately regains publication eligibility\
+Then the public projection excludes and then restores that saved pair\
+And its day, slot order, vehicle/Driver identities and round history are unchanged\
+And a MANUAL day is never regenerated as a recovery shortcut.
+
+Regression: `tests/sql/featured-optional-documents.sql` owns rollback-only personal
+and fleet fixtures. Existing `tests/sql/featured-continuous-rounds.sql` and
+`tests/sql/featured-random-rounds.sql` retain seven-day themes, waiting-first round
+exhaustion/reuse, distinct Drivers, manual-day protection and privacy denials.
+Migration080 already removed the historical extra Featured document gate; this
+scenario does not introduce a new publication exception or require a new migration.
+
 ### Scenario: the public programme never silently disappears
 
 Given the current day has no published roster or a selected truck or Driver is no longer eligible\
@@ -519,3 +544,41 @@ Evidence: tests/sql/featured-team-permission.sql and the isolated production-bac
 restore/rehearsal.
 
 October13 regression lesson: NR-34 in `docs/SECURITY_REGRESSION_REGISTER.md`; local evidence and hosted/visual gates are tracked separately in `docs/PROGRESS.md`.
+
+October21 operational evidence: the owner-approved44-pair synthetic demo scope
+correction is committed and independently verified on the live181 database.
+All seven saved days retain eight eligible same-category vehicles; pair/order,
+rotation history,28 public/16 private capacity signals and97 document records
+remain unchanged. No reviewed ownership or new document approval was invented.
+Protected applied/readback receipts and fresh restore/rollback evidence live in
+`.local/featured44-renewal1/`; current browser and delivery status is in
+`docs/PROGRESS.md`. This is a fixture correction, not an eligibility relaxation.
+
+### Scenario: distinguish an actual TikTok Live broadcast from the featured timetable
+
+Given a published Featured day has a validated TikTok link and scheduled start
+time in East Africa Time\
+When no authorized staff member has confirmed the broadcast is live\
+Then the public header explicitly says “TikTok LIVE broadcast planned” and shows
+its start time\
+
+Given a published Featured day has no TikTok link\
+When a visitor opens Featured\
+Then the public header says no TikTok LIVE broadcast is planned\
+And a featured vehicle slot being in progress never implies a TikTok broadcast.
+
+Given an authorized Featured manager opens a published day with a TikTok link\
+When they mark the broadcast Live or Ended\
+Then only the bounded public status and safe schedule time are exposed\
+And the status action is denied to members without the Featured permission,
+unauthenticated visitors, unpublished days, or days without a TikTok link\
+And marking Live records the server time; marking Ended stops the Live label.
+
+Given a day is explicitly Live, scheduled, ended or has no TikTok link\
+When a visitor opens Featured in web or mobile\
+Then both clients explicitly identify the broadcast as TikTok LIVE and keep it
+separate from the vehicle timetable\
+And only the confirmed Live state says the TikTok LIVE broadcast is on now and
+offers the “Watch live on TikTok” action\
+And the full broadcast message stays visible without horizontal overflow on a
+narrow phone, alongside reachable weekly and schedule controls.

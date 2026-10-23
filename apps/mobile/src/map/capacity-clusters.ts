@@ -2,10 +2,11 @@ import type {Feature, FeatureCollection, Point} from 'geojson';
 import type {CapacitySignal} from '../api/public-capacity.ts';
 import {markerLocation, separateMarkers, type LngLat} from './capacity-geometry.ts';
 import type {MapPoint} from './focused-markers.ts';
+import {capacityStatusPresentation} from '../theme/capacity-status-presentation.ts';
 
 export type CapacityStatus = 'EMPTY' | 'PARTIAL';
 export const capacityStatuses: CapacityStatus[] = ['EMPTY', 'PARTIAL'];
-export const capacityColors = {EMPTY: '#16a34a', PARTIAL: '#eab308'};
+export const capacityColors = {EMPTY: capacityStatusPresentation.EMPTY.color, PARTIAL: capacityStatusPresentation.PARTIAL.color};
 export const capacitySourceIds = {EMPTY: 'capacity-empty', PARTIAL: 'capacity-partial'};
 export const capacityLayerIds = (status: CapacityStatus) => [
   `${capacitySourceIds[status]}-clusters`, `${capacitySourceIds[status]}-trucks`,

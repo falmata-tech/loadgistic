@@ -5,7 +5,7 @@ import {nativeFeatured} from '../../../src/lib/mobile/public-contract.js';
 const shipment={id:'demo',code:'DEMO',origin:'A',destination:'B',cargo:'Demo',status:'CREATED',driver:'Demo',truck:'Demo',updatedAt:''};
 test('server Featured projections including an honestly empty roster remain renderable',()=>{
  const value=nativeFeatured({feature_date:'2026-10-11',published:false,providers:[]});
- assert.deepEqual(parseFeatured(value),value);assert.deepEqual(value.trucks,[]);
+ assert.deepEqual(parseFeatured(value),value);assert.deepEqual(value.trucks,[]);assert.equal(value.tiktokStatus,'NOT_SCHEDULED');
 });
 test('bad Featured arrays or nested records fail before the screen calls filter/map',()=>{
  const value=nativeFeatured({feature_date:'2026-10-11',published:false,providers:[]});

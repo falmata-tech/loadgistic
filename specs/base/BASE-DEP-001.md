@@ -370,8 +370,8 @@ Given a request authorizes performance improvements to an existing interface\
 When an optimization is proposed\
 Then its acceptance preserves appearance, action count, automatic behavior and result completeness\
 And any required UX tradeoff needs explicit owner agreement before implementation\
-And a running local preview with desktop/phone evidence requires explicit owner visual approval before deployment\
-And successful CI, an agent-authored spec and earlier release permission do not replace that approval.
+And the agent exercises the running local preview on desktop and phone, records the changed workflow and visual evidence, and corrects observed defects before deployment\
+And a required UX tradeoff still needs owner agreement, while successful CI or an agent-authored spec does not replace the hands-on review or separate release authorization.
 
 NR-13 and `docs/MAP_PERFORMANCE_REGRESSION_2026-09-21.md` record the map incident,
 local evidence and remaining repair. Repository rules are workflow requirements,

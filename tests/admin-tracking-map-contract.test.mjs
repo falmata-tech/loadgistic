@@ -6,6 +6,7 @@ import {z} from 'zod';
 import * as trackingMap from '../src/lib/tracking-map.js';
 import {trackingRecoveryActions,statusLabel} from '../src/lib/domain.js';
 import {canManageProviderFleet} from '../src/lib/fleet.js';
+import * as demoTrackingIdentity from '../src/lib/demo-tracking-identity.js';
 
 const actor={id:'00000000-0000-4000-8000-000000000001',role:'SUPPORT',can_manage_operations:true};
 const shipmentId='00000000-0000-4000-8000-000000000002';
@@ -100,6 +101,7 @@ function page(data){
   '@/app/admin/admin-presentation.module.css':{__esModule:true,default:simple},'@/components/localization':{Text:'Text'},
   '@/components/page-header':{PageHeader:'Header'},'@/components/flash':{Flash:'Flash'},'@/components/status-pill':{StatusPill:'Status'},'@/components/workspace-task-dialog':{WorkspaceTaskDialog:'TaskDialog'},
   '@/components/lifecycle-controls':{TrackingRecoveryControls:'Recovery'},'@/components/tracking-location-map':{TrackingLocationMap:'TrackingMap'},
+  '@/components/demo-tracking-label':{DemoTrackingLabel:'DemoTrackingLabel'},'@/lib/demo-tracking-identity.js':demoTrackingIdentity,
   '@/components/tracking-proof-link':{TrackingProofLink:'Proof'},'@/components/tracking-map-data':{trackingMapData:mapData},
   '@/components/admin-record-documents':{AdminRecordDocuments:'RecordDocuments'},'@/components/admin-account-overview':{AdminAccountOverviewView:'AccountOverview'},
   '@/lib/platform-admin/account':{getAdminAccountOverview:async()=>null,getAdminRecordDocuments:async()=>null},'@/lib/admin-account-navigation.js':{adminAccountReturnPath:()=>null,adminOperationReturnPath:()=>null,adminOperationListReturnPath:()=>null},

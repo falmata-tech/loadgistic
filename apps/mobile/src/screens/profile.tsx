@@ -1,11 +1,11 @@
 import { FilePicker, PrivateFile, uploadBody, useFileSelection } from '../components/private-file';
 import { useEffect,useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Switch, Text, View } from 'react-native';
+import { Modal, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
-import { Page, Card, Title, Copy, Field, Button, ErrorText,palette } from '../components/ui';
+import { Page, Card, Title, Copy, Field, Button, ErrorText, palette, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
 import { PlacePicker } from '../components/place-picker';
 import {PublicImage} from '../components/public-details';
@@ -15,9 +15,9 @@ type Profile = { accountName:string;handle:string;headline: string; about: strin
 type Workspace = { accountName?:string;managerName?:string;imageUrl: string; customImage: boolean; name: string; handle: string; profile: Profile; regions: { code: string; label: string }[] };
 export default function ProfileScreen({embedded=false}:{embedded?:boolean}={}) {
  const account = useAccount(), query = useAccountQuery<Workspace>('/api/mobile/profile');
- if (account.busy) return <Page embedded={embedded}><ActivityIndicator /></Page>;
+ if (account.busy) return <Page embedded={embedded}><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
- return <Page embedded={embedded}>{!embedded&&<Title message={"Transporter profile"}/>}<ErrorText message={query.error} />{!query.data && !query.error && <ActivityIndicator />}{!!query.error && <Button secondary message="Try again" onPress={() => { void query.reload(); }} />}{query.data&&<><ProfileEditor key={account.session.user.id} workspace={query.data}/><Portrait key={`photo:${account.session.user.id}`} initial={query.data}/></>}</Page>;
+ return <Page embedded={embedded}>{!embedded&&<Title message={"Transporter profile"}/>}<ErrorText message={query.error} />{!query.data && !query.error && <LoadingSpinner />}{!!query.error && <Button secondary message="Try again" onPress={() => { void query.reload(); }} />}{query.data&&<><ProfileEditor key={account.session.user.id} workspace={query.data}/><Portrait key={`photo:${account.session.user.id}`} initial={query.data}/></>}</Page>;
 }
 function profileDraft(workspace:Workspace):Profile{return {...workspace.profile,accountName:workspace.profile.accountName||workspace.accountName||workspace.name,handle:workspace.profile.handle||workspace.handle};}
 function ProfileEditor({ workspace }: { workspace: Workspace }) {

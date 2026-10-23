@@ -1,22 +1,22 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+
 import { Link, Redirect, router } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
 import { useForegroundRefresh } from '../hooks/foreground-refresh';
 import { supportTopic, supportTopics, type SupportList, type SupportSummary } from '../api/support';
-import { Page, Title, Copy, Card, Field, Button, ErrorText } from '../components/ui';
+import { Page, Title, Copy, Card, Field, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
 import { useLanguage } from '../localization/provider';
 export default function SupportScreen() {
  const account = useAccount();
- if (account.busy) return <Page><ActivityIndicator /></Page>;
+ if (account.busy) return <Page><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
  return <MemberSupport key={account.session.user.id} />;
 }
 function ChatCard({ item }: { item: SupportSummary }) {
  const {t,locale}=useLanguage();
- return <Card><Title>{t(supportTopic(item.category))}</Title><Copy>{item.preview}</Copy><Copy>{item.status === 'CLOSED' ? t('Ended') : item.agent ? t('Assigned to {agent}',{agent:item.agent}) : t('Waiting for an available support agent')}</Copy><Copy>{new Date(item.updatedAt).toLocaleString(locale)}</Copy><Link href={{ pathname: '/support-chat', params: { id: item.id } }} style={{ paddingVertical: 12, color: '#0c7275' }}>{item.status === 'CLOSED' ? t('View past chat') : t('Continue chat')}</Link></Card>;
+ return <Card><Title>{t(supportTopic(item.category))}</Title><Copy>{item.preview}</Copy><Copy>{item.status === 'CLOSED' ? t('Ended') : item.agent ? t('Assigned to {agent}',{agent:item.agent}) : t('Waiting for an available support agent')}</Copy><Copy>{new Date(item.updatedAt).toLocaleString(locale)}</Copy><Link href={{ pathname: '/support-chat', params: { id: item.id } }} style={{ paddingVertical: 12, color: '#155eef' }}>{item.status === 'CLOSED' ? t('View past chat') : t('Continue chat')}</Link></Card>;
 }
 function MemberSupport() {
  const {t}=useLanguage();

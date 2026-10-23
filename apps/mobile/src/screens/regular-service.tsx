@@ -1,10 +1,10 @@
 import {CoveragePreview} from '../components/coverage-preview';
 import { useRef, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+
 import { Redirect } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
-import { Page, Title, Copy, Card, Button, ErrorText } from '../components/ui';
+import { Page, Title, Copy, Card, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
 import { Cities } from '../components/cities';
 import { PlacePicker, emptyPlace } from '../components/place-picker';
@@ -14,7 +14,7 @@ type Scope={vehicleId:string;expectedDriverId:string};
 type Props=Partial<Scope>&{embedded?:boolean;onBusy?:(busy:boolean)=>void;onSaved?:()=>void};
 export default function RegularService({embedded=false,vehicleId,expectedDriverId,onBusy,onSaved}:Props={}) {
  const account = useAccount();
- if (account.busy) return <Page embedded={embedded}><ActivityIndicator /></Page>;
+ if (account.busy) return <Page embedded={embedded}><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
  if(!vehicleId||!expectedDriverId)return <Redirect href={account.session.user.operatingModel==='COMPANY_DRIVER'?'/manage-capacity':'/fleet'}/>;
  return <ScopedRegularService key={`${vehicleId}:${expectedDriverId}`} embedded={embedded} vehicleId={vehicleId} expectedDriverId={expectedDriverId} onBusy={onBusy} onSaved={onSaved}/>;

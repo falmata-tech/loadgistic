@@ -1,10 +1,10 @@
-.dialog { width:min(640px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); margin:auto; padding:0; color:var(--ink,#0b1d3a); border:1px solid var(--line,#d8e3e6); border-radius:16px; box-shadow:0 24px 80px #0b1d3a30; overflow:auto; }
+.dialog { width:min(640px,calc(100vw - 32px)); max-height:calc(100dvh - 48px); margin:auto; padding:0; color:var(--ink,#0b1d3a); border:1px solid var(--line,#e5eaf1); border-radius:16px; box-shadow:0 24px 80px #0b1d3a30; overflow:auto; }
 .dialog::backdrop { background:#0b1d3a55; }
-.header { display:flex; justify-content:space-between; gap:16px; align-items:start; padding:22px 24px 18px; border-bottom:1px solid var(--line,#d8e3e6); background:#fff; }
+.header { display:flex; justify-content:space-between; gap:16px; align-items:start; padding:22px 24px 18px; border-bottom:1px solid var(--line,#e5eaf1); background:#fff; }
 .header > div { min-width:0; }
 .header h2 { margin:0; font-size:1.25rem; line-height:1.35; }
 .header p { margin:8px 0 0; color:var(--muted,#526572); font-size:.88rem; line-height:1.5; }
-.header > button { display:flex; align-items:center; justify-content:center; flex-shrink:0; min-width:44px; min-height:44px; border:1px solid var(--line,#d8e3e6); border-radius:10px; background:white; color:var(--ink,#0b1d3a); cursor:pointer; }
+.header > button { display:flex; align-items:center; justify-content:center; flex-shrink:0; min-width:44px; min-height:44px; border:1px solid var(--line,#e5eaf1); border-radius:10px; background:white; color:var(--ink,#0b1d3a); cursor:pointer; }
 .content { padding:22px 24px; background:#fff; }
 .content :global(form) { margin:0; }
 .content :global(label) { font-size:.9rem; line-height:1.45; }
@@ -12,10 +12,10 @@
 .content :global(input:not([type=checkbox])),.content :global(select),.content :global(textarea) { width:100%; min-width:0; }
 .content :global(textarea) { min-height:90px; }
 .content :global(.support-agent-create),.content :global(.support-agent-edit) { display:grid; position:static; width:auto; max-height:none; overflow:visible; border:0; box-shadow:none; padding:0; }
-.content :global(.support-create-step) { padding:0 0 18px; border:0; border-bottom:1px solid var(--line,#d8e3e6); }
+.content :global(.support-create-step) { padding:0 0 18px; border:0; border-bottom:1px solid var(--line,#e5eaf1); }
 .content :global(.support-create-step:last-of-type) { border-bottom:0; }
 .content :global(.transport-follow-up),.content :global(.brokerage-assignment) { display:grid; padding:0; margin:0; }
 .content :global(.brokerage-assignment) { margin-bottom:22px; }
-.footer { display:flex; justify-content:flex-end; padding:14px 24px; border-top:1px solid var(--line,#d8e3e6); background:#f8fafb; }
+.footer { display:flex; justify-content:flex-end; padding:14px 24px; border-top:1px solid var(--line,#e5eaf1); background:#f3f5f7; }
 .danger .header { border-top:4px solid #ad3737; }
 @media(max-width:600px) { .dialog { width:calc(100vw - 20px); max-height:calc(100dvh - 24px); border-radius:12px; } .header,.content { padding:18px; } .footer { padding:12px 18px; } .content :global(.form-grid),.content :global(.team-permission-grid) { grid-template-columns:1fr; } }

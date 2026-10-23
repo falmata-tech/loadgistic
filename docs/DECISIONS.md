@@ -126,6 +126,18 @@ Primary references: [architecture](https://www.traccar.org/architecture/),
 Pinned retention evidence:
 [6.3 foreign-key removal](https://github.com/traccar/traccar/blob/v6.16.0/schema/changelog-6.3.xml).
 
+Hosting recommendation, October21 (provider choice remains open; this is not a
+deployment authorization): keep GT06 ingress on one Docker-capable Linux VM and
+keep the coordinated demo workflow as its own signed Netlify scheduled/background
+function pair, separate from managed operations. A GPS packet-test container may
+connect to Traccar over the VM's private Docker network; the workflow simulator
+does not use TCP. Netlify/Supabase are not the public device socket host. Compare
+provider-specific IPv4/TCP, persistent storage, firewall, backup and region
+support before any resource is created; see
+[DEMO-GPS-HOSTING.md](operations/DEMO-GPS-HOSTING.md). The workflow worker and
+remote test adapter remain unimplemented, and the local migration ledger must
+be reconciled before adding durable job receipts.
+
 ## ADR-079 — Provider-owner fleets and truthful truck authority (2026-10-14)
 
 Accepted planned change; implementation/tested/visually approved/deployed remain
@@ -1286,9 +1298,15 @@ query-preserving compatibility redirect. This removes competing public market
 pages while preserving existing links. The shared Map is the default view and
 List is secondary. On hydration the Board requests browser location; success
 centers a regional view around the visitor while denial preserves the whole
-market and exposes a retry action. The map keeps an Ethiopia-focused initial
-view while bounded panning allows practical East Africa context without opening
-Africa or the world. Unclustered markers use pointed location-pin shapes, reuse
+market and exposes a retry action. Owner correction October 21 supersedes the
+regional camera rule: when no restored viewport or explicit visitor/vehicle
+centering applies, the default market view centers on the densest group of
+available approximate vehicle locations so one distant outlier cannot shrink the
+active market to a world view. This only chooses the starting camera; all signals
+remain eligible and visitors can pan and zoom globally without a regional clamp.
+Desktop web, phone web and Expo use the same cluster-selection rule, adjusting
+zoom for the map engine's tile scale. Unclustered markers use
+pointed location-pin shapes, reuse
 the existing cargo-configuration artwork, and show a complete green Empty ring
 or complete bright-yellow Partial ring plus text. Public markers and filters do
 not display or evaluate remaining-space percentages; route and area meaning
@@ -1416,6 +1434,11 @@ shows only provider-level summary facts, and links to filtered current trucks
 when available. Provider microsites remain reachable from truck details. Add
 schedule storage and authorization additively. Rollback disables the public
 projection and admin writes while retaining schedules and audit history.
+
+Owner clarification, October21: the public TikTok label reports the broadcast's
+explicit scheduled/live/ended state separately from the vehicle timetable.
+Only an authorized Featured manager can mark it Live after starting the stream
+in TikTok; programme time never implies that a broadcast is live.
 
 ## ADR-035 — Composed public marketplace, featured-transporter board, and sponsorship
 

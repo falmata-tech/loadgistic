@@ -17,7 +17,7 @@ export type VisitorShipment=TrackingSummary&{provider:string;mode:string;canRevi
 
 /** Validate before render: a successful HTTP status is not a data contract. */
 export function parseFeatured(value:unknown):Featured{
- if(!row(value)||!strings(value,['date','headline','introduction','theme','tiktokUrl','start','end'])||typeof value.published!=='boolean'
+ if(!row(value)||!strings(value,['date','headline','introduction','theme','tiktokUrl','start','end'])||!['NOT_SCHEDULED','SCHEDULED','LIVE','ENDED'].includes(String(value.tiktokStatus))||typeof value.published!=='boolean'
   ||!list(value.week,item=>row(item)&&strings(item,['date','day','label','dateLabel']))
   ||!list(value.trucks,item=>row(item)&&integer(item.slot)&&strings(item,['name','handle','driver','driverKind','portrait','truck','configuration','image','place'])&&typeof item.available==='boolean')
   ||!list(value.programme,item=>row(item)&&strings(item,['kind','label','startsAt','endsAt','timeLabel'])&&(item.slot===null||integer(item.slot)))

@@ -193,6 +193,34 @@ And deliberate foreground activity may refresh the signed expiry at most once pe
 And Log out clears access and private UI; history restores revalidate
 And legacy shipment-only cookies never acquire email-wide access.
 
+### Scenario: an open active Tracking view refreshes without extending access
+
+Given a verified owner, authorized staff member or status-only viewer is viewing
+an active shipment on web or Expo\
+When its saved status, route, events or permitted approximate location changes\
+Then the foreground view checks for an update no more often than once per 60
+seconds, preserves a manual refresh, and renders the recipient's current server
+projection without resetting the map camera for an ordinary location update\
+And a status-only viewer never receives the private vehicle marker or location.
+
+Given the view is hidden, unfocused, backgrounded, completed, signed out or
+past the absolute five-minute verified-email deadline\
+When an automatic check would be due\
+Then no check is sent and no session is renewed by the timer.
+
+Given a refresh loses recipient authorization or returns 401\
+When that denial is received\
+Then the private marker and shipment content are cleared immediately and
+verification is required again; an error never leaves a stale private marker.
+
+Given an automatic check fails transiently or remains in progress\
+When another tick occurs\
+Then requests do not overlap, failed checks back off, and manual refresh
+remains available. A 60-second interval would produce approximately 100
+read requests per minute for 100 concurrently viewing people, before any
+change-triggered page refresh; this is a sizing estimate, not a measured
+production capacity claim.
+
 ### Scenario: provider controls multiple tracking parties
 
 Given the owning provider or assigned Driver has an active Tracking session\

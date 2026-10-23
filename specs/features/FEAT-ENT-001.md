@@ -1,8 +1,8 @@
 ---
 id: FEAT-ENT-001
-title: Business workspaces for shared capacity and shipment coordination
+title: Shipper and broker workspaces for shared capacity and shipment coordination
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-APP-001, FEAT-FLT-001, FEAT-CAP-001, FEAT-SHR-001, FEAT-TRK-001, FEAT-GPS-001, FEAT-SUP-001, FEAT-TRQ-001, FEAT-BIL-001, FEAT-ADM-001, FEAT-MOB-001, FEAT-UIX-001, FEAT-PLY-001, FEAT-VER-001]
-problem: Brokers and cargo-owning businesses need a team workspace over explicitly shared capacity and Tracking, while individuals must retain free email access and Loadgistic software operations must be separate from its brokerage business.
+problem: Brokers and shippers need a team workspace over explicitly shared Capacity and Tracking, while individuals retain free email access and Loadgistic software operations stay separate from its brokerage activity.
 behavior: The backed-up October18 local preview retains Marketplace and My workspace, adds workspace-scoped business teams, retires platform transport-arrangement chat and special Loadgistic access, and separates shipment route/status access from explicitly granted truck-location access. Commercial entitlements remain planned and disabled; hosted rollout is not claimed.
 contracts: [SelectedWorkspaceContext, BusinessMembership, BusinessInvitation, BusinessCapacityGrant, ShipmentViewerInvitation, ShipmentLocationGrant, ShipmentLocationProjection, WorkspaceEntitlement, BrokerageRetirement]
 observability: [workspace_membership_audit, private_share_audit, tracking_viewer_audit, tracking_location_grant_audit, denied_workspace_access, retired_brokerage_denial, commercial_entitlement_outcome]
@@ -45,10 +45,10 @@ reviewed release. Pricing, payment and commercial restrictions remain unimplemen
 ADR-081 records the proposed architecture. Earlier pending dashboard/GPS work
 is preserved; it is not restarted, discarded or claimed deployed.
 
-## October18 customer company identity and provider-only directory — local plan
+## October21 shipper/broker identity and provider directory — local plan
 
-Broker/shipper/receiver workspaces choose their company name and unique account
-handle. The account manager is the current business owner's explicitly configured
+Shipper/broker workspaces choose their account name and unique account handle.
+The account manager is the current workspace owner's explicitly configured
 first name only; private Last/father name and login email are never search fields.
 The handle namespace is shared with provider profiles, but customer directory
 records never become public `/@` transporter pages. Existing collisions stop
@@ -57,27 +57,40 @@ reviewed migration preparation rather than silently renaming accounts.
 Only a currently authorized Transport Provider owner or employed driver with
 provider workspace access can browse/search the business directory. Business
 membership, a generic SHIPPER role, or platform staff status alone is not that
-permission. The directory lives in Network → Find businesses on web and Expo;
-no extra main navigation item is needed. Existing capacity-sharing business
+permission. The directory lives in Network → Shippers & brokers on web and Expo;
+no extra main navigation item is needed. Existing Capacity-sharing recipient
 selection remains separate and repeats its own truck/edit permission checks.
 
-Directory cards expose company name, handle, first-name-only manager, business
-kind, voluntarily supplied general office city and safe reviewed-document badges.
+Visible demand-side navigation and directory headings use “Shippers & brokers”; a
+single account area is “Shipper / broker workspace.” Admin records use the neutral
+“Workspaces” grouping, with Shipper / broker and Receiver account types named
+separately. Database, API and component identifiers may retain the existing
+business-workspace terminology; it is not presented as the user's role.
+
+Directory cards expose account name, handle, first-name-only manager, shipper or
+broker role, voluntarily supplied general office city and safe reviewed-document badges.
 They expose no login email, phone inferred from a login, staff directory, raw
 coordinates, document IDs, Storage paths, private filenames, review notes or
 reviewer identity. Exact published proof files remain unavailable to directory
-viewers. Search ranks company name, handle and manager's first name; pagination,
-current provider authority and active-business checks are server-side.
+viewers. Search ranks account name, handle and manager's first name; pagination,
+current provider authority and active-workspace checks are server-side.
 
-Business owners may optionally submit Business licence, Manager National ID and
-Business address documents through Account → Documents. The same private media,
-normal Pending/More info/Rejected/Approved workflow and existing administrator/
-assigned Trust review queue apply. No document is required for business account
-access and no truck-ownership, licence-holder or vehicle permission control is
-presented. An ordinary business teammate sees only the safe current summary;
-only the current owner manages files/submissions, and Trust access is rechecked.
+Workspace owners may optionally submit the business licence, manager National ID
+and business address through Account → Documents. The same private media, normal
+Pending/More info/Rejected/Approved workflow and existing administrator/assigned
+Trust review queue apply. Documents are not required for registration, workspace
+access, team management, provider-directory visibility, recipient search or
+Capacity sharing. Each current, approved document adds only its matching safe
+trust badge. Missing, pending, rejected, stale or expired proof removes or
+withholds the applicable badge but never hides an otherwise active workspace or
+blocks a new search/share. Individual email-based Tracking retains its existing
+rules. No truck-ownership, licence-holder or vehicle permission control is
+presented for these documents. Review fees are arranged offline; the app does
+not collect payment details or use a payment status to approve documents. An
+ordinary teammate sees only the safe current summary; only the current owner
+manages files/submissions, and Trust access is rechecked.
 
-Changed company identity/address or manager ownership/name makes the applicable
+Changed workspace identity/address or manager ownership/name makes the applicable
 review stale without rewriting its terminal history. A new owner cannot read a
 previous manager's National ID. Expired, stale, suspended, archived or erased
 subjects contribute no reviewed badge. Rejected/More info/stale/expired evidence
@@ -85,29 +98,53 @@ can be replaced by a new normal Pending submission; simultaneous duplicates
 serialize. Account erasure retains only required history and scrubs private file
 references through the existing verified cleanup workflow.
 
-Acceptance: anonymous, pure customer, suspended provider and foreign workspace
-reads deny; normal provider sees only safe names/badges; owner submits a private
-file; wrong owner/member denies; Trust requests More info then replacement and
-approval; existing provider verification stays intact; identity change removes
-badge; documents remain optional; no business verification can qualify a fleet.
-Tests: planned `tests/business-directory.test.mjs`,
-`tests/sql/business-directory-verification.sql` and actual provider/owner/Trust
+Acceptance: anonymous, ordinary customer, suspended provider and foreign
+workspace reads deny; an authorized provider finds an active shipper/broker with
+no submitted documents and can add that exact workspace as a Capacity recipient;
+that share exposes only the permitted projection. The owner may submit private
+proof; a wrong owner/member is denied; Trust can request More info, review a
+replacement and approve it; only the matching current safe badge appears.
+Identity changes remove the affected badge without removing the workspace from
+search or preventing sharing. Expiry behaves the same. Private files, manager
+surname, email, review note or payment data never enter directory output; no
+business verification can qualify a fleet. Tests:
+`tests/business-directory.test.mjs`,
+`tests/sql/business-directory-verification.sql`,
+`tests/sql/business-capacity-sharing.sql` and actual provider/owner/Trust
 Chrome workflows after backed-up local rehearsal. No hosted change is authorized.
+
+## Mobile Shipper / broker Account task groups — October21
+
+Given a business owner or teammate opens Account in Expo
+Then workspace and team tasks appear together under Shipper / broker workspace
+And personal details, sign-in security and software Support appear under Your
+account
+And each task opens its existing focused read-first screen with the same access
+checks, saved-state behavior and return path
+And role-based visibility remains unchanged: only authorized members see Team,
+only owners see Shipper / broker documents, and non-owners retain Leave workspace
+And no forms open automatically and no capabilities are removed.
+
+Verification: pure presentation tests cover the owner, admin and staff action
+groups; the synthetic Expo business workflow checks both owner and staff group
+visibility and continues to verify workspace APIs and SQL membership. Actual
+Expo desktop/phone screenshot review and owner visual approval are pending. No
+hosted change is part of this layout update.
 
 ## Confirmed owner decisions
 
 - Remove transport-arrangement intake/chat everywhere: public, providers, Expo,
   platform staff and administrators. Loadgistic software staff provide software
   support/management only. Remove the special Share with Loadgistic audience.
-- Loadgistic's brokerage uses an ordinary business customer workspace, without
+- Loadgistic's brokerage uses an ordinary Shipper / broker workspace, without
   special private-capacity or shipment privileges. Leads are collected elsewhere.
 - Transport Provider and broker/shipper/receiver workspaces will be paid.
   Public discovery and simple email-based private Capacity/Tracking remain free.
 - Business customers have their own administrators and staff. Those employees
   are customer users, never platform Support staff.
 - Capacity sharing explicitly targets either a named email address, for that
-  person only, or an existing business found through business-account search.
-  Selecting that business authorizes its permitted team members; no extra
+  person only, or an existing Shipper / broker workspace found through account
+  search. Selecting that workspace authorizes its permitted team members; no extra
   recipient acceptance or repeated per-employee consent is needed for this grant.
 - Provider shipment creation asks for exactly one shipment-owner email.
   That verified recipient may invite other status/route viewers.
@@ -127,7 +164,7 @@ page/map state. It does not log the person out or blend the two data scopes.
 
 The public account entry becomes **Sign in**, because provider owners, drivers
 and business customers all use it. Unknown verified identities deliberately choose
-Create a Transport Provider workspace or Create a business workspace. Staff join
+Create a Transport Provider workspace or Create a Shipper / broker workspace. Staff join
 by invitation, rather than choosing a privileged staff role at signup. Free
 recipient access continues to have its own clear email entry and never forces
 account provisioning, a subscription or a provider signup.
@@ -184,24 +221,24 @@ source and actual update time. Other viewers see **Shipment route** and status
 only. Do not show a truck marker, a location-loading message or a hidden location
 payload for a status-only viewer.
 
-## Sharing: person versus business
+## Sharing: person versus Shipper / broker workspace
 
-The provider or authorized driver chooses **Email address** or **Business
-account** when sharing capacity. Email takes a contact name and email and grants
-only that verified person access. Business account searches registered recipient
-businesses and lets the publisher select the exact business by its public name,
+The provider or authorized driver chooses **Email address** or **Shipper / broker
+account** when sharing Capacity. Email takes a contact name and email and grants
+only that verified person access. Shipper / broker account searches registered
+recipients and lets the publisher select the exact workspace by its public name,
 handle and appropriate disambiguating public information. Do not require an
 email first or guess a business from an address, company-looking name or domain.
 
-Business selection makes the audience clear: **Their permitted team members can
-view these signals.** Saving that selection grants the business access directly;
+Workspace selection makes the audience clear: **Their permitted team members can
+view these signals.** Saving that selection grants the workspace access directly;
 there is no additional recipient-acceptance gate or per-employee approval by the
-provider. Current business membership and Capacity-view permission control which
-employees can use the grant. Later permitted employees of that same business
+provider. Current workspace membership and Capacity-view permission control which
+employees can use the grant. Later permitted employees of that same workspace
 inherit it; removed or suspended employees lose it. Search returns only the
-minimal public business identity, never private staff emails or customer data.
-The saved sharing list distinguishes the person from the business and its team.
-Business search belongs to authenticated sharing, not a new public broker/demand
+minimal public Shipper / broker identity, never private staff emails or customer data.
+The saved sharing list distinguishes a person from a Shipper / broker workspace and its team.
+Workspace search belongs to authenticated sharing, not a new public broker/demand
 catalogue. Only active recipient businesses are selectable; final authorization
 uses the exact saved business identity, not display text or the search result
 snapshot.
@@ -236,7 +273,7 @@ An owner who belongs to a business may explicitly add the shipment to that
 workspace and choose its staff access. This is per shipment, not a way to copy
 the owner's whole private inbox. Within Share tracking, an owner can grant
 selected current staff **Allow truck location**; it is off by default and cannot
-be self-enabled by another business administrator. Viewer management and arrival
+be self-enabled by another workspace administrator. Viewer management and arrival
 approval remain with the primary owner; neither delegation is included in this
 change. Other business coordination uses the staff's granted route/status access.
 
@@ -293,7 +330,7 @@ data; do not mass-publish more precise historical locations.
 Commercial rules below remain planned. No checkout, charge, paid restriction or
 subscription-management screen is enabled by this local implementation.
 
-The subscription belongs to the provider/business workspace, not every invited
+The subscription belongs to the Transport Provider or Shipper / broker workspace, not every invited
 employee or every free recipient email. Separate memberships do not copy payment
 or data privileges between businesses. Account exposes subscription management
 only to the workspace owner/appropriate commercial administrator.
@@ -479,7 +516,7 @@ When an authorized member opens that workspace\
 Then only that exact business grant and the member's current permissions permit access\
 And an email-only or exclusive-to-email grant never becomes a team grant implicitly.
 
-Given a provider or authorized driver selects Business account while sharing\
+Given a provider or authorized driver selects Shipper / broker account while sharing\
 When they search for and save an existing business\
 Then the selected business's permitted staff can access the signals directly\
 And the interface clearly states team access before saving\

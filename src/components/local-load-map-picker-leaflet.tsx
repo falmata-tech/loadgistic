@@ -56,7 +56,7 @@ export function LeafletLocalLoadMapPicker({center}:{center?:Point|null}) {
         <BaseMapTiles/>
         <MapCenter center={currentPoint||mapCenter}/>
         <PointCapture mode={mode} onPoint={capture}/>
-        {pickup?<CircleMarker center={[pickup.lat,pickup.lng]} radius={9} pathOptions={{color:'#1769e0',fillColor:'#1769e0',fillOpacity:.9}}><Tooltip permanent direction="top"><Text message="Pickup"/></Tooltip></CircleMarker>:null}
+        {pickup?<CircleMarker center={[pickup.lat,pickup.lng]} radius={9} pathOptions={{color:'#155eef',fillColor:'#155eef',fillOpacity:.9}}><Tooltip permanent direction="top"><Text message="Pickup"/></Tooltip></CircleMarker>:null}
         {dropoff?<CircleMarker center={[dropoff.lat,dropoff.lng]} radius={9} pathOptions={{color:'#c45116',fillColor:'#c45116',fillOpacity:.9}}><Tooltip permanent direction="top"><Text message="Drop-off"/></Tooltip></CircleMarker>:null}
       </MapContainer>
     </div>

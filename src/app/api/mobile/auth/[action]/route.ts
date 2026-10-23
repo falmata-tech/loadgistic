@@ -3,6 +3,7 @@ import { mobileBody, mobileClient, mobileFailure, mobileJson, MobileError, mobil
 import { createSessionToken, verifySessionToken } from '@/lib/security.js';
 import { normalizeManagedAuthEmail, isNumericEmailOtp } from '@/lib/auth-flow.js';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
+import { requestMobileOtp } from '@/lib/mobile/otp-delivery';
 import {phoneLocationRpc,verifiedLocationAuthSession} from '@/lib/mobile/phone-location';
 export const runtime = 'nodejs';
 
@@ -21,7 +22,9 @@ export async function POST(request: Request, context: { params: Promise<{ action
       const [ip, account] = await Promise.all([checkRateLimit(requestKey(request, scope), 10, 600000), checkRateLimit(`${scope}:${email}`, action === 'request' ? 5 : 6, 600000)]);
       if (!ip.allowed || !account.allowed) throw new MobileError(429, 'PLEASE_WAIT', 'Please wait before requesting or trying another code.');
       if (action === 'request') {
-        await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } }).catch(() => undefined);
+        const delivery = await requestMobileOtp(() => client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } }));
+        if (delivery === 'WAIT') throw new MobileError(429, 'PLEASE_WAIT', 'Please wait before requesting another code.');
+        if (delivery !== 'SENT') throw new MobileError(503, 'CODE_NOT_SENT', 'Could not send a code. Please try again later.');
         return mobileJson({ handoff: createSessionToken(`mobile-login:${email}`, 900), message: 'Check your email for your sign-in code.' });
       }
       let result = await client.auth.verifyOtp({ email, token: String(body.code), type: 'signup' });

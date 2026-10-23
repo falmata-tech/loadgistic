@@ -16,7 +16,7 @@ test('current load filters vehicles without retaining the removed space filter',
  await expect(dialog.getByRole('checkbox',{name:'Partly loaded',exact:true})).toBeChecked();
  await chooseCapacityOptions(dialog,'status',['PARTIAL']);
  await page.screenshot({path:info.outputPath('vehicle-load-filter.png'),scale:'css'});
- await dialog.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
+ await dialog.getByRole('button',{name:'Show vehicles',exact:true}).click();
  await expect(page).toHaveURL((url:URL)=>url.searchParams.get('status')==='PARTIAL'&&!url.searchParams.has('geometry')&&!url.searchParams.has('loadType'));
  const partialResponse=await page.request.get('/api/public/capacity?status=PARTIAL');expect(partialResponse.ok()).toBe(true);
  const partial=await partialResponse.json();expect(partial.items.length).toBeGreaterThan(0);
@@ -41,7 +41,7 @@ test('current load filters vehicles without retaining the removed space filter',
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await page.locator('.language-picker select:visible').selectOption(locale);
   await openCapacityFilterDialog(page);
-  await expect(dialog.locator('[data-filter-group="status"] legend')).toHaveText(messages["Vehicle's current load"]);
+  await expect(dialog.locator('[data-filter-group="status"] legend')).toHaveText(messages['Load status']);
   await expect(dialog.getByRole('checkbox',{name:messages['Empty vehicle'],exact:true})).toBeVisible();
   await expect(dialog.getByRole('checkbox',{name:messages['Partly loaded'],exact:true})).toBeVisible();
   await expect(dialog.locator('[name="loadType"]')).toHaveCount(0);await page.keyboard.press('Escape');

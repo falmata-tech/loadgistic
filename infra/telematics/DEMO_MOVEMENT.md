@@ -23,16 +23,17 @@ Supabase, gateway or database credentials. It has no customer-write endpoint.
 No credential belongs in command arguments, output, Git or this document.
 
 ```sh
-node scripts/telematics/demo-motion-local.mjs start 180
-node scripts/telematics/demo-motion-local.mjs status
-node scripts/telematics/demo-motion-local.mjs stop
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs start 180
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs status
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs stop
 ```
 
-Start launches one detached bounded local runner. Duration is10–3600seconds. A
-protected lock prevents duplicates; status shows counters, not coordinates/keys.
-Stop closes timers/sockets and revokes only its own generation. It does not reset
-records or change sources. Inspect a stale lock after an OS crash; the tool refuses
-to steal it or kill an unrelated process.
+Start requests one detached bounded local runner. Duration is10–3600seconds. A
+protected lock prevents duplicates; before saving new state, start checks the
+exact backend leases. Status compares process and backend state and shows counters,
+not coordinates/keys. Stop closes timers/sockets and revokes only its own
+generation. It does not reset records or change sources. Inspect a stale lock
+after an OS crash; the tool refuses to steal it or kill an unrelated process.
 
 ## Real-device priority
 
@@ -45,7 +46,7 @@ After real reporting authority has been explicitly released or expired, an
 operator may deliberately run:
 
 ```sh
-node scripts/telematics/demo-motion-local.mjs resume 180
+node --env-file=.local/telematics/demo-motion-runtime.env scripts/telematics/demo-motion-local.mjs resume 180
 ```
 
 Resume checks157's authoritative installation-use helper under the same truck
@@ -59,6 +60,11 @@ the real fix. Phone simulation uses the same obscured projection, current driver
 publication checks and saved radius through a narrow server-only command.
 Private per-fix demo epochs may become a public boolean only; they are not IDs
 or control modes in map payloads.
+
+The local runner emits GPS and phone updates no more frequently than every 30
+seconds. The bounded 60-second preview check produced two saved updates per
+source while both web and Expo stayed responsive; its leases stopped at the end.
+Use the normal start/status/stop commands above for owner-led local demos.
 
 ## Verification and rollback
 

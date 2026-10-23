@@ -67,7 +67,7 @@ test('private email code unlocks only its grants and retains private scope throu
   const response=await page.request.get('/api/shared-capacity');expect(response.status()).toBe(200);expect(response.headers()['cache-control']).toContain('no-store');
   const body=await response.json();expect(body.items.map((v:{id:string})=>v.id)).toEqual([capacity.id]);
   const drawer=await openCapacityFilterDialog(page);await chooseTruckConfiguration(drawer,body.items[0].cargo_configuration);
-  await drawer.getByRole('button',{name:'Show matching vehicles',exact:true}).click();
+  await drawer.getByRole('button',{name:'Show vehicles',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.get('view')==='private'&&url.searchParams.has('vehicleCategory'));
   await expect(page.locator('.capacity-drawer-handle button[aria-controls="capacity-filter-drawer"]')).toBeEnabled();
   const filtered=await openCapacityFilterDialog(page);await filtered.getByRole('link',{name:'Clear',exact:true}).click();

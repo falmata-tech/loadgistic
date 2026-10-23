@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {trackingAreaGeometry} from '../src/location/tracking-area.ts';
 import {coverageBounds,coverageGeometry} from '../src/map/coverage-preview.ts';
+import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import * as locationSource from '../../../src/lib/location-source.js';
 
 // Run the actual component and its effects against the existing Camera ref contract.
@@ -30,7 +31,8 @@ function trackingMap(initial){
   './ui':{Copy:'Copy',ErrorText:'ErrorText'},'../map/coverage-preview':{coverageBounds,coverageGeometry},
   '../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/http':{apiOrigin:'http://127.0.0.1'},
   '../../../../src/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/truck.svg'},
-  '../../../../src/lib/location-source.js':locationSource,'./app-icon':{AppIcon:'AppIcon'}
+  '../../../../src/lib/location-source.js':locationSource,'./app-icon':{AppIcon:'AppIcon'},
+  '../theme/capacity-status-presentation':{capacityStatusPresentation}
  };
  const exports={};new Function('require','exports',compiled)(name=>{assert.ok(name in dependencies,`unexpected dependency ${name}`);return dependencies[name];},exports);
  const camera={fitBounds:(bounds,options)=>{
@@ -90,6 +92,21 @@ test('driver map movement preserves its map instance and renders only actual pub
  assert.equal(find(unknown,item=>item.type==='AppIcon'),null);
  const hidden=view.render({location:null,vehicleConfiguration:'Box truck',fill:true});
  assert.equal(find(hidden,item=>item.props.id==='tracking-reported-truck'),null);
+});
+
+test('Tracking keeps the reported vehicle above overlapping route-stop markers',()=>{
+ const onTruckPress=()=>{};
+ const view=trackingMap({route,location:{...area(39),source:'GPS'},vehicleConfiguration:'Box truck',onTruckPress,fill:true});
+ const map=find(view.render(),item=>item.type==='Map');
+ function markers(node){
+  if(Array.isArray(node))return node.flatMap(markers);
+  if(!node||typeof node!=='object')return [];
+  return node.type==='Marker'?[node.props.id]:markers(node.props?.children);
+ }
+ assert.deepEqual(markers(map.props.children),[
+  'tracking-city-0','tracking-city-1','tracking-city-2','tracking-reported-truck'
+ ],'the vehicle and its tap target must paint above a city stop');
+ assert.equal(find(map,item=>item.props?.id==='tracking-reported-truck').props.onPress,onTruckPress);
 });
 
 test('a corrected route refits but equivalent routes and later moving fixes preserve the camera',()=>{

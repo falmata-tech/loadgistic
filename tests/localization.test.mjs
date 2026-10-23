@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {spawnSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {LANGUAGES,supportedLocale,translateMessage,translateFeedback} from '../src/lib/i18n/core.js';
 import {localizedUpdateLabel} from '../src/lib/i18n/update-label.js';
@@ -59,7 +60,7 @@ test('tracking progression and corrected visible messages have both supported tr
  const labels=new Set(['Going to pickup','Loading','En route','Unloading','Complete','Problem',
   'Save {status}','Ready to save: {status}','Current: {status}','No available update',
   'Within {distance} km','Page {page} of {pages} · {count} results','{count} active truck','{count} active trucks',
-  'Transport services','Verified shipment reviews','Customer experience','New to Loadgistic']);
+  'Transport services','Verified shipment reviews','Customer experience','New to Loadgistic','No additional stops']);
  for(const current of ['CREATED','ISSUE','CANCELLED',...TRACKING_JOURNEY]){
   for(const status of TRACKING_JOURNEY)for(const recorded of [[],TRACKING_JOURNEY])for(const next of [[],TRACKING_JOURNEY])labels.add(trackingProgress(status,current,recorded,next));
  }
@@ -78,4 +79,14 @@ test('launch journeys have contextual messages in every supported non-English lo
   const value='Home · Adama · +251900000001';
   assert.ok(translateMessage(messages,'Oldest request: {time}',{time:value}).includes(value));
  }
+});
+
+test('conditional interface labels are checked without translating stored or user content',()=>{
+ const audit=spawnSync(process.execPath,['scripts/audit-localization.mjs','--summary'],{encoding:'utf8',maxBuffer:2_000_000});
+ assert.equal(audit.status,0,audit.stderr);
+ const report=JSON.parse(audit.stdout);
+ assert.equal(report.missingCount,0,'marked and conditional UI messages need both catalogs');
+ assert.equal(report.unmarkedCount,0,'visible raw JSX copy needs review');
+ assert.equal(report.dynamicOwnedMissingCount,0,'literal branches in dynamic UI messages need both catalogs');
+ assert.ok(report.dynamicReviewCount>0,'unresolved data/computed boundaries remain visible for manual review');
 });

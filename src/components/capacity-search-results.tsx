@@ -7,6 +7,7 @@ import {Text,FeedbackText,Localized} from './localization';
 import {LoadingIndicator} from './loading-state';
 import type {CapacitySearchKind,CapacitySearchResult,CapacitySearchItem} from '@/lib/capacity-search';
 import {TRANSPORTER_SEARCH_TIMEOUT_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
+import {CAPACITY_FILTER_PRESENTATION as filterPresentation} from '@/lib/capacity-filter-presentation';
 export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport Provider',OWNER_OPERATOR:'Transport Provider',SELF_MANAGED_DRIVER:'Transport Provider',COMPANY_DRIVER:'Driver'};
 export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiPath='/api/capacity-search',active=true,requestVersion=0,render,onProfileSelect}:{query:Record<string,string>;mapQuery?:Record<string,string>;view:'open'|'private'|'loadgistic';searchPath:string;apiPath?:string;active?:boolean;requestVersion?:number;render?:(content:React.ReactNode)=>React.ReactNode;onProfileSelect?:()=>void}){
  const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
@@ -61,8 +62,8 @@ export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiP
  </section>;
  return render?render(content):content;
 }
-const documentOptions:Record<string,Array<[string,string]>>={ownerDocs:[['IDENTITY','National ID'],['BUSINESS_LICENSE','Business License'],['BUSINESS_ADDRESS','Business Address']],driverDocs:[['IDENTITY','National ID'],['DRIVER_IDENTITY','Driving licence']],truckDocs:[['VEHICLE_OWNERSHIP','Vehicle ownership'],['VEHICLE_AUTHORIZATION','Permission to use vehicle'],['VEHICLE_OPERATING_LICENSE','Vehicle operating licence']]};
+const documentOptions=filterPresentation.documents.groups;
 export function CapacityDocumentFilters({query}:{query:Record<string,string>}){
- const [selected,setSelected]=React.useState(()=>Object.fromEntries(Object.keys(documentOptions).map(key=>[key,(query[key]||'').split(',').filter(Boolean)])) as Record<string,string[]>);
- return <fieldset className="capacity-document-filters"><legend><Text message="Reviewed documents"/></legend><p><Text message="Only current, approved documents. Every selected document must match."/></p>{Object.entries(documentOptions).map(([key,options])=><div key={key}><strong><Text message={key==='ownerDocs'?'Company or owner':key==='driverDocs'?'Driver documents':'Vehicle documents'}/></strong><input type="hidden" name={key} value={selected[key].join(',')}/>{options.map(([value,label])=><label className="checkbox-label" key={value}><input type="checkbox" checked={selected[key].includes(value)} onChange={event=>setSelected((old:Record<string,string[]>)=>({...old,[key]:event.target.checked?[...old[key],value]:old[key].filter((v:string)=>v!==value)}))}/><Text message={label}/></label>)}</div>)}</fieldset>;
+ const [selected,setSelected]=React.useState(()=>Object.fromEntries(documentOptions.map(({key})=>[key,(query[key]||'').split(',').filter(Boolean)])) as Record<string,string[]>);
+ return <fieldset className="capacity-document-filters"><legend><Text message={filterPresentation.documents.title}/></legend><p><Text message="Only current, approved documents. Every selected document must match."/></p>{documentOptions.map(({key,label,options})=><div key={key}><strong><Text message={label}/></strong><input type="hidden" name={key} value={selected[key].join(',')}/>{options.map(([value,optionLabel])=><label className="checkbox-label" key={value}><input type="checkbox" checked={selected[key].includes(value)} onChange={event=>setSelected((old:Record<string,string[]>)=>({...old,[key]:event.target.checked?[...old[key],value]:old[key].filter((v:string)=>v!==value)}))}/><Text message={optionLabel}/></label>)}</div>)}</fieldset>;
 }

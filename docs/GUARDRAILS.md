@@ -41,6 +41,15 @@ ordinary viewers receive a separately minimized route/status projection, never
 hidden location data. Old obscured coordinates cannot be relabelled with a
 smaller radius. Verify new source/assignment/grant authority before every read.
 
+Shippers and brokers may create a workspace, appear in the Transport Provider
+directory, and receive explicitly shared Capacity without document review.
+Business licence, manager National ID and business address review is optional;
+the existing private submission, Trust queue, review, expiry and replacement
+process remains available to workspace owners. Current approvals add only their
+matching trust badges. Missing, pending, stale or expired documents do not hide
+the workspace or block search and sharing. Review fees are handled offline and
+do not create an in-app payment or payment-status workflow.
+
 Retire platform Brokerage and LOADGISTIC audience at all server, old-client and
 notification boundaries, preserving software Support and existing history.
 Loadgistic's brokerage must use ordinary customer tenancy, not admin bypass.

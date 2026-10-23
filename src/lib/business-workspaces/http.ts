@@ -24,9 +24,9 @@ export function businessFailure(error:unknown):Response {
  return businessJson({error:{code:'BUSINESS_UNAVAILABLE',message:'This workspace is temporarily unavailable. Please try again.'}},503);
 }
 const messages:Record<string,string>={SIGN_IN_REQUIRED:'Sign in to continue.',VERIFIED_EMAIL_REQUIRED:'Verify your email to continue.',INVALID_ORIGIN:'Use this app to save changes.',
- INVALID_BUSINESS_INPUT:'Check the information and try again.',ACCOUNT_HANDLE_UNAVAILABLE:'That handle is already in use. Choose another.',INVALID_ACCOUNT_HANDLE:'Choose a valid handle using lowercase letters, numbers, underscores or hyphens.',BUSINESS_FORBIDDEN:'You do not have access to this business.',BUSINESS_IDENTITY_REQUIRED:'This account cannot access a business workspace.',
- BUSINESS_REVISION_CONFLICT:'This business changed. Refresh before saving.',BUSINESS_HANDLE_UNAVAILABLE:'That business handle is already in use.',
- BUSINESS_OWNER_HANDOVER_REQUIRED:'Transfer ownership or archive the business before leaving.',BUSINESS_INVITATION_UNAVAILABLE:'This invitation is no longer available.',
+ INVALID_BUSINESS_INPUT:'Check the information and try again.',ACCOUNT_HANDLE_UNAVAILABLE:'That handle is already in use. Choose another.',INVALID_ACCOUNT_HANDLE:'Choose a valid handle using lowercase letters, numbers, underscores or hyphens.',BUSINESS_FORBIDDEN:'You do not have access to this workspace.',BUSINESS_IDENTITY_REQUIRED:'This account cannot access a shipper or broker workspace.',
+ BUSINESS_REVISION_CONFLICT:'This workspace changed. Refresh before saving.',BUSINESS_HANDLE_UNAVAILABLE:'That workspace handle is already in use.',
+ BUSINESS_OWNER_HANDOVER_REQUIRED:'Transfer ownership or archive the workspace before leaving.',BUSINESS_INVITATION_UNAVAILABLE:'This invitation is no longer available.',
  RATE_LIMITED:'Please wait before trying again.',POLICY_REQUIRED:'Read and accept the current terms before continuing.'};
 
 export async function businessActor(request:Request):Promise<string>{

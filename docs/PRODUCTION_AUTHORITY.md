@@ -1,16 +1,138 @@
+## October21 additional Play phone session and web readback
+
+The owner answered “Yes, finish the Play phone session” to
+`call_2f3416a1510243dcbb23f25e744e3996`, item0. This permits a Loadgistic-only
+session to record the current location disclosure/permissions, briefly reset
+its app permission, replace the test APK and install the Play testing copy when
+ready. The exact approved signed1.1.1/code9 APK was reinstalled and verified;
+no new signing, build, unrelated app access or server-record reset occurred.
+The first-install record exposed a stale Home permission message after Android
+grants and an initial Tracking timeout; one normal visible refresh recovered.
+The video draft shows the real disclosure/prompts/settings and recovered map,
+but leaves “Allow all the time” unselected and repeats the prompt, so it is not
+approved for Play submission. Keep these failed first-launch details visible;
+do not claim automatic recovery.
+
+The prior native core session completed and signed out, with server revocation
+and signed-out restart verified in protected composite f0edac752a820289f8d957736136e450f888667929fddd116fbc160e87c05003.
+The new recording session's UI was reopened to the normal Sign in screen. Its
+read-only backend sign-out check failed, so server revocation for this separate
+recording session is unverified; do not reuse the prior session receipt as proof.
+A full-screen call screen appeared during a later attempt. Further phone
+interaction stopped there, and the unrelated screenshot was deleted.
+
+Under the existing web deployment authority, the same immutable web artifact
+was republished with only the adapter's three generated image redirects restored.
+Current deploy6ad86887a637e6b8a2e70b44 is independently verified:16 HTTP checks,
+actual desktop/phone Chrome, eight Featured cards and no image400 errors.
+Private documents and their image proxies remain denied. Production receipt
+SHA256 ff847649169404f6fcd2ddb453af45fc1d2f4182948109e2a563e85da56f5ea0
+under `.local/image-routing-20261021/`. No source, secrets, provider environment,
+additional SQL, key or billing change was made. This is consumed execution
+under prior deployment authority, not a fabricated new owner answer.
+
+## October21 additional demo mix — committed and independently verified
+
+The owner answered “Approve the additional demo mix” to question
+`call_b3639fea3280481c98feb53963b6e7a4`, item0. Original exact review SHA256
+`6e237ca394b108a861e2f09f31b70d849a25a2a2d53fbda5005f2552b3737c4d`,
+template46f22109487c5e1bc59249d5c76ab8a6c6d2c544c6704c8e71b7c0c9e1adc28d
+and actual approval5d35c0cc7aae54e2cf553af79eea88b4f087a9f327701131b4bb9df386071187
+remain immutable. Scope: nine controlled synthetic actors/vehicles, nine Manual
+locations, seven Partial publications, two courier configurations, nine synthetic
+policy acceptances, two unverified Permission declarations and six canonical
+coordinate corrections. No reviewed badge, fabricated GPS/phone observation or
+real-user change is authorized. The44 Featured repair is already committed;
+never replay it. Refresh expired backup/restore/rehearsal evidence for this same
+approved data, with original authority preserved.
+
+The same approved nine-demo update committed once at2026-10-21T06:51:51.051Z.
+Independent readback SHA256
+`995f40473a635b94cf7cbbbec60a20a89164357e4b45c311d47c6e70f4680424`
+confirms the selected rows and all seven Featured days still have eight eligible
+vehicles. Fresh archive7b11fe7b... and its full restore are retained; fresh
+rollback rehearsal passed in5.715s. The initial local restore-finish harness
+incorrectly assumed a database-guard token existed in the read-only query; the
+failed attempt is preserved. A finish-only identity-pinned verification completed
+on the same restored clone, without replaying the restore or changing production.
+Evidence: `.local/demo9-renewal1/`. This one-time data approval is consumed.
+
+The owner also answered “Yes, use the phone” to item1, authorizing this new
+Loadgistic-only installed Android session for restart, sign-out and background
+Tracking checks. Use the existing dedicated synthetic driver review account;
+do not reinstall, sign again, inspect other apps or invent device observations.
+
+## October21 Featured demo repair — applied and independently verified
+
+The owner answered “Approve the live demo repair” to question
+`call_7e5eb2deb5ef4b92a3c958f2a5c9bc7e`. This covers only the tested44 controlled
+synthetic account/vehicle scope in reviewbbec8c525410b5c1a1f567d2cf106b8d1aa1e3c46d5370efe5793932fc73db1d,
+production templateab873ecf208f058fe4f15922a853e5849e5720139cc5bd17efa90bb5f82123ac,
+on Loadgistic `tpwyyzoqijjmbvsmmvcm`, sourcecad46f1/CI39528806968. Actual approval
+record SHA256 `580db2d9a3e76366ffcca8568df2062cc42d49de139f928bec315262def93756`.
+No real-user account is included; saved day categories/pairs/order,28 public/16
+private signals,97 documents and history remain unchanged. No verification or
+consent is created. The separate nine-vehicle diversity scenario was not covered by this44 approval;
+its later explicit approval and consumed execution are recorded above.
+
+The original backup's freshness window expired while approval was pending.
+Before execution, take a genuinely new read-only backup, restore and rehearse
+it, and bind the new safety wrapper/evidence to this original approval chain.
+Keep every original artifact/receipt immutable. Prove the approved data body,
+actors, row facts, target, executable source/CI and security conditions remain
+unchanged; never extend timestamps, infer approval for changed data, accept a
+new warning or use a more powerful role. An actual changed scope stops rollout.
+Fresh backup894168aa... and its full isolated restore pass. The same approved
+data body passed a30.321s rollback rehearsal. Root applied the repair once at
+2026-10-21T05:53:23.374Z and independently verified the committed state: all seven
+saved days contain eight eligible same-category vehicles,44 owner scopes work,
+private capacity stays private and97 document rows/Storage references remain
+unchanged. Applied receipt SHA256
+`2dcfa4ebb9caee0ecf19dde4d885dd36c7078c73305b20ab5cbf6462fb1aa83b`;
+independent readback SHA256
+`caa4fe9d32bbb57aa9d1232c848228005ab69b9400522dff799215709ed038c9`.
+Evidence stays protected in `.local/featured44-renewal1/`. This one-time approval
+is consumed for these44 only. The later separately approved nine-demo mix is recorded above.
+
 ## Current October 20 execution status
 
-All16 required jobs passed on133bd08 in CI39516069847. The42 approved migrations
-are applied through180 on Loadgistic only. The exact approved1.1.1/code9 signing
+All16 required jobs passed oncad46f1 in CI39528806968. The42 earlier migrations
+and the separately approved181 repair are applied on Loadgistic only. The exact approved1.1.1/code9 signing
 was used once; temporary private signing material was removed. That signed APK
 is installed and byte-verified on the approved phone; final native acceptance
 and Play upload remain incomplete. These facts supersede the earlier pending/
 unused execution wording below, without changing its original approval scope.
 
 Web publication stopped at a new mutable-search-path warning. The owner did not
-approve an additional warning exception. Repair181 is being qualified locally;
-there is no authority to apply181, change Auth settings or publish through a
-failed remaining gate. Fresh exact SQL review and recovery evidence are required.
+approve an additional warning exception. The owner subsequently answered
+“Approve applying the tested security repair” for only migration181,
+SQL SHA256 `0a479833eda3c7ed5e0af3acb807c72914a593b7c4eb8a2f25de139c06346af1`,
+on Loadgistic `tpwyyzoqijjmbvsmmvcm`. Exact review:
+`.local/authority-search-path181/production181-owner-review.md`, SHA256
+`b6d6cb23b549fca27b6f031139dbdbd654a63c1d729a2ff019fdfbea92a1f2e3`;
+recorded actual approval SHA256
+`7b9550357a9667c2bc672a4fe1033baff6ad78053e0041a5aef74d2301bce4e8`.
+Source cad46f1 / CI39528806968 has all16 required jobs passing. Preserve the
+original approval and evidence; refresh expired backup/security prerequisites
+for this same operation without extending timestamps. SQL/source/CI/target,
+full180/181 catalogue outcomes and warning conditions must remain identical to
+the reviewed scope. This is approval, not an181 application or web-publication
+claim, and does not authorize Auth changes or any additional warning exception.
+
+Execution is now verified:181 applied once at2026-10-21T03:17:15.809Z; exact SQL,
+unchanged history/catalog and independent post-security readback pass. The new
+warning disappeared; only the two earlier approved warnings remain visible.
+Applied receipt SHA256 `4bb0bc1323a6e93e8aaa1425bd7ad06fc84d232f7243ad083abaadd75a0371cd`;
+postread SHA256 `24b7d62dfa4cd1f10457d1c0c7b7bde0d963a6b241c525f58704d0950ea47757`.
+Matching immutable web artifact is published as6ad83032f09202fa835781c3;
+100 normal synthetic-account API checks pass. Native/Play delivery is incomplete.
+
+The owner additionally approved testing the connected phone and synthetic driver
+account, including its location permissions, policy acceptance if needed and
+one clearly marked private pending test document. Only index2 was used for the
+upload; policy was already accepted, request remains Pending, private1495 bytes
+match and anonymous access is denied. No verification approval or badge was
+created. Protected descriptor/provenance remain under the181 release directory.
 
 ## October 20 release authority — original approved scope
 
@@ -32,8 +154,10 @@ It authorizes one temporary use of the existing upload key for APK SHA256
 The original approval and artifact-source records remain immutable. Any later
 tested source requires explicit executable-input equivalence and current passing
 CI; it does not relabel the frozen artifact or approve changed bytes. This
-approval is unused. Preserve the existing certificate and private-key cleanup
-requirements; no replacement key, billing change or public Play launch.
+one-use signing approval is consumed by signing and verifying the exact APK and
+AAB; the APK was installed on the approved phone. Preserve the existing
+certificate and private-key cleanup requirements; no replacement key, billing
+change or public Play launch is authorized.
 
 ## October 19 bounded Android 1.1.0 signing — unused historical candidate
 

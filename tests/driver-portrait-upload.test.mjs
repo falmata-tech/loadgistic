@@ -7,7 +7,7 @@ import {createPrivateUploadReference,storePrivateUpload} from '../src/lib/privat
 import {cleanupDriverPortraitUploads,getDriverPortraitWorkspace} from '../src/lib/driver-portrait-storage.js';
 
 test('Driver photos normalize to bounded JPEG without original metadata',async()=>{
-  const original=await sharp({create:{width:700,height:400,channels:3,background:'#008080'}})
+  const original=await sharp({create:{width:700,height:400,channels:3,background:'#155eef'}})
     .jpeg().withExif({IFD0:{Artist:'Private portrait author',Copyright:'Private metadata'}}).toBuffer();
   assert.ok((await sharp(original).metadata()).exif);
   const output=await prepareDriverPortrait(new File([original],'private-location-name.jpg',{type:'image/jpeg'}));
@@ -17,7 +17,7 @@ test('Driver photos normalize to bounded JPEG without original metadata',async()
   assert.equal(metadata.exif,undefined);assert.equal(metadata.icc,undefined);assert.equal(metadata.xmp,undefined);
 });
 test('Portrait decoding rejects malformed, mismatched, oversized and animated images',async()=>{
-  const png=await sharp({create:{width:12,height:12,channels:3,background:'#008080'}}).png().toBuffer();
+  const png=await sharp({create:{width:12,height:12,channels:3,background:'#155eef'}}).png().toBuffer();
   const frames=Buffer.concat([Buffer.alloc(8*8*3,0),Buffer.alloc(8*8*3,255)]);
   const animation=await sharp(frames,{raw:{width:8,height:16,pageHeight:8,channels:3}}).webp().toBuffer();
   assert.equal((await sharp(animation).metadata()).pages,2);
@@ -41,7 +41,7 @@ test('Portrait URLs and reserved Storage paths exclude actor ids and path inject
   }
 });
 test('Driver portraits reject compressed images beyond the pixel budget',async()=>{
-  const compressed=await sharp({create:{width:5001,height:5000,channels:3,background:'#008080'}}).png().toBuffer();
+  const compressed=await sharp({create:{width:5001,height:5000,channels:3,background:'#155eef'}}).png().toBuffer();
   assert.ok(compressed.length<4194304);
   await assert.rejects(()=>prepareDriverPortrait(new File([compressed],'large-dimensions.png',{type:'image/png'})),/PORTRAIT_IMAGE_INVALID/);
 });

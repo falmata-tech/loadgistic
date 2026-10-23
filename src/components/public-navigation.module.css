@@ -1,9 +1,9 @@
-.rail.rail{box-shadow:none;background:#fff;border-color:#dbe5e5}
+.rail.rail{box-shadow:none;background:#fff;border-color:#e5eaf1}
 .rail.rail a{font-size:.85rem;font-weight:650;color:#5b6d7b;min-height:47px;border-color:transparent}
-.rail.rail a.active,.rail.rail a[aria-current=page]{background:#e7f3f1;color:#086f72;border-color:transparent;box-shadow:none}
-.rail.rail a[aria-current=page] svg{color:#086f72}
-.legal{display:grid;gap:2px;border-top:1px solid #e0e8e7;padding-top:12px;margin-top:20px}
-.legal a{font-size:.75rem!important;color:#5b6f78!important;font-weight:500!important}
+.rail.rail a.active,.rail.rail a[aria-current=page]{background:#eaf1ff;color:#155eef;border-color:transparent;box-shadow:none}
+.rail.rail a[aria-current=page] svg{color:#155eef}
+.legal{display:grid;gap:2px;border-top:1px solid #e5eaf1;padding-top:12px;margin-top:20px}
+.legal a{font-size:.75rem!important;color:#526375!important;font-weight:500!important}
 @media(min-width:1181px){
  :global(body):has(>.rail){--public-rail-left:0px;--public-rail-width:220px;--public-rail-gap:0px}
  .rail.rail{position:fixed;left:0;top:66px;bottom:0;display:flex;flex-direction:column;width:220px;max-height:none;padding:22px 13px;border-width:0 1px 0 0;border-radius:0;backdrop-filter:none}

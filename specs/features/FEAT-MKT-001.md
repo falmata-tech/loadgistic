@@ -449,7 +449,7 @@ When the route renders at desktop or mobile width\
 Then warm white and off-white surfaces provide useful spacing around the primary tool\
 And Loadgistic blue and orange appear in bounded navigation, actions, status, and trust accents rather than saturating whole sections\
 And the hero visual shows young Ethiopian men at a metal door-and-window workshop handling incoming metal inputs and finished goods with local road freight, without presenting one truck as the product\
-And its bright negative space blends into the white-first layout while navy, teal, aqua, and a restrained amber accent follow the approved Loadgistic palette\
+And its bright negative space blends into the white-first layout while navy, cobalt, and a restrained amber accent follow the approved Loadgistic palette\
 And at mobile widths the full visual scales and crops to the available hero width, preserves its important workshop subjects, and uses soft white edge fades rather than exposing a rectangular image boundary\
 And concise route actions lead directly to the Market, Daily Featured Trucks, Track, About, or transporter signup\
 And the shell, selected navigation, and active tool read as one composed public application rather than stacked website sections\

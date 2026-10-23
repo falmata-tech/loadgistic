@@ -1,6 +1,19 @@
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 
+test('visible Capacity map reloads saved signals after a minute without losing its map',async({page}:{page:Page})=>{
+ await page.clock.install();
+ const firstWindow=page.waitForResponse(async response=>new URL(response.url()).pathname==='/api/public/capacity'&&response.ok()&&!(await response.json()).hasMore,{timeout:30000});
+ await page.goto('/');await firstWindow;
+ await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+ const map=page.locator('.leaflet-container'),instance=await map.elementHandle();
+ const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/public/capacity'&&response.ok(),{timeout:15000});
+ await page.clock.fastForward(60000);
+ await refreshed;
+ expect(await instance!.evaluate(element=>element.isConnected)).toBe(true);
+ await expect(map).toBeVisible();
+});
+
 test('viewport pagination preserves markers and camera until the replacement finishes',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);
  const initialWindow=page.waitForResponse(async response=>new URL(response.url()).pathname==='/api/public/capacity'&&response.ok()&&!(await response.json()).hasMore,{timeout:30000});

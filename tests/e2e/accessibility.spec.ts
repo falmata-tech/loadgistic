@@ -131,22 +131,19 @@ test('unified account access keeps one responsive and touch-sized task',async({p
   }
 });
 
-test('transporter and Driver workspaces have no serious accessibility violations', async ({ page }: { page: Page }) => {
-  await login(page, 'transporter@loadgistic.local');
-  for (const route of ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/company-page', '/app/verification', '/app/support', '/app/more', '/app/menu']) {
-    await page.goto(route);
-    if(route==='/app/menu')await expect(page).toHaveURL(/\/app\/more$/,{timeout:20000});
-    await expectAccessible(page, `fleet transporter ${route}`);
+for (const [role, email, routes] of [
+  ['fleet transporter', 'transporter@loadgistic.local', ['/app/home', '/app/fleet', '/app/provider-shipments', '/app/company-page', '/app/verification', '/app/support', '/app/more', '/app/menu']],
+  ['self-managed Driver', 'driver@loadgistic.local', ['/app/home', '/app/provider-shipments', '/app/verification', '/app/support', '/app/more', '/app/menu']]
+] as const) {
+  for (const route of routes) {
+    test(`${role} ${route} has no serious accessibility violations`, async ({ page }: { page: Page }) => {
+      await login(page, email);
+      await page.goto(route,{waitUntil:'domcontentloaded'});
+      if(route==='/app/menu')await expect(page).toHaveURL(/\/app\/more$/,{timeout:20_000});
+      await expectAccessible(page,`${role} ${route}`);
+    });
   }
-
-  await page.context().clearCookies();
-  await login(page, 'driver@loadgistic.local');
-  for (const route of ['/app/home', '/app/provider-shipments', '/app/verification', '/app/support', '/app/more', '/app/menu']) {
-    await page.goto(route);
-    if(route==='/app/menu')await expect(page).toHaveURL(/\/app\/more$/,{timeout:20000});
-    await expectAccessible(page, `self-managed Driver ${route}`);
-  }
-});
+}
 
 test('administration and support workspaces have no serious accessibility violations', async ({ page }: { page: Page }) => {
   await login(page, 'admin@loadgistic.local', '/admin');
@@ -174,7 +171,7 @@ test('public filters support keyboard entry, Escape, and trigger focus restorati
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close filters' })).toBeFocused();
   await expectAccessible(page,'capacity filters');
-  await expectMinimumTarget(dialog.getByRole('button',{name:'Show matching vehicles'}),'filter submit');
+  await expectMinimumTarget(dialog.getByRole('button',{name:'Show vehicles'}),'filter submit');
   const dialogBox=await dialog.boundingBox();
   const viewport=page.viewportSize();
   expect(dialogBox).not.toBeNull();

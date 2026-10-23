@@ -2,7 +2,7 @@
   "expo": {
     "name": "Loadgistic",
     "slug": "loadgistic",
-    "version": "1.1.1",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/loadgistic-icon.png",
     "userInterfaceStyle": "light",
@@ -12,10 +12,10 @@
     },
     "android": {
       "package": "com.loadgistic.app",
-      "versionCode": 9,
+      "versionCode": 10,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/loadgistic-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0b1d3a"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -57,7 +57,7 @@
         "expo-notifications",
         {
           "icon": "./assets/push-notification.png",
-          "color": "#0c7275",
+          "color": "#155eef",
           "defaultChannel": "loadgistic-updates"
         }
       ]

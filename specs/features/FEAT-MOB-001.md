@@ -11,6 +11,22 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — Android test release verified
 
+## Public Capacity vehicle-detail parity — local implementation pending review
+
+Given a visitor selects an eligible public vehicle\
+When its Vehicle details opens in Expo Web or the Android client\
+Then the published Driver callback and the three entity document-review groups
+support the same contact and evidence-inspection tasks as the web details\
+And application labels, review states and count/date explanations use the
+selected English, Amharic or Afaan Oromo language while public names stay intact\
+And Call uses only the validated published phone through the normal phone link\
+And the collapsed phone layout remains readable with targets at least44px,
+with bounded scrolling for expanded documents and a reachable close action.
+
+FEAT-CAP-001 and FEAT-VER-001 control fields and privacy. The existing public API
+and its current eligibility/permission checks are reused. Expo browser evidence
+does not qualify installed Android dialer behavior or an Android release.
+
 ## Cross-platform confirmations — October 14 local repair
 
 Given an authorized provider chooses Remove driver, Cancel invitation, Remove
@@ -212,7 +228,7 @@ And extra parameters, invalid handles and foreign origins remain denied.
 Given available Empty and Partial trucks overlap on the public or authorized
 private map
 Then every native cluster contains exactly one status, names Empty or Partial,
-and uses the same green or yellow as that capacity signal. Opposite-status
+and uses the same cobalt or amber as that capacity signal. Opposite-status
 clusters and nearby truck markers remain separately touchable. Source-local
 cluster IDs cannot collide; expansion uses the source that produced that cluster.
 Selection still removes all other trucks/clusters and closing restores the map.
@@ -302,7 +318,7 @@ adapter wiring and existing successful upload/access checks. No schema change.
 Use `PublicMobileNav`, `PublicHeader` and `AppShell` as the design baseline:
 public Capacity / Track / Featured / About bottom navigation; the web's role-aware
 Home / Fleet or assigned truck / Tracking / Network / Account workspace destinations.
-Reuse Lucide line icons, teal active states, white surfaces, border colors and
+Reuse Lucide line icons, cobalt active states, white surfaces, border colors and
 existing labels. Account embeds personal, business, document and plan controls; the compact
 global menu exposes supplementary actions and a separate language panel. Do not design a separate mobile product or duplicate top-of-map
 navigation links. Native safe areas, keyboard avoidance and touch targets adapt
@@ -532,7 +548,7 @@ and who can see it. Load preferences and pickup/drop-off options live inside
 Capacity under an optional disclosure. Regular service describes routes/areas the
 provider usually serves and stays distinct from current truck availability.
 Location controls the assigned driver's approximate position and privacy radius.
-Visible labels are Available space, Usual routes and Truck location. Each opens its own focused editor. First Capacity setup includes any required
+Visible labels are Available space, Usual routes and Truck location for providers with those controls; a restricted company driver sees Duty status instead of an unavailable capacity-publishing action. Each opens its own focused editor; its spoken/accessibility name explains the action (Update capacity, Update duty status, Manage usual routes, Set vehicle location). First Capacity setup includes any required
 location/coverage fields; never pretend an incomplete signal can publish. Hide
 controls the driver cannot manage; restricted company drivers retain Location
 and duty controls. Keep the separate one-tap location refresh. Stack these three
@@ -888,7 +904,7 @@ digest or staff audience. No private session or private results persist in publi
 search state. No managed search service or new database matching logic is added.
 
 Given truck filters are opened
-Then configuration images, space needed, availability, truck city/distance, shipment
+Then configuration images, current load, availability, truck city/distance, shipment
 route, stops, freshness and entity-specific reviewed documents use existing filters.
 Filters live in a lightly shaded modal, profile results in a collapsible panel.
 Cancel preserves applied values; Clear all resets search, filters, selection and map.

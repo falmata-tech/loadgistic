@@ -70,7 +70,7 @@ test('provider Network and public Shared capacity remain distinct',async({page}:
   originalGrantIds=new Set(originalGrants.map((grant:{id:string})=>grant.id));
   expect(originalGrants,'The generated synthetic recipient must not reuse an existing grant.').toHaveLength(0);
   await shareEmail.fill(sharedEmail);
-  await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Person or company name',{exact:true}).fill('Synthetic partner');
+  await shareEmail.locator('xpath=ancestor::form[1]').getByLabel('Contact name',{exact:true}).fill('Synthetic partner');
   await shareEmail.locator('xpath=ancestor::form[1]').getByRole('button',{name:'Add access'}).click();
   await expect(page.getByText('Capacity access added.')).toBeVisible();
 

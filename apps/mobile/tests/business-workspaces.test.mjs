@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {businessApiPathAllowed,businessApiArrayResponse} from '../../../src/lib/mobile/business-api-path.js';
 import {parseBusinessContext,parseBusinessDirectory,parseBusinessTrackingDetail,loadBusinessCapacity} from '../src/api/business-workspaces.ts';
 import {workspaceDestinations,workspaceHome,activeDestination,workspaceCapabilities} from '../src/navigation/destinations.ts';
+import {businessAccountGroups} from '../src/navigation/business-account-groups.ts';
 const require=createRequire(import.meta.url),{allowedPath}=require('../scripts/local-preview-proxy.cjs');
 test('shared validation resolves only the pinned mobile runtime without widening project roots',()=>{
  const config=require('../metro.config.js'),mobileRoot=fileURLToPath(new URL('../',import.meta.url));
@@ -39,6 +40,22 @@ test('customer tabs follow current explicit permissions without fleet/driver aut
  const trackingOnly={...session,user:{...session.user,selectedBusinessWorkspace:{...summary,permissions:{...summary.permissions,capacity:false}}}};
  assert.deepEqual(workspaceDestinations(trackingOnly).map(item=>item.href),['/business-tracking','/business-account']);assert.equal(workspaceHome(trackingOnly),'/business-tracking');
  assert.equal(activeDestination('/business-shipment',true,session),'/business-tracking');assert.equal(workspaceCapabilities(session).canManageFleet,false);assert.equal(workspaceCapabilities(session).drivesTruck,false);
+});
+test('shipper/broker Account groups workspace and personal work without widening role actions',()=>{
+ const owner=businessAccountGroups({team:true,owner:true});
+ assert.deepEqual(owner.map(group=>group.title),['Shipper / broker workspace','Your account']);
+ assert.deepEqual(owner[0].actions.map(action=>action.id),['TEAM','DETAILS','DOCUMENTS','SWITCH']);
+ assert.deepEqual(owner[1].actions.map(action=>action.id),['PERSONAL','SECURITY','SUPPORT']);
+ assert.equal(owner[1].signOut,true);
+ const admin=businessAccountGroups({team:true,owner:false});
+ assert.deepEqual(admin[0].actions.map(action=>action.id),['TEAM','DETAILS','LEAVE','SWITCH']);
+ assert.equal(admin[0].actions.some(action=>action.id==='DOCUMENTS'),false);
+ const staff=businessAccountGroups({team:false,owner:false});
+ assert.deepEqual(staff[0].actions.map(action=>action.id),['DETAILS','LEAVE','SWITCH']);
+ assert.deepEqual(staff[1].actions.map(action=>action.id),['PERSONAL','SECURITY','SUPPORT']);
+ const unavailable=businessAccountGroups(null);
+ assert.deepEqual(unavailable[0].actions.map(action=>action.id),['SWITCH']);
+ assert.deepEqual(unavailable[1].actions.map(action=>action.id),['PERSONAL','SECURITY','SUPPORT']);
 });
 test('business Tracking refuses location/approval/proof escalation in normalized server responses',()=>{
  const detail={workspaceId:workspace,isOwner:false,ownerActionsRequireVerification:true,id:foreign,code:'SYNTHETIC',origin:'A',destination:'B',cargo:'Synthetic',status:'IN_TRANSIT',driver:'Synthetic',truck:'Synthetic',updatedAt:'',provider:'Synthetic',mode:'STATUS_ONLY',canShare:false,canApprove:false,canReview:false,canViewLocation:false,route:[],publicTruck:null,events:[],location:null,review:null};

@@ -11,7 +11,9 @@ of `docs/PRODUCTION_AUTHORITY.md`. Existing source, target, artifact and approva
 records remain authoritative; this skill grants no additional permission.
 
 Resume the first incomplete dependency. Distinguish local implementation, focused
-tests, visual approval, terminal same-source CI, signing and actual publication.
+tests, agent-led visual/workflow review, terminal same-source CI, signing and
+actual publication. Follow the October 22 visual-review rule in `AGENTS.md`;
+do not turn its self-review into permission for a hosted write or deployment.
 Do not restart completed preparation or infer green status from partial jobs.
 Use BASE-DEP-001 for required gates. Use the test-repair procedure only when an
 actual failing/stale test requires it, not as a fresh whole-repository audit.

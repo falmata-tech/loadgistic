@@ -7,5 +7,14 @@
   "role": "Decorative freight illustration, not a factual photo or app screenshot",
   "branding": "Existing public/icon.svg, unchanged; name rendered in feature-graphic.svg",
   "ownerApproved": true,
-  "approval": "Owner instructed finalization on 2026-10-10 after the concrete graphic/native review."
+  "approval": "Owner instructed finalization on 2026-10-10 after the concrete graphic/native review.",
+  "colorRevision": {
+    "source": "feature-artwork.png",
+    "file": "feature-artwork-cobalt.png",
+    "tool": "built-in imagegen",
+    "generatedOutput": "exec-b12b0795-ef39-4909-a0cc-8ccc923fd763.png",
+    "change": "The teal container and ambient color were shifted to cobalt/navy; truck composition, route, port, warm lighting and gold accents retained.",
+    "replacesBrandColor": true,
+    "ownerVisualReviewPending": true
+  }
 }

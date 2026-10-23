@@ -1,4 +1,34 @@
-## October19 verified testing-track status
+# Loadgistic Google Play setup
+
+Updated October21, 2026. Verified owner marketvision.tech@gmail.com, developer
+`5256539403314542898`, app `4974969611761012361`, package `com.loadgistic.app`.
+[Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
+
+## Current test candidate — 1.1.1 / code 9
+
+The exact signed APK/AAB are built and verified for source `cad46f1`, CI
+`39528806968`, schema181. APK SHA256 is
+`6dcd8e845e77398d300aafa2021791fc1a89905a954a1eb78690434db712ea12`; AAB SHA256
+is `ae4e835bf1605af442ec508d8049539e562211fce614befba40067cff50033a4`.
+The APK was installed and byte-verified on the approved Pixel 8a. It is not yet
+uploaded to Google Play.
+
+Latest Play API readback at `2026-10-21T03:28:34Z` still showed 1.0.6/code7 on
+Internal and Alpha, with Production empty and code9 absent. The old internal link
+below therefore serves code7, not this candidate. Do not advertise it as code9.
+The tester list is configured but enrollment and the continuous14-day clock
+have not been verified.
+
+Code9's fresh install exposed a stale Home permission message despite Android
+location grants and a first Tracking request timeout that recovered after a
+visible refresh. The newly captured video is an internal draft only: its Android
+settings frame does not show “Allow all the time” selected and it repeats the
+permission prompt. Do not use that clip for Play. A clean background-location
+recording, current policy/declaration review and Play-installed code9 acceptance
+remain gates. See the current handoff in [PROGRESS](../PROGRESS.md) and scoped
+authority in [PRODUCTION_AUTHORITY](../PRODUCTION_AUTHORITY.md).
+
+## Historical October19 testing-track readback
 
 A fresh publisher API inspection reports1.0.6/code7 as `completed` on both
 Alpha and Internal. Production remains empty. The temporary inspection edit was
@@ -21,13 +51,7 @@ The prior submitted1.0.6 artifact is unchanged; no updated policy answer or stor
 submission is claimed. Physical hardware/background-device acceptance remains
 separate from local GT06 simulation.
 
-# Loadgistic Google Play setup
-
-Updated October 12, 2026. Verified owner marketvision.tech@gmail.com, developer
-`5256539403314542898`, app `4974969611761012361`, package `com.loadgistic.app`.
-[Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
-
-## Latest Android test build — October 12
+## Previous Android test build — 1.0.6 / code 7, October 12
 
 **1.0.6 / code 7** is available to the unchanged two-owner Internal list:
 https://play.google.com/apps/internaltest/4700942405023499701.

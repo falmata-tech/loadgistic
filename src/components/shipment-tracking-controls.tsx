@@ -131,7 +131,7 @@ export function ShipmentTrackingControls({shipmentId,trackingMode,nextStatuses,n
       })}</div></fieldset>
 
       {selectedAction?.acceptsProof?<div className="form-group tracking-proof-input"><label htmlFor="status-proof"><Upload aria-hidden="true"/><Text message="Proof "/><span className="meta"><Text message="(optional)"/></span></label><input id="status-proof" name="proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"/></div>:null}
-      {selectedStatus==='ASSIGNED'&&needsReceiverContact?<div className="alert"><Text message="Business must add the receiver name and phone first."/></div>:null}
+      {selectedStatus==='ASSIGNED'&&needsReceiverContact?<div className="alert"><Text message="The Shipper / broker must add the receiver name and phone first."/></div>:null}
       {selectedStatus==='ASSIGNED'&&needsShipmentVehicle?<div className="alert"><Text message="Choose a vehicle and Driver first."/></div>:null}
       {firstAvailable?<button className="button" disabled={!selectedStatus||(selectedStatus==='ASSIGNED'&&(needsReceiverContact||needsShipmentVehicle))}><Check aria-hidden="true"/><Text message="Save "/>{selectedAction?.label||'update'}</button>:<div className="tracking-finished"><CircleCheckBig aria-hidden="true"/><span><strong><Text message="No action needed"/></strong><small><Text message="This shipment has no next tracking action."/></small></span></div>}
     </form>

@@ -9,7 +9,7 @@ export function locationSourceLabel(value){
   return {GPS:'GPS device',MOBILE:'Driver’s phone',MANUAL:'Manually entered'}[locationSourceKind(value)]||'';
 }
 export function locationSourceColor(value){
-  return {GPS:'#0c7275',MOBILE:'#1976ed',MANUAL:'#925212'}[locationSourceKind(value)]||'#526875';
+  return {GPS:'#7257c8',MOBILE:'#1976ed',MANUAL:'#925212'}[locationSourceKind(value)]||'#526875';
 }
 // Only static paths are emitted. No submitted field enters this markup.
 export function locationSourceSvg(value){

@@ -10,7 +10,7 @@ export function WorkspaceSection({message,label,icon,children,initiallyOpen=fals
  const title=label===undefined?t(message):label;
  return <View style={styles.section}>
   <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{expanded:open}} onPress={()=>{Keyboard.dismiss();setVisited(true);setOpen(value=>!value);}} style={styles.heading}>
-   <AppIcon name={icon} color={palette.teal}/><Text style={styles.label}>{title}</Text><View style={{transform:[{rotate:open?'90deg':'0deg'}]}}><AppIcon name="next" size={18}/></View>
+   <AppIcon name={icon} color={palette.blue}/><Text style={styles.label}>{title}</Text><View style={{transform:[{rotate:open?'90deg':'0deg'}]}}><AppIcon name="next" size={18}/></View>
   </Pressable>
   {visited&&<View style={[styles.body,!open&&styles.hidden]} accessibilityElementsHidden={!open} importantForAccessibility={open?'auto':'no-hide-descendants'}>{children}</View>}
  </View>;

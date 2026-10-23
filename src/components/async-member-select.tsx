@@ -73,7 +73,7 @@ export function AsyncMemberSelect({
       <input id={id} value={query} onChange={event=>clearSelection(event.target.value)} onFocus={()=>setOpen(true)} autoComplete="off" placeholder={t(placeholder)} aria-expanded={open&&Boolean(results.length)} role="combobox"/>
       {loading?<LoadingIndicator className="member-search-loading" label="Searching members"/>:null}
     </div>
-    {selected?<div className="member-search-selected"><CheckCircle2 aria-hidden="true"/><span><strong>{query}</strong><small><Text message="Exactly one "/>{kind==='TRANSPORT'?<Text message="transporter or self-managed Driver"/>:<Text message="Business"/>}<Text message=" selected"/></small></span><button type="button" className="button secondary small" onClick={()=>clearSelection('')}><X aria-hidden="true"/><Text message="Change"/></button></div>:null}
+    {selected?<div className="member-search-selected"><CheckCircle2 aria-hidden="true"/><span><strong>{query}</strong><small><Text message="Exactly one "/>{kind==='TRANSPORT'?<Text message="transporter or self-managed Driver"/>:<Text message="Shipper / broker"/>}<Text message=" selected"/></small></span><button type="button" className="button secondary small" onClick={()=>clearSelection('')}><X aria-hidden="true"/><Text message="Change"/></button></div>:null}
     {!selected&&query.length<2?<small><Text message="Type at least 2 characters."/></small>:null}
     {open&&results.length?<div className="member-search-results" role="listbox">{results.map((member:Member)=><button type="button" role="option" key={`${member.ref_kind}:${member.id}`} onClick={()=>{
       setSelected(`${member.ref_kind}:${member.id}`);

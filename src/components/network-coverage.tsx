@@ -12,7 +12,7 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
   if (!coverage) return null;
   return <section className="card network-coverage">
     <div className="page-header compact-header">
-      <div><h2><Route aria-hidden="true"/><Text message="Network coverage"/></h2><p className="page-subtitle"><Text message="Your routes and partner Business areas."/></p></div>
+      <div><h2><Route aria-hidden="true"/><Text message="Network coverage"/></h2><p className="page-subtitle"><Text message="Your routes and partner areas."/></p></div>
       <Link className="button secondary small" href="/app/company-page"><Pencil aria-hidden="true"/><Text message="Edit routes"/></Link>
     </div>
     <Localized as="div" copy={["aria-label"]} className="coverage-routes" aria-label="Preferred Route network">
@@ -26,7 +26,7 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
         <span className={`status ${business.matched_places.length ? 'green' : 'expired'}`}>{business.coverage_label}</span>
         {business.matched_places.length ? <span className="coverage-match">{business.matched_places.map(titleCase).join(' · ')}</span> : null}
       </Link>)}
-      {!coverage.businesses.length ? <div className="empty-state compact"><Text message="Businesses that save this fleet as a partner will appear here."/></div> : null}
+      {!coverage.businesses.length ? <div className="empty-state compact"><Text message="Shippers and brokers who save this fleet as a partner will appear here."/></div> : null}
     </div>
     <p className="meta"><Text message="Coordinate and activity match. Not a service guarantee."/></p>
   </section>;

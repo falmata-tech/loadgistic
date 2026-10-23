@@ -51,7 +51,7 @@ export default async function ApplyPage({
       description={<Text message="Add vehicles and drivers from your workspace."/>}
       contextKicker={<Text message="Build your presence"/>}
       contextTitle={<Text message="Share capacity. Grow your transport business."/>}
-      contextDescription={<Text message="Connect with brokers and businesses, share vehicle availability, and keep customers informed through private Tracking."/>}
+      contextDescription={<Text message="Share vehicle availability with shippers and brokers, and keep customers informed through private Tracking."/>}
       contextNoteTitle={<Text message="Identity confirmed"/>}
       contextNote={<Text message="Your account remains inactive until this short transporter setup is complete."/>}
       footerNote={<Text message="Creating an account does not mark any Driver, vehicle, or document as reviewed."/>}

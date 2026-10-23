@@ -9,7 +9,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{type:st
   const user=await getCurrentUser();
   if(!user)return NextResponse.redirect(new URL('/login',request.url),303);
   const {type,id}=await params;
-  if(['SUBSCRIPTION','SUBSCRIPTIONS','PLAN','PLANS','WORKSPACE_SPONSOR'].includes(type.toUpperCase()))return NextResponse.json({error:hasPlatformPermission(user,'BILLING')?'Platform payment plans are not offered.':'Forbidden'},{status:hasPlatformPermission(user,'BILLING')?410:403});
+  if(['SUBSCRIPTION','SUBSCRIPTIONS','PLAN','PLANS','WORKSPACE_SPONSOR'].includes(type.toUpperCase()))return NextResponse.json({error:hasPlatformPermission(user,'BILLING')?'This feature is no longer available.':'Forbidden'},{status:hasPlatformPermission(user,'BILLING')?410:403});
   const form=await request.formData();
   const requestedReturnTo=text(form,'returnTo');
   const returnTo=adminOperationReturnPath(requestedReturnTo)||'/admin/operations';

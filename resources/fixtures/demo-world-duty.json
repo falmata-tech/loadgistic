@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "fixture_source": "loadgistic",
+  "state": "inert",
+  "vehicle_key": "veh-public-fleet-01-5",
+  "vehicle_id": "626ff53a-3c93-44c7-8afb-b175a84403c1",
+  "platform_number": "LG-TRK-F0105",
+  "organization_key": "org-public-fleet-01",
+  "organization_id": "c36022ff-bf3e-432d-ae96-93d1537cf79e",
+  "owner_key": "user-public-fleet-01",
+  "driver_key": "user-public-fleet-driver-005",
+  "command": "publish_provider_capacity",
+  "source": "MANUAL",
+  "baseline_status": "EMPTY",
+  "accepted_loads": "FTL",
+  "sharing_mode": "PUBLIC",
+  "daily_slots_utc": [630, 650]
+}

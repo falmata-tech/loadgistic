@@ -18,14 +18,22 @@ commands succeed; do not infer current rules from older test names. Reuse curren
 application ports, guarded SQL and synthetic fixture factories instead of making
 UI-only shells or a second persistence model.
 
+For user-visible screen, workflow, navigation or localization changes, also use
+`loadgistic-ui-ux` for the role/task review, empty-state guidance, multilingual
+fit and desktop/phone experience checks. Keep its product-specific design detail
+there instead of expanding this general engineering skill.
+
 Choose evidence by the changed boundary:
 
 - Pure logic: focused input/output and negative cases.
 - API/database/privacy: authoritative saved outcomes, role/tenant denial,
   unchanged state after rejection, and current local Supabase target.
 - UI: actual Chrome desktop/phone tasks and the affected Expo surface; preserve
-  navigation, loading/error recovery and saved state. Follow existing visual
-  review requirements without inventing additional approvals.
+  navigation, loading/error recovery and saved state. Exercise sign-in, edits,
+  save/cancel, reload and sign-out as the affected roles; check authoritative
+  outcomes and denials, not screenshots alone. Follow AGENTS.md's hands-on
+  workflow verification, browser/session ownership and phone-permission rules,
+  plus existing visual review requirements without inventing approvals.
 - Native capabilities: installed-app/device evidence when needed; web preview
   alone cannot prove phone location, notifications or permissions.
 - Scripts/CI: `npm run check:workflow`, bounded failure tests and elapsed time.

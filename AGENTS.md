@@ -2,9 +2,43 @@
 
 ## Product invariant
 
-Loadgistic helps fleets and independent drivers share capacity signals with known brokers and enterprises (shippers and receivers), or with the open market. Transporters provide private shipment tracking to brokers, their customers or enterprises directly after agreeing the work. Optional document review helps people seeking transport assess providers; it is not a service guarantee. Keep this positioning concise in product copy. Public discovery remains account-free; Loadgistic does not publish demand or handle transactions.
+Loadgistic helps fleets and independent drivers share capacity signals with Shippers and brokers, or with the open market. Transport Providers provide private shipment tracking to Shippers, brokers, receivers or their customers after agreeing the work. Optional document review helps people seeking transport assess providers; it is not a service guarantee. Keep this positioning concise in product copy. Public discovery remains account-free; Loadgistic does not publish demand or handle transactions.
 
 Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
+
+## Product experience standard
+
+Clarity is part of the product, not a finish pass or a cost-saving tradeoff.
+Apply this to every surface and role: public visitors, Transport Providers,
+drivers, business owners and staff, platform Support, platform staff and admins.
+
+- Start with the person's task and current record, not the database table or an
+  inventory of available features. Group related facts and actions in the place
+  people use them; keep separate pages only when they support a distinct task.
+- Treat phone use as the stricter design case for shared workflows: design its
+  hierarchy, touch targets, one-hand reach, safe areas, map overlays and return
+  paths deliberately before adapting the same task structure to wider screens.
+- Make layout and interaction hierarchy carry the explanation. Keep helper text
+  short and use it for decisions, consequences and genuinely unfamiliar actions;
+  do not cover weak structure with paragraphs that narrate the screen.
+- A first-use or empty state must say what is missing, why it matters and the
+  next useful action. An empty Capacity map must still orient a new provider or
+  driver and lead them into publishing their first signal; never leave them to
+  infer what an empty map means. Apply the same rule to lists, queues and
+  dashboards.
+- Show saved facts before editing. Open a focused edit only when requested, keep
+  its scope clear, and make Save, Cancel, progress, errors and the result easy to
+  understand. Avoid duplicate actions, repeated headings, unexplained controls,
+  dead ends and busy screens that force people to learn the data model.
+- Prefer one obvious next action, familiar icons paired with short contextual
+  labels, and clear return paths. Do not replace useful words with ambiguous
+  icons or add decorative controls that do not help complete a task.
+- Write English, Amharic and Afaan Oromo for the user's intent and audience,
+  using simple natural phrasing rather than literal translation or internal
+  terminology. Check that labels fit and retain their meaning at phone widths.
+- Review real empty, loading, success, failure/retry, saved and permission-denied
+  states at relevant desktop and phone sizes. A page rendering or a passing
+  component test is not evidence that a person can complete the promised task.
 
 ## Commands
 
@@ -36,6 +70,7 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 
 - Repo-scoped skills in `.agents/skills` keep detailed procedures task-specific:
   `loadgistic-engineering` for everyday changes/setup housekeeping,
+  `loadgistic-ui-ux` for task-centered UI, navigation and localization work,
   `loadgistic-test-repair` for failed gates or stale-fixture audits, and
   `loadgistic-release` for preparing/resuming an authorized rollout.
   `loadgistic-github` handles branch/PR/review and authorized merge work, following
@@ -46,6 +81,17 @@ Before major authentication, authorization, workflow, public-data, file, schema,
   stack-specific loop. Update affected tests/fixtures with behavior changes,
   including gated cases; resolve known findings together before another full CI.
   Preserve real denial, persistence and recovery checks.
+- For migration-based database diagnosis, inspect the selected database catalog
+  and final installed function definition first. An older CREATE statement is
+  historical evidence: check subsequent replacements/drops before reporting a
+  current requirement, missing feature or repair prerequisite. Label unconfirmed
+  source inferences explicitly; do not build a fix for an already-removed rule.
+- When delegating follow-up work, use `followup_task` for an idle/completed
+  agent. `send_message` informs a running agent but does not start an idle one.
+  Check task state before waiting on a dependency; do not wait on an unstarted
+  task. Keep file ownership and the next executable step explicit (NR-68).
+- Bound generated-file searches by line length as well as line count; `head`
+  does not prevent one embedded JSON line from consuming the working context.
 - After one controlled retry, diagnose the observed cause before repeating slow
   or failed work. Improve recurring friction proactively and record its measured
   result, evidence and remaining action in the existing register/checklist.
@@ -100,11 +146,16 @@ Before major authentication, authorization, workflow, public-data, file, schema,
 
 ## Local visual review before UI deployment
 
-- Owner-required order (2026-09-21): keep the dev server running and provide the
-  URL for owner visual testing; obtain explicit visual approval; run extensive
-  tests/release gates; deploy only when the owner explicitly asks. Visual approval
-  alone is not deployment permission. Limited checks needed to make the preview
-  usable may run first; do not put the full suite ahead of owner review.
+- Owner instruction (2026-10-22) supersedes the earlier owner-visual-approval
+  gate: the agent performs and records the visual review. Keep the dev server
+  running, inspect the actual changed screen in Chrome on desktop and phone,
+  complete the affected task, and check saved results and permission boundaries.
+  Check the affected Expo view too; use an authorized phone session for native-only
+  behavior. Record URLs, screenshots, interactions, failures and remaining limits.
+  Do not claim a screen reviewed from screenshots or tests alone. Ask the owner
+  only when a product decision or access needed for the review is unresolved.
+  After the agent's review passes, run the required full tests/release gates.
+  Deployment still requires the owner's explicit request and all production gates.
 
 - Performance-only requests authorize optimization of the existing experience,
   not a redesign or additional user work. Establish the existing appearance,
@@ -120,15 +171,38 @@ Before major authentication, authorization, workflow, public-data, file, schema,
   and completeness alongside actual performance evidence. See NR-13.
 
 - For every visible UI or map change, start and keep a Loadgistic local server
-  running against local services. Give the owner the working URL and the exact
-  interaction to review, with focused desktop and phone screenshots.
-- Run focused interaction tests first, then wait for the owner's explicit
-  visual approval before full release gates or deployment of those changes.
-  Automated screenshots, passing CI, and an earlier deployment authorization
-  do not constitute visual approval of a changed interface.
-- Record what was reviewed and approved. Material visual or interaction changes
-  after approval require another local review. Never silently redesign markers
-  or add interaction steps while fixing loading or clustering.
+  running against local services. Record the working URL, exact interaction and
+  focused desktop and phone screenshots; share them with the owner when useful.
+- Run focused interaction tests first, then complete the agent-led browser and
+  affected Expo review before full release gates. Automated screenshots and
+  passing CI alone do not establish visual or workflow quality.
+- Record what was actually reviewed and its outcome. Material visual or
+  interaction changes after review require another local review. Never silently
+  redesign markers or add interaction steps while fixing loading or clustering.
+
+## Hands-on workflow verification
+
+- Owner instruction, October20: agents may use actual Google Chrome to exercise
+  Loadgistic web workflows without asking for browser permission each time.
+  Verify the app, origin and environment first; use separate browser contexts
+  and assigned synthetic accounts so agents cannot overwrite each other's work.
+- Test tasks, not just page loads: sign in, navigate, type, save/cancel, reload,
+  recover from errors and sign out. Verify saved API/database state and relevant
+  role/privacy denials. Inspect layout, labels, loading and reachable controls on
+  desktop and phone web. Screenshots alone do not prove a working transaction.
+- Cover the affected provider, driver, shipper/broker and team roles; admin and
+  platform staff remain web-only. Delegate independent journeys when requested,
+  with one owner for shared fixtures and serialized heavy browser work on this Mac.
+- Prefer local services and disposable owned fixtures. Production inspection
+  must identify the deployed version; testing an older live version does not
+  qualify the candidate. Browser permission does not expand production write,
+  account, communication or release authority.
+- Ask before each session using the owner's Android phone, including a dev
+  build. Native permission, background location and closed-app notifications
+  need actual device checks; Expo web is not a substitute. Touch only Loadgistic.
+- Record observed steps, role/environment, actual outcomes and untested limits;
+  report what was verified instead of claiming that clicking every page proves
+  the entire platform. Reuse unchanged passing evidence to avoid repeated suites.
 
 ## External support communication
 

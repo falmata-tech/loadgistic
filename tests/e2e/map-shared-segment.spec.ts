@@ -23,7 +23,7 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
   const loaded=page.waitForResponse((r:any)=>r.url().includes('/api/public/capacity?'));
   await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);await loaded;
   await closeCapacityFilters(page);
-  await expect(page.locator('.map-current-route')).toHaveAttribute('stroke','#eab308');
+  await expect(page.locator('.map-current-route')).toHaveAttribute('stroke','#667085');
   // Selection now fits the complete regular route too. Inspect the shared leg
   // at street scale, where both strokes have room beside the info bubbles.
   await page.locator('.leaflet-control-zoom-in').click();

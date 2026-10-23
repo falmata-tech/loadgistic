@@ -4,7 +4,7 @@ import { AppLink } from '../components/app-link';
 import { foregroundTrackingDue } from '../location/tracking-area';
 import { FilePicker, PrivateFile, uploadBody, useFileSelection } from '../components/private-file';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, AppState, Pressable, Text, View } from 'react-native';
+import { AppState, Pressable, Text, View } from 'react-native';
 import { Redirect, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackingLocationResult } from '../../../../src/lib/tracking-location-controls.js';
 import { TRACKING_JOURNEY, trackingProgress } from '../../../../src/lib/tracking-progress.js';
@@ -13,15 +13,17 @@ import { useAccountQuery } from '../hooks/account-query';
 import { statusLabel, type TrackingDetail } from '../api/tracking';
 import { captureCapacityLocation } from '../location/capture';
 import { privacyRadii } from '../location/privacy';
-import { Page, Title, Copy, Card, Field, Button, ErrorText, palette } from '../components/ui';
+import { Page, Title, Copy, Card, Field, Button, ErrorText, palette, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
 import {TrackingWorkspace} from '../components/tracking-workspace';
+import {TrackingDemoLabel} from '../components/tracking-demo-label';
+import {demoTrackingLabel,isDemoTrackingShipment} from '../../../../src/lib/demo-tracking-identity.js';
 export default function ShipmentDetail() {
  const params = useLocalSearchParams<{ id?: string }>(), id = typeof params.id === 'string' ? params.id : '';
  const account = useAccount(), query = useAccountQuery<TrackingDetail>(`/api/mobile/shipments/${encodeURIComponent(id)}`);
- if (account.busy) return <Page><ActivityIndicator /></Page>;
+ if (account.busy) return <Page><LoadingSpinner /></Page>;
  if (!account.session) return <Redirect href="/account" />;
- return query.data?<View style={{flex:1}}><Shipment key={account.session.user.id+id} data={query.data} reload={query.reload}/><ErrorText message={query.error}/></View>:<Page><ErrorText message={query.error}/>{!query.error&&<ActivityIndicator accessibilityLabel="Loading shipment"/>}<Button secondary message="Refresh shipment" onPress={()=>void query.reload()} busy={query.loading}/></Page>;
+ return query.data?<View style={{flex:1}}><Shipment key={account.session.user.id+id} data={query.data} reload={query.reload}/><ErrorText message={query.error}/></View>:<Page><ErrorText message={query.error}/>{!query.error&&<LoadingSpinner accessibilityLabel="Loading shipment"/>}<Button secondary message="Refresh shipment" onPress={()=>void query.reload()} busy={query.loading}/></Page>;
 }
 function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promise<void> }) {
  const {t}=useLanguage();
@@ -67,12 +69,12 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
  async function appeal(){if(lock.current)return;lock.current=true;setBusy(true);setFeedbackAt('APPEAL');setError('');setMessage('');try{await account.request(`/api/mobile/shipments/${data.id}/appeal`,{reason:appealReason});await reload();setAppealReason('');setMessage('Your appeal is saved. The team can review this shipment and its proof.');}catch(error){setError(error instanceof Error?error.message:'Could not confirm the appeal. Refresh before trying again.');}finally{lock.current=false;setBusy(false);}}
  const recorded = data.events.map(item => item.status);
  const feedback = <><ErrorText message={error} />{!!message && <Copy>{t(message)}</Copy>}</>;
- return <TrackingWorkspace code={data.code} status={data.status} route={data.route} location={data.location} truck={data.publicTruck}><Button secondary message="Refresh shipment" onPress={()=>void reload()} busy={busy}/><Copy>{data.cargo}</Copy>
+ return <TrackingWorkspace shipmentId={data.id} code={data.code} status={data.status} route={data.route} location={data.location} truck={data.publicTruck}><Button secondary message="Refresh shipment" onPress={()=>void reload()} busy={busy}/><Copy>{data.cargo}</Copy>
   {!!data.pickupDate && <Copy>{t('Pickup: {date}',{date:data.pickupDate})}</Copy>}{!!data.deliveryDate && <Copy>{t('Delivery: {date}',{date:data.deliveryDate})}</Copy>}
-  {data.status==='UNLOADING'&&<Card><Title message="Waiting for shipment owner approval"/><Copy message="The shipment owner can approve unloading from their tracking page. If approval is delayed or disputed, ask our team to review."/>{data.canLocate&&!data.appeals?.some(item=>item.status==='OPEN')&&<><Field message="Explain the approval problem" value={appealReason} onChangeText={setAppealReason} multiline maxLength={1000} editable={!busy}/><Button message="Ask the team to review" busy={busy} disabled={appealReason.trim().length<5} onPress={()=>void appeal()}/></>}{data.appeals?.map(item=><View key={item.id}><Copy>{item.reason} · {t(item.status)}</Copy>{!!item.resolutionNote&&<Copy>{item.resolutionNote}</Copy>}</View>)}{feedbackAt==='APPEAL'&&feedback}</Card>}
+  {data.status==='UNLOADING'&&<Card><Title message="Waiting for shipment owner approval"/>{isDemoTrackingShipment(data.id)&&<TrackingDemoLabel kind="approval"/>}<Copy message="The shipment owner can approve unloading from their tracking page. If approval is delayed or disputed, ask our team to review."/>{data.canLocate&&!data.appeals?.some(item=>item.status==='OPEN')&&<><Field message="Explain the approval problem" value={appealReason} onChangeText={setAppealReason} multiline maxLength={1000} editable={!busy}/><Button message="Ask the team to review" busy={busy} disabled={appealReason.trim().length<5} onPress={()=>void appeal()}/></>}{data.appeals?.map(item=><View key={item.id}><Copy>{item.reason} · {t(item.status)}</Copy>{!!item.resolutionNote&&<Copy>{item.resolutionNote}</Copy>}</View>)}{feedbackAt==='APPEAL'&&feedback}</Card>}
   <Card><Title message={"Shipment progress"}/><Copy message={"Choose the next step, then save it."}/>
    {TRACKING_JOURNEY.map(status => { const enabled = data.nextStatuses.includes(status), progress = trackingProgress(status, data.status, recorded, data.nextStatuses);
-    return <Pressable key={status} accessibilityRole="radio" accessibilityLabel={`${t(statusLabel(status))} · ${t(progress)}`} accessibilityState={{ checked: selected === status, disabled: busy || !enabled }} disabled={busy || !enabled} onPress={() => { setSelected(status); proof.setFile(null); setError(''); }} style={{ padding: 14, minHeight: 60, borderWidth: 1, borderRadius: 12, borderColor: selected === status ? palette.teal : palette.border, backgroundColor: selected === status ? '#eaf5f4' : '#fff' }}><Text style={{ color: palette.ink, fontSize: 16, fontWeight: '600' }}>{progress === 'Completed' ? '✓ ' : selected === status ? '● ' : ''}{t(statusLabel(status))}</Text><Text style={{ color: progress === 'Next' ? palette.teal : palette.muted }}>{t(progress)}</Text></Pressable>;
+    return <Pressable key={status} accessibilityRole="radio" accessibilityLabel={`${t(statusLabel(status))} · ${t(progress)}`} accessibilityState={{ checked: selected === status, disabled: busy || !enabled }} disabled={busy || !enabled} onPress={() => { setSelected(status); proof.setFile(null); setError(''); }} style={{ padding: 14, minHeight: 60, borderWidth: 1, borderRadius: 12, borderColor: selected === status ? palette.blue : palette.border, backgroundColor: selected === status ? '#eaf1ff' : '#fff' }}><Text style={{ color: palette.ink, fontSize: 16, fontWeight: '600' }}>{progress === 'Completed' ? '✓ ' : selected === status ? '● ' : ''}{t(statusLabel(status))}</Text><Text style={{ color: progress === 'Next' ? palette.blue : palette.muted }}>{t(progress)}</Text></Pressable>;
    })}
    {data.nextStatuses.includes('ISSUE') && <Button secondary message="Report an issue" busy={busy} onPress={() => { setSelected('ISSUE'); proof.setFile(null); }} />}
    {validChoice && <><Copy>{t('Selected: {status}',{status:t(statusLabel(selected))})}</Copy><Field label={t(selected === 'ISSUE' ? 'What happened? (required)' : 'Update note (optional)')} value={note} onChangeText={setNote} maxLength={1000} multiline editable={!busy} />
@@ -89,7 +91,7 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
    {data.recipients.filter(person=>person.owner).map(person=><View key={person.id}><Copy>{person.email}</Copy></View>)}
    {data.deliveries.some(item=>item.status!=='SENT')&&<Copy message="The shipment owner's email is still awaiting delivery."/>}
   </Card>
-  {data.canRecover && <AppLink href={{ pathname: '/shipment-manage', params: { id: data.id } }} style={{ paddingVertical: 14, color: palette.teal }} message={"Correct, reassign or cancel shipment"}/>}
-  <Card><Title message={"Update history"}/>{data.events.map(event => <View key={event.id} style={{ gap: 4, paddingVertical: 8 }}><Copy>{t(statusLabel(event.status))} · {new Date(event.createdAt).toLocaleString()}</Copy>{!!event.note && <Copy>{event.note}</Copy>}{event.hasProof && <PrivateFile label={t('View photo proof')} load={() => account.request(`/api/mobile/shipments/${data.id}/proof/${event.id}`)} />}</View>)}</Card>
+  {data.canRecover && <AppLink href={{ pathname: '/shipment-manage', params: { id: data.id } }} style={{ paddingVertical: 14, color: palette.blue }} message={"Correct, reassign or cancel shipment"}/>}
+  <Card><Title message={"Update history"}/>{data.events.map(event => <View key={event.id} style={{ gap: 4, paddingVertical: 8 }}><Copy>{t(statusLabel(event.status))} · {new Date(event.createdAt).toLocaleString()}</Copy>{isDemoTrackingShipment(data.id)&&<TrackingDemoLabel kind="event"/>}{!!event.note && <Copy>{event.note}</Copy>}{event.hasProof && <PrivateFile label={t(isDemoTrackingShipment(data.id)?demoTrackingLabel('proof'):'View photo proof')} load={() => account.request(`/api/mobile/shipments/${data.id}/proof/${event.id}`)} />}</View>)}</Card>
  </TrackingWorkspace>;
 }

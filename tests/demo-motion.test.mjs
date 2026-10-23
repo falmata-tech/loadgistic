@@ -5,7 +5,7 @@ import net from 'node:net';
 import {EventEmitter} from 'node:events';
 import {simulate,gt06Packet} from '../scripts/telematics/simulator.mjs';
 import {localDemoMotionConfiguration,demoMotionSignature,authenticateDemoMotion,executeDemoMotion,demoMotionCommand} from '../src/lib/demo-motion-auth.js';
-import {demoRouteFix,demoMotionClient,runDemoMotion} from '../scripts/telematics/demo-motion-runtime.mjs';
+import {demoRouteFix,demoMotionClient,runDemoMotion,demoProcessAlive,assertDemoRunnerTargetsAvailable,demoFailureCode} from '../scripts/telematics/demo-motion-runtime.mjs';
 const secret='f'.repeat(64),url='http://127.0.0.1:3100/api/telematics/demo-motion';
 const environment={NODE_ENV:'development',LOADGISTIC_DEMO_MOTION_ENABLED:'true',LOADGISTIC_DEMO_MOTION_SECRET:secret,NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:55321'};
 test('demo adapter is opt-in and refuses production, customer databases and shared credentials',()=>{
@@ -37,6 +37,32 @@ test('runtime credential has no database API and refuses public destinations',as
  assert.deepEqual(await request({action:'STATUS',target:'company-truck'}),{state:'OFF'});
  assert.equal(sent.options.redirect,'error');assert.equal(sent.options.credentials,'omit');assert.equal(sent.options.headers.Authorization,undefined);assert.ok(sent.options.headers['x-demo-signature']);
 });
+test('runner status treats a permission-limited process probe as alive',()=>{
+ let probed=0;
+ assert.equal(demoProcessAlive(42,(pid,signal)=>{probed++;assert.equal(pid,42);assert.equal(signal,0);throw Object.assign(new Error('probe denied'),{code:'EPERM'});}),true);
+ assert.equal(probed,1);
+ assert.equal(demoProcessAlive(42,()=>{throw Object.assign(new Error('process missing'),{code:'ESRCH'});}),false);
+ assert.equal(demoProcessAlive(1,()=>assert.fail('invalid pid must not be probed')),false);
+});
+test('backend lease preflight refuses an active target before local recovery state can be replaced',async()=>{
+ const calls=[],request=async input=>{calls.push(input);return {configured:true,state:'RUNNING',source:'GPS',expiresAt:new Date(5000).toISOString()};};
+ await assert.rejects(()=>assertDemoRunnerTargetsAvailable(request,{targets:['company-truck'],now:()=>1000}),/DEMO_RUNNER_ALREADY_ACTIVE/);
+ assert.deepEqual(calls,[{action:'STATUS',target:'company-truck'}]);
+});
+test('backend lease preflight permits expired or unconfigured targets and fails closed on malformed status',async()=>{
+ const now=1000;
+ await assert.doesNotReject(()=>assertDemoRunnerTargetsAvailable(async()=>({configured:true,state:'RUNNING',expiresAt:new Date(900).toISOString()}),{targets:['company-truck'],now:()=>now}));
+ await assert.doesNotReject(()=>assertDemoRunnerTargetsAvailable(async()=>({}),{targets:['company-truck'],now:()=>now}));
+ await assert.doesNotReject(()=>assertDemoRunnerTargetsAvailable(async()=>({state:'UNCONFIGURED'}),{targets:['company-truck'],now:()=>now}));
+ await assert.rejects(()=>assertDemoRunnerTargetsAvailable(async()=>({state:'RUNNING'}),{targets:['company-truck'],now:()=>now}),/DEMO_RUNNER_ALREADY_ACTIVE/);
+ await assert.rejects(()=>assertDemoRunnerTargetsAvailable(async()=>({state:'UNKNOWN'}),{targets:['company-truck'],now:()=>now}),/DEMO_STATUS_INVALID/);
+ await assert.rejects(()=>assertDemoRunnerTargetsAvailable(async()=>({}),{targets:['customer-truck'],now:()=>now}),/DEMO_RUNNER_INPUT_INVALID/);
+});
+test('runner failures expose only stable demo error codes',()=>{
+ assert.equal(demoFailureCode(new Error('DEMO_REAL_DEVICE_TAKEOVER')),'DEMO_REAL_DEVICE_TAKEOVER');
+ assert.equal(demoFailureCode(new TypeError('fetch failed')),'DEMO_TRANSPORT_UNAVAILABLE');
+ assert.equal(demoFailureCode(new Error('request failed with bearer secret')),'DEMO_RUN_FAILED');
+});
 test('fictional route is bounded and moves at plausible speed without random cross-country jumps',()=>{
  for(const target of ['company-truck','personal-truck'])for(let seconds=0;seconds<2400;seconds+=5){
   const a=demoRouteFix(target,seconds),b=demoRouteFix(target,seconds+5),distance=Math.hypot((b.latitude-a.latitude)*111195,(b.longitude-a.longitude)*111195*Math.cos(a.latitude*Math.PI/180));
@@ -48,10 +74,31 @@ test('phone takeover stops its reports and never changes source/radius or manual
  const calls=[],leaseId=randomUUID(),states=[];let clock=0,reports=0;
  const request=async input=>{calls.push(input);if(input.action==='CONFIGURE')return {configured:true};if(input.action==='START')return {state:'RUNNING',source:'MOBILE',epoch:2,leaseId,expiresAt:new Date(60000).toISOString()};
   if(input.action==='PHONE'){if(++reports>1)throw Error('DEMO_REPORT_DENIED');return {recorded:true};}if(input.action==='STOP')return {state:'REAL',epoch:3};throw Error('UNEXPECTED_COMMAND');};
- const result=await runDemoMotion({request,simulate:()=>assert.fail('No GPS in phone target'),seconds:60,targets:['personal-truck'],now:()=>clock,
+ const result=await runDemoMotion({request,simulate:()=>assert.fail('No GPS in phone target'),seconds:120,targets:['personal-truck'],now:()=>clock,
   sleep:async ms=>{clock+=ms;},onState:value=>states.push(structuredClone(value))});
- assert.equal(result.failed,true);assert.equal(reports,2);assert.equal(calls.filter(row=>row.action==='STOP').length,1);
- assert.equal(calls.some(row=>'source'in row||'precisionKm'in row||row.action==='MANUAL'),false);assert.equal(states.at(-1)[0].status,'PAUSED');
+ assert.equal(result.failed,true);assert.equal(result.failureCode,'DEMO_REPORT_DENIED');assert.equal(result.targets[0].failureCode,'DEMO_REPORT_DENIED');
+ assert.equal(reports,2);assert.equal(calls.filter(row=>row.action==='STOP').length,1);
+ assert.equal(calls.some(row=>'source'in row||'precisionKm'in row||row.action==='MANUAL'),false);
+ assert.equal(states.at(-1)[0].status,'PAUSED');assert.equal(states.at(-1)[0].failureCode,'DEMO_REPORT_DENIED');
+});
+test('local movement uses a 60-second cadence for both phone and GT06 sources',async()=>{
+ const leaseId=randomUUID(),sleepCalls=[];let clock=0,phoneReports=0,gpsReports=0,gt06Interval;
+ const request=async input=>{if(input.action==='START')return {state:'RUNNING',source:input.target==='company-truck'?'GPS':'MOBILE',epoch:1,leaseId,expiresAt:new Date(100000).toISOString()};
+  if(input.action==='GPS'){gpsReports++;return {observedAt:new Date(2000).toISOString(),latitude:input.latitude,longitude:input.longitude};}
+  if(input.action==='PHONE'){phoneReports++;return {recorded:true};}return {state:'OFF'};};
+ const phone=await runDemoMotion({request,seconds:120,targets:['personal-truck'],now:()=>clock,sleep:async ms=>{sleepCalls.push(ms);clock+=ms;}});
+ assert.equal(phone.failed,false);assert.equal(phoneReports,2);assert.deepEqual(sleepCalls,[1100,60000,58900]);
+ clock=0;
+ const gps=await runDemoMotion({request,seconds:10,targets:['company-truck'],now:()=>clock,sleep:async()=>{},simulate:async options=>{gt06Interval=options.reportIntervalSeconds;await options.beforeReport();return {positions:1};}});
+ assert.equal(gps.failed,false);assert.equal(gpsReports,1);assert.equal(gt06Interval,60);
+});
+test('runtime result preserves only a sanitized failure code after a target pauses',async()=>{
+ const states=[],leaseId=randomUUID();
+ const request=async input=>{if(input.action==='START')return {state:'RUNNING',source:'MOBILE',epoch:2,leaseId,expiresAt:new Date(60000).toISOString()};
+  if(input.action==='PHONE')throw Error('raw endpoint data bearer-token=do-not-print');return {state:'OFF'};};
+ const result=await runDemoMotion({request,simulate:()=>assert.fail(),seconds:60,targets:['personal-truck'],sleep:async()=>{},onState:value=>states.push(structuredClone(value))});
+ assert.equal(result.failed,true);assert.equal(result.failureCode,'DEMO_RUN_FAILED');assert.equal(result.targets[0].failureCode,'DEMO_RUN_FAILED');
+ assert.equal(JSON.stringify({result,states}).includes('bearer-token'),false);
 });
 test('cleanup releases the first lease if the second target refuses to start',async()=>{
  const calls=[],leaseId=randomUUID();
@@ -91,4 +138,31 @@ test('GPS expiry during its final reservation ends normally without hiding an ea
  const request=async input=>{if(input.action==='START')return {state:'RUNNING',source:'GPS',epoch:1,leaseId:randomUUID(),expiresAt:new Date(10000).toISOString()};if(input.action==='GPS'){clock=10001;throw Error('DEMO_REPORT_DENIED');}return {};};
  const result=await runDemoMotion({request,seconds:10,targets:['company-truck'],now:()=>clock,sleep:async ms=>{clock+=ms;},simulate:async options=>{assert.equal(await options.beforeReport(),null);}});
  assert.equal(result.failed,false);assert.equal(result.targets[0].status,'STOPPED');
+});
+test('GPS reservation denial remains visible after its socket is aborted',async()=>{
+ const request=async input=>{if(input.action==='START')return {state:'RUNNING',source:'GPS',epoch:1,leaseId:randomUUID(),expiresAt:new Date(Date.now()+60000).toISOString()};
+  if(input.action==='GPS')throw Error('DEMO_REAL_DEVICE_TAKEOVER');return {};};
+ const result=await runDemoMotion({request,seconds:60,targets:['company-truck'],simulate:async options=>{
+  try{await options.beforeReport();}catch{throw Error('SIMULATION_REPORT_DENIED');}
+ }});
+ assert.equal(result.failed,true);assert.equal(result.failureCode,'DEMO_REAL_DEVICE_TAKEOVER');
+ assert.equal(result.targets[0].status,'PAUSED');
+});
+test('a failed target releases its own lease while other targets continue',async()=>{
+ let clock=0,releaseOther,stopped;
+ const otherGate=new Promise(resolve=>{releaseOther=resolve;});
+ const stoppedGate=new Promise(resolve=>{stopped=resolve;});
+ const request=async input=>{
+  if(input.action==='START')return {state:'RUNNING',source:'MOBILE',epoch:1,leaseId:randomUUID(),expiresAt:new Date(10000).toISOString()};
+  if(input.action==='PHONE'&&input.target==='personal-truck')throw Error('DEMO_REPORT_DENIED');
+  if(input.action==='PHONE')return otherGate;
+  if(input.action==='STOP'&&input.target==='personal-truck')stopped();
+  return {};
+ };
+ const pending=runDemoMotion({request,seconds:10,targets:['company-truck','personal-truck'],now:()=>clock,sleep:async ms=>{clock+=ms;}});
+ await stoppedGate;
+ releaseOther({recorded:true});
+ const result=await pending;
+ assert.equal(result.failed,true);
+ assert.equal(result.targets.find(row=>row.target==='personal-truck').failureCode,'DEMO_REPORT_DENIED');
 });

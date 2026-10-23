@@ -10,7 +10,7 @@
   background:#fff;
   border:1.5px solid currentColor;
   border-radius:50%;
-  box-shadow:0 1px 4px #172c4626;
+  box-shadow:0 1px 4px #0b1d3a26;
   pointer-events:none;
 }
 .badge svg { width:14px; height:14px; fill:none; stroke:currentColor; }

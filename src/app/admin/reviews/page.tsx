@@ -20,7 +20,7 @@ const tabs=[
   {id:'documents',label:'Documents',icon:BadgeCheck,permission:'TRUST'},
   {id:'ratings',label:'Ratings',icon:Star,permission:'TRUST'},
 ] as const;
-const documentSubjects:Record<string,string>={BUSINESS_WORKSPACE:'Business account',ORGANIZATION:'Transport Provider',PROVIDER_PROFILE:'Transport Provider',DRIVER:'Driver',VEHICLE:'Vehicle'};
+const documentSubjects:Record<string,string>={BUSINESS_WORKSPACE:'Shipper / broker account',ORGANIZATION:'Transport Provider',PROVIDER_PROFILE:'Transport Provider',DRIVER:'Driver',VEHICLE:'Vehicle'};
 const documentTypes:Record<string,string>={IDENTITY:'National ID',BUSINESS_LICENSE:'Business license',BUSINESS_ADDRESS:'Business address',DRIVER_IDENTITY:'Driver license',VEHICLE_OWNERSHIP:'Vehicle ownership',VEHICLE_AUTHORIZATION:'Permission to use vehicle',VEHICLE_OPERATING_LICENSE:'Vehicle operating licence'};
 export default async function AdminReviewsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['ADMIN','SUPPORT'],{allowLimited:true});

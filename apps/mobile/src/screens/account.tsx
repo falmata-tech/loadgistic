@@ -9,16 +9,16 @@ import {Redirect,useLocalSearchParams} from 'expo-router';
 import BusinessWorkspaces,{businessHome} from './business-workspaces';
 import { statusLabel } from '../api/tracking';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Switch, Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import { useAccountQuery } from '../hooks/account-query';
 import { useAccount } from '../session/provider';
-import { Page, Title, Copy, Card, Field, Button, ErrorText } from '../components/ui';
+import { Page, Title, Copy, Card, Field, Button, ErrorText, LoadingSpinner } from '../components/ui';
 const message = (error: unknown) => error instanceof Error ? error.message : 'Please try again.';
 export default function AccountScreen() {
   const account = useAccount();
   const {setup}=useLocalSearchParams<{setup?:string}>();
   const [committed,setCommitted]=useState<{actorId:string;kind:'ONBOARDING'|'JOIN_FLEET'}|null>(null);
-  if (account.busy) return <Page><ActivityIndicator accessibilityLabel="Restoring your account" /></Page>;
+  if (account.busy) return <Page><LoadingSpinner accessibilityLabel="Restoring your account" /></Page>;
   if (!account.session) return <Login />;
   if ((account.session.state === 'ONBOARDING'||account.session.user.role==='CUSTOMER')&&setup==='provider') return <Onboarding key={account.session.user.id} committed={committed?.actorId===account.session.user.id&&committed.kind==='ONBOARDING'} onCommitted={()=>setCommitted({actorId:account.session!.user.id,kind:'ONBOARDING'})}/>;
   if (account.session.state === 'ONBOARDING') return <BusinessWorkspaces/>;
@@ -54,7 +54,7 @@ function Onboarding({committed,onCommitted}:{committed:boolean;onCommitted:()=>v
   return <Page><Title message={"Set up your transporter account"}/><Copy message="Add vehicles and drivers from your workspace."/><ErrorText message={error} />
     <Field message="Account name" value={accountName} onChangeText={setAccountName} autoComplete="nickname" maxLength={140} editable={!busy}/><Copy message="Use your name or a name for your transport work."/>
     <Field message="Handle" value={handle} onChangeText={text=>setHandle(text.toLowerCase().replace(/^@/,''))} autoComplete="username" autoCapitalize="none" autoCorrect={false} maxLength={64} editable={!busy}/><Copy message="Use letters, numbers, underscores or hyphens."/>
-    <Text style={{fontSize:17,fontWeight:'700',color:'#172c46'}}>{t('Account manager')}</Text><Copy message="Only your first name is shown as Account manager."/>
+    <Text style={{fontSize:17,fontWeight:'700',color:'#0b1d3a'}}>{t('Account manager')}</Text><Copy message="Only your first name is shown as Account manager."/>
     <Field message="First name" value={firstName} onChangeText={setFirstName} autoComplete="given-name" maxLength={100} editable={!busy} />
     <Field message="Last / father name" value={lastName} onChangeText={setLastName} autoComplete="family-name" maxLength={100} editable={!busy} /><Copy message="Private. Your last or father name is not shown publicly."/>
     <Field message="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" maxLength={32} editable={!busy} />
@@ -69,7 +69,7 @@ function Invitations({committed,onCommitted}:{committed:boolean;onCommitted:()=>
   useEffect(() => { let mounted = true;if(committed)return;request('/api/mobile/invitations').then(value => { if (mounted) setItems((value as { invitations: Invitation[] }).invitations); }).catch(error => { if (mounted) setError(message(error)); }).finally(()=>{if(mounted)setLoading(false);}); return () => { mounted = false; }; }, [request,committed]);
   const accept = async (id?: string) => { if(lock.current)return;lock.current=true;setBusy(true); setError(''); try { if(!committed){await account.request('/api/mobile/invitations', { invitationId: id });onCommitted();}await account.reload(); } catch (error) { setError(message(error)); } finally { lock.current=false;setBusy(false); } };
   if(committed)return <Page><Title message="Join your fleet"/><Copy message="Your fleet membership is saved. Try again to open your workspace."/><ErrorText message={error||account.error}/><Button message="Try again" busy={busy} onPress={()=>{void accept();}}/><SignOut/></Page>;
-  return <Page><Title message={"Join your fleet"}/><ErrorText message={error} />{(busy||loading) && <ActivityIndicator />}{items.map(item => <Card key={item.id}><Title>{item.organization_name}</Title><Copy>{t('Join as {name}, company driver.',{name:item.driver_name})}</Copy>{item.can_accept && <Button message="Join fleet" busy={busy} onPress={() => accept(item.id)} />}</Card>)}{!busy&&!loading && !items.length && <Copy message={"No pending invitation. Ask your fleet owner to invite this email."}/>}<SignOut /></Page>;
+  return <Page><Title message={"Join your fleet"}/><ErrorText message={error} />{(busy||loading) && <LoadingSpinner />}{items.map(item => <Card key={item.id}><Title>{item.organization_name}</Title><Copy>{t('Join as {name}, company driver.',{name:item.driver_name})}</Copy>{item.can_accept && <Button message="Join fleet" busy={busy} onPress={() => accept(item.id)} />}</Card>)}{!busy&&!loading && !items.length && <Copy message={"No pending invitation. Ask your fleet owner to invite this email."}/>}<SignOut /></Page>;
 }
 type DashboardData = { profilePublished: boolean | null; counts: { label: string; value: number }[]; recent: { id: string; code: string; origin: string; destination: string; summary: string; status: string }[] };
 function Dashboard() {
@@ -78,7 +78,7 @@ function Dashboard() {
   const { data, error, reload } = useAccountQuery<DashboardData>('/api/mobile/dashboard');
   return <Page><Title>{session.user.providerAccountName || session.user.organizationName || session.user.businessName || session.user.name}</Title><Copy>{t(session.user.role === 'DRIVER' ? 'Your driving workspace' : 'Your transport workspace')}</Copy><ErrorText message={error} />
     {!session.access?.granted ? <Card><Title message={"Workspace access is limited"}/><Copy message={"This account is not linked to a transport workspace."}/><ActionLink href="/support" message="Support" icon="help"/></Card> : <>
-      {!data && !error && <ActivityIndicator accessibilityLabel="Loading your dashboard" />}
+      {!data && !error && <LoadingSpinner accessibilityLabel="Loading your dashboard" />}
       {!!error && <Button message="Try again" onPress={() => { void reload(); }} />}
       <ProfileSetup published={data?.profilePublished} /><ActionLink href="/manage-capacity" message="Vehicle capacity" icon="location"/>
       <ActionLink href="/shipments" message="Tracking" icon="route"/>
@@ -86,7 +86,7 @@ function Dashboard() {
       <ActionLink href="/network" message="Who can see my vehicles" icon="network"/>
       {session.user.role!=='DRIVER'&&<View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>{data?.counts.map(item => <View key={item.label} style={{ width: '48%' }}><Card><Copy>{t(item.label)}</Copy><Title>{item.value}</Title></Card></View>)}</View>}
       <Title message={"Recent tracking"}/>{data?.recent.length === 0 && <Copy message={"No tracking activity yet."}/>}
-      {data?.recent.map(item => <Card key={item.id}><Text>{item.code}</Text><Copy>{item.origin} → {item.destination}</Copy><Copy>{item.summary}</Copy><Copy>{t(statusLabel(item.status))}</Copy><AppLink href={{ pathname: '/shipment-detail', params: { id: item.id } }} style={{ color: '#0c7275', paddingVertical: 12 }} message={"Open shipment"}/></Card>)}
+      {data?.recent.map(item => <Card key={item.id}><Text>{item.code}</Text><Copy>{item.origin} → {item.destination}</Copy><Copy>{item.summary}</Copy><Copy>{t(statusLabel(item.status))}</Copy><AppLink href={{ pathname: '/shipment-detail', params: { id: item.id } }} style={{ color: '#155eef', paddingVertical: 12 }} message={"Open shipment"}/></Card>)}
     </>}
   </Page>;
 }

@@ -335,7 +335,7 @@ And detailed explanatory storytelling is linked through About rather than repeat
 And the homepage itself contains an always-accessible truck search, dismissible filters, location controls, and the interactive Truck Map rather than separate listing pages\
 And no ranked Truck List competes with geographic discovery\
 And location permission is requested as soon as the Board becomes interactive so nearby supply can be shown without another setup step\
-And pointed pins with visible truck artwork, a complete green Empty ring, or a complete yellow Partial ring let visitors scan vehicle type and status before opening details without interpreting a percentage meter\
+And pointed pins with visible vehicle artwork, a complete cobalt Empty ring, or a complete amber Partial ring let visitors scan vehicle type and status before opening details without interpreting a percentage meter\
 And the map key stays visible while contextual map summaries appear only on hover or focus above the related marker\
 And Open capacity, Private capacity, Track, Featured, About, and transporter account access are easy to find while a new identity continues to provider setup only after proof\
 And no account prompt blocks browsing, filtering, map view, transporter details, or contact methods the transporter made public.
@@ -346,7 +346,7 @@ Given a visitor moves between public pages\
 When layout and color are rendered\
 Then the base uses warm white or off-white surfaces, generous spacing, and restrained borders\
 And public workspace titles use a compact application scale that leaves the primary tool visible rather than an oversized editorial scale\
-And the shared brand palette uses deep navy `#0B1D3A`, teal `#0D6B6E`, aqua `#27A5A1`, and restrained amber `#F2B01E` over white or `#F3F5F7` surfaces\
+And the shared brand palette uses deep navy `#0B1D3A`, cobalt `#155EEF`, and restrained amber `#F2B01E` over white or `#F3F5F7` surfaces; purple identifies GPS location sources, and green is not used for UI branding or capacity status\
 And saturated Loadgistic colors are reserved for clear actions, current state, small trust accents, and navigation focus\
 And large dark or heavily colored bands do not compete with the main page task.
 
@@ -677,7 +677,7 @@ And every confirmed defect is recorded with its affected actor, viewport, route,
 
 Given content is loading in a map or search result surface\
 When the user waits for its response\
-Then a restrained teal horizontal activity indicator communicates ongoing work\
+Then a restrained cobalt horizontal activity indicator communicates ongoing work\
 And an accessible text label remains available without displaying a text-only loading notice\
 And the indicator does not fabricate a percentage or block existing controls\
 And reduced-motion preference replaces animation with a static treatment\

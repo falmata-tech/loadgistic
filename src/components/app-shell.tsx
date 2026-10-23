@@ -73,9 +73,9 @@ const mobileNavigation: Record<string, string[]> = {
 };
 
 const roleLabels: Record<string, string> = {
-  CUSTOMER: 'Business workspace',
-  SHIPPER: 'Business',
-  RECEIVER: 'Business',
+  CUSTOMER: 'Shipper / broker workspace',
+  SHIPPER: 'Shipper / broker',
+  RECEIVER: 'Receiver',
   TRANSPORTER: 'Transport Provider',
   DRIVER: 'Transport Provider',
   ADMIN: 'Platform administrator',
@@ -83,7 +83,7 @@ const roleLabels: Record<string, string> = {
 };
 
 function workspaceRoleLabel(user:any) {
-  if(user.role==='CUSTOMER')return user.selected_business_workspace?.membershipRole==='OWNER'?'Owner':user.selected_business_workspace?.membershipRole==='ADMIN'?'Business admin':'Team member';
+  if(user.role==='CUSTOMER')return user.selected_business_workspace?.membershipRole==='OWNER'?'Owner':user.selected_business_workspace?.membershipRole==='ADMIN'?'Workspace admin':'Team member';
   if(user.role==='SUPPORT'){
     const responsibilities=[['can_manage_featured','Featured'],['can_manage_support','Support'],['can_manage_customers','Customers'],['can_manage_operations','Operations'],['can_manage_trust','Trust']].filter(([field])=>user[field]);
     return responsibilities.length===1?responsibilities[0][1]:'Platform team';

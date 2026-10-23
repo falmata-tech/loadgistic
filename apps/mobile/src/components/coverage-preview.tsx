@@ -3,14 +3,14 @@ import {View} from 'react-native';
 import {Map,Camera,GeoJSONSource,Layer} from './map-platform';
 import {coverageBounds,coverageGeometry} from '../map/coverage-preview';
 import {mapStyle} from './map-style';
-import {Copy,ErrorText} from './ui';
+import {Copy,ErrorText,palette} from './ui';
 import {useLanguage} from '../localization/provider';
 import type {Place} from './place-picker';
 export function CoveragePreview({kind,places,regular=false}:{kind:string;places:Place[];regular?:boolean}){
  const {t}=useLanguage();
  const feature=useMemo(()=>coverageGeometry(kind,places),[kind,places]);
  const [failed,setFailed]=useState('');
- const signature=JSON.stringify(feature),color=regular?'#c06620':'#16845b';
+ const signature=JSON.stringify(feature),color=regular?'#c06620':palette.blue;
  if(!feature)return <Copy message="Choose all cities to see the coverage preview."/>;
  return <View style={{gap:8}}><View style={{height:240,borderRadius:14,overflow:'hidden'}}>
   <Map key={signature} style={{flex:1}} androidView="texture" mapStyle={mapStyle} attribution onDidFailLoadingMap={()=>setFailed(signature)} onDidFinishLoadingMap={()=>setFailed('')}>

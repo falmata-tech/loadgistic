@@ -26,9 +26,11 @@ begin
   'location_source','DEVICE_OBSCURED','approximate_lat',9.03,'approximate_lng',38.74,'location_precision_km',20));
  workspace:=(business_workspace_create(owner_id,jsonb_build_object('name','Synthetic capacity broker','handle','capacity161-'||substr(owner_id::text,1,12),'kind','BROKER'))->>'id')::uuid;
  other_workspace:=(business_workspace_create(foreign_id,jsonb_build_object('name','Synthetic other shipper','handle','capacity161-'||substr(foreign_id::text,1,12),'kind','SHIPPER'))->>'id')::uuid;
+ perform pg_temp.assert_business_capacity(jsonb_array_length(business_workspace_search(provider_id,'Synthetic capacity broker',10))=1,'UNREVIEWED_RECIPIENT_NOT_SEARCHABLE');
  perform pg_temp.assert_business_capacity((select count(*)=0 from business_capacity_filtered_page(owner_id,workspace)),'UNSHARED_TRUCK_VISIBLE');
  perform pg_temp.capacity_business_denied(format('select grant_business_capacity_access(%L,%L,%L)',foreign_id,truck,workspace),'BUSINESS_FORBIDDEN');
  result:=grant_business_capacity_access(provider_id,truck,workspace);grant_id:=(result->>'id')::uuid;
+ perform pg_temp.assert_business_capacity((result->>'created')::boolean,'UNREVIEWED_BUSINESS_SHARE_DENIED');
  select p.payload into payload from business_capacity_filtered_page(owner_id,workspace) p;
  perform pg_temp.assert_business_capacity(payload->>'vehicle_id'=truck::text and payload->>'access_scope'='BUSINESS','TEAM_SHARE_MISSING');
  perform pg_temp.assert_business_capacity(payload->>'assigned_driver_first_name'='Synthetic' and payload->>'cargo_configuration'='Mini Box Truck','EXISTING_SAFE_PROJECTION_LOST');
@@ -65,6 +67,6 @@ begin
  perform pg_temp.capacity_business_denied(format('select * from business_capacity_filtered_page(%L,%L)',staff_id,workspace),'BUSINESS_FORBIDDEN');
  perform pg_temp.assert_business_capacity(not has_table_privilege('anon','business_capacity_grants','SELECT') and not has_table_privilege('authenticated','business_capacity_grants','SELECT') and (select relrowsecurity from pg_class where oid='business_capacity_grants'::regclass),'BROWSER_TABLE_ACCESS');
  perform pg_temp.assert_business_capacity(not has_function_privilege('service_role','business_capacity_rows(uuid,uuid,timestamptz,uuid,integer,jsonb)','EXECUTE') and not has_function_privilege('authenticated','business_capacity_filtered_page(uuid,uuid,timestamptz,uuid,integer,jsonb)','EXECUTE'),'PROJECTION_BYPASS');
- raise notice 'PASS: exact business shares, new/current/removed staff, rich filters, personal-email isolation, exclusive policy, publisher revocation and ACL';
+ raise notice 'PASS: unverified businesses remain discoverable/shareable; team shares, staff, filters, personal-email isolation, exclusive policy, revocation and ACL';
 end $test$;
 rollback;

@@ -1,14 +1,14 @@
 import { useRef, useState, type PropsWithChildren } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { apiRequest } from '../api/http';
 import { useVisitor } from '../session/visitor-provider';
 import type { VisitorScope } from '../session/visitor-controller';
-import { Button, Card, Copy, ErrorText, Field, Title } from './ui';
+import { Button, Card, Copy, ErrorText, Field, Title, LoadingSpinner } from './ui';
 import {useLanguage} from '../localization/provider';
 import {useAccount} from '../session/provider';
 export function VisitorAccess({ scope, children }: PropsWithChildren<{ scope: VisitorScope }>) {
  const visitor = useVisitor(), [error, setError] = useState('');
- if (!visitor.ready) return <ActivityIndicator accessibilityLabel="Checking saved email access" />;
+ if (!visitor.ready) return <LoadingSpinner accessibilityLabel="Checking saved email access" />;
  if (!visitor.snapshot.foreground) return <Copy message={"Private access is paused while the app is in the background."}/>;
  if (!visitor.snapshot[scope]) return <VisitorLogin key={scope} scope={scope} />;
  return <View style={{ flex: 1, gap: 12 }} onTouchStart={() => { void visitor.controller.touch(scope).catch(error => setError(error instanceof Error ? error.message : 'Could not renew email access.')); }}>

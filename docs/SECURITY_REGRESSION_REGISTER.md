@@ -1,5 +1,207 @@
 # Security failures we must not repeat
 
+## NR-72 — Mobile email-code handoff claimed delivery after Auth denial
+
+**Observed October 22:** during the Expo broker sign-in check, the mobile Auth
+request route ignored Supabase's returned error and showed code entry. The local
+test inbox received no corresponding message. This proves a false success state,
+not its underlying SMTP or rate-limit cause.
+
+**Repair and control:** only an explicit successful Auth response creates the
+short-lived handoff. A returned 429 or thrown 429 produces a generic wait
+message; other failure produces a generic temporary error without exposing
+provider details or the recipient. Six focused identity/OTP tests, source/spec
+checks, typecheck and translation audit pass. A later synthetic code arrived in
+the local inbox; Expo Web Chrome signed in and completed both private broker
+filter tasks without page errors. Installed Android sign-in remains a separate
+check. Owner: mobile identity maintainer.
+
+## NR-71 — Protected local demo secret printed during inspection
+
+**Observed October 22:** a read-only search of a protected, ignored local demo
+runtime file included the value of its HMAC secret in a private tool trace. The
+file was not committed or published, and this was a local-only demo credential;
+it was nevertheless an unnecessary disclosure to the working trace.
+
+**Control and repair:** inspect only allowlisted environment key names, never
+their values, when identifying configuration shape. The local HMAC was replaced
+with new random bytes without printing either value, the file retained mode
+`0600`, and only the Loadgistic localhost web process was restarted with the
+replacement. The preview is listening again on port 3100. Production secrets
+and hosted settings were not accessed or changed.
+
+**Limit:** a prose rule does not prevent an arbitrary shell command from printing
+a secret. Owner: local development workflow maintainer. Review future tool
+commands that touch protected paths before execution; keep values out of command
+arguments, output and committed evidence.
+
+## NR-70 — A shared filter-shape change leaves a web-only initializer behind
+
+**Observed October21:** Capacity document choices moved from an object to a
+shared array used by web and Expo. The web component still built its selected
+state with `Object.keys(array)`, so its keys became `0`, `1`, `2` instead of
+`ownerDocs`, `driverDocs`, and `truckDocs`; rendering then read an undefined
+selection and crashed the Capacity page. Typecheck did not detect the mismatch.
+The first E2E run found this real regression. Its next attempt spent the full
+two-minute test timeout on an old `Transporter search` button label; the current
+button is `Search transporters` and the field is a separate textbox with the
+same label.
+
+**Control:** when changing a shared data shape, inspect all consumers and state
+initializers, not only the shared helper. Add browser checks that render every
+group on both clients, and update all affected selectors alongside the UI.
+When a button and field share an accessible label, use role-specific locators.
+Run the exact focused workflow once before broader gates; classify a failure as
+product behavior or stale test contract before retrying.
+
+**Verified repair:** web initialization now derives all selected keys from the
+array's explicit `key` property. The Expo filter unit tests and focused API/SSR
+filter tests pass. Actual Chrome passes web filter workflows at desktop and
+phone widths, web nearby-location privacy and transporter search, and Expo
+multi-option apply/reset plus route and nearby-radius submission. The exact
+source typechecks, source/spec validation pass, and updated screen captures are
+in `.local/product-audit-20261021/filter-parity-review/`. Owner visual review,
+full release gates and publication remain pending. No production state changed.
+
+## NR-69 — Prebuilt publication omits adapter image routing
+
+**Observed October21:** the live web APIs and direct static images worked, but
+`/_next/image` returned400 for vehicle illustrations. The original JPEGs were
+valid and byte-identical to source. Netlify's direct Image CDN decoded them.
+The frozen build contained the adapter's image redirects, while its root config
+did not; the installed CLI's no-build path used the root configuration without
+the adapter's build-time additions. Existing deployment checks missed this
+configuration boundary.
+
+**Control:** inspect actual installed CLI parsing/configuration rather than
+assuming a flag or a generated file is consumed. Preserve only the required
+adapter routing from the exact qualified artifact; do not wholesale-activate
+unrelated generated environment, plugin, path or cache fields. Verify optimized
+images at two supported widths in HTTP and real desktop/phone Chrome. Prove
+invalid/nonimage requests and anonymous private-file/proxy requests cannot
+expose private bytes. Keep compiled payload/source equality and runtime
+environment checks separate.
+
+**Verified repair:** the same six function ZIPs,461 static and172 edge files
+were published with only three existing adapter image redirects activated.
+Deployment6ad86887a637e6b8a2e70b44 passes16 focused HTTP cases, including six
+image decodes and repeated private-file denial. Chrome desktop/phone shows eight
+Featured cards, eight decoded vehicle images and zero image400 responses.
+Health is200 with no runtime blockers; public capacity remains48 and Featured8.
+Evidence: `.local/image-routing-20261021/`.
+
+**Limits and preparation corrections:** the preview intentionally lacked
+production runtime configuration; its failed full-runtime check was preserved,
+not relabeled green or repaired by copying secrets. Production runtime was
+verified independently. Installed CLI27.1.1 rejected the assumed `--config`
+flag in an inert parser test, before credentials or provider writes; the
+supported command used a narrow read-only configuration overlay instead.
+The separate local backup-verification harness also assumed a database-guard
+token existed in a read-only query. It did not. An identity-pinned finish-only
+check completed on the already restored clone, preserving the failed attempt;
+neither backup nor restore was replayed. Read the selected input contract before
+generating replacements.
+
+**Enforcement / next:** the26 focused routing/operator tests and real published
+checks passed for this release. Their protected one-time operators are not a
+permanent CI installation. The canonical release runbook now requires these
+checks; wire reusable image/proxy assertions into the maintained deployment
+checker when that checker is next changed. Do not claim documentation alone
+prevents another publication omission. Owner: release/workflow maintainer.
+
+## NR-68 — A dependency is assigned without starting the idle agent
+
+**Observed October21:** during the Featured data-repair preparation, new
+instructions were sent with `send_message` after the receiving agent had
+completed its turn. That tool queues a message but does not start an idle agent.
+Waiting for a new diagnosis therefore delayed the next executable step until
+`followup_task` explicitly resumed the agent. No product or database failure
+caused this coordination delay.
+
+**Control:** use `followup_task` for a new task on an idle/completed agent and
+`send_message` for an agent already running. Check actual task status before
+waiting for a dependency, and keep file ownership and its expected result
+explicit. Do not infer that a queued instruction means work has started.
+
+**Evidence and limits:** completion notifications and the explicit subsequent
+follow-up established the ordering. No raw chat transcript is retained and no
+unmeasured token/time saving is claimed. This is a mandatory coordination
+procedure, not a new automated enforcement mechanism.
+
+**Owner / next:** coordinating agent; apply this check before the next delegated
+step. Preserve existing independent source review and narrow task scopes.
+
+## NR-67 — Existing Featured rosters lose every eligible entry after a rule change
+
+**Observed October21:** the published Pickup day retained eight saved slots,
+but the actual public response and desktop/phone Chrome rendered zero vehicles.
+All fifteen current-theme candidates failed the fleet-publication rule: their
+providers had multiple Live vehicles without the required qualifying ownership
+or financed operating-licence review. The scheduled worker preserved the saved
+day as designed. Rotation tests created fresh qualifying fixtures and therefore
+did not establish compatibility with the existing hosted demo fleets.
+
+**Cause and responsibility:** the rollout checked the new eligibility rule and
+rotation in isolation but missed checking their combined effect on existing
+saved selections. This is a release-validation and demo-data compatibility gap;
+passing CI and a successful database update did not prove Featured was usable.
+
+**Required prevention:** when changing publication or eligibility, rehearse
+against restored existing saved selections as well as new fixtures. Compare the
+saved day, candidate eligibility and actual public projection before publication;
+reconcile an unexpectedly empty scheduled day explicitly. Repeat the actual
+public desktop/phone check after deployment. Preserve legitimate exclusions and
+manual days. Never fabricate reviewed ownership, treat a declared owner as
+verified, or change customer records to make a demonstration appear populated.
+
+**Evidence and limits:** protected findings are under
+`.local/authority-search-path181/featured-live-*`; the published Chrome smoke is
+`.local/browser-workflow-20261021/published-smoke/evidence.json`. All affected
+rows were matched to controlled synthetic fixture identities, not names. No
+existing approved qualifying request or explicit authority fact was found for
+the affected scopes. The owner-approved44-pair correction is now committed and
+independently verified: all seven saved days retain eight eligible same-category
+vehicles, with privacy and documents unchanged. The separately approved nine-demo
+mix also preserves that eligibility. Receipts are in `.local/featured44-renewal1/`
+and `.local/demo9-renewal1/`. The new optional-document/saved-roster regression
+passes locally; it is not yet registered in the canonical CI SQL runner.
+
+**Diagnostic correction:** a later investigation initially inferred an approved-
+document requirement from historical040, but080 already removed it and the
+installed181 function confirms documents are optional. A proposed next-trip
+dependency likewise referred to013 even though014 dropped that relation. Both
+claims were corrected before implementation; neither justifies a new migration.
+Inspect current catalog/final definitions before treating old source as a current
+rule (NR-62). The focused rollback-only optional-document/saved-roster regression
+passes against the isolated181 restore; no new eligibility function is needed.
+
+**Repair-preflight finding:** the initial disposable-account classification checked
+vehicle-subject documents but missed requests linked through `related_vehicle_id`.
+The broader transaction guard stopped before mutation when25 selected pairs had
+such links. Do not call those records dependency-free, discard their documents,
+or remove the guard to make rehearsal pass. Classify the current subject, scope,
+status and file authority; preserve and prove access or choose another reviewed
+correction. Dependency discovery must follow both subject and relationship keys.
+
+**Operational preparation:** the corrected atomic rehearsal passed all seven
+saved days at eight eligible pairs and restored its exact baseline. Failed
+preparations are retained: a local record/SQL-alias collision, an overstrict
+backup check confusing25 vehicle-linked reviews with97 total personal records,
+and a reused Auth restore helper restricted to the old clone-name pattern.
+A later diversity harness repeated the local-record/SQL-alias collision with
+`v` after the earlier `d` collision. Use explicit names such as `target_record`
+for procedural records and inspect every inline block before replaying commands.
+Static/pure tests did not exercise those runtime boundaries. Diagnose the first
+failing stage, preserve actual snapshots, and resume only the known incomplete
+step; do not restart full CI or erase partial-clone evidence. Validate identity
+inputs through imported helpers before beginning a multi-stage restore.
+
+**Owner / next:** release and Featured maintainers; prepare the smallest truthful
+demo-data correction, obtain any required exact hosted-operation approval, then
+verify the real public cards. Add a rollback-only existing-roster eligibility
+transition regression and an operational projection check before claiming this
+prevention is automated. Featured remains unresolved until that evidence exists.
+
 ## NR-66 — Local catalog checks omit a function-security advisor condition
 
 **Observed October20:** after the approved42SQL rollout through180, the hosted
@@ -9,7 +211,7 @@ mirror this function-configuration rule. The function is SQL/STABLE/invoker and
 not directly executable by public, signed-in or service roles; those facts limit
 exposure but do not remove the warning or authorize a release exception.
 
-**Control being implemented:** check explicit search paths on every first-party
+**Installed control:** check explicit search paths on every first-party
 public function locally, excluding extension-owned objects, with rolled-back
 unsafe invoker/definer fixtures. Harden only the affected helper; preserve its
 body, signature, owner, ACL and authority outcomes. Test caller-path shadowing
@@ -21,11 +223,16 @@ inlining, so a one-line fix cannot be assumed performance-neutral.
 synthetic owner and stopped before timing; correctness probes alone are not
 scale qualification. The SET-only candidate passes nine focused SQL suites and
 14 negative gate fixtures, but5000-vehicle profile search took12.265s against5s.
-It is not deployable. The equivalent private security-invoker view candidate
-preserves exact predicates and permission scope and remains under qualification.
-No third-warning exception or181 hosted repair is approved.
-**Owner / next:** security and release maintainer; finish targeted regression,
-fresh exact SQL review and independent hosted postcheck before web publication.
+It was rejected. The equivalent private security-invoker view implementation
+preserves exact predicates and permission scope. It passed all16 required CI
+jobs oncad46f1 (run39528806968), the fresh backup rehearsal and nine SQL suites.
+The owner approved181; it was applied once on October21 at03:17Z. Independent
+hosted readback and security checks confirm this warning is removed. Only the
+two previously approved warnings remain; no third-warning exception was used.
+Receipts are under `.local/authority-search-path181/`.
+**Owner / next:** security and release maintainer; retain the installed gate and
+negative fixtures on future function changes. Web publication and100 API checks
+pass; the separate Featured compatibility finding is tracked in NR-67.
 
 ## NR-65 — Browser actions run before their target screen is ready
 

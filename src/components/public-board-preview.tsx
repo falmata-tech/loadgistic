@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Banknote, Boxes, CalendarClock, CircleDotDashed, Clock3, Eye, Gauge, Layers3, MapPin, MapPinned, Route, Truck, UserRound, Waypoints } from 'lucide-react';
 import { vehicleConfigurationImage } from '@/lib/vehicle-configurations';
+import {capacityLoadLabel,capacityLoadPreference} from '@/lib/capacity-load-preferences';
 
 type ShipmentPreview={movement_scope:string;origin?:string|null;destination?:string|null;local_place_label?:string|null;pickup_area_label?:string|null;dropoff_area_label?:string|null;load_type?:string|null;vehicle_category?:string|null;pickup_label?:string|null;delivery_label?:string|null;price_mode?:string|null;price_minor?:number|null;distribution_mode?:string|null;posted_label?:string|null};
 type TruckPreview={status:string;movement_scope?:string|null;local_place_label?:string|null;local_radius_km?:number|null;location_area?:string|null;location_precision_km?:number|null;current_route_origin?:string|null;current_route_destination?:string|null;origin?:string|null;destination?:string|null;travel_date?:string|null;planned_space_status?:string|null;cargo_configuration?:string|null;accepts_full_load:boolean;accepts_partial_load:boolean;accepts_multi_pick:boolean;accepts_multi_drop:boolean;proof_available:boolean;freshness?:string|null;updated_label?:string|null};
@@ -25,11 +26,7 @@ function shipmentRoute(shipment:ShipmentPreview){
   return `${shipment.origin||'Origin'} → ${shipment.destination||'Destination'}`;
 }
 
-function acceptedLoads(truck:TruckPreview){
-  if(truck.accepts_full_load&&truck.accepts_partial_load)return 'Whole vehicle or shared space';
-  if(truck.accepts_partial_load)return 'Shared space';
-  return 'Full Truckload (FTL)';
-}
+function acceptedLoads(truck:TruckPreview){const preference=capacityLoadPreference(truck.status,truck.accepts_full_load,truck.accepts_partial_load);return preference?capacityLoadLabel(preference):null;}
 
 function stopPolicy(truck:TruckPreview){
   if(truck.accepts_multi_pick&&truck.accepts_multi_drop)return 'Multi pick + drop';
@@ -82,8 +79,8 @@ export function PublicBoardPreview({initialBoard,shipments,trucks,shared}:{initi
           <div className="preview-tags"><span>{shipment.movement_scope==='LOCAL'?<Text message="Local"/>:<Text message="Long-distance route"/>}</span><span>{shipment.distribution_mode==='OPEN_MARKET'?<Text message="Public"/>:<Text message="Limited"/>}</span><span><Text message="Posted "/>{shipment.posted_label||'recently'}</span></div>
           <div className="preview-card-actions"><Link href="/login" className="button secondary"><Eye aria-hidden="true"/><Text message="Details"/></Link><Link href="/login" className="button"><UserRound aria-hidden="true"/><Text message="Contact"/><ArrowRight aria-hidden="true"/></Link></div>
         </article>)}</>:(trucks as TruckPreview[]).map((truck,index)=><article className="locked-board-card rich-preview-card" key={index}>
-          <div className="preview-card-main truck-preview-main"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt="" width={120} height={120}/><div><div className="preview-card-title"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}>{capacityStatus(truck.status)}</span><h3><Text message={truck.cargo_configuration||'Available vehicle'}/></h3></div><p className="preview-route"><Route aria-hidden="true"/>{truckRoute(truck)}</p></div></div>
-          <div className="locked-card-facts"><div><MapPin aria-hidden="true"/><span><small><Text message="Current area"/></small><strong>{truck.location_area||truck.local_place_label||'Area not set'}</strong></span></div><div><Boxes aria-hidden="true"/><span><small><Text message="Shipment size"/></small><strong>{acceptedLoads(truck)}</strong></span></div><div><Route aria-hidden="true"/><span><small><Text message="Stops"/></small><strong>{stopPolicy(truck)}</strong></span></div><div><Clock3 aria-hidden="true"/><span><small><Text message="Updated"/></small><strong>{truck.updated_label||truck.freshness||'Recently updated'}</strong></span></div></div>
+          <div className="preview-card-main truck-preview-main"><Image className="truck-thumbnail large" src={vehicleConfigurationImage(truck.cargo_configuration)} alt="" width={120} height={120}/><div><div className="preview-card-title"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}>{capacityStatus(truck.status)}</span>{acceptedLoads(truck)?<span className="preview-load-preference"><Boxes aria-hidden="true"/><Text message={acceptedLoads(truck)!}/></span>:null}<h3><Text message={truck.cargo_configuration||'Available vehicle'}/></h3></div><p className="preview-route"><Route aria-hidden="true"/>{truckRoute(truck)}</p></div></div>
+          <div className="locked-card-facts"><div><MapPin aria-hidden="true"/><span><small><Text message="Current area"/></small><strong>{truck.location_area||truck.local_place_label||'Area not set'}</strong></span></div><div><Route aria-hidden="true"/><span><small><Text message="Stops"/></small><strong>{stopPolicy(truck)}</strong></span></div><div><Clock3 aria-hidden="true"/><span><small><Text message="Updated"/></small><strong>{truck.updated_label||truck.freshness||'Recently updated'}</strong></span></div></div>
           <div className="preview-tags"><span>{truck.movement_scope==='BOTH'?<Text message="Local + long-distance"/>:truck.movement_scope==='LOCAL'?<Text message="Local"/>:<Text message="Long-distance route"/>}</span><span>{truck.proof_available?<Text message="Photo recorded"/>:<Text message="No photo"/>}</span></div>
           <div className="preview-card-actions"><Link href="/login" className="button secondary"><Eye aria-hidden="true"/><Text message="Details"/></Link><Link href="/login" className="button"><UserRound aria-hidden="true"/><Text message="Contact"/><ArrowRight aria-hidden="true"/></Link></div>
         </article>)}

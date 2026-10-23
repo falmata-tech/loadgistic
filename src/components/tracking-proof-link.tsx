@@ -6,6 +6,7 @@ import {Image} from 'lucide-react';
 import {Text,useTranslation} from '@/components/localization';
 import {TrackingDetailDialog} from '@/components/tracking-detail-dialog';
 import {PRIVATE_UPLOAD_MAX_BYTES} from '@/lib/upload-policy.js';
+import {isDemoTrackingShipment,demoTrackingLabel} from '@/lib/demo-tracking-identity.js';
 
 const imageTypes=new Set(['image/jpeg','image/png','image/webp']);
 
@@ -36,8 +37,9 @@ function TrackingProofPhoto({shipmentId,eventId}:{shipmentId:string;eventId:stri
 
 export function TrackingProofLink({shipmentId,eventId}:{shipmentId:string;eventId:string}){
   const [open,setOpen]=React.useState(false),[ready,setReady]=React.useState(false);
+  const demo=isDemoTrackingShipment(shipmentId);
   React.useEffect(()=>setReady(true),[]);
-  return <><button type="button" className="button secondary small" disabled={!ready} onClick={()=>setOpen(true)}><Image aria-hidden="true"/><Text message="Open proof"/></button>
-    {open?<TrackingDetailDialog title="Shipment proof" closeLabel="Close proof" className="tracking-proof-dialog" onClose={()=>setOpen(false)}><TrackingProofPhoto shipmentId={shipmentId} eventId={eventId}/></TrackingDetailDialog>:null}
+  return <><button type="button" className="button secondary small" disabled={!ready} onClick={()=>setOpen(true)}><Image aria-hidden="true"/><Text message={demo?demoTrackingLabel('proof'):'Open proof'}/></button>
+    {open?<TrackingDetailDialog title={demo?demoTrackingLabel('proof'):'Shipment proof'} closeLabel="Close proof" className="tracking-proof-dialog" onClose={()=>setOpen(false)}><TrackingProofPhoto shipmentId={shipmentId} eventId={eventId}/></TrackingDetailDialog>:null}
   </>;
 }

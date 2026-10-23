@@ -1,9 +1,9 @@
 import {useRef,useState} from 'react';
-import {ActivityIndicator,Text,View} from 'react-native';
+import { Text, View } from 'react-native';
 import {useAccount} from '../session/provider';
 import {useAccountQuery} from '../hooks/account-query';
 import {useLanguage} from '../localization/provider';
-import {Button,Copy,ErrorText,Field,palette} from './ui';
+import { Button, Copy, ErrorText, Field, palette, LoadingSpinner } from './ui';
 import {Choices} from './choices';
 import {DatePicker} from './date-picker';
 import {FilePicker,PrivateFile,uploadBody,useFileSelection} from './private-file';
@@ -13,9 +13,9 @@ import type {BusinessDocumentsView} from '../../../../src/lib/business-directory
 
 export function BusinessDocuments({workspaceId,canManage,summary=false}:{workspaceId:string;canManage:boolean;summary?:boolean}){
  const account=useAccount(),{t}=useLanguage(),query=useAccountQuery<unknown>(`/api/business-workspaces/${workspaceId}/documents`);
- let data:BusinessDocumentsView|null=null,invalid='';try{if(query.data)data=parseBusinessDocuments(query.data,workspaceId,canManage);}catch{invalid=t('Could not load business details. Please try again.');}
- return <View style={{gap:16}}><ErrorText message={query.error||invalid}/>{query.loading&&<ActivityIndicator/>}{data&&<BusinessDocumentBadges documents={data.documents}/>}
-  {!summary&&data&&canManage&&<><Copy message="Documents are private and reviewed by Loadgistic administrators."/><Submit key={`${workspaceId}:${data.subjects[0]?.allowedTypes.join(',')}`} data={data} reload={query.reloadConfirmed}/><Text style={{fontSize:17,fontWeight:'700',color:palette.ink}}>{t('Request history')}</Text>{data.requests.length?data.requests.map(request=><View key={request.id} style={{gap:8,paddingVertical:12,borderTopWidth:1,borderColor:palette.border}}><Text style={{fontSize:15,fontWeight:'600',color:palette.ink}}>{request.name}</Text><Copy>{t(businessDocumentLabel(request.type))} · {t(request.stale?'Account details changed':request.status==='PENDING'?'Awaiting review':request.status==='APPROVED'?'Loadgistic reviewed':request.status==='MORE_INFO'?'More information requested':'Not approved')}</Copy>{!!request.note&&<Copy>{request.note}</Copy>}{request.hasFile&&<PrivateFile label={t('Open private document')} load={()=>account.request(`/api/mobile/verification/${request.id}`)}/>}</View>):<Copy message="No submitted documents"/>}</>}
+ let data:BusinessDocumentsView|null=null,invalid='';try{if(query.data)data=parseBusinessDocuments(query.data,workspaceId,canManage);}catch{invalid=t('Could not load workspace details. Please try again.');}
+ return <View style={{gap:16}}><ErrorText message={query.error||invalid}/>{query.loading&&<LoadingSpinner/>}{data&&<BusinessDocumentBadges documents={data.documents}/>}
+  {!summary&&data&&canManage&&<><Copy message="Documents are private and reviewed by Loadgistic administrators."/><Copy message="Review is optional. Transport Providers can find and share Capacity with your account without documents. Approved documents add trust badges. Fees are paid offline."/><Submit key={`${workspaceId}:${data.subjects[0]?.allowedTypes.join(',')}`} data={data} reload={query.reloadConfirmed}/><Text style={{fontSize:17,fontWeight:'700',color:palette.ink}}>{t('Request history')}</Text>{data.requests.length?data.requests.map(request=><View key={request.id} style={{gap:8,paddingVertical:12,borderTopWidth:1,borderColor:palette.border}}><Text style={{fontSize:15,fontWeight:'600',color:palette.ink}}>{request.name}</Text><Copy>{t(businessDocumentLabel(request.type))} · {t(request.stale?'Account details changed':request.status==='PENDING'?'Awaiting review':request.status==='APPROVED'?'Loadgistic reviewed':request.status==='MORE_INFO'?'More information requested':'Not approved')}</Copy>{!!request.note&&<Copy>{request.note}</Copy>}{request.hasFile&&<PrivateFile label={t('Open private document')} load={()=>account.request(`/api/mobile/verification/${request.id}`)}/>}</View>):<Copy message="No submitted documents"/>}</>}
   <Button secondary message="Refresh documents" busy={query.loading} onPress={()=>{void query.reload();}}/>
  </View>;
 }

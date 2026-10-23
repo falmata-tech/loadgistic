@@ -131,7 +131,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     if(kind==='company')expect((await page.context().request.get(providerPreviewUrl)).status()).toBe(403);
     const card=page.getByRole('dialog',{name:'Driver photo',exact:true}).getByRole('region',{name:'Public Driver photo'});await expect(card).toBeVisible();
     await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
-    const imageBytes=await sharp({create:{width:720,height:480,channels:3,background:'#06787c'}}).jpeg().withExif({IFD0:{Artist:'Synthetic private author'}}).toBuffer();
+    const imageBytes=await sharp({create:{width:720,height:480,channels:3,background:'#155eef'}}).jpeg().withExif({IFD0:{Artist:'Synthetic private author'}}).toBuffer();
     const input=card.getByLabel('Choose photo');const consent=card.getByLabel('I agree to make this photo public.');
     await input.setInputFiles({name:'private-camera.jpg',mimeType:'image/jpeg',buffer:imageBytes});
     await card.getByRole('button',{name:'Upload Driver photo',exact:true}).click();

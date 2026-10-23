@@ -21,6 +21,7 @@ const MANAGED_ERRORS=[
   'FEATURED_HEADLINE_INVALID','FEATURED_INTRODUCTION_INVALID','FEATURED_SCHEDULE_MODE_INVALID',
   'FEATURED_TARGET_COUNT_INVALID','FEATURED_TARGET_COUNT_MISMATCH','FEATURED_TRUCK_THEME_INVALID',
   'FEATURED_TRUCK_INVALID','FEATURED_TRUCK_DUPLICATE','FEATURED_TRUCK_INELIGIBLE','FEATURED_DRIVER_REQUIRED','FEATURED_DRIVER_DUPLICATE',
+  'FEATURED_DAY_NOT_FOUND','FEATURED_DAY_NOT_PUBLISHED','FEATURED_TIKTOK_REQUIRED','FEATURED_BROADCAST_STATE_INVALID','FEATURED_BROADCAST_ALREADY_ENDED','FEATURED_BROADCAST_NOT_SCHEDULED','FEATURED_BROADCAST_NOT_LIVE',
   'SPONSORSHIP_DATE_RANGE_INVALID','SPONSORSHIP_POSITION_INVALID','SPONSORSHIP_KIND_INVALID',
   'SPONSORSHIP_PROVIDER_INVALID','SPONSORSHIP_PROVIDER_INELIGIBLE','SPONSOR_NAME_INVALID',
   'SPONSOR_DESCRIPTION_INVALID','SPONSOR_WEBSITE_INVALID','SPONSOR_CONTACT_REQUIRED','SPONSORSHIP_OVERLAP',
@@ -224,6 +225,17 @@ export async function saveFeaturedProviderDay(user,input={}){
   }});
   if(error)throw managedError('SUPABASE_FEATURED_SAVE_FAILED',error);
   return getAdminFeaturedProviderDay(user,featureDate);
+}
+
+export async function setFeaturedTikTokBroadcast(user,featureDate,state){
+  assertFeaturedManager(user);const date=validateDate(featureDate);const nextState=String(state||'').trim().toUpperCase();
+  if(!['LIVE','ENDED'].includes(nextState))throw new Error('FEATURED_BROADCAST_STATE_INVALID');
+  const client=createSupabaseAdminClient();
+  const {data,error}=await client.rpc('set_managed_featured_tiktok_broadcast',{
+    actor_user_id:user.id,requested_date:date,requested_state:nextState
+  });
+  if(error)throw managedError('SUPABASE_FEATURED_BROADCAST_FAILED',error);
+  return data;
 }
 
 export async function saveProviderSponsorship(user,input={}){

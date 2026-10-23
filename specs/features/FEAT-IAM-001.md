@@ -314,6 +314,22 @@ sessions. The Google scenarios below describe retained disabled capability.
 Focused proof: actual local inbox-code sign-in, direct endpoint/callback denial,
 responsive/a11y login states. Rollback is a reviewed application revision.
 
+### Mobile code request must reflect delivery — October 22 local repair
+
+Given the native sign-in form requests an email code\
+When Supabase Auth confirms it accepted the OTP request\
+Then the app may show the code-entry handoff.
+
+Given Supabase Auth rejects the request, returns no result, or the request
+throws\
+When the native sign-in form submits\
+Then the API returns a bounded failure instead of a code-entry handoff\
+And a rate-limited request says to wait before retrying\
+And no provider error details, email, or token are exposed to the client.
+
+Focused regression: `tests/mobile-otp-delivery.test.mjs`. A later local inbox
+retry must confirm actual delivery before Expo broker parity is claimed.
+
 ### Owner demo inbox aliases — 2026-09-23
 
 Given an account is positively identified by the existing local/production demo

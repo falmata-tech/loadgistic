@@ -123,3 +123,14 @@ When a coverage audit runs\
 Then Amharic and Afaan Oromo are checked against the same message keys\
 And unmarked or dynamic application copy is reported separately rather than
 claimed translated merely because the page has a language picker.
+
+### Scenario: conditional interface copy is covered
+
+Given an application-owned label, title, accessible name or status changes with
+the current workflow state\
+When the localization audit reads that conditional UI\
+Then each visible text branch is checked against both supported catalogs\
+And a missing branch is reported as untranslated interface copy\
+And user-provided values, machine states, identifiers and option values are
+preserved rather than treated as text to translate\
+And unresolved computed presentation boundaries remain visible for manual review.

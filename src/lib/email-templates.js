@@ -5,7 +5,7 @@ function escapeHtml(value){return text(value).replace(/[&<>"']/g,character=>({
 function line(label,value){return value?`${label}: ${value}`:null;}
 function htmlLine(label,value){return value?`<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`:'';}
 function emailHtml(title,paragraphs){
-  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#0b1d3a;line-height:1.5"><div style="max-width:620px;margin:auto;padding:24px"><h1 style="font-size:24px">${escapeHtml(title)}</h1>${paragraphs.join('')}<p style="color:#5f7077;font-size:13px">Loadgistic connects customers and transporters. Confirm current documents, cargo fit, timing, and commercial terms directly.</p></div></body></html>`;
+  return `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#0b1d3a;line-height:1.5"><div style="max-width:620px;margin:auto;padding:24px"><h1 style="font-size:24px">${escapeHtml(title)}</h1>${paragraphs.join('')}<p style="color:#526375;font-size:13px">Loadgistic connects customers and transporters. Confirm current documents, cargo fit, timing, and commercial terms directly.</p></div></body></html>`;
 }
 function statusLabel(value){
   return text(value).toLowerCase().replaceAll('_',' ').replace(/\b\w/g,character=>character.toUpperCase());

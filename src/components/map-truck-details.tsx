@@ -32,11 +32,10 @@ export function MapTruckDetails({truck}:{truck:TruckDetails}) {
     <div className="truck-inspection-hero">
       <div className="truck-inspection-image"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></div>
       <div className="truck-inspection-identity">
-        <span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}><Text message={truck.status==='PARTIAL'?'Partial capacity':'Empty vehicle'}/></span>
+        <div className="truck-inspection-status-line"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}><Text message={truck.status==='PARTIAL'?'Partial capacity':'Empty vehicle'}/></span>{loadPreference?<span className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></span>:null}</div>
         <h3>{truck.vehicle_make} {truck.vehicle_model}</h3>
         {truck.cargo_configuration?<p><Text message={truck.cargo_configuration}/></p>:null}
-        <div className="truck-inspection-tags">{truck.sharing_mode?<span><Text message={capacitySharingLabel(truck.sharing_mode)}/></span>:null}
-        {loadPreference?<span className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></span>:null}</div>
+        <div className="truck-inspection-tags">{truck.sharing_mode?<span><Text message={capacitySharingLabel(truck.sharing_mode)}/></span>:null}</div>
       </div>
     </div>
     <TruckAuthorityBadges authority={truck.authority}/>
@@ -61,7 +60,7 @@ export function MapTruckDetails({truck}:{truck:TruckDetails}) {
     </div>
     {truck.current_signal_geometry_visible===false?<p className="truck-inspection-private"><strong><Text message="Regular service—not current location"/></strong><Text message="Call for current details or ask the Driver to share private capacity with your email."/></p>:null}
     <div className="map-truck-documents">
-      <TruckDocumentSummary label={truck.provider_organization_id?'Company documents':'Owner documents'} badges={truck.owner_verification_badges}/>
+      <TruckDocumentSummary label={truck.provider_organization_id?'Transport Provider documents':'Owner documents'} badges={truck.owner_verification_badges}/>
       <TruckDocumentSummary label="Driver documents" badges={truck.driver_verification_badges}/>
       <TruckDocumentSummary label="Vehicle documents" badges={truck.truck_verification_badges}/>
     </div>

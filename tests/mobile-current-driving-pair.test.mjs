@@ -12,7 +12,7 @@ function home({user,vehicles}){
  const ports={react:React,'react-native':{View:'View',Text:'Text',StyleSheet:{create:value=>value,absoluteFill:{}}},
   '../localization/provider':{useLanguage:()=>({t:value=>value})},'../session/provider':{useAccount:()=>({session:{state:'ACTIVE',user,access:{granted:true}}})},
   '../hooks/account-query':{useAccountQuery:()=>({data:{vehicles,canPublish:true},error:'',reload:async()=>{}})},
-  '../navigation/destinations':{workspaceCapabilities},'../navigation/current-driving-pair':{currentDrivingTruck},'../components/ui':{palette:{border:'#ccc',teal:'#077',ink:'#123',muted:'#567'}}};
+  '../navigation/destinations':{workspaceCapabilities},'../navigation/current-driving-pair':{currentDrivingTruck},'../components/ui':{palette:{border:'#cbd5e1',blue:'#155eef',ink:'#0b1d3a',muted:'#526375'}}};
  new Function('require','exports','React',compiled)(name=>ports[name]||{},module,React);
  return module.DriverHome();
 }

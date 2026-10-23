@@ -1,10 +1,10 @@
 import {ContentSafety} from '../components/content-safety';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator,StyleSheet,Text,View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { usePublicQuery } from '../hooks/public-query';
 import type { PublicProvider } from '../api/public-content';
-import { Page,Copy,Button,ErrorText,palette } from '../components/ui';
+import { Page, Copy, Button, ErrorText, palette, LoadingSpinner } from '../components/ui';
 import { PublicBadges,ExternalButton } from '../components/public-details';
 import {PublicCard,PublicCardAction,PublicCardFact,PublicCardHeading,PublicCardImage} from '../components/public-card';
 import {useLanguage} from '../localization/provider';
@@ -14,7 +14,7 @@ export default function TransporterScreen(){const {handle}=useLocalSearchParams<
 function Profile({handle}:{handle:string}){
  const {t}=useLanguage();
  const [page,setPage]=useState(1),[showFleet,setShowFleet]=useState(false),query=usePublicQuery<PublicProvider>(`/api/mobile/public/providers/${encodeURIComponent(handle)}?page=${page}`),provider=query.data;
- return <Page><View style={styles.workspace}><ErrorText message={query.error}/>{query.loading&&!provider&&<ActivityIndicator accessibilityLabel="Loading transporter"/>}{!!query.error&&<Button message="Try again" onPress={()=>{void query.reload();}}/>}
+ return <Page><View style={styles.workspace}><ErrorText message={query.error}/>{query.loading&&!provider&&<LoadingSpinner accessibilityLabel="Loading transporter"/>}{!!query.error&&<Button message="Try again" onPress={()=>{void query.reload();}}/>}
  {provider&&<ContentSafety handle={provider.handle}><View style={styles.identity}><PublicCardImage path={provider.image} label={provider.accountName||provider.name} portrait identity={provider.isCompany?'company':'person'}/><View style={styles.identityText}><Text accessibilityRole="header" style={styles.title}>{provider.accountName||provider.name}</Text><Text style={styles.caption}>@{provider.handle}</Text><Text style={styles.caption}>{t('Transport Provider')}{provider.city?` · ${provider.city}`:''}</Text>{!!provider.managerName&&<Text style={styles.caption}>{t('Account manager')} · {provider.managerName}</Text>}</View></View>
  <ProviderTruckSummary summary={provider.authoritySummary}/>
  {!!provider.headline&&<Text style={styles.introduction}>{provider.headline}</Text>}
@@ -43,5 +43,5 @@ function Profile({handle}:{handle:string}){
 }
 const styles=StyleSheet.create({
  workspace:{width:'100%',maxWidth:820,alignSelf:'center',gap:14},identity:{flexDirection:'row',gap:12,alignItems:'center'},identityText:{flex:1,gap:4},title:{fontSize:21,lineHeight:27,fontWeight:'700',color:palette.ink},introduction:{fontSize:14,lineHeight:21,color:palette.muted},caption:{fontSize:12,lineHeight:18,color:palette.muted},
- contacts:{flexDirection:'row',flexWrap:'wrap',gap:10},contact:{flexBasis:'45%',flexGrow:1},sectionFacts:{gap:8,paddingTop:10,borderTopWidth:1,borderTopColor:'#e7eeee'},label:{fontSize:13,lineHeight:19,fontWeight:'600',color:palette.ink},rating:{fontSize:14,lineHeight:20,fontWeight:'600',color:palette.ink},review:{gap:7,paddingVertical:10,borderTopWidth:1,borderTopColor:'#e7eeee'},truckIdentity:{flexDirection:'row',alignItems:'center',gap:12},number:{fontSize:11,lineHeight:16,color:palette.muted},capacity:{fontSize:13,lineHeight:19,fontWeight:'600',color:palette.ink},
+ contacts:{flexDirection:'row',flexWrap:'wrap',gap:10},contact:{flexBasis:'45%',flexGrow:1},sectionFacts:{gap:8,paddingTop:10,borderTopWidth:1,borderTopColor:palette.borderSoft},label:{fontSize:13,lineHeight:19,fontWeight:'600',color:palette.ink},rating:{fontSize:14,lineHeight:20,fontWeight:'600',color:palette.ink},review:{gap:7,paddingVertical:10,borderTopWidth:1,borderTopColor:palette.borderSoft},truckIdentity:{flexDirection:'row',alignItems:'center',gap:12},number:{fontSize:11,lineHeight:16,color:palette.muted},capacity:{fontSize:13,lineHeight:19,fontWeight:'600',color:palette.ink},
 });

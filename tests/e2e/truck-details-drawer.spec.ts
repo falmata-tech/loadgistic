@@ -61,7 +61,7 @@ test('selected truck has centered readable modals and a separate attached exit r
  expect(Math.abs(bounds.x+bounds.width/2-mapBox.x-mapBox.width/2)).toBeLessThan(2);
  expect(Math.abs(bounds.y+bounds.height/2-mapBox.y-mapBox.height/2)).toBeLessThan(2);
  const overflow=await card.locator('.capacity-info-content').evaluate((el:HTMLElement)=>el.scrollHeight-el.clientHeight);expect(overflow).toBeLessThanOrEqual(1);
- await expect(card).toHaveCSS('border-top-color','rgb(234, 179, 8)');
+ await expect(card).toHaveCSS('border-top-color','rgb(102, 112, 133)');
  await page.screenshot({path:info.outputPath('route-modal.png')});
  // Modal traps focus and blocks background map interactions.
  await page.keyboard.press('Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);

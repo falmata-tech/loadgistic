@@ -23,7 +23,7 @@ export default async function WorkspaceMenuPage(){
     ...(provider?[{href:'/app/verification',label:'Verification',detail:'Review document status and submit updates.',Icon:BadgeCheck}]:[]),
     ...(administrator?[
       {href:'/admin',label:'Administration overview',detail:'Open platform records and current work queues.',Icon:Activity},
-      {href:'/admin/operations',label:'Accounts',detail:'Open an account to see its business, vehicles and related work.',Icon:Database},
+      {href:'/admin/operations',label:'Accounts',detail:'Open an account to see its workspace, vehicles and related work.',Icon:Database},
       {href:'/admin/reviews',label:'Review Center',detail:'Documents and shipment reviews.',Icon:ClipboardCheck},
       {href:'/admin/featured',label:'Featured & sponsors',detail:'Manage the public programme, schedule, and sponsors.',Icon:Sparkles},
       {href:'/admin/devices',label:'GPS devices',detail:'Connect trackers to provider fleets',Icon:Satellite},

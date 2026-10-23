@@ -6,6 +6,7 @@ import React from 'react';
 import { Circle, CircleMarker, MapContainer, Polygon, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { BaseMapTiles } from '@/components/base-map-tiles';
+import {capacityStatusPresentation} from '@/lib/capacity-status-presentation';
 
 type Point={lat:number;lng:number};type PlacePoint=Point&{label:string};type RegularSignal={id:string;geometry:'ROUTE'|'RADIUS';route_points:PlacePoint[];area_boundary:PlacePoint[];area_center_lat?:number;area_center_lng?:number;area_center_label?:string};
 
@@ -15,7 +16,7 @@ function ResizeMap(){const map=useMap();React.useEffect(()=>{const host=map.getC
 
 export function CapacityLocationMapLeaflet({center,radiusKm,areaCenter=null,areaBoundary=[],routePoints=[],regularSignals=[],availabilityStatus='EMPTY',showLegend=true,showTruckLabel=true}:{center:Point;radiusKm:number;areaCenter?:Point|null;areaBoundary?:PlacePoint[];routePoints?:PlacePoint[];regularSignals?:RegularSignal[];availabilityStatus?:string;showLegend?:boolean;showTruckLabel?:boolean}){
   const {t}=useTranslation();
-  const capacityColor=availabilityStatus==='PARTIAL'?'#eab308':'#16a34a';
+  const capacityColor=capacityStatusPresentation[availabilityStatus==='PARTIAL'?'PARTIAL':'EMPTY'].color;
   const currentTooltipClass=`capacity-route-tooltip ${availabilityStatus==='PARTIAL'?'partial':'empty'}`;
   return <div className="capacity-location-map" aria-label={t('Approximate vehicle location within {distance} km',{distance:radiusKm})}>
     <MapContainer center={[center.lat,center.lng]} zoom={8} minZoom={2} maxZoom={13} scrollWheelZoom={false} dragging>

@@ -206,12 +206,12 @@ const messages: Record<string,string> = {
   INVALID_APPLICATION_TYPE: 'Choose a valid business or provider type.',
   SUBSCRIPTION_NOT_FOUND: 'No subscription is assigned to this workspace yet.',
   SUBSCRIPTION_ACCESS_REQUIRED: 'This account is not linked to a transport workspace.',
-  BILLING_RETIRED: 'Platform payment plans are not offered.',
+  BILLING_RETIRED: 'This feature is no longer available.',
   SPONSORED_ACCESS_BUSINESS_ONLY: 'Sponsored free access is available only to approved Businesses.',
-  PAYMENT_NOT_REQUIRED: 'Payment is not required for this workspace.',
+  PAYMENT_NOT_REQUIRED: 'This feature is no longer available.',
   PUBLIC_SUPPORT_CLOSED: 'Live support is available to transport providers in their dashboard.',
   INVALID_PLATFORM_CONTROLS: 'Choose a valid mode and a daily count between 1 and 8.',
-  ACCESS_ACTIVATION_CONFIRMATION_REQUIRED: 'Platform payment plans are not offered.',
+  ACCESS_ACTIVATION_CONFIRMATION_REQUIRED: 'This feature is no longer available.',
   PLATFORM_CONTROLS_FAILED: 'Settings could not be saved. Please try again.',
   FEATURED_AUTOMATION_FAILED: 'The daily selection could not be prepared. Please try again.',
   FEATURED_DRIVER_DUPLICATE: 'Choose each driver only once for this day.',
@@ -242,6 +242,14 @@ const messages: Record<string,string> = {
   ,GUEST_FILE_SCANNING_REQUIRED: 'File sharing is temporarily unavailable. Send the written message and our team will follow up.'
   ,FEATURED_DATE_INVALID: 'Choose a valid feature date.'
   ,FEATURED_TIKTOK_URL_INVALID: 'Enter a secure TikTok link, or leave it blank.'
+  ,FEATURED_DAY_NOT_FOUND: 'That featured day could not be found. Reload and try again.'
+  ,FEATURED_DAY_NOT_PUBLISHED: 'Publish this programme before changing its TikTok Live status.'
+  ,FEATURED_TIKTOK_REQUIRED: 'Add a TikTok Live link before changing its broadcast status.'
+  ,FEATURED_BROADCAST_STATE_INVALID: 'That TikTok Live status change is not available.'
+  ,FEATURED_BROADCAST_ALREADY_ENDED: 'This TikTok Live broadcast is already marked ended.'
+  ,FEATURED_BROADCAST_NOT_SCHEDULED: 'This day has no scheduled TikTok Live to start.'
+  ,FEATURED_BROADCAST_NOT_LIVE: 'Mark the TikTok broadcast Live before ending it.'
+  ,SUPABASE_FEATURED_BROADCAST_FAILED: 'We could not save the TikTok Live status. Reload and try again.'
   ,FEATURED_PROVIDER_REQUIRED: 'Choose at least one eligible transporter before publishing.'
   ,FEATURED_PROVIDER_DUPLICATE: 'Each transporter can appear only once per day.'
   ,FEATURED_PROVIDER_INVALID: 'One of the selected transporters is no longer based in this city or town.'

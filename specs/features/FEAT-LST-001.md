@@ -63,7 +63,7 @@ And a repeated or missing continuation cursor stops with an error instead of an 
 
 Given trucks appear on desktop or phone\
 When a visitor explores with normal map controls or selects a round cluster\
-Then clusters retain green Empty and yellow Partial styling\
+Then clusters retain cobalt Empty and amber Partial styling\
 And one activation zooms inward with no confirmation popup\
 And detailed truck markers appear through automatic loading\
 And at maximum zoom co-located trucks remain individually selectable\
@@ -225,7 +225,7 @@ And a selected city takes precedence over device proximity; exact visitor GPS re
 And automatic device centering does not override an explicitly selected city.
 
 Given the public or shared capacity map is open on desktop or phone
-Then location markers and approximate-location boundaries are blue, regular service is muted orange, and capacity remains green/yellow
+Then location markers and approximate-location boundaries are blue, regular service is muted orange, and capacity is cobalt/amber
 And the compact map key starts collapsed and opens within the viewport
 And location success/error feedback sits beside the location controls rather than across the map
 And signal-detail overlays do not capture map drag, touch or wheel gestures except their explicit close control

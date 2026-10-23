@@ -19,5 +19,23 @@
     }
   ],
   "aiAssisted": true,
-  "published": false
+  "published": false,
+  "colorRevisions": [
+    {
+      "file": "east-africa-yard-wide-cobalt.png",
+      "source": "east-africa-yard-wide.png",
+      "tool": "built-in imagegen",
+      "generatedOutput": "exec-6432090b-9bed-4688-be75-291302e611ea.png",
+      "change": "Foreground truck tarpaulin recolored to cobalt; natural hills, trees, people and yard colors preserved.",
+      "ownerVisualReviewPending": true
+    },
+    {
+      "file": "east-africa-yard-portrait-cobalt.png",
+      "source": "east-africa-yard-portrait.png",
+      "tool": "built-in imagegen",
+      "generatedOutput": "exec-44f8ae64-5bc8-4649-962c-e57a8b442868.png",
+      "change": "Foreground truck tarpaulin recolored to cobalt; natural hills, trees, people and yard colors preserved.",
+      "ownerVisualReviewPending": true
+    }
+  ]
 }

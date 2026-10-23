@@ -25,10 +25,35 @@ production administrator credential with the gateway or device-facing network.
 Use its documented API for ordinary business operations. The verified-erasure
 exception in ADR-080 permits only scoped, bounded raw-history purging after
 independently proven deletion of the exact device; no ordinary direct-table writes.
-Supported protocol families initially include GT06, Teltonika, H02 and JT808;
-list exact model/protocol/firmware caveats. Protocol support is not physical-device
+The configured gateway software includes GT06, Teltonika, H02 and JT808
+decoders; GT06 is the first physical protocol target. Keep exact model/protocol/
+firmware caveats visible. A configured decoder is not physical-device
 certification or a guarantee that every branded clone supports every command.
 See ADR-080 and authoritative sources in the operations guide.
+
+### First physical protocol and bridge API model
+
+GT06 is the first physical protocol target because the owner's available test
+tracker is reported to use it. This priority does not claim every WhatsGPS or
+white-label model implements the same GT06 variant. The exact manufacturer
+model and firmware remain unconfirmed. “4G” is the mobile network connection,
+not a protocol. Traccar receives and decodes the device-facing GT06 TCP stream;
+Loadgistic does not implement a parallel packet decoder. The local listener is
+loopback-only, so physical testing requires a separately reviewed staging
+address and network rule. See the [GT06 device and API model](../../infra/telematics/GT06_API_MODEL.md)
+for the current HMAC bridge contract, normalized position example, and ordered
+physical-device qualification.
+
+Initial real-hardware qualification is receive-only: registered login,
+heartbeat/status, location and allowlisted alarms. Exact tracker identity must
+match the pre-provisioned gateway binding; an IMEI or protocol ID is not
+ownership proof or authentication. Do not store raw packets or expose exact
+coordinates in logs. Real-device commands remain disabled until the exact model,
+firmware and command behavior have separate documentation and bench evidence.
+The existing normalized bridge carries `POSITION` events with separate device
+and server timestamps, stable event key, validated coordinates, normalized
+speed, and only allowlisted attributes. Duplicate, stale, unselected-source and
+cross-owner data continue through the existing fail-closed rules.
 
 ### Scenario: provisioned ownership is not a self-claimed IMEI
 
@@ -39,6 +64,71 @@ And no provider can acquire another device by entering its IMEI\
 And an IMEI is an identifier, not an authentication secret or ownership proof\
 And unknown, duplicate, inactive and cross-owner bindings fail without a write\
 And provisioning and reassignment are audited without secret values.
+
+Given an administrator finds a Transport Provider in the GPS device workspace\
+When they register a real tracker using its IMEI, exact protocol identifier,
+hardware model and label\
+Then the server checks that provider and its configured physical gateway before
+creating or reusing an exact Traccar device binding\
+And the application verifies the returned gateway number, protocol identifier,
+IMEI and non-synthetic gateway attributes before saving\
+And the provider's saved device list shows the new unassigned device\
+And that provider owner can assign it to one of their own active vehicles on web
+or Expo, while another provider and employees cannot assign it.
+
+Given gateway creation succeeds but the application link fails or its result is
+ambiguous\
+Then the admin sees a pending-link result, never a false success\
+And the gateway record remains in place for an exact-identity retry or manual
+reconciliation; a retry must never silently adopt a changed or foreign binding.
+
+Given an administrator opens the GPS workspace without choosing a provider\
+Then the page asks for a provider-name search instead of listing every provider\
+When a search selects one provider, that provider's devices and Add action appear
+before a short, paginated list of matching providers\
+And each readback row shows its current vehicle assignment or unassigned state
+and saved last-report state without repeating its Demo name as a second label\
+And a Demo tracker's display name remains stable if the provider later assigns
+it to a different vehicle; the current assignment is shown separately\
+And non-provider workspaces never consume a search result or page slot.
+
+Given an administrator chooses Demo GPS for a fictional provider\
+When an exact, unlinked synthetic fixture is available for that provider\
+Then the server selects its configured demo gateway, creates or reuses only that
+fixture's exact Traccar binding, and forces the synthetic GT06 profile\
+And the existing database fixture-owner and synthetic-only gateway checks must pass\
+And the admin and provider device lists label the saved device as Demo\
+And when every eligible Demo fixture is already linked, Admin explains why
+another cannot be added instead of presenting a usable submit path\
+And assigning it does not label it as physical hardware or claim live telemetry
+before a real simulator report arrives\
+And an arbitrary owner, physical gateway, altered binding, or missing demo gateway
+is denied without creating an application device.
+
+The admin-selectable spare `990000000000013` belongs only to the original
+fictional Transporter organization and its active Truck 02 fixture. It is
+separate from the ten moving demo targets. Retry after gateway creation reuses
+only an exact binding, keeps partial gateway state for reconciliation, and never
+auto-deletes a device. Other demo trackers remain controlled fixture setup.
+The Demo choice cannot mint arbitrary IMEIs or start a simulator, and no
+application-only fake position is emitted.
+When that spare sends a saved simulated fix through the GPS server, the
+authorized private Capacity map projects GPS as its source and a Demo marker;
+public Capacity excludes a PRIVATE signal. The projection never includes the
+IMEI, gateway identity, or exact telemetry coordinates. Provenance follows the
+saved fix even though this intake spare is outside recurring movement.
+The Admin spare reports simulated positions only. Its Commands tab explains
+that commands are unavailable, and both web and mobile command endpoints reject
+requests for that exact spare before a command can be queued. A location report
+does not make physical or engine commands available.
+
+Focused admin evidence: `tests/telematics.test.mjs` covers real/demo command
+normalization and exact gateway readback; `tests/telematics-admin-readback.test.mjs`
+covers current admin scope, selected-provider readback, revocation and route
+denial. `tests/sql/telematics.sql` passed on the dedicated disposable
+`loadgistic_demo_gps_admin_ci` clone in a transaction that rolled back; it covers
+admin provisioning, provider workspace visibility, own-vehicle assignment and
+foreign/employee denial. Authenticated desktop/phone visual review remains open.
 
 ### Scenario: provider devices belong to their fleet
 
@@ -313,3 +403,34 @@ GPS positions/36 phone/manual updates and no customer/Tracking changes. Final
 source hashes and receipts are mapped in traceability. Owner visual review still
 precedes full gates; hosted retention/quotas/backup expiry and physical Android/
 tracker/interlock acceptance remain release prerequisites.
+
+## Planned production deployment package — October 21
+
+Status: local gateway and bridge are implemented; a publicly reachable,
+production GPS service is not evidenced or authorized. Prepare a portable,
+separately deployable container stack for the pinned Traccar gateway, its private
+persistent database and the restricted bridge. Keep the demo scenario worker in
+a separate service/network identity with no tracker protocol listeners.
+
+The production package must require explicit host, public DNS/IP, firewall and
+supported-device profile before activation. Publish only the exact selected
+tracker protocol TCP/UDP ports; keep Traccar administration, its database and
+bridge administration private. Bridge traffic is outbound HTTPS to the exact
+Loadgistic application endpoint with the current gateway HMAC; do not expose the
+app's Supabase/service credential to the gateway. Require protected secret
+injection, pinned images, resource limits, read-only filesystems where supported,
+health/readiness checks, sanitized metrics/logging, bounded retention, tested
+backup/restore, storage alerts, stop/drain and rollback that preserves retained
+history. IMEI remains an identifier, never proof that an unknown sender owns a
+device; actual device enrollment and protocol/firmware command capabilities must
+be verified per model. Do not enable engine relay commands for physical hardware.
+
+Acceptance before any hosted activation: deploy the exact artifact to an isolated
+staging host; prove one allowlisted real test tracker and one synthetic tracker
+ingest through Traccar, durable outbox, signed bridge and app readback; reject an
+unknown/duplicate/cross-owner device and replay; exercise offline/restart/backlog,
+retention and restore; verify no admin/database port is public; then demonstrate
+the current provider's source, permission and privacy projections. Production
+secrets, firewall, DNS, hosted database registration, physical devices and public
+listeners require exact owner-reviewed operations and are not authorized by
+writing this deployment package.

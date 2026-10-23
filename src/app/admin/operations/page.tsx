@@ -16,7 +16,7 @@ import {adminOperationReturnPath} from '@/lib/admin-account-navigation.js';
 
 const views=[
   {id:'USERS',label:'Accounts',icon:Users,permission:'CUSTOMERS'},
-  {id:'WORKSPACES',label:'Provider accounts',icon:Building2,permission:'CUSTOMERS'},
+  {id:'WORKSPACES',label:'Workspaces',icon:Building2,permission:'CUSTOMERS'},
   {id:'TRUCKS',label:'Vehicles',icon:Truck,permission:'OPERATIONS'},
   {id:'DRIVERS',label:'Driver Access',icon:UserRoundCog,permission:'OPERATIONS'},
   {id:'TRACKING',label:'Tracking',icon:PackageSearch,permission:'OPERATIONS'},
@@ -25,7 +25,8 @@ const views=[
 ] as const;
 
 function workspaceTypeLabel(type:string){
-  if(['ENTERPRISE_SHIPPER','ENTERPRISE_RECEIVER'].includes(type))return 'Business';
+  if(type==='ENTERPRISE_SHIPPER')return 'Shipper / broker workspace';
+  if(type==='ENTERPRISE_RECEIVER')return 'Receiver workspace';
   if(type==='TRANSPORT_COMPANY')return 'Transport Provider';
   if(['SELF_MANAGED_DRIVER','OWNER_OPERATOR','INDEPENDENT_PROVIDER'].includes(type))return 'Transport Provider';
   return type.replaceAll('_',' ').toLowerCase();
@@ -51,12 +52,12 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
   const returnTo=adminOperationReturnPath(`/admin/operations?${new URLSearchParams({view,...(query.q?{q:query.q}:{}),page:String(data.pagination.page)})}`)||`/admin/operations?view=${view}`;
 
   return <div className={"page admin-operations "+styles.workspace}>
-    <PageHeader title={<Text message={view==='USERS'?'Accounts':view==='WORKSPACES'?'Provider accounts':'Platform Records'}/>}/>
+    <PageHeader title={<Text message={view==='USERS'?'Accounts':view==='WORKSPACES'?'Workspaces':'Platform Records'}/>}/>
     {user.role==='ADMIN'&&view==='TRUCKS'?<Link href="/admin/devices" className="button secondary small"><Text message="GPS devices"/></Link>:null}
     <Flash error={query.error} success={query.success}/>
     {user.role==='ADMIN'&&view==='USERS'?<Link href="/admin/privacy" className="button secondary"><Text message="Account deletion requests"/></Link>:null}
     <section className={"stats compact-admin-stats "+styles.compactCounts}>
-      <div className="stat"><span className="meta"><Text message="Clients"/></span><strong>{data.counts.workspaces}</strong></div>
+      <div className="stat"><span className="meta"><Text message="Workspaces"/></span><strong>{data.counts.workspaces}</strong></div>
       <div className="stat"><span className="meta"><Text message="Users"/></span><strong>{data.counts.users}</strong></div>
       <div className="stat"><span className="meta"><Text message="Vehicles"/></span><strong>{data.counts.trucks}</strong></div>
       <div className="stat"><span className="meta"><Text message="Tracking"/></span><strong>{data.counts.tracking}</strong></div>
@@ -77,7 +78,7 @@ export default async function AdminOperationsPage({searchParams}:{searchParams:P
     <section className="admin-record-section">
       <div className="admin-record-list">
         {view==='USERS'?records.map(record=><article key={record.id}><div><strong>{record.name}</strong><span>{record.email} · {record.phone||'Phone not added'}</span><small>{record.workspace_name} · {<Text message={record.role==='TRANSPORTER'?'Transport Provider':record.role==='DRIVER'?'Driver':record.role==='SUPPORT'?'Team member':record.role==='ADMIN'?'Administrator':'Account'}/>}</small></div><StatusPill status={record.active?'ACTIVE':'SUSPENDED'}/><div className={styles.rowActions}><Link className="button secondary small" href={recordHref(view,record,returnTo)}><Eye aria-hidden="true"/><Text message="Open"/></Link></div></article>):null}
-        {view==='WORKSPACES'?records.map(record=><article key={`${record.record_kind}-${record.id}`}><div><strong>{record.name}</strong><span>{workspaceTypeLabel(record.type)} · {record.city||'Location not added'}</span><small>{record.user_count}<Text message=" users · "/>{record.truck_count}<Text message=" active vehicles · "/>{record.tracking_count}<Text message=" Tracking sessions"/></small></div><div className={styles.rowActions}><Link className="button secondary small" href={recordHref(view,record)}><Eye aria-hidden="true"/><Text message="Open"/></Link></div></article>):null}
+        {view==='WORKSPACES'?records.map(record=><article key={`${record.record_kind}-${record.id}`}><div><strong>{record.name}</strong><span><Text message={workspaceTypeLabel(record.type)}/> · {record.city||'Location not added'}</span><small>{record.user_count}<Text message=" users · "/>{record.truck_count}<Text message=" active vehicles · "/>{record.tracking_count}<Text message=" Tracking sessions"/></small></div><div className={styles.rowActions}><Link className="button secondary small" href={recordHref(view,record)}><Eye aria-hidden="true"/><Text message="Open"/></Link></div></article>):null}
         {view==='TRUCKS'?records.map(record=><article key={record.id}><div><strong>{record.platform_number} · {record.make} {record.model}</strong><span>{record.owner_name} · {record.cargo_configuration}<Text message=" · plate "/>{record.plate||'not recorded'}</span><small>{record.capacity_status?`${record.capacity_status.replaceAll('_',' ')} · ${record.location_area||'Area not updated'} · ${relativeTime(record.capacity_updated_at)}`:<Text message="No capacity update"/>}</small></div><StatusPill status={record.active?'ACTIVE':'INACTIVE'}/><div className={styles.rowActions}><Link className="button secondary small" href={recordHref(view,record,returnTo)}><Eye aria-hidden="true"/><Text message="Open"/></Link></div></article>):null}
         {view==='DRIVERS'?records.map(record=><article key={record.id}><div><strong>{record.name}</strong><span>{record.owner_name} · {record.platform_number||'No assigned vehicle'}</span><small>{[record.can_manage_capacity?'Capacity updates':null,record.can_manage_tracking?'Tracking updates':null].filter(Boolean).join(' · ')||'Duty control only'}</small></div><StatusPill status={record.active?'ACTIVE':'SUSPENDED'}/><div className={styles.rowActions}><Link className="button secondary small" href={recordHref(view,record)}><Eye aria-hidden="true"/><Text message="Open"/></Link></div></article>):null}
         {view==='TRACKING'?records.map(record=><article key={record.id}><div><strong>{record.code} · {record.cargo_summary}</strong><span>{record.origin} → {record.destination}</span><small>{record.provider_name} · {record.platform_number}<Text message=" · Driver "/>{record.driver_name}<Text message=" · updated "/>{relativeTime(record.updated_at)}</small></div><StatusPill status={record.operational_status}/><div className={styles.rowActions}><Link className="button secondary small" href={recordHref(view,record)}><PackageSearch aria-hidden="true"/><Text message="Open Tracking"/></Link>{record.provider_handle?<Link className="button secondary small" href={`/@${record.provider_handle}`}><Building2 aria-hidden="true"/><Text message="Transporter"/></Link>:null}</div></article>):null}

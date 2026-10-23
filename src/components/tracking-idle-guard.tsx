@@ -90,8 +90,10 @@ export function TrackingSessionBoundary({initialExpiresAt,children}:{initialExpi
     };
     // Hide cached private results before history snapshots; recheck the session on restore.
     const hideForHistory=()=>{if(surface.current)surface.current.style.visibility='hidden';};
+    const accessLost=()=>{hideForHistory();void endSession('inactive');};
     const restoreFromHistory=(event:PageTransitionEvent)=>{if(event.persisted)window.location.reload();};
     window.addEventListener('pagehide',hideForHistory);
+    window.addEventListener('tracking-access-lost',accessLost);
     window.addEventListener('pageshow',restoreFromHistory);
     const events:Array<keyof DocumentEventMap>=['pointerdown','keydown','touchstart','wheel','scroll'];
     for(const eventName of events)document.addEventListener(eventName,recordActivity,{passive:true});
@@ -104,6 +106,7 @@ export function TrackingSessionBoundary({initialExpiresAt,children}:{initialExpi
       for(const eventName of events)document.removeEventListener(eventName,recordActivity);
       document.removeEventListener('visibilitychange',checkAfterBackground);
       window.removeEventListener('pagehide',hideForHistory);
+      window.removeEventListener('tracking-access-lost',accessLost);
       window.removeEventListener('pageshow',restoreFromHistory);
     };
   },[endSession,renew]);

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "fixture_source": "loadgistic",
+  "state": "inert-unbound",
+  "workspace_id": "1da45f19-a9fa-4c55-b08e-7c3b65b1aa7d",
+  "owner_fixture_key": "user-sim-broker",
+  "staff_fixture_key": "user-sim-broker-staff",
+  "staff_email": "demo-broker-staff-196@loadgistic.local",
+  "role": "STAFF",
+  "tracking": true,
+  "capacity_phases": ["CAPACITY_OFF", "CAPACITY_ON"],
+  "daily_slots_utc": [600, 840],
+  "command": "business_workspace_command.UPDATE_MEMBER",
+  "private_example_policy": "No grant or recipient changes; only this marked staff member's Capacity permission cycles."
+}

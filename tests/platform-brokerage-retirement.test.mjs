@@ -63,7 +63,7 @@ test('native chat polling and sharing UI contain no retired request/grant contro
 });
 test('platform Terms no longer promise retired transport arrangement in any language',async()=>{
  const terms=await readFile(new URL('../src/app/terms/page.tsx',import.meta.url),'utf8');
- const agreement='Customers and transporters agree freight pricing, cargo fit, insurance, timing, liability, permits and payment directly.';
+ const agreement='Customers and transporters should confirm cargo fit, insurance, timing, liability and permits directly before a shipment starts.';
  assert.match(terms,/Direct agreements/);
  assert.ok(terms.includes(agreement));
  assert.doesNotMatch(terms,/When Loadgistic arranges transport/);

@@ -80,6 +80,22 @@ test('tracking closes at five minutes even with active renewal; private capacity
  for(let i=0;i<4;i++){x.advance(60001);await x.controller.touch('tracking');assert.equal(x.controller.snapshot().tracking.expiresAt,initial+300000);}
  x.advance(60000);await x.controller.expire();assert.equal(x.controller.snapshot().tracking,null);assert.equal(x.stored.has('tracking'),false);assert.ok(x.controller.snapshot().capacity);
 });
+test('foreground Tracking polling reads once without renewing or extending its absolute grant',async()=>{
+ const x=setup();await x.controller.verify('tracking','handoff','123456');x.advance(61000);
+ const before=x.calls.length;
+ await x.controller.request('tracking','/api/mobile/visitor/tracking/shipments',undefined,undefined,true);
+ assert.deepEqual(x.calls.slice(before).map(call=>call.path),['/api/mobile/visitor/tracking/shipments']);
+ assert.equal(x.controller.snapshot().tracking.expiresAt,initial+300000);
+ x.advance(239000);await x.controller.expire();
+ assert.equal(x.controller.snapshot().tracking,null);
+});
+test('a denied Tracking poll clears the verified grant before stale private data can render',async()=>{
+ const x=setup();await x.controller.verify('tracking','handoff','123456');
+ x.port.request=async()=>{throw Object.assign(new Error('Access changed'),{status:401});};
+ await assert.rejects(x.controller.request('tracking','/api/mobile/visitor/tracking/shipments',undefined,undefined,true));
+ assert.equal(x.controller.snapshot().tracking,null);
+ assert.equal(x.stored.has('tracking'),false);
+});
 test('restoring an obsolete thirty-minute Tracking grant clears it before exposing private content',async()=>{
  const x=setup();x.stored.set('tracking',JSON.stringify({token:'payload.signature',scope:'tracking',startedAt:initial,expiresAt:initial+1800000}));await x.controller.restore('tracking');assert.equal(x.controller.snapshot().tracking,null);assert.equal(x.stored.has('tracking'),false);
 });

@@ -112,7 +112,7 @@ test('Play reviewer owner and teammate use one private business workspace throug
   await owner.getByRole('tab',{name:'My workspace',exact:true}).click();
   await owner.getByRole('button',{name:'Switch workspace',exact:true}).click();
   await expect(owner.getByText('Your workspaces',{exact:true})).toBeVisible();
-  await owner.getByRole('button',{name:/Business workspace/}).last().click();
+  await owner.getByRole('button',{name:/Shipper \/ broker workspace/}).last().click();
   await owner.getByLabel('Business name',{exact:true}).fill(`Play review ${nonce}`);
   await owner.getByLabel('Business handle',{exact:true}).fill(`play-review-${nonce}`);
   const createdResponse=owner.waitForResponse(response=>new URL(response.url()).pathname==='/api/business-workspaces'&&response.request().method()==='POST');
@@ -127,6 +127,14 @@ test('Play reviewer owner and teammate use one private business workspace throug
   await businessRead(owner,ownerToken,'/capacity/discovery');evidence.ownerCapacity=true;
   await businessRead(owner,ownerToken,'/tracking');evidence.ownerTracking=true;
   await owner.getByRole('tab',{name:'Account',exact:true}).click();
+  const ownerBusinessGroup=owner.getByTestId('business-account-group-business'),ownerAccountGroup=owner.getByTestId('business-account-group-account');
+  await expect(ownerBusinessGroup.getByRole('button',{name:'Team',exact:true})).toBeVisible();
+  await expect(ownerBusinessGroup.getByRole('button',{name:'Workspace details',exact:true})).toBeVisible();
+  await expect(ownerBusinessGroup.getByRole('button',{name:'Documents',exact:true})).toBeVisible();
+  await expect(ownerAccountGroup.getByRole('button',{name:'Account details',exact:true})).toBeVisible();
+  await expect(ownerAccountGroup.getByRole('button',{name:'Email and account security',exact:true})).toBeVisible();
+  await expect(ownerAccountGroup.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();
+  await owner.screenshot({path:info.outputPath('expo-business-account-owner-phone.png'),fullPage:true});
   await owner.getByRole('button',{name:'Team',exact:true}).click();
   await expect(owner.getByRole('button',{name:'Invite teammate',exact:true})).toBeVisible();evidence.ownerTeam=true;
   evidence.stage='OWNER_INVITE';record();
@@ -150,7 +158,13 @@ test('Play reviewer owner and teammate use one private business workspace throug
   await businessRead(staff,staffToken,'/capacity/discovery');evidence.staffCapacity=true;
   await businessRead(staff,staffToken,'/tracking');evidence.staffTracking=true;
   await staff.getByRole('tab',{name:'Account',exact:true}).click();
-  await expect(staff.getByRole('button',{name:'Team',exact:true})).toHaveCount(0);evidence.staffTeamDenied=true;
+  const staffBusinessGroup=staff.getByTestId('business-account-group-business'),staffAccountGroup=staff.getByTestId('business-account-group-account');
+  await expect(staffBusinessGroup.getByRole('button',{name:'Team',exact:true})).toHaveCount(0);
+  await expect(staffBusinessGroup.getByRole('button',{name:'Documents',exact:true})).toHaveCount(0);
+  await expect(staffBusinessGroup.getByRole('button',{name:'Leave workspace',exact:true})).toBeVisible();
+  await expect(staffAccountGroup.getByRole('button',{name:'Software support',exact:true})).toBeVisible();
+  await staff.screenshot({path:info.outputPath('expo-business-account-staff-phone.png'),fullPage:true});
+  evidence.staffTeamDenied=true;
   const members=localSql(`select user_id||'|'||role||'|'||can_view_capacity||'|'||can_view_tracking from public.business_workspace_members where workspace_id='${workspaceId}' order by role`).split('\n');
   expect(members).toHaveLength(2);
   expect(members).toEqual(expect.arrayContaining([`${ownerId}|OWNER|true|true`,`${staffId}|STAFF|true|true`]));

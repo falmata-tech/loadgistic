@@ -9,7 +9,7 @@ export function LocationDisclosure({ visible, decide,informational=false }: { vi
  return <Modal visible={visible} transparent animationType="fade" onRequestClose={() => decide(false)}>
   <View style={{ flex: 1, backgroundColor: 'rgba(23,44,70,0.35)', justifyContent: 'center', padding: 20 }}>
    <ScrollView accessibilityViewIsModal contentContainerStyle={{ padding: 20, gap: 14 }} style={{ width: '100%', maxWidth: 480, maxHeight: '90%', flexGrow:0, alignSelf: 'center', backgroundColor: '#fff', borderRadius: 20 }}>
-    <AppIcon name="location" size={28} color={palette.teal}/>
+    <AppIcon name="location" size={28} color={palette.blue}/>
     <Title message="Location during your shipment"/>
     <Copy message="Loadgistic collects your phone's location to update your active shipment, even when the app is closed or not in use."/>
     <Copy message="Only an approximate location, within your chosen radius of up to 10 km, is sent to Loadgistic and shared with authorized shipment parties. Your exact coordinates stay on your phone."/>

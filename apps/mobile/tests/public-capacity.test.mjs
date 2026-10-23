@@ -2,9 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCapacityPage, capacityUrl, loadCapacity, loadSharedCapacity } from '../src/api/public-capacity.ts';
 const row = (id, extra = {}) => ({ id, status: 'EMPTY', assigned_driver_first_name: 'Driver', location_lat: 9, location_lng: 38, ...extra });
-test('only available assigned trucks enter the projection; contacts stay out', () => {
+test('only available assigned trucks enter the projection; private contacts stay out', () => {
  const page = parseCapacityPage({ items: [row('a', { contact_email: 'private@example.test' }), row('b', { status: 'FULL' }), row('c', { assigned_driver_first_name: '' })], hasMore: false });
  assert.equal(page.items.length, 1); assert.equal('contact_email' in page.items[0], false);
+});
+test('vehicle details keep only explicit public callback phones and safe document metadata',()=>{
+ const privateFields={assigned_driver_last_name:'Private surname',assigned_driver_user_id:'private-driver-id',provider_organization_id:'private-owner-id',owner_surname:'Private owner',contact_email:'private@example.test',email:'private-account@example.test',device_id:'private-device',installation_id:'private-installation',proof_storage_path:'supabase://verification/private-proof',document_number:'private-document',storage_path:'private-storage'};
+ const badge={type:'DRIVER_IDENTITY',verified:true,expired:false,reviewedAt:'2026-10-22T12:30:00.000Z',expiresOn:'2027-10-22',...privateFields};
+ const item=parseCapacityPage({items:[row('safe',{...privateFields,assigned_driver_first_name:'Public first name',assigned_driver_phone:'+251 922 809 000',contact_phone:'+251911111111',driver_verification_badges:[badge],owner_verification_badges:[{...badge,type:'IDENTITY'}],truck_verification_badges:[{...badge,type:'VEHICLE_OWNERSHIP'}]})],hasMore:false}).items[0];
+ assert.equal(item.driver,'Public first name');assert.equal(item.driverPhone,'+251922809000');assert.equal(item.providerPhone,'+251911111111');assert.equal(item.ownerDocumentsLabel,'Transport Provider documents');
+ assert.deepEqual(item.driverBadges,[{type:'DRIVER_IDENTITY',reviewed:true,expired:false,reviewedAt:'2026-10-22T12:30:00.000Z',expiresOn:'2027-10-22'}]);
+ for(const value of Object.values(privateFields))assert.equal(JSON.stringify(item).includes(value),false,value);
+});
+test('private account phones never replace unpublished callbacks and malformed phones cannot launch contacts',()=>{
+ const parse=extra=>parseCapacityPage({items:[row('safe',extra)],hasMore:false}).items[0];
+ for(const assigned_driver_phone of [undefined,null,'','javascript:alert(1)','+251\n922809000','abc1234567','123'])assert.equal(parse({assigned_driver_phone,phone:'+251911111111',account_phone:'+251922222222',driver_phone:'+251933333333'}).driverPhone,'');
+ assert.equal(parse({contact_phone:'https://example.test'}).providerPhone,'');assert.equal(parse({}).ownerDocumentsLabel,'Owner documents');
+});
+test('unreviewed, expired and unknown document claims cannot become current reviewed evidence',()=>{
+ const item=parseCapacityPage({items:[row('safe',{owner_verification_badges:[null,{type:'PRIVATE_FILE',verified:true,storage_path:'secret'},{type:'IDENTITY',verified:'true',reviewedAt:'private review note'},{type:'BUSINESS_LICENSE',verified:true,expired:true,expiresOn:'2020-01-01'}]})],hasMore:false}).items[0];
+ assert.deepEqual(item.ownerBadges,[{type:'IDENTITY',reviewed:false,expired:false,reviewedAt:'',expiresOn:''},{type:'BUSINESS_LICENSE',reviewed:false,expired:true,reviewedAt:'',expiresOn:'2020-01-01'}]);
+ for(const status of ['FULL','OFF_DUTY'])assert.equal(parseCapacityPage({items:[row('denied',{status,assigned_driver_phone:'+251911111111'})],hasMore:false}).items.length,0);
+ assert.equal(parseCapacityPage({items:[row('unassigned',{assigned_driver_first_name:'',assigned_driver_phone:'+251911111111'})],hasMore:false}).items.length,0);
 });
 test('invalid coordinates stay off map and malformed pagination fails', () => {
  assert.equal(parseCapacityPage({ items: [row('a', { location_lat: 100 })], hasMore: false }).items[0].latitude, null);

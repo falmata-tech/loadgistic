@@ -3,12 +3,15 @@ import { capacityLoadPreference, type CapacityLoadPreference } from '../../../..
 import {publicTruckAuthority} from '../../../../src/lib/public-truck-authority.js';
 import type {TruckAuthority} from './public-content';
 import {publicAsset} from '../../../../src/lib/mobile/public-contract.js';
+import {externalDestination,type PublicBadge} from './public-content.ts';
 import {locationSourceKind} from '../../../../src/lib/location-source.js';
 export type SignalPoint = {latitude:number;longitude:number;label:string};
 export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};
 export type CapacitySignal = {
   authority?:TruckAuthority; id: string; provider: string; handle: string; driver: string;portrait:string;
   truck: string; status: 'EMPTY' | 'PARTIAL';
+  driverPhone:string;providerPhone:string;driverKind:string;ownerDocumentsLabel:'Owner documents'|'Transport Provider documents';
+  ownerBadges:PublicBadge[];driverBadges:PublicBadge[];truckBadges:PublicBadge[];
   acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
   latitude: number | null; longitude: number | null;
   capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|'MANUAL'|null;locationIsDemo?:boolean;
@@ -21,6 +24,17 @@ const record = (value: unknown): Record<string, unknown> => {
   return value as Record<string, unknown>;
 };
 const text = (value: unknown) => typeof value === 'string' ? value : '';
+const publicPhone=(value:unknown)=>externalDestination(`tel:${text(value)}`)?.slice(4)||'';
+const documentTypes=new Set(['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS','DRIVER_IDENTITY','VEHICLE_OWNERSHIP','VEHICLE_OPERATING_LICENSE','VEHICLE_AUTHORIZATION','VEHICLE_AUTHORITY','TRUCK_AUTHORIZATION']);
+const publicDate=(value:unknown)=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}(?:T[\d:.+-]+Z?)?$/.test(value)?value:'';
+function documentBadges(value:unknown):PublicBadge[]{
+ if(!Array.isArray(value))return[];
+ return value.flatMap(raw=>{
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))return[];
+  const row=raw as Record<string,unknown>,type=text(row.type);if(!documentTypes.has(type))return[];
+  return [{type,reviewed:row.verified===true&&row.expired!==true,expired:row.expired===true,reviewedAt:publicDate(row.reviewedAt),expiresOn:publicDate(row.expiresOn)}];
+ });
+}
 const coordinate = (value: unknown, max: number): number | null =>
   typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= max ? value : null;
 
@@ -36,7 +50,7 @@ const points = (value:unknown):SignalPoint[] => {
  }
  return result;
 };
-// Explicit projection prevents accidental persistence of contacts or extra server fields.
+// Only explicitly public callback phones and review metadata accompany the map.
 export function parseCapacityPage(value: unknown): CapacityPage {
   const page = record(value);
   if (page.filterError) throw new Error('Choose valid cities and try your filters again.');
@@ -50,6 +64,9 @@ export function parseCapacityPage(value: unknown): CapacityPage {
     const latitude=coordinate(row.location_lat,90),longitude=coordinate(row.location_lng,180);
     const currentVisible=row.current_signal_geometry_visible!==false;
     items.push({ ...(row.authority?{authority:publicTruckAuthority(row.authority)}:{}),id, driver,portrait:publicAsset(row.assigned_driver_portrait_url), provider: text(row.provider_name), handle: text(row.provider_handle),
+      driverPhone:publicPhone(row.assigned_driver_phone),providerPhone:publicPhone(row.contact_phone),driverKind:text(row.driver_kind_label)||'Driver',
+      ownerDocumentsLabel:row.provider_organization_id?'Transport Provider documents':'Owner documents',
+      ownerBadges:documentBadges(row.owner_verification_badges),driverBadges:documentBadges(row.driver_verification_badges),truckBadges:documentBadges(row.truck_verification_badges),
       truck: [text(row.vehicle_make), text(row.vehicle_model)].filter(Boolean).join(' '),
       status: row.status, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
       latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {provisionDeviceSchema,selectLocationSchema,deviceCommandCapability,commandDispatchState,validateTelemetry,approximateTelematicsPosition} from '../src/lib/telematics-contract.js';
 import {authenticateGateway,gatewaySignature,loadGatewayConfigurations,verifyGatewayDevice} from '../src/lib/telematics-gateway-auth.js';
+import {adminDeviceProvisionCommand} from '../src/lib/telematics-admin-provision.js';
 import {normalizePosition,signedHeaders,syntheticCommand,correlatedSyntheticResult} from '../infra/telematics/bridge-contract.mjs';
 import {crc16X25,gt06Packet,loginPacket,gpsPacket,syntheticReply} from '../scripts/telematics/simulator.mjs';
 import {DEMO_DEVICES,assertDemoDevice,assertLoopback,assertDemoIdentity} from '../scripts/telematics/demo-manifest.mjs';
@@ -46,6 +47,19 @@ test('manual source has worldwide validated coordinates and an exclusive owner b
  const provision={ownerOrganizationId:randomUUID(),gatewayId:gateway.id,gatewayDeviceId:1,imei:'990000000000001',protocol:'gt06',protocolDeviceId:'990000000000001',label:'Synthetic'};
  assert.equal(provisionDeviceSchema.parse(provision).modelProfile,'UNVERIFIED');
  assert.throws(()=>provisionDeviceSchema.parse({...provision,ownerProviderProfileId:randomUUID()}));
+});
+test('admin demo selection binds a configured synthetic gateway and rejects spoofed hardware state',()=>{
+ const ownerOrganizationId=randomUUID(),demoGatewayId=randomUUID();
+ const input={mode:'DEMO',ownerOrganizationId,gatewayDeviceId:4,imei:'990000000000004',protocolDeviceId:'990000000000004',label:'Fictional tracker'};
+ assert.deepEqual(adminDeviceProvisionCommand(input,demoGatewayId),{ownerOrganizationId,gatewayId:demoGatewayId,gatewayDeviceId:4,imei:input.imei,
+  protocol:'gt06',protocolDeviceId:input.protocolDeviceId,label:input.label,modelProfile:'SYNTHETIC_GT06',synthetic:true});
+ assert.throws(()=>adminDeviceProvisionCommand(input,''),/DEMO_GATEWAY_UNAVAILABLE/);
+ for(const changed of [{...input,gatewayId:randomUUID()},{...input,synthetic:false},{...input,modelProfile:'UNVERIFIED'},
+  {...input,protocol:'teltonika'},{...input,ownerProviderProfileId:randomUUID()}])
+  assert.throws(()=>adminDeviceProvisionCommand(changed,demoGatewayId));
+ const real={...input,mode:'REAL',gatewayId:randomUUID(),protocol:'gt06'};
+ assert.throws(()=>adminDeviceProvisionCommand(real,demoGatewayId),/INVALID_DEVICE_PROVISION/);
+ assert.throws(()=>adminDeviceProvisionCommand({...real,synthetic:true},demoGatewayId));
 });
 test('normalized bridge drops raw/result identifiers and converts knots to kph',()=>{
  const raw={id:1,deviceId:1,uniqueId:'990000000000001',protocol:'gt06',fixTime:now,serverTime:now,valid:true,latitude:9.031,longitude:38.748,speed:10,course:0,

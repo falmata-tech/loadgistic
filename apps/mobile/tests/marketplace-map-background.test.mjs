@@ -43,7 +43,8 @@ function nodes(tree,ancestors=[]){
 const find=(tree,predicate)=>nodes(tree).find(({node})=>predicate(node))?.node;
 const style=node=>Object.assign({},...[node.props.style].flat().filter(Boolean));
 const language={useLanguage:()=>({t:message=>message})};
-const ui=Object.fromEntries(['Page','Title','Copy','Card','Button','ErrorText','Field'].map(name=>[name,name]));
+const ui=Object.fromEntries(['Page','Title','Copy','Card','Button','ErrorText','Field','LoadingSpinner'].map(name=>[name,name]));
+ui.palette={blue:'#155eef',blueSoft:'#eaf1ff',success:'#155eef',successSoft:'#eaf1ff',muted:'#526375',borderSoft:'#e5eaf1',canvas:'#f3f5f7'};
 const native=Object.fromEntries(['ActivityIndicator','View','Text','ScrollView','Pressable','TextInput','Image'].map(name=>[name,name]));
 native.StyleSheet={create:value=>value,absoluteFill:{position:'absolute',top:0,left:0,right:0,bottom:0}};
 const settle=async()=>{for(let index=0;index<5;index++)await Promise.resolve();};
@@ -119,7 +120,8 @@ function capacityScreen(){
   '../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},
   '../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},
   '../api/public-capacity':{loadCapacity:async()=>{},loadSharedCapacity:async()=>{}},'../../../../src/lib/transporter-search.js':transporterSearch,
-  '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by public Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}}
+  '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by public Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},
+  '../components/ui':ui
  });
  return{render:()=>render.render(screen.default)};
 }
@@ -132,8 +134,8 @@ test('Capacity keeps the map full height with search and vehicle filters after t
  const map=find(tree,item=>item.type==='CapacityMap');
  assert.ok(map,'the map remains mounted behind its floating controls');
  assert.equal(map.props.bottomInset,20,'signal controls reserve only their normal bottom offset');
- assert.ok(find(tree,item=>item.type==='Pressable'&&nodes(item).some(({node})=>node.type==='Text'&&String(node.props.children).startsWith('Vehicle filters'))));
- const search=find(tree,item=>item.type==='Pressable'&&nodes(item).some(({node})=>node.type==='Text'&&String(node.props.children).startsWith('Transporter search')));
+ assert.ok(find(tree,item=>item.type==='Pressable'&&item.props.accessibilityLabel==='Vehicle filters'&&nodes(item).some(({node})=>node.type==='Text'&&String(node.props.children).startsWith('Filter'))));
+ const search=find(tree,item=>item.type==='Pressable'&&item.props.accessibilityLabel==='Search transporters'&&nodes(item).some(({node})=>node.type==='Text'&&String(node.props.children).startsWith('Search')));
  search.props.onPress();tree=capacity.render();
  assert.equal(find(tree,item=>item.type==='ResultsDrawer').props.bottom,20,'results scrolling uses the map bottom inset');
  assert.equal(style(find(tree,item=>item.props.testID==='capacity-map-workspace')).flex,1);
@@ -143,7 +145,7 @@ test('the actual results drawer accepts a bottom inset while preserving its defa
  const render=renderer();
  const drawer=render.compile('../src/components/results-drawer.tsx',{
   'react-native':{...native,Animated:{View:'AnimatedView',Value:class{constructor(value){this.value=value;}},timing:()=>({start(){},stop(){}})}},
-  './ui':{palette:{border:'#cbdadb',ink:'#172c46',teal:'#0c7275'}},'./app-icon':{AppIcon:'AppIcon'},'../localization/provider':language
+  './ui':{palette:{border:'#cbd5e1',ink:'#0b1d3a'}},'../components/ui':{palette:{blue:'#155eef',blueSoft:'#eaf1ff',success:'#155eef',successSoft:'#eaf1ff',muted:'#526375',borderSoft:'#e5eaf1',canvas:'#f3f5f7'}},'./app-icon':{AppIcon:'AppIcon'},'../localization/provider':language
  });
  const configured=()=>drawer.ResultsDrawer({bottom:112,onClose(){}});
  const regular=()=>drawer.ResultsDrawer({onClose(){}});

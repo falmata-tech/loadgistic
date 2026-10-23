@@ -92,6 +92,18 @@ jobs:
       - name: Validate specifications, source and delivery tooling before Docker
         run: npm run check
 
+      - name: Require private demo GPS worker loopback roundtrip
+        env:
+          REQUIRE_GT06_LOOPBACK: 'true'
+        run: timeout --signal=TERM --kill-after=10s 3m node --test tests/telematics-hosted-motion-worker.test.mjs tests/telematics-hosted-topology.test.mjs
+
+      - name: Verify default-off hosted motion container packaging
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 3m docker build -q -f infra/telematics/Dockerfile.motion -t loadgistic-hosted-motion:ci .
+          timeout --signal=TERM --kill-after=10s 30s docker run --rm --network none loadgistic-hosted-motion:ci node /app/infra/telematics/hosted-motion-worker.mjs --preflight |
+            node -e "let s='';process.stdin.on('data',c=>s+=c);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.event!=='hosted_motion_preflight'||x.enabled!==false||x.deploymentAuthorized!==false)process.exit(1)})"
+
       - name: Set up pinned Supabase CLI
         uses: supabase/setup-cli@v2
         with:
@@ -135,6 +147,244 @@ jobs:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: node scripts/ci-disposable-gps-database.mjs create
 
+      - name: Install and verify demo-world migrations on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_control') is not null,
+            to_regprocedure('public.demo_world_claim_batch(uuid,integer)') is not null,
+            to_regclass('public.demo_world_tracking_notification_sink') is not null,
+            to_regprocedure('public.demo_world_tracking_fixture_isolated(uuid)') is not null,
+            to_regclass('public.demo_world_handover_receipts') is not null,
+            to_regprocedure('public.demo_world_execute_atomic_handover()') is not null,
+            to_regclass('public.demo_world_handover_jobs') is not null,
+            to_regprocedure('public.demo_world_claim_handover(uuid)') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            ffffffff)
+              for migration in 185_demo_world_durable_capacity 186_demo_world_tracking_notification_sink 187_demo_world_atomic_handover 188_demo_world_handover_worker; do
+                timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "supabase/migrations/$migration.sql"
+              done
+              ;;
+            tttttttt) echo "Demo-world migrations already present in disposable clone" ;;
+            *) echo "Partial demo-world migration state in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = tttttttt
+
+      - name: Install default-off hosted demo motion guard on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_hosted_motion_control') is not null,
+            to_regprocedure('public.hosted_demo_motion_command(uuid,uuid,jsonb)') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            ff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/189_hosted_demo_motion_control.sql ;;
+            tt) echo "Hosted demo motion guard already present in disposable clone" ;;
+            *) echo "Partial hosted demo motion guard in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = tt
+
+      - name: Install inert demo broker sharing scenario on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_business_share_control') is not null,
+            to_regprocedure('public.demo_world_claim_business_share(uuid)') is not null,
+            to_regprocedure('public.demo_world_execute_business_share(bigint,uuid)') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            fff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/190_demo_world_business_capacity_sharing.sql ;;
+            ttt) echo "Demo broker sharing scenario already present in disposable clone" ;;
+            *) echo "Partial demo broker sharing scenario in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = ttt
+
+      - name: Install disarmed demo Tracking reservation on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_tracking_lifecycle_control') is not null,
+            to_regprocedure('public.demo_world_tracking_lifecycle_scope()') is not null,
+            to_regprocedure('public.demo_world_tracking_lifecycle_email_sink()') is not null,
+            to_regprocedure('public.demo_world_tracking_lifecycle_otp_sink()') is not null,
+            to_regprocedure('public.demo_world_tracking_lifecycle_push_sink()') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            fffff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/191_demo_world_tracking_lifecycle_reservation.sql ;;
+            ttttt) echo "Demo Tracking reservation already present in disposable clone" ;;
+            *) echo "Partial demo Tracking reservation in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = ttttt
+
+      - name: Install exact Admin demo GPS provenance on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regprocedure('public.mark_demo_admin_spare_gps_fix()') is not null,
+            exists(select 1 from pg_trigger where tgname='mark_demo_admin_spare_gps_fix' and not tgisinternal))"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            ff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/192_demo_admin_spare_gps_provenance.sql ;;
+            tt) echo "Exact Admin demo GPS provenance already present in disposable clone" ;;
+            *) echo "Partial Admin demo GPS provenance in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = tt
+
+      - name: Install exact incomplete Demo Tracking resume guard on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select position('target_exists := found' in
+            pg_get_functiondef('public.demo_world_tracking_lifecycle_control_guard()'::regprocedure)) > 0"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            f) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/193_demo_tracking_exact_incomplete_resume.sql ;;
+            t) echo "Exact incomplete Demo Tracking resume guard already present in disposable clone" ;;
+            *) echo "Demo Tracking resume guard missing or ambiguous in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = t
+
+      - name: Install disarmed live Demo Tracking reservation on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_tracking_live_control') is not null,
+            to_regprocedure('public.demo_world_tracking_live_scope()') is not null,
+            to_regprocedure('public.demo_world_tracking_live_email_sink()') is not null,
+            to_regprocedure('public.demo_world_tracking_live_otp_sink()') is not null,
+            to_regprocedure('public.demo_world_tracking_live_push_sink()') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            fffff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/194_demo_world_tracking_live_reservation.sql ;;
+            ttttt) echo "Live Demo Tracking reservation already present in disposable clone" ;;
+            *) echo "Partial live Demo Tracking reservation in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = ttttt
+
+      - name: Install inert demo provider profile scenario on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_profile_control') is not null,
+            to_regclass('public.demo_world_profile_target') is not null,
+            to_regclass('public.demo_world_profile_jobs') is not null,
+            to_regclass('public.demo_world_profile_receipts') is not null,
+            to_regprocedure('public.demo_world_profile_target_guard()') is not null,
+            to_regprocedure('public.demo_world_claim_profile(uuid)') is not null,
+            to_regprocedure('public.demo_world_execute_profile(bigint,uuid)') is not null,
+            to_regprocedure('public.demo_world_profile_status()') is not null,
+            exists(select 1 from pg_trigger where tgname='demo_world_profile_target_guard' and not tgisinternal),
+            exists(select 1 from pg_trigger where tgname='demo_world_profile_receipt_immutable' and not tgisinternal))"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            ffffffffff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/195_demo_world_provider_profile.sql ;;
+            tttttttttt) echo "Demo provider profile scenario already present in disposable clone" ;;
+            *) echo "Partial demo provider profile migration state in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = tttttttttt
+
+      - name: Install inert broker staff permission scenario on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_team_control') is not null,
+            to_regclass('public.demo_world_team_target') is not null,
+            to_regclass('public.demo_world_team_jobs') is not null,
+            to_regclass('public.demo_world_team_receipts') is not null,
+            to_regprocedure('public.demo_world_claim_team(uuid)') is not null,
+            to_regprocedure('public.demo_world_execute_team(bigint,uuid)') is not null,
+            to_regprocedure('public.demo_world_team_status()') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            fffffff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/196_demo_world_broker_staff_permission.sql ;;
+            ttttttt) echo "Demo broker staff permission scenario already present in disposable clone" ;;
+            *) echo "Partial broker staff permission migration state in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = ttttttt
+
+      - name: Install versioned demo provider profile copy on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            exists(select 1 from information_schema.columns
+              where table_schema='public' and table_name='demo_world_profile_jobs'
+                and column_name='copy_version'),
+            to_regprocedure('public.demo_world_profile_copy(integer,boolean)') is not null,
+            exists(select 1 from public.demo_world_profile_control
+              where id=1 and manifest_version=2 and not enabled))"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            fff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/197_demo_world_provider_profile_copy_v2.sql ;;
+            ttt) echo "Versioned demo provider profile copy already present in disposable clone" ;;
+            *) echo "Partial demo provider profile copy migration state in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = ttt
+
+      - name: Install inert vehicle duty cycle on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          presence_query="select concat(
+            to_regclass('public.demo_world_duty_control') is not null,
+            to_regclass('public.demo_world_duty_jobs') is not null,
+            to_regclass('public.demo_world_duty_receipts') is not null,
+            to_regprocedure('public.demo_world_claim_duty(uuid)') is not null,
+            to_regprocedure('public.demo_world_execute_duty(bigint,uuid)') is not null,
+            to_regprocedure('public.demo_world_duty_status()') is not null)"
+          presence="$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")"
+          case "$presence" in
+            ffffff) timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -q -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < supabase/migrations/198_demo_world_vehicle_duty.sql ;;
+            tttttt) echo "Inert vehicle duty cycle already present in disposable clone" ;;
+            *) echo "Partial vehicle duty cycle migration state in disposable clone" >&2; exit 1 ;;
+          esac
+          test "$(docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -Atqc "$presence_query")" = tttttt
+
+      - name: Verify inert vehicle duty cycle on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-world-duty-cycle.sql
+
+      - name: Verify durable Capacity and Tracking notification isolation on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          for suite in demo-world-durable-capacity demo-world-tracking-notification-sink; do
+            timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
+
       - name: Verify GPS privacy and credential races on disposable database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
@@ -145,12 +395,65 @@ jobs:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-ci-isolated-setup.sql
 
+      - name: Verify exact fictional GPS cohort and provisioning authority
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          for suite in demo-gps-cohort-provision demo-gps-cohort; do
+            timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
+
+      - name: Verify hosted motion kill switch and takeover on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/hosted-demo-motion-control.sql
+
+      - name: Verify broker sharing scenario and private feed on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-world-business-sharing.sql
+
+      - name: Verify inert provider profile cycle on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-world-provider-profile.sql
+
+      - name: Verify inert broker staff permission cycle on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-world-broker-staff-permission.sql
+
+      - name: Verify disarmed Tracking reservation and notification isolation
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          test "$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci
+          for suite in demo-world-tracking-lifecycle-readiness demo-world-tracking-lifecycle-reservation demo-tracking-exact-incomplete-resume demo-world-tracking-live-reservation; do
+            timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
+
+      - name: Verify exact Admin demo GPS provenance on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-gps-admin-spare-provenance.sql
+
       - name: Verify GPS demo location arbitration
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: |
           set -euo pipefail
           { printf "set loadgistic.demo_isolated_test = 'true';\n"; cat tests/sql/demo-location-arbitration.sql; } | timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1
+
+      - name: Verify exact demo handover and durable worker on disposable database
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          for suite in demo-world-atomic-handover demo-world-handover-worker; do
+            timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
 
       - name: Verify ordered phone and GPS locks
         env:
@@ -183,7 +486,7 @@ jobs:
           for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-owner-retention tracking-device-location capacity-launch-matching \
             independent-single-truck provider-owner-fleets provider-vehicle-authority provider-live-publication-limit provider-publication-owner-scope provider-authority-recovery provider-authority-command-denials provider-authority-search-path provider-authority-erasure provider-driving-intent provider-fleet-erasure provider-billing-retired capacity-search-metadata-cost capacity-multiple-options telematics telematics-account-privacy security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds featured-continuous-rounds tracking-route-map \
             fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
-            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search profile-search-page-cost public-provider-map-page-cost public-map-assigned-driver-cost personal-fleet-capacity-sharing featured-operation-status featured-team-permission featured-broadcast-window provider-only-support freight-vehicle-catalogue \
+            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search profile-search-page-cost public-provider-map-page-cost public-map-assigned-driver-cost personal-fleet-capacity-sharing featured-operation-status featured-team-permission featured-broadcast-window featured-tiktok-broadcast-state provider-only-support freight-vehicle-catalogue \
             account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards play-review-business-isolation public-capacity-policy-scope \
             truck-regular-service-scope personal-public-identity staff-active-permission-preservation review-moderation-restrictions support-waiting-claim-eligibility \
             platform-brokerage-retirement customer-business-workspaces business-capacity-sharing tracking-owner-delegation location-radius-choices tracking-selected-sources \

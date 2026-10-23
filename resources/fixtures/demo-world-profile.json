@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "fixture_source": "loadgistic",
+  "state": "inert-unbound",
+  "actor_key": "user-public-fleet-01",
+  "organization_key": "org-public-fleet-01",
+  "organization_id": "c36022ff-bf3e-432d-ae96-93d1537cf79e",
+  "page_key": "page-public-fleet-01",
+  "page_id": "06b2d2f0-9914-4543-853b-72381b4999da",
+  "command": "update_provider_profile_page",
+  "daily_slots_utc": [540, 900],
+  "baseline": {
+    "headline": "Vehicle space across Addis Ababa",
+    "about": "Around Addis Ababa, Sheger Freight Network works with pickups, vans and box-body vehicles. Open a vehicle to see its latest space and working area."
+  },
+  "alternate": {
+    "headline": "Road freight across our active routes",
+    "about": "Our fleet shares current vehicle capacity so brokers and cargo teams can find a suitable match and contact us directly."
+  },
+  "previous_baseline": {
+    "headline": "Reliable freight capacity for growing Ethiopian trade",
+    "about": "Sheger Freight Network coordinates current truck capacity and regular road-freight service for producers, distributors, and commercial customers."
+  }
+}

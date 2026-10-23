@@ -45,7 +45,7 @@ export function LeafletRouteMap({ routes, comparisonRoutes = [],areas=[],compari
   }
   function routeStyle(route:any) {
     if(route.group==='viewer')return {color:'#c45116',weight:6,opacity:.96,dashArray:'12 8'};
-    return {color:'#1769e0',weight:5,opacity:.82};
+    return {color:'#155eef',weight:5,opacity:.82};
   }
   const fitPoints=[
     ...visible.flatMap(route=>[route.from,route.to]).map(point=>({lat:point.lat,lng:point.lng})),
@@ -56,7 +56,7 @@ export function LeafletRouteMap({ routes, comparisonRoutes = [],areas=[],compari
       <MapContainer center={[9.1,39.7]} zoom={6} minZoom={5} maxZoom={10} scrollWheelZoom={false}>
         <BaseMapTiles/>
         {visible.map((route:any,index:number)=><Polyline key={`${route.group}-${route.id||index}`} positions={[[route.from.lat,route.from.lng],[route.to.lat,route.to.lng]]} pathOptions={routeStyle(route)}/>)}
-        {visibleAreas.map((area:any,index:number)=><Circle key={`${area.group}-area-${area.id||index}`} center={[area.center_lat,area.center_lng]} radius={Number(area.radius_km)*1000} pathOptions={area.group==='viewer'?{color:'#c45116',weight:4,opacity:.96,dashArray:'10 7',fillColor:'#c45116',fillOpacity:.12}:{color:'#1769e0',weight:3,opacity:.86,fillColor:'#1769e0',fillOpacity:.15}}><Tooltip permanent direction="center">{area.place_label}<br/>{area.radius_km}<Text message=" km"/></Tooltip></Circle>)}
+        {visibleAreas.map((area:any,index:number)=><Circle key={`${area.group}-area-${area.id||index}`} center={[area.center_lat,area.center_lng]} radius={Number(area.radius_km)*1000} pathOptions={area.group==='viewer'?{color:'#c45116',weight:4,opacity:.96,dashArray:'10 7',fillColor:'#c45116',fillOpacity:.12}:{color:'#155eef',weight:3,opacity:.86,fillColor:'#155eef',fillOpacity:.15}}><Tooltip permanent direction="center">{area.place_label}<br/>{area.radius_km}<Text message=" km"/></Tooltip></Circle>)}
         {[...markers.entries()].map(([name,marker]:any)=><CircleMarker key={name} center={[marker.lat,marker.lng]} radius={6} pathOptions={{color:'#0b3f91',fillColor:'#ffffff',fillOpacity:1,weight:3}}><Tooltip permanent direction="top" offset={[0,-5]}>{name}</Tooltip></CircleMarker>)}
         <FitCoverage points={fitPoints}/>
       </MapContainer>

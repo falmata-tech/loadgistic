@@ -15,7 +15,7 @@ test('capacity map combines location sources with load status and clears them on
   await dialog.locator('[data-filter-group="status"] input[value="EMPTY"]').check();
   await expect(dialog.locator('input[name="locationSource"]')).toHaveValue('GPS,MOBILE');
   await page.screenshot({path:info.outputPath('location-source-filters.png'),scale:'css'});
-  await dialog.getByRole('button',{name:'Show matching vehicles'}).click();
+  await dialog.getByRole('button',{name:'Show vehicles'}).click();
   await expect(page).toHaveURL(url=>url.searchParams.get('locationSource')==='GPS,MOBILE'&&url.searchParams.get('status')==='EMPTY',{timeout:20_000});
   const filteredQuery=new URL(page.url()).searchParams;
   await trigger.click();
@@ -43,6 +43,6 @@ test('an old Space needed link does not keep an invisible filter',async({page})=
   const dialog=page.getByRole('dialog',{name:'Vehicle filters'});
   await expect(dialog.getByRole('checkbox',{name:'Partly loaded'})).toBeChecked();
   await expect(dialog.locator('[data-filter-group="loadType"]')).toHaveCount(0);
-  await dialog.getByRole('button',{name:'Show matching vehicles'}).click();
+  await dialog.getByRole('button',{name:'Show vehicles'}).click();
   await expect(page).toHaveURL(url=>url.searchParams.get('status')==='PARTIAL'&&!url.searchParams.has('loadType'),{timeout:20_000});
 });

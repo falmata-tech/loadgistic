@@ -12,8 +12,8 @@ const campaign=JSON.parse(await readFile(path.join(source,'campaign.json'),'utf8
 assert.equal(campaign.brand,'Loadgistic');
 assert.equal(campaign.website,'https://loadgistic.com');
 await mkdir(output,{recursive:true});
-const artwork=await readFile(path.join(source,'east-africa-yard-portrait.png'));
-const wideArtwork=await readFile(path.join(source,'east-africa-yard-wide.png'));
+const artwork=await readFile(path.join(source,'east-africa-yard-portrait-cobalt.png'));
+const wideArtwork=await readFile(path.join(source,'east-africa-yard-wide-cobalt.png'));
 const iconSource=await readFile(path.join(root,'public/icon.svg'),'utf8');
 const icon=iconSource.slice(iconSource.indexOf('>')+1,iconSource.lastIndexOf('</svg>'));
 const escape=text=>text.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
@@ -25,9 +25,9 @@ async function poster(format,headline,name){
  <defs><linearGradient id="shade" x2="0" y2="1"><stop stop-color="#041a2e" stop-opacity=".85"/><stop offset=".7" stop-color="#041a2e" stop-opacity=".6"/><stop offset="1" stop-color="#041a2e" stop-opacity="0"/></linearGradient></defs>
  <rect width="${width}" height="${layout.website+100}" fill="url(#shade)"/>
  <svg x="92" y="${layout.brand}" width="80" height="80" viewBox="0 0 512 512">${icon}</svg>
- <text x="194" y="${layout.brand+59}" fill="#fff" font-family="Arial,sans-serif" font-weight="700" font-size="57" letter-spacing="-1.5">Load<tspan fill="#21b6b3">gistic</tspan></text>
+ <text x="194" y="${layout.brand+59}" fill="#fff" font-family="Arial,sans-serif" font-weight="700" font-size="57" letter-spacing="-1.5">Load<tspan fill="#155eef">gistic</tspan></text>
  ${headline.map((line,index)=>`<text x="92" y="${layout.headline+index*(layout.size+8)}" fill="#fff" font-family="Arial,sans-serif" font-weight="700" font-size="${layout.size}" letter-spacing="-1.7">${escape(line)}</text>`).join('')}
- <rect x="92" y="${layout.status-34}" width="424" height="48" rx="24" fill="#0c7275"/>
+ <rect x="92" y="${layout.status-34}" width="424" height="48" rx="24" fill="#155eef"/>
  <text x="115" y="${layout.status}" fill="#fff" font-family="Arial,sans-serif" font-weight="600" font-size="26">${escape(status)}</text>
  <text x="94" y="${layout.website}" fill="#e9f1f3" font-family="Arial,sans-serif" font-size="27">loadgistic.com</text>
  </svg>`);

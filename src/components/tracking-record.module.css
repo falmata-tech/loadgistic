@@ -4,11 +4,11 @@
 .section { border:1px solid var(--line); border-radius:12px; background:white; padding:20px; min-width:0; }
 .section > header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid var(--line); }
 .section h2,.section h3 { margin:0; display:flex; align-items:center; gap:8px; font-size:1rem; }
-.section h2 svg,.section h3 svg { width:20px; height:20px; color:var(--teal,#0d6b6e); }
+.section h2 svg,.section h3 svg { width:20px; height:20px; color:var(--blue); }
 .timeline { margin:0; padding:0; list-style:none; }
 .timeline li { display:grid; grid-template-columns:16px minmax(0,1fr); gap:14px; padding-bottom:22px; }
 .timeline li:last-child { padding-bottom:0; }
-.timeline li::before { content:''; width:10px; height:10px; background:var(--teal,#0d6b6e); border:3px solid #deeeee; border-radius:50%; margin-top:3px; }
+.timeline li::before { content:''; width:10px; height:10px; background:var(--blue); border:3px solid #e5eaf1; border-radius:50%; margin-top:3px; }
 .timeline strong { font-size:.9rem; }
 .timeline p { margin:7px 0; font-size:.87rem; line-height:1.5; }
 .timeline time { color:var(--muted); font-size:.77rem; }

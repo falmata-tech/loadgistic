@@ -33,7 +33,7 @@ function runtime(file,{state='ONBOARDING',platform='android',guest=null,role='DR
   isChatMessageVisible:()=>false,blockChatReading(){},chatAlertSnapshot,chatAlertCopy,createChatAlertTracker,handoverAlertSnapshot,handoverAlertCopy,createHandoverAlertTracker,
   browserAlerts:()=>({prepare:async()=>'OFF',dispose:async()=>{},enabled:()=>false,status:()=>'OFF',reconcile:async()=>{}}),
   useNativePush:input=>{pushInputs.push(input);return{status:'UNSUPPORTED',optedIn:false,error:'',toggle:async()=>{}};},removeNativePushScope:async scope=>{revokedPushScopes.push(scope);},watchNativePushRefresh:()=>()=>{},
-  palette:{ink:'#172c46',teal:'#06787c'},BackgroundNoticeLayout:Context,backgroundNoticeVisible:()=>false,
+  palette:{ink:'#0b1d3a',blue:'#155eef'},BackgroundNoticeLayout:Context,backgroundNoticeVisible:()=>false,
   Location:{},authorizeBackgroundLocation:async()=>{throw Error('Unexpected location authorization');},backgroundConsentKey:id=>id,
   deviceTrackingId:async()=>{throw Error('Unexpected device request');},readTrackingLeases:async()=>[],replaceTrackingLeases:async()=>{},revokeTrackingLease:async()=>{},startBackgroundTracking:async()=>{throw Error('Unexpected background start');},stopBackgroundTracking:async()=>{backgroundStops++;},trackingLeases:value=>value,
   setTimeout:(callback,delay=0)=>{const id=++nextTimer;timers.set(id,{callback,delay});return id;},clearTimeout:id=>timers.delete(id),

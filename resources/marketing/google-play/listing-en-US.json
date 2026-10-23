@@ -12,15 +12,15 @@
     "height": 500,
     "alpha": false,
     "altText": "Loadgistic beside dispatchers and working freight vehicles at an East African yard.",
-    "provenance": "Generated East African freight-yard illustration, composed with the unchanged Loadgistic icon and name. Not customer footage or an app screenshot. Exact prompts are in resources/marketing/prelaunch/regional-artwork-provenance.json.",
+    "provenance": "Generated East African freight-yard illustration, composed with the current navy-and-cobalt Loadgistic identity. Not customer footage or an app screenshot. Exact prompts are in resources/marketing/prelaunch/regional-artwork-provenance.json.",
     "aiAssistedCreation": true,
     "proposedAiLabel": true,
-    "reviewed": true,
-    "artworkSource": "resources/marketing/prelaunch/east-africa-yard-wide.png",
+    "reviewed": false,
+    "artworkSource": "resources/marketing/prelaunch/east-africa-yard-wide-cobalt.png",
     "exportScript": "resources/marketing/google-play/export-assets.mjs",
     "sourceRole": "Transparent vector brand overlay; artworkSource is the decorative freight background.",
-    "artDirection": "Credible East African freight-yard operations, dispatchers and working vehicles; brand name only. Capacity networks lead; Tracking is secondary.",
-    "approval": "Owner explicitly approved the revised regional presentation at the actual 3135 preview on 2026-10-11."
+    "artDirection": "Credible East African freight-yard operations, dispatchers and working vehicles; navy and cobalt brand identity with natural landscape colors. Capacity networks lead; Tracking is secondary.",
+    "approval": "The prior visual approval applies to the former color treatment; this cobalt recolor awaits owner review."
   },
   "icon": {
     "source": "public/icon.svg",
@@ -29,7 +29,7 @@
     "height": 512,
     "format": "32-bit PNG",
     "maxBytes": 1048576,
-    "altText": "Loadgistic's white L, teal lines and gold accent on a navy background.",
+    "altText": "Loadgistic's white L and cobalt lines on a navy background.",
     "provenance": "Existing approved Loadgistic identity, unchanged. The new feature graphic's authorship does not establish the original icon's authorship."
   },
   "phoneScreenshots": [
