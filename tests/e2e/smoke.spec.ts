@@ -999,8 +999,11 @@ test('assigned Driver shares only an approximate location during travel',async({
   const requestedAt=Date.now();
   await page.getByRole('button',{name:'Email me a code'}).click();
   await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
+  const unlock=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/unlock'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Open tracking'}).click();
-  const reportedArea=page.locator('.tracking-reported-area');await expect(reportedArea).toContainText('Reported approximate area');await expect(reportedArea).toHaveAttribute('data-location-radius-km',String(location.location_precision_km));
+  expect((await unlock).status()).toBe(200);
+  await page.waitForURL(new RegExp(`/track/${shipmentId}$`),{timeout:30000});
+  const reportedArea=page.locator('.tracking-reported-area');await expect(reportedArea).toContainText('Reported approximate area',{timeout:30000});await expect(reportedArea).toHaveAttribute('data-location-radius-km',String(location.location_precision_km));
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible();
   await expect(page.getByText('Vehicle circle shows an approximate location, not exact GPS.',{exact:true})).toBeVisible();
   await expect(page.locator('.timeline')).toContainText('Going to pickup');
