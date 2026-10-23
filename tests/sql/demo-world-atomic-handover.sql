@@ -6,7 +6,7 @@ declare
   vehicle_a uuid:='54eb0674-4aa2-4975-bc1b-18999463a5b7';
   vehicle_b uuid:='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7';
   capacity_count bigint;assignment_count bigint;featured_count bigint;
-  original_a uuid;original_b uuid;outcome jsonb;denied boolean;featured_rows integer;
+  original_a uuid;original_b uuid;outcome jsonb;denied boolean;future_day uuid;featured_failure text;
 begin
   if current_database() not in('loadgistic_demo_handover_187_ci','loadgistic_telematics_ci')
     then raise exception 'ISOLATED_HANDOVER_TEST_DATABASE_REQUIRED';end if;
@@ -100,17 +100,24 @@ begin
   exception when others then denied:=sqlerrm='DEMO_HANDOVER_SOURCE_REFUSED';end;
   if not denied then raise exception 'HANDOVER_REAL_SOURCE_ACCEPTED';end if;
   denied:=false;
+  featured_failure:=null;
   begin
-    update public.featured_provider_days day set feature_date=current_date+100
-      where day.id=(select slot.day_id from public.featured_provider_slots slot
-        where slot.vehicle_id in(vehicle_a,vehicle_b)
-          or slot.driver_user_id in(original_a,original_b)
-        order by slot.day_id limit 1);
-    get diagnostics featured_rows=row_count;
-    if featured_rows<>1 then raise exception 'HANDOVER_FEATURED_FIXTURE_MISSING';end if;
+    -- Today's category may contain neither handover vehicle. Create the
+    -- exact future conflict here instead of borrowing the rotating roster.
+    insert into public.featured_provider_days(feature_date,base_place_ref,base_place_label,status)
+      select greatest(current_date+100,coalesce(max(feature_date)+1,current_date+100)),
+        'builtin:addis ababa','Synthetic handover guard','PUBLISHED'
+      from public.featured_provider_days
+      returning id into future_day;
+    insert into public.featured_provider_slots(day_id,slot_position,provider_organization_id,
+      vehicle_id,driver_user_id) values(future_day,1,
+      'c36022ff-bf3e-432d-ae96-93d1537cf79e',vehicle_a,original_a);
     perform public.demo_world_execute_atomic_handover();
-  exception when others then denied:=sqlerrm='DEMO_HANDOVER_SAVED_FEATURED';end;
-  if not denied then raise exception 'HANDOVER_FUTURE_FEATURED_ACCEPTED';end if;
+  exception when others then
+    featured_failure:=case when sqlerrm~'^DEMO_[A-Z0-9_]+$' then sqlerrm else 'OTHER_SQL_ERROR' end;
+    denied:=featured_failure='DEMO_HANDOVER_SAVED_FEATURED';
+  end;
+  if not denied then raise exception 'HANDOVER_FUTURE_FEATURED_ACCEPTED: %',coalesce(featured_failure,'NO_ERROR');end if;
   if (select count(*) from public.capacities where vehicle_id in(vehicle_a,vehicle_b))<>capacity_count
     then raise exception 'HANDOVER_DENIAL_WROTE_CAPACITY';end if;
 end $test$;
