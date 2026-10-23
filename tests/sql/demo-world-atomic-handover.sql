@@ -6,7 +6,7 @@ declare
   vehicle_a uuid:='54eb0674-4aa2-4975-bc1b-18999463a5b7';
   vehicle_b uuid:='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7';
   capacity_count bigint;assignment_count bigint;featured_count bigint;
-  original_a uuid;original_b uuid;outcome jsonb;denied boolean;
+  original_a uuid;original_b uuid;outcome jsonb;denied boolean;featured_rows integer;
 begin
   if current_database() not in('loadgistic_demo_handover_187_ci','loadgistic_telematics_ci')
     then raise exception 'ISOLATED_HANDOVER_TEST_DATABASE_REQUIRED';end if;
@@ -97,7 +97,11 @@ begin
   begin
     update public.featured_provider_days day set feature_date=current_date+100
       where day.id=(select slot.day_id from public.featured_provider_slots slot
-        where slot.vehicle_id=vehicle_a limit 1);
+        where slot.vehicle_id in(vehicle_a,vehicle_b)
+          or slot.driver_user_id in(original_a,original_b)
+        order by slot.day_id limit 1);
+    get diagnostics featured_rows=row_count;
+    if featured_rows<>1 then raise exception 'HANDOVER_FEATURED_FIXTURE_MISSING';end if;
     perform public.demo_world_execute_atomic_handover();
   exception when others then denied:=sqlerrm='DEMO_HANDOVER_SAVED_FEATURED';end;
   if not denied then raise exception 'HANDOVER_FUTURE_FEATURED_ACCEPTED';end if;

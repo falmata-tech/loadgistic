@@ -53,6 +53,11 @@ The test now moves only affected current/future Featured days into the past
 inside its rollback transaction, then separately proves the Featured guard.
 Existing-date and deliberately future-dated local rehearsals pass. No product
 guard or release threshold was relaxed.
+CI `39924302264` reaches the explicit Featured denial but finds that the fresh
+day features one handover **driver** on another vehicle, not the test's assumed
+vehicle slot. The assertion now chooses either affected vehicle or driver and
+requires one chosen day. Existing-slot and future driver-only rollback
+rehearsals pass; the actual handover guard still blocks either case.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.
