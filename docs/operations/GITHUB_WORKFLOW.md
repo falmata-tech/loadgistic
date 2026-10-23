@@ -4,15 +4,18 @@ This is Loadgistic's working convention. AGENTS and production authority control
 permissions; these instructions do not install GitHub protections or authorize
 a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR results.
 
-## Verified setup, October 20
+## Verified setup, October 23
 
 The public repository is `falmata-tech/loadgistic`; its default branch is `main`,
-not `master`. Live branch SHAs matched the local comparison: `feat/mobile-app`
-was 101 commits ahead and 0 behind `main` at the audit baseline, with no PR. Draft PR15 points to the older
-`feat/focused-capacity-dialogs`, not this release candidate. Its old green checks
-cannot certify current work. All existing branches report unprotected; the
-accessible ruleset list is empty. No provider setting was changed in this review.
-Protected metadata receipt: `.local/test-audit-20261020/github-workflow-inventory.json`.
+not `master`. The long `feat/mobile-app` branch was integrated through PR16 with
+a merge commit, `6b74ec8f63d4436e70a75954006e983ac6dddd59`, preserving its 126
+existing commits. The exact-head PR run `40028282878` passed all 16 jobs. The
+separate main-push run `40032518930` passed all 16 jobs on attempt 2, including
+`release-ready`. Attempt 1 failed two browser cases; only failed jobs were
+rerun, and the intermittent timing issue remains recorded in current progress.
+PR15 is older, unrelated work and its checks certify neither
+PR16 nor main. The original October 20 inventory is retained at
+`.local/test-audit-20261020/github-workflow-inventory.json`.
 
 The October 20 CI ran on all PRs and pushes to main, the temporary mobile branch
 and release branches, with per-ref cancellation. That temporary branch trigger
@@ -30,7 +33,7 @@ those remain unverified. No configuration was changed. Protected receipt:
 `.local/test-audit-20261020/netlify-branch-readonly.json`.
 A local Git branch or successful PR does not identify the live Netlify artifact.
 
-## Normal work after this release is integrated
+## Normal work from integrated main
 
 Use a lightweight GitHub flow: one integrated `main`, short-lived branches and
 one focused PR per coherent change. Do not introduce a permanent develop/staging
@@ -70,32 +73,26 @@ Verify current head, base, reviews and every required check immediately before a
 authorized merge; read back the merged commit and remote branch afterward. Keep
 an unchanged short-lived branch only until its merge/result has been verified.
 
-## Integrating the existing long branch
+## Long-branch integration result
 
-This is a separate pending operation, not a request to rewrite the existing commits.
-
-1. Finish the current audit, reviewed task commits and exact-source CI.
-2. Prepare a catch-up PR from `feat/mobile-app` to `main` describing the entire
-   net change, migrations and web/mobile release evidence. Do not repurpose PR15
-   or merge old dependency PRs blindly into the untested candidate.
-3. Recheck main/head and any conflicts. Preserve the existing commit chain and
-   approved artifact source IDs; propose a merge commit for this catch-up.
-4. Verify Netlify's exact production branch, auto-publish behavior and credential
-   contexts before treating merge as a harmless source-only operation. Preview
-   must not inherit production database/admin/email authority or real customer data.
-5. Obtain the required owner authority for the concrete merge/provider changes,
-   then verify the resulting main and hosted artifact separately. The prior
-   database/signing approvals remain bound to their actual files and conditions.
+PR16 integrated the long branch on October 23 after exact-head CI passed. The
+merge commit and remote main were read back independently. Netlify reported
+`manual` publishing, production branch `main`, allowed branches `[main]`, and
+the same published deploy ID before and after the merge. Thus the source merge
+did not itself publish a different live web artifact. Main-push CI and main
+protection have their own readbacks in [current progress](../PROGRESS.md); do
+not reuse PR CI as proof of either. The earlier database/signing approvals stay
+bound to their exact files and conditions; Google Play is paused by the owner.
 
 ## Enforcement and CI cost
 
-Recommended provider follow-up is a PR requirement on main, required current
-`release-ready`, resolved blocking review threads, and blocked deletion/force push,
-including avoiding routine administrator bypass. Do not claim those controls are
-installed: the observed repository currently has none. A solo owner cannot supply
-an independent second human review; do not configure an impossible approval rule
-or treat an agent's own review as that independent approval. Review exact settings
-and available account features before a separately authorized apply.
+After PR16 merged, `main` protection was installed and independently read back:
+pull requests are required, `release-ready` is a strict required check, blocking
+review threads must be resolved, administrators are covered, and force push and
+deletion are disabled. Required approving reviews are set to zero because the
+solo owner cannot supply an independent second human review. Do not mistake an
+agent's own review or this branch rule for independent approval. If a real
+reviewer joins, update the count in a separate reviewed provider change.
 
 After the catch-up PR is selected, use PR checks for short task branches and
 main-push checks for the integrated result. A temporary release candidate without
