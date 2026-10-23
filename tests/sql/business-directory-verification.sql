@@ -125,7 +125,10 @@ begin
  address_id:=public.submit_managed_verification(owner_id,pg_temp.business_document_command(workspace,'BUSINESS_ADDRESS',token||'-address'));
  perform public.review_managed_verification(reviewer_id,licence_id,'APPROVED','Fictional business licence checked.');
  perform public.review_managed_verification(reviewer_id,address_id,'APPROVED','Fictional business address checked.');
- perform pg_temp.assert_business_verification(exists(select 1 from public.business_workspace_search(provider_id,business_name,10)d where d->>'id'=workspace::text),'APPROVED_BUSINESS_RECIPIENT_SEARCH_MISSING');
+ perform pg_temp.assert_business_verification(exists(
+  select 1 from jsonb_array_elements(public.business_workspace_search(provider_id,business_name,10)) as d(item)
+  where d.item->>'id'=workspace::text
+ ),'APPROVED_BUSINESS_RECIPIENT_SEARCH_MISSING');
  item:=pg_temp.business_directory_item(provider_id,workspace);
  perform pg_temp.assert_business_verification(item->>'name'=business_name and item->>'managerName'=manager_first,'DIRECTORY_NAME_OR_FIRST_NAME_WRONG');
  select count(*) into badge_count from jsonb_array_elements(item->'documents')d where (d->>'verified')::boolean;
