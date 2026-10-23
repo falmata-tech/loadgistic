@@ -25,10 +25,10 @@ test('Expo transporter search coalesces typing and clears inline without reloadi
  const maps:URL[]=[],searches:{url:URL;at:number}[]=[],errors:string[]=[];
  page.on('pageerror',error=>errors.push(error.name));page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')maps.push(url);if(url.pathname==='/api/mobile/public/discovery')searches.push({url,at:Date.now()});});
  await page.setViewportSize({width:390,height:844});await page.goto(`${preview}/?provider=${encodeURIComponent(profile.handle)}`);
- await expect(page.getByRole('button',{name:'Transporter search',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);
+ await expect(page.getByRole('button',{name:'Search transporters',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);
  const canvas=page.locator('.maplibregl-canvas:visible');await canvas.evaluate(node=>node.setAttribute('data-search-map-proof','preserved'));const mapCount=maps.length;
  expect(maps.every(url=>url.searchParams.get('provider')===profile.handle&&!url.searchParams.has('q'))).toBe(true);expect(searches).toEqual([]);
- await page.getByRole('button',{name:'Transporter search',exact:true}).click();const input=page.getByLabel('Search transporters',{exact:true}),clear=page.getByRole('button',{name:'Clear search',exact:true});await clearTarget(page,clear);
+ await page.getByRole('button',{name:'Search transporters',exact:true}).click();const input=page.getByRole('textbox',{name:'Search transporters',exact:true}),clear=page.getByRole('button',{name:'Clear search',exact:true});await clearTarget(page,clear);
  await input.fill('😀');await expect(page.getByText('Enter at least two characters.',{exact:true})).toBeVisible();await page.waitForTimeout(650);expect(searches).toEqual([]);
 
  // Hold one genuine authorized response after its server work finishes. This
@@ -46,7 +46,7 @@ test('Expo transporter search coalesces typing and clears inline without reloadi
   await clearTarget(page,clear);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await clear.click();await expect(input).toHaveValue('');await expect(page.getByRole('button',{name:'Show vehicles on map',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'Close transporter search',exact:true}).click();
   await expect(input).toHaveCount(0);await expect(canvas).toHaveAttribute('data-search-map-proof','preserved');expect(maps).toHaveLength(mapCount);
-  await page.getByRole('button',{name:/^Vehicle filters/}).click();await expect(page.getByText('Showing selected profile vehicles',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Cancel',exact:true}).click();
+  await page.getByRole('button',{name:/^Vehicle filters/}).click();await expect(page.getByText('Showing selected profile vehicles',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Close filters',exact:true}).click();
  }finally{release();await page.unroute('**/api/mobile/public/discovery?**');}
  expect(errors).toEqual([]);
 });
@@ -56,14 +56,14 @@ test('Expo transporter search clear targets remain usable in English and Amharic
  // Review captures use ordinary, unmodified local API responses only.
  const response=await page.request.get('/api/capacity-search?status=EMPTY');expect(response.ok()).toBe(true);const profiles=(await response.json()).items,profile=profiles.find((item:{kind:string})=>item.kind==='COMPANY');expect(profile).toBeTruthy();
  const maps:URL[]=[],errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')maps.push(url);});
- await page.setViewportSize({width:390,height:844});await page.goto(`${preview}/?provider=${encodeURIComponent(profile.handle)}`);await expect(page.getByRole('button',{name:'Transporter search',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);
+ await page.setViewportSize({width:390,height:844});await page.goto(`${preview}/?provider=${encodeURIComponent(profile.handle)}`);await expect(page.getByRole('button',{name:'Search transporters',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);
  const canvas=page.locator('.maplibregl-canvas:visible');await canvas.evaluate(node=>node.setAttribute('data-search-map-proof','preserved'));const mapCount=maps.length;
- await page.getByRole('button',{name:'Transporter search',exact:true}).click();const input=page.getByLabel('Search transporters',{exact:true}),clear=page.getByRole('button',{name:'Clear search',exact:true});await input.fill(profile.title);await expect(page.getByText(profile.title,{exact:true}).first()).toBeVisible({timeout:30_000});
+ await page.getByRole('button',{name:'Search transporters',exact:true}).click();const input=page.getByRole('textbox',{name:'Search transporters',exact:true}),clear=page.getByRole('button',{name:'Clear search',exact:true});await input.fill(profile.title);await expect(page.getByText(profile.title,{exact:true}).first()).toBeVisible({timeout:30_000});
  for(const width of [390,320]){await page.setViewportSize({width,height:width===320?640:844});await clearTarget(page,clear);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath(`native-transporter-search-en-${width}.png`),scale:'css'});}
  await clear.click();await expect(input).toHaveValue('');await expect(page.getByRole('button',{name:'Show vehicles on map',exact:true})).toHaveCount(0);await page.getByRole('button',{name:'Close transporter search',exact:true}).click();await expect(input).toHaveCount(0);
  const catalog={...JSON.parse(readFileSync('src/lib/i18n/messages/am.json','utf8')),...Object.fromEntries(workflowRows.map(row=>[row[0],row[1]]))},t=(message:string)=>translateMessage(catalog,message);
  await page.getByRole('button',{name:'Language',exact:true}).click();await page.getByRole('radio',{name:'አማርኛ',exact:true}).click();await page.getByRole('dialog').getByRole('button').click();await expect(page.getByRole('dialog')).toHaveCount(0);
- await page.getByRole('button',{name:t('Transporter search'),exact:true}).click();const translatedInput=page.getByLabel(t('Search transporters'),{exact:true}),translatedClear=page.getByRole('button',{name:t('Clear search'),exact:true});await clearTarget(page,translatedClear);
+ await page.getByRole('button',{name:t('Search transporters'),exact:true}).click();const translatedInput=page.getByRole('textbox',{name:t('Search transporters'),exact:true}),translatedClear=page.getByRole('button',{name:t('Clear search'),exact:true});await clearTarget(page,translatedClear);
  await translatedInput.fill(profile.title);await expect(page.getByText(profile.title,{exact:true}).first()).toBeVisible({timeout:30_000});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('native-transporter-search-am-320.png'),scale:'css'});
  await translatedClear.click();await expect(translatedInput).toHaveValue('');await page.screenshot({path:info.outputPath('native-transporter-search-am-cleared-320.png'),scale:'css'});await page.getByRole('button',{name:t('Close transporter search'),exact:true}).click();
  await expect(canvas).toHaveAttribute('data-search-map-proof','preserved');expect(maps).toHaveLength(mapCount);expect(errors).toEqual([]);
@@ -83,8 +83,8 @@ test('Expo transporter profiles remain independent of applied truck filters unti
  });
  const seedResponse=await page.request.get('/api/capacity-search?page=1');expect(seedResponse.ok()).toBe(true);const profiles=(await seedResponse.json()).items,profile=profiles.find((item:{kind:string})=>item.kind==='COMPANY');expect(profile).toBeTruthy();
  const searches:URL[]=[],maps:URL[]=[],errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/mobile/public/discovery')searches.push(url);if(url.pathname==='/api/public/capacity')maps.push(url);});
- await page.setViewportSize({width:390,height:844});await page.goto(preview+'/');await expect(page.getByRole('button',{name:'Transporter search',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);const initialMapCount=maps.length;
- await page.getByRole('button',{name:'Transporter search',exact:true}).click();const input=page.getByLabel('Search transporters',{exact:true});
+ await page.setViewportSize({width:390,height:844});await page.goto(preview+'/');await expect(page.getByRole('button',{name:'Search transporters',exact:true})).toBeVisible({timeout:45_000});await paintedMap(page);const initialMapCount=maps.length;
+ await page.getByRole('button',{name:'Search transporters',exact:true}).click();const input=page.getByRole('textbox',{name:'Search transporters',exact:true});
  const baselineResponse=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/mobile/public/discovery'&&url.searchParams.get('q')===profile.title;});await input.fill(profile.title);const baselineHttp=await baselineResponse;expect(baselineHttp.ok()).toBe(true);const baseline=await baselineHttp.json();expect(baseline.items.length).toBeGreaterThan(0);await expect(page.getByText(profile.title,{exact:true}).first()).toBeVisible({timeout:30_000});expect(maps).toHaveLength(initialMapCount);
  expect([...searches[0].searchParams.keys()].sort()).toEqual(['page','q']);const resultActions=page.getByRole('button',{name:'Show vehicles on map',exact:true});await expect(resultActions).toHaveCount(baseline.items.length);
  await page.getByRole('button',{name:/^Vehicle filters/}).click();await page.getByRole('checkbox',{name:'Partly loaded',exact:true}).check();await page.getByRole('button',{name:'Any configuration',exact:true}).click();await page.getByRole('checkbox',{name:'Cargo van',exact:true}).check();await page.getByRole('button',{name:'Close',exact:true}).click();

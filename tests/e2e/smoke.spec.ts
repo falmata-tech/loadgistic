@@ -328,6 +328,7 @@ test('route filters accept either endpoint without requiring the other',async({p
   await page.goto('/capacity');
   await openCapacityFilters(page);
   const filterDialog=await openCapacityFilterDialog(page);
+  await filterDialog.locator('[data-filter-section="route"] summary').click();
   await choosePlace(filterDialog,'Origin','Adama',/Adama, Ethiopia/i);
   await filterDialog.getByRole('button',{name:'Show vehicles'}).click();
   await expect(page).toHaveURL(/originPlaceRef=/);
@@ -337,6 +338,7 @@ test('route filters accept either endpoint without requiring the other',async({p
 
   await page.goto('/capacity');
   await openCapacityFilterDialog(page);
+  await filterDialog.locator('[data-filter-section="route"] summary').click();
   await choosePlace(filterDialog,'Destination','Hawassa',/Hawassa, Ethiopia/i);
   await filterDialog.getByRole('button',{name:'Show vehicles'}).click();
   await expect(page).toHaveURL(/destinationPlaceRef=/);
@@ -1000,7 +1002,7 @@ test('assigned Driver shares only an approximate location during travel',async({
   await page.getByRole('button',{name:'Open tracking'}).click();
   const reportedArea=page.locator('.tracking-reported-area');await expect(reportedArea).toContainText('Reported approximate area');await expect(reportedArea).toHaveAttribute('data-location-radius-km',String(location.location_precision_km));
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible();
-  await expect(page.getByText(/reported approximate area, not exact GPS or road navigation/i)).toBeVisible();
+  await expect(page.getByText('Vehicle circle shows an approximate location, not exact GPS.',{exact:true})).toBeVisible();
   await expect(page.locator('.timeline')).toContainText('Going to pickup');
   }finally{await removeSmokeShipment(pair.service,shipmentId);}
 });

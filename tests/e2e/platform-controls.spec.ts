@@ -9,7 +9,7 @@ test('retired account billing controls cannot be enabled by an administrator',as
   await expect(page.locator('form.platform-control-card')).toHaveCount(0);
   await expect(page.getByText('Trial, then payment',{exact:true})).toHaveCount(0);
   const response=await page.request.post('/api/admin/settings',{form:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}});
-  expect(response.status()).toBe(410);expect((await response.json()).error).toBe('Platform payment plans are not offered.');
+  expect(response.status()).toBe(410);expect((await response.json()).error).toBe('This feature is no longer available.');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath('billing-controls-retired.png')});
 });

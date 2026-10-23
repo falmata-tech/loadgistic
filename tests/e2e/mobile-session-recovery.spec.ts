@@ -19,7 +19,7 @@ test('mobile permission return and transient account refresh keep the authentica
   const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
   await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(actor.email,since,'Your Loadgistic sign-in code'));
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible({timeout:30000});
+  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible({timeout:30000});
   await page.evaluate(()=>{
    const w=window as Window&{__lgRefreshCount?:number};w.__lgRefreshCount=0;
    const fetch=window.fetch.bind(window);
@@ -27,7 +27,7 @@ test('mobile permission return and transient account refresh keep the authentica
    for(const value of ['hidden','visible']){Object.defineProperty(document,'visibilityState',{configurable:true,value});document.dispatchEvent(new Event('visibilitychange'));}
   });
   expect(await page.evaluate(()=>(window as Window&{__lgRefreshCount?:number}).__lgRefreshCount)).toBe(0);
-  await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Account',exact:true}).click();
   await page.getByRole('button',{name:'Account details',exact:true}).click();
   await page.getByRole('button',{name:'Edit account details',exact:true}).click();
@@ -47,7 +47,7 @@ test('mobile permission return and transient account refresh keep the authentica
   await expect(page.getByText('Account details saved.',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Back to account',exact:true}).click();
   await page.getByRole('tab',{name:'Home',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Account',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
   await expect(page.getByRole('button',{name:'Send code',exact:true})).toBeVisible();

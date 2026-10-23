@@ -39,9 +39,9 @@ test('Capacity basemap extends to application navigation without retired transpo
       return {fillsBottom:Math.abs(map.bottom-(innerWidth<=760?nav.top:innerHeight))<=10,noRetiredChat:document.querySelector('.public-assistance-dock')===null,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
     })).toEqual({fillsBottom:true,noRetiredChat:true,noOverflow:true});
     await clearTouchTargets(page,'.capacity-map-controls button,.leaflet-control-zoom a,.public-map-legend summary,.leaflet-control-attribution a,.public-mobile-nav a');
-    await page.getByRole('button',{name:'Transporter search',exact:true}).click();
-    await expect(page.getByLabel('Search transporters')).toBeVisible();
-    await clearTouchTargets(page,'.capacity-people-drawer .capacity-drawer-actions button,.capacity-people-drawer .capacity-drawer-actions a');
+    await page.getByRole('button',{name:'Search transporters',exact:true}).click();
+    await expect(page.locator('#capacity-market-search')).toBeVisible();
+    await clearTouchTargets(page,'.capacity-people-drawer .capacity-people-search-form button,.capacity-people-drawer .capacity-drawer-heading button');
     await page.getByRole('button',{name:'Close transporter search',exact:true}).click();
     await expect(page.getByRole('button',{name:'Need help with transport?',exact:true})).toHaveCount(0);
     await expect(page.locator('.public-assistance-dock,.public-chat-dialog')).toHaveCount(0);

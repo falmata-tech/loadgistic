@@ -12,7 +12,10 @@ test('five current multi-option filter groups remain draft until apply and clear
  await chooseTruckConfiguration(dialog,configurations);
  await expect(selection(page,'loadType')).toHaveCount(0);
  await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);await chooseCapacityOptions(dialog,'locationSource',['GPS','MOBILE']);
- await chooseCapacityOptions(dialog,'stopOption',['MULTI_PICK','MULTI_DROP']);await chooseCapacityOptions(dialog,'freshness',['FRESH','UPDATE_NEEDED']);
+ await dialog.locator('[data-filter-section="route"] > summary').click();
+ await chooseCapacityOptions(dialog,'stopOption',['MULTI_PICK','MULTI_DROP']);
+ await dialog.locator('[data-filter-section="more"] > summary').click();
+ await chooseCapacityOptions(dialog,'freshness',['FRESH','UPDATE_NEEDED']);
  const expected={vehicleCategory:'Cargo van,Mini Box Truck',status:'EMPTY,PARTIAL',locationSource:'GPS,MOBILE',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'};
  for(const [key,value] of Object.entries(expected)){await expect(selection(page,key)).toHaveCount(1);await expect(selection(page,key)).toHaveValue(value);}
  expect(page.url()).toBe(before);await expect(dialog.getByRole('group',{name:'Reviewed documents',exact:true})).toContainText('Every selected document must match.');

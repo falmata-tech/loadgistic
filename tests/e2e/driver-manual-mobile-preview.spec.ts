@@ -35,7 +35,7 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await expect(page.getByText('Isuzu Expo preview')).toBeVisible({timeout:45_000});
   await expect(page.getByText('No driver location shared yet')).toBeVisible();
 
-  await page.getByRole('button',{name:'Vehicle location',exact:true}).click();
+  await page.getByRole('button',{name:'Set vehicle location',exact:true}).click();
   await expect(page.getByText('Capacity map location')).toBeVisible();
   await page.getByRole('radio',{name:'Manual capacity location'}).click();
   await expect(page.getByText('A manual point stays until you update it. Update it when the vehicle moves.')).toBeVisible();
@@ -88,7 +88,7 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   expect(phoneBefore.status()).toBe(200);
   expect((await phoneBefore.json()).items.some((item:{vehicle_id:string})=>item.vehicle_id===vehicle.id)).toBe(false);
 
-  await page.getByRole('button',{name:'Vehicle location',exact:true}).click();
+  await page.getByRole('button',{name:'Set vehicle location',exact:true}).click();
   await page.getByRole('radio',{name:'Driver’s phone'}).click();
   const phoneSource=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/fleet/devices'&&response.request().method()==='POST');
   const phoneReport=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/capacity'&&response.request().method()==='POST');

@@ -28,7 +28,7 @@ test('ranked profile results, company map scope and detailed modal filters work 
  await expect(dialog.getByRole('group',{name:'Load status',exact:true})).toBeVisible();await expect(dialog.getByRole('group',{name:'Vehicle type',exact:true})).toBeVisible();await expect(dialog.locator('[name="officeCity"]')).toHaveCount(0);
  await expect(dialog.locator('[name="resultKind"]')).toHaveCount(0);await dialog.locator('[data-filter-section="more"] summary').click();await dialog.getByLabel('Business License',{exact:true}).check();
  await dialog.getByLabel('Permission to use vehicle',{exact:true}).check();await page.screenshot({path:info.outputPath('document-filters.png'),scale:'css'});
- const backdrop=await dialog.evaluate(el=>getComputedStyle(el,'::backdrop').backgroundColor);expect(backdrop).toBe('rgba(25, 106, 113, 0.13)');
+ const backdrop=await dialog.evaluate(el=>getComputedStyle(el,'::backdrop').backgroundColor);expect(backdrop).toBe('rgba(11, 29, 58, 0.24)');
  await dialog.getByRole('button',{name:'Show vehicles',exact:true}).click();await expect(dialog).not.toBeVisible();
  await expect(page).toHaveURL((url:URL)=>url.searchParams.get('ownerDocs')==='BUSINESS_LICENSE'&&url.searchParams.get('truckDocs')==='VEHICLE_AUTHORIZATION');
  const applied=await (await page.request.get(`/api/capacity-search${new URL(page.url()).search}`)).json();expect(applied.items.every((item:{kind:string})=>item.kind!=='TRUCK')).toBe(true);

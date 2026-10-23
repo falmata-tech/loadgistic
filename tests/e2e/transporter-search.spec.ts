@@ -19,7 +19,7 @@ test('web transporter search coalesces issued work, composes text safely and cle
  // boundary so browser work cannot spend the final millisecond on slower CPUs.
  await page.clock.install();await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000));
  const element=await map.elementHandle(),camera=await map.locator('.leaflet-map-pane').evaluate(node=>(node as HTMLElement).style.transform);
- await page.getByRole('button',{name:'Transporter search',exact:true}).click();
+ await page.getByRole('button',{name:'Search transporters',exact:true}).click();
  const drawer=page.getByRole('complementary',{name:'Transporter search',exact:true}),input=drawer.getByRole('searchbox',{name:'Search transporters',exact:true}),clear=drawer.locator('form').getByRole('button',{name:'Clear search',exact:true});
  await input.fill('😀');await page.clock.runFor(500);expect(seen).toEqual([]);await expect(drawer.getByText('Enter at least two characters.',{exact:true})).toBeVisible();
  await input.fill('Older');await page.clock.runFor(499);expect(seen).toEqual([]);await page.clock.runFor(1);await expect.poll(()=>seen.length).toBe(1);
@@ -43,7 +43,7 @@ test('web transporter profiles remain independent of applied truck filters until
  test.setTimeout(90000);await page.setViewportSize({width:320,height:844});
  const available=await page.request.get('/api/capacity-search');expect(available.ok()).toBe(true);const profile=(await available.json()).items.find((item:{kind:string})=>item.kind==='COMPANY');expect(Boolean(profile)).toBe(true);
  const searches:string[]=[],errors:string[]=[];page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/capacity-search')searches.push(url.search);});page.on('pageerror',error=>errors.push(error.name));
- await page.goto('/');await page.getByRole('button',{name:'Transporter search',exact:true}).click();
+ await page.goto('/');await page.getByRole('button',{name:'Search transporters',exact:true}).click();
  const drawer=page.getByRole('complementary',{name:'Transporter search',exact:true}),input=drawer.getByRole('searchbox',{name:'Search transporters',exact:true});
  const first=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/capacity-search'&&url.searchParams.get('q')===profile.title;});
  await input.fill(profile.title);const response=await first;expect(response.ok()).toBe(true);const result=await response.json();expect(result.items.length).toBeLessThanOrEqual(15);
@@ -51,6 +51,7 @@ test('web transporter profiles remain independent of applied truck filters until
  const before=await drawer.locator('.capacity-result-card').allTextContents(),count=await drawer.locator('.capacity-result-count').textContent(),pagination=drawer.locator('.capacity-result-pagination'),pageNumber=await pagination.count()?await pagination.textContent():null;
  expect(searches.length).toBe(1);
  await page.getByRole('button',{name:/Vehicle filters/}).click();const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await dialog.getByRole('checkbox',{name:'Partly loaded',exact:true}).check();await chooseTruckConfiguration(dialog,'Cargo van');
+ await dialog.locator('[data-filter-section="more"] > summary').click();
  await dialog.getByRole('group',{name:'Reviewed documents',exact:true}).getByRole('checkbox',{name:'National ID',exact:true}).first().check();
  await dialog.getByRole('button',{name:'Show vehicles',exact:true}).click();await expect(page).toHaveURL(url=>url.searchParams.get('status')==='PARTIAL'&&url.searchParams.get('vehicleCategory')==='Cargo van'&&url.searchParams.get('ownerDocs')==='IDENTITY',{timeout:30000});
  await expect(drawer).toBeVisible();await expect(input).toHaveValue(profile.title);await expect(drawer.locator('.capacity-result-card').first()).toBeVisible();

@@ -21,29 +21,28 @@ test('review login leaves a usable Marketplace and preserves both area destinati
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
   await expect(page.getByText('Find space for your next load',{exact:true})).toBeVisible({timeout:30000});
   await page.getByRole('tab',{name:'My workspace',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Marketplace',exact:true}).click();
   await expect(page.getByText('Find space for your next load',{exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'About',exact:true}).click();
   await expect(page).toHaveURL(/\/about$/);const aboutUrl=page.url();
   await page.getByRole('tab',{name:'My workspace',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Capacity',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'Marketplace',exact:true}).click();
   await expect(page).toHaveURL(aboutUrl);
   await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toHaveCount(1);
   await page.getByRole('button',{name:'Open menu',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close menu',exact:true}).click();
   await page.getByRole('button',{name:'Open menu',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Send code',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Capacity',exact:true})).toHaveCount(0);
-  await page.getByRole('tab',{name:'Marketplace',exact:true}).click();
-  await page.getByRole('tab',{name:'My workspace',exact:true}).click();
+  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toHaveCount(0);
+  await page.goto('http://localhost:8084/account',{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('button',{name:'Send code',exact:true})).toBeVisible();
  }finally{
-  await page.goto('about:blank');
+  if(!page.isClosed()) await page.goto('about:blank');
   checked(await service.from('app_review_accounts').delete().eq('user_id',actor.id));
   if(vehicle){checked(await service.from('audit_logs').delete().eq('entity_id',vehicle));checked(await auditDeleteVehicles(service,'id',vehicle));}
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));

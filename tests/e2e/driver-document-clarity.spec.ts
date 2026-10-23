@@ -12,6 +12,7 @@ test('truck management names its Driver and verification stays optional',async({
   await expect(page).toHaveURL(/\/app\/fleet\?view=drivers&driver=[a-f0-9-]+/,{timeout:20000});
   const expectedDriver=(await page.locator('#driver-access h2').innerText()).replace(/\s*·\s*You$/,'');
   await page.locator('#driver-access').getByRole('link',{name:'View vehicle',exact:true}).click();
+  await page.getByRole('navigation',{name:'Vehicle'}).getByRole('link',{name:'Vehicle details'}).click();
   await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText(expectedDriver);
   await expect(page.getByRole('link',{name:'Manage driver'})).toHaveAttribute('href',/^\/app\/fleet\?view=drivers&vehicle=[a-f0-9-]{36}&driver=[a-f0-9-]{36}$/);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

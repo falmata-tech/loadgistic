@@ -18,7 +18,11 @@ test('Featured and GPS administration start in view mode and explicit tasks canc
    await page.getByRole('button',{name:'Selection settings',exact:true}).click();const settings=page.getByRole('dialog',{name:'Selection settings',exact:true});await expect(settings.getByLabel('Selection',{exact:true})).toBeVisible();await settings.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
    await page.getByRole('link',{name:'Edit programme',exact:true}).click();await expect(page.locator('.featured-roster-editor')).toBeVisible();await expect(page.getByRole('button',{name:'Save draft',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Publish this day',exact:true})).toBeVisible();await capture(`featured-edit-${width}.png`);
    await page.getByRole('link',{name:'Cancel editing',exact:true}).click();await expect(page.locator('.featured-roster-editor')).toHaveCount(0);evidence.programmeCancelRestoredView=true;
-   await page.goto('/admin/devices');await expect(page.locator('input[name=imei]')).toHaveCount(0);await page.getByRole('button',{name:'Add GPS device',exact:true}).click();const device=page.getByRole('dialog',{name:'Add GPS device',exact:true});await expect(device.getByLabel('IMEI',{exact:true})).toBeVisible();await capture(`gps-registration-task-${width}.png`);await device.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.locator('input[name=imei]')).toHaveCount(0);evidence.gpsCancelRestoredView=true;
+   await page.goto('/admin/devices');await expect(page.locator('input[name=imei]')).toHaveCount(0);
+   await page.getByRole('textbox',{name:'Find transport provider'}).fill('BlueLine');
+   await page.getByRole('button',{name:'Search',exact:true}).click();
+   await page.getByRole('navigation',{name:'Transport providers'}).getByRole('link',{name:'BlueLine Transport PLC'}).click();
+   await page.getByRole('button',{name:'Add GPS device',exact:true}).click();const device=page.getByRole('dialog',{name:'Add GPS device',exact:true});await expect(device.getByRole('combobox',{name:'Demo GPS fixture',exact:true})).toBeVisible();await capture(`gps-registration-task-${width}.png`);await device.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.locator('input[name=imei]')).toHaveCount(0);evidence.gpsCancelRestoredView=true;
    evidence.widths.push(width);
   }
   expect(evidence.domainWrites).toBe(0);expect(evidence.errors).toEqual([]);

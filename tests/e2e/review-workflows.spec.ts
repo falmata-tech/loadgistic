@@ -147,7 +147,7 @@ test('retired payment review cannot mutate retained proof or subscription histor
   checked(await service.from('payment_proofs').insert({id:proofId,subscription_id:subscription.id,amount_minor:125050,reference:`review-payment-${actor.suffix}`,status:'PENDING'}));
   await auditLogin(page,actor.email);expect((await page.request.post(`/api/admin/payment-proofs/${proofId}`,{form:{status:'APPROVED'}})).status()).toBe(403);
   admin=await adminBrowser(browser,page,info);const denied=await admin.page.request.post(`/api/admin/payment-proofs/${proofId}`,{form:{status:'APPROVED'}});
-  expect(denied.status()).toBe(410);expect((await denied.json()).error).toBe('Platform payment plans are not offered.');
+  expect(denied.status()).toBe(410);expect((await denied.json()).error).toBe('This feature is no longer available.');
   expect(checked(await service.from('payment_proofs').select('status').eq('id',proofId).single()).status).toBe('PENDING');
   expect(checked(await service.from('subscriptions').select('*').eq('id',subscription.id).single())).toEqual(subscription);
   await admin.page.goto('/admin/reviews',{waitUntil:'domcontentloaded'});await expect(admin.page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();await expect(admin.page.getByRole('link',{name:'Payments',exact:true})).toHaveCount(0);

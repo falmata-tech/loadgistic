@@ -68,7 +68,7 @@ test('blue location feedback stays by controls and the small map key opens withi
   const box=await key.locator('.public-map-legend-items').boundingBox();const size=page.viewportSize();
   expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(size.width);expect(box.height).toBeLessThan(200);
   const colors=await key.evaluate((el:HTMLElement)=>({location:getComputedStyle(el.querySelector('.privacy')!,'::before').borderColor,regular:getComputedStyle(el.querySelector('.corridor')!,'::before').borderTopColor}));
-  expect(colors.location).toContain('26, 115, 232');expect(colors.regular).toBe('rgb(192, 102, 32)');
+  expect(colors.location).toContain('21, 94, 239');expect(colors.regular).toBe('rgb(192, 102, 32)');
   await expect.poll(()=>page.locator('.leaflet-tile').evaluateAll((tiles:HTMLImageElement[])=>tiles.length>0&&tiles.every(tile=>tile.complete&&tile.naturalWidth>0)),{timeout:20000}).toBe(true);
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
   await page.screenshot({path:path.join(captures,`${info.project.name}-map-key.png`),scale:'css'});

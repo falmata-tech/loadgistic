@@ -113,8 +113,8 @@ test('Play reviewer owner and teammate use one private business workspace throug
   await owner.getByRole('button',{name:'Switch workspace',exact:true}).click();
   await expect(owner.getByText('Your workspaces',{exact:true})).toBeVisible();
   await owner.getByRole('button',{name:/Shipper \/ broker workspace/}).last().click();
-  await owner.getByLabel('Business name',{exact:true}).fill(`Play review ${nonce}`);
-  await owner.getByLabel('Business handle',{exact:true}).fill(`play-review-${nonce}`);
+  await owner.getByLabel('Account name',{exact:true}).fill(`Play review ${nonce}`);
+  await owner.getByLabel('Handle',{exact:true}).fill(`play-review-${nonce}`);
   const createdResponse=owner.waitForResponse(response=>new URL(response.url()).pathname==='/api/business-workspaces'&&response.request().method()==='POST');
   await owner.getByRole('button',{name:'Create workspace',exact:true}).click();
   expect((await createdResponse).status()).toBe(201);

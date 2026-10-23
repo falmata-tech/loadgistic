@@ -18,15 +18,15 @@ test('Expo Capacity keeps full map and search controls without retired transport
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(120000);
  for(const width of [390,320]){
   await page.setViewportSize({width,height:width===320?640:844});await page.goto(preview+'/');
-  await expect(page.getByRole('button',{name:'Transporter search',exact:true})).toBeVisible({timeout:30000});
+  await expect(page.getByRole('button',{name:'Search transporters',exact:true})).toBeVisible({timeout:30000});
   await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30000});
   const map=await paintedMap(page),chat=page.getByRole('link',{name:'Need help with transport?',exact:true});
   const [frame,tabs,attribution]=await Promise.all([map.boundingBox(),page.getByRole('tab',{name:'Capacity',exact:true}).boundingBox(),map.locator('.maplibregl-ctrl-attrib').boundingBox()]);
   expect(frame&&tabs&&attribution).toBeTruthy();
   expect(Math.abs(frame!.y+frame!.height-tabs!.y)).toBeLessThan(12);
   await expect(chat).toHaveCount(0);
-  await page.getByRole('button',{name:'Transporter search',exact:true}).click();
-  await expect(page.getByLabel('Search transporters')).toBeVisible();
+  await page.getByRole('button',{name:'Search transporters',exact:true}).click();
+  await expect(page.getByRole('textbox',{name:'Search transporters',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Clear search',exact:true}).scrollIntoViewIfNeeded();
   await page.getByRole('button',{name:'Clear search',exact:true}).click({trial:true});
   const clear=await page.getByRole('button',{name:'Clear search',exact:true}).boundingBox();

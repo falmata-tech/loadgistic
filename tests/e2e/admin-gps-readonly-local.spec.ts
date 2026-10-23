@@ -43,10 +43,12 @@ test('read-only admin GPS desktop and phone review',async({page},info)=>{
    const spareOption=dialog.getByRole('option',{name:/Demo GPS for Truck 02/});
    const available=await spareOption.count()===1;
    if(available)await dialog.getByLabel('Demo GPS fixture').selectOption('990000000000013');
-   else await expect(dialog.getByText('All Demo GPS devices for this provider have already been added.')).toBeVisible();
-   await expect(dialog.getByRole('option',{name:'Demo GPS device'})).toHaveCount(1);
+   else await expect(dialog.getByText(/^(All Demo GPS devices for this provider have already been added\.|No ready Demo GPS fixture is available for this provider\.)$/)).toBeVisible();
+   const demoOption=dialog.getByRole('option',{name:'Demo GPS device'});
+   if(available)await expect(demoOption).toHaveCount(1);
    await expect(dialog.getByRole('option',{name:'Physical GPS tracker'})).toHaveCount(0);
-   evidence.demoOption=true;
+   if(!available)await expect(dialog.getByRole('button',{name:'Add GPS device'})).toBeDisabled();
+   evidence.demoOption=await demoOption.count()===1;
    evidence.spareFixture=available;
    await capture(`gps-admin-form-${width}.png`);
    await dialog.getByRole('button',{name:'Cancel'}).click();

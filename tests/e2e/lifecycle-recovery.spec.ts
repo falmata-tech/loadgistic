@@ -59,8 +59,8 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   await guestPage.reload();await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible();await expect(guestPage.locator('.tracking-reported-area')).toHaveCount(0);await expect(guestPage.locator('.tracking-truck-marker')).toHaveCount(0);
   // Correct a synthetic workspace through the Customers permission boundary.
   phase('CUSTOMER_CORRECTION');await page.goto(`/admin/operations/workspaces/${actor.organization_id}?kind=ORGANIZATION`);
-  await page.getByRole('button',{name:'Edit business name',exact:true}).click();await page.getByLabel('Business name',{exact:true}).fill(`Corrected audit business ${actor.suffix}`);await page.getByLabel('Reason',{exact:true}).fill('Correct the business display name');
-  await page.getByRole('button',{name:'Save business name'}).click();await expect(page.getByText('Business name corrected.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Edit account name',exact:true}).click();await page.getByLabel('Account name',{exact:true}).fill(`Corrected audit business ${actor.suffix}`);await page.getByLabel('Reason',{exact:true}).fill('Correct the business display name');
+  await page.getByRole('button',{name:'Save account name'}).click();await expect(page.getByText('Business name corrected.',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:`Corrected audit business ${actor.suffix}`,exact:true})).toBeVisible();
   await page.screenshot({path:path.join(snapshots,`${info.project.name}-workspace-correction.png`),fullPage:true,scale:'css'});
   phase('RETIRED_TRUCK_RESTORE');await auditLogin(page,actor.email);await page.goto(`/app/fleet/${vehicles[0]}`);await page.getByRole('link',{name:'Vehicle details',exact:true}).click();await page.getByRole('button',{name:'Retire vehicle',exact:true}).click();await retirement.getByLabel('Reason',{exact:true}).fill('Retire the replaced truck');await retirement.getByRole('checkbox').check();await retirement.getByRole('button',{name:'Retire vehicle',exact:true}).click();

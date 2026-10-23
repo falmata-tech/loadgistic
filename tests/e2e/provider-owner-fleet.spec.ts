@@ -50,7 +50,7 @@ test('Transport Provider publishes one unreviewed truck, manages document review
   await page.getByRole('button',{name:'Add vehicle',exact:true}).click();await expect(page).toHaveURL(/\/app\/fleet\/[0-9a-f-]+(?:\?.*)?$/);
   const id=new URL(page.url()).pathname.split('/').at(-1)!;expect(id).toMatch(uuid);owned.truckIds.push(id);manifest();
   const saved=checked(await service.from('vehicles').select('publication_status,use_basis,provider_profile_id').eq('id',id).single());expect(saved).toMatchObject({publication_status:'DRAFT',use_basis:basis,provider_profile_id:owned.providerId});
-  await expect(page.getByRole('button',{name:'Go live',exact:true})).toBeEnabled();return id;
+  await openOwnTruck(id);await expect(page.getByRole('button',{name:'Go live',exact:true})).toBeEnabled();return id;
  }
  async function assign(driverId:string,truckId:string){
   const key=driverId===owned.ownerId?'owner':'employee';await checkpoint(key==='owner'?'ASSIGN_OWNER':'ASSIGN_EMPLOYEE');assignments[key]={};

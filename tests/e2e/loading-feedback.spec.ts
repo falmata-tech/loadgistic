@@ -83,6 +83,7 @@ test('search and place lookups show activity while preserving editable inputs',a
   await page.route('**/api/places?q=**',async(route:any)=>{await placeReady;await route.continue();});
   try{
     await openCapacityFilterDialog(page);
+    await page.locator('[data-filter-section="route"] > summary').click();
     const origin=page.locator('#capacity-route-origin');
     await origin.fill('Addis');
     const track=page.locator('.place-combobox .loading-progress-track');
