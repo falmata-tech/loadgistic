@@ -32,13 +32,14 @@ source; preserve the unchanged limit and use exact-source Linux CI to decide
 release fitness before changing the database function.
 Candidate commit `190d9d4` was pushed to `feat/mobile-app`. Its first same-source
 CI run, `39893225119`, failed before browser shards: Expo lint/tests and the
-disposable demo sharing fixture. No deployment followed. The local follow-up
-repairs remove the React render violation, fix the Featured empty-string case,
-refresh the affected native test harnesses, and give CI only a synthetic
-private-capacity recipient. The complete native command passes 328/328 tests
-with clean lint/typecheck; strict translations and Android export pass. The
-focused CI-fixture checks pass. These repairs still need their own commit and
-same-source CI before any release claim.
+disposable demo sharing fixture. Follow-up `dca60b4` repaired those and passed
+the mobile job, but CI `39918207704` exposed a second fresh-fixture gap: its
+Tracking test expected a GPS position present only in a long-lived local clone.
+The revised SQL test now creates its own synthetic position and rolls back every
+write; the disposable local run passes and its original 654 fixes remain intact.
+The complete native command passes 328/328 tests with clean lint/typecheck;
+strict translations, Android export and focused CI-fixture checks pass. This
+latest test correction still needs exact-source CI. No deployment followed.
 CI39528806968 passes all16 required jobs oncad46f1. Repair181 is applied and
 independently verified on Loadgistic: the new search-path warning is gone;
 current catalog/Data API checks pass, with only the two previously approved

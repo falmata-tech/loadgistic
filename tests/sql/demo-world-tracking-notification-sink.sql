@@ -22,6 +22,7 @@ declare
  driver_id uuid;
  denied boolean;
  command_result boolean;
+ fix_rows integer;
 begin
  if current_database() not in ('loadgistic_demo_world_185_ci','loadgistic_demo_world_186_atomic_ci','loadgistic_telematics_ci') then
   raise exception 'ISOLATED_DEMO_TEST_DATABASE_REQUIRED';
@@ -158,6 +159,24 @@ begin
  on conflict (shipment_id,party_role) do nothing;
  select code_hash into strict tracking_code_digest from public.shipment_party_grants
  where shipment_id=demo_id and party_role='SHIPPER';
+ -- Create the exact synthetic GPS fix in this transaction. A fresh CI fixture
+ -- has no position history; a long-lived local clone may have old demo fixes.
+ delete from public.telematics_positions where assignment_id=(
+  select tracking_gps_assignment_id from public.provider_shipments where id=demo_id);
+ insert into public.telematics_positions
+  (gateway_id,event_key,payload_digest,device_id,assignment_id,vehicle_id,
+   observed_at,received_at,valid,latitude,longitude,speed_kph,demo_epoch)
+ select device.gateway_id,'demo-world-ci:tracking-fix:'||demo_id::text,repeat('a',64),
+  device.id,assignment.id,shipment.assigned_vehicle_id,
+  clock_timestamp(),clock_timestamp(),true,9.0,38.7,0,1
+ from public.provider_shipments shipment
+ join public.telematics_device_assignments assignment
+  on assignment.id=shipment.tracking_gps_assignment_id
+  and assignment.vehicle_id=shipment.assigned_vehicle_id and assignment.ended_at is null
+ join public.telematics_devices device on device.id=assignment.device_id and device.active
+ where shipment.id=demo_id and shipment.tracking_location_source='GPS';
+ get diagnostics fix_rows=row_count;
+ if fix_rows<>1 then raise exception 'DEMO_GPS_TEST_FIXTURE_MISSING';end if;
  -- GPS motion feeds the ordinary owner projection. A delegated viewer must
  -- still see route/status without receiving the selected moving location.
  owner_tracking:=public.provider_guest_tracking_for_recipient(demo_id,owner_digest);
