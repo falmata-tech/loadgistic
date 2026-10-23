@@ -117,10 +117,15 @@ export function applyManagedFixtureMarketPolicy(capacities,vehicles,{localEmptyP
   });
 }
 
-export function selectSharedFixtureVehicleIds(capacities,shareRatio=.25){
+export const HANDOVER_FIXTURE_VEHICLE_IDS=new Set([
+  'veh-public-fleet-01-1','veh-public-fleet-01-4'
+]);
+
+export function selectSharedFixtureVehicleIds(capacities,shareRatio=.25,{excludedVehicleIds=new Set()}={}){
   const ratio=Math.max(0,Math.min(1,Number(shareRatio)||0));
   const unique=[...new Map(capacities.map(capacity=>[capacity.vehicle_id,capacity])).values()];
-  return stableTake(unique,Math.ceil(unique.length*ratio),capacity=>capacity.vehicle_id);
+  const eligible=unique.filter(capacity=>!excludedVehicleIds.has(capacity.vehicle_id));
+  return stableTake(eligible,Math.min(eligible.length,Math.ceil(unique.length*ratio)),capacity=>capacity.vehicle_id);
 }
 
 export function managedFixtureSharingPolicies(capacities,sharedVehicleIds){

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds,managedFixtureSharingPolicies,excludeRetiredGuestFixtureTables
+  selectSharedFixtureVehicleIds,managedFixtureSharingPolicies,excludeRetiredGuestFixtureTables,HANDOVER_FIXTURE_VEHICLE_IDS
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 import {readFixtureSchema} from './lib/fixture-schema.mjs';
@@ -413,7 +413,11 @@ if(definitions.provider_shipments&&definitions.provider_shipment_events){
 }
 
 const demoSharedEmails=normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS);
-const sharedVehicleIds=selectSharedFixtureVehicleIds(fixtureTables.capacities);
+// The scheduled demo handover requires both exact vehicles to remain PUBLIC.
+// Select replacement shared examples so the private-feed cohort stays full.
+const sharedVehicleIds=selectSharedFixtureVehicleIds(fixtureTables.capacities,.25,{
+  excludedVehicleIds:HANDOVER_FIXTURE_VEHICLE_IDS
+});
 const capacityByVehicleId=new Map(fixtureTables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
 const grantRows=[];
 for(const vehicleId of sharedVehicleIds){

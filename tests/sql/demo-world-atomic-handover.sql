@@ -28,6 +28,10 @@ begin
     where vehicle_id=vehicle_b and active;
   if original_a is null or original_b is null or original_a=original_b
     then raise exception 'HANDOVER_FIXTURE_ASSIGNMENT_MISSING';end if;
+  if (select count(*) from public.vehicle_capacity_sharing s
+      where s.vehicle_id in(vehicle_a,vehicle_b) and s.mode='PUBLIC'
+        and s.exclusive_email is null and s.exclusive_digest is null)<>2
+    then raise exception 'HANDOVER_FIXTURE_PUBLIC_SHARING_MISSING';end if;
   -- Fresh managed fixtures may feature either driver today. Put only their
   -- current/future days in the past within this rollback-only test, so the
   -- device and sharing denials below are reached in the intended order. The

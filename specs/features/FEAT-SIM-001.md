@@ -954,6 +954,10 @@ source and its vehicle's prior Empty signal shape, and a one-day immutable
 receipt is saved\
 And replay that day performs no additional write.
 
+The managed demo import keeps both handover vehicles public-only and chooses
+replacement vehicles for the private-sharing cohort. A fresh import must not
+make a scheduled handover fail its audience guard or shrink that cohort.
+
 Given the handover control is disabled, the current time is outside the fixed
 fortnightly slot, or a lease is stale or held by another worker\
 When the background worker requests or executes a handover job\

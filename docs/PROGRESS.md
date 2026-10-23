@@ -58,6 +58,16 @@ day features one handover **driver** on another vehicle, not the test's assumed
 vehicle slot. The assertion now chooses either affected vehicle or driver and
 requires one chosen day. Existing-slot and future driver-only rollback
 rehearsals pass; the actual handover guard still blocks either case.
+CI `39925563686` then reached the atomic rollback case but stopped before its
+forced-failure trigger. A bounded diagnostic in `27e650f` identified the exact
+fresh-import cause in CI `39928053423`: one handover vehicle had a public +
+private sharing policy, which the production handover correctly refuses. The
+import now reserves both handover vehicles as public-only and selects other
+vehicles for the same-size private-sharing demo cohort. A focused fixture test
+checks the exact policies and count; the SQL test now asserts this precondition
+before exercising rollback. Local fixture, specs, workflow static checks and
+rollback-only SQL tests pass. This latest repair still needs exact-source CI;
+no hosted database, web or Play write followed.
 The complete native command passes 328/328 tests with clean lint/typecheck;
 strict translations, Android export and focused CI-fixture checks pass. This
 latest test correction still needs exact-source CI. No deployment followed.

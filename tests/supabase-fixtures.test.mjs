@@ -5,7 +5,7 @@ import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,MANAGED_COURIER_FIXTURE_VEHICLES,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies
+  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
 import {FEATURED_TRUCK_DAYS} from '../src/lib/featured-trucks.js';
@@ -202,10 +202,13 @@ test('managed import keeps Open capacity larger than each explicitly shared demo
   assert.equal(publicCapacity.filter(capacity=>capacity.market_status==='PARTIAL').length,35);
   assert.ok(publicCapacity.filter(capacity=>capacity.market_status==='EMPTY').length>15);
 
-  const shared=selectSharedFixtureVehicleIds(managed);
+  const shared=selectSharedFixtureVehicleIds(managed,.25,{excludedVehicleIds:HANDOVER_FIXTURE_VEHICLE_IDS});
   assert.equal(shared.size,Math.ceil(vehicles.length*.25));
   assert.ok(shared.size<publicCapacity.length);
   assert.equal([...shared].every(vehicleId=>vehicleById.has(vehicleId)),true);
+  for(const vehicleId of HANDOVER_FIXTURE_VEHICLE_IDS){
+    assert.equal(shared.has(vehicleId),false,'scheduled handover vehicle must stay public-only');
+  }
   const withRecipient=new Map(managedFixtureSharingPolicies(managed,shared)
     .map(policy=>[policy.vehicle_id,policy.mode]));
   const withoutRecipient=new Map(managedFixtureSharingPolicies(managed,new Set())
@@ -213,6 +216,9 @@ test('managed import keeps Open capacity larger than each explicitly shared demo
   for(const vehicleId of ['veh-public-fleet-02-3','veh-public-fleet-06-5']){
     assert.equal(withRecipient.get(vehicleId),'BOTH','demo-world sharing requires a synthetic recipient');
     assert.equal(withoutRecipient.get(vehicleId),'PUBLIC','an empty recipient list cannot satisfy that scenario');
+  }
+  for(const vehicleId of HANDOVER_FIXTURE_VEHICLE_IDS){
+    assert.equal(withRecipient.get(vehicleId),'PUBLIC');
   }
   assert.deepEqual(normalizeDemoSharedEmails('TEST@example.com, test@example.com,second@example.com'),
     ['test@example.com','second@example.com']);
