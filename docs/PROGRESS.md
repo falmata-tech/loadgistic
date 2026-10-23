@@ -55,13 +55,14 @@ current task list.
   cargo type to an incompatible courier configuration. The test now chooses a
   non-trailer saved vehicle, changes its category and configuration together,
   requires a usable fixture, and restores both fields. The exact local SQL test
-  passed with `ROLLBACK`; PR CI on this correction remains pending.
+  passed with `ROLLBACK`. Read PR21's terminal CI and merge status on GitHub;
+  this local result alone does not qualify that later commit.
 
 ## Next steps
 
-1. Qualify and merge PR21's concise GitHub handoff and focused Featured SQL
-   test correction through its exact-head CI. Keep the pre-existing dirty `next-env.d.ts` and
-   `apps/mobile/.claude/` files outside the task.
+1. For subsequent work, start from protected `main` and qualify the exact new
+   source through its own CI. Keep the pre-existing dirty `next-env.d.ts` and
+   `apps/mobile/.claude/` files outside unrelated tasks.
 2. Diagnose and harden the two intermittently slow browser workflows before
    the next product release: preserve the first assertion when cleanup also
    fails, and retain the existing signup and archive/security outcomes. Local
