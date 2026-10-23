@@ -7,6 +7,7 @@ const reviewed=new Map([
  ['https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',{name:'braces',version:'3.0.3'}],
  ['https://github.com/advisories/GHSA-86w9-cpqp-85rv',{name:'node-forge',version:'1.4.0'}],
  ['https://github.com/advisories/GHSA-w5hq-g745-h8pq',{name:'uuid',version:'7.0.3'}],
+ ['https://github.com/advisories/GHSA-mrhx-c7xc-m3w5',{name:'zod',version:'3.25.76',toolingPath:'node_modules/expo/node_modules/zod'}],
 ]);
 // This permits only the reviewed internal-build tooling paths. The raw audit
 // remains visible. Unknown findings or packages in the app bundle fail closed.
@@ -23,7 +24,20 @@ export function reviewNativeDependencies({audit,lock,map}){
  }
  if(Object.keys(audit.vulnerabilities).length&&!findings.size)throw Error('UNREVIEWED_DEPENDENCY_FINDING');
  for(const item of findings.values()){
-  const expected=reviewed.get(item.url),versions=Object.entries(lock.packages).filter(([name])=>name.endsWith('/node_modules/'+item.name)||name==='node_modules/'+item.name);
+  const expected=reviewed.get(item.url);
+  if(expected.toolingPath){
+   const nodes=audit.vulnerabilities[item.name]?.nodes;
+   if(!Array.isArray(nodes)||nodes.length!==1||nodes[0]!==expected.toolingPath
+    ||lock.packages[expected.toolingPath]?.version!==expected.version
+    ||lock.packages['']?.dependencies?.zod!=='4.6.7'
+    ||lock.packages['node_modules/zod']?.version!=='4.6.7')throw Error('REVIEWED_TOOLING_VERSION_DRIFT');
+   if(map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/'+expected.toolingPath+'/')))
+    throw Error('VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME');
+   if(!map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/node_modules/zod/v4/')))
+    throw Error('PATCHED_ZOD_NOT_IN_ANDROID_RUNTIME');
+   continue;
+  }
+  const versions=Object.entries(lock.packages).filter(([name])=>name.endsWith('/node_modules/'+item.name)||name==='node_modules/'+item.name);
   if(!versions.length||versions.some(([,value])=>value.version!==expected.version))throw Error('REVIEWED_TOOLING_VERSION_DRIFT');
   if(map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/node_modules/'+item.name+'/')))throw Error('VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME');
  }

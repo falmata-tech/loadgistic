@@ -1,5 +1,24 @@
 # Security failures we must not repeat
 
+## NR-74 — A new parser advisory stops the web and Android PR gates
+
+**Observed October 23:** catch-up PR16 CI run 40025173293 rejected a new
+high-severity [Zod advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5).
+The web and mobile direct locks used `zod@3.24.2`; this parser is part of shipped
+input validation. The web audit would also fail after the earlier disposable-SQL
+step, even though the run did not reach it. The mobile audit failed immediately.
+This is a newly reported dependency finding, not a reason to waive an audit.
+
+**Repair and control:** pin the direct web and mobile dependency to patched
+`4.6.7`, adapt the two affected record schemas, and preserve the normal
+typecheck, behavior, bundle and CI gates. Expo's own nested `zod@3.25.76`
+remains a build-tool finding. The mobile review permits it only at that exact
+lockfile/audit path when the actual Android map contains patched app Zod and
+excludes Expo's copy; negative tests cover version, path and bundle drift.
+The raw audit finding remains visible. The exact-source CI result is pending;
+no Google Play work is authorized by this assessment. Owner: mobile/web release
+maintainer. See `docs/MOBILE_DEPENDENCY_REVIEW.md` for the bounded disposition.
+
 ## NR-73 — A new critical framework advisory stops the release
 
 **Observed October 23:** exact-source CI run 39933232579 stopped at its required

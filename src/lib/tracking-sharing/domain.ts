@@ -26,7 +26,7 @@ export class TrackingSharingError extends Error{constructor(public code:string){
 /** Projection rejects authority contradictions, then emits only the established
  * public shipment fields. No hidden private payload is passed to the browser. */
 export function businessTrackingProjection(value:unknown,workspaceId:string,shipmentId:string){
- const envelope=z.object({workspaceId:id,isOwner:z.boolean(),shipment:z.record(z.unknown())}).strict().safeParse(value);
+ const envelope=z.object({workspaceId:id,isOwner:z.boolean(),shipment:z.record(z.string(),z.unknown())}).strict().safeParse(value);
  if(!envelope.success||envelope.data.workspaceId!==workspaceId||envelope.data.shipment.id!==shipmentId)throw new TrackingSharingError('TRACKING_UNAVAILABLE');
  const source=envelope.data.shipment;
  if(source.recipient_role!==(envelope.data.isOwner?'BUSINESS_OWNER':'BUSINESS_STAFF')||typeof source.can_view_location!=='boolean'||source.can_approve!==false||source.can_share!==false||source.can_review!==false

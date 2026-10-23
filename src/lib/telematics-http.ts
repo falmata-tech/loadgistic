@@ -3,7 +3,7 @@ import {MobileError} from './mobile/server';
 import {assignOwnedDevice,selectVehicleLocationSource,requestDeviceCommand} from './telematics.js';
 import {checkRateLimit} from './rate-limit.js';
 import type {ManagedCurrentUser} from './identity/supabase';
-const envelope=z.object({action:z.enum(['ASSIGN','SOURCE','COMMAND']),input:z.record(z.unknown())}).strict();
+const envelope=z.object({action:z.enum(['ASSIGN','SOURCE','COMMAND']),input:z.record(z.string(),z.unknown())}).strict();
 const messages:Record<string,[number,string]>={
  FORBIDDEN:[403,'You do not have permission for this fleet change.'],
  NOT_FOUND:[404,'This device or vehicle is not available.'],

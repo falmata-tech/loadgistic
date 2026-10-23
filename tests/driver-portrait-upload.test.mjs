@@ -29,7 +29,7 @@ test('Portrait decoding rejects malformed, mismatched, oversized and animated im
   await assert.rejects(()=>prepareDriverPortrait(null),/PORTRAIT_REQUIRED/);
 });
 test('Portrait URLs and reserved Storage paths exclude actor ids and path injection',async()=>{
-  const id='e1111111-1111-1111-1111-111111111111';
+  const id='e1111111-1111-4111-8111-111111111111';
   assert.equal(uploadedDriverPortraitUrl(id),`/api/public/driver-portraits/${id}`);
   for(const value of [null,'../secret','supabase://private/key','?id=secret'])assert.equal(uploadedDriverPortraitUrl(value),null);
   const reference=createPrivateUploadReference('driver-portrait','image/jpeg');
@@ -46,7 +46,7 @@ test('Driver portraits reject compressed images beyond the pixel budget',async()
   await assert.rejects(()=>prepareDriverPortrait(new File([compressed],'large-dimensions.png',{type:'image/png'})),/PORTRAIT_IMAGE_INVALID/);
 });
 test('Portrait cleanup retains failed metadata for retry and reports counts only',async()=>{
-  const ids=['e1111111-1111-1111-1111-111111111111','e2222222-2222-2222-2222-222222222222'];let acknowledged=[];
+  const ids=['e1111111-1111-4111-8111-111111111111','e2222222-2222-4222-8222-222222222222'];let acknowledged=[];
   const client={rpc:async(name,args)=>{assert.equal(name,'claim_driver_portrait_cleanup');assert.equal(args.requested_limit,20);return {data:ids.map((id,i)=>({id,file_path:`private/${i}`})),error:null};},
     from:()=>({delete:()=>({eq:(column,id)=>({eq:async(state,value)=>{assert.equal(column,'id');assert.equal(state,'state');assert.equal(value,'DELETING');acknowledged.push(id);return {error:null};}})})})};
   const result=await cleanupDriverPortraitUploads(500,{client,remove:async path=>{if(path==='private/1')throw new Error('storage offline');}});

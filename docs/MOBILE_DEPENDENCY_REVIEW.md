@@ -1,4 +1,28 @@
-# Current release review — 19 October 2026
+# Current dependency review — 23 October 2026
+
+The newly reviewed high-severity [Zod advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
+blocks the October 23 PR CI run. The app's direct `zod@3.24.2` validation
+runtime is updated to patched `4.6.7`; the shared contracts' two `z.record`
+calls now use the required explicit string-key schema. The separate web lockfile
+also uses `4.6.7` and its local audit reports zero advisories.
+
+Expo 57.0.30 still installs its own `zod@3.25.76` for build tooling. The mobile
+audit reports that advisory only at `node_modules/expo/node_modules/zod`; the
+compiled Android source map contains the patched app Zod v4 and no Expo-nested
+Zod. The runtime review requires the exact advisory node, both locked versions,
+the patched module in the bundle, and exclusion of the tooling copy. A changed
+path, version, runtime inclusion, or new advisory fails the gate. This is a
+bounded internal-build assessment, not a claim that Expo's tooling finding has
+been fixed or permission for Play publication. Raw audit counts remain visible:
+eight affected dependency entries, five high and three moderate, none critical.
+Google Play signing and upload remain paused at the owner's request.
+
+Local evidence: ignored `.local/release-20261023/android-zod-audit.json` and
+`android-zod-export/`, plus `apps/mobile/tests/dependency-review.test.mjs`.
+Typechecks, focused contracts, Android export and exact-map review pass; the
+complete source-matched CI gate is still required.
+
+# Historical release review — 19 October 2026
 
 The 1.1.0/code8 candidate uses Expo 57.0.30, Router 57.0.28 and React Native
 0.86.3. Ten SDK57-compatible patch versions were aligned with Expo Doctor;

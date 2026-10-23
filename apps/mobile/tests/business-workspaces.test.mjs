@@ -11,7 +11,7 @@ const require=createRequire(import.meta.url),{allowedPath}=require('../scripts/l
 test('shared validation resolves only the pinned mobile runtime without widening project roots',()=>{
  const config=require('../metro.config.js'),mobileRoot=fileURLToPath(new URL('../',import.meta.url));
  assert.equal(config.resolver.extraNodeModules.zod,path.join(mobileRoot,'node_modules/zod'));
- assert.equal(require('../node_modules/zod/package.json').version,'3.24.2');
+ assert.equal(require('../node_modules/zod/package.json').version,'4.6.7');
  assert.equal(config.watchFolders.some(folder=>folder.includes('suqpage')||folder===path.resolve(mobileRoot,'../..')),false);
 });
 const actor='16000000-0000-4000-8000-000000000001',workspace='16000000-0000-4000-8000-000000000002',foreign='16000000-0000-4000-8000-000000000003';
