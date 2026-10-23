@@ -12,6 +12,61 @@
       "project": "mobile-chromium"
     },
     {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "read-only admin GPS desktop and phone review",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded local Admin Demo intake and provider web assignment",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded local Admin Demo intake and provider web assignment",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "read-only saved spare phone layout and GPS report",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "read-only saved spare phone layout and GPS report",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "Expo Web provider reads the saved spare, assignment, source and command limit",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "Expo Web provider reads the saved spare, assignment, source and command limit",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded Expo Web provider reassigns only the saved Demo spare",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "guarded Expo Web provider reassigns only the saved Demo spare",
+      "project": "mobile-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "admin-gps-readonly-local.spec.ts",
+      "title": "private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI",
+      "project": "mobile-chromium"
+    },
+    {
       "file": "admin-workspace-view-mode.spec.ts",
       "title": "Featured and GPS administration start in view mode and explicit tasks cancel without writes",
       "project": "mobile-chromium"

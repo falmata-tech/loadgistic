@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,readdirSync} from 'node:fs';
+import ts from 'typescript';
 import {inspectFixturePreflightResult} from '../scripts/ci-fixture-preflight.mjs';
 import {inspectFeaturedPrepareResult} from '../scripts/ci-featured-prepare.mjs';
 import {inspectBrowserShard,failedBrowserFiles,browserShardFailureSummary,failedBrowserCaseDiagnostics,reportBrowserShardFailure} from '../scripts/ci-browser-shard.mjs';
@@ -8,6 +9,38 @@ const reviewedSkips=JSON.parse(readFileSync('tests/e2e/ci-allowed-skips.json','u
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const preflightRunner=readFileSync('scripts/ci-fixture-preflight.mjs','utf8');
 const featuredRunner=readFileSync('scripts/ci-featured-prepare.mjs','utf8');
+test('every intentional browser skip is reviewed before CI starts',()=>{
+ const expected=[];
+ for(const file of readdirSync('tests/e2e').filter(name=>name.endsWith('.spec.ts'))){
+  const source=ts.createSourceFile(file,readFileSync(`tests/e2e/${file}`,'utf8'),ts.ScriptTarget.Latest,true);
+  function visit(node){
+   if(ts.isCallExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='test'
+     &&ts.isStringLiteral(node.arguments[0])&&node.arguments[1]){
+    const title=node.arguments[0].text;
+    const skips=[];
+    function findSkip(child){
+     if(ts.isCallExpression(child)&&ts.isPropertyAccessExpression(child.expression)
+       &&ts.isIdentifier(child.expression.expression)&&child.expression.expression.text==='test'
+       &&child.expression.name.text==='skip')skips.push(child.arguments[0]?.getText(source)||'');
+     ts.forEachChild(child,findSkip);
+    }
+    findSkip(node.arguments[1]);
+    if(skips.length){
+     const conditions=skips.join(' ');
+     const projects=conditions.includes('process.env')?['desktop-chromium','mobile-chromium']
+      :conditions.includes('desktop-chromium')?['mobile-chromium']
+      :conditions.includes('mobile-chromium')?['desktop-chromium']:null;
+     assert.ok(projects,`Review skip condition in ${file}: ${title}`);
+     for(const project of projects)expected.push({file,title,project});
+    }
+   }
+   ts.forEachChild(node,visit);
+  }
+  visit(source);
+ }
+ const key=row=>`${row.file}\0${row.title}\0${row.project}`;
+ assert.deepEqual(reviewedSkips.map(key).sort(),expected.map(key).sort());
+});
 test('all eight isolated browser shards remain required by the e2e release gate',()=>{
  assert.match(workflow,/fail-fast: false/);
  assert.match(workflow,/shard: \[1, 2, 3, 4, 5, 6, 7, 8\]/);

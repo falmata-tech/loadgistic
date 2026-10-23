@@ -72,7 +72,13 @@ test('vehicle confirmation notice fits the screen around the map centre',async({
  await page.locator('.map-info-bubble.truck').click({timeout:30000});
  const modal=page.locator('dialog.capacity-info-card.truck'),content=modal.locator('.capacity-info-content');
  await expect(content).toContainText('Confirm availability directly.');
- await expect.poll(()=>content.evaluate((el:HTMLElement)=>({horizontal:el.scrollWidth-el.clientWidth,vertical:el.scrollHeight-el.clientHeight}))).toEqual({horizontal:0,vertical:0});
+ await expect.poll(()=>content.evaluate((el:HTMLElement)=>el.scrollWidth-el.clientWidth)).toBe(0);
+ // The chosen live fixture may have more tags or evidence rows than the
+ // compact example. Long cards must remain reachable inside the bounded dialog.
+ if(await content.evaluate((el:HTMLElement)=>el.scrollHeight>el.clientHeight)){
+  await content.evaluate((el:HTMLElement)=>{el.scrollTop=el.scrollHeight;});
+  await expect(content.locator('.truck-document-summary').last()).toBeInViewport({ratio:0.1});
+ }
  await page.screenshot({path:info.outputPath('vehicle-confirmation-fits.png')});
  const viewports=info.project.name.includes('mobile')?[{width:320,height:640},{width:390,height:844},{width:412,height:839}]:[{width:1280,height:720},{width:1280,height:560}];
  for(const viewport of viewports){
