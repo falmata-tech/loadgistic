@@ -34,6 +34,14 @@ web-only. Play submission is not complete. Ordered work:
 
 Current findings and evidence (October25):
 
+- Final installed review found Refresh and failed Sign in retaining the Android
+  accessibility name “busy” after loading. The installed React Native adapter
+  retains its prior description when no explicit action label is present. The
+  shared Button and Sign out now provide their translated action name. All341
+  native tests, typecheck, lint,791-message translation audit and Android export
+  pass; rebuilt installed-APK verification is in progress.
+  This native runtime change requires new Android bytes; the earlier APK is kept.
+
 - Live demo inspection found 30 unassigned legacy route preferences. A restored
   hosted-data clone verified the exact 20 public-demo corridor repair and its
   rollback. The agent reviewed and applied that finite correction under the

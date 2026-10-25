@@ -27,6 +27,12 @@ And signup keeps the chosen account type through verification, with Transport
 Provider as the default only when no explicit business choice was supplied\
 And loading and switch accessibility labels follow the selected app language.
 
+Given a named action changes from ready to loading and back after success or failure\
+When Android accessibility inspects the control in each state\
+Then its name retains the translated action, including while its text is replaced
+by a spinner, and returns to that action after loading\
+And loading disables the action without leaving an idle button named only “busy”.
+
 Given a signed-out visitor opens Shared with you\
 When mobile opens authentication\
 Then it explains that sign-in is required to see vehicles shared with the account\
