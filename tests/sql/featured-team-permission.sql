@@ -5,7 +5,7 @@ begin
  raise exception 'EXPECTED_FEATURED_DENIAL';
 end $$;
 do $test$
-declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;vehicle_id_value uuid;old_configuration text;new_configuration text;day_value date;
+declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;vehicle_id_value uuid;old_configuration text;old_category text;new_configuration constant text:='Cargo van';day_value date;
 begin
  select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  foreach uid in array array[staff_id,other_id] loop
@@ -36,22 +36,21 @@ begin
   perform pg_temp.expect_featured_denied(format('select disable_managed_sponsorship(%L,%L)',uid,gen_random_uuid()));
  end loop;
 
- -- Moving a saved truck to a different weekday type must flag that saved day.
- select s.vehicle_id,v.cargo_configuration,d.feature_date into vehicle_id_value,old_configuration,day_value
+ -- Change one saved non-trailer vehicle to another valid type outside its
+ -- scheduled day's theme. A tractor cannot be changed to a courier/van type:
+ -- its supported-trailer constraint would fail before Featured is exercised.
+ select s.vehicle_id,v.cargo_configuration,v.category,d.feature_date into vehicle_id_value,old_configuration,old_category,day_value
  from featured_provider_slots s join featured_provider_days d on d.id=s.day_id join vehicles v on v.id=s.vehicle_id
  where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6
+ and not v.trailer_interchangeable
  and (featured_truck_theme(d.feature_date)->'configurations') ? v.cargo_configuration
- -- Sunday's mixed theme also contains Monday's first type. Choose a saved day
- -- where the replacement really is outside that day's theme, not just another day.
- and not ((featured_truck_theme(d.feature_date)->'configurations') ? (featured_truck_theme(d.feature_date+1)->'configurations'->>0))
+ and not ((featured_truck_theme(d.feature_date)->'configurations') ? new_configuration)
  limit 1;
- if vehicle_id_value is not null then
-  new_configuration:=featured_truck_theme(day_value+1)->'configurations'->>0;
-  update vehicles set cargo_configuration=new_configuration where id=vehicle_id_value;
-  result:=managed_featured_overview(staff_id);
-  if not exists(select 1 from jsonb_array_elements(result->'days') d where d->>'date'=day_value::text and (d->>'invalid')::integer>0) then raise exception 'CHANGED_TRUCK_TYPE_NOT_FLAGGED';end if;
-  update vehicles set cargo_configuration=old_configuration where id=vehicle_id_value;
- end if;
+ if vehicle_id_value is null then raise exception 'FEATURED_TEST_VEHICLE_UNAVAILABLE';end if;
+ update vehicles set cargo_configuration=new_configuration,category=new_configuration where id=vehicle_id_value;
+ result:=managed_featured_overview(staff_id);
+ if not exists(select 1 from jsonb_array_elements(result->'days') d where d->>'date'=day_value::text and (d->>'invalid')::integer>0) then raise exception 'CHANGED_TRUCK_TYPE_NOT_FLAGGED';end if;
+ update vehicles set cargo_configuration=old_configuration,category=old_category where id=vehicle_id_value;
  -- Independent responsibilities combine, and revoking Featured preserves others.
  perform update_managed_support_agent(admin_id,other_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":true,"can_manage_brokerage":false,"can_manage_featured":true,"can_manage_billing":true,"can_manage_customers":true}');
  if not can_manage_featured(other_id) or can_manage_brokerage(other_id) or not exists(select 1 from support_agent_profiles where user_id=other_id and can_manage_support and can_manage_billing and can_manage_customers) then raise exception 'COMBINED_CAPABILITIES_LOST';end if;
