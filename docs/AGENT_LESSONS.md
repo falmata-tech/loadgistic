@@ -177,3 +177,20 @@ fixture cleanup, and switch to the completed production preview before retrying
 slow authentication journeys. The demo importer now fails before writes when a
 target schema would omit route vehicle/driver bindings; negative tests protect
 that specific recurrence.
+For phone-web/Expo parity, start Expo with `npm run preview:web` from
+`apps/mobile`. Plain `npm run web` leaves the local API proxy disabled: an auth
+request can receive Expo's `200 text/html` page, which the app correctly reports
+as an invalid response. That startup mistake wasted one synthetic broker
+journey and its cleanup on October 25. Before creating fixture accounts, send an
+empty POST to `http://127.0.0.1:8084/api/mobile/auth/request` and require
+`400 application/json` with `INVALID_INPUT`; it delivers no code. Keep the
+full journey opt-in and run it only after this preflight and resource checks.
+
+The first parity PR run also found stale assertions for renamed route labels and
+the signup default. Search changed visible strings across all browser specs,
+including opt-in cases, before pushing. An opt-in skip must run before expensive
+browser fixtures initialize. In mounted native panes, scope record text and
+status assertions to the active task: sponsor links, reconnect notices and map
+details can legitimately repeat the same label. These are test-harness failures,
+not evidence that the product flow failed; retain partial workflow evidence and
+verify exact synthetic cleanup before retrying.

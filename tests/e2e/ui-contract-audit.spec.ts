@@ -135,12 +135,12 @@ test('admin stale pagination recovers and regular service areas remain areas',as
   await page.goto(`/admin/operations?view=ROUTES&q=${encodeURIComponent(area.data!.origin)}`);
   const link=page.locator(`a[href="/admin/operations/routes/${area.data!.id}?kind=PROFILE_ROUTE"]`);
   const row=page.locator('.admin-record-list article').filter({has:link});
-  await expect(row.locator('small')).toContainText('Service area');
+  await expect(row.locator('small')).toContainText('Preferred service area');
   await expect(row.locator('.status')).toHaveText(/service area/i);
   await expect(row).toContainText(`Area around ${area.data!.origin}`);
   await expect(row).not.toContainText('→');
   await link.click();
-  await expect(page.locator('dl div').filter({has:page.locator('dt').getByText('Type',{exact:true})}).locator('dd')).toHaveText('Service area');
+  await expect(page.locator('dl div').filter({has:page.locator('dt').getByText('Type',{exact:true})}).locator('dd')).toHaveText('Preferred service area');
   await expect(page.locator('dl')).toContainText(`Area around ${area.data!.origin}`);
   await expect(page.locator('.admin-operation-record-card .status')).toHaveText(/service area/i);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

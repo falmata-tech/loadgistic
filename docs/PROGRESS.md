@@ -8,10 +8,11 @@ current delivery state.
 
 ## Current task — Android cross-platform qualification
 
-The owner now authorizes emulator testing and Closed Alpha upload only after the
+The owner authorizes emulator testing and Closed Alpha upload only after the
 app passes, including screen-by-screen web/native clarity, feature and translation
-parity for customer roles. Platform staff/Admin stay web-only. Play submission is
-not complete. Ordered work:
+parity for customer roles. The latest instruction prioritizes a fixed local build
+and permits unfinished Play setup to remain separate. Platform staff/Admin stay
+web-only. Play submission is not complete. Ordered work:
 
 1. Correct the packaging qualification: the original code-10 APK contained only
    ARM64 libraries and crashed on the x86-64 emulator. The earlier “universal”
@@ -62,6 +63,26 @@ Current findings and evidence (October25):
   system ANRs/hung QEMU and test-driver installation stalls prevented reliable
   installed role qualification. Emulator is stopped during heavy gates. These
   are infrastructure limits, not proof that final native workflows pass.
+- Candidate `0d9ce6f` is on PR24. Its first CI run `40213634873` failed: stale
+  Routes/preference-area labels and signup defaults, a Featured detail locator
+  also matching a sponsor link, a first-page corridor-fixture assumption, and an
+  opt-in browser test initializing Chrome before skipping. These assertions and
+  fixture handling are repaired together. Focused actual Chrome checks pass:
+  corridor1, role accessibility14, admin/area4, native signup/Featured2; the
+  browser-gate inventory passes25. One CI Axe-analysis exception did not reproduce
+  in those14 local role checks; its cause remains unconfirmed and checks remain.
+- The final local1.2.0/code10 APK and AAB are built from `0d9ce6f`, with ARM64 and
+  x86-64 runtime libraries. Archive, signature, bundle, required/forbidden
+  permission and all50 native-library16KB structural checks pass. Both contain
+  the same JavaScript payload. They use the debug certificate for local testing;
+  installed final-artifact qualification and Play signing/upload remain pending.
+  Exact files, hashes and limitations: `.local/play-code10-20261025/final/`.
+- The immutable Linux web package from `0d9ce6f` passed source/function inspection
+  and was uploaded as unpublished draft `6ade3c5478ea2d92b4f31c8e`. This has not
+  changed production. Test/document-only corrections may reuse its frozen bytes
+  only after executable-input equivalence and current terminal CI are verified.
+  A fresh hosted advisor read is waiting for macOS Keychain access; older advisor
+  evidence is not being relabeled as current.
 
 The English Play listing has been saved as an unsubmitted Console draft and
 reloaded successfully. Internal and Alpha still serve code7. Existing background
@@ -84,12 +105,12 @@ evidence is under `.local/play-code10-20261025/` and
   not remove email-based Tracking. Hosted security advisors report zero errors
   and the same two separately accepted warnings. The SQL hashes, protected
   backup/rehearsal and apply readback are in `.local/release-20261025-ae03/`.
-- The original Android 1.2.0/code 10 **ARM64-only, debug-signed test APK** is
+- The original Android 1.2.0/code10 **ARM64-only, debug-signed test APK** is
   preserved at `.local/play-code10-20261025/loadgistic-code10-arm64-original.apk`, SHA-256
   `1195fbbc9d72c300d5b7df522ede9664d5ee9dbbcfc1d82dadde5c19d1cdde66`.
-  It is not a Play upload artifact. A two-ABI APK/AAB rebuild succeeds, but the
-  later parity corrections and Featured redesign must finish installed review
-  and source qualification before the newly authorized Closed Alpha upload.
+  It is not the current test build or a Play upload artifact. Use the final
+  ARM64/x86-64 local test APK recorded above; installed review and source
+  qualification remain required before the authorized Closed Alpha upload.
 
 ## Production verification and limits
 
@@ -130,6 +151,6 @@ evidence is under `.local/play-code10-20261025/` and
    `.local/release-20261025-ae03/`.
 2. Treat hosted simulator activation and GPS ingress as separate reviewed
    infrastructure work.
-3. Await the owner's explicit go-ahead for Play work. The local APK may be used
-   for local testing, but no signing or Play submission follows from this web
-   release.
+3. Finish candidate CI and the matching web rollout, then qualify the final
+   installed Android artifact. Play testing preparation is authorized separately;
+   upload remains conditional on qualification, with no public launch.

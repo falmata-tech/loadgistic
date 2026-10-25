@@ -53,8 +53,8 @@ test('native Featured board and detail fit an English 320px phone',async({page},
  await bounded(page,tiles.nth(0));await bounded(page,tiles.nth(1));await page.screenshot({path:info.outputPath('native-featured-english-320.png'),scale:'css'});
  await page.getByRole('button',{name:'View schedule',exact:true}).click();await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();await page.getByRole('button',{name:'Hide schedule',exact:true}).click();
  await tiles.nth(0).click();const close=page.getByRole('button',{name:'Close featured account details',exact:true}).last();await expect(close).toBeVisible();
- await expect(page.getByRole('link',{name:'Transporter profile',exact:true})).toHaveAttribute('href',`/transporter?handle=${encodeURIComponent(feature.trucks[0].handle)}`);
- await page.screenshot({path:info.outputPath('native-featured-detail-english-320.png'),scale:'css'});await close.click();await expect(page.getByRole('link',{name:'Transporter profile',exact:true})).toHaveCount(0);
+ await expect(close.locator('..').getByRole('link',{name:'Transporter profile',exact:true})).toHaveAttribute('href',`/transporter?handle=${encodeURIComponent(feature.trucks[0].handle)}`);
+ await page.screenshot({path:info.outputPath('native-featured-detail-english-320.png'),scale:'css'});await close.click();await expect(close).toHaveCount(0);
 });
 
 test('native Capacity facts remain readable while details close and selected exit preserves applied filters',async({page},info)=>{

@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
 import type {BrowserContext,Page} from 'playwright-core';
-import {test,expect} from './browser-test';
+import {test,expect as baseExpect} from './browser-test';
 import {auditDeleteVehicles,auditFleetProvider,auditTrackingOwnerLogin,checked,localAuditService} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {chooseCapacityOptions,chooseTruckConfiguration} from './capacity-drawer-helper';
@@ -14,14 +14,38 @@ import {createProviderShipment} from '../../src/lib/provider-tracking.js';
 // Ordinary disposable accounts prove the real Network path. Play-review
 // workspaces are deliberately invisible there and must stay isolated.
 test.use({channel:'chrome',headless:false,trace:'off',video:'off',screenshot:'off',actionTimeout:20_000,navigationTimeout:90_000});
+test.skip(process.env.LOADGISTIC_RUN_BUSINESS_RUNTIME_PARITY!=='1','Local opt-in requires web and Expo previews.');
+const expect=baseExpect.configure({timeout:30_000});
 const web='http://127.0.0.1:3100',expo='http://localhost:8084';
 const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
-function cleanupLocalBusinessWorkspace(owned:{workspaceId:string;ownerId:string;staffId:string;connectionId:string;grantId:string;vehicleId:string},handle:string){
+function cleanupLocalBusinessWorkspace(owned:{workspaceId:string;ownerId:string;staffId:string;providerId:string;organizationId:string;connectionId:string;grantId:string;vehicleId:string},handle:string){
  if(process.env.NEXT_PUBLIC_SUPABASE_URL!=='http://127.0.0.1:55321')throw Error('LOCAL_BUSINESS_FIXTURE_REQUIRED');
  if(!uuid.test(owned.workspaceId)||!uuid.test(owned.ownerId)||!uuid.test(owned.staffId)
+  ||!uuid.test(owned.providerId)||!uuid.test(owned.organizationId)
   ||owned.vehicleId&&!uuid.test(owned.vehicleId)||owned.connectionId&&!uuid.test(owned.connectionId)
   ||owned.grantId&&(!uuid.test(owned.grantId)||!uuid.test(owned.vehicleId)||!uuid.test(owned.connectionId))
   ||!/^journey-broker-[0-9a-f]{8}$/.test(handle))throw Error('INVALID_BUSINESS_FIXTURE_SCOPE');
+ const connectionDiscovery=`select case when count(*)=0 then ''
+  when count(*)=1 and bool_and(requester_id='${owned.organizationId}'::uuid and requested_by='${owned.providerId}'::uuid and recipient_id='${owned.workspaceId}'::uuid)
+  then max(id::text) else 'INVALID_SCOPE' end from public.account_connections
+  where requester_id='${owned.workspaceId}'::uuid or recipient_id='${owned.workspaceId}'::uuid;`;
+ let discoveredConnection='';
+ try{discoveredConnection=execFileSync('docker',['exec','supabase_db_loadgistic-local','psql','-X','-q','-t','-A','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',connectionDiscovery],
+  {timeout:20_000,stdio:['pipe','pipe','pipe'],encoding:'utf8'}).trim();}
+ catch{throw Error('EXACT_LOCAL_CONNECTION_DISCOVERY_FAILED');}
+ if(discoveredConnection&&(!uuid.test(discoveredConnection)||owned.connectionId&&owned.connectionId!==discoveredConnection))throw Error('EXACT_SYNTHETIC_CONNECTION_REQUIRED');
+ if(discoveredConnection)owned.connectionId=discoveredConnection;
+ const exactGrant=owned.connectionId&&owned.vehicleId
+  ?`connection_id='${owned.connectionId}'::uuid and vehicle_id='${owned.vehicleId}'::uuid`:'false';
+ const discovery=`select case when count(*)=0 then ''
+  when count(*)=1 and bool_and(${exactGrant}) then max(id::text)
+  else 'INVALID_SCOPE' end from public.account_capacity_grants where recipient_id='${owned.workspaceId}'::uuid;`;
+ let discovered='';
+ try{discovered=execFileSync('docker',['exec','supabase_db_loadgistic-local','psql','-X','-q','-t','-A','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',discovery],
+  {timeout:20_000,stdio:['pipe','pipe','pipe'],encoding:'utf8'}).trim();}
+ catch{throw Error('EXACT_LOCAL_GRANT_DISCOVERY_FAILED');}
+ if(discovered&&(!uuid.test(discovered)||owned.grantId&&owned.grantId!==discovered))throw Error('EXACT_SYNTHETIC_GRANT_REQUIRED');
+ if(discovered)owned.grantId=discovered;
  const sql=`begin;set local lock_timeout='5s';set local statement_timeout='20s';
  do $cleanup$ declare w uuid:='${owned.workspaceId}'; c uuid:=nullif('${owned.connectionId}','')::uuid;
  g uuid:=nullif('${owned.grantId}','')::uuid;v uuid:=nullif('${owned.vehicleId}','')::uuid;removed integer;
@@ -54,7 +78,8 @@ function cleanupLocalBusinessWorkspace(owned:{workspaceId:string;ownerId:string;
   delete from public.business_workspaces where id=w and handle='${handle}';
   get diagnostics removed=row_count;if removed<>1 then raise exception 'SYNTHETIC_WORKSPACE_DELETE_COUNT';end if;
  end $cleanup$;commit;`;
- execFileSync('docker',['exec','supabase_db_loadgistic-local','psql','-X','-q','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',sql],{timeout:20_000,stdio:'pipe'});
+ try{execFileSync('docker',['exec','supabase_db_loadgistic-local','psql','-X','-q','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',sql],{timeout:20_000,stdio:'pipe'});}
+ catch{throw Error('EXACT_LOCAL_WORKSPACE_CLEANUP_FAILED');}
 }
 async function nativeLogin(page:Page,email:string){
  await page.goto(expo+'/account');
@@ -100,7 +125,6 @@ async function createCustomer(service:ReturnType<typeof localAuditService>,email
 }
 
 test('broker owner and staff find one connected vehicle and shipment on phone web and Expo',async({browser},info)=>{
- test.skip(process.env.LOADGISTIC_RUN_BUSINESS_RUNTIME_PARITY!=='1','Local opt-in requires web and Expo previews.');
  test.skip(info.project.name!=='desktop-chromium','One serialized browser uses explicit phone contexts for both apps.');
  test.setTimeout(600_000);
  const service=localAuditService(),nonce=randomUUID().slice(0,8),ownerEmail=`journey-owner-${nonce}@loadgistic.local`,staffEmail=`journey-staff-${nonce}@loadgistic.local`;
@@ -112,6 +136,10 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
  const phone=async(baseURL:string)=>{const context=await browser.newContext({baseURL,viewport:{width:390,height:844},isMobile:true,hasTouch:true,extraHTTPHeaders:{'x-forwarded-for':'127.0.0.239'}});contexts.push(context);return context.newPage();};
  const place=async(name:string)=>checked(await service.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id as string;
  try{
+  const preview=await fetch(`${expo}/api/mobile/auth/request`,{method:'POST',headers:{Accept:'application/json','Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(10_000)});
+  expect(preview.status).toBe(400);
+  expect(preview.headers.get('content-type')).toContain('application/json');
+  expect(await preview.json()).toMatchObject({error:{code:'INVALID_INPUT'}});
   proof.stage='SYNTHETIC_IDENTITIES';record();
   const provider=await auditFleetProvider(service,'broker-parity');
   owned.providerId=provider.id;owned.organizationId=provider.organization_id;manifest();
@@ -147,7 +175,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   expect((await directoryResponse.json()).items.some((item:{id:string})=>item.id===owned.workspaceId)).toBe(true);
   await expect(providerWeb.getByText(`Journey broker ${nonce}`,{exact:true}).first()).toBeVisible({timeout:30_000});
   await providerWeb.getByRole('button',{name:'Request connection',exact:true}).click();
-  await expect(providerWeb.locator('p[role="status"]')).toContainText('Request sent.');
+  await expect(providerWeb.getByRole('status').filter({hasText:'Request sent.'})).toContainText('Request sent. Vehicle access begins only after it is shared.');
   owned.connectionId=checked(await service.from('account_connections').select('id').eq('requested_by',owned.providerId).eq('recipient_id',owned.workspaceId).single()).id;manifest();
   const ownerWeb=await phone(web);await webLogin(ownerWeb,ownerEmail,'customer');
   await ownerWeb.goto('/app/network');
@@ -161,9 +189,19 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await providerWeb.getByRole('button',{name:'Share with connection',exact:true}).click();
   const shareVehicle=providerWeb.getByRole('dialog',{name:'Share vehicle'});
   await shareVehicle.getByRole('combobox',{name:'Share with connection'}).selectOption(owned.connectionId);
+  const shareResponse=providerWeb.waitForResponse(response=>new URL(response.url()).pathname==='/api/account-vehicle-shares'&&response.request().method()==='POST');
   await shareVehicle.getByRole('button',{name:'Share vehicle',exact:true}).click();
-  await expect.poll(async()=>checked(await service.from('account_capacity_grants').select('id').eq('connection_id',owned.connectionId).eq('vehicle_id',owned.vehicleId).single()).id).toMatch(uuid);
-  owned.grantId=checked(await service.from('account_capacity_grants').select('id').eq('connection_id',owned.connectionId).eq('vehicle_id',owned.vehicleId).single()).id;manifest();
+  const response=await shareResponse;
+  if(response.status()!==200){
+   await expect(shareVehicle.getByRole('alert')).toBeVisible();
+   throw Error(`SHARE_VEHICLE_HTTP_${response.status()}: ${await shareVehicle.getByRole('alert').innerText()}`);
+  }
+  await expect.poll(async()=>{
+   const result=await service.from('account_capacity_grants').select('id').eq('connection_id',owned.connectionId).eq('vehicle_id',owned.vehicleId).eq('recipient_id',owned.workspaceId).maybeSingle();
+   if(result.error)throw result.error;
+   if(result.data){owned.grantId=result.data.id;manifest();}
+   return result.data?.id??null;
+  }).toMatch(uuid);
   await expect(providerWeb).toHaveURL(/\/app\/network\?view=vehicles/);
   await providerWeb.context().close();
   proof.connected=true;record();
@@ -241,10 +279,11 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await expect(ownerExpo.getByRole('button',{name:/Isuzu Journey/})).toBeVisible();
   await ownerExpo.goto('/directory');
   await ownerExpo.getByRole('tab',{name:'Connections',exact:true}).click();
-  await expect(ownerExpo.getByText(`Audit fleet ${provider.suffix}`)).toBeVisible();
+  await expect(ownerExpo.getByText(`Audit fleet ${provider.suffix}`).filter({visible:true}).first()).toBeVisible();
   await ownerExpo.goto('/business-tracking');await expect(ownerExpo.getByText(`Journey cargo ${nonce}`)).toBeVisible();
   await ownerExpo.getByRole('button',{name:/Addis Ababa.*Dire Dawa/i}).click();
-  await expect(ownerExpo.getByText(`Journey cargo ${nonce}`,{exact:true})).toBeVisible();
+  await ownerExpo.getByRole('button',{name:'Open shipment progress',exact:true}).click();
+  await expect(ownerExpo.getByTestId('tracking-native-map-workspace').getByText(`Journey cargo ${nonce}`,{exact:true})).toBeVisible();
   const ownerDetail=await ownerExpo.request.get(`${expo}/api/business-workspaces/${owned.workspaceId}/tracking/${owned.shipmentId}`,{headers:{Authorization:`Bearer ${ownerToken}`}});
   expect(ownerDetail.status()).toBe(200);
   expect((await ownerDetail.json()).canViewLocation).toBe(true);
@@ -253,7 +292,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   const providerExpo=await phone(expo);await nativeLogin(providerExpo,provider.email);
   await providerExpo.goto('/network');
   await providerExpo.getByRole('tab',{name:'Vehicle sharing',exact:true}).click();
-  await expect(providerExpo.getByText(`Journey broker ${nonce}`,{exact:true})).toBeVisible();
+  await expect(providerExpo.getByText(`Journey broker ${nonce}`,{exact:true}).filter({visible:true}).first()).toBeVisible();
   proof.nativeProviderShare=true;record();await providerExpo.context().close();
 
   proof.stage='STAFF_PERMISSION';record();
@@ -270,7 +309,8 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await staffExpo.goto('/business-tracking');
   await expect(staffExpo.getByText(`Journey cargo ${nonce}`)).toBeVisible();
   await staffExpo.getByRole('button',{name:/Addis Ababa.*Dire Dawa/i}).click();
-  await expect(staffExpo.getByText(`Journey cargo ${nonce}`,{exact:true})).toBeVisible();
+  await staffExpo.getByRole('button',{name:'Open shipment progress',exact:true}).click();
+  await expect(staffExpo.getByTestId('tracking-native-map-workspace').getByText(`Journey cargo ${nonce}`,{exact:true})).toBeVisible();
   const staffDetail=await staffExpo.request.get(`${expo}/api/business-workspaces/${owned.workspaceId}/tracking/${owned.shipmentId}`,{headers:{Authorization:`Bearer ${staffToken}`}});
   expect(staffDetail.status()).toBe(200);
   const detail=await staffDetail.json();expect(detail.canViewLocation).toBe(false);expect(detail.location).toBeNull();
@@ -291,7 +331,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
     checked(await service.from('audit_logs').delete().eq('entity_id',owned.shipmentId));
     checked(await service.from('provider_shipments').delete().eq('id',owned.shipmentId));
    }
-   if(owned.workspaceId)cleanupLocalBusinessWorkspace(owned,`journey-broker-${nonce}`);
+   if(owned.workspaceId){cleanupLocalBusinessWorkspace(owned,`journey-broker-${nonce}`);manifest();}
    if(owned.vehicleId){
     checked(await service.from('audit_logs').delete().eq('entity_id',owned.vehicleId));
     checked(await auditDeleteVehicles(service,'id',owned.vehicleId));

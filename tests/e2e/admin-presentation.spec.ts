@@ -13,7 +13,7 @@ test('admin record actions and connected details remain usable at desktop and na
  for(const width of [1440,390,320]){
   await page.setViewportSize({width,height:900});await page.goto('/admin');
   const overview=page.locator('.admin-overview-page');await expect(overview.getByRole('heading',{name:'Platform overview',exact:true})).toBeVisible();
-  for(const label of ['People and provider accounts','Vehicles','Drivers','Tracking','Capacity','Routes'])await expect(overview.getByRole('link',{name:new RegExp('^'+label)})).toBeVisible();
+  for(const label of ['People and provider accounts','Vehicles','Drivers','Tracking','Capacity','Preferred corridor'])await expect(overview.getByRole('link',{name:new RegExp('^'+label)})).toBeVisible();
   await capture(page,info,`admin-overview-${width}.png`);
   await page.goto('/admin/operations?view=DRIVERS');const row=page.locator('.admin-record-list article').first();await expect(row).toBeVisible();
   const actions=row.locator('[class*=rowActions]');await expect(actions.getByRole('link',{name:'Open',exact:true})).toBeVisible();
@@ -53,13 +53,13 @@ test('admin operations sections stay visible and usable on phone widths',async({
  for(const width of[390,320]){
   await page.setViewportSize({width,height:844});await page.goto('/admin/operations');
   const navigation=page.getByRole('navigation',{name:'Platform record type',exact:true});await expect(navigation).toBeVisible();
-  for(const label of['Accounts','Vehicles','Driver Access','Tracking','Capacity','Routes']){
+  for(const label of['Accounts','Vehicles','Driver Access','Tracking','Capacity','Preferred corridor']){
    const link=navigation.getByRole('link',{name:label,exact:true});await expect(link).toBeVisible();
    const bounds=await link.boundingBox();expect(bounds).not.toBeNull();expect(bounds!.width).toBeGreaterThanOrEqual(44);expect(bounds!.height).toBeGreaterThanOrEqual(44);expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width+1);
   }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const screenshot=info.outputPath(`admin-sections-${width}.png`);await page.screenshot({path:screenshot,fullPage:false});chmodSync(screenshot,0o600);
-  await navigation.getByRole('link',{name:'Routes',exact:true}).click();await expect(page).toHaveURL(/\/admin\/operations\?view=ROUTES$/);await expect(navigation.getByRole('link',{name:'Routes',exact:true})).toHaveClass(/active/);
+  await navigation.getByRole('link',{name:'Preferred corridor',exact:true}).click();await expect(page).toHaveURL(/\/admin\/operations\?view=ROUTES$/);await expect(navigation.getByRole('link',{name:'Preferred corridor',exact:true})).toHaveClass(/active/);
  }
 });
 

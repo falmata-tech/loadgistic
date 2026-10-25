@@ -87,7 +87,7 @@ test('administrator Overview exposes every core record and management area',asyn
   const overview=page.locator('.admin-overview-page');
   await expect(overview.getByRole('heading',{name:'Platform overview'})).toBeVisible();
   await expect(overview.getByRole('link',{name:/^People and provider accounts/})).toHaveAttribute('href','/admin/operations');
-  for(const [label,view] of [['Vehicles','TRUCKS'],['Drivers','DRIVERS'],['Tracking','TRACKING'],['Capacity','CAPACITY'],['Routes','ROUTES']])
+  for(const [label,view] of [['Vehicles','TRUCKS'],['Drivers','DRIVERS'],['Tracking','TRACKING'],['Capacity','CAPACITY'],['Preferred corridor','ROUTES']])
     await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toHaveAttribute('href',`/admin/operations?view=${view}`);
   for(const [label,path] of [['Review Center','/admin/reviews'],['Featured & sponsors','/admin/featured'],['Team','/admin/support?tab=team'],['GPS devices','/admin/devices']])
     await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toHaveAttribute('href',path);

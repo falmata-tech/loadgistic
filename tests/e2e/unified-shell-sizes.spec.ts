@@ -36,6 +36,9 @@ test('Expo signup presents the same account benefits on a narrow phone',async({p
  await page.setViewportSize({width:320,height:760});
  await page.goto('http://localhost:8084/signup');
  await expect(page.getByRole('radio',{name:'Find room for your load'})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Put your vehicles on the map'})).toHaveAttribute('aria-checked','true');
+ await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
+ await page.getByRole('radio',{name:'Find room for your load'}).click();
  await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
  await page.getByRole('radio',{name:'Put your vehicles on the map'}).click();
  await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();

@@ -13,11 +13,18 @@ test('every intentional browser skip is reviewed before CI starts',()=>{
  const expected=[];
  for(const file of readdirSync('tests/e2e').filter(name=>name.endsWith('.spec.ts'))){
   const source=ts.createSourceFile(file,readFileSync(`tests/e2e/${file}`,'utf8'),ts.ScriptTarget.Latest,true);
+  const moduleSkips=[];
+  for(const statement of source.statements){
+   if(!ts.isExpressionStatement(statement)||!ts.isCallExpression(statement.expression))continue;
+   const call=statement.expression;
+   if(ts.isPropertyAccessExpression(call.expression)&&ts.isIdentifier(call.expression.expression)
+     &&call.expression.expression.text==='test'&&call.expression.name.text==='skip')moduleSkips.push(call.arguments[0]?.getText(source)||'');
+  }
   function visit(node){
    if(ts.isCallExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='test'
      &&ts.isStringLiteral(node.arguments[0])&&node.arguments[1]){
     const title=node.arguments[0].text;
-    const skips=[];
+    const skips=[...moduleSkips];
     function findSkip(child){
      if(ts.isCallExpression(child)&&ts.isPropertyAccessExpression(child.expression)
        &&ts.isIdentifier(child.expression.expression)&&child.expression.expression.text==='test'
