@@ -19,6 +19,9 @@ declare start_day date;day_value date;response jsonb;existing_days integer;exist
   eligible_count integer;round_low bigint;round_high bigint;round_item bigint;round_count integer;
   admin_id uuid;representative uuid;duplicate_vehicles text[];saved_id uuid;problem text;
   late_saved_id uuid;late_account record;current_round bigint;random_day date;fault_day date;
+  late_ledger_count integer;late_observation_count integer;next_day_repeat_count integer;
+  next_day_repeat_round bigint;next_day_slot_count integer;next_day_distinct_count integer;
+  remaining_after_saved integer;next_day_current_turns integer;next_day_new_turns integer;
   first_draw text[];second_draw text[];retry_before jsonb;retry_after jsonb;
   legacy_vehicle_before jsonb;legacy_theme_before jsonb;observed_before bigint;
 begin
@@ -83,25 +86,62 @@ begin
     (day_id,slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id)
   values(late_saved_id,1,late_account.provider_organization_id,late_account.provider_profile_id,
     late_account.vehicle_id,late_account.driver_user_id);
+  -- The imported saved turn has not been observed yet. Count every other
+  -- currently eligible account still waiting in this round.
+  select count(*)-1 into remaining_after_saved from public.featured_eligible_account_links() link
+  where not exists(select 1 from public.featured_account_rotation_selections history
+    where history.round_number=current_round and history.provider_key=link.provider_key);
+  if remaining_after_saved<0 then raise exception 'FEATURED_LATE_SAVED_ACCOUNT_ALREADY_USED';end if;
   response:=public.generate_managed_featured_days_for_date(start_day+31);
-  if not exists(select 1 from public.featured_account_rotation_selections
+  select count(*) into late_ledger_count from public.featured_account_rotation_selections
     where round_number=current_round and provider_key=late_account.provider_key
-      and featured_day_id=late_saved_id)
-    or exists(select 1 from public.featured_provider_days day
-      join public.featured_provider_slots slot on slot.day_id=day.id
-      where day.feature_date=start_day+31
-        and (slot.provider_organization_id=late_account.provider_organization_id
-          or slot.provider_profile_id=late_account.provider_profile_id))
-    then raise exception 'FEATURED_LATE_SAVED_DAY_REPEATED ledger:% next_day:% round:% response:%',
-      (select count(*) from public.featured_account_rotation_selections
-        where round_number=current_round and provider_key=late_account.provider_key
-          and featured_day_id=late_saved_id),
-      (select count(*) from public.featured_provider_days day
-        join public.featured_provider_slots slot on slot.day_id=day.id
-        where day.feature_date=start_day+31
-          and (slot.provider_organization_id=late_account.provider_organization_id
-            or slot.provider_profile_id=late_account.provider_profile_id)),
-      current_round,response;end if;
+      and featured_day_id=late_saved_id;
+  select count(*) into late_observation_count from public.featured_account_saved_day_observations
+    where featured_day_id=late_saved_id and provider_key=late_account.provider_key;
+  if late_ledger_count<>1 or late_observation_count<>1 then
+    raise exception 'FEATURED_LATE_SAVED_TURN_NOT_OBSERVED ledger:% observation:% round:%',
+      late_ledger_count,late_observation_count,current_round;
+  end if;
+  if response->>'created'<>'7' or response->>'empty'<>'0' then
+    raise exception 'FEATURED_LATE_SAVED_WEEK_GAP: %',response;
+  end if;
+  select count(*),count(distinct (slot.provider_organization_id,slot.provider_profile_id))
+    into next_day_slot_count,next_day_distinct_count
+  from public.featured_provider_days day join public.featured_provider_slots slot on slot.day_id=day.id
+  where day.feature_date=start_day+31;
+  if next_day_slot_count<>8 or next_day_distinct_count<>8 then
+    raise exception 'FEATURED_LATE_SAVED_NEXT_DAY_SHORT_OR_DUPLICATE: % %',
+      next_day_slot_count,next_day_distinct_count;
+  end if;
+  select count(*) filter(where history.round_number=current_round),
+    count(*) filter(where history.round_number=current_round+1)
+    into next_day_current_turns,next_day_new_turns
+  from public.featured_provider_days day
+  join public.featured_account_rotation_selections history on history.featured_day_id=day.id
+  where day.feature_date=start_day+31;
+  if next_day_current_turns<>least(8,remaining_after_saved)
+    or next_day_new_turns<>8-least(8,remaining_after_saved)
+  then raise exception 'FEATURED_LATE_SAVED_ROUND_BOUNDARY current:% new:% remaining:%',
+    next_day_current_turns,next_day_new_turns,remaining_after_saved;
+  end if;
+  select count(*) into next_day_repeat_count
+  from public.featured_provider_days day join public.featured_provider_slots slot on slot.day_id=day.id
+  where day.feature_date=start_day+31
+    and (slot.provider_organization_id=late_account.provider_organization_id
+      or slot.provider_profile_id=late_account.provider_profile_id);
+  if next_day_repeat_count>0 then
+    select max(history.round_number) into next_day_repeat_round
+    from public.featured_provider_days day
+    join public.featured_account_rotation_selections history on history.featured_day_id=day.id
+    where day.feature_date=start_day+31 and history.provider_key=late_account.provider_key;
+    if next_day_repeat_count<>1 or next_day_repeat_round is distinct from current_round+1
+      or exists(select 1 from public.featured_eligible_account_links() link
+        where not exists(select 1 from public.featured_account_rotation_selections history
+          where history.round_number=current_round and history.provider_key=link.provider_key))
+    then raise exception 'FEATURED_LATE_SAVED_REPEATED_BEFORE_CYCLE_COMPLETE repeat:% saved_round:% next_round:%',
+      next_day_repeat_count,current_round,next_day_repeat_round;
+    end if;
+  end if;
   select id into admin_id from public.profiles where active and role='ADMIN' limit 1;
   select vehicle_id into representative from public.featured_eligible_account_links() limit 1;
   if admin_id is null or representative is null then raise exception 'FEATURED_ADMIN_FIXTURE_MISSING';end if;

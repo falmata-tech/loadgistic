@@ -43,9 +43,9 @@ function capacityTitle(capacity:any,t:(message:string)=>string){
 function regularServiceTitle(capacity:any,t:(message:string)=>string){
   const signal=capacity?.recurring_corridors?.[0];
   if(!signal)return null;
-  if(signal.geometry==='ROUTE')return {label:'Corridor route',value:placeLabels(signal.route_points,' ↔ ')};
+  if(signal.geometry==='ROUTE')return {label:'Preferred corridor',value:placeLabels(signal.route_points,' ↔ ')};
   const boundary=placeLabels(signal.area_boundary,' · ');
-  return {label:'Regular service area',value:boundary?`${signal.area_center_label||t('Service area')} · ${boundary}`:signal.area_center_label||t('Service area')};
+  return {label:'Preferred service area',value:boundary?`${signal.area_center_label||t('Service area')} · ${boundary}`:signal.area_center_label||t('Service area')};
 }
 
 function panelId(rowKey:string){

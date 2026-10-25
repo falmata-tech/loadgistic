@@ -27,7 +27,7 @@ export default async function AddFleetTruckPage({searchParams}:{searchParams:Pro
         <div className="form-group full"><label htmlFor="vehicle-plate"><Text message="Plate number"/></label><Localized as="input" copy={["placeholder"]} id="vehicle-plate" name="plate" minLength={2} maxLength={32} placeholder="Record the current plate" autoComplete="off" required/><small><Text message="Plate details stay inside authorized provider and platform operations."/></small></div>
       </div>
       <aside className="vehicle-registration-preview"><span><ShieldCheck aria-hidden="true"/><span><strong><Text message="Registration is not verification"/></strong><small><Text message="Add ownership or authorization documents from Verification after saving."/></small></span></span></aside>
-      <p className="meta"><Text message="Assign a driver, then go live. Document review adds verified badges."/></p>
+      <p className="meta"><Text message="Take the vehicle live when ready. Assign a driver before publishing available capacity. Document review adds verified badges."/></p>
       <div className="vehicle-registration-actions"><Link className="button secondary" href="/app/home/vehicles"><Text message="Cancel"/></Link><button className="button success"><Save aria-hidden="true"/><Text message={heading}/></button></div>
     </form>
   </div>;

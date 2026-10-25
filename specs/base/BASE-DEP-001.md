@@ -396,6 +396,7 @@ not test selection or the required all-tests-pass release outcome.
 Given the complete root unit suite is selected\
 When it runs locally or in CI\
 Then at most two test-file workers execute at once\
+And the command explicitly enables TypeScript type stripping on the repository's pinned Node22.16 runtime\
 And the selected tests and existing per-test budgets remain unchanged\
 And the SMTP parser subprocess keeps its five-second containment budget.
 
@@ -415,6 +416,14 @@ And a source error line prefers a stack frame matching that failing spec over st
 And annotation line numbers are positive safe integers no greater than one million; malformed field values are never stringified and unsafe/unknown filenames produce no case annotation\
 And only the two existing map-shell and vehicle-modal layout specs may additionally report allowlisted layout booleans and bounded nonnegative pixel measurements parsed from complete standalone comparison lines; unknown keys, strings, arbitrary message text and malformed values are discarded\
 And no test title, assertion body, contact, header, payload or raw report enters the annotation\
+And the named provider/owner/viewer Tracking smoke may additionally report one
+fixed workflow-stage enum and a bounded integer duration from its failed
+top-level Playwright step; exact source-case and literal stage allowlists are
+required, and unknown titles, step errors and malformed durations remain private\
+And only the fourteen existing provider role/route accessibility cases may
+report a fixed role, route and failed analysis-stage enum, known Axe rule IDs,
+a bounded duration and a fixed error category; arbitrary titles, DOM targets,
+error messages, contact data and unsupported routes remain private\
 And the existing selection, retry, skip and pass/fail requirements remain authoritative.
 
 Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.

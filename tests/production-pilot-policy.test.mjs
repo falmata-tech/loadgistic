@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import {readPrivateUpload} from '../src/lib/private-storage.js';
 import {
-  PRODUCTION_PILOT_SOURCE,pilotEmail,pilotUuid,validateProductionPilotTarget
+  PRODUCTION_PILOT_SOURCE,assertPilotRouteBindingReady,pilotEmail,pilotUuid,validateProductionPilotTarget
 } from '../scripts/production-pilot-policy.mjs';
 
 test('Production pilot identities are namespaced, non-deliverable, and deterministic',()=>{
@@ -35,6 +35,15 @@ test('the hosted importer is additive and keeps destructive local reset and reus
   assert.match(source,/argument\(rollbackRequested\?'--confirm-rollback':'--confirm-additive'\)/);
   assert.doesNotMatch(source,/reset-local|deleteLocalFixtures|SUPABASE_FIXTURE_PASSWORD/);
   assert.doesNotMatch(source,/\.delete\(\)\.not\(/);
+});
+
+test('pilot route import refuses schema or fixture data that would drop vehicle and driver bindings',()=>{
+  const routes=JSON.parse(fs.readFileSync('resources/fixtures/managed-market.json','utf8')).tables.profile_routes;
+  const definitions={profile_routes:{properties:{assigned_vehicle_id:{format:'uuid'},assigned_driver_user_id:{format:'uuid'}}}};
+  assert.ok(routes.length>=20);
+  assert.doesNotThrow(()=>assertPilotRouteBindingReady(definitions,routes));
+  assert.throws(()=>assertPilotRouteBindingReady({profile_routes:{properties:{assigned_vehicle_id:{format:'uuid'}}}},routes),/ROUTE_SCOPE_MIGRATION_REQUIRED/);
+  assert.throws(()=>assertPilotRouteBindingReady(definitions,[{...routes[0],assigned_driver_user_id:null}]),/ROUTE_BINDING_REQUIRED/);
 });
 
 test('Production pilot requires an exact remote Supabase project confirmation',()=>{

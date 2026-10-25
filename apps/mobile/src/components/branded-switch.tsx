@@ -1,9 +1,11 @@
 import {Pressable,StyleSheet,View} from 'react-native';
+import {useLanguage} from '../localization/provider';
 import {palette} from './ui';
 
 /** One accessible blue control for native and Expo web settings. */
 export function Switch({accessibilityLabel,value,onValueChange,disabled=false}:{accessibilityLabel:string;value:boolean;onValueChange:(value:boolean)=>void;disabled?:boolean}){
- return <Pressable accessibilityRole="switch" accessibilityLabel={accessibilityLabel} accessibilityState={{checked:value,disabled}} aria-checked={value}
+ const {t}=useLanguage();
+ return <Pressable accessibilityRole="switch" accessibilityLabel={t(accessibilityLabel)} accessibilityState={{checked:value,disabled}} aria-checked={value}
   disabled={disabled} onPress={()=>onValueChange(!value)} style={[styles.hit,disabled&&styles.disabled]}>
   <View style={[styles.track,value&&styles.trackOn]}><View style={[styles.thumb,value&&styles.thumbOn]}/></View>
  </Pressable>;

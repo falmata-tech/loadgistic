@@ -72,6 +72,16 @@
       "project": "mobile-chromium"
     },
     {
+      "file": "business-runtime-parity.spec.ts",
+      "title": "broker owner and staff find one connected vehicle and shipment on phone web and Expo",
+      "project": "desktop-chromium"
+    },
+    {
+      "file": "business-runtime-parity.spec.ts",
+      "title": "broker owner and staff find one connected vehicle and shipment on phone web and Expo",
+      "project": "mobile-chromium"
+    },
+    {
       "file": "driver-manual-capacity-location.spec.ts",
       "title": "assigned driver chooses a manual Capacity point, sees its source, and can return to phone",
       "project": "mobile-chromium"
@@ -162,6 +172,11 @@
       "project": "desktop-chromium"
     },
     {
+      "file": "mobile-private-entry.spec.ts",
+      "title": "private Capacity explains sign-in and keeps its destination through account creation",
+      "project": "desktop-chromium"
+    },
+    {
       "file": "mobile-tracking-map.spec.ts",
       "title": "Expo phone Tracking uses a route-first map, existing progress and public contact modal that closes before profile navigation",
       "project": "desktop-chromium"
@@ -217,6 +232,11 @@
       "project": "mobile-chromium"
     },
     {
+      "file": "preferred-corridor-parity.spec.ts",
+      "title": "preferred corridor keeps current capacity distinct on phone web and Expo",
+      "project": "desktop-chromium"
+    },
+    {
       "file": "public-app-shell-review.spec.ts",
       "title": "capture focused public application shell review",
       "project": "desktop-chromium"
@@ -225,6 +245,11 @@
       "file": "public-app-shell-review.spec.ts",
       "title": "capture focused public application shell review",
       "project": "mobile-chromium"
+    },
+    {
+      "file": "public-card-presentation.spec.ts",
+      "title": "native Featured board and detail fit an English 320px phone",
+      "project": "desktop-chromium"
     },
     {
       "file": "public-card-presentation.spec.ts",

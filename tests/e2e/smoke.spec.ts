@@ -640,7 +640,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await expect(page.locator('.public-map-legend')).toContainText('Empty service area');
   await expect(page.locator('.public-map-legend')).toContainText('Empty capacity route');
   await expect(page.locator('.public-map-legend')).toContainText('Partial capacity route');
-  await expect(page.locator('.public-map-legend')).toContainText('Corridor route');
+  await expect(page.locator('.public-map-legend')).toContainText('Preferred corridor');
   await expect(page.locator('.public-map-legend')).not.toContainText('Next trip');
   await page.screenshot({path:path.join(captures,`${info.project.name}-selected-truck.png`),scale:'css'});
   const closeCard=page.getByRole('button',{name:'Close map signal details'});
@@ -871,14 +871,18 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   // Keep synthetic email workflows independent of other tests' client rate
   // buckets without disabling origin or recipient rate limits.
   await page.context().setExtraHTTPHeaders({'x-forwarded-for':info.project.name.startsWith('mobile')?'127.0.0.249':'127.0.0.248'});
-  const service=localAuditService();let provider:any,vehicleId='',shipmentId='';
+  const service=localAuditService();let provider:any,vehicleId='',shipmentId='',ownerEmail='',trackingPartyEmail='';
+  let primaryFailure:unknown;
   try{
+  await test.step('tracking: prepare synthetic provider and vehicle',async()=>{
   provider=await auditProvider(service,'smoke-owner-share');
   vehicleId=(await createProviderVehicle(provider,{useBasis:'OWNED',make:'Toyota',model:'Tracking smoke',plate:`TEST-${provider.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
   expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:provider.id,requested_drives_truck:true}))).toBe(true);
   await updateFleetDriverAccess(provider,provider.id,{vehicleId,canManageCapacity:true,canManageTracking:true});
+  });
   // Exercise ordinary email login, including when fixture-password disclosure
   // is disabled in the local preview.
+  await test.step('tracking: provider email sign-in',async()=>{
   const email=provider.email;
   await page.goto('/login',{waitUntil:'domcontentloaded'});
   const access=page.getByTestId('email-code-request-form');await access.getByLabel('Email',{exact:true}).fill(email);
@@ -886,6 +890,8 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await expect(page.getByTestId('email-code-form')).toBeVisible({timeout:30000});
   await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(email,loginRequested,['Your Loadgistic signup code','Your Loadgistic sign-in code']));
   await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page).toHaveURL(/\/app\/home/,{timeout:30000});await expect(page.locator('.app-main')).toBeVisible();
+  });
+  await test.step('tracking: create shipment and open provider detail',async()=>{
   await page.goto('/app/provider-shipments/new');
   await page.getByRole('combobox',{name:'Vehicle',exact:true}).selectOption(vehicleId);
   await page.getByLabel('Cargo summary').fill('Workshop machine parts');
@@ -893,8 +899,8 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await choosePlace(page,'Passing through city','Dire',/Dire Dawa, Ethiopia/i);
   await expect(page.locator('input[name="passingPlaceRef"]')).toHaveValue(/\S+/);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
-  const ownerEmail=`owner-${provider.suffix}@example.test`;
-  const trackingPartyEmail=`dispatch-${provider.suffix}@example.test`;
+  ownerEmail=`owner-${provider.suffix}@example.test`;
+  trackingPartyEmail=`dispatch-${provider.suffix}@example.test`;
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
   await page.getByLabel('Shipment owner email').fill(ownerEmail);
   await expect(page.getByLabel('Additional tracking emails')).toHaveCount(0);
@@ -915,6 +921,8 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await expect(page.getByRole('heading',{name:/Tracking · LGX-/})).toBeVisible({timeout:10_000});
   await expect(page.getByText(ownerEmail,{exact:true})).toBeVisible();
   expect(checked(await service.from('provider_tracking_recipients').select('recipient_role').eq('shipment_id',shipmentId))).toEqual([{recipient_role:'OWNER'}]);
+  });
+  await test.step('tracking: provider status and proof',async()=>{
   await auditOpenTrackingProgress(page);await expect(page.locator('.tracking-journey li')).toHaveCount(5);
   await expect(page.getByLabel('Report a problem')).toBeEnabled();
   await expect(page.locator('.tracking-journey strong')).toHaveText(['Going to pickup','Loading','En route','Unloading','Complete']);
@@ -925,6 +933,8 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await auditOpenTrackingProgress(page);await page.getByLabel('En route').check();
   await expect(page.getByLabel('Photo proof required')).toHaveCount(0);
   await expect(page.getByText('The shipment owner manages who can follow this shipment.')).toBeVisible();
+  });
+  await test.step('tracking: owner email access and viewer invitation',async()=>{
   await page.goto('/track');
   await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
 
@@ -957,6 +967,8 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
     return (inbox.messages||[]).some((item:any)=>item.Subject==='Your Loadgistic tracking access'&&Date.parse(item.Created)>=invitationAt-2000&&item.To?.some((to:any)=>to.Address===trackingPartyEmail));
   },{timeout:15000}).toBe(true);
   await sharing.getByRole('button',{name:'Close editor'}).click();
+  });
+  await test.step('tracking: viewer email access and restricted detail',async()=>{
   await page.getByRole('button',{name:'Log out',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Follow your shipment'})).toBeVisible();
   await page.getByLabel('Email',{exact:true}).fill(trackingPartyEmail);
@@ -976,7 +988,11 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await expect(page.getByRole('button',{name:'Open proof'})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Share tracking'})).toHaveCount(0);
   expect(checked(await service.from('profiles').select('id').eq('email',trackingPartyEmail))).toHaveLength(0);
+  });
+  }catch(error){primaryFailure=error;throw error;
   }finally{
+    try{
+    await test.step('tracking: clean up synthetic records',async()=>{
     if(shipmentId){
       const proofs=checked(await service.from('provider_shipment_events').select('proof_storage_path').eq('shipment_id',shipmentId).not('proof_storage_path','is',null));
       for(const proof of proofs){
@@ -990,6 +1006,11 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
     }
     if(vehicleId){checked(await service.from('audit_logs').delete().eq('entity_id',vehicleId));checked(await auditDeleteVehicles(service,'id',vehicleId));}
     if(provider){checked(await service.from('audit_logs').delete().eq('actor_user_id',provider.id));checked(await service.auth.admin.deleteUser(provider.id));}
+    });
+    }catch(cleanupError){
+      if(!primaryFailure)throw cleanupError;
+      test.info().annotations.push({type:'synthetic-cleanup-failed',description:'Tracking fixture cleanup failed after the primary test error.'});
+    }
   }
 });
 
@@ -1126,7 +1147,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(summary.locator('.capacity-setting-truck-label')).toContainText('Vehicle area');
   await expect(summary.locator('.capacity-summary-map-header')).toBeVisible();
   await expect(summary.getByRole('navigation',{name:'Edit capacity signals'})).toBeVisible();
-  await expect(summary.locator('.capacity-map-key')).toContainText('Corridor route');
+  await expect(summary.locator('.capacity-map-key')).toContainText('Preferred corridor');
   await expect(summary.getByRole('region',{name:'Approximate vehicle location controls'})).toBeVisible();
   const zones=await summary.evaluate((root:HTMLElement)=>{
     const box=(selector:string)=>{const rect=(root.querySelector(selector) as HTMLElement|null)?.getBoundingClientRect();return rect?{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom}:null;};
@@ -1191,9 +1212,9 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('heading',{name:'Available by radius or corridor'})).toHaveCount(0);
   await expect(summary).toContainText('just now');
   await expect(summary).not.toContainText('Next trip');
-  await expect(summary).toContainText('Corridor route');
+  await expect(summary).toContainText('Preferred corridor');
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
-  await page.getByRole('button',{name:/^Edit regular service:/}).click();
+  await page.getByRole('button',{name:/^Edit preferred corridor:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
   await expect(page.getByTestId('capacity-planning-editor')).toContainText('The area or two-way route you serve regularly');
   await page.getByRole('button',{name:'Close editor'}).click();

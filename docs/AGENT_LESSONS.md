@@ -10,6 +10,11 @@ read the current accepted spec before applying a lesson.
 
 | What went wrong | Required prevention | Detailed record |
 | --- | --- | --- |
+| `npm test` relied on an implicit TypeScript loader available in newer Node installations, while `.nvmrc` pins22.16. Selecting that documented runtime caused15 loader failures before the affected tests ran. | Run gates on the pinned runtime and explicitly enable its supported type-stripping mode. Preserve worker limits and test selection; verify real imported-TypeScript cases before another full gate. | BASE-DEP-001; `package.json`; October25 Node22 loader probe10/10; initial failed gate preserved under `.local/release-20261025-focus/quality.log`. |
+| The Driver map's scrollable action rail had no keyboard-accessible element while all four buttons were disabled before hydration. Earlier ready-state audits did not expose it; authenticated Axe failures also lost their role/route and analysis stage in sanitized CI output. | Audit the actual server-rendered disabled state as well as the hydrated screen. Keep labeled scrollable rails keyboard focusable with a visible focus treatment. Report only fixed role/route/stage/error enums and known Axe rules; distinguish an analysis rejection from a returned violation instead of assuming they have the same cause. | FEAT-UIX-001; BASE-DEP-001; `tests/e2e/accessibility.spec.ts`; October25 local14-case review and CI40229087647. |
+| A three-person Tracking browser test timed out in CI, but sanitized output retained only its declaration line; raw logs contained no stage, so the stall could not be located. | Give long workflows fixed named steps. Emit only reviewed stage enums and bounded timings from failed steps, never arbitrary step titles or error bodies. Preserve first failure through cleanup, reproduce one case locally, and keep unknown CI causes explicit. | BASE-DEP-001; `scripts/ci-browser-shard.mjs`; `tests/ci-browser-gate.test.mjs`; October25 focused Tracking replay54s. |
+| On installed Android, Refresh and failed Sign in kept the accessibility name “busy” after loading. Visible text alone did not reset React Native's native content description. | Keep an explicit translated action name while a spinner replaces button text. Test ready/loading/retry semantics and inspect the actual installed Android hierarchy after completion; Expo rendering alone cannot detect native description retention. | FEAT-MOB-001; `apps/mobile/tests/button-accessibility.test.mjs`; October25 installed review. |
+| An APK with no output filters was called universal without inspecting its native libraries. It contained ARM64 only and crashed on an x86-64 emulator at `libreactnative.so`. | Inspect actual APK/AAB ABI members and required runtime libraries; report supported ABIs explicitly. Install and cold-start the artifact on the selected ABI before claiming compatibility. Output metadata alone does not prove runtime coverage. | October25 code10, `.local/play-code10-20261025/`; original SHA256 `1195fbbc…cdde66`; ARM64/x86-64 rebuild and installed qualification remain separately recorded. |
 | The October 25 release review described promoting an uploaded Netlify draft before its deploy context was checked. The draft was ready as a package but used `deploy-preview` context; its health endpoint returned 503 because production-only settings were absent. | Before seeking release approval, read the draft's actual context and cold-start health. If required secrets are production-only, keep the draft unpublished, reuse the verified bytes through an authorized production-context upload, then independently read the published deploy ID, context and live health. Do not widen secret scopes to make a preview pass. | NR-69; `docs/PROGRESS.md`; protected `.local/release-20261025-ae03/` receipts. |
 | The Featured-team permission SQL test selected a saved tractor and changed only its cargo configuration to the next weekday's courier type. The database correctly rejected that impossible tractor/trailer combination, stopping a documentation PR before browser CI. | For a test of Featured invalidation, choose a saved non-trailer vehicle, change its category and cargo configuration together to a valid type outside the saved day's theme, assert that such a fixture exists, and roll back both fields. Keep the vehicle constraint and the Featured invalidation assertion intact. | FEAT-FTR-001; `tests/sql/featured-team-permission.sql`; PR21 CI 40038949581 attempt 1. |
 | Main CI on the same PR-green source intermittently failed the provider-onboarding cleanup and timed out a guest-history browser case. A local replay also hit a shared preview port before its process owner was checked; the port belonged to another project. | Verify a test port's process owner and backend target before browser use. Run one failed-job-only CI retry, retain the original failure, and classify slow navigation separately from product behavior. Before the next product release, make cleanup preserve the first test error and give these long synthetic workflows useful stage diagnostics; do not silently raise timeouts or remove privacy assertions. | PR16 main CI 40032518930 attempts 1–2; FEAT-FLT-001 and FEAT-GST-001; current progress. |
@@ -164,3 +169,49 @@ Reviewed guidance, October20:
 - [actionlint usage](https://github.com/rhysd/actionlint/blob/main/docs/usage.md) supplies workflow static checking. Version1.7.12 and platform archive digests are pinned; ordinary checks never download software.
 - [Supabase testing guidance](https://supabase.com/docs/guides/local-development/testing/overview) supports database/RLS tests. Retain our transaction-based SQL and isolated local targets rather than adding a second persistence engine or rewriting working tests just to use another harness.
 - [Expo local builds](https://docs.expo.dev/build-reference/local-builds/) support a local alternative to hosted builds. Preserve our approved signing and exact-artifact checks; local build capability is not permission to export a key or claim a device test passed.
+
+
+October25 parity qualification: use `tests/e2e/browser-test.ts` for new browser
+cases; the offline `@playwright/test` shim deliberately erases fixture types.
+Review new cases against the maintained CI skip inventory before pushing. Run
+Android emulators separately from Metro/Hermes/native packaging on this Mac:
+concurrent heavy work caused QEMU hangs and Android system ANRs, which do not
+establish an app failure. Preserve failed harness runs, confirm authoritative
+fixture cleanup, and switch to the completed production preview before retrying
+slow authentication journeys. The demo importer now fails before writes when a
+target schema would omit route vehicle/driver bindings; negative tests protect
+that specific recurrence.
+For phone-web/Expo parity, start Expo with `npm run preview:web` from
+`apps/mobile`. Plain `npm run web` leaves the local API proxy disabled: an auth
+request can receive Expo's `200 text/html` page, which the app correctly reports
+as an invalid response. That startup mistake wasted one synthetic broker
+journey and its cleanup on October 25. Before creating fixture accounts, send an
+empty POST to `http://127.0.0.1:8084/api/mobile/auth/request` and require
+`400 application/json` with `INVALID_INPUT`; it delivers no code. Keep the
+full journey opt-in and run it only after this preflight and resource checks.
+
+The first parity PR run also found stale assertions for renamed route labels and
+the signup default. Search changed visible strings across all browser specs,
+including opt-in cases, before pushing. An opt-in skip must run before expensive
+browser fixtures initialize. In mounted native panes, scope record text and
+status assertions to the active task: sponsor links, reconnect notices and map
+details can legitimately repeat the same label. These are test-harness failures,
+not evidence that the product flow failed; retain partial workflow evidence and
+verify exact synthetic cleanup before retrying.
+
+For installed Android tests, a successful ADB `input text` command does not prove
+the app received every character on a busy emulator. Verify the complete email
+and masked password length before submission; keep secrets out of exceptions and
+screenshots intended for sharing. October25 bulk input lost characters, while
+paced input and the inspected form button passed with unchanged credentials and
+Auth code. Read the installed `input` usage before changing flags. Unsupported
+test deep links must be compared with `normalizeNativeLink` before diagnosing an
+app defect; Capacity's canonical native path is `/`, not `/capacity`.
+
+Featured rotation tests must enforce complete eligible cycles, rather than ban
+legitimate repeats across a completed cycle. The fresh30-account CI fixture
+crossed a round boundary inside one day's eight slots; an unconditional next-day
+ban failed randomly despite valid scheduling. Preserve saved-turn idempotency,
+daily uniqueness and exact round completion in the regression. Compare the
+installed function, fixture size and owner's rule before changing production SQL
+or retrying a stochastic assertion.

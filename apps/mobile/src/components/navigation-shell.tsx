@@ -8,7 +8,7 @@ import {useLanguage} from '../localization/provider';
 import {languages} from '../localization/controller';
 import {aboutDestination,activeDestination,hasWorkspace,isWorkspace,phoneDestinations,publicDestinations,workspaceDestinations,type Destination} from '../navigation/destinations';
 import {AppIcon,type IconName} from './app-icon';
-import {ErrorText,palette} from './ui';
+import {Button,ErrorText,palette} from './ui';
 import {ExternalButton} from './public-details';
 import {ChatUpdatesButton,useChatUpdates} from '../session/chat-alert-provider';
 import {blockChatReading} from '../session/chat-visibility';
@@ -63,8 +63,8 @@ export function NavigationShell({children}:PropsWithChildren){
       <Pressable accessibilityRole="button" onPress={()=>open('language')} style={styles.row}><AppIcon name="language"/><Text style={styles.rowText}>{t('Language')}</Text><AppIcon name="next" size={18}/></Pressable>
       <View style={styles.divider} accessible={false}/>
       <MenuItem item={aboutDestination} active={path===aboutDestination.href} onPress={()=>navigate(aboutDestination.href)}/>
-      <View style={styles.legal}><ExternalButton label={t('Privacy')} url="https://loadgistic.com/privacy"/><ExternalButton label={t('Terms')} url="https://loadgistic.com/terms"/></View>
-      {account.session&&<><ErrorText message={error}/><Pressable accessibilityRole="button" accessibilityState={{disabled:signingOut,busy:signingOut}} disabled={signingOut} onPress={()=>{void signOut();}} style={styles.row}><AppIcon name="logout"/><Text style={styles.rowText}>{t('Sign out')}</Text></Pressable></>}
+      <View style={styles.legal}><Button secondary message="Privacy" onPress={()=>navigate('/privacy')}/><ExternalButton label={t('Terms')} url="https://loadgistic.com/terms" failureMessage="Could not open Terms. Please try again."/></View>
+      {account.session&&<><ErrorText message={error}/><Pressable accessibilityRole="button" accessibilityLabel={t('Sign out')} accessibilityState={{disabled:signingOut,busy:signingOut}} disabled={signingOut} onPress={()=>{void signOut();}} style={styles.row}><AppIcon name="logout"/><Text style={styles.rowText}>{t('Sign out')}</Text></Pressable></>}
      </>:<><ErrorText message={language.error}/>{languages.map(item=><Pressable key={item.code} accessibilityRole="radio" aria-checked={item.code===language.locale} accessibilityState={{checked:item.code===language.locale,disabled:language.busy}} disabled={language.busy} onPress={()=>{void language.select(item.code);}} style={[styles.row,item.code===language.locale&&styles.active]}><AppIcon name="language" color={item.code===language.locale?'#fff':palette.muted}/><Text style={[styles.rowText,item.code===language.locale&&styles.activeText]}>{item.name}</Text>{item.code===language.locale&&<AppIcon name="check" color="#fff"/>}</Pressable>)}</>}
     </ScrollView>
    </SafeAreaView>

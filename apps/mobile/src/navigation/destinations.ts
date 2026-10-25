@@ -1,16 +1,16 @@
 import type {AccountSession} from '../session/contract';
 
-export type Destination={href:string;label:string;icon:'map'|'route'|'users'|'info'|'home'|'truck'|'network'|'help'|'more'|'user'|'documents'|'billing'|'profile'|'location'|'shield'};
+export type Destination={href:string;label:string;icon:'map'|'route'|'users'|'info'|'home'|'truck'|'network'|'help'|'more'|'user'|'documents'|'tracking'|'featured'|'billing'|'profile'|'location'|'shield'};
 // Mirrors the web's PublicMobileNav and AppShell. This is display policy only.
 export const publicDestinations:Destination[]=[
  {href:'/',label:'Capacity',icon:'map'},
- {href:'/featured',label:'Featured',icon:'users'},
+ {href:'/featured',label:'Featured',icon:'featured'},
 ];
 export const aboutDestination:Destination={href:'/about',label:'About',icon:'info'};
 export const visitorDestinations:Destination[]=[publicDestinations[0],{href:'/visitor-tracking',label:'Track',icon:'route'},publicDestinations[1],aboutDestination];
 const home:Destination={href:'/account',label:'Home',icon:'home'};
 const settings:Destination={href:'/account-settings',label:'Account',icon:'user'};
-const tracking:Destination={href:'/shipments',label:'Tracking',icon:'route'};
+const tracking:Destination={href:'/shipments',label:'Tracking',icon:'tracking'};
 const network:Destination={href:'/network',label:'Network',icon:'network'};
 const support:Destination={href:'/support',label:'Support',icon:'help'};
 const workspacePaths=new Set(['/account','/account-settings','/account-details','/account-security','/driver-photo','/fleet','/manage-capacity','/regular-service','/shipments','/shipment-detail','/shipment-manage','/network','/directory','/shared-capacity','/support','/support-chat','/billing','/documents','/profile','/workspaces','/business-capacity','/business-tracking','/business-account','/business-shipment']);
@@ -33,10 +33,10 @@ export function workspaceDestinations(session:AccountSession|null):Destination[]
  if(!hasWorkspace(session))return [];
  if(session!.user.role==='CUSTOMER'){
   const permissions=session!.user.selectedBusinessWorkspace!.permissions;
-  return [{href:'/directory',label:'Network',icon:'network'},...(permissions.tracking?[{href:'/business-tracking',label:'Tracking',icon:'route'} as Destination]:[]),{href:'/business-account',label:'Account',icon:'user'}];
+  return [{href:'/directory',label:'Network',icon:'network'},...(permissions.tracking?[{href:'/business-tracking',label:'Tracking',icon:'tracking'} as Destination]:[]),{href:'/business-account',label:'Account',icon:'user'}];
  }
  if(!session!.access?.granted)return [home,support,settings];
- return [home,network,tracking,{href:'/featured',label:'Featured',icon:'users'},support,settings];
+ return [home,network,tracking,{href:'/featured',label:'Featured',icon:'featured'},support,settings];
 }
 export function phoneDestinations(session:AccountSession|null):Destination[]{
  if(!hasWorkspace(session))return visitorDestinations;

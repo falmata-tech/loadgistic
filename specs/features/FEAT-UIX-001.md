@@ -406,12 +406,12 @@ And supporting prose remains only when it explains a material rule, privacy boun
 Given a provider successfully saves capacity\
 When the save completes\
 Then the editor collapses after a visible success message\
-And one summary shows how the truck appears publicly together with the same current Empty Service area or Empty-or-Partial Capacity route map and the provider's one regular Service area or Capacity route\
+And one summary shows how the truck appears publicly together with the same current Empty Service area or Empty-or-Partial Capacity route map and the provider's one Preferred service area or Preferred corridor\
 And the privacy-obscured truck-area marker remains obvious above overlapping area polygons and routes\
 And each summary section has a focused Edit action that opens only that section\
 And regular Capacity route controls live inside that same capacity console rather than in a second planning block\
 And each edit opens only the selected signal's inputs over the still-mounted map, with no Edit all action\
-And Capacity, Coverage, Sharing, Loads, Regular service, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
+And Capacity, Coverage, Sharing, Loads, Preferred corridor, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
 And the selected truck, focused Edit actions, visible map key, and combined location controls occupy distinct top-left, top-right, bottom-left, and bottom-right map zones\
 And location refresh remains a direct action while the radius shortcut opens the focused Location modal.
 
@@ -538,6 +538,20 @@ And focused editing opens in a viewport-bounded native modal whose Save, Cancel,
 And failed saves stay in that modal with the entered values and a readable error while successful saves refresh the server-owned map without page navigation\
 And no Tracking list, Tracking action panel, or Start Tracking prompt is embedded in Home\
 And the fixed Tracking navigation destination remains directly available.
+
+### Scenario: Capacity map actions remain keyboard reachable while loading
+
+Given the Driver's Capacity action rail overflows its available height\
+And its actions are disabled during initial hydration or an update\
+When the user reaches the labeled action rail with the keyboard\
+Then the rail itself receives visible focus and supports keyboard scrolling\
+And disabled actions remain disabled until their existing readiness conditions pass\
+And ordinary Capacity and fleet-managed duty/location rails use the same focus treatment\
+And touch targets, map geometry, labels and editing permissions remain unchanged.
+
+Verification: the server-rendered disabled-action state and the hydrated
+role/route audits in `tests/e2e/accessibility.spec.ts`; actual Chrome phone and
+desktop focus/scroll review. Qualification is recorded in current progress.
 
 ### Scenario: authenticated phone pages keep their task above the fold
 

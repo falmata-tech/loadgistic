@@ -424,7 +424,15 @@ for(const useBasis of ['OWNED','PERMISSION']){
   if(!['localhost','127.0.0.1'].includes(endpoint.hostname)||endpoint.port!=='55321')throw new Error('LOCAL_LOADGISTIC_REQUIRED');
   const service=createClient(endpoint.href,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
   const suffix=randomUUID().slice(0,8),email=`independent-${suffix}@loadgistic.local`;
-  let userId='',providerId='',vehicleId='';
+  let userId='',providerId='',vehicleId='',cleanupStage='NOT_STARTED';
+  let primaryFailure:unknown=null;
+  const cleanupEvidence=(status:'complete'|'failed',error?:unknown)=>{
+   const details=error&&typeof error==='object'?error as {code?:unknown;status?:unknown;name?:unknown}:null;
+   writeFileSync(info.outputPath('independent-provider-cleanup.json'),JSON.stringify({useBasis,status,stage:cleanupStage,
+    hadPrimaryFailure:primaryFailure!==null,errorClass:typeof details?.name==='string'&&['Error','AssertionError','AuthApiError','AuthUnknownError','AuthRetryableFetchError'].includes(details.name)?details.name:null,
+    errorCode:typeof details?.code==='string'&&(/^[0-9A-Z]{5}$/.test(details.code)||['unexpected_failure','database_error','user_not_found','request_timeout','over_request_rate_limit','not_admin'].includes(details.code))?details.code:null,
+    errorStatus:Number.isInteger(details?.status)&&Number(details?.status)>=100&&Number(details?.status)<=599?details?.status:null},null,2),{mode:0o600});
+  };
   try{
    await verifyNewEmail(page,email);
    await expect(page.getByRole('heading',{name:'Choose your account',exact:true})).toBeVisible();
@@ -481,16 +489,30 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.screenshot({path:info.outputPath(`${useBasis.toLowerCase()}-first-capacity.png`),fullPage:true});
-  }finally{
-   // Exact synthetic identities only, including a partially completed signup.
-   if(!userId)userId=(await service.from('profiles').select('id').eq('email',email).maybeSingle()).data?.id||'';
-   if(userId){
-    expect((await service.from('provider_signup_intents').delete().eq('auth_user_id',userId)).error).toBeNull();
-    expect((await service.from('audit_logs').delete().eq('actor_user_id',userId)).error).toBeNull();
-    if(!providerId)providerId=(await service.from('provider_profiles').select('id').eq('user_id',userId).maybeSingle()).data?.id||'';
-    if(providerId){expect((await service.from('capacities').delete().eq('provider_profile_id',providerId)).error).toBeNull();expect((await auditDeleteVehicles(service,'provider_profile_id',providerId)).error).toBeNull();}
-    expect((await service.auth.admin.deleteUser(userId)).error).toBeNull();
-   }
+  }catch(error){primaryFailure=error;throw error;}finally{
+   try{
+    // Exact synthetic identities only, including a partially completed signup.
+    cleanupStage='FIND_IDENTITY';
+    if(!userId)userId=(await service.from('profiles').select('id').eq('email',email).maybeSingle()).data?.id||'';
+    if(userId){
+     cleanupStage='DELETE_SIGNUP_INTENT';
+     expect((await service.from('provider_signup_intents').delete().eq('auth_user_id',userId)).error).toBeNull();
+     cleanupStage='DELETE_AUDIT';
+     expect((await service.from('audit_logs').delete().eq('actor_user_id',userId)).error).toBeNull();
+     cleanupStage='FIND_PROVIDER';
+     if(!providerId)providerId=(await service.from('provider_profiles').select('id').eq('user_id',userId).maybeSingle()).data?.id||'';
+     if(providerId){
+      cleanupStage='DELETE_CAPACITY';
+      expect((await service.from('capacities').delete().eq('provider_profile_id',providerId)).error).toBeNull();
+      cleanupStage='DELETE_VEHICLES';
+      expect((await auditDeleteVehicles(service,'provider_profile_id',providerId)).error).toBeNull();
+     }
+     cleanupStage='DELETE_AUTH';
+     const deletion=await service.auth.admin.deleteUser(userId);
+     if(deletion.error)throw deletion.error;
+    }
+    cleanupStage='COMPLETE';cleanupEvidence('complete');
+   }catch(error){cleanupEvidence('failed',error);if(!primaryFailure)throw error;}
   }
  });
 }

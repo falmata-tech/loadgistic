@@ -306,20 +306,20 @@ And when its geometry is Capacity route a labeled cobalt Empty or amber Partial 
 And color is reinforced by text and shape rather than being the only meaning\
 And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
 
-### Scenario: regular service belongs to one truck and its current driver
+### Scenario: a preferred corridor belongs to one truck and its current driver
 
-Given an assigned truck regularly serves an area or route\
-When an authorized fleet owner or independent driver maintains its regular service\
+Given an assigned truck has a preferred service area or two-way corridor\
+When an authorized fleet owner or independent driver maintains its preferred corridor\
 Then the selected truck and expected current driver are required and rechecked
 inside the command\
 And that truck-and-driver pair may retain exactly zero or one regular-service signal\
 And that signal is either a structured Service area with one center plus three through five surrounding cities or a structured two-way Capacity route with two through five ordered cities\
 And another addition is rejected without changing the saved signal\
-And regular service asks for no date and never claims that a truck is currently available\
+And a preferred corridor asks for no date and never claims that a truck is currently available\
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
-And a regular Capacity route joins its cities with ↔ while a regular Service area names its center and boundary cities\
+And a Preferred corridor joins its cities with ↔ while a Preferred service area names its center and boundary cities\
 And both state Confirm availability\
-And the shared map uses an orange dashed line for a Corridor route or an orange outline for a regular Service area, distinct from violet approximate location and status-colored current capacity.
+And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred service area, distinct from violet approximate location and status-colored current capacity.
 
 ### Scenario: regular routes cannot leak across trucks or assignments
 
@@ -512,13 +512,13 @@ Given a truck has saved capacity facts\
 When its authorized provider opens the editor\
 Then a map-centered summary appears before the full editor\
 And one compact selected-truck control occupies the map's reserved top-left zone without repeating a Capacity title\
-And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Routes and Location\
-And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Routes and Location stay separate\
+And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Preferred corridor and Location\
+And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Preferred corridor and Location stay separate\
 And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
-And the Driver map uses the same Empty cobalt, Partial amber, Approximate location violet, and Regular service blue signal language and readable hover summaries as the public Market\
+And the Driver map uses the same Empty cobalt, Partial gray, Approximate location violet, and Preferred corridor muted-orange signal language and readable hover summaries as the public Market\
 And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
 And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
-And Capacity, Sharing, Routes, and Location each open only their relevant editor\
+And Capacity, Sharing, Preferred corridor, and Location each open only their relevant editor\
 And no separate future-or-recurring planning section appears below the capacity console\
 And every edit opens a native modal over the still-mounted map with only that signal's inputs, while regular service retains its own explicit save\
 And focused saves preserve unopened values\
@@ -532,7 +532,7 @@ Given an authorized Driver opens Capacity management on a supported phone\
 When published capacity exists\
 Then the map occupies the primary remaining workspace beneath the compact application bars\
 And the current truck selector remains compact in the reserved top-left map zone instead of becoming a page-sized card\
-And a compact top-right rail has four recognizable, accessibly named actions: Capacity, Sharing, Routes and Location\
+And a compact top-right rail has four recognizable, accessibly named actions: Capacity, Sharing, Preferred corridor and Location\
 And Capacity opens one editor for availability, coverage and accepted-load preferences; the other three actions open only sharing, regular-service and location controls\
 And the complete map key remains visible at bottom-left while Approximate location radius and Refresh truck location share one bottom-right dock\
 And every floating zone stays aligned, distinct, and clear of the other zones, required attribution, and essential map interaction\
@@ -544,10 +544,10 @@ And the page does not repeat a visible Capacity title, detached Updating card, s
 ### Scenario: a focused edit is isolated and reversible
 
 Given an authorized provider is viewing a saved truck on Driver Home or its Fleet detail\
-When Capacity, Sharing, Regular service, or Location is selected\
+When Capacity, Sharing, Preferred corridor, or Location is selected\
 Then only the selected group's inputs open in a labelled modal with trapped keyboard focus\
 And Capacity contains Empty, Partial, and Off Duty choices, current route or area inputs, accepted load types, and multiple pickup/drop-off preferences\
-And Sharing owns public/private visibility, Routes owns the separate regular-service signal, and Location owns the approximate point and privacy radius\
+And Sharing owns public/private visibility, Preferred corridor owns the separate undated preference, and Location owns the approximate point and privacy radius\
 And each available group has its own compact, labelled floating button, with no duplicate action or Edit all control\
 And a first publication defaults to Private with a concise visible notice; changing Capacity does not silently change Sharing\
 And the underlying map remains mounted at its current pan and zoom\
@@ -791,3 +791,19 @@ propagation, for click and dblclick. The shared-leg
 regression now asserts unchanged camera state across each inspection as well as
 separation and touchability at successive explicit zoom levels. No new map mode,
 layout or user action is introduced.
+
+
+### Scenario: demo import preserves Preferred corridor vehicle and driver scope
+
+Given a production-pilot fixture contains truck/driver-bound route preferences\
+When its importer reads the target schema before writing any pilot record\
+Then it refuses a schema missing either vehicle or driver assignment column\
+And it refuses preferences missing either assignment instead of silently dropping
+those fields during projection\
+And the preference is displayed only for its exact vehicle and current driver;
+current availability remains a separate signal.
+
+Regression: `tests/production-pilot-policy.test.mjs` and
+`tests/demo-corridor-fixture.test.mjs`. The October25 finite hosted demo repair
+was rehearsed with rollback and independently verified as20 public corridor
+preferences; protected operation evidence is linked from current progress.

@@ -5,7 +5,7 @@ import {createClient} from '@supabase/supabase-js';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 import {applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments} from './fixture-market-policy.mjs';
 import {
-  PRODUCTION_PILOT_SOURCE,pilotEmail,pilotUuid,validateProductionPilotTarget
+  PRODUCTION_PILOT_SOURCE,assertPilotRouteBindingReady,pilotEmail,pilotUuid,validateProductionPilotTarget
 } from './production-pilot-policy.mjs';
 
 const argument=name=>process.argv.find(value=>value.startsWith(`${name}=`))?.slice(name.length+1)||'';
@@ -107,6 +107,7 @@ const openApiResponse=await fetch(`${url}/rest/v1/`,{headers:{apikey:serviceRole
 if(!openApiResponse.ok)throw new Error(`PRODUCTION_PILOT_SCHEMA_READ_FAILED:${openApiResponse.status}`);
 const openApi=await openApiResponse.json();const definitions=openApi.definitions||openApi.components?.schemas||{};
 if(!definitions.profiles?.properties?.driver_portrait_preset)throw new Error('PRODUCTION_PILOT_DRIVER_PORTRAIT_MIGRATION_REQUIRED');
+if(!rollbackRequested)assertPilotRouteBindingReady(definitions,fixtureTables.profile_routes);
 
 async function listAllAuthUsers(){
   const users=[];let page=1;

@@ -225,7 +225,7 @@ And a selected city takes precedence over device proximity; exact visitor GPS re
 And automatic device centering does not override an explicitly selected city.
 
 Given the public or shared capacity map is open on desktop or phone
-Then approximate-location boundaries are violet, Corridor routes are muted orange, and current capacity is cobalt for Empty or slate for Partial
+Then approximate-location boundaries are violet, Preferred corridors are muted orange, and current capacity is cobalt for Empty or slate for Partial
 And the compact map key starts collapsed and opens within the viewport
 And location success/error feedback sits beside the location controls rather than across the map
 And signal-detail overlays do not capture map drag, touch or wheel gestures except their explicit close control

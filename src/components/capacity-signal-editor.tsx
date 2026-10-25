@@ -87,7 +87,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
               <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
               {!current&&onDuty?<p className="meta"><Text message="Private until you choose Open in Sharing."/></p>:null}
               {status==='PARTIAL'?<p className="meta"><Text message="Some space available. Confirm the actual fit directly."/></p>:null}
-              {!onDuty?<p className="meta"><Text message="Off Duty hides this vehicle from capacity maps. Your regular service stays saved."/></p>:null}
+              {!onDuty?<p className="meta"><Text message="Off Duty hides this vehicle from capacity maps. Your preferred corridor stays saved."/></p>:null}
             </div>
             {onDuty?<div className="capacity-load-choice-column">
               {status==='EMPTY'?<><fieldset className="capacity-load-choices"><legend><Boxes aria-hidden="true"/><Text message="Load type"/></legend>{CAPACITY_LOAD_CHOICES.map(([value,label])=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message={capacityLoadExplanation(acceptedLoads)}/></p></>:<p className="meta"><Text message="Remaining space is for shared loads."/></p>}

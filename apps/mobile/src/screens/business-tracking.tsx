@@ -30,7 +30,7 @@ function Shipments({workspaceId}:{workspaceId:string}){
  return <Page><Title message="Tracking"/>
   <ErrorText message={query.error||invalid}/>{query.loading&&<LoadingSpinner/>}{!!(query.error||invalid)&&<Button secondary message="Refresh updates" onPress={()=>{void query.reload();}}/>}
   {data?.shipments.map(shipment=><Pressable key={shipment.id} accessibilityRole="button" onPress={()=>router.push({pathname:'/business-shipment',params:{id:shipment.id}})} style={{paddingVertical:17,borderBottomWidth:1,borderColor:palette.border,gap:7}}><View style={{flexDirection:'row',gap:10,alignItems:'center'}}><AppIcon name="route" color={palette.blue}/><Text style={{flex:1,fontSize:16,fontWeight:'700',color:palette.ink}}>{shipment.origin} → {shipment.destination}</Text><AppIcon name="next"/></View>{isDemoTrackingShipment(shipment.id)&&<TrackingDemoLabel/>}<Text style={{fontSize:13,fontWeight:'600',color:palette.blue}}>{t(statusLabel(shipment.status))}</Text><Text style={{fontSize:14,lineHeight:20,color:palette.muted}}>{shipment.cargo}</Text></Pressable>)}
-  {data&&!data.total&&<Copy message="No shipments shared yet"/>}
+  {data&&!data.total&&<><Copy message="No shipments shared yet"/><Copy message="When a shipment owner shares tracking with your workspace, it will appear here."/></>}
   {data&&data.pageCount>1&&<><Copy>{t('Page {page} of {pages}',{page:data.page,pages:data.pageCount})}</Copy><Button secondary message="Previous" disabled={page===1||query.loading} onPress={()=>setPage(value=>value-1)}/><Button secondary message="Next" disabled={page>=data.pageCount||query.loading} onPress={()=>setPage(value=>value+1)}/></>}
  </Page>;
 }

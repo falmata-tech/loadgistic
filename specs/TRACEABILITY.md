@@ -9,6 +9,16 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- FEAT-UIX-001 / BASE-DEP-001: the October25 Driver action-rail repair keeps
+  its labeled scroll region keyboard reachable before hydration and during
+  disabled updates. The real server-rendered regression and role/route audits
+  are in [`accessibility.spec.ts`](../tests/e2e/accessibility.spec.ts); bounded
+  analysis diagnostics are covered by
+  [`ci-browser-gate.test.mjs`](../tests/ci-browser-gate.test.mjs). Focused Chrome
+  review, complete gates and publication status are tracked in
+  [current progress](../docs/PROGRESS.md); CI40229087647's original failure is
+  preserved and is not relabeled as an Axe violation or a passing run.
+
 - FEAT-SEC-001 / NR-66: proposed181 pins the private authority helper's lookup
   scope, preserves discovery through an owner-only security-invoker view and
   reuses existing scoped query caches. Nine focused SQL suites and14 injected
@@ -83,7 +93,7 @@ Use the historical record only for a dated result or decision provenance.
 | [FEAT-LUX-001](features/FEAT-LUX-001.md) | Clear launch journeys and contextual language | [tests/browser-request.test.mjs](../tests/browser-request.test.mjs); [tests/provider-shipment-response.test.mjs](../tests/provider-shipment-response.test.mjs) |
 | [FEAT-MAT-001](features/FEAT-MAT-001.md) | Coordinate-authoritative marketplace matching | [tests/audit-geographic-matching.test.mjs](../tests/audit-geographic-matching.test.mjs); [tests/capacity-filter-places.test.mjs](../tests/capacity-filter-places.test.mjs) |
 | [FEAT-MKT-001](features/FEAT-MKT-001.md) | Frictionless public capacity marketplace | [tests/transporter-search.test.mjs](../tests/transporter-search.test.mjs); [tests/transporter-search-web.test.mjs](../tests/transporter-search-web.test.mjs) |
-| [FEAT-MOB-001](features/FEAT-MOB-001.md) | Native transporter and visitor application | [tests/e2e/mobile-review-navigation.spec.ts](../tests/e2e/mobile-review-navigation.spec.ts); [apps/mobile/tests/account-session.test.mjs](../apps/mobile/tests/account-session.test.mjs) |
+| [FEAT-MOB-001](features/FEAT-MOB-001.md) | Native transporter and visitor application | [tests/e2e/mobile-private-entry.spec.ts](../tests/e2e/mobile-private-entry.spec.ts); [tests/e2e/preferred-corridor-parity.spec.ts](../tests/e2e/preferred-corridor-parity.spec.ts); [apps/mobile/tests/personal-identity-editors.test.mjs](../apps/mobile/tests/personal-identity-editors.test.mjs); [apps/mobile/tests/native-text.test.mjs](../apps/mobile/tests/native-text.test.mjs); [apps/mobile/tests/button-accessibility.test.mjs](../apps/mobile/tests/button-accessibility.test.mjs); [tests/e2e/mobile-review-navigation.spec.ts](../tests/e2e/mobile-review-navigation.spec.ts); [apps/mobile/tests/account-session.test.mjs](../apps/mobile/tests/account-session.test.mjs) |
 | [FEAT-NET-001](features/FEAT-NET-001.md) | Retired demand-side member network | See named ownership in the spec. |
 | [FEAT-NOT-001](features/FEAT-NOT-001.md) | Chat and driver handover alerts with visible-message read receipts | [tests/sql/business-native-push.sql](../tests/sql/business-native-push.sql); [tests/chat-read-alerts.test.mjs](../tests/chat-read-alerts.test.mjs) |
 | [FEAT-PLC-001](features/FEAT-PLC-001.md) | Local Ethiopia place catalog | [src/lib/place-search.js](../src/lib/place-search.js); [tests/supabase-repository.test.mjs](../tests/supabase-repository.test.mjs); [tests/e2e/smoke.spec.ts](../tests/e2e/smoke.spec.ts) |

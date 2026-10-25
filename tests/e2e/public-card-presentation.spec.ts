@@ -20,17 +20,20 @@ test('native Featured account and transporter cards retain real facts and destin
  const widths=info.project.name==='mobile-chromium'?[390,320]:[1280];
  for(const width of widths){
   await page.setViewportSize({width,height:width===320?640:width===1280?900:844});await page.goto(preview+'/featured');await expect(page.getByRole('heading',{name:feature.headline||'Daily Featured Transport Providers',exact:true})).toBeVisible({timeout:45_000});
-  const heading=page.getByRole('heading',{name:truck.name,exact:true}).first(),card=page.getByTestId('public-summary-card').filter({has:heading}).first();await expect(heading).toBeVisible();await bounded(page,card);
-  await actualPortrait(card,truck.name,truck.portrait);
-  for(const value of [truck.name,truck.handle,String(truck.fleetSize)])await expect(card).toContainText(value);
-  if(truck.place)await expect(card).toContainText(truck.place);
-  const profile=card.getByRole('link',{name:'Transporter profile',exact:true});await expect(profile).toHaveAttribute('href',`/transporter?handle=${encodeURIComponent(truck.handle)}`);await profile.click({trial:true});expect((await profile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-  expect(await page.getByRole('link',{name:'Transporter profile',exact:true}).count()).toBe(feature.trucks.length+feature.sponsors.filter((sponsor:{kind:string})=>sponsor.kind==='TRANSPORTER').length);
-  expect(await card.getByRole('link',{name:'View available vehicles',exact:true}).count()).toBe(truck.available?1:0);
+  const tile=page.getByTestId('featured-account-tile').filter({hasText:truck.name}).first();await expect(tile).toBeVisible({timeout:45_000});await bounded(page,tile);
+  await actualPortrait(tile,truck.name,truck.portrait);
+  for(const value of [truck.name,truck.handle,String(truck.fleetSize)])await expect(tile).toContainText(value);
+  await expect(page.getByTestId('featured-account-tile')).toHaveCount(feature.trucks.length);
+  if(width<=390){const first=await page.getByTestId('featured-account-tile').nth(0).boundingBox(),second=await page.getByTestId('featured-account-tile').nth(1).boundingBox();expect(first&&second).toBeTruthy();expect(Math.abs(first!.y-second!.y)).toBeLessThanOrEqual(1);expect(second!.x).toBeGreaterThan(first!.x+first!.width);}
   await page.screenshot({path:info.outputPath(`native-featured-${width}.png`),scale:'css'});
-  await card.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath(`native-featured-card-${width}.png`),scale:'css'});
+  await tile.scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath(`native-featured-card-${width}.png`),scale:'css'});
   await page.getByRole('button',{name:'View schedule',exact:true}).click();await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();await page.getByRole('button',{name:'Hide schedule',exact:true}).click();
-  await profile.click();const providerResponse=await page.request.get(`/api/mobile/public/providers/${encodeURIComponent(truck.handle)}`);expect(providerResponse.ok()).toBe(true);const provider=await providerResponse.json();await expect(page.getByRole('heading',{name:provider.name,exact:true})).toBeVisible({timeout:30_000});await bounded(page,page.getByRole('heading',{name:provider.name,exact:true}));
+  await tile.click();const close=page.getByRole('button',{name:'Close featured account details',exact:true}).last();await expect(close).toBeVisible();if(truck.place)await expect(page.getByText(truck.place,{exact:true}).last()).toBeVisible();
+  const profile=page.getByRole('link',{name:'Transporter profile',exact:true}).last();await expect(profile).toHaveAttribute('href',`/transporter?handle=${encodeURIComponent(truck.handle)}`);await profile.click({trial:true});expect((await profile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  const vehicles=page.getByRole('link',{name:'View available vehicles',exact:true});expect(await vehicles.count()).toBe(truck.available?1:0);if(truck.available)await expect(vehicles).toHaveAttribute('href',`/?provider=${encodeURIComponent(truck.handle)}`);
+  await close.click();await expect(vehicles).toHaveCount(0);await tile.click();
+  await page.getByRole('link',{name:'Transporter profile',exact:true}).last().click();
+  const providerResponse=await page.request.get(`/api/mobile/public/providers/${encodeURIComponent(truck.handle)}`);expect(providerResponse.ok()).toBe(true);const provider=await providerResponse.json();await expect(page.getByRole('heading',{name:provider.name,exact:true})).toBeVisible({timeout:30_000});await bounded(page,page.getByRole('heading',{name:provider.name,exact:true}));
   for(const [field,label] of [['phone','Call transporter'],['whatsapp','WhatsApp'],['email','Email transporter'],['website','Website']] as const)expect(await page.getByRole('button',{name:label,exact:true}).count()).toBe(provider.contacts[field]?1:0);
   await actualPortrait(page.locator('body'),provider.name,provider.image);
   await expect(page.getByRole('heading',{name:'Documents',exact:true})).toBeVisible();await page.screenshot({path:info.outputPath(`native-transporter-${width}.png`),scale:'css'});
@@ -39,6 +42,19 @@ test('native Featured account and transporter cards retain real facts and destin
   await page.goBack();await expect(page.getByRole('heading',{name:feature.headline||'Daily Featured Transport Providers',exact:true})).toBeVisible({timeout:45_000});
  }
  expect(errors).toEqual([]);
+});
+
+test('native Featured board and detail fit an English 320px phone',async({page},info)=>{
+ test.skip(info.project.name!=='mobile-chromium','The compact layout check targets a narrow phone.');test.setTimeout(90_000);
+ await page.setViewportSize({width:320,height:640});
+ const response=await page.request.get('/api/mobile/public/featured');expect(response.ok()).toBe(true);const feature=await response.json();expect(feature.trucks.length).toBeGreaterThan(1);
+ await page.goto(preview+'/featured');const tiles=page.getByTestId('featured-account-tile');await expect(tiles).toHaveCount(feature.trucks.length,{timeout:45_000});
+ const first=await tiles.nth(0).boundingBox(),second=await tiles.nth(1).boundingBox();expect(first&&second).toBeTruthy();expect(Math.abs(first!.y-second!.y)).toBeLessThanOrEqual(1);expect(second!.x).toBeGreaterThan(first!.x+first!.width);
+ await bounded(page,tiles.nth(0));await bounded(page,tiles.nth(1));await page.screenshot({path:info.outputPath('native-featured-english-320.png'),scale:'css'});
+ await page.getByRole('button',{name:'View schedule',exact:true}).click();await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();await page.getByRole('button',{name:'Hide schedule',exact:true}).click();
+ await tiles.nth(0).click();const close=page.getByRole('button',{name:'Close featured account details',exact:true}).last();await expect(close).toBeVisible();
+ await expect(close.locator('..').getByRole('link',{name:'Transporter profile',exact:true})).toHaveAttribute('href',`/transporter?handle=${encodeURIComponent(feature.trucks[0].handle)}`);
+ await page.screenshot({path:info.outputPath('native-featured-detail-english-320.png'),scale:'css'});await close.click();await expect(close).toHaveCount(0);
 });
 
 test('native Capacity facts remain readable while details close and selected exit preserves applied filters',async({page},info)=>{
@@ -60,10 +76,12 @@ test('native Capacity facts remain readable while details close and selected exi
   await page.getByRole('button',{name:/^Vehicle filters/}).click();await expect(page.getByRole('button',{name:signal.cargo_configuration,exact:true})).toBeVisible();await page.getByRole('button',{name:'Close filters',exact:true}).click();
   await page.goto(`${preview}/transporter?handle=${encodeURIComponent(signal.provider_handle)}`);await expect(page.getByRole('heading',{name:signal.provider_name,exact:true})).toBeVisible({timeout:30_000});
   const fleet=page.getByRole('button',{name:/^View vehicles and drivers \(/});if(await fleet.count())await fleet.click();
-  const mapAction=page.getByRole('link',{name:'View capacity on map',exact:true}).first();await expect(mapAction).toHaveAttribute('href',`/?provider=${encodeURIComponent(signal.provider_handle)}`);
+  const mapAction=page.getByRole('link',{name:'View capacity on map',exact:true}).first();const mapHref=await mapAction.getAttribute('href');expect(mapHref).not.toBeNull();
+  const mapUrl=new URL(mapHref!,'http://localhost');expect(mapUrl.pathname).toBe('/');expect(mapUrl.searchParams.get('provider')).toBe(signal.provider_handle);
+  const selectedTruck=mapUrl.searchParams.get('truck');expect(selectedTruck).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   const matching=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('provider')===signal.provider_handle;});
-  await mapAction.click();const matched=await matching;expect(matched.ok()).toBe(true);const result=await matched.json();expect(result.items.length).toBeGreaterThan(0);expect(result.items.every((item:{provider_handle:string})=>item.provider_handle===signal.provider_handle)).toBe(true);
-  await expect(page).toHaveURL(url=>url.searchParams.get('provider')===signal.provider_handle&&!url.searchParams.has('q'));await expect(page.locator('.maplibregl-canvas:visible')).toHaveCount(1);await expect(page.locator('.maplibregl-canvas:visible')).toBeVisible();
+  await mapAction.click();const matched=await matching;expect(matched.ok()).toBe(true);const result=await matched.json();expect(result.items.length).toBeGreaterThan(0);expect(result.items.every((item:{provider_handle:string})=>item.provider_handle===signal.provider_handle)).toBe(true);expect(result.items.some((item:{id:string})=>item.id===selectedTruck)).toBe(true);
+  await expect(page).toHaveURL(url=>url.searchParams.get('provider')===signal.provider_handle&&url.searchParams.get('truck')===selectedTruck&&!url.searchParams.has('q'));await expect(page.locator('.maplibregl-canvas:visible')).toHaveCount(1);await expect(page.locator('.maplibregl-canvas:visible')).toBeVisible();
  }
  expect(errors).toEqual([]);
 });
@@ -90,8 +108,9 @@ test('native card labels translate in Amharic and Oromo while public record cont
  for(const locale of ['am','om'] as const){
   const column={am:1,om:2,so:3,ti:4}[locale],catalog={...JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8')),...Object.fromEntries(workflowRows.map(row=>[row[0],row[column]]))},t=(message:string)=>translateMessage(catalog,message);
   await page.getByRole('button',{name:translateMessage(previous,'Language'),exact:true}).click();await page.getByRole('radio',{name:names[locale],exact:true}).click();await page.getByRole('dialog').getByRole('button').click();await expect(page.getByRole('dialog')).toHaveCount(0);
-  const card=page.getByTestId('public-summary-card').filter({has:page.getByRole('heading',{name:truck.name,exact:true})}).first();await expect(card).toContainText(truck.handle);if(truck.place)await expect(card).toContainText(truck.place);await expect(card).toContainText(t('Transport Provider'));await actualPortrait(card,truck.name,truck.portrait);await bounded(page,card);
-  const action=card.getByRole('link',{name:t('Transporter profile'),exact:true});await action.click({trial:true});expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);await page.screenshot({path:info.outputPath(`native-featured-${locale}-390.png`),scale:'css'});await action.click();
+  const tile=page.getByTestId('featured-account-tile').filter({hasText:truck.name}).first();await expect(tile).toBeVisible({timeout:45_000});await expect(tile).toContainText(truck.handle);await expect(tile).toContainText(t('Transport Provider'));await actualPortrait(tile,truck.name,truck.portrait);await bounded(page,tile);
+  await page.screenshot({path:info.outputPath(`native-featured-${locale}-390.png`),scale:'css'});await tile.click();if(truck.place)await expect(page.getByText(truck.place,{exact:true}).last()).toBeVisible();
+  const action=page.getByRole('link',{name:t('Transporter profile'),exact:true}).last();await action.click({trial:true});expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);await action.click();
   const providerResponse=await page.request.get(`/api/mobile/public/providers/${encodeURIComponent(truck.handle)}`);expect(providerResponse.ok()).toBe(true);const provider=await providerResponse.json();await expect(page.getByRole('heading',{name:provider.name,exact:true})).toBeVisible({timeout:30_000});await expect(page.locator('body')).toContainText(t(provider.kind));if(provider.headline)await expect(page.getByText(provider.headline,{exact:true})).toBeVisible();await bounded(page,page.getByRole('heading',{name:provider.name,exact:true}));
   for(const [field,label] of [['phone','Call transporter'],['whatsapp','WhatsApp'],['email','Email transporter'],['website','Website']] as const)expect(await page.getByRole('button',{name:t(label),exact:true}).count()).toBe(provider.contacts[field]?1:0);
   await page.screenshot({path:info.outputPath(`native-transporter-${locale}-390.png`),scale:'css'});await page.goto(preview+'/featured');await expect(page.getByRole('heading',{name:t(feature.headline||'Daily Featured Transport Providers'),exact:true})).toBeVisible({timeout:45_000});previous=catalog;

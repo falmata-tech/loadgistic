@@ -16,13 +16,14 @@ const payload=(title,page=1)=>({items:[{key:title,kind:'COMPANY',title,handle:'m
 
 function harness({mode='open',verified=true,initialQuery='',blocked=[]}={}){
  const hooks=[],effects=[];let cursor=0,effectIndex=0,dirty=false,now=0,nextTimer=0,tree,focusCallback,focusCleanup;
- const timers=new Map(),requests=[],mapLoads=[];
+ const timers=new Map(),requests=[],mapLoads=[],backHandlers=new Set();
  const clock={setTimeout(callback,delay){const id=++nextTimer;timers.set(id,{callback,at:now+delay});return id;},clearTimeout:id=>timers.delete(id),advance(delta){const end=now+delta;for(;;){const next=[...timers].filter(([,timer])=>timer.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next)break;now=next[1].at;timers.delete(next[0]);next[1].callback();}now=end;}};
  const same=(left,right)=>left&&right&&left.length===right.length&&left.every((value,index)=>Object.is(value,right[index]));
  const memo=(factory,deps)=>{const index=cursor++,previous=hooks[index];if(!previous||!same(previous.deps,deps))hooks[index]={value:factory(),deps};return hooks[index].value;};
  const react={useState(initial){const index=cursor++;if(!(index in hooks))hooks[index]=typeof initial==='function'?initial():initial;return[hooks[index],value=>{const next=typeof value==='function'?value(hooks[index]):value;if(!Object.is(next,hooks[index])){hooks[index]=next;dirty=true;}}];},useRef(initial){const index=cursor++;return hooks[index]||(hooks[index]={current:initial});},useMemo:memo,useCallback:(callback,deps)=>memo(()=>callback,deps),useEffect(create,deps){const index=effectIndex++,previous=effects[index];if(!previous||!same(previous.deps,deps))effects[index]={deps,create,cleanup:previous?.cleanup,pending:true};}};
  const node=(type,props,key)=>({type,props:props||{},key}),native=Object.fromEntries(['View','Text','ScrollView','Pressable','TextInput'].map(name=>[name,name]));
  native.StyleSheet={create:value=>value};native.Keyboard={dismiss(){}};
+ native.BackHandler={addEventListener:(event,handler)=>{assert.equal(event,'hardwareBackPress');backHandlers.add(handler);return{remove:()=>backHandlers.delete(handler)};}};
  const request=(path,signal,scope)=>new Promise((resolve,reject)=>{requests.push({path,signal,scope,resolve,reject});signal.addEventListener('abort',()=>reject(new Error('Aborted')),{once:true});});
  const visitor={ready:true,snapshot:{foreground:true,capacity:verified?{startedAt:1}:null},controller:{request:(scope,path,_options,signal)=>request(path,signal,scope),touch:async()=>{},clear:async()=>{}}};
  const truck={id:'11111111-1111-4111-8111-111111111111',provider_handle:'chosen-company'};
@@ -38,7 +39,7 @@ function harness({mode='open',verified=true,initialQuery='',blocked=[]}={}){
  const exports={};new Function('require','exports','setTimeout','clearTimeout',source)(name=>{assert.ok(name in imports,'Unexpected dependency '+name);return imports[name];},exports,clock.setTimeout,clock.clearTimeout);
  const props={initialQuery,initialMode:mode,initialFilters:{provider:'chosen-company',truck:truck.id,status:'EMPTY'}};
  const render=()=>{for(let pass=0;pass<10;pass++){dirty=false;cursor=effectIndex=0;tree=exports.TestCapacity(props);for(const effect of effects)if(effect.pending){effect.pending=false;effect.cleanup?.();effect.cleanup=effect.create();}if(!dirty)return tree;}throw Error('Unsettled screen');};
- return{render,clock,requests,mapLoads,visitor,blur:()=>focusCleanup?.(),focus:()=>{focusCleanup=focusCallback?.();},close(){for(const effect of effects)effect.cleanup?.();}};
+ return{render,clock,requests,mapLoads,visitor,backHandlerCount:()=>backHandlers.size,pressBack:()=>[...backHandlers].at(-1)?.()??false,blur:()=>focusCleanup?.(),focus:()=>{focusCleanup=focusCallback?.();},close(){for(const effect of effects)effect.cleanup?.();}};
 }
 const input=tree=>find(tree,node=>node.type==='TextInput');
 const results=tree=>find(tree,node=>node.type==='DiscoveryResults');
@@ -113,6 +114,35 @@ test('leaving a retained Capacity screen cancels delayed interest and resumes on
  const view=harness();try{
   let tree=view.render();await settle();tree=view.render();open(tree);tree=view.render();edit(tree,'Adama');tree=view.render();view.blur();tree=view.render();view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,0,'an open drawer on a hidden route must not start a query');view.focus();tree=view.render();view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,1);assert.equal(view.mapLoads.length,1,'route focus affects only search interest');
  }finally{view.close();}
+});
+
+test('Android Back closes only a focused search drawer and cancels its search interest',async()=>{
+ const view=harness();try{
+  let tree=view.render();await settle();tree=view.render();
+  assert.equal(view.backHandlerCount(),0,'closed Capacity must leave Back to the navigator');
+  assert.equal(view.pressBack(),false);
+  open(tree);tree=view.render();edit(tree,'Adama');tree=view.render();
+  assert.equal(view.backHandlerCount(),1,'focused search drawer owns Back');
+  assert.equal(view.pressBack(),true,'Back is consumed instead of exiting the activity');
+  tree=view.render();assert.equal(find(tree,node=>node.type==='ResultsDrawer'),undefined);
+  assert.equal(view.backHandlerCount(),0,'closing the drawer removes the native subscription');
+  view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,0,'dismissal cancels the pending search');
+  assert.equal(view.pressBack(),false,'Back returns to the navigator after dismissal');
+  open(tree);tree=view.render();submit(tree);tree=view.render();assert.equal(view.requests.length,1);
+  assert.equal(view.pressBack(),true);tree=view.render();
+  view.requests[0].resolve(payload('Late match'));await settle();tree=view.render();
+  open(tree);tree=view.render();assert.equal(results(tree)?.props.result||null,null,'late responses cannot restore a dismissed search');
+ }finally{view.close();assert.equal(view.backHandlerCount(),0,'unmount removes any remaining Back listener');}
+});
+
+test('unfocused Capacity never consumes Android Back and remounting focus restores one listener',async()=>{
+ const view=harness();try{
+  let tree=view.render();await settle();tree=view.render();open(tree);tree=view.render();
+  assert.equal(view.backHandlerCount(),1);
+  view.blur();tree=view.render();assert.equal(view.backHandlerCount(),0,'blur removes the Back listener even while the drawer state is retained');
+  assert.equal(view.pressBack(),false);
+  view.focus();tree=view.render();assert.equal(view.backHandlerCount(),1,'focus reinstalls exactly one listener');
+ }finally{view.close();assert.equal(view.backHandlerCount(),0,'unmount removes the focused listener');}
 });
 
 test('inline clear and drawer close cancel pending work without changing truck state',async()=>{

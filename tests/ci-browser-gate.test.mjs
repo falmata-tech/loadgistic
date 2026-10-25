@@ -13,11 +13,18 @@ test('every intentional browser skip is reviewed before CI starts',()=>{
  const expected=[];
  for(const file of readdirSync('tests/e2e').filter(name=>name.endsWith('.spec.ts'))){
   const source=ts.createSourceFile(file,readFileSync(`tests/e2e/${file}`,'utf8'),ts.ScriptTarget.Latest,true);
+  const moduleSkips=[];
+  for(const statement of source.statements){
+   if(!ts.isExpressionStatement(statement)||!ts.isCallExpression(statement.expression))continue;
+   const call=statement.expression;
+   if(ts.isPropertyAccessExpression(call.expression)&&ts.isIdentifier(call.expression.expression)
+     &&call.expression.expression.text==='test'&&call.expression.name.text==='skip')moduleSkips.push(call.arguments[0]?.getText(source)||'');
+  }
   function visit(node){
    if(ts.isCallExpression(node)&&ts.isIdentifier(node.expression)&&node.expression.text==='test'
      &&ts.isStringLiteral(node.arguments[0])&&node.arguments[1]){
     const title=node.arguments[0].text;
-    const skips=[];
+    const skips=[...moduleSkips];
     function findSkip(child){
      if(ts.isCallExpression(child)&&ts.isPropertyAccessExpression(child.expression)
        &&ts.isIdentifier(child.expression.expression)&&child.expression.expression.text==='test'
@@ -100,8 +107,10 @@ test('each isolated browser shard checks current synthetic fixture behavior befo
  const shard=workflow.slice(workflow.indexOf('  e2e-shards:\n'),workflow.indexOf('  e2e:\n'));
  const fixtureImport=shard.indexOf('Import and verify managed fixtures');
  const preflight=shard.indexOf('run: node scripts/ci-fixture-preflight.mjs');
+ const expoInstall=shard.indexOf('Install locked Expo preview dependencies');
+ const expoStart=shard.indexOf('Start the isolated Loadgistic Expo preview for browser workflows');
  const fullSuite=shard.indexOf('run: node scripts/ci-browser-shard.mjs');
- assert.ok(fixtureImport>=0&&preflight>fixtureImport&&fullSuite>preflight);
+ assert.ok(fixtureImport>=0&&preflight>fixtureImport&&expoInstall>preflight&&expoStart>expoInstall&&fullSuite>expoStart);
 });
 
 test('CI fixture imports never restore retired email Capacity access',()=>{
@@ -181,6 +190,31 @@ function diagnosticReport({file=diagnosticFile,line=12,project='mobile-chromium'
  return {suites:[{file:`tests/e2e/${file}`,specs:[{file,line,title:'PRIVATE_TITLE contact@example.test',
   tests:[{projectName:project,status,results}]}]}],errors:[],stats:{expected:0,skipped:0,unexpected:1,flaky:0}};
 }
+
+test('Tracking timeout diagnosis exposes only an allowlisted failed workflow stage and duration',()=>{
+ const report=diagnosticReport({file:'smoke.spec.ts',results:[{status:'timedOut',steps:[
+  {title:'tracking: provider email sign-in',duration:12000},
+  {title:'tracking: owner email access and viewer invitation',duration:170000,error:{message:'PRIVATE_TOKEN contact@example.test'},steps:[{title:'PRIVATE_URL'}]},
+  {title:'tracking: clean up synthetic records',duration:20,error:{message:'PRIVATE_CLEANUP'}}
+ ]}]});
+ report.suites[0].specs[0].title='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].workflow,{stage:'OWNER_SHARING',durationMs:170000});
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',7,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.join(''),/CI_BROWSER_STAGE file=smoke.spec.ts project=mobile-chromium stage=OWNER_SHARING duration_ms=170000/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example|provider starts|tracking:|viewer invitation/);
+});
+
+test('workflow stage diagnosis rejects other cases and never stringifies private or malformed fields',()=>{
+ const title='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
+ const make=(steps)=>{const report=diagnosticReport({file:'smoke.spec.ts',results:[{status:'timedOut',steps}]});report.suites[0].specs[0].title=title;return report;};
+ for(const steps of [null,{},'PRIVATE',[],[{title:'PRIVATE contact@example.test',error:{}}],[{title:'tracking: provider email sign-in',duration:1}]])assert.equal(failedBrowserCaseDiagnostics(make(steps))[0].workflow,undefined);
+ for(const duration of ['PRIVATE_DURATION',{},-1,0.5,Infinity,3_600_001]){
+  assert.deepEqual(failedBrowserCaseDiagnostics(make([{title:'tracking: provider email sign-in',duration,error:{message:'PRIVATE'}}]))[0].workflow,{stage:'PROVIDER_SIGN_IN',durationMs:null});
+ }
+ const other=make([{title:'tracking: provider email sign-in',duration:1,error:{}}]);other.suites[0].specs[0].title='PRIVATE';assert.equal(failedBrowserCaseDiagnostics(other)[0].workflow,undefined);
+ const file=make([{title:'tracking: provider email sign-in',duration:1,error:{}}]);file.suites[0].specs[0].file='tests/e2e/driver-manual-mobile-preview.spec.ts';assert.equal(failedBrowserCaseDiagnostics(file)[0].workflow,undefined);
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',7,other,chunk=>chunks.push(chunk));assert.doesNotMatch(chunks.join(''),/PRIVATE|CI_BROWSER_STAGE/);
+});
 
 test('known layout failures retain only typed geometry differences without assertion text',()=>{
  const report=diagnosticReport({file:'truck-profile-layout.spec.ts',results:[{status:'failed',error:{message:
@@ -331,6 +365,62 @@ test('public accessibility failures expose only reviewed route and axe rule IDs'
   report.suites[0].specs[0].title=title;
   assert.equal(failedBrowserCaseDiagnostics(report)[0].a11y,undefined);
  }
+});
+
+test('authenticated accessibility failures identify only fixed role, route, stage and axe rule IDs',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',results:[{status:'failed',duration:9345,steps:[
+  {title:'accessibility: primary axe',duration:1000},
+  {title:'accessibility: target size axe',duration:1100},
+  {title:'accessibility: assert results',duration:35,error:{message:'PRIVATE_STEP sentinel@example.test'}}
+ ],error:{
+  message:'self-managed Driver /app/home serious/critical accessibility violations:\nscrollable-region-focusable: Scrollable region must have keyboard access\n  PRIVATE_CONTACT@example.test — PRIVATE_TOKEN\ncolor-contrast: Elements must have sufficient color contrast\nPRIVATE_RULE: PRIVATE_SECRET',
+  stack:'Error\n    at source (/repo/tests/e2e/accessibility.spec.ts:69:7)'
+ }}]});
+ report.suites[0].specs[0].title='self-managed Driver /app/home has no serious accessibility violations';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,{
+  role:'SELF_MANAGED_DRIVER',route:'/app/home',stage:'ASSERT_RESULTS',errorType:'AXE_RULE_FAILURE',
+  rules:['color-contrast','scrollable-region-focusable'],durationMs:9345,stepDurationMs:35
+ });
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.at(-1),/^::error file=tests\/e2e\/accessibility.spec.ts,line=69::CI_BROWSER_AUTH_A11Y role=SELF_MANAGED_DRIVER route=\/app\/home stage=ASSERT_RESULTS error=AXE_RULE_FAILURE duration_ms=9345 step_ms=35 rules=color-contrast,scrollable-region-focusable\n$/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example\.test|TOKEN|SECRET|Scrollable region/);
+});
+
+test('authenticated Axe rejection reports a fixed error kind without asserting a violation',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',results:[{status:'failed',duration:122000,steps:[
+  {title:'accessibility: primary axe',duration:91000,error:{message:'page.evaluate: Execution context was destroyed; PRIVATE contact@example.test'}}
+ ],error:{message:'page.evaluate: Execution context was destroyed; PRIVATE_TOKEN',
+  stack:'Error\n    at source (/repo/tests/e2e/accessibility.spec.ts:58:7)'}}]});
+ report.suites[0].specs[0].title='fleet transporter /app/fleet has no serious accessibility violations';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,{
+  role:'FLEET_TRANSPORTER',route:'/app/fleet',stage:'PRIMARY_AXE',errorType:'CONTEXT_DESTROYED',
+  rules:[],durationMs:122000,stepDurationMs:91000
+ });
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.at(-1),/stage=PRIMARY_AXE error=CONTEXT_DESTROYED duration_ms=122000 step_ms=91000 rules=unknown/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example\.test|TOKEN|Execution context/);
+});
+
+test('authenticated accessibility diagnosis rejects unreviewed cases and private error fields',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',results:[{status:'failed',duration:'PRIVATE_DURATION',steps:[
+  {title:'accessibility: target size axe',duration:'PRIVATE_STEP_DURATION',error:{message:'PRIVATE_ERROR contact@example.test'}}
+ ],error:{message:'PRIVATE_ERROR contact@example.test',request:{body:'PRIVATE_BODY'},headers:{Authorization:'PRIVATE_TOKEN'}}}]});
+ const spec=report.suites[0].specs[0];
+ for(const title of ['self-managed Driver /app/fleet has no serious accessibility violations',
+  'fleet transporter /app/private has no serious accessibility violations','PRIVATE contact@example.test']){
+  spec.title=title;
+  assert.equal(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,undefined);
+ }
+ spec.title='fleet transporter /app/home has no serious accessibility violations';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,{
+  role:'FLEET_TRANSPORTER',route:'/app/home',stage:'TARGET_SIZE_AXE',errorType:'OTHER',
+  rules:[],durationMs:null,stepDurationMs:null
+ });
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.at(-1),/error=OTHER duration_ms=unknown step_ms=unknown rules=unknown/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example\.test|BODY|TOKEN/);
+ report.suites[0].specs[0].file='tests/e2e/smoke.spec.ts';
+ assert.equal(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,undefined);
 });
 
 test('case diagnostics are bounded per failed case without changing completed-report gate decisions',()=>{

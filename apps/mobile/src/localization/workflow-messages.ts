@@ -1,5 +1,18 @@
 // Fixed app copy only. Record names, descriptions and messages are never keys.
 export const workflowRows: readonly (readonly string[])[] = [
+  ["This vehicle uses an older sharing setting. In Capacity, choose Private network before sharing with an account.", "ይህ መኪና የቀድሞ የማጋራት ቅንብር ይጠቀማል። ለመለያ ከማጋራትዎ በፊት በጭነት ቦታ ማስተዳደሪያ ውስጥ «የግል አጋሮች»ን ይምረጡ።", "Konkolaataan kun qindaaʼina qooddannaa durii fayyadama. Herrega waliin qooduu dura bakka Iddoo feʼumsaa keessatti «Michoota dhuunfaa» filadhaa."],
+  ["Could not open Terms. Please try again.", "ውሎችን መክፈት አልተቻለም። እንደገና ይሞክሩ።", "Ulaagaalee banuun hin dandaʼamne. Irra deebiʼaa yaalaa."],
+  ["Checking saved email access", "የተቀመጠ የኢሜይል መዳረሻ እየተፈተሸ ነው", "Seensi iimeelii kuufame ilaalamaa jira"],
+  ["Loading transporter", "የአጓጓዥ መረጃ እየተጫነ ነው", "Odeeffannoon geejjibaa feʼamaa jira"],
+  ["Loading Featured", "የዛሬ ትውውቅ እየተጫነ ነው", "Kan harʼaa feʼamaa jira"],
+  ["Loading your shipments", "የጭነት መረጃዎ እየተጫነ ነው", "Odeeffannoon feʼumsa keessanii feʼamaa jira"],
+  ["Loading shipment", "የጭነት መረጃ እየተጫነ ነው", "Odeeffannoon feʼumsaa feʼamaa jira"],
+  ["Loading shipment updates", "የጭነት ወቅታዊ መረጃ እየተጫነ ነው", "Odeeffannoon haala feʼumsaa feʼamaa jira"],
+  ["Loading shipments", "ጭነቶች እየተጫኑ ነው", "Feʼumsonni feʼamaa jiru"],
+  ["Restoring your account", "መለያዎ እየተመለሰ ነው", "Herregni keessan deebifamaa jira"],
+  ["Loading your dashboard", "የሥራ ማስተዳደሪያዎ እየተጫነ ነው", "Fuulli hojii keessanii feʼamaa jira"],
+  ["Driver can update capacity", "ሹፌሩ ያለውን የጭነት ቦታ ማዘመን ይችላል", "Konkolaachisaan iddoo feʼumsaa haaromsuu dandaʼa"],
+  ["Driver can update tracking", "ሹፌሩ የጭነት ክትትልን ማዘመን ይችላል", "Konkolaachisaan hordoffii feʼumsaa haaromsuu dandaʼa"],
   ["Save change", "ለውጡን አስቀምጥ", "Jijjiirama kuusi"],
   ["Allow public display of my driver photo", "የአሽከርካሪ ፎቶዬ ለሁሉም እንዲታይ እፈቅዳለሁ", "Suuraan koo kan konkolaachisaa uummataaf akka mulʼatu nan hayyama"],
   ["The driver silhouette will appear instead.", "በፎቶው ፋንታ የአሽከርካሪ ምልክት ይታያል።", "Bakka suuraa mallattoon konkolaachisaa ni mulʼata."],

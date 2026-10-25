@@ -6,6 +6,92 @@ checkpoints remain in Git and the [October 23](PROGRESS_HISTORY_20261023.md)
 and [October 20](PROGRESS_HISTORY_20261020.md) histories; this page records the
 current delivery state.
 
+## Current task — Android parity and matching web release
+
+The owner prioritizes a fixed local Android build and the matching live web
+changes. Closed Alpha upload is permitted only after qualification; an unfinished
+Play setup may remain separate. No public Play launch. Platform staff/Admin stay
+web-only. The agent reviews changed screens without another visual-approval
+question. Use only Loadgistic; preserve `next-env.d.ts` and mobile `.claude` edits.
+
+Ordered checkpoint:
+
+1. Implemented/tested: web-like native Featured board/detail, private-Capacity
+   sign-in explanation and retained shipper/broker signup/return context,
+   Preferred corridor wording, public vehicle map links, Android Back and
+   translated loading/action names. Related specs: FEAT-MOB/CAP/GEO/LST/UIX-001.
+2. Applied/verified: finite demo-only correction restored20 public corridor
+   assignments. Only vehicle/driver assignment columns changed; ledger208 and
+   all30 other columns stayed unchanged. Backup, rehearsal, rollback and exact
+   DB/API readback: `.local/corridor-demo-20261025/`.
+3. Built/installed/tested: Android1.2.0/code10, ARM64/x86-64 (not32-bit ARM),
+   debug-signed, built fromebc6df9 and input-equivalent to1bea439. Exact files and
+   source-preserving receipts: `.local/play-code10-20261025/final-parity/`.
+   Native driver Capacity save matches database visibility/load/route values;
+   sign-out revokes the synthetic server session1→0. Manual Location draft/
+   cancel, private signup choice, Featured detail and Android Back pass. Earlier
+   unchanged-screen receipts separately cover corridor/Partial, fleet GPS/Support
+   and Account edit/cancel; they retain their original source and hash.
+4. Current: finish the web-only keyboard-loading repair and bounded authenticated
+   Axe diagnostics, then quality, exact-source web packaging and PR24 CI. Both
+   map-action rails now receive visible keyboard focus even when their buttons
+   are disabled. The real server-rendered regression passes desktop1280 and
+   phones390/320; all14 provider role/route Chrome Axe cases pass after the fix
+   in6.1m. Focus screenshots were reviewed at all three widths. The first broad
+   gate on pinned Node22.16 hit15 TypeScript-loader failures before those tests
+   ran (1115 pass/one skip). A10-case probe with its supported type-stripping
+   flag passed; the root test command now enables that mode explicitly while
+   preserving two workers and every test. The complete corrected gate passes
+   1197/1198 tests (one existing intentional skip), source/spec/workflow checks
+   and typecheck in213s. Next: freeze this repair, build its web artifact and
+   run exact-head remote CI.
+   New immutable web package: `.local/release-20261025-focus/`. Review native
+   input equivalence to the resulting head before reusing the tested APK/AAB.
+5. Pending: merge only after exact-head PR gates pass; verify independent
+   merged-main CI, fresh site/ledger/advisors, immutable artifact and recovery
+   evidence; publish once and verify actual production UI/API/private-file flows.
+   The old0d9 web package/draft cannot certify this new web focus repair.
+6. Pending/separate: installed broker/staff journeys, fleet saves and physical
+   phone/background location are unqualified. Ask before a new owner-phone
+   session. Play signing/upload remains unqualified; local build delivery is not
+   blocked on Console work.
+
+Verification and failure boundaries:
+
+- Complete focus-source root gate:1197 pass/one existing intentional skip,
+  source/spec/workflow and typecheck pass. All342 unchanged native tests, native types,
+  lint,791-message translations and Android export pass. The native runtime,
+  dependencies and assets are unchanged by the current web-only repair.
+- Actual Chrome/Expo en/am/om reviews cover Featured, Preferred corridor and
+  private entry/signup/return. Final Capacity/Location labels open and close at
+  390/320. No fluent-speaker review or physical background test is claimed.
+- CI40229087647 on1bea439 completed13 jobs successfully, with one underlying
+  mobile role-route Axe analysis rejection; e2e/release-ready aggregates failed.
+  CI did not expose a violation. Independent local review passed12/14, finding
+  a genuine disabled-rail keyboard defect and a transient Verification RPC
+  overlay before Axe. The latter RPC subsequently returned200; neither local
+  observation is a proven explanation for CI's analysis rejection.
+- Earlier failed runs remain evidence:40213634873 (stale labels/signup/locator/
+  fixture assumptions),40217827876 (Support role expectation and unconfirmed
+  API/cleanup failures),40221972550 (overstrict Featured cross-cycle assertion),
+  and40224817354 (Tracking smoke timeout, local replay54s, CI cause unknown).
+  Their accepted repairs preserve privacy, permissions, persistence, full-round
+  rotation and original timeouts. No failed run is relabeled green.
+- Native review preserved the original ARM64-only mislabel, an emulator graphics
+  boot failure/System UI ANR, and bulk-typing harness failures. The current APK
+  hash was verified after installation and cold-started in6015ms on owned API35
+  x86-64. This does not establish real-device performance. The emulator is signed
+  out and stopped; owned local Next3100 remains running for focused review.
+- The20:29UTC hosted API security read succeeded after Keychain unlock: zero
+  errors, exactly the same two accepted warnings, no retained credential or
+  hosted write. Refresh its real freshness window when ready to publish.
+- Old source0d9's unpublished draft6ade3c5478ea2d92b4f31c8e and protected
+  `.local/release-20261025-parity/` receipts remain immutable historical evidence.
+  The production site below is unchanged by this candidate.
+- Play Internal/Alpha still serve code7. The English listing has unsubmitted draft
+  changes; review declarations are not fully verified. No code10 upload. Current
+  evidence and limits: `.local/play-code10-20261025/` and PR24.
+
 ## Live delivery
 
 - The web app is live at https://loadgistic.com on Netlify production deploy
@@ -21,11 +107,12 @@ current delivery state.
   not remove email-based Tracking. Hosted security advisors report zero errors
   and the same two separately accepted warnings. The SQL hashes, protected
   backup/rehearsal and apply readback are in `.local/release-20261025-ae03/`.
-- Android 1.2.0/code 10 is a **local, debug-signed test APK** at
-  `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`, SHA-256
+- The original Android 1.2.0/code10 **ARM64-only, debug-signed test APK** is
+  preserved at `.local/play-code10-20261025/loadgistic-code10-arm64-original.apk`, SHA-256
   `1195fbbc9d72c300d5b7df522ede9664d5ee9dbbcfc1d82dadde5c19d1cdde66`.
-  It is not a Play upload artifact. Google Play signing, upload and publication
-  remain paused by the owner.
+  It is not the current test build or a Play upload artifact. Use the final
+  ARM64/x86-64 local test APK recorded above; installed review and source
+  qualification remain required before the authorized Closed Alpha upload.
 
 ## Production verification and limits
 
@@ -66,6 +153,6 @@ current delivery state.
    `.local/release-20261025-ae03/`.
 2. Treat hosted simulator activation and GPS ingress as separate reviewed
    infrastructure work.
-3. Await the owner's explicit go-ahead for Play work. The local APK may be used
-   for local testing, but no signing or Play submission follows from this web
-   release.
+3. Finish candidate CI and the matching web rollout, then qualify the final
+   installed Android artifact. Play testing preparation is authorized separately;
+   upload remains conditional on qualification, with no public launch.

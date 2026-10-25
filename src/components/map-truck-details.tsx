@@ -58,7 +58,7 @@ export function MapTruckDetails({truck}:{truck:TruckDetails}) {
       {truck.current_signal_geometry_visible!==false?<div><MapPinned aria-hidden="true"/><p>{localizedUpdateLabel(truck.location_updated_label,t,'location')}</p></div>:null}
       {truck.capacity_confirmation_needed?<p className="truck-inspection-confirm"><Text message="Confirm availability directly."/></p>:null}
     </div>
-    {truck.current_signal_geometry_visible===false?<p className="truck-inspection-private"><strong><Text message="Regular service—not current location"/></strong></p>:null}
+    {truck.current_signal_geometry_visible===false?<p className="truck-inspection-private"><strong><Text message="Preferred corridor—not current location"/></strong></p>:null}
     <div className="map-truck-documents">
       <TruckDocumentSummary label={truck.provider_organization_id?'Transport Provider documents':'Owner documents'} badges={truck.owner_verification_badges}/>
       <TruckDocumentSummary label="Driver documents" badges={truck.driver_verification_badges}/>

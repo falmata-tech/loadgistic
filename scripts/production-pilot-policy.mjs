@@ -2,6 +2,18 @@ import crypto from 'node:crypto';
 
 export const PRODUCTION_PILOT_SOURCE='loadgistic-production-pilot-v1';
 
+export function assertPilotRouteBindingReady(definitions,routes){
+  const columns=definitions?.profile_routes?.properties;
+  if(!columns||!Object.hasOwn(columns,'assigned_vehicle_id')||!Object.hasOwn(columns,'assigned_driver_user_id')){
+    throw new Error('PRODUCTION_PILOT_ROUTE_SCOPE_MIGRATION_REQUIRED');
+  }
+  if(!Array.isArray(routes)||routes.length===0||routes.some(route=>
+    typeof route.assigned_vehicle_id!=='string'||!route.assigned_vehicle_id
+    ||typeof route.assigned_driver_user_id!=='string'||!route.assigned_driver_user_id)){
+    throw new Error('PRODUCTION_PILOT_ROUTE_BINDING_REQUIRED');
+  }
+}
+
 export function pilotUuid(value){
   const bytes=crypto.createHash('sha256').update(`${PRODUCTION_PILOT_SOURCE}:${String(value)}`).digest().subarray(0,16);
   bytes[6]=(bytes[6]&0x0f)|0x40;
