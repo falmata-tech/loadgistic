@@ -192,7 +192,12 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     await card.getByRole('button',{name:'Replace Driver photo',exact:true}).click();
     await expect(page.getByRole('status').filter({hasText:'Public Driver photo updated.'})).toBeVisible();await openPortrait(page);
     const nextUrl=await photo.getAttribute('src');expect(nextUrl).not.toBe(firstUrl);
-    expect((await visitor.request.get(firstUrl)).status()).toBe(404);expect((await visitor.request.get(nextUrl)).status()).toBe(200);
+    const oldStatus=(await visitor.request.get(firstUrl)).status();
+    const newStatus=(await visitor.request.get(nextUrl)).status();
+    await test.step(`portrait: replacement HTTP old=${oldStatus} new=${newStatus}`,async()=>{
+      expect(oldStatus,'The retired portrait must stop being publicly accessible').toBe(404);
+      expect(newStatus,'The replacement portrait must be publicly accessible').toBe(200);
+    });
     checked(await service.from('profiles').update({active:false}).eq('id',actorId));
     expect((await visitor.request.get(nextUrl)).status()).toBe(404);expect((await post(page,{command:'REMOVE'})).status).toBe(401);
     checked(await service.from('profiles').update({active:true}).eq('id',actorId));

@@ -26,6 +26,10 @@ const accessibilityStages=new Map([
  ['accessibility: target size axe','TARGET_SIZE_AXE'],
  ['accessibility: assert results','ASSERT_RESULTS']
 ]);
+const portraitCases=new Map([
+ ["independent Driver controls their public portrait while Featured keeps the provider's separate identity",'SELF_MANAGED'],
+ ["company Driver controls their public portrait while Featured keeps the provider's separate identity",'COMPANY']
+]);
 const sourceLine=value=>Number.isSafeInteger(value)&&value>0&&value<=1_000_000?value:null;
 const trackingSmokeTitle='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
 const trackingStages=new Map([
@@ -176,6 +180,17 @@ function authenticatedAccessibilityFailure(result,file,title){
   durationMs:duration(result?.duration),stepDurationMs:duration(failedStep?.duration)};
 }
 
+function portraitReplacementFailure(result,file,title){
+ if(file!=='driver-portraits.spec.ts'||!portraitCases.has(title)||!Array.isArray(result?.steps))return null;
+ for(const step of result.steps.slice(0,32)){
+  if(!step||typeof step!=='object'||!step.error||typeof step.error!=='object'||Array.isArray(step.error))continue;
+  const match=typeof step.title==='string'
+   ?/^portrait: replacement HTTP old=([1-5][0-9]{2}) new=([1-5][0-9]{2})$/.exec(step.title):null;
+  if(match)return {kind:portraitCases.get(title),oldStatus:Number(match[1]),newStatus:Number(match[2])};
+ }
+ return null;
+}
+
 export function failedBrowserCaseDiagnostics(report){
  const diagnostics=[];
  for(const test of cases(report)){
@@ -188,10 +203,11 @@ export function failedBrowserCaseDiagnostics(report){
   const a11y=accessibilityFailure(result,file,test.title);
   const authenticatedA11y=authenticatedAccessibilityFailure(result,file,test.title);
   const workflow=failedWorkflowStage(result,file,test.title);
+  const portrait=portraitReplacementFailure(result,file,test.title);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
    line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
-   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{})});
+   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{}),...(portrait?{portrait}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -200,13 +216,14 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow,portrait} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
   if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
   if(a11y)write(`::error ${location}::CI_BROWSER_A11Y route=${a11y.route} rules=${a11y.rules.join(',')||'unknown'}\n`);
   if(authenticatedA11y)write(`::error ${location}::CI_BROWSER_AUTH_A11Y role=${authenticatedA11y.role} route=${authenticatedA11y.route} stage=${authenticatedA11y.stage} error=${authenticatedA11y.errorType} duration_ms=${authenticatedA11y.durationMs??'unknown'} step_ms=${authenticatedA11y.stepDurationMs??'unknown'} rules=${authenticatedA11y.rules.join(',')||'unknown'}\n`);
   if(workflow)write(`::error ${location}::CI_BROWSER_STAGE file=${file} project=${project} stage=${workflow.stage} duration_ms=${workflow.durationMs??'unknown'}\n`);
+  if(portrait)write(`::error ${location}::CI_BROWSER_PORTRAIT kind=${portrait.kind} old_status=${portrait.oldStatus} new_status=${portrait.newStatus}\n`);
  }
 }
 
