@@ -1,6 +1,6 @@
 import {capacitySharingLabel} from '../../../../src/lib/capacity-sharing';
 import {capacityLoadLabel} from '../../../../src/lib/capacity-load-preferences';
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import type {CapacityTruck,CapacityWorkspace} from '../api/capacity';
@@ -23,9 +23,11 @@ import {DriverLocationEditor} from '../components/driver-location-editor';
 import RegularService from './regular-service';
 import type {MapCoverage} from '../components/tracking-map';
 
-export function DriverHome(){
+export function DriverHome({active=true}:{active?:boolean}){
  const {t}=useLanguage(),account=useAccount();
- const {data,error,reload}=useAccountQuery<CapacityWorkspace>('/api/mobile/capacity');
+ const {data,error,reload,refresh}=useAccountQuery<CapacityWorkspace>('/api/mobile/capacity');
+ const wasActive=useRef(active);
+ useEffect(()=>{if(active&&!wasActive.current)void refresh();wasActive.current=active;},[active,refresh]);
  const capabilities=workspaceCapabilities(account.session);
  const truck=currentDrivingTruck(data?.vehicles,account.session?.user.id);
  return <View style={styles.home}>

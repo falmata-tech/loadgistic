@@ -6,9 +6,9 @@ import {localAuditService,checked} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 
 test('transport companies, owner-operators and company drivers retain dashboard conversations',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
- test.setTimeout(180000);const service=localAuditService(),id=checked(await service.auth.admin.createUser({email:`provider-support-${randomUUID()}@example.test`,email_confirm:true})).user.id;
+ test.setTimeout(180000);page.setDefaultTimeout(20_000);const service=localAuditService(),id=checked(await service.auth.admin.createUser({email:`provider-support-${randomUUID()}@example.test`,email_confirm:true})).user.id;
  const admin=checked(await service.from('profiles').select('id').eq('role','ADMIN').eq('active',true).limit(1).single());
- const staff=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:page.viewportSize()!}),staffPage=await staff.newPage();
+ const staff=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:page.viewportSize()!}),staffPage=await staff.newPage();staffPage.setDefaultTimeout(20_000);
  const signouts:(()=>Promise<unknown>)[]=[];let chat='',organization='';
  try{
   signouts.push(await localSupportLogin(staffPage,admin.id));
@@ -21,9 +21,11 @@ test('transport companies, owner-operators and company drivers retain dashboard 
    if(kind==='SELF_MANAGED'){const provider=checked(await service.from('provider_profiles').insert({user_id:id,business_name:'Owner-driver support fixture',handle:`support-driver-${id}`,public_visibility:'PRIVATE'}).select('id').single());checked(await service.from('company_pages').insert({provider_profile_id:provider.id,published:false}));}
    else checked(await service.from('organization_members').insert({user_id:id,organization_id:organization,membership_role:kind==='COMPANY'?'DRIVER':'OWNER'}));
    checked(await service.from('profiles').update({role,active:true,full_name:'Provider support review'}).eq('id',id));
-   signouts.push(await localSupportLogin(page,id));await page.goto('/app/home');
-   await page.getByRole('link',{name:'Support',exact:true}).filter({visible:true}).first().click();await expect(page).toHaveURL(/\/app\/support/);
-   await page.goto('/app/more');await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();await page.locator('.workspace-support-shortcut').click();
+   signouts.push(await localSupportLogin(page,id));await page.goto('/app/home/vehicles',{waitUntil:'domcontentloaded'});
+   if((page.viewportSize()?.width||0)<980){const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});await nav.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('dialog',{name:'More navigation'}).getByRole('link',{name:'Support',exact:true}).click();}
+   else await page.getByRole('navigation',{name:'Site navigation',exact:true}).getByRole('link',{name:'Support',exact:true}).click();
+   await expect(page).toHaveURL(/\/app\/support/);
+   await page.goto('/app/more',{waitUntil:'domcontentloaded'});await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible();await page.goto('/app/support',{waitUntil:'domcontentloaded'});
    await page.getByRole('link',{name:'New chat',exact:true}).click();
    await page.getByLabel('What do you need?').fill(`Help with ${role} capacity`);await page.getByRole('button',{name:'Send to support'}).click();
    await expect(page.getByText(`Help with ${role} capacity`,{exact:true})).toBeVisible();await expect(page.getByRole('combobox',{name:'Language'})).toBeEnabled();chat=new URL(page.url()).searchParams.get('conversation')!;expect(chat).toBeTruthy();

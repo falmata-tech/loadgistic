@@ -31,10 +31,9 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(identity.email,since,'Your Loadgistic sign-in code'));
   const verified=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Sign in',exact:true}).last().click();expect((await verified).status()).toBe(200);
-  await expect(page).toHaveURL('http://localhost:8084/');
-  await expect(page.getByRole('tab',{name:'Capacity',exact:true})).toHaveAttribute('aria-selected','true');
-  await page.getByRole('tab',{name:'Home',exact:true}).click();
+  await expect(page).toHaveURL('http://localhost:8084/account');
   await expect(page.getByRole('tab',{name:'Home',exact:true})).toHaveAttribute('aria-selected','true');
+  await expect(page.getByRole('tab',{name:'My capacity',exact:true})).toHaveAttribute('aria-selected','true');
   await expect(page.getByTestId('driver-home-map')).toBeVisible({timeout:30_000});
   await expect(page.getByText(new RegExp(`EXP-${owner.suffix}`))).toBeVisible({timeout:45_000});
   await expect(page.getByText('No driver location shared yet')).toBeVisible();

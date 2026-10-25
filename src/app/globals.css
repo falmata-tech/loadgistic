@@ -3239,7 +3239,10 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
 /* On very narrow phones the vertical rail collides with the location dock.
    Reflow the same four labeled actions into two rows without shrinking touch targets. */
 @media(max-width:380px){
+  .capacity-home-page .driver-map-summary:not(.has-no-map):has(.capacity-summary-map-header) .capacity-summary-toolrail,
   .fleet-truck-capacity-workspace.capacity-home-page .driver-map-summary:not(.has-no-map) .capacity-summary-toolrail{grid-template-columns:repeat(2,minmax(0,1fr));width:172px}
+  .capacity-home-page .driver-map-summary:not(.has-no-map):has(.capacity-summary-map-header) .capacity-summary-toolrail>a,
+  .capacity-home-page .driver-map-summary:not(.has-no-map):has(.capacity-summary-map-header) .capacity-summary-toolrail button,
   .fleet-truck-capacity-workspace.capacity-home-page .driver-map-summary:not(.has-no-map) .capacity-summary-toolrail>a,
   .fleet-truck-capacity-workspace.capacity-home-page .driver-map-summary:not(.has-no-map) .capacity-summary-toolrail button{width:82px;min-height:44px}
 }

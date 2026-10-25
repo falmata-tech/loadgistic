@@ -7,7 +7,7 @@ test('Support skips unchanged transcripts, preserves drafts and rechecks access 
   actor=await auditProvider(service,'polling');const agent=await auditIdentity(service,'support@loadgistic.local');
   chat=checked(await service.from('support_conversations').insert({customer_user_id:actor.id,assigned_agent_user_id:agent.id,category:'ACCOUNT',status:'OPEN'}).select('id').single()).id;
   checked(await service.from('support_messages').insert({conversation_id:chat,sender_user_id:actor.id,body:'Polling audit conversation'}));
-  await auditLogin(page,actor.email);await page.goto(`/app/support?conversation=${chat}`);
+  await auditLogin(page,actor.email,`/app/support?conversation=${chat}`);
   const endpoint=`/api/support/updates?conversation=${chat}`;
   const initial=await page.request.get(endpoint);expect(initial.status()).toBe(200);const tag=initial.headers().etag;expect(tag).toBeTruthy();
   const unchanged=await page.request.get(endpoint,{headers:{'If-None-Match':tag}});expect(unchanged.status()).toBe(304);expect((await unchanged.body()).length).toBe(0);

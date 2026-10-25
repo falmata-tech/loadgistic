@@ -47,9 +47,10 @@ test('Expo signup presents the same account benefits on a narrow phone',async({p
 
 test('account entry and signed-in navigation remain usable across phone, tablet and desktop widths',async({page},info)=>{
  test.setTimeout(150_000);
+ await page.setViewportSize({width:widths[0],height:760});
+ await page.goto('/signup');
  for(const width of widths){
   await page.setViewportSize({width,height:width<=390?760:900});
-  await page.goto('/signup');
   await expect(page.getByRole('heading',{name:'Create an account'})).toBeVisible();
   await expect(page.getByRole('radio',{name:'Put your vehicles on the map'})).toBeVisible();
   await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
@@ -67,9 +68,9 @@ test('account entry and signed-in navigation remain usable across phone, tablet 
  const identity=await auditProvider(service,'shell-sizes');
  try{
  await localSupportLogin(page,identity.id);
+ await page.goto('/app/network');
  for(const width of widths){
   await page.setViewportSize({width,height:width<=390?760:900});
-  await page.goto('/app/network');
   await expect(page.locator('header.unified-site-header')).toBeVisible();
   const nav=page.getByRole('navigation',{name:width<=760?'Mobile navigation':'Site navigation'});
   await expect(nav).toBeVisible();
@@ -80,9 +81,9 @@ test('account entry and signed-in navigation remain usable across phone, tablet 
   }
   expect(metrics.documentWidth,`workspace horizontal overflow at ${width}px`).toBeLessThanOrEqual(metrics.viewportWidth+1);
   if(width<=760){
-   const capacity=await nav.getByRole('link',{name:'Capacity',exact:true}).boundingBox();
+   const home=await nav.getByRole('link',{name:'Home',exact:true}).boundingBox();
    const more=await nav.getByRole('button',{name:'More'}).boundingBox();
-   expect(capacity&&more&&Math.abs(capacity.y-more.y)<3,`bottom navigation wrapped at ${width}px`).toBeTruthy();
+   expect(home&&more&&Math.abs(home.y-more.y)<3,`bottom navigation wrapped at ${width}px`).toBeTruthy();
   }
   if([320,768,1440].includes(width))await page.screenshot({path:info.outputPath(`workspace-${width}.png`)});
  }

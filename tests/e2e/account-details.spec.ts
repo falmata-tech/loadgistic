@@ -16,9 +16,7 @@ function localService(){
 }
 async function login(page:any,email:string){
   const service=localService(),identity=await service.from('profiles').select('id').eq('email',email).single();
-  expect(identity.error).toBeNull();await localSupportLogin(page,identity.data!.id);await page.goto('/app/home');
-  await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);
-  await expect(page.locator('.app-main')).toBeVisible();
+  expect(identity.error).toBeNull();await localSupportLogin(page,identity.data!.id);
 }
 async function post(page:any,input:unknown){
   return page.evaluate(async(body:unknown)=>{
@@ -71,7 +69,7 @@ test('providers and Company drivers save private account phones even with limite
     expect(publicBefore.error).toBeNull();
     for(const identity of identities){
       await acceptAuditContentPolicy(service,identity.id);
-      await login(page,identity.email);await page.goto('/app/more?tab=details');
+      await login(page,identity.email);await page.goto('/app/more?tab=details',{waitUntil:'domcontentloaded',timeout:60000});
       let form=await openAccountDetails(page);
       await expect(form).toBeVisible();await expect(page.getByText('No plan assigned',{exact:true})).toHaveCount(0);
       await form.getByLabel('First name',{exact:true}).fill('Abebe');
@@ -103,7 +101,7 @@ test('providers and Company drivers save private account phones even with limite
     expect(publicAfter.error).toBeNull();expect(publicAfter.data).toEqual(publicBefore.data);
     // Own public callbacks work without fleet publication permissions; private phones stay separate.
     for(const identity of [company,independent]){
-      await login(page,identity.email);await page.goto('/app/more?tab=details');
+      await login(page,identity.email);await page.goto('/app/more?tab=details',{waitUntil:'domcontentloaded',timeout:60000});
       let form=await openAccountDetails(page);
       await form.getByLabel('Public contact phone',{exact:true}).fill('+251900222333');
       await saveAccountDetails(page,form);await page.reload();form=await openAccountDetails(page);

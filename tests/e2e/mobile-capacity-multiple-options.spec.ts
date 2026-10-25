@@ -103,5 +103,7 @@ test('Expo private Capacity requires an account instead of an email code',async(
  await page.setViewportSize({width:390,height:844});
  await page.goto('http://127.0.0.1:8084/capacity?view=private');
  await expect(page.getByLabel('Email verification code')).toHaveCount(0);
- expect((await page.request.get('/api/mobile/visitor/capacity/signals')).status()).toBe(401);
+ const denied=await page.request.get('/api/mobile/visitor/capacity/signals');
+ expect(denied.status()).toBe(410);
+ expect(await denied.json()).toMatchObject({error:{code:'ACCOUNT_REQUIRED'}});
 });

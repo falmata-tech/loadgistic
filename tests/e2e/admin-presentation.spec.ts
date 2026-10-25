@@ -36,7 +36,7 @@ test('admin record actions and connected details remain usable at desktop and na
  }
  await page.goto('/admin/operations?view=DRIVERS');
  for(const locale of ['am','om']){
-  const picker=page.locator('.app-topbar .language-picker select');await picker.selectOption(locale);await expect(picker).toHaveValue(locale);
+  const picker=page.locator('.public-header-language .language-picker select');await picker.selectOption(locale);await expect(picker).toHaveValue(locale);
   const actions=page.locator('.admin-record-list article').first().locator('[class*=rowActions]');await expect(actions).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   for(const button of await actions.locator('a.button,summary.button,form > button').all()){

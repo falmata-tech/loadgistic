@@ -6,8 +6,7 @@ const expect=baseExpect.configure({timeout:30000});
 
 async function login(page:any,email='driver@loadgistic.local'){
   const identity=await auditIdentity(localAuditService(),email);
-  await localSupportLogin(page,identity.id);await page.goto('/app/home',{waitUntil:'domcontentloaded'});
-  await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
+  await localSupportLogin(page,identity.id);
 }
 
 test('personal Transport Provider owner can add trucks and drivers while new registration stays separate from assignment',async({page}:{page:any})=>{

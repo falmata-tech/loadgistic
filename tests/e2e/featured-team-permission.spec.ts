@@ -41,9 +41,12 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   await staff.goto('/login',{waitUntil:'domcontentloaded',timeout:30000});const since=Date.now();await staff.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);await staff.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(staff.getByTestId('email-code-form')).toBeVisible();
   const code=await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']);await staff.getByLabel('Six-digit code',{exact:true}).fill(code);await staff.getByRole('button',{name:'Continue',exact:true}).click();await expect(staff).toHaveURL(/\/admin\/featured$/,{timeout:30000});
   await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});
-  const siteNav=staff.getByRole('navigation',{name:'Site navigation'});
-  await expect(siteNav.getByRole('link',{name:'Featured settings',exact:true})).toHaveAttribute('href','/admin/featured');
-  for(const name of ['Accounts','Reviews','Support'])await expect(siteNav.getByRole('link',{name,exact:true})).toHaveCount(0);
+  const siteNav=staff.locator('nav.public-workspace-nav');
+  await expect(siteNav.locator('a[href="/admin/featured"]')).toHaveCount(1);
+  if((staff.viewportSize()?.width??1000)<=760){
+   await expect(staff.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Featured settings',exact:true})).toHaveAttribute('href','/admin/featured');
+  }else await expect(siteNav.getByRole('link',{name:'Featured settings',exact:true})).toBeVisible();
+  for(const href of ['/admin/operations','/admin/reviews','/support'])await expect(siteNav.locator(`a[href="${href}"]`)).toHaveCount(0);
   expect((await staff.request.post('/api/admin/settings',{form:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}})).status()).toBe(403);
   expect((await staff.request.post('/api/admin/support-agents',{form:{name:'Unwanted',email:'unwanted@example.test'}})).status()).toBe(403);
   expect((await staff.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(410);
@@ -75,6 +78,12 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   await expect(siteNav.locator('a[href="/brokerage"]')).toHaveCount(0);
   expect((await staff.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(410);
   await expect(siteNav.locator('a[href="/admin/featured"]')).toHaveAttribute('aria-current','page');
+  if((staff.viewportSize()?.width??1000)<=760){
+   await staff.getByRole('navigation',{name:'Mobile navigation'}).getByRole('button',{name:'More'}).click();
+   const more=staff.getByRole('dialog',{name:'More navigation'});
+   for(const href of ['/admin/featured','/admin/operations','/admin/reviews'])await expect(more.locator(`a[href="${href}"]`)).toBeVisible();
+   await more.getByRole('button',{name:'Close menu'}).click();
+  }
   await staff.screenshot({path:info.outputPath('combined-responsibilities.png'),fullPage:true});
   await page.locator(`[data-member-id="${staffId}"]`).getByRole('button',{name:'Edit member',exact:true}).click();await edit.locator('[name=canManageFeatured]').uncheck();await post(page,()=>edit.getByRole('button',{name:'Save permissions',exact:true}).click(),'/api/admin/support-agents');await expect(page).toHaveURL(/success=/);
   expect((await staff.request.post('/api/admin/settings',{form:{section:'PREPARE_FEATURED'}})).status()).toBe(403);

@@ -13,7 +13,7 @@ export function WorkspaceTaskPane({active,children}:PropsWithChildren<{active:bo
 }
 export function WorkspaceTabs({value,items,onChange}:{value:string;items:WorkspaceTab[];onChange:(value:string)=>void}){
  const {t}=useLanguage();
- return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs} accessibilityRole="tablist">{items.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityLabel={t(item.message)} accessibilityState={{selected:value===item.id}} onPress={()=>onChange(item.id)} style={[styles.tab,value===item.id&&styles.activeTab]}><Text style={[styles.tabText,value===item.id&&styles.activeText]}>{t(item.message)}</Text>{item.count!==undefined&&<Text style={styles.count}>{item.count}</Text>}</Pressable>)}</ScrollView>;
+ return <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabs} accessibilityRole="tablist">{items.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityLabel={t(item.message)} aria-selected={value===item.id} accessibilityState={{selected:value===item.id}} onPress={()=>onChange(item.id)} style={[styles.tab,value===item.id&&styles.activeTab]}><Text style={[styles.tabText,value===item.id&&styles.activeText]}>{t(item.message)}</Text>{item.count!==undefined&&<Text style={styles.count}>{item.count}</Text>}</Pressable>)}</ScrollView>;
 }
 export function WorkspaceTaskHeader({title,subtitle,onBack,backMessage,actions}:{title:string;subtitle?:string;onBack:()=>void;backMessage:string;actions?:ReactNode}){
  const {t}=useLanguage();

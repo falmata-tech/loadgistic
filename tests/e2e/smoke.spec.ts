@@ -36,10 +36,10 @@ test('Featured without sponsors keeps the provider board usable',async({page}:{p
   }finally{await restore();}
 });
 
-async function login(page:any,email:string){
+async function login(page:any,email:string,destination?:string){
   // Fixture aliases can be migrated to the owner's deliverable +addresses.
   // Use the shared local-only identity resolver; OTP has its own visible tests.
-  await auditLogin(page,email);
+  await auditLogin(page,email,destination);
 }
 
 async function fixtureDrivingVehicle(email:string){
@@ -794,8 +794,7 @@ test('provider edits business facts without designing the Loadgistic microsite',
 });
 
 test('fleet Driver access shows only current capacity and Tracking permissions',async({page}:{page:any})=>{
-  await login(page,'transporter@loadgistic.local');
-  await page.goto('/app/fleet?view=drivers');
+  await login(page,'transporter@loadgistic.local','/app/fleet?view=drivers');
   await page.getByRole('link',{name:'Manage',exact:true}).first().click();await page.getByRole('button',{name:'Edit assignment',exact:true}).click();
   await expect(page.getByLabel('Capacity updates').first()).toBeVisible();
   await expect(page.getByLabel('Tracking updates').first()).toBeVisible();

@@ -251,8 +251,7 @@ test('fleet owners edit capacity but cannot substitute their device location',as
   const places=checked(await service.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
   const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
   await publishProviderCapacity(owner,{vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:routePlaces});
-  await login(page,owner.email);
-  await page.goto(`/app/fleet/${vehicleId}`);
+  await auditLogin(page,owner.email,`/app/fleet/${vehicleId}`);
   await expect(page.getByRole('button',{name:'Refresh vehicle location'})).toHaveCount(0);
   await page.getByRole('navigation',{name:'Edit capacity signals'}).getByRole('link',{name:'Manage location source'}).click();
   await expect(page).toHaveURL(/\?view=location$/);

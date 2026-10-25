@@ -51,7 +51,9 @@ test('review login keeps one shell across provider Home, Network and public capa
   await expect(page).toHaveURL(/\/about$/);const aboutUrl=page.url();
   await expect(page.getByRole('button',{name:'Account',exact:true})).toBeVisible();
   await page.getByRole('tab',{name:'More',exact:true}).click();
-  await page.getByRole('button',{name:'Close menu',exact:true}).click();
+  const visibleClose=page.getByRole('button',{name:'Close menu',exact:true}).filter({visible:true});
+  await expect(visibleClose).toHaveCount(1);
+  await visibleClose.click();
   await expect(page).toHaveURL(aboutUrl);
   await page.getByRole('tab',{name:'More',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();

@@ -95,15 +95,35 @@ current task list.
   provider signup and Fleet, Expo Fleet return, Admin navigation, account
   security, Featured staff permission, Capacity/map layouts and the guarded
   local GPS task. Root quality passes 1,188 tests with one existing skip and
-  typecheck; the production web build passes. The existing local Android
-  1.2.0/code 10 test APK still matches its recorded checksum; native build
-  inputs were not changed by this repair. These local results do not replace
+  typecheck; the production web build passes. At that checkpoint the local
+  Android 1.2.0/code 10 test APK still matched its recorded checksum; the later
+  native change below supersedes that artifact. These local results do not replace
   terminal CI or authorize hosted SQL. PR22 remains draft at the prior commit;
   no new source push, hosted migration, web deploy or Play delivery has occurred.
   Actual Google Chrome at 1440px and 390px shows the signup and retained
   transporter-search views without horizontal overflow; the settled phone
   search shows its proper empty result for a vehicle-make query. Protected
   captures are under `.local/release-20261024/chrome-review/`.
+- The original checkout is now at `fefa922` on the same branch. PR22 run
+  `40173149817` passed validation, native boundaries and container checks, but
+  failed the Featured permission job and all eight browser shards. The local
+  repair resolves the observed stale fixture aliases, routes, signup sequence
+  and mobile tab assertions; it also fixes actual saved-signup recovery, tab
+  reactivation after vehicle reassignment and a 320px Capacity map overlap.
+  Focused real-browser checks now pass for Featured permissions on desktop and
+  phone, 42 phone shell/accessibility cases (41 together plus the corrected
+  Network case), nine phone fleet/Capacity/Tracking/Support flows, and five
+  phone personal-account flows. Root quality passes 1,189 tests with one
+  existing skip, the web production build passes all 164 static pages, and
+  Android export bundles 3,737 modules. A fresh standalone arm64 1.2.0/code-10
+  local APK passes the compiled permission check (57 MB; SHA-256
+  `1195fbbc9d72c300d5b7df522ede9664d5ee9dbbcfc1d82dadde5c19d1cdde66`).
+  It uses the generated local test signing key; it has not been installed on a
+  phone and is not a Play artifact. The earlier web package and APK are stale
+  because executable inputs changed. These are local results; the repair needs
+  terminal exact-head CI before a hosted migration or web deployment. Neither
+  the hosted migrations nor the web or Play release has occurred.
+  Play remains paused by owner instruction.
 
 ## Current delivery
 
@@ -160,13 +180,12 @@ current task list.
 
 ## Next steps
 
-1. For subsequent work, start from protected `main` and qualify the exact new
-   source through its own CI. Keep the pre-existing dirty `next-env.d.ts` and
-   `apps/mobile/.claude/` files outside unrelated tasks.
-2. Diagnose and harden the two intermittently slow browser workflows before
-   the next product release: preserve the first assertion when cleanup also
-   fails, and retain the existing signup and archive/security outcomes. Local
-   attempts exposed slow dev-server navigation; no production defect was proven.
-3. Treat any web publication, hosted simulator activation, Android signing, and
-   Play delivery as separate operations with their own exact-source checks and
-   current owner instructions. Play remains paused.
+1. Qualify PR22's repaired head with terminal green CI. Preserve the separate
+   dirty `next-env.d.ts` and `apps/mobile/.claude/` files outside that PR.
+2. After green CI, refresh the protected hosted backup, restore and SQL
+   rehearsal and present the exact migrations 199–208 for owner review before
+   any hosted write. Rebuild the immutable web package from the final source,
+   then follow the guarded Netlify release and independent live checks.
+3. Treat hosted simulator activation, Android signing and Play delivery as
+   separate operations. Only the local Android build is requested now; Play
+   remains paused.

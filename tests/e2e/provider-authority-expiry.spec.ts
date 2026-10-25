@@ -68,7 +68,7 @@ test('operating-licence expiry and financed-holder review persist, and Expo perm
  try{
   const owner=await auditFleetProvider(service,'expiry-web');actors.push(owner);evidence();const truck=await makeTruck(owner,'FINANCED');
   await checkpoint('WEB_LOGIN');await webLogin(page,owner.email);
-  await checkpoint('WEB_DOCUMENT_FORM');await page.goto(`/app/fleet/${truck}?view=documents`);await page.getByRole('button',{name:'Submit verification',exact:true}).click();await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_OPERATING_LICENSE');await expect(page.locator('input[name="relatedVehicleId"]')).toHaveValue(truck);
+  await checkpoint('WEB_DOCUMENT_FORM');await page.goto(`/app/fleet/${truck}?view=documents`,{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Submit verification',exact:true}).click();await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_OPERATING_LICENSE');await expect(page.locator('input[name="relatedVehicleId"]')).toHaveValue(truck);
   await checkpoint('WEB_LICENCE_EXPIRY');await chooseDate(page,'Licence expires',expiry);
   await checkpoint('WEB_LICENCE_UPLOAD');await page.getByLabel('Document name',{exact:true}).fill(`Financed licence ${nonce}`);await page.locator('input[name="file"]').setInputFiles({name:'synthetic-financed-licence.png',mimeType:'image/png',buffer:bytes});await page.getByRole('button',{name:'Submit for review',exact:true}).click();await expect(page.locator('.alert.success')).toBeVisible();
   const licence=await storedRequest(owner.id,truck,`Financed licence ${nonce}`);expect(licence).toMatchObject({subject_type:'VEHICLE',subject_id:truck,related_vehicle_id:truck,verification_type:'VEHICLE_OPERATING_LICENSE',expires_on:expiry,status:'PENDING'});

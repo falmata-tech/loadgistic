@@ -34,10 +34,11 @@ test('provider Capacity stays public while Network remains a separate task',asyn
   await expect(page).toHaveURL(url=>url.pathname==='/'&&!url.search);
   await expect(page.getByRole('region',{name:'Open transport capacity'})).toBeVisible();
   await expect(page.getByRole('tablist',{name:'Network views'})).toHaveCount(0);
-  await page.getByRole('navigation',{name:'Site navigation'}).getByRole('link',{name:'Network'}).click();
+  const navigation=page.getByRole('navigation',{name:(page.viewportSize()?.width||0)<980?'Mobile navigation':'Site navigation'});
+  await navigation.getByRole('link',{name:'Network'}).click();
   await expect(page).toHaveURL(/\/app\/network/,{timeout:30_000});
   }finally{
-    await page.goto('about:blank');
+    if(!page.isClosed())await page.goto('about:blank',{waitUntil:'commit',timeout:5000}).catch(()=>undefined);
     checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));
     checked(await service.auth.admin.deleteUser(actor.id));
   }
