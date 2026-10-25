@@ -40,7 +40,10 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   stage='STAFF_LOGIN';staffContext=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:page.viewportSize()!,extraHTTPHeaders:{'x-forwarded-for':'127.0.0.245'}});const staff=await staffContext.newPage();staff.setDefaultTimeout(20000);staff.setDefaultNavigationTimeout(60000);
   await staff.goto('/login',{waitUntil:'domcontentloaded',timeout:30000});const since=Date.now();await staff.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);await staff.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(staff.getByTestId('email-code-form')).toBeVisible();
   const code=await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']);await staff.getByLabel('Six-digit code',{exact:true}).fill(code);await staff.getByRole('button',{name:'Continue',exact:true}).click();await expect(staff).toHaveURL(/\/admin\/featured$/,{timeout:30000});
-  await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});await expect(staff.locator('.sidebar-nav a')).toHaveCount(1);await expect(staff.locator('.sidebar-nav a')).toHaveAttribute('href','/admin/featured');
+  await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});
+  const siteNav=staff.getByRole('navigation',{name:'Site navigation'});
+  await expect(siteNav.getByRole('link',{name:'Featured settings',exact:true})).toHaveAttribute('href','/admin/featured');
+  for(const name of ['Accounts','Reviews','Support'])await expect(siteNav.getByRole('link',{name,exact:true})).toHaveCount(0);
   expect((await staff.request.post('/api/admin/settings',{form:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}})).status()).toBe(403);
   expect((await staff.request.post('/api/admin/support-agents',{form:{name:'Unwanted',email:'unwanted@example.test'}})).status()).toBe(403);
   expect((await staff.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(410);
@@ -68,10 +71,10 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   await edit.locator('[name=available]').uncheck();
   await post(page,()=>edit.getByRole('button',{name:'Save permissions',exact:true}).click(),'/api/admin/support-agents');await expect(page).toHaveURL(/success=/);
   await staff.goto('/admin/featured');await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});
-  for(const href of ['/admin/featured','/support','/admin/operations','/admin/reviews'])await expect(staff.locator(`.sidebar-nav a[href="${href}"]`)).toHaveCount(1);
-  await expect(staff.locator('.sidebar-nav a[href="/brokerage"]')).toHaveCount(0);
+  for(const href of ['/admin/featured','/support','/admin/operations','/admin/reviews'])await expect(siteNav.locator(`a[href="${href}"]`)).toHaveCount(1);
+  await expect(siteNav.locator('a[href="/brokerage"]')).toHaveCount(0);
   expect((await staff.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(410);
-  await expect(staff.locator('.workspace-title .meta')).toHaveText('Platform team');
+  await expect(siteNav.locator('a[href="/admin/featured"]')).toHaveAttribute('aria-current','page');
   await staff.screenshot({path:info.outputPath('combined-responsibilities.png'),fullPage:true});
   await page.locator(`[data-member-id="${staffId}"]`).getByRole('button',{name:'Edit member',exact:true}).click();await edit.locator('[name=canManageFeatured]').uncheck();await post(page,()=>edit.getByRole('button',{name:'Save permissions',exact:true}).click(),'/api/admin/support-agents');await expect(page).toHaveURL(/success=/);
   expect((await staff.request.post('/api/admin/settings',{form:{section:'PREPARE_FEATURED'}})).status()).toBe(403);

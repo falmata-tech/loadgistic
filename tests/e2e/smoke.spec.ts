@@ -6,6 +6,7 @@ import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {randomInt,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
+import {localSupportLogin} from './provider-support-helper';
 import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditFleetProvider,auditDeleteVehicles,auditAssignAndPublishSelfDrivenVehicle} from './audit-helpers';
 import {addLocalSmokeSponsor,temporarilyHideLocalSponsors} from './sponsor-fixture-helper';
 import {getProviderCapacityWorkspace,addProviderRegularCapacity,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
@@ -22,7 +23,7 @@ test.afterEach(async()=>{
   try{await cleanupSmokeSponsor?.();}finally{cleanupSmokeSponsor=undefined;}
 });
 
-test('Featured without sponsors keeps the truck board usable',async({page}:{page:any})=>{
+test('Featured without sponsors keeps the provider board usable',async({page}:{page:any})=>{
   const restore=await temporarilyHideLocalSponsors();
   try{
     await page.goto('/featured');
@@ -30,7 +31,7 @@ test('Featured without sponsors keeps the truck board usable',async({page}:{page
     await expect(page.locator('.transport-expo-experience')).toHaveClass(/without-sponsors/);
     await expect(page.locator('.expo-sponsored-rail')).toHaveCount(0);
     const mobile=(page.viewportSize()?.width||0)<=760;
-    const navigation=page.getByRole('navigation',{name:mobile?'Public mobile navigation':'Public workspace navigation'});
+    const navigation=page.getByRole('navigation',{name:mobile?'Mobile navigation':'Site navigation'});
     await expect(navigation.getByRole('link',{name:'Capacity',exact:true})).toBeVisible();
   }finally{await restore();}
 });
@@ -125,7 +126,7 @@ test('public entry makes capacity immediately usable without an account',async({
   await page.locator('a[href="/featured"]:visible').first().click();
   await expect(page).toHaveURL(/\/featured$/,{timeout:15_000});
   await expect(page.locator('.public-capacity-map')).toHaveCount(0);
-  const currentPublicNav=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Public workspace navigation'}):page.getByRole('navigation',{name:'Public mobile navigation'});
+  const currentPublicNav=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Site navigation'}):page.getByRole('navigation',{name:'Mobile navigation'});
   await expect(currentPublicNav.getByRole('link',{name:'Featured',exact:true})).toHaveAttribute('aria-current','page');
   const featured=page.locator('.featured-provider-section');
   await expect(featured.locator('.featured-programme-current')).toContainText(/Transport Providers/i);
@@ -196,6 +197,10 @@ test('public entry makes capacity immediately usable without an account',async({
     await expect(providerDialog).toBeHidden();
     await expect(page.locator('.public-capacity-map')).toBeVisible();
     await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
+    const truckMarker=page.locator('.capacity-truck-map-marker:visible').first();
+    if(!await truckMarker.count())await page.locator('.capacity-map-cluster:visible').first().click();
+    await expect(truckMarker).toBeVisible();
+    await truckMarker.click();
     await page.locator('.map-info-bubble.truck').click();
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   }else{
@@ -204,21 +209,24 @@ test('public entry makes capacity immediately usable without an account',async({
   }
 });
 
-test('legacy capacity URL preserves search in the filter drawer',async({page}:{page:any})=>{
+test('legacy capacity URL opens an independent transporter search',async({page}:{page:any})=>{
   await page.goto('/capacity?q=Fuso');
   await expect(page).toHaveURL(/\?q=Fuso$/);
   await page.locator('.capacity-drawer-handle').waitFor({state:'attached',timeout:15000});
   const drawer=await openCapacityFilters(page);
   await expect(drawer.getByRole('searchbox',{name:'Search transporters'})).toHaveValue('Fuso');
+  await expect(drawer.getByRole('button',{name:'Clear search'})).toBeEnabled();
+  await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Vehicle filters'}).getByRole('searchbox',{name:'Search transporters'})).toHaveCount(0);
 });
 
 test('public mobile shell keeps every visitor destination directly reachable',async({page}:{page:any})=>{
   await page.goto('/');
   const mobile=(page.viewportSize()?.width||0)<=760;
-  const appNav=page.getByRole('navigation',{name:'Public mobile navigation'});
+  const appNav=page.getByRole('navigation',{name:'Mobile navigation'});
   if(!mobile){
     await expect(appNav).toBeHidden();
-    const workspaceNav=page.getByRole('navigation',{name:'Public workspace navigation'});
+    const workspaceNav=page.getByRole('navigation',{name:'Site navigation'});
     await expect(workspaceNav).toBeVisible();
     await expect(workspaceNav.getByRole('link',{name:'Capacity',exact:true})).toHaveAttribute('aria-current','page');
     await expect(workspaceNav.getByRole('link')).toHaveCount(6);
@@ -230,7 +238,7 @@ test('public mobile shell keeps every visitor destination directly reachable',as
     ]);
     await expect(page.getByRole('heading',{name:'Privacy',exact:true,level:1})).toBeVisible();
     await expect(page.getByRole('link',{name:'Delete account and data',exact:true})).toBeVisible();
-    await expect(page.getByRole('navigation',{name:'Public workspace navigation'}).getByRole('link',{name:'Privacy',exact:true})).toHaveAttribute('aria-current','page');
+    await expect(page.getByRole('navigation',{name:'Site navigation'}).getByRole('link',{name:'Privacy',exact:true})).toHaveAttribute('aria-current','page');
     await expect(page.locator('.home-footer')).toHaveCount(0);
     return;
   }
@@ -255,8 +263,8 @@ test('public mobile shell keeps every visitor destination directly reachable',as
   await expect(appNav.getByRole('link',{name:'Featured',exact:true})).toHaveAttribute('aria-current','page');
   await appNav.getByRole('link',{name:'Track',exact:true}).click();
   await expect(page).toHaveURL(/\/track$/);
-  await expect(page.getByRole('navigation',{name:'Public mobile navigation'})).toBeVisible();
-  await expect(page.getByRole('navigation',{name:'Public mobile navigation'}).getByRole('link',{name:'Track',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('navigation',{name:'Mobile navigation'})).toBeVisible();
+  await expect(page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Track',exact:true})).toHaveAttribute('aria-current','page');
 });
 
 test('Truck Market profile results focus the provider trucks',async({page}:{page:any})=>{
@@ -361,7 +369,7 @@ test('administrator can review and publish an ordered daily provider-account ros
   await page.goto('/admin/featured');
   await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers'})).toBeVisible();
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();
-  await expect(page.locator('.featured-admin-status')).toContainText('eligible Transport Providers');
+  await expect(page.locator('.featured-admin-status')).toContainText('Eligible accounts:');
   await expect(page.getByRole('heading',{name:"Choose today's Transport Providers"})).toBeVisible();
   await expect(page.getByText('08:30–12:00 EAT',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Automatic'})).toHaveClass(/active/);
@@ -600,7 +608,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await expect(page.locator('.public-map-legend')).toContainText('Empty service area');
   await expect(page.locator('.public-map-legend')).toContainText('Empty capacity route');
   await expect(page.locator('.public-map-legend')).toContainText('Partial capacity route');
-  await expect(page.locator('.public-map-legend')).toContainText(/Regular service/i);
+  await expect(page.locator('.public-map-legend')).toContainText('Corridor route');
   await expect(page.locator('.public-map-legend')).not.toContainText('Next trip');
   await page.screenshot({path:path.join(captures,`${info.project.name}-selected-truck.png`),scale:'css'});
   const closeCard=page.getByRole('button',{name:'Close map signal details'});
@@ -743,7 +751,7 @@ test('provider edits business facts without designing the Loadgistic microsite',
   const service=localAuditService(),actor=await auditFleetProvider(service,'smoke-profile'),accountName=`Synthetic smoke provider ${actor.suffix}`;
   writeFileSync(info.outputPath('profile-owned-fixture.json'),JSON.stringify({userId:actor.id,organizationId:actor.organization_id})+'\n',{mode:0o600});
   try{
-  await login(page,actor.email);
+  await localSupportLogin(page,actor.id);
   await page.goto('/app/company-page',{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('button',{name:'Save transporter information'})).toHaveCount(0);
   await page.getByRole('button',{name:'Edit profile',exact:true}).click();
@@ -1028,12 +1036,17 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
   await expect(page.getByText(trackingCode)).toHaveCount(0);
   if((page.viewportSize()?.width||0)<=760){
     const mobileNav=page.getByRole('navigation',{name:'Mobile navigation'});
-    await expect(mobileNav.getByRole('link')).toHaveCount(5);
-    for(const label of ['Home','Fleet','Tracking','Network','Account'])await expect(mobileNav.getByRole('link',{name:label,exact:true})).toBeVisible();
+    await expect(mobileNav.getByRole('link')).toHaveCount(3);
+    for(const label of ['Home','Network','Tracking'])await expect(mobileNav.getByRole('link',{name:label,exact:true})).toBeVisible();
     await expect(mobileNav.getByRole('link',{name:'Capacity',exact:true})).toHaveCount(0);
+    await expect(mobileNav.getByRole('link',{name:'Fleet',exact:true})).toHaveCount(0);
+    await mobileNav.getByRole('button',{name:'More',exact:true}).click();
+    const more=page.getByRole('dialog',{name:'More navigation'});
+    await expect(more.getByRole('link',{name:'Account',exact:true})).toBeVisible();
+    await expect(more.getByRole('link',{name:'Support',exact:true})).toBeVisible();
     await Promise.all([
       page.waitForURL(/\/app\/more$/,{waitUntil:'domcontentloaded'}),
-      mobileNav.getByRole('link',{name:'Account',exact:true}).click()
+      more.getByRole('link',{name:'Account',exact:true}).click()
     ]);
     await expect(page.getByRole('heading',{name:'Account',exact:true})).toBeVisible({timeout:30_000});
     await expect(page.getByRole('form',{name:'Account details'})).toHaveCount(0);
@@ -1041,14 +1054,13 @@ test('Driver Home stays focused on capacity and keeps Tracking in navigation',as
     await page.getByRole('button',{name:'Edit details',exact:true}).click();
     const accountTask=page.getByRole('dialog',{name:'Account details',exact:true});await expect(accountTask.getByRole('form',{name:'Account details'})).toBeVisible();
     await accountTask.getByRole('button',{name:'Close editor',exact:true}).click();
-    await expect(page.getByRole('link',{name:'Support',exact:true})).toBeVisible();
     await expect(page.locator('.workspace-menu-grid')).toHaveCount(0);
     await expect(page.getByRole('button',{name:'Log out'})).toBeVisible();
     await page.goto('/app/home',{waitUntil:'domcontentloaded'});
   }
   const primaryNavigation=(page.viewportSize()?.width||0)<=760
     ?page.getByRole('navigation',{name:'Mobile navigation'})
-    :page.getByRole('navigation',{name:'Workspace navigation'});
+    :page.getByRole('navigation',{name:'Site navigation'});
   await Promise.all([
     page.waitForURL(/\/app\/provider-shipments$/,{waitUntil:'domcontentloaded'}),
     primaryNavigation.getByRole('link',{name:'Tracking',exact:true}).click()
@@ -1083,7 +1095,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(summary.locator('.capacity-setting-truck-label')).toContainText('Vehicle area');
   await expect(summary.locator('.capacity-summary-map-header')).toBeVisible();
   await expect(summary.getByRole('navigation',{name:'Edit capacity signals'})).toBeVisible();
-  await expect(summary.locator('.capacity-map-key')).toContainText('Regular service');
+  await expect(summary.locator('.capacity-map-key')).toContainText('Corridor route');
   await expect(summary.getByRole('region',{name:'Approximate vehicle location controls'})).toBeVisible();
   const zones=await summary.evaluate((root:HTMLElement)=>{
     const box=(selector:string)=>{const rect=(root.querySelector(selector) as HTMLElement|null)?.getBoundingClientRect();return rect?{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom}:null;};
@@ -1148,7 +1160,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('heading',{name:'Available by radius or corridor'})).toHaveCount(0);
   await expect(summary).toContainText('just now');
   await expect(summary).not.toContainText('Next trip');
-  await expect(summary).toContainText('Regular service');
+  await expect(summary).toContainText('Corridor route');
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
   await page.getByRole('button',{name:/^Edit regular service:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();

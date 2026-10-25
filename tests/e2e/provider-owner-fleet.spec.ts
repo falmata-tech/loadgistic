@@ -47,7 +47,7 @@ test('Transport Provider publishes one unreviewed truck, manages document review
   await page.goto('/app/fleet/new',{waitUntil:'domcontentloaded'});await expect(page.getByRole('heading',{name:'Add vehicle',exact:true})).toBeVisible();
   await page.getByRole('radio',{name:basis==='OWNED'?'I own this vehicle':'I am buying this vehicle through financing',exact:true}).check();
   await page.getByLabel('Make',{exact:true}).fill('Isuzu');await page.getByLabel('Model',{exact:true}).fill(model);await page.getByLabel('Vehicle configuration',{exact:true}).selectOption('Mini Box Truck');await page.getByLabel('Plate number',{exact:true}).fill(`LOCAL-${nonce}-${owned.truckIds.length+1}`);
-  await page.getByRole('button',{name:'Add vehicle',exact:true}).click();await expect(page).toHaveURL(/\/app\/fleet\/[0-9a-f-]+(?:\?.*)?$/);
+  await page.getByRole('button',{name:'Add vehicle',exact:true}).click({noWaitAfter:true});await expect(page).toHaveURL(/\/app\/fleet\/[0-9a-f-]+(?:\?.*)?$/);
   const id=new URL(page.url()).pathname.split('/').at(-1)!;expect(id).toMatch(uuid);owned.truckIds.push(id);manifest();
   const saved=checked(await service.from('vehicles').select('publication_status,use_basis,provider_profile_id').eq('id',id).single());expect(saved).toMatchObject({publication_status:'DRAFT',use_basis:basis,provider_profile_id:owned.providerId});
   await openOwnTruck(id);await expect(page.getByRole('button',{name:'Go live',exact:true})).toBeEnabled();return id;
@@ -97,11 +97,11 @@ test('Transport Provider publishes one unreviewed truck, manages document review
   await checkpoint('SIGNUP');await page.goto('/login',{waitUntil:'domcontentloaded'});const since=Date.now();await page.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);await page.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(page.getByTestId('email-code-form')).toBeVisible();
   await checkpoint('SIGNUP_CODE');
   const code=await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']);await page.getByLabel('Six-digit code',{exact:true}).fill(code);await page.getByRole('button',{name:'Continue',exact:true}).click();
-  await expect(page).toHaveURL(/\/workspaces$/);
+  await expect(page.getByRole('heading',{name:'Choose your account',exact:true})).toBeVisible();
+  await page.getByRole('link',{name:'Continue as Transport Provider',exact:true}).click();
   await checkpoint('SIGNUP_TERMS');
   await page.getByLabel('I agree to the Terms and content rules.',{exact:true}).check();await page.getByRole('button',{name:'Accept and continue',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Before you share',exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:/Transport Provider.*Set up your vehicles/}).click();
   await checkpoint('SIGNUP_DETAILS');
   const setup=page.getByTestId('provider-details-form');await expect(setup).toBeVisible();owned.ownerId=checked(await service.from('profiles').select('id').eq('email',email).single()).id;manifest();await expect(setup.getByRole('radio')).toHaveCount(0);await setup.getByLabel('Account name',{exact:true}).fill('Provider fleet test');await setup.getByLabel('Handle',{exact:true}).fill(`provider-owner-${nonce}`);await setup.getByLabel('First name',{exact:true}).fill('Provider');await setup.getByLabel('Last / father name',{exact:true}).fill('Private family');await setup.getByLabel('Account phone',{exact:true}).fill('+251900000011');
   await checkpoint('SIGNUP_DRIVING');
@@ -199,7 +199,7 @@ test('Transport Provider publishes one unreviewed truck, manages document review
    const created=native.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/fleet'&&response.request().method()==='POST');await native.getByRole('button',{name:'Add vehicle',exact:true}).click();const response=await created;expect(response.status()).toBe(200);const third=(await response.json()).id;expect(third).toMatch(uuid);owned.truckIds.push(third);manifest();expect(checked(await service.from('vehicles').select('publication_status,use_basis').eq('id',third).single())).toMatchObject({publication_status:'DRAFT',use_basis:'PERMISSION'});expect(checked(await service.from('driver_vehicle_assignments').select('id').eq('vehicle_id',third).eq('active',true))).toHaveLength(0);
    await native.getByRole('button',{name:/Manage vehicle: Isuzu Provider mobile/}).click();await native.getByRole('tab',{name:'Details',exact:true}).click();
    await expect(native.getByRole('button',{name:'Go live',exact:true})).toBeEnabled();await native.screenshot({path:info.outputPath('provider-expo-fleet.png')});
-   await checkpoint('EXPO_RETURN_HOME');await native.getByRole('tab',{name:'Home',exact:true}).click();await captureNative('BEFORE_RETURN_HOME_ASSERTIONS');
+   await checkpoint('EXPO_RETURN_HOME');await native.getByRole('tab',{name:'My capacity',exact:true}).click();await captureNative('BEFORE_RETURN_HOME_ASSERTIONS');
    try{await expectNativeHome();}catch(error){await captureNative('RETURN_HOME_FAILURE');throw error;}await captureNative('AFTER_RETURN_HOME_ASSERTIONS');
    await checkpoint('EXPO_SWITCH_AREAS');await native.getByRole('tab',{name:'Public capacity',exact:true}).click();await expect(native).toHaveURL(/\/account$/);await expect(native.getByRole('region',{name:'Map'})).toBeVisible();await native.getByRole('tab',{name:'My capacity',exact:true}).click();await expectNativeHome();await captureNative('RETURN_WORKSPACE');await native.screenshot({path:info.outputPath('provider-expo-driving-home.png')});
   }

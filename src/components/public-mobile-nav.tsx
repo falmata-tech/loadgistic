@@ -8,7 +8,7 @@ import {aboutDestination,activeSiteDestination,memberDestinations,phonePrimaryDe
 import styles from './public-navigation.module.css';
 
 export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
- const pathname=usePathname(),router=useRouter(),active=activeSiteDestination(pathname,user),[menuOpen,setMenuOpen]=React.useState(false);
+ const pathname=usePathname(),router=useRouter(),active=activeSiteDestination(pathname,user),[menuOpen,setMenuOpen]=React.useState(false),[ready,setReady]=React.useState(false);
  const privateItems=memberDestinations(user),primary=phonePrimaryDestinations(user);
  const workItems=privateItems.filter(item=>!['support','account'].includes(item.key));
  const utilityItems=privateItems.filter(item=>['support','account'].includes(item.key));
@@ -20,6 +20,7 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
  const moreUtility=utilityItems.filter(item=>!primaryKeys.has(item.key));
  React.useEffect(()=>{if(pathname==='/'&&window.location.hash==='#featured-providers')router.replace('/featured');},[pathname,router]);
  React.useEffect(()=>{setMenuOpen(false);},[pathname]);
+ React.useEffect(()=>{setReady(true);},[]);
  const link=(item:SiteDestination,className?:string)=><Link key={item.key} href={item.href} className={[className,active===item.key?'active':''].filter(Boolean).join(' ')||undefined} aria-current={active===item.key?'page':undefined} onClick={()=>setMenuOpen(false)}><item.icon aria-hidden="true"/><span><Text message={item.label}/></span></Link>;
  return <>
   <Localized as="nav" copy={["aria-label"]} className={`public-workspace-nav ${styles.rail}`} aria-label="Site navigation">
@@ -32,11 +33,11 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
    {utilityItems.map(item=>link(item))}
    {link(aboutDestination)}
    </>}
-   <div className={styles.legal}><Link href="/privacy"><LockKeyhole aria-hidden="true"/><span><Text message="Privacy"/></span></Link><Link href="/terms"><FileText aria-hidden="true"/><span><Text message="Terms"/></span></Link></div>
+   <div className={styles.legal}><Link href="/privacy" aria-current={pathname==='/privacy'?'page':undefined}><LockKeyhole aria-hidden="true"/><span><Text message="Privacy"/></span></Link><Link href="/terms" aria-current={pathname==='/terms'?'page':undefined}><FileText aria-hidden="true"/><span><Text message="Terms"/></span></Link></div>
   </Localized>
   <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Mobile navigation">
    {primary.map(item=>link(item))}
-   {user?<button type="button" className={menuOpen?'active':''} aria-expanded={menuOpen} aria-controls="site-more-menu" onClick={()=>setMenuOpen(true)}><MoreHorizontal aria-hidden="true"/><span><Text message="More"/></span></button>:null}
+   {user?<button type="button" className={menuOpen?'active':''} aria-expanded={menuOpen} aria-controls="site-more-menu" disabled={!ready} onClick={()=>setMenuOpen(true)}><MoreHorizontal aria-hidden="true"/><span><Text message="More"/></span></button>:null}
   </Localized>
   {menuOpen?<div className={styles.menuBackdrop} onClick={()=>setMenuOpen(false)}><div id="site-more-menu" className={styles.menu} role="dialog" aria-modal="true" aria-label="More navigation" onClick={event=>event.stopPropagation()} onKeyDown={event=>{if(event.key==='Escape')setMenuOpen(false);}}><div className={styles.menuTitle}><strong><Text message="More"/></strong><button type="button" aria-label="Close menu" onClick={()=>setMenuOpen(false)}><X aria-hidden="true"/></button></div>
     {moreWork.map(item=>link(item))}
@@ -45,6 +46,6 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
     {moreUtility.length?<div className={styles.group} aria-hidden="true"/>:null}
     {moreUtility.map(item=>link(item))}
     {link(aboutDestination)}
-    <div className={styles.legal}><Link href="/privacy"><Text message="Privacy"/></Link><Link href="/terms"><Text message="Terms"/></Link></div></div></div>:null}
+    <div className={styles.legal}><Link href="/privacy" aria-current={pathname==='/privacy'?'page':undefined}><Text message="Privacy"/></Link><Link href="/terms" aria-current={pathname==='/terms'?'page':undefined}><Text message="Terms"/></Link></div></div></div>:null}
  </>;
 }

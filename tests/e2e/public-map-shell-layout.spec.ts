@@ -60,7 +60,7 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       await page.screenshot({path:path.join(captures,`${surface}-map-${width}.png`),scale:'css'});
     }
   }
-  const nav=page.getByRole('navigation',{name:phone?'Public mobile navigation':'Public workspace navigation',exact:true});
+  const nav=page.getByRole('navigation',{name:phone?'Mobile navigation':'Site navigation',exact:true});
   await Promise.all([page.waitForURL(/\/about$/,{waitUntil:'domcontentloaded'}),nav.getByRole('link',{name:'About',exact:true}).click()]);
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.locator('main.public-market-workspace')).toHaveCount(0);

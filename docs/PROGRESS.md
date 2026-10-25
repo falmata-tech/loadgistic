@@ -1,6 +1,6 @@
 # Current work and release status
 
-Updated 2026-10-24. Work in Loadgistic even when the IDE displays Suqpage. Start
+Updated 2026-10-25. Work in Loadgistic even when the IDE displays Suqpage. Start
 with the controlling spec in [traceability](../specs/TRACEABILITY.md), then the
 [product brief](PRODUCT_MASTER_PROMPT.md). Historical run-by-run evidence was
 moved to [October 23 history](PROGRESS_HISTORY_20261023.md); earlier history is
@@ -74,6 +74,36 @@ current task list.
   pre-existing `next-env.d.ts` or mobile `.claude` files. The attempted rebuild
   of a temporary recovered copy is not release evidence. No hosted write or web
   publication occurred.
+- The restored original checkout is now at `4c116d6` on
+  `feat/account-network-launch`. Exact-head CI run `40160565628` passed its
+  source, mobile-boundary and container checks but failed all eight browser
+  shards and the Featured staff-permission browser job. The browser failures
+  include stale expectations for the old workspace navigation, Fleet heading,
+  and route names; they must be repaired and exercised locally before another
+  full CI run. A focused real Chrome check also found that an older `?q=`
+  Capacity link lost its transporter-search text. The local correction and its
+  desktop browser check pass, as do updated visitor and Admin navigation checks
+  on phone and desktop where run. This is **not** release evidence yet. Hosted
+  migration ledger remains at 198; migrations 199–208 remain local only, and
+  the web and Play builds have not been published.
+- The October 25 local browser repair aligns stale assertions and disposable
+  fixtures with the unified navigation, account signup, Featured account
+  eligibility and current Fleet device order. It also fixes the actual
+  transporter-search URL handoff, prevents an unhydrated mobile More tap from
+  closing immediately, and restricts post-verification account choice to the
+  matching eligible signed-in identity. Focused desktop/phone checks pass for
+  provider signup and Fleet, Expo Fleet return, Admin navigation, account
+  security, Featured staff permission, Capacity/map layouts and the guarded
+  local GPS task. Root quality passes 1,188 tests with one existing skip and
+  typecheck; the production web build passes. The existing local Android
+  1.2.0/code 10 test APK still matches its recorded checksum; native build
+  inputs were not changed by this repair. These local results do not replace
+  terminal CI or authorize hosted SQL. PR22 remains draft at the prior commit;
+  no new source push, hosted migration, web deploy or Play delivery has occurred.
+  Actual Google Chrome at 1440px and 390px shows the signup and retained
+  transporter-search views without horizontal overflow; the settled phone
+  search shows its proper empty result for a vehicle-make query. Protected
+  captures are under `.local/release-20261024/chrome-review/`.
 
 ## Current delivery
 

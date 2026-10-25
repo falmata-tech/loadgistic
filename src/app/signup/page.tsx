@@ -8,7 +8,9 @@ import {PublicAuthShell} from '@/components/public-auth-shell';
 import {Flash} from '@/components/flash';
 import {getCurrentUser} from '@/lib/auth';
 import {localAuthInboxUrl} from '@/lib/auth-flow.js';
-import {MANAGED_SIGNUP_COOKIE,maskedProviderSignupEmail,readProviderSignupHandoff} from '@/lib/provider-signup.js';
+import {MANAGED_SIGNUP_COOKIE,managedProviderSignupEligible,maskedProviderSignupEmail,readProviderSignupHandoff} from '@/lib/provider-signup.js';
+import {getManagedCurrentUser} from '@/lib/identity/supabase';
+import {createSupabaseServerClient} from '@/lib/supabase/server';
 import {signupAudience} from '@/lib/signup-audience.js';
 import {signupBenefits} from '@/lib/platform-copy.js';
 
@@ -17,7 +19,17 @@ export default async function SignupPage({searchParams}:{searchParams:Promise<Re
  if(user?.active)redirect('/');
  const query=await searchParams,audience=signupAudience(query.audience)==='BUSINESS'?'BUSINESS':'PROVIDER';
  const handoff=readProviderSignupHandoff((await cookies()).get(MANAGED_SIGNUP_COOKIE)?.value||'');
- const codeStep=query.step==='code'&&Boolean(handoff?.email),verified=Boolean(user&&!user.active);
+ const codeStep=query.step==='code'&&Boolean(handoff?.email);
+ let verified=false;
+ if(handoff?.email){
+  try{
+   const client=await createSupabaseServerClient();
+   const {data,error}=await client.auth.getUser();
+   const identity=!error&&data.user?await getManagedCurrentUser(client,data.user):null;
+   if(identity&&data.user&&!identity.active&&data.user.email?.trim().toLowerCase()===handoff.email)
+    verified=await managedProviderSignupEligible(data.user.id);
+  }catch{verified=false;}
+ }
  const localInbox=localAuthInboxUrl();
  return <><PublicHeader/><PublicAuthShell variant="signup" taskKicker="New account" title={verified?'Choose your account':'Create an account'}
   description={verified?'Your email is verified. Choose how you will use Loadgistic.':codeStep?<Text message="We sent a six-digit code to {email}." values={{email:maskedProviderSignupEmail(handoff?.email||'')}}/>:'Choose your account type, then verify your email.'}

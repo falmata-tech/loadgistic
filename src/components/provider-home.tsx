@@ -56,5 +56,5 @@ async function publicMarket(input:SearchParams,ownSignalIds:string[]){
  const mapQuery=Object.fromEntries(Object.entries({...raw,...visibleSelections,q:''})
   .filter(([key,value])=>key!=='view'&&typeof value==='string')) as Record<string,string>;
  const initial=filterError?{items:[],hasMore:false,nextCursor:null,pageSize:14,filterError}:await listPublicCapacityCursor(mapQuery,{pageSize:14});
- return <section className={`public-market-workspace ${styles.market}`} aria-label="Public capacity market"><div className="home-market-shell public-market-console"><div className="public-capacity-body"><PublicCapacityFeed initial={initial} query={mapQuery} searchPath="/app/home/market" ownSignalIds={ownSignalIds}/></div></div></section>;
+ return <section className={`public-market-workspace ${styles.market}`} aria-label="Public capacity market"><div className="home-market-shell public-market-console"><div className="public-capacity-body"><PublicCapacityFeed initial={initial} query={{...mapQuery,q:raw.q||''}} searchPath="/app/home/market" ownSignalIds={ownSignalIds}/></div></div></section>;
 }

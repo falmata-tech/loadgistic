@@ -47,7 +47,7 @@ export function PublicCapacityFeed(props:FeedProps){
   const [resetVersion,setResetVersion]=React.useState(0);
   const [drawerOpen,setDrawerOpen]=React.useState(false);
   const [searchTerm,setSearchTerm]=React.useState(props.query.q||'');
-  const [submittedSearch,setSubmittedSearch]=React.useState(null as string|null);
+  const [submittedSearch,setSubmittedSearch]=React.useState(transporterSearchQuery(props.query.q||'')||null);
   const [searchVersion,setSearchVersion]=React.useState(0);
   const [composing,setComposing]=React.useState(false);
   const composition=React.useRef(false),searchInput=React.useRef(null as HTMLInputElement|null),searchTimer=React.useRef(null as ReturnType<typeof setTimeout>|null);

@@ -41,39 +41,20 @@ function recordAdminNavigation(page:Page,baseURL:string|undefined){
   };
 }
 
-test('administrator More navigation reaches one role-complete menu',async({page,baseURL}:{page:any;baseURL?:string},info:any)=>{
-  const timing=recordAdminNavigation(page,baseURL);
-  try{
+test('administrator reaches management from the shared site navigation',async({page}:{page:any})=>{
   await loginAsAdministrator(page);
   const mobile=(page.viewportSize()?.width||0)<=760;
-  const primaryNav=page.getByRole('navigation',{name:mobile?'Mobile navigation':'Workspace navigation'});
-  const primaryMore=primaryNav.getByRole('link',{name:'More',exact:true});
-  await expect(primaryMore).toBeVisible();
-  await expect(primaryMore).toHaveAttribute('href','/app/menu');
-
-  if(!mobile){
-    const topbarMore=page.locator('.app-topbar').getByRole('link',{name:'More',exact:true});
-    await expect(topbarMore).toBeVisible();
-    await expect(topbarMore).toHaveAttribute('href','/app/menu');
-  }
-
-  timing.task('OPEN_MORE','MENU');
-  await Promise.all([
-    page.waitForURL(/\/app\/menu$/,{waitUntil:'domcontentloaded'}),
-    primaryMore.click()
-  ]);
-  await expect(page).toHaveURL(/\/app\/menu$/);
-  const menu=page.locator('.workspace-menu-page');
-  await expect(menu).toBeVisible({timeout:20000});
-  for(const name of ['Management','Account','Marketplace'])await expect(menu.getByRole('heading',{name,exact:true})).toBeVisible();
-  await expect(menu.getByRole('link',{name:/^Administration overview/})).toHaveAttribute('href','/admin');
-  await expect(menu.getByRole('link',{name:/^Accounts\b/})).toHaveAttribute('href','/admin/operations');
-  await expect(menu.getByRole('link',{name:/^Featured & sponsors/})).toHaveAttribute('href','/admin/featured');
-  await expect(menu.getByRole('link',{name:/^Support/})).toHaveAttribute('href','/admin/support');
-  await expect(menu.getByRole('link',{name:/^Account\b/})).toHaveAttribute('href','/app/more');
-  await expect(menu.getByRole('link',{name:/^Account\b/})).toHaveCount(1);
-  await expect(menu.getByRole('link',{name:/^Public featured programme/})).toHaveAttribute('href','/featured');
-  }finally{timing.save(info);}
+  const primary=page.getByRole('navigation',{name:mobile?'Mobile navigation':'Site navigation'});
+  await expect(primary.getByRole('link',{name:'Admin',exact:true})).toHaveAttribute('href','/admin');
+  const destinations=mobile?await (async()=>{
+    await primary.getByRole('button',{name:'More',exact:true}).click();
+    return page.getByRole('dialog',{name:'More navigation'});
+  })():primary;
+  for(const [name,href] of [['Accounts','/admin/operations'],['Featured settings','/admin/featured'],['Reviews','/admin/reviews'],['Support','/admin/support']])
+    await expect(destinations.getByRole('link',{name,exact:true})).toHaveAttribute('href',href);
+  await destinations.getByRole('link',{name:'Accounts',exact:true}).click();
+  await expect(page).toHaveURL(/\/admin\/operations(?:\?.*)?$/,{timeout:30000});
+  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
 });
 
 test('featured management previews its canonical public programme',async({page}:{page:any})=>{
@@ -112,9 +93,13 @@ test('administrator Overview exposes every core record and management area',asyn
     await expect(overview.getByRole('link',{name:new RegExp(`^${label}`)})).toHaveAttribute('href',path);
   await expect(overview.getByRole('link',{name:/^Open inbox/})).toHaveAttribute('href','/admin/support');
   await expect(overview.getByRole('link',{name:/^Private capacity/})).toHaveCount(0);
-  const navigation=page.getByRole('navigation',{name:(page.viewportSize()?.width||0)<=760?'Mobile navigation':'Workspace navigation'});
-  await expect(navigation.getByRole('link',{name:'Overview',exact:true})).toHaveClass(/active/);
-  await expect(navigation.getByRole('link',{name:'Accounts',exact:true})).toHaveAttribute('href','/admin/operations');
+  const mobile=(page.viewportSize()?.width||0)<=760;
+  const navigation=page.getByRole('navigation',{name:mobile?'Mobile navigation':'Site navigation'});
+  await expect(navigation.getByRole('link',{name:'Admin',exact:true})).toHaveClass(/active/);
+  if(mobile){
+    await navigation.getByRole('button',{name:'More',exact:true}).click();
+    await expect(page.getByRole('dialog',{name:'More navigation'}).getByRole('link',{name:'Accounts',exact:true})).toHaveAttribute('href','/admin/operations');
+  }else await expect(navigation.getByRole('link',{name:'Accounts',exact:true})).toHaveAttribute('href','/admin/operations');
 });
 
 test('every current Operations inventory opens a real bounded record detail',async({page,baseURL}:{page:any;baseURL?:string},info:any)=>{

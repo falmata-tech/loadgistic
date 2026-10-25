@@ -1,6 +1,8 @@
-import {auditDeleteVehicles,auditIdentity,auditLogin,auditProvider,checked,localAuditService} from './audit-helpers';
+import {auditDeleteVehicles,auditIdentity,auditLogin,auditProvider,auditFleetDriver,auditFleetProvider,checked,localAuditService} from './audit-helpers';
 import {expect,test} from './browser-test';
 import {randomUUID} from 'node:crypto';
+import {localSupportLogin} from './provider-support-helper';
+import {createProviderVehicle} from '../../src/lib/fleet.js';
 
 async function login(page:any,role='admin'){
   await auditLogin(page,`${role}@loadgistic.local`);
@@ -79,22 +81,44 @@ test('admin vehicle save and denied account action return to their searched inve
 
 test('provider home displays authoritative counts and latest activity',async({page}:{page:any},info:any)=>{
   const client=localAuditService();
-  const owner=await auditIdentity(client,'transporter@loadgistic.local');
-  const projection=await client.rpc('workspace_dashboard',{actor_user_id:owner.id});expect(projection.error).toBeNull();
-  const capacity=checked(await client.rpc('provider_capacity_workspace',{actor_user_id:owner.id}));
-  const driverPage=checked(await client.rpc('fleet_driver_page',{actor_user_id:owner.id,requested_offset:0,requested_limit:1}));
-  const driverTotal=Number(driverPage[0]?.total_count||0);
-  await login(page,'transporter');
-  // Approved owner Home is Fleet (home/page.tsx and provider-fleet-workspace.tsx).
-  // Its navigation shows all active vehicles and the full driver total, not a page length.
-  await expect(page.getByRole('heading',{name:'My Fleet',exact:true})).toBeVisible();
-  const fleet=page.getByRole('navigation',{name:'My Fleet',exact:true});
-  await expect(fleet.getByRole('link',{name:/^Vehicles/}).locator('span')).toHaveText(String(capacity.vehicles.length));
-  await expect(fleet.getByRole('link',{name:/^Drivers/}).locator('span')).toHaveText(String(driverTotal));
-  await page.getByRole('link',{name:'Tracking',exact:true}).filter({visible:true}).first().click();
-  if(projection.data.recent.length){const recent=page.locator('a.tracking-row').filter({hasText:projection.data.recent[0].code});await expect(recent).toBeVisible();await expect(recent).toHaveAttribute('href',`/app/provider-shipments/${projection.data.recent[0].id}`);}
-  else await expect(page.getByText('No Tracking sessions yet.',{exact:true})).toBeVisible();
-  await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
+  const owner=await auditFleetProvider(client,'home-count');let vehicleId='';let driverId='';
+  try{
+   vehicleId=(await createProviderVehicle(owner,{useBasis:'OWNED',make:'Audit',model:'Fleet count',plate:`HOME-${owner.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+   driverId=(await auditFleetDriver(client,owner,vehicleId)).id;
+   const projection=await client.rpc('workspace_dashboard',{actor_user_id:owner.id});expect(projection.error).toBeNull();
+   const capacity=checked(await client.rpc('provider_capacity_workspace',{actor_user_id:owner.id}));
+   const driverPage=checked(await client.rpc('fleet_driver_page',{actor_user_id:owner.id,requested_offset:0,requested_limit:1}));
+   const driverTotal=Number(driverPage[0]?.total_count||0);
+   expect(capacity.vehicles.length).toBe(1);expect(driverTotal).toBe(1);
+   await localSupportLogin(page,owner.id);await page.goto('/app/home/vehicles',{waitUntil:'domcontentloaded'});
+   await expect(page.getByRole('navigation',{name:'Home views',exact:true})).toBeVisible();
+   const fleet=page.getByRole('navigation',{name:'Manage vehicles',exact:true});
+   await expect(fleet.getByRole('link',{name:/^Vehicles/}).locator('span')).toHaveText(String(capacity.vehicles.length));
+   await expect(fleet.getByRole('link',{name:/^Drivers/}).locator('span')).toHaveText(String(driverTotal));
+   await page.getByRole('link',{name:'Tracking',exact:true}).filter({visible:true}).first().click();
+   if(projection.data.recent.length){const recent=page.locator('a.tracking-row').filter({hasText:projection.data.recent[0].code});await expect(recent).toBeVisible();await expect(recent).toHaveAttribute('href',`/app/provider-shipments/${projection.data.recent[0].id}`);}
+   else await expect(page.getByText('No Tracking sessions yet.',{exact:true})).toBeVisible();
+   await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
+  }finally{
+   if(vehicleId){
+    checked(await client.from('capacities').delete().eq('vehicle_id',vehicleId));
+    checked(await client.from('telematics_location_sources').delete().eq('vehicle_id',vehicleId));
+    checked(await client.from('driver_vehicle_assignments').delete().eq('vehicle_id',vehicleId));
+   }
+   if(driverId){
+    checked(await client.from('drivers').delete().eq('user_id',driverId));
+    checked(await client.from('organization_members').delete().eq('user_id',driverId).eq('organization_id',owner.organization_id));
+    checked(await client.from('audit_logs').delete().eq('actor_user_id',driverId));
+    checked(await client.auth.admin.deleteUser(driverId));
+   }
+   if(vehicleId)checked(await auditDeleteVehicles(client,'id',vehicleId));
+   checked(await client.from('company_pages').delete().eq('organization_id',owner.organization_id));
+   checked(await client.from('organization_members').delete().eq('organization_id',owner.organization_id));
+   checked(await client.from('audit_logs').delete().eq('organization_id',owner.organization_id));
+   checked(await client.from('audit_logs').delete().eq('actor_user_id',owner.id));
+   checked(await client.from('organizations').delete().eq('id',owner.organization_id));
+   checked(await client.auth.admin.deleteUser(owner.id));
+  }
 });
 
 test('admin stale pagination recovers and regular service areas remain areas',async({page}:{page:any},info:any)=>{

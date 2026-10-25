@@ -27,7 +27,7 @@ test('capture focused public application shell review',async({page}:{page:any})=
   await page.getByRole('button',{name:'Vehicle filters',exact:true}).click({trial:true});
   await page.screenshot({path:path.join(output,`${project}-market.png`),fullPage:false});
 
-  const navigation=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Public workspace navigation'}):page.getByRole('navigation',{name:'Public mobile navigation'});
+  const navigation=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Site navigation'}):page.getByRole('navigation',{name:'Mobile navigation'});
   await navigation.getByRole('link',{name:'Featured',exact:true}).click();
   await expect(page).toHaveURL(/\/featured$/);
   await expect(page.locator('.featured-board-surface')).toBeVisible();

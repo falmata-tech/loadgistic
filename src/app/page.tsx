@@ -60,7 +60,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
       </Localized>:null}
     </header>
     <div className="capacity-view-body">
-      <Localized as="section" copy={["aria-label"]} id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body"><PublicCapacityFeed key={scope} initial={initial} query={mapQuery} apiPath={apiPath} searchApiPath={searchApiPath}/></div></Localized>
+      <Localized as="section" copy={["aria-label"]} id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body"><PublicCapacityFeed key={scope} initial={initial} query={{...mapQuery,q:query.q}} apiPath={apiPath} searchApiPath={searchApiPath}/></div></Localized>
     </div>
   </main></>;
 }

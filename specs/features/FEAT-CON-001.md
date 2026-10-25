@@ -87,6 +87,9 @@ And Sign up is a separate entry that explains and selects Transport Provider or
 Shipper / broker before email verification
 And an email new to Loadgistic reaches the account-type choice after its code
 has been verified, without disclosing account existence before verification
+And that choice accepts only the matching verified session, signed signup
+handoff and still-eligible inactive identity; an unverified or suspended
+identity cannot use it to gain workspace authority
 And an active signed-in account returns to public Capacity unless it was opening
 an intentional protected destination.
 
@@ -147,6 +150,8 @@ And a signed-in shipper/broker keeps Capacity as a navigation destination; its
 map switch selects public or Shared with you without a second navigation item
 And Capacity appears before Network on desktop and phone, with Featured as its
 own marketplace destination
+And the phone More menu opens on its first enabled tap after page load and
+keeps authorized destinations available until dismissed or navigation occurs
 And the signed-in shipper/broker's Tracking destination opens the list of
 shipments that workspace members may access, with role-authorized details and
 actions after selecting a shipment; it does not ask for an email to find them
