@@ -197,12 +197,28 @@ test('public entry makes capacity immediately usable without an account',async({
     await expect(providerDialog).toBeHidden();
     await expect(page.locator('.public-capacity-map')).toBeVisible();
     await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
-    const truckMarker=page.locator('.capacity-truck-map-marker:visible').first();
+    await expect(page.getByText('Loading vehicles in this map area…',{exact:true})).toHaveCount(0,{timeout:20_000});
+    const inMapTarget=async(selector:string)=>page.locator(selector+':visible').evaluateAll((elements:any[],className:string)=>{
+      const map=document.querySelector('.leaflet-container')?.getBoundingClientRect();
+      if(!map)return -1;
+      return elements.findIndex(element=>{
+        const bounds=element.getBoundingClientRect(),x=(bounds.left+bounds.right)/2,y=(bounds.top+bounds.bottom)/2;
+        return bounds.width>0&&bounds.height>0&&x>map.left+12&&x<map.right-12&&y>map.top+12&&y<map.bottom-12&&document.elementFromPoint(x,y)?.closest(className)===element;
+      });
+    },selector);
     let selectedFromCluster=false;
-    for(let attempt=0;attempt<8&&!await truckMarker.count();attempt+=1){
-      const cluster=page.locator('.capacity-map-cluster:visible').first();
-      if(!await cluster.count())break;
-      await cluster.click();
+    for(let attempt=0;attempt<8;attempt+=1){
+      await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+      if(await inMapTarget('.capacity-truck-map-marker')>=0)break;
+      const clusterIndex=await inMapTarget('.capacity-map-cluster');
+      if(clusterIndex<0){
+        const zoom=page.locator('.leaflet-control-zoom-in');
+        if((await zoom.getAttribute('class'))?.includes('leaflet-disabled'))break;
+        await zoom.click();
+        await page.waitForTimeout(180);
+        continue;
+      }
+      await page.locator('.capacity-map-cluster:visible').nth(clusterIndex).click();
       await page.waitForTimeout(180);
       const picker=page.locator('.capacity-cluster-picker:visible');
       if(await picker.count()){
@@ -211,8 +227,12 @@ test('public entry makes capacity immediately usable without an account',async({
         break;
       }
     }
-    await expect(truckMarker).toBeVisible();
-    if(!selectedFromCluster)await truckMarker.click();
+    if(selectedFromCluster)await expect(page.locator('.capacity-truck-map-marker.selected')).toBeVisible();
+    else{
+      const markerIndex=await inMapTarget('.capacity-truck-map-marker');
+      expect(markerIndex,'A filtered vehicle marker must be reachable in the map viewport').toBeGreaterThanOrEqual(0);
+      await page.locator('.capacity-truck-map-marker:visible').nth(markerIndex).click();
+    }
     await page.locator('.map-info-bubble.truck').click();
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   }else{
