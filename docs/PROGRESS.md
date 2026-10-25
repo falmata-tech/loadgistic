@@ -63,6 +63,16 @@ Current findings and evidence (October25):
   system ANRs/hung QEMU and test-driver installation stalls prevented reliable
   installed role qualification. Emulator is stopped during heavy gates. These
   are infrastructure limits, not proof that final native workflows pass.
+- The final APK subsequently installed and cold-started on the dedicated API35
+  x86-64 emulator. Actual native private-sign-in/signup context, Featured
+  board/detail/Android Back, a live demo Preferred corridor, and the applied
+  Partial filter with gray map results pass. Synthetic fleet-owner sign-in and
+  its Vehicles/Drivers/GPS Home tabs pass after the test account's policy step.
+  Bulk ADB typing dropped characters; paced input with verified field lengths
+  resolved that harness failure without changing Auth. Driver editing, fleet
+  saves, broker/staff, native location/background work and native sign-out are
+  still unverified on this final artifact. Protected `final/native-review.json`
+  records these limits; Play upload remains unqualified.
 - Candidate `0d9ce6f` is on PR24. Its first CI run `40213634873` failed: stale
   Routes/preference-area labels and signup defaults, a Featured detail locator
   also matching a sponsor link, a first-page corridor-fixture assumption, and an
@@ -71,6 +81,15 @@ Current findings and evidence (October25):
   corridor1, role accessibility14, admin/area4, native signup/Featured2; the
   browser-gate inventory passes25. One CI Axe-analysis exception did not reproduce
   in those14 local role checks; its cause remains unconfirmed and checks remain.
+- Follow-up `a0d5fa1` CI run `40217827876` passed validation, mobile, container,
+  all three Featured jobs and seven browser shards. Shard2 failed Support
+  navigation, map API fixture setup and fleet-onboarding cleanup; aggregate gates
+  therefore failed. The Support case still expected an owner-only vehicle page
+  for fleet drivers. The role-specific expectation and bounded API/cleanup
+  diagnostics pass all four focused local Chrome cases once in236.5 seconds,
+  including both OWNED/PERMISSION signup cases and completed fixture cleanup.
+  The initial API and Auth-cleanup failures did not reproduce; their CI causes
+  remain unconfirmed. Do not merge or publish from this failed CI receipt.
 - The final local1.2.0/code10 APK and AAB are built from `0d9ce6f`, with ARM64 and
   x86-64 runtime libraries. Archive, signature, bundle, required/forbidden
   permission and all50 native-library16KB structural checks pass. Both contain

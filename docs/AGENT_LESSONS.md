@@ -194,3 +194,12 @@ status assertions to the active task: sponsor links, reconnect notices and map
 details can legitimately repeat the same label. These are test-harness failures,
 not evidence that the product flow failed; retain partial workflow evidence and
 verify exact synthetic cleanup before retrying.
+
+For installed Android tests, a successful ADB `input text` command does not prove
+the app received every character on a busy emulator. Verify the complete email
+and masked password length before submission; keep secrets out of exceptions and
+screenshots intended for sharing. October25 bulk input lost characters, while
+paced input and the inspected form button passed with unchanged credentials and
+Auth code. Read the installed `input` usage before changing flags. Unsupported
+test deep links must be compared with `normalizeNativeLink` before diagnosing an
+app defect; Capacity's canonical native path is `/`, not `/capacity`.

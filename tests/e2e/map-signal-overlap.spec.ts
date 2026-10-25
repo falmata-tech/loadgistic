@@ -6,9 +6,14 @@ import {randomUUID} from 'node:crypto';
 // its viewport response gets coincident geometry. No stored geography is changed.
 test('coincident closed areas and routes remain separately tappable through zoom',async({page}:{page:any},info:any)=>{
   test.setTimeout(90000);
-  const data=await (await page.request.get('/api/public/capacity')).json();
-  const original=data.items.find((item:{location_lat:number|null;location_lng:number|null})=>item.location_lat!=null&&item.location_lng!=null);
-  expect(original).toBeTruthy();
+  const initial=await page.request.get('/api/public/capacity');
+  expect(initial.status(),'PUBLIC_CAPACITY_INITIAL_HTTP_STATUS').toBe(200);
+  expect(initial.headers()['content-type']||'','PUBLIC_CAPACITY_INITIAL_CONTENT_TYPE').toContain('application/json');
+  const data=await initial.json();
+  expect(Array.isArray(data?.items),'PUBLIC_CAPACITY_INITIAL_ITEMS_ARRAY').toBe(true);
+  const located=data.items.filter((item:{location_lat:number|null;location_lng:number|null})=>item.location_lat!=null&&item.location_lng!=null);
+  expect(located.length,`PUBLIC_CAPACITY_LOCATED_ITEMS of ${data.items.length}`).toBeGreaterThan(0);
+  const original=located[0];
   const lat=Number(original.location_lat),lng=Number(original.location_lng);
   const points=Array.from({length:5},(_,i)=>({lat:lat+Math.sin(i*Math.PI*2/5)*.17,lng:lng+Math.cos(i*Math.PI*2/5)*.17,label:`Test boundary ${i+1}`,place_ref:`test-${i}`}));
   const rendererId=randomUUID();let routeMode=false;
