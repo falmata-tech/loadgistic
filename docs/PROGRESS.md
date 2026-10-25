@@ -6,136 +6,91 @@ checkpoints remain in Git and the [October 23](PROGRESS_HISTORY_20261023.md)
 and [October 20](PROGRESS_HISTORY_20261020.md) histories; this page records the
 current delivery state.
 
-## Current task — Android cross-platform qualification
+## Current task — Android parity and matching web release
 
-The owner authorizes emulator testing and Closed Alpha upload only after the
-app passes, including screen-by-screen web/native clarity, feature and translation
-parity for customer roles. The latest instruction prioritizes a fixed local build
-and permits unfinished Play setup to remain separate. Platform staff/Admin stay
-web-only. Play submission is not complete. Ordered work:
+The owner prioritizes a fixed local Android build and the matching live web
+changes. Closed Alpha upload is permitted only after qualification; an unfinished
+Play setup may remain separate. No public Play launch. Platform staff/Admin stay
+web-only. The agent reviews changed screens without another visual-approval
+question. Use only Loadgistic; preserve `next-env.d.ts` and mobile `.claude` edits.
 
-1. Correct the packaging qualification: the original code-10 APK contained only
-   ARM64 libraries and crashed on the x86-64 emulator. The earlier “universal”
-   description was wrong; preserve its hash and inspect actual library members.
-2. Fix the observed public-vehicle map handoff, obsolete email Capacity copy,
-   internal Privacy navigation, labels/icons and accessibility translations;
-   preserve permissions and verify the selected signup type.
-3. Address the owner's final inspection findings: explain private-Capacity sign-in
-   on mobile, preserve its signup/return context, use Preferred corridor wording,
-   and verify actual demo corridor geometry on web and mobile. Deploy matching web
-   changes after qualification; no further visual approval is requested.
-4. Exercise installed Android visitor/provider/driver and available shipper/broker
-   journeys, inspect phone layouts and compare web outcomes. Record gaps and native
-   capability limits before declaring parity.
-5. Run focused checks and the required source gates once for the resulting source;
-   package and verify the matching APK/AAB and existing upload certificate.
-6. Upload only that qualified bundle to the existing Closed Alpha track, then read
-   back version, review state and tester availability. No public Play rollout.
+Ordered checkpoint:
 
-Current findings and evidence (October25):
+1. Implemented/tested: web-like native Featured board/detail, private-Capacity
+   sign-in explanation and retained shipper/broker signup/return context,
+   Preferred corridor wording, public vehicle map links, Android Back and
+   translated loading/action names. Related specs: FEAT-MOB/CAP/GEO/LST/UIX-001.
+2. Applied/verified: finite demo-only correction restored20 public corridor
+   assignments. Only vehicle/driver assignment columns changed; ledger208 and
+   all30 other columns stayed unchanged. Backup, rehearsal, rollback and exact
+   DB/API readback: `.local/corridor-demo-20261025/`.
+3. Built/installed/tested: Android1.2.0/code10, ARM64/x86-64 (not32-bit ARM),
+   debug-signed, built fromebc6df9 and input-equivalent to1bea439. Exact files and
+   source-preserving receipts: `.local/play-code10-20261025/final-parity/`.
+   Native driver Capacity save matches database visibility/load/route values;
+   sign-out revokes the synthetic server session1→0. Manual Location draft/
+   cancel, private signup choice, Featured detail and Android Back pass. Earlier
+   unchanged-screen receipts separately cover corridor/Partial, fleet GPS/Support
+   and Account edit/cancel; they retain their original source and hash.
+4. Current: finish the web-only keyboard-loading repair and bounded authenticated
+   Axe diagnostics, then quality, exact-source web packaging and PR24 CI. Both
+   map-action rails now receive visible keyboard focus even when their buttons
+   are disabled. The real server-rendered regression passes desktop1280 and
+   phones390/320; all14 provider role/route Chrome Axe cases pass after the fix
+   in6.1m. Focus screenshots were reviewed at all three widths. The first broad
+   gate on pinned Node22.16 hit15 TypeScript-loader failures before those tests
+   ran (1115 pass/one skip). A10-case probe with its supported type-stripping
+   flag passed; the root test command now enables that mode explicitly while
+   preserving two workers and every test. The complete corrected gate passes
+   1197/1198 tests (one existing intentional skip), source/spec/workflow checks
+   and typecheck in213s. Next: freeze this repair, build its web artifact and
+   run exact-head remote CI.
+   New immutable web package: `.local/release-20261025-focus/`. Review native
+   input equivalence to the resulting head before reusing the tested APK/AAB.
+5. Pending: merge only after exact-head PR gates pass; verify independent
+   merged-main CI, fresh site/ledger/advisors, immutable artifact and recovery
+   evidence; publish once and verify actual production UI/API/private-file flows.
+   The old0d9 web package/draft cannot certify this new web focus repair.
+6. Pending/separate: installed broker/staff journeys, fleet saves and physical
+   phone/background location are unqualified. Ask before a new owner-phone
+   session. Play signing/upload remains unqualified; local build delivery is not
+   blocked on Console work.
 
-- `cf3d755` CI40224817354 passed13 jobs but timed out in one mobile Tracking
-  smoke; the two aggregate gates consequently failed. The raw job report had
-  no failing step. The isolated Chrome journey passes locally in54 seconds,
-  including all three email sign-ins, sharing, viewer denial and cleanup;
-  the CI cause remains unconfirmed. Seven literal test stages and an explicit
-  stage-enum reporter allowlist now preserve bounded future diagnosis without
-  exposing raw reports or increasing the180-second timeout. Driver Home's two
-  remaining generic labels now match web Capacity/Location. The full root gate
-  passes1194 of1195 tests (one existing intentional skip) and typecheck;
-  all342 native tests, native typecheck/lint/translations/export also pass.
-  Final replacement packaging/source CI remain open.
+Verification and failure boundaries:
 
-- Final installed review found Refresh and failed Sign in retaining the Android
-  accessibility name “busy” after loading. The installed React Native adapter
-  retains its prior description when no explicit action label is present. The
-  shared Button and Sign out now provide their translated action name. All341
-  native tests, typecheck, lint,791-message translation audit and Android export
-  pass; rebuilt installed-APK verification is in progress.
-  This native runtime change requires new Android bytes; the earlier APK is kept.
-
-- Live demo inspection found 30 unassigned legacy route preferences. A restored
-  hosted-data clone verified the exact 20 public-demo corridor repair and its
-  rollback. The agent reviewed and applied that finite correction under the
-  owner's instruction to fix demo data and self-review. Independent database and
-  public API checks confirm 20 visible corridors; only vehicle/driver assignment
-  columns changed, ledger208 unchanged. Protected review and receipts:
-  `.local/corridor-demo-20261025/owner-review.md` and `applied-receipt.json`.
-- Preferred corridor wording now distinguishes the saved preference from current
-  Capacity routes; radius preferences use Preferred service area. Web/Expo phone
-  route dialogs passed actual Chrome interactions and en/am/om inspection. The
-  optional radius browser branch did not run; deterministic radius tests remain.
-- Native Featured now follows the web's compact command strip and two-column
-  provider portrait board. Chrome/Expo320px detail/close/schedule and translated
-  Amharic/Oromo journeys pass. The long English profile journey hit local API
-  timeout; this is not recorded as a completed native installed task.
-- Private-Capacity authentication explains why sign-in is needed, retains the
-  business signup selection and destination, and passes actual Chrome320/390px
-  link/return checks. Shared native titles now expose heading semantics.
-- Root1192-test run:1190 passed, one existing skipped, one browser-skip inventory
-  failure. The reviewed inventory correction passes25 focused gate tests. Mobile
- 338-test run:337 passed, one native raw-text guard caught a Featured condition;
-  its boolean correction passes the7 focused guard/card cases. Do not relabel the
-  initial failed runs as green; current-source CI is still required. A subsequent complete root test run passes1192
-  of1193 (one existing intentional skip); final root typecheck passes after using
-  the existing typed browser-test adapter. All338 mobile tests now pass.
-- The dedicated x86-64 emulator launched the intermediate APK, but later Android
-  system ANRs/hung QEMU and test-driver installation stalls prevented reliable
-  installed role qualification. Emulator is stopped during heavy gates. These
-  are infrastructure limits, not proof that final native workflows pass.
-- The final APK subsequently installed and cold-started on the dedicated API35
-  x86-64 emulator. Actual native private-sign-in/signup context, Featured
-  board/detail/Android Back, a live demo Preferred corridor, and the applied
-  Partial filter with gray map results pass. Synthetic fleet-owner sign-in and
-  its Vehicles/Drivers/GPS Home tabs pass after the test account's policy step.
-  Bulk ADB typing dropped characters; paced input with verified field lengths
-  resolved that harness failure without changing Auth. Driver editing, fleet
-  saves, broker/staff, native location/background work and native sign-out are
-  still unverified on this final artifact. Protected `final/native-review.json`
-  records these limits; Play upload remains unqualified.
-- Candidate `0d9ce6f` is on PR24. Its first CI run `40213634873` failed: stale
-  Routes/preference-area labels and signup defaults, a Featured detail locator
-  also matching a sponsor link, a first-page corridor-fixture assumption, and an
-  opt-in browser test initializing Chrome before skipping. These assertions and
-  fixture handling are repaired together. Focused actual Chrome checks pass:
-  corridor1, role accessibility14, admin/area4, native signup/Featured2; the
-  browser-gate inventory passes25. One CI Axe-analysis exception did not reproduce
-  in those14 local role checks; its cause remains unconfirmed and checks remain.
-- Follow-up `a0d5fa1` CI run `40217827876` passed validation, mobile, container,
-  all three Featured jobs and seven browser shards. Shard2 failed Support
-  navigation, map API fixture setup and fleet-onboarding cleanup; aggregate gates
-  therefore failed. The Support case still expected an owner-only vehicle page
-  for fleet drivers. The role-specific expectation and bounded API/cleanup
-  diagnostics pass all four focused local Chrome cases once in236.5 seconds,
-  including both OWNED/PERMISSION signup cases and completed fixture cleanup.
-  The initial API and Auth-cleanup failures did not reproduce; their CI causes
-  remain unconfirmed. Do not merge or publish from this failed CI receipt.
-- `e2fdb3d` run `40221972550` stopped in the Featured SQL regression, before
-  browser jobs. The unchanged test forbade a next-day repeat even after a complete
-  round; this contradicts the owner's allowed later-cycle appearances. The
-  corrected test retains the saved turn/observation checks and proves eight
-  distinct accounts, exact old/new round allocation and full eligible-round
-  completion before reuse. Two independent source reviews and focused local
-  rollback runs pass; the preview counts are unchanged. FEAT-CON-001 clarifies
-  the existing rule, not a new cooldown. No production migration is needed.
-- The final local1.2.0/code10 APK and AAB are built from `0d9ce6f`, with ARM64 and
-  x86-64 runtime libraries. Archive, signature, bundle, required/forbidden
-  permission and all50 native-library16KB structural checks pass. Both contain
-  the same JavaScript payload. They use the debug certificate for local testing;
-  installed final-artifact qualification and Play signing/upload remain pending.
-  Exact files, hashes and limitations: `.local/play-code10-20261025/final/`.
-- The immutable Linux web package from `0d9ce6f` passed source/function inspection
-  and was uploaded as unpublished draft `6ade3c5478ea2d92b4f31c8e`. This has not
-  changed production. Test/document-only corrections may reuse its frozen bytes
-  only after executable-input equivalence and current terminal CI are verified.
-  A fresh hosted advisor read is waiting for macOS Keychain access; older advisor
-  evidence is not being relabeled as current.
-
-The English Play listing has been saved as an unsubmitted Console draft and
-reloaded successfully. Internal and Alpha still serve code7. Existing background
-location and reviewer sign-in declaration changes remain unsent. Protected current
-evidence is under `.local/play-code10-20261025/` and
-`.local/release-20261025-ae03/play-preparation-20261025.json`.
+- Complete focus-source root gate:1197 pass/one existing intentional skip,
+  source/spec/workflow and typecheck pass. All342 unchanged native tests, native types,
+  lint,791-message translations and Android export pass. The native runtime,
+  dependencies and assets are unchanged by the current web-only repair.
+- Actual Chrome/Expo en/am/om reviews cover Featured, Preferred corridor and
+  private entry/signup/return. Final Capacity/Location labels open and close at
+  390/320. No fluent-speaker review or physical background test is claimed.
+- CI40229087647 on1bea439 completed13 jobs successfully, with one underlying
+  mobile role-route Axe analysis rejection; e2e/release-ready aggregates failed.
+  CI did not expose a violation. Independent local review passed12/14, finding
+  a genuine disabled-rail keyboard defect and a transient Verification RPC
+  overlay before Axe. The latter RPC subsequently returned200; neither local
+  observation is a proven explanation for CI's analysis rejection.
+- Earlier failed runs remain evidence:40213634873 (stale labels/signup/locator/
+  fixture assumptions),40217827876 (Support role expectation and unconfirmed
+  API/cleanup failures),40221972550 (overstrict Featured cross-cycle assertion),
+  and40224817354 (Tracking smoke timeout, local replay54s, CI cause unknown).
+  Their accepted repairs preserve privacy, permissions, persistence, full-round
+  rotation and original timeouts. No failed run is relabeled green.
+- Native review preserved the original ARM64-only mislabel, an emulator graphics
+  boot failure/System UI ANR, and bulk-typing harness failures. The current APK
+  hash was verified after installation and cold-started in6015ms on owned API35
+  x86-64. This does not establish real-device performance. The emulator is signed
+  out and stopped; owned local Next3100 remains running for focused review.
+- The20:29UTC hosted API security read succeeded after Keychain unlock: zero
+  errors, exactly the same two accepted warnings, no retained credential or
+  hosted write. Refresh its real freshness window when ready to publish.
+- Old source0d9's unpublished draft6ade3c5478ea2d92b4f31c8e and protected
+  `.local/release-20261025-parity/` receipts remain immutable historical evidence.
+  The production site below is unchanged by this candidate.
+- Play Internal/Alpha still serve code7. The English listing has unsubmitted draft
+  changes; review declarations are not fully verified. No code10 upload. Current
+  evidence and limits: `.local/play-code10-20261025/` and PR24.
 
 ## Live delivery
 

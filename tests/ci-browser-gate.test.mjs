@@ -367,6 +367,62 @@ test('public accessibility failures expose only reviewed route and axe rule IDs'
  }
 });
 
+test('authenticated accessibility failures identify only fixed role, route, stage and axe rule IDs',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',results:[{status:'failed',duration:9345,steps:[
+  {title:'accessibility: primary axe',duration:1000},
+  {title:'accessibility: target size axe',duration:1100},
+  {title:'accessibility: assert results',duration:35,error:{message:'PRIVATE_STEP sentinel@example.test'}}
+ ],error:{
+  message:'self-managed Driver /app/home serious/critical accessibility violations:\nscrollable-region-focusable: Scrollable region must have keyboard access\n  PRIVATE_CONTACT@example.test — PRIVATE_TOKEN\ncolor-contrast: Elements must have sufficient color contrast\nPRIVATE_RULE: PRIVATE_SECRET',
+  stack:'Error\n    at source (/repo/tests/e2e/accessibility.spec.ts:69:7)'
+ }}]});
+ report.suites[0].specs[0].title='self-managed Driver /app/home has no serious accessibility violations';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,{
+  role:'SELF_MANAGED_DRIVER',route:'/app/home',stage:'ASSERT_RESULTS',errorType:'AXE_RULE_FAILURE',
+  rules:['color-contrast','scrollable-region-focusable'],durationMs:9345,stepDurationMs:35
+ });
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.at(-1),/^::error file=tests\/e2e\/accessibility.spec.ts,line=69::CI_BROWSER_AUTH_A11Y role=SELF_MANAGED_DRIVER route=\/app\/home stage=ASSERT_RESULTS error=AXE_RULE_FAILURE duration_ms=9345 step_ms=35 rules=color-contrast,scrollable-region-focusable\n$/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example\.test|TOKEN|SECRET|Scrollable region/);
+});
+
+test('authenticated Axe rejection reports a fixed error kind without asserting a violation',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',results:[{status:'failed',duration:122000,steps:[
+  {title:'accessibility: primary axe',duration:91000,error:{message:'page.evaluate: Execution context was destroyed; PRIVATE contact@example.test'}}
+ ],error:{message:'page.evaluate: Execution context was destroyed; PRIVATE_TOKEN',
+  stack:'Error\n    at source (/repo/tests/e2e/accessibility.spec.ts:58:7)'}}]});
+ report.suites[0].specs[0].title='fleet transporter /app/fleet has no serious accessibility violations';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,{
+  role:'FLEET_TRANSPORTER',route:'/app/fleet',stage:'PRIMARY_AXE',errorType:'CONTEXT_DESTROYED',
+  rules:[],durationMs:122000,stepDurationMs:91000
+ });
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.at(-1),/stage=PRIMARY_AXE error=CONTEXT_DESTROYED duration_ms=122000 step_ms=91000 rules=unknown/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example\.test|TOKEN|Execution context/);
+});
+
+test('authenticated accessibility diagnosis rejects unreviewed cases and private error fields',()=>{
+ const report=diagnosticReport({file:'accessibility.spec.ts',results:[{status:'failed',duration:'PRIVATE_DURATION',steps:[
+  {title:'accessibility: target size axe',duration:'PRIVATE_STEP_DURATION',error:{message:'PRIVATE_ERROR contact@example.test'}}
+ ],error:{message:'PRIVATE_ERROR contact@example.test',request:{body:'PRIVATE_BODY'},headers:{Authorization:'PRIVATE_TOKEN'}}}]});
+ const spec=report.suites[0].specs[0];
+ for(const title of ['self-managed Driver /app/fleet has no serious accessibility violations',
+  'fleet transporter /app/private has no serious accessibility violations','PRIVATE contact@example.test']){
+  spec.title=title;
+  assert.equal(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,undefined);
+ }
+ spec.title='fleet transporter /app/home has no serious accessibility violations';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,{
+  role:'FLEET_TRANSPORTER',route:'/app/home',stage:'TARGET_SIZE_AXE',errorType:'OTHER',
+  rules:[],durationMs:null,stepDurationMs:null
+ });
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.at(-1),/error=OTHER duration_ms=unknown step_ms=unknown rules=unknown/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example\.test|BODY|TOKEN/);
+ report.suites[0].specs[0].file='tests/e2e/smoke.spec.ts';
+ assert.equal(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,undefined);
+});
+
 test('case diagnostics are bounded per failed case without changing completed-report gate decisions',()=>{
  const report=diagnosticReport();
  const spec=report.suites[0].specs[0];

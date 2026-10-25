@@ -33,7 +33,7 @@
     "places:import": "node scripts/import-ethiopia-places-supabase.mjs",
     "places:import:supabase": "npm run places:import",
     "places:setup": "npm run places:download && npm run places:import",
-    "test": "node --test --test-concurrency=2 tests/*.test.mjs",
+    "test": "node --experimental-strip-types --test --test-concurrency=2 tests/*.test.mjs",
     "test:e2e": "node scripts/run-e2e.mjs",
     "test:e2e:critical": "node scripts/run-e2e.mjs --grep \"public entry|map clusters|visitor location|capacity summary|provider starts Tracking|provider edits business facts\"",
     "test:a11y": "node scripts/run-e2e.mjs tests/e2e/accessibility.spec.ts",

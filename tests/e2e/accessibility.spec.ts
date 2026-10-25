@@ -52,23 +52,25 @@ async function expectMinimumTarget(locator:any,label:string){
 
 async function expectAccessible(page: Page, label: string) {
   await waitForPage(page);
-  const result = await new AxeBuilder({ page })
+  const result = await test.step('accessibility: primary axe',()=>new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .disableRules(['target-size'])
-    .analyze();
-  const targetSizeResult = await new AxeBuilder({ page })
+    .analyze());
+  const targetSizeResult = await test.step('accessibility: target size axe',()=>new AxeBuilder({ page })
     .withRules(['target-size'])
     // Leaflet markers are large spatial controls, but may straddle the current
     // viewport or overlap while a cluster separates during zoom. Their own
     // marker and cluster treatments retain large pointer targets.
     .exclude('.leaflet-marker-pane')
-    .analyze();
-  const blocking = [...result.violations, ...targetSizeResult.violations].filter(violation =>
-    violation.impact === 'serious' || violation.impact === 'critical'
-  );
-  expect(blocking, `${label} serious/critical accessibility violations:\n${blocking.map(violation =>
-    `${violation.id}: ${violation.help}\n${violation.nodes.map(node => `  ${node.target.join(' ')} — ${node.failureSummary}`).join('\n')}`
-  ).join('\n')}`).toEqual([]);
+    .analyze());
+  await test.step('accessibility: assert results',()=>{
+    const blocking = [...result.violations, ...targetSizeResult.violations].filter(violation =>
+      violation.impact === 'serious' || violation.impact === 'critical'
+    );
+    expect(blocking, `${label} serious/critical accessibility violations:\n${blocking.map(violation =>
+      `${violation.id}: ${violation.help}\n${violation.nodes.map(node => `  ${node.target.join(' ')} — ${node.failureSummary}`).join('\n')}`
+    ).join('\n')}`).toEqual([]);
+  });
 }
 
 for(const route of ['/', '/shared-capacity', '/featured', '/about', '/privacy', '/terms', '/track', '/login', '/apply', '/@blueline-transport']){
@@ -144,6 +146,63 @@ for (const [role, email, routes] of [
     });
   }
 }
+
+test.describe('server-rendered Capacity actions before hydration',()=>{
+  test('disabled action rail stays keyboard reachable and visibly focused',async({page},testInfo)=>{
+    // Keep the real server-rendered disabled state while Axe runs in the page.
+    // Blocking only app bundles leaves Axe's own injected script available.
+    await page.route('**/_next/static/**',route=>
+      new URL(route.request().url()).pathname.endsWith('.js')?route.abort():route.continue());
+    const viewports=testInfo.project.name==='mobile-chromium'
+      ?[{width:390,height:720},{width:320,height:720}]
+      :[{width:1280,height:800}];
+    await page.setViewportSize(viewports[0]);
+    await login(page,'driver@loadgistic.local','/app/home');
+    for(const [index,viewport] of viewports.entries()){
+      await test.step(`disabled rail ${viewport.width}px`,async()=>{
+        if(index){
+          await page.setViewportSize(viewport);
+          await page.reload({waitUntil:'domcontentloaded'});
+        }
+        const rail=page.getByRole('navigation',{name:'Edit capacity signals'});
+        await expect(rail).toBeVisible();
+        const actions=rail.getByRole('button');
+        await expect(actions).toHaveCount(4);
+        for(const action of await actions.all())await expect(action).toBeDisabled();
+
+        let reachedByTab=false;
+        for(let tab=0;tab<60;tab++){
+          await page.keyboard.press('Tab');
+          if(await rail.evaluate(element=>element===document.activeElement)){
+            reachedByTab=true;
+            break;
+          }
+        }
+        expect(reachedByTab,'Tab never reached the scrollable Capacity action rail').toBe(true);
+        await expect(rail).toBeFocused();
+        const focus=await rail.evaluate(element=>{
+          const style=getComputedStyle(element);
+          return {visible:element.matches(':focus-visible'),style:style.outlineStyle,width:parseFloat(style.outlineWidth)};
+        });
+        expect(focus.visible,'keyboard focus has no focus-visible state').toBe(true);
+        expect(focus.style,'keyboard focus has no visible outline').not.toBe('none');
+        expect(focus.width,'keyboard focus outline is too thin').toBeGreaterThanOrEqual(2);
+
+        const scan=await new AxeBuilder({page}).withRules(['scrollable-region-focusable']).analyze();
+        expect(scan.violations.map(violation=>({id:violation.id,targets:violation.nodes.map(node=>node.target)})))
+          .toEqual([]);
+
+        const dimensions=await rail.evaluate(element=>({client:element.clientHeight,scroll:element.scrollHeight}));
+        if(dimensions.scroll>dimensions.client+1){
+          await page.keyboard.press('Home');
+          await expect.poll(()=>rail.evaluate(element=>element.scrollTop)).toBe(0);
+          await page.keyboard.press('End');
+          await expect.poll(()=>rail.evaluate(element=>element.scrollTop)).toBeGreaterThan(0);
+        }
+      });
+    }
+  });
+});
 
 test('administration and support workspaces have no serious accessibility violations', async ({ page }: { page: Page }) => {
   await login(page, 'admin@loadgistic.local', '/admin');

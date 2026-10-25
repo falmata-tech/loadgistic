@@ -9,6 +9,16 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- FEAT-UIX-001 / BASE-DEP-001: the October25 Driver action-rail repair keeps
+  its labeled scroll region keyboard reachable before hydration and during
+  disabled updates. The real server-rendered regression and role/route audits
+  are in [`accessibility.spec.ts`](../tests/e2e/accessibility.spec.ts); bounded
+  analysis diagnostics are covered by
+  [`ci-browser-gate.test.mjs`](../tests/ci-browser-gate.test.mjs). Focused Chrome
+  review, complete gates and publication status are tracked in
+  [current progress](../docs/PROGRESS.md); CI40229087647's original failure is
+  preserved and is not relabeled as an Axe violation or a passing run.
+
 - FEAT-SEC-001 / NR-66: proposed181 pins the private authority helper's lookup
   scope, preserves discovery through an owner-only security-invoker view and
   reuses existing scoped query caches. Nine focused SQL suites and14 injected

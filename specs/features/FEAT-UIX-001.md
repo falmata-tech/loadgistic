@@ -539,6 +539,20 @@ And failed saves stay in that modal with the entered values and a readable error
 And no Tracking list, Tracking action panel, or Start Tracking prompt is embedded in Home\
 And the fixed Tracking navigation destination remains directly available.
 
+### Scenario: Capacity map actions remain keyboard reachable while loading
+
+Given the Driver's Capacity action rail overflows its available height\
+And its actions are disabled during initial hydration or an update\
+When the user reaches the labeled action rail with the keyboard\
+Then the rail itself receives visible focus and supports keyboard scrolling\
+And disabled actions remain disabled until their existing readiness conditions pass\
+And ordinary Capacity and fleet-managed duty/location rails use the same focus treatment\
+And touch targets, map geometry, labels and editing permissions remain unchanged.
+
+Verification: the server-rendered disabled-action state and the hydrated
+role/route audits in `tests/e2e/accessibility.spec.ts`; actual Chrome phone and
+desktop focus/scroll review. Qualification is recorded in current progress.
+
 ### Scenario: authenticated phone pages keep their task above the fold
 
 Given an authenticated member opens Capacity management, Account, More, Support, Fleet, or Tracking on a supported phone\

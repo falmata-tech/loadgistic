@@ -15,6 +15,17 @@ const projects=new Set(['desktop-chromium','mobile-chromium']);
 const resultCategories=new Map([['failed','FAILED'],['timedOut','TIMED_OUT'],['interrupted','INTERRUPTED'],['passed','UNEXPECTED_PASS']]);
 const knownAxeRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const publicA11yRoutes=new Set(['/','/shared-capacity','/featured','/about','/privacy','/terms','/track','/login','/apply','/@blueline-transport']);
+const authenticatedA11yCases=new Map([
+ ...['/app/home','/app/fleet','/app/provider-shipments','/app/company-page','/app/verification','/app/support','/app/more','/app/menu']
+  .map(route=>[`fleet transporter ${route} has no serious accessibility violations`,{role:'FLEET_TRANSPORTER',route}]),
+ ...['/app/home','/app/provider-shipments','/app/verification','/app/support','/app/more','/app/menu']
+  .map(route=>[`self-managed Driver ${route} has no serious accessibility violations`,{role:'SELF_MANAGED_DRIVER',route}])
+]);
+const accessibilityStages=new Map([
+ ['accessibility: primary axe','PRIMARY_AXE'],
+ ['accessibility: target size axe','TARGET_SIZE_AXE'],
+ ['accessibility: assert results','ASSERT_RESULTS']
+]);
 const sourceLine=value=>Number.isSafeInteger(value)&&value>0&&value<=1_000_000?value:null;
 const trackingSmokeTitle='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
 const trackingStages=new Map([
@@ -133,6 +144,38 @@ function accessibilityFailure(result,file,title){
  return {route:match[1],rules:[...rules].sort().slice(0,12)};
 }
 
+function authenticatedAccessibilityFailure(result,file,title){
+ if(file!=='accessibility.spec.ts'||typeof title!=='string')return null;
+ const identity=authenticatedA11yCases.get(title);
+ if(!identity)return null;
+ const failedStep=Array.isArray(result?.steps)?result.steps.slice(0,16).find(step=>
+  step&&typeof step==='object'&&accessibilityStages.has(step.title)
+  &&step.error&&typeof step.error==='object'&&!Array.isArray(step.error)):null;
+ const stage=failedStep?accessibilityStages.get(failedStep.title):'BEFORE_OR_OUTSIDE_AXE';
+ const errors=[failedStep?.error,result?.error,...(Array.isArray(result?.errors)?result.errors:[])];
+ const messages=errors.map(error=>error?.message).filter(message=>typeof message==='string'&&message.length<=100_000);
+ const has=pattern=>messages.some(message=>pattern.test(message));
+ let errorType='OTHER';
+ if(stage==='ASSERT_RESULTS'&&has(/serious\/critical accessibility violations:/))errorType='AXE_RULE_FAILURE';
+ else if(has(/\bScript Timeout\b/))errorType='AXE_SCRIPT_TIMEOUT';
+ else if(has(/Execution context was destroyed/))errorType='CONTEXT_DESTROYED';
+ else if(has(/Target page, context or browser has been closed/))errorType='PAGE_CLOSED';
+ else if(has(/Frame was detached/))errorType='FRAME_DETACHED';
+ else if(has(/Timeout\s+\d+ms exceeded|page\.evaluate:\s*Timeout/))errorType='PLAYWRIGHT_TIMEOUT';
+ else if(errors.some(error=>error?.name==='AxeError'))errorType='AXE_RUNTIME_ERROR';
+ const rules=new Set();
+ if(errorType==='AXE_RULE_FAILURE')for(const message of messages){
+  if(!message.includes('serious/critical accessibility violations:'))continue;
+  for(const line of message.replace(/\x1b\[[0-9;]*m/g,'').split(/\r?\n/)){
+   const rule=/^\s*([a-z][a-z0-9-]{1,80}):\s/.exec(line)?.[1];
+   if(knownAxeRules.has(rule))rules.add(rule);
+  }
+ }
+ const duration=value=>Number.isSafeInteger(value)&&value>=0&&value<=3_600_000?value:null;
+ return {...identity,stage,errorType,rules:[...rules].sort().slice(0,12),
+  durationMs:duration(result?.duration),stepDurationMs:duration(failedStep?.duration)};
+}
+
 export function failedBrowserCaseDiagnostics(report){
  const diagnostics=[];
  for(const test of cases(report)){
@@ -143,10 +186,12 @@ export function failedBrowserCaseDiagnostics(report){
   const result=results.find(result=>result.status==='failed'||result.status==='timedOut'||result.status==='interrupted')||results.at(-1);
   const layout=layoutMeasurements(result,file);
   const a11y=accessibilityFailure(result,file,test.title);
+  const authenticatedA11y=authenticatedAccessibilityFailure(result,file,test.title);
   const workflow=failedWorkflowStage(result,file,test.title);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),...(workflow?{workflow}:{})});
+   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
+   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -155,11 +200,12 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine,layout,a11y,workflow} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
   if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
   if(a11y)write(`::error ${location}::CI_BROWSER_A11Y route=${a11y.route} rules=${a11y.rules.join(',')||'unknown'}\n`);
+  if(authenticatedA11y)write(`::error ${location}::CI_BROWSER_AUTH_A11Y role=${authenticatedA11y.role} route=${authenticatedA11y.route} stage=${authenticatedA11y.stage} error=${authenticatedA11y.errorType} duration_ms=${authenticatedA11y.durationMs??'unknown'} step_ms=${authenticatedA11y.stepDurationMs??'unknown'} rules=${authenticatedA11y.rules.join(',')||'unknown'}\n`);
   if(workflow)write(`::error ${location}::CI_BROWSER_STAGE file=${file} project=${project} stage=${workflow.stage} duration_ms=${workflow.durationMs??'unknown'}\n`);
  }
 }
