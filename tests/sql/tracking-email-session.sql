@@ -7,7 +7,10 @@ begin
  ids:=array[gen_random_uuid(),gen_random_uuid()];
  select p.user_id into strict actor from provider_profiles p
  join profiles u on u.id=p.user_id and u.active
- join vehicles v on v.provider_profile_id=p.id and v.active limit 1;
+ join vehicles v on v.provider_profile_id=p.id and v.active
+ where not p.review_workspace
+   and not exists(select 1 from app_review_accounts review where review.user_id=p.user_id)
+ limit 1;
  insert into provider_shipments(id,code,provider_profile_id,assigned_vehicle_id,
  assigned_driver_user_id,origin,origin_place_ref,origin_lat,origin_lng,
  destination,destination_place_ref,destination_lat,destination_lng,cargo_summary,

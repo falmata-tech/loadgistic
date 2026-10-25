@@ -75,7 +75,7 @@ begin
  -- Platform Brokerage has no private Capacity audience after its retirement.
  -- Require the exact denial; an empty result could hide a restored access path.
  begin
-  perform private_capacity_filtered_page('LOADGISTIC',recipient,actor,null,null,14,'{}');
+  perform private_capacity_filtered_page('LOADGISTIC',repeat('0',64),actor,null,null,14,'{}');
   raise exception 'RETIRED_PLATFORM_AUDIENCE_ACCEPTED';
  exception when raise_exception then
   if sqlerrm<>'PLATFORM_CAPACITY_RETIRED' then raise;end if;

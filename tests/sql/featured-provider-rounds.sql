@@ -1,17 +1,36 @@
 -- FEAT-CON-001: rollback-only account rotation, manual selection and saved-day
 -- compatibility on the installed local or restored database.
 begin;
+create temporary table featured_account_fault_date(feature_date date primary key);
+create function pg_temp.fail_featured_account_second_slot() returns trigger
+language plpgsql as $$
+begin
+  if new.slot_position=2 and exists(
+    select 1 from pg_temp.featured_account_fault_date fault
+    join public.featured_provider_days day on day.feature_date=fault.feature_date
+    where day.id=new.day_id
+  ) then raise exception 'FEATURED_ACCOUNT_SYNTHETIC_SLOT_FAILURE';end if;
+  return new;
+end $$;
+create trigger featured_account_fault_second_slot before insert on public.featured_provider_slots
+for each row execute function pg_temp.fail_featured_account_second_slot();
 do $test$
 declare start_day date;day_value date;response jsonb;existing_days integer;existing_slots integer;
   eligible_count integer;round_low bigint;round_high bigint;round_item bigint;round_count integer;
   admin_id uuid;representative uuid;duplicate_vehicles text[];saved_id uuid;problem text;
-  late_saved_id uuid;late_account record;current_round bigint;
+  late_saved_id uuid;late_account record;current_round bigint;random_day date;fault_day date;
+  first_draw text[];second_draw text[];retry_before jsonb;retry_after jsonb;
+  legacy_vehicle_before jsonb;legacy_theme_before jsonb;observed_before bigint;
 begin
   select max(feature_date)+1 into start_day from public.featured_provider_days;
   if start_day is null then start_day:=(now() at time zone 'Africa/Addis_Ababa')::date+30;end if;
   select count(*) into existing_days from public.featured_provider_days where feature_date<start_day;
   select count(*) into existing_slots from public.featured_provider_slots slot
     join public.featured_provider_days day on day.id=slot.day_id where day.feature_date<start_day;
+  select jsonb_agg(to_jsonb(history) order by round_number,vehicle_id,driver_user_id)
+    into legacy_vehicle_before from public.featured_rotation_selections history;
+  select jsonb_agg(to_jsonb(history) order by primary_theme_key,round_number,vehicle_id,driver_user_id)
+    into legacy_theme_before from public.featured_theme_rotation_selections history;
   select count(*) into eligible_count from public.featured_eligible_account_links();
   if eligible_count<8 then raise exception 'FEATURED_ACCOUNT_FIXTURE_TOO_SMALL: %',eligible_count;end if;
   update public.platform_controls set featured_mode='AUTO',featured_target_count=8 where singleton;
@@ -124,6 +143,83 @@ begin
       if problem<>'FEATURED_PROVIDER_DUPLICATE' then raise;end if;
     end;
   end if;
+  -- Different random seeds must produce different account orders from the same
+  -- pool and round state. Retrying a saved week must not reshuffle its records.
+  random_day:=start_day+45;
+  perform setseed(0.125);
+  perform public.generate_managed_featured_days_for_date(random_day);
+  select array_agg(coalesce(slot.provider_organization_id::text,slot.provider_profile_id::text)
+    order by day.feature_date,slot.slot_position) into first_draw
+  from public.featured_provider_slots slot join public.featured_provider_days day on day.id=slot.day_id
+  where day.feature_date between random_day and random_day+6;
+  select jsonb_build_object(
+    'days',(select jsonb_agg(to_jsonb(day) order by day.feature_date) from public.featured_provider_days day
+      where day.feature_date between random_day and random_day+6),
+    'slots',(select jsonb_agg(to_jsonb(slot) order by day.feature_date,slot.slot_position)
+      from public.featured_provider_slots slot join public.featured_provider_days day on day.id=slot.day_id
+      where day.feature_date between random_day and random_day+6),
+    'history',(select jsonb_agg(to_jsonb(history) order by round_number,provider_key)
+      from public.featured_account_rotation_selections history),
+    'observations',(select jsonb_agg(to_jsonb(observation) order by featured_day_id,provider_key)
+      from public.featured_account_saved_day_observations observation)) into retry_before;
+  perform public.generate_managed_featured_days_for_date(random_day);
+  select jsonb_build_object(
+    'days',(select jsonb_agg(to_jsonb(day) order by day.feature_date) from public.featured_provider_days day
+      where day.feature_date between random_day and random_day+6),
+    'slots',(select jsonb_agg(to_jsonb(slot) order by day.feature_date,slot.slot_position)
+      from public.featured_provider_slots slot join public.featured_provider_days day on day.id=slot.day_id
+      where day.feature_date between random_day and random_day+6),
+    'history',(select jsonb_agg(to_jsonb(history) order by round_number,provider_key)
+      from public.featured_account_rotation_selections history),
+    'observations',(select jsonb_agg(to_jsonb(observation) order by featured_day_id,provider_key)
+      from public.featured_account_saved_day_observations observation)) into retry_after;
+  if retry_before is distinct from retry_after then
+    raise exception 'FEATURED_ACCOUNT_RETRY_RESHUFFLED days:% slots:% history:% observations:%',
+      retry_before->'days' is distinct from retry_after->'days',
+      retry_before->'slots' is distinct from retry_after->'slots',
+      retry_before->'history' is distinct from retry_after->'history',
+      retry_before->'observations' is distinct from retry_after->'observations';
+  end if;
+  delete from public.featured_provider_days where feature_date between random_day and random_day+6;
+  perform setseed(0.75);
+  perform public.generate_managed_featured_days_for_date(random_day);
+  select array_agg(coalesce(slot.provider_organization_id::text,slot.provider_profile_id::text)
+    order by day.feature_date,slot.slot_position) into second_draw
+  from public.featured_provider_slots slot join public.featured_provider_days day on day.id=slot.day_id
+  where day.feature_date between random_day and random_day+6;
+  if first_draw is not distinct from second_draw then raise exception 'FEATURED_ACCOUNT_DRAW_NOT_RANDOMIZED';end if;
+
+  -- A failure after the first saved slot must leave no partial day, turn or audit.
+  fault_day:=start_day+60;
+  select count(*) into observed_before from public.featured_account_saved_day_observations;
+  insert into pg_temp.featured_account_fault_date values(fault_day);
+  begin
+    perform public.generate_managed_featured_days_for_date(fault_day);
+    raise exception 'FEATURED_ACCOUNT_PARTIAL_FAILURE_NOT_TRIGGERED';
+  exception when raise_exception then
+    get stacked diagnostics problem=message_text;
+    if problem<>'FEATURED_ACCOUNT_SYNTHETIC_SLOT_FAILURE' then raise;end if;
+  end;
+  if exists(select 1 from public.featured_provider_days where feature_date between fault_day and fault_day+6)
+    or exists(select 1 from public.featured_account_rotation_selections where first_feature_date between fault_day and fault_day+6)
+    or exists(select 1 from public.audit_logs where action='FEATURED_DAY_AUTO_PUBLISHED'
+      and details->>'featureDate'=fault_day::text)
+    or (select count(*) from public.featured_account_saved_day_observations)<>observed_before
+    then raise exception 'FEATURED_ACCOUNT_PARTIAL_FAILURE_RETAINED';end if;
+  if legacy_vehicle_before is distinct from
+      (select jsonb_agg(to_jsonb(history) order by round_number,vehicle_id,driver_user_id)
+       from public.featured_rotation_selections history)
+    or legacy_theme_before is distinct from
+      (select jsonb_agg(to_jsonb(history) order by primary_theme_key,round_number,vehicle_id,driver_user_id)
+       from public.featured_theme_rotation_selections history)
+    then raise exception 'FEATURED_LEGACY_LEDGER_CHANGED';end if;
+  if not (select relrowsecurity from pg_class where oid='public.featured_account_rotation_selections'::regclass)
+    or not (select relrowsecurity from pg_class where oid='public.featured_account_manual_selections'::regclass)
+    or not (select relrowsecurity from pg_class where oid='public.featured_account_saved_day_observations'::regclass)
+    or has_table_privilege('authenticated','public.featured_account_rotation_selections','INSERT,UPDATE,DELETE')
+    or has_table_privilege('authenticated','public.featured_account_manual_selections','SELECT,INSERT,UPDATE,DELETE')
+    or has_table_privilege('authenticated','public.featured_account_saved_day_observations','SELECT,INSERT,UPDATE,DELETE')
+    then raise exception 'FEATURED_ACCOUNT_LEDGER_WRITE_EXPOSED';end if;
   if has_function_privilege('anon','public.featured_eligible_account_links()','EXECUTE')
     or has_function_privilege('authenticated','public.save_managed_featured_provider_day(uuid,jsonb)','EXECUTE')
     or has_table_privilege('authenticated','public.featured_account_rotation_selections','SELECT')

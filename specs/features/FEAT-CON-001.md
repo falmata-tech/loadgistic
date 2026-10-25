@@ -122,6 +122,10 @@ have had a turn, avoiding duplicate accounts within one day
 And a manually saved day remains unchanged and may deliberately repeat an
 account; its selection is recorded so automatic scheduling does not immediately
 repeat it by accident
+And an imported published day is observed at most once: a current-round
+conflict must not become a new turn in a later round on retry
+And retrying a saved week preserves its days, slots and account-turn history;
+a failed slot write leaves no partial day, turn or publication audit
 And TikTok LIVE status continues to describe only an actual/scheduled broadcast.
 
 Given the public or signed-in shell is rendered on web or Expo

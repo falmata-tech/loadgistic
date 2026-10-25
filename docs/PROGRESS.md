@@ -16,8 +16,9 @@ current task list.
   Capacity, Track, Featured and About. Signup chooses account type before email
   verification. Account badges and Featured use provider accounts rather than a
   fixed vehicle/day category. Private Capacity is account-only; migration 207
-  removes obsolete demo email grants and prevents their return. Migrations
-  199–207 are installed locally, **not hosted**.
+  removes obsolete demo email grants and prevents their return. Migration 208
+  prevents a saved Featured day from becoming an extra later-round turn on
+  retry. Migrations 199–208 are installed locally, **not hosted**.
 - Agent-led desktop, phone web and Expo previews exercised provider, driver and
   broker navigation, sharing, Account and Capacity tasks. Focused browser checks
   for Account details/profile/documents, driver Account, public-market return,
@@ -28,10 +29,9 @@ current task list.
   source/spec/workflow checks and typecheck. All 331 native unit tests, native
   lint/typecheck and the 769-message translation audit pass. The web production
   build passes with 164 static pages. Android export bundles 3,737 modules.
-  The first local Android 1.2.0/code 10 APK built and verified (SHA-256
+  The local Android 1.2.0/code 10 APK is present and verified (SHA-256
   `ddc3f26706cfd9993a388f214ffcd76aee9cc17def89bc3b24c14b32efb5607c`);
-  its ignored file was subsequently lost with the checkout and is being rebuilt.
-  It was debug-signed for local testing, not Play. PR22 is open; its first two
+  it was debug-signed for local testing, not Play. PR22 is open; its first three
   CI runs failed as detailed below. No hosted SQL rollout, web deployment or Play
   delivery has occurred. Play remains paused by owner instruction.
 - The 396 source/spec/test paths from the reviewed local manifest were committed
@@ -56,12 +56,24 @@ current task list.
   policies into BOTH before exercising the simulator; its safety checks remain
   unchanged. The focused test passed after modeling the fresh PUBLIC state and
   rolled back all writes. A new exact-head CI run is required.
-- The original local checkout and ignored artifacts unexpectedly disappeared
-  during PR22 diagnosis. The committed branch was recovered from GitHub into
-  the original directory without deleting its remaining generated dev files.
-  The ignored local APK and protected release artifacts did **not** survive;
-  the local APK is being rebuilt. Fresh backup and rollout evidence must be
-  prepared again. No hosted write or web publication occurred.
+- PR22 third run `40158398644` reached the SQL privacy loop, then failed in
+  `capacity-viewport.sql`: a stale test used an undeclared recipient variable.
+  The corrected rollback-only test passes locally. A local continuation of the
+  remaining SQL loop exposed two truck-theme Featured suites that no longer
+  describe account rotation, and a Tracking fixture that selected an isolated
+  Play-review provider. The latter passes after choosing a normal provider.
+  The current account-round test now covers random order, saved-week retry,
+  historical ledgers, failure atomicity and access denial. It found that a
+  published historical day could be counted again after a round advanced;
+  additive migration 208 records each imported day once, and the focused test
+  passes locally. The 44 other remaining SQL suites passed locally. A new
+  exact-head CI run is still required; no hosted write occurred.
+- The owner clarified that the original checkout had been moved temporarily.
+  It is back with its protected `.local` release files and exact local APK intact.
+  The original branch was fast-forwarded to `912e881` without touching the
+  pre-existing `next-env.d.ts` or mobile `.claude` files. The attempted rebuild
+  of a temporary recovered copy is not release evidence. No hosted write or web
+  publication occurred.
 
 ## Current delivery
 
