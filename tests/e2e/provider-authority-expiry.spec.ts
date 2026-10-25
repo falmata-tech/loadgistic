@@ -32,6 +32,20 @@ async function webLogin(page:Page,email:string,expectedLanding:'/app/home'|'/adm
  if(expectedLanding==='/admin/reviews')await expect(page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();
  else await expect(page.locator('.app-main')).toBeVisible();
 }
+async function openVehicleDocumentsAfterLogin(page:Page,truck:string){
+ const target=`/app/fleet/${truck}?view=documents`;
+ try{await page.goto(target,{waitUntil:'domcontentloaded'});}
+ catch(error){
+  // The sign-in page can finish its own client redirect just as this direct
+  // navigation begins. Retry that cancelled navigation once, then assert the
+  // vehicle form rather than treating an aborted request as a product failure.
+  if(!(error instanceof Error)||!error.message.includes('net::ERR_ABORTED'))throw error;
+  await page.waitForLoadState('domcontentloaded');
+  if(new URL(page.url()).pathname!==`/app/fleet/${truck}`)await page.goto(target,{waitUntil:'domcontentloaded'});
+ }
+ await expect(page).toHaveURL(new RegExp(`/app/fleet/${truck}\\?view=documents$`));
+ await expect(page.getByRole('button',{name:'Submit verification',exact:true})).toBeVisible();
+}
 async function nativeLogin(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible();
  await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));await page.getByRole('button',{name:'Sign in',exact:true}).last().click();await expect(page.getByLabel('Sign-in code',{exact:true})).toHaveCount(0);
@@ -68,7 +82,7 @@ test('operating-licence expiry and financed-holder review persist, and Expo perm
  try{
   const owner=await auditFleetProvider(service,'expiry-web');actors.push(owner);evidence();const truck=await makeTruck(owner,'FINANCED');
   await checkpoint('WEB_LOGIN');await webLogin(page,owner.email);
-  await checkpoint('WEB_DOCUMENT_FORM');await page.goto(`/app/fleet/${truck}?view=documents`,{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Submit verification',exact:true}).click();await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_OPERATING_LICENSE');await expect(page.locator('input[name="relatedVehicleId"]')).toHaveValue(truck);
+  await checkpoint('WEB_DOCUMENT_FORM');await openVehicleDocumentsAfterLogin(page,truck);await page.getByRole('button',{name:'Submit verification',exact:true}).click();await page.getByLabel('Verification type',{exact:true}).selectOption('VEHICLE_OPERATING_LICENSE');await expect(page.locator('input[name="relatedVehicleId"]')).toHaveValue(truck);
   await checkpoint('WEB_LICENCE_EXPIRY');await chooseDate(page,'Licence expires',expiry);
   await checkpoint('WEB_LICENCE_UPLOAD');await page.getByLabel('Document name',{exact:true}).fill(`Financed licence ${nonce}`);await page.locator('input[name="file"]').setInputFiles({name:'synthetic-financed-licence.png',mimeType:'image/png',buffer:bytes});await page.getByRole('button',{name:'Submit for review',exact:true}).click();await expect(page.locator('.alert.success')).toBeVisible();
   const licence=await storedRequest(owner.id,truck,`Financed licence ${nonce}`);expect(licence).toMatchObject({subject_type:'VEHICLE',subject_id:truck,related_vehicle_id:truck,verification_type:'VEHICLE_OPERATING_LICENSE',expires_on:expiry,status:'PENDING'});

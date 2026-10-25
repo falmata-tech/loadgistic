@@ -198,9 +198,21 @@ test('public entry makes capacity immediately usable without an account',async({
     await expect(page.locator('.public-capacity-map')).toBeVisible();
     await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
     const truckMarker=page.locator('.capacity-truck-map-marker:visible').first();
-    if(!await truckMarker.count())await page.locator('.capacity-map-cluster:visible').first().click();
+    let selectedFromCluster=false;
+    for(let attempt=0;attempt<8&&!await truckMarker.count();attempt+=1){
+      const cluster=page.locator('.capacity-map-cluster:visible').first();
+      if(!await cluster.count())break;
+      await cluster.click();
+      await page.waitForTimeout(180);
+      const picker=page.locator('.capacity-cluster-picker:visible');
+      if(await picker.count()){
+        await picker.getByRole('button').first().click();
+        selectedFromCluster=true;
+        break;
+      }
+    }
     await expect(truckMarker).toBeVisible();
-    await truckMarker.click();
+    if(!selectedFromCluster)await truckMarker.click();
     await page.locator('.map-info-bubble.truck').click();
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   }else{

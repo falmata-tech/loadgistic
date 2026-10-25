@@ -22,6 +22,8 @@ test('transport companies, owner-operators and company drivers retain dashboard 
    else checked(await service.from('organization_members').insert({user_id:id,organization_id:organization,membership_role:kind==='COMPANY'?'DRIVER':'OWNER'}));
    checked(await service.from('profiles').update({role,active:true,full_name:'Provider support review'}).eq('id',id));
    signouts.push(await localSupportLogin(page,id));await page.goto('/app/home/vehicles',{waitUntil:'domcontentloaded'});
+   await expect(page).toHaveURL(/\/app\/home\/vehicles$/);
+   await expect(page.locator('.app-main .surface-skeleton')).toHaveCount(0);
    if((page.viewportSize()?.width||0)<980){const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});await nav.getByRole('button',{name:'More',exact:true}).click();await page.getByRole('dialog',{name:'More navigation'}).getByRole('link',{name:'Support',exact:true}).click();}
    else await page.getByRole('navigation',{name:'Site navigation',exact:true}).getByRole('link',{name:'Support',exact:true}).click();
    await expect(page).toHaveURL(/\/app\/support/);
