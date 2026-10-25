@@ -22,7 +22,7 @@ test('private and filtered Capacity metadata never reflects submitted values or 
  const filtered=publicPageMetadata({...base,query:{q:'PRIVATE_SURNAME',nearLat:'12.345678',token:'PRIVATE_TOKEN'}});
  assert.equal(filtered.robots.index,false);assert.equal(filtered.robots.follow,true);assert.equal(filtered.alternates.canonical,PUBLIC_SITE_ORIGIN+'/');
  const privateView=publicPageMetadata({...base,privateView:true,query:{view:'private',email:'PRIVATE_EMAIL'}});
- assert.deepEqual(privateView.robots,{index:false,follow:false,nosnippet:true,noimageindex:true});assert.equal(privateView.alternates.canonical,null);assert.equal('openGraph'in privateView,false);
+ assert.deepEqual(privateView.robots,{index:false,follow:false,nosnippet:true,noimageindex:true});assert.equal(privateView.alternates.canonical,null);assert.equal('openGraph'in privateView,false);assert.equal('twitter'in privateView,false);
  for(const value of [filtered,privateView])for(const marker of ['PRIVATE_SURNAME','12.345678','PRIVATE_TOKEN','PRIVATE_EMAIL'])assert.equal(JSON.stringify(value).includes(marker),false);
 });
 test('public handle metadata uses only the public route and never creates arbitrary canonicals',()=>{

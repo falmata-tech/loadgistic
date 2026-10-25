@@ -1,18 +1,15 @@
 import {verificationBadgesFromApproved,truckDocumentBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
 import {loadPublicProviderFleet,publicFleetVehicleIds} from '../public-provider-paging.js';
-import {privateCapacityContactName} from '../private-capacity-contact.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
-import {randomUUID} from 'node:crypto';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
 import {resolveCapacityFilterPlaces} from '../capacity-filter-places.js';
 import {capacityGeographicMatch} from '../capacity-geographic-match.js';
 import {buildFeaturedDaySchedule,DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../expo-broadcast.js';
 import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate,regionalExpoWeekForDate} from '../provider-regions.js';
-import {featuredTruckTypeForDate,featuredTruckWeekForDate} from '../featured-trucks.js';
-import {loadFeaturedTruckCandidates,featuredTruckMapHref,readFeaturedRows} from '../featured-truck-candidates.js';
-import {capacityUpdatePresentation,distanceBetweenKm,normalizePrivateContactEmail} from '../domain.js';
-import {hashTrackingAccessCode,privateContactDigest,sharedCapacityOtpCode} from '../security.js';
+import {FEATURED_PROVIDER_DAY} from '../featured-trucks.js';
+import {readFeaturedRows} from '../featured-truck-candidates.js';
+import {capacityUpdatePresentation,distanceBetweenKm} from '../domain.js';
 
 const PLACE_TYPE_ORDER=new Map([
   ['city',0],['town',1],['suburb',2],['neighbourhood',3],['quarter',4],['village',5]
@@ -195,25 +192,13 @@ export async function listSupabasePrivateCapacityNetwork(user){
   return (data||[]).map(row=>row.payload||row);
 }
 
-export async function grantSupabasePrivateCapacityAccess(user,input){
-  const email=normalizePrivateContactEmail(input.email);
-  const name=privateCapacityContactName(input.name);
-  const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('grant_named_private_capacity_access',{
-    actor_user_id:user.id,target_vehicle_id:String(input.vehicleId||''),
-    normalized_recipient_email:email,recipient_digest:privateContactDigest(email),contact_name:name
-  });
-  if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_GRANT_FAILED',error);
-  return data;
+/** @returns {Promise<{id:string}>} */
+export async function grantSupabasePrivateCapacityAccess(_user,_input){
+  throw new Error('EMAIL_CAPACITY_RETIRED');
 }
 
-export async function nameSupabasePrivateCapacityContact(user,input){
-  const name=privateCapacityContactName(input.name),client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('name_private_capacity_contact',{
-    actor_user_id:user.id,target_grant_id:String(input.grantId||''),contact_name:name
-  });
-  if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_NAME_FAILED',error);
-  return data;
+export async function nameSupabasePrivateCapacityContact(_user,_input){
+  throw new Error('EMAIL_CAPACITY_RETIRED');
 }
 
 export async function setSupabaseLoadgisticCapacityAccess(){throw new Error('PLATFORM_CAPACITY_RETIRED');}
@@ -224,31 +209,6 @@ export async function revokeSupabasePrivateCapacityAccess(user,grantId){
     actor_user_id:user.id,target_grant_id:String(grantId||'')
   });
   if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_REVOKE_FAILED',error);
-}
-
-export async function requestSupabaseSharedCapacityOtp(value){
-  const email=normalizePrivateContactEmail(value),emailDigest=privateContactDigest(email);
-  const challengeId=randomUUID(),accessCode=sharedCapacityOtpCode(challengeId);
-  const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('request_shared_capacity_otp',{
-    challenge_id:challengeId,normalized_recipient_email:email,recipient_digest:emailDigest,
-    challenge_code_digest:hashTrackingAccessCode(accessCode),
-    challenge_expires_at:new Date(Date.now()+10*60*1000).toISOString()
-  });
-  if(error)throw managedCapacityError('SUPABASE_SHARED_CAPACITY_OTP_REQUEST_FAILED',error);
-  return data
-    ?{accepted:true,deliveryQueued:true,challengeId,accessCode}
-    :{accepted:true,deliveryQueued:false,challengeId};
-}
-
-export async function verifySupabaseSharedCapacityAccess(value,code){
-  const email=normalizePrivateContactEmail(value),emailDigest=privateContactDigest(email);
-  const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('consume_shared_capacity_otp',{
-    recipient_digest:emailDigest,submitted_code_digest:hashTrackingAccessCode(String(code||'').trim())
-  });
-  if(error||!data)throw new Error('SHARED_CAPACITY_ACCESS_DENIED',{cause:error||undefined});
-  return {emailDigest};
 }
 
 function projectPrivateCapacityRow(row,hasNear,nearLat,nearLng){
@@ -280,8 +240,9 @@ function projectPrivateCapacityRow(row,hasNear,nearLat,nearLng){
     current_signal_geometry_visible:true,near_center_distance_km:nearCenterDistance};
 }
 
-export async function listSupabaseSharedCapacity(emailDigest,filters={},options={}){
-  return listSupabasePrivateCapacityProjection('EMAIL',emailDigest,null,filters,options);
+export async function listSupabaseAccountCapacity(actorId,emailDigest,filters={},options={}){
+  if(!actorId||!emailDigest)throw new Error('ACCOUNT_CAPACITY_FORBIDDEN');
+  return listSupabasePrivateCapacityProjection('ACCOUNT',emailDigest,actorId,filters,options);
 }
 
 export async function listSupabaseBusinessCapacity(actorId,workspaceId,filters={},options={}){
@@ -302,8 +263,9 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   catch{return {items:[],hasMore:false,nextCursor:null,pageSize,filterError:'Map bounds are invalid. Move the map and try again.'};}
   const hasNear=query.near_lat!==null&&query.near_lng!==null;
   const cursor=decodePublicCursor(options.cursor);
-  const {data,error}=await client.rpc(businessWorkspaceId?'business_capacity_filtered_page':'private_capacity_filtered_page',{
-    ...(businessWorkspaceId?{target_workspace_id:businessWorkspaceId}:{requested_audience:audience,requested_digest:emailDigest}),actor_user_id:actorUserId,
+  const rpcName=businessWorkspaceId?'business_capacity_filtered_page':audience==='ACCOUNT'?'account_capacity_filtered_page':'private_capacity_filtered_page';
+  const {data,error}=await client.rpc(rpcName,{
+    ...(businessWorkspaceId?{target_workspace_id:businessWorkspaceId}:audience==='ACCOUNT'?{recipient_digest:emailDigest}:{requested_audience:audience,requested_digest:emailDigest}),actor_user_id:actorUserId,
     cursor_updated_at:cursor?.updatedAt||null,cursor_id:cursor?.id||null,requested_page_size:pageSize,query
   });
   if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_PROJECTION_FAILED',error);
@@ -618,7 +580,7 @@ export async function getSupabaseDailyFeaturedProviders(date=ethiopiaDate()){
 }
 
 export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
-  const featureDate=String(date||'');const theme=featuredTruckTypeForDate(featureDate);const sponsorGroup=regionalExpoGroupForDate(featureDate);
+  const featureDate=String(date||'');const theme=FEATURED_PROVIDER_DAY;const sponsorGroup=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
   const [dayResult,providerRows]=await Promise.all([
     client.from('featured_provider_days').select('id,feature_date,expo_group_key,public_headline,public_introduction,tiktok_url,tiktok_broadcast_status,schedule_mode,schedule_config_json,manual_schedule_json,target_count,status').eq('feature_date',featureDate).eq('status','PUBLISHED').maybeSingle(),
@@ -628,18 +590,26 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   if(dayResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error});
   const providers=providerRows.map(row=>decorateFeaturedCandidate(row.payload||row));
   const providerByKey=new Map(providers.map(provider=>[provider.provider_organization_id?`organization:${provider.provider_organization_id}`:`profile:${provider.provider_profile_id}`,provider]));
-  const candidates=await loadFeaturedTruckCandidates(client,featureDate,providers);
-  const truckByKey=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
-  const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
-    headline:'Daily Featured Vehicles',introduction:`${theme.label} · 08:30–12:00 EAT`,tiktok_url:null,
+  const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:[],theme,
+    headline:'Daily Featured Transport Providers',introduction:'Meet the transport accounts in today’s showcase.',tiktok_url:null,
     broadcast_start_time:'08:30',broadcast_end_time:'12:00',tiktok_broadcast_status:'NOT_SCHEDULED',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
-  const day=dayResult.data;if(!day||day.expo_group_key!==theme.key)return empty();
+  const day=dayResult.data;if(!day)return empty();
   const {data:slots,error:slotError}=await client.from('featured_provider_slots').select('slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id').eq('day_id',day.id).order('slot_position');
   if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});
-  const featured=[];const truckKeys=[];const aliases=new Map();
-  for(const slot of slots||[]){const key=`vehicle:${slot.vehicle_id}`;const candidate=truckByKey.get(key);if(!candidate?.eligible||candidate.driver_user_id!==slot.driver_user_id)continue;
-    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,driver_user_id:unusedDriver,vehicle_id:unusedVehicle,public_capacity_id:unusedCapacity,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,theme:unusedTheme,...safe}=candidate;
-    featured.push({...safe,map_href:featuredTruckMapHref(candidate),position:slot.slot_position});truckKeys.push(key);aliases.set(key,key);
+  const featured=[];const providerKeys=[];const aliases=new Map();const seen=new Set();
+  for(const slot of slots||[]){
+    const key=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;
+    const candidate=providerByKey.get(key);
+    if(!candidate?.eligible||seen.has(key))continue;
+    seen.add(key);
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,
+      base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,
+      profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,...safe}=candidate;
+    featured.push({...safe,provider_key:key,truck_key:key,
+      public_capacity_available:Number(candidate.active_capacity_count)>0,
+      map_href:Number(candidate.active_capacity_count)>0?`/?provider=${encodeURIComponent(candidate.handle)}`:null,
+      position:slot.slot_position});
+    providerKeys.push(key);aliases.set(`vehicle:${slot.vehicle_id}`,key);aliases.set(key,key);
   }
   const {data:placements,error:placementError}=await client.from('sponsor_placements').select('sponsor_id,position').eq('expo_group_key',sponsorGroup.key).eq('active',true).lte('starts_on',featureDate).gte('ends_on',featureDate).order('position').limit(5);
   if(placementError)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:placementError});
@@ -651,8 +621,9 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
     const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,...safe}=provider;
     sponsoredProviders.push({...safe,sponsor_kind:'TRANSPORTER',sponsor_position:placement.position,sponsored:true});
   }
-  const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,truckKeys,aliases),sponsoredProviders);
-  return {feature_date:featureDate,base_place:theme.label,expo_group:theme,week:featuredTruckWeekForDate(featureDate),theme,
-    headline:day.public_headline||'Daily Featured Vehicles',introduction:day.public_introduction||`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
+  const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,providerKeys,aliases),sponsoredProviders);
+  return {feature_date:featureDate,base_place:theme.label,expo_group:theme,week:[],theme,
+    headline:day.public_headline||'Daily Featured Transport Providers',
+    introduction:day.public_introduction||'Meet the transport accounts in today’s showcase and explore the vehicles they publish.',
     tiktok_url:day.tiktok_url,tiktok_broadcast_status:day.tiktok_broadcast_status||'NOT_SCHEDULED',broadcast_start_time:schedule.config.dayStart,broadcast_end_time:schedule.config.dayEnd,schedule,walkthroughs:schedule.walkthroughs,sponsored_providers:sponsoredProviders,providers:featured,published:true};
 }

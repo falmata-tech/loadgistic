@@ -1,6 +1,7 @@
 import { Page, Title, Copy, Button, ErrorText, LoadingSpinner } from '../components/ui';
 import {useState} from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
+import {Switch} from '../components/branded-switch';
 import {Redirect,router} from 'expo-router';
 import {useAccount} from '../session/provider';
 import {useLanguage} from '../localization/provider';

@@ -58,12 +58,12 @@
     },
     {
       "file": "admin-gps-readonly-local.spec.ts",
-      "title": "private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI",
+      "title": "private spare GPS fix stays out of public Capacity and email-only access",
       "project": "desktop-chromium"
     },
     {
       "file": "admin-gps-readonly-local.spec.ts",
-      "title": "private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI",
+      "title": "private spare GPS fix stays out of public Capacity and email-only access",
       "project": "mobile-chromium"
     },
     {
@@ -217,16 +217,6 @@
       "project": "mobile-chromium"
     },
     {
-      "file": "private-capacity-network.spec.ts",
-      "title": "capture focused private Capacity and Network review",
-      "project": "desktop-chromium"
-    },
-    {
-      "file": "private-capacity-network.spec.ts",
-      "title": "capture focused private Capacity and Network review",
-      "project": "mobile-chromium"
-    },
-    {
       "file": "public-app-shell-review.spec.ts",
       "title": "capture focused public application shell review",
       "project": "desktop-chromium"
@@ -278,12 +268,12 @@
     },
     {
       "file": "telematics-fleet.spec.ts",
-      "title": "fictional GPS capacity has an honest top-left source badge on its existing public and private audiences",
+      "title": "fictional GPS capacity marks public signals and keeps private ones off the retired email route",
       "project": "desktop-chromium"
     },
     {
       "file": "telematics-fleet.spec.ts",
-      "title": "fictional GPS capacity has an honest top-left source badge on its existing public and private audiences",
+      "title": "fictional GPS capacity marks public signals and keeps private ones off the retired email route",
       "project": "mobile-chromium"
     },
     {
@@ -308,7 +298,7 @@
     },
     {
       "file": "truck-regular-editors.spec.ts",
-      "title": "Expo selected fleet Usual routes saves updates removes without changing another truck or current capacity",
+      "title": "Expo selected fleet corridor route saves updates removes without changing another vehicle or current capacity",
       "project": "desktop-chromium"
     },
     {

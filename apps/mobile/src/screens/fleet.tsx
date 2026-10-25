@@ -7,7 +7,8 @@ import CapacityManagement from '../screens/manage-capacity';
 import Documents from '../screens/documents';
 import { TruckControls, VehicleLifecycle, DriverContact, TrailerSetup, FleetInvitation, type ManagedTruck } from '../components/fleet-management';
 import { useRef, useState } from 'react';
-import { Image, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {Switch} from '../components/branded-switch';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { apiOrigin } from '../api/http';
@@ -19,13 +20,13 @@ import {FleetDevices,TruckLocationSource} from '../components/fleet-devices';
 type Truck = ManagedTruck&{capacityStatus?:string|null;sharingMode?:string|null};
 type Driver = { isOwner:boolean; id: string; name: string; email: string; phone: string; vehicleId: string; canManageCapacity: boolean; canManageTracking: boolean };
 type Fleet = { publication:ProviderPublication;currentDriverId:string|null;currentDrivenVehicleId:string|null;canAddTruck:boolean;retired: { id: string; label: string }[]; retiredPage: number; retiredPageCount: number; invitations: { id: string; name: string; email: string; expiresAt: string; sentAt: string | null }[]; canManage: boolean; canManageDrivers: boolean; vehicles: Truck[]; drivers: Driver[]; configurations: { name: string; image: string }[]; driverPage: number; driverPageCount: number };
-export default function FleetScreen() {
+export default function FleetScreen({embeddedHome=false}:{embeddedHome?:boolean}={}) {
  const account=useAccount();
  if(account.busy)return <Page><LoadingSpinner/></Page>;
  if(!account.session||!workspaceCapabilities(account.session).canManageFleet)return <Redirect href="/account"/>;
- return <OwnerFleet key={account.session.user.id}/>;
+ return <OwnerFleet key={account.session.user.id} embeddedHome={embeddedHome}/>;
 }
-function OwnerFleet(){
+function OwnerFleet({embeddedHome}:{embeddedHome:boolean}){
  const {t}=useLanguage();
  const account = useAccount(), lock = useRef(false); const [retiredPage, setRetiredPage] = useState(1), [supported, setSupported] = useState<string[]>([]); const [error, setError] = useState(''), [page, setPage] = useState(1), [mode, setMode] = useState<'truck' | 'driver' | null>(null), [saving, setSaving] = useState(false);
  const [make, setMake] = useState(''), [model, setModel] = useState(''), [plate, setPlate] = useState(''), [configuration, setConfiguration] = useState('');
@@ -42,7 +43,7 @@ function OwnerFleet(){
  const truck=data?.vehicles.find(item=>selected===`truck:${item.id}`),driver=data?.drivers.find(item=>selected===`driver:${item.id}`);
  if(truck&&data)return <Page><TruckWorkspace key={truck.id} truck={truck} data={data} reload={confirmReload} loadError={loadError} onBack={()=>setSelected('')}/></Page>;
  if(driver&&data)return <Page><DriverWorkspace key={fleetDriverEditorKey(driver)} driver={driver} trucks={data.vehicles} onSaved={confirmReload} loadError={loadError} onBack={()=>setSelected('')}/></Page>;
- return <Page>{mode?<WorkspaceTaskHeader title={t(mode==='truck'?'Add vehicle':'Add driver')} backMessage="Back to fleet" onBack={()=>{if(!saving)setMode(null);}}/>:<Title message="My fleet"/>}<ErrorText message={error || loadError} />
+ return <Page>{mode?<WorkspaceTaskHeader title={t(mode==='truck'?'Add vehicle':'Add driver')} backMessage="Back to vehicles" onBack={()=>{if(!saving)setMode(null);}}/>:embeddedHome?null:<Title message="Manage vehicles"/>}<ErrorText message={error || loadError} />
   {!data && !loadError && <LoadingSpinner />}{!data && !!loadError && <Button message="Try again" onPress={() => { setError(''); void reload(); }} />}
   {mode === 'truck' ? <Card><Copy message="New vehicles start as drafts."/><Copy message="How do you use this vehicle?"/><Button secondary={useBasis!=='OWNED'} message="I own this vehicle" busy={saving} onPress={()=>setUseBasis('OWNED')}/><Button secondary={useBasis!=='FINANCED'} message="I am buying this vehicle through financing" busy={saving} onPress={()=>setUseBasis('FINANCED')}/><Button secondary={useBasis!=='PERMISSION'} message="I rent it or have permission to use it" busy={saving} onPress={()=>setUseBasis('PERMISSION')}/><Field message="Make" value={make} onChangeText={setMake} editable={!saving}/><Field message="Model" value={model} onChangeText={setModel} editable={!saving}/><Field message="Plate" value={plate} onChangeText={setPlate} editable={!saving}/><Button secondary label={configuration?t(configuration):t('Choose vehicle type')} busy={saving} onPress={() => setChoosing(true)} />{configuration.startsWith('Tractor + ') && <TrailerSetup configuration={configuration} configurations={data?.configurations || []} supported={supported} onChange={setSupported} disabled={saving} />}<Copy message="Assign a driver, then go live. Document review adds verified badges."/><Button message="Add vehicle" busy={saving} disabled={!useBasis} onPress={save} /><Button secondary message="Cancel" busy={saving} onPress={() => setMode(null)} /></Card>
   : mode === 'driver' ? <Card><Copy message="You can assign a vehicle immediately. The driver verifies their email when signing in."/><Field message="Driver name" value={name} onChangeText={setName} editable={!saving}/><Field message="Driver email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" editable={!saving}/><Field message="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" editable={!saving}/><Button message="Add driver" busy={saving} onPress={save} /><Button secondary message="Cancel" busy={saving} onPress={() => setMode(null)} /></Card>

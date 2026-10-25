@@ -9,8 +9,8 @@ begin
  raise exception 'EXPECTED_REVIEW_BUSINESS_DENIAL:%',code;
 end $$;
 do $test$
-declare review_owner uuid:=gen_random_uuid();review_staff uuid:=gen_random_uuid();real_owner uuid:=gen_random_uuid();candidate uuid:=gen_random_uuid();
- review_profile uuid:=gen_random_uuid();staff_profile uuid:=gen_random_uuid();real_profile uuid:=gen_random_uuid();candidate_profile uuid:=gen_random_uuid();
+declare review_owner uuid:=gen_random_uuid();review_staff uuid:=gen_random_uuid();real_owner uuid:=gen_random_uuid();
+ review_profile uuid:=gen_random_uuid();staff_profile uuid:=gen_random_uuid();real_profile uuid:=gen_random_uuid();
  review_vehicle uuid;real_vehicle uuid;review_business uuid;real_business uuid;real_shipment uuid:=gen_random_uuid();
  review_shipment uuid:=gen_random_uuid();invite uuid;token text:='play-business-'||substr(gen_random_uuid()::text,1,8);
  version_value bigint;uid uuid;result jsonb;cmd jsonb;owner_digest text:=encode(gen_random_bytes(32),'hex');
@@ -98,31 +98,14 @@ begin
  perform pg_temp.expect_review_business_denied(format('insert into public.business_capacity_grants(vehicle_id,workspace_id,created_by) values(%L,%L,%L)',review_vehicle,real_business,review_owner),'REVIEW_WORKSPACE_ONLY');
  perform pg_temp.expect_review_business_denied(format('insert into public.business_capacity_grants(vehicle_id,workspace_id,created_by) values(%L,%L,%L)',real_vehicle,review_business,real_owner),'REVIEW_WORKSPACE_ONLY');
  perform pg_temp.expect_review_business_denied(format('insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by) values(%L,''EMAIL'',%L,%L,%L)',
-  real_vehicle,'play-business-'||review_owner||'@example.test',encode(gen_random_bytes(32),'hex'),real_owner),'REVIEW_WORKSPACE_ONLY');
- perform pg_temp.expect_review_business_denied(format('insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by) values(%L,''EMAIL'',%L,%L,%L)',
-  review_vehicle,'play-business-'||real_owner||'@example.test',encode(gen_random_bytes(32),'hex'),review_owner),'REVIEW_WORKSPACE_ONLY');
- perform pg_temp.expect_review_business_denied(format('insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by) values(%L,''EMAIL'',%L,%L,%L)',
-  review_vehicle,'play-business-'||real_owner||'@example.test',review_capacity_digest,review_owner),'REVIEW_WORKSPACE_ONLY');
- insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by)
- values(review_vehicle,'EMAIL','play-business-'||review_staff||'@example.test',encode(gen_random_bytes(32),'hex'),review_owner);
- -- A legacy or imported direct email grant must not enter the synthetic team
- -- feed even if it predates the mutation guard.
- alter table public.capacity_access_grants disable trigger guard_review_capacity_email;
- insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by)
- values(real_vehicle,'EMAIL','play-business-'||review_owner||'@example.test',encode(gen_random_bytes(32),'hex'),real_owner);
- alter table public.capacity_access_grants enable trigger guard_review_capacity_email;
+  review_vehicle,'play-business-'||review_staff||'@example.test',encode(gen_random_bytes(32),'hex'),review_owner),'EMAIL_CAPACITY_RETIRED');
+ -- A historical cross-scope team grant must not enter the synthetic feed.
+ alter table public.business_capacity_grants disable trigger guard_business_review_capacity_grant;
+ insert into public.business_capacity_grants(vehicle_id,workspace_id,created_by)
+ values(real_vehicle,review_business,real_owner);
+ alter table public.business_capacity_grants enable trigger guard_business_review_capacity_grant;
  perform pg_temp.assert_review_business((select count(*)=0 from public.business_capacity_filtered_page(review_owner,review_business))
-  and (public.business_capacity_search(review_owner,review_business,'Sample',1)->>'total')::integer=0,'PERSONAL_EMAIL_CAPACITY_LEAK');
- insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
- values(candidate,'play-business-'||candidate||'@example.test',now(),'{}');
- update public.profiles set role='DRIVER',active=true where id=candidate;
- insert into public.provider_profiles(id,user_id,business_name,handle,review_workspace,public_visibility)
- values(candidate_profile,candidate,'Pending synthetic reviewer','review-pending-'||substr(candidate::text,1,12),true,'PRIVATE');
- insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by)
- values(real_vehicle,'EMAIL','play-business-'||candidate||'@example.test',encode(gen_random_bytes(32),'hex'),real_owner);
- perform pg_temp.expect_review_business_denied(format('insert into public.app_review_accounts(user_id,provider_profile_id,expected_role) values(%L,%L,''DRIVER'')',
-  candidate,candidate_profile),'REVIEW_WORKSPACE_ONLY');
- perform pg_temp.assert_review_business(not public.business_review_identity(candidate),'LATE_REGISTRATION_CROSSED_REAL_SHARE');
+  and (public.business_capacity_search(review_owner,review_business,'Sample',1)->>'total')::integer=0,'CROSS_SCOPE_CAPACITY_LEAK');
  cmd:=jsonb_build_object('id',real_shipment,'code','LGX-'||upper(substr(replace(real_shipment::text,'-',''),1,8)),
   'vehicle_id',real_vehicle,'origin_place_ref',place_refs[1],'passing_place_ref',place_refs[2],
   'destination_place_ref',place_refs[3],'cargo_summary','Ordinary shipment',
@@ -191,6 +174,6 @@ begin
  perform pg_temp.assert_review_business(not has_function_privilege('authenticated','public.business_review_identity(uuid)','EXECUTE')
   and not has_table_privilege('authenticated','public.business_workspaces','SELECT'),
   'REVIEW_FLAG_BROWSER_EXPOSURE');
- raise notice 'PASS: private reviewer business owner/staff, search, membership, invites, capacity email, Tracking attachment/detail, disabled marker and ACL';
+ raise notice 'PASS: private reviewer business owner/staff, search, membership, invites, retired email Capacity, Tracking attachment/detail, disabled marker and ACL';
 end $test$;
 rollback;

@@ -91,10 +91,10 @@ test('staff Featured and sponsor controls remain usable while platform brokerage
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
  for(const width of [1440,390,320]){
   await page.setViewportSize({width,height:900});await page.goto('/admin/featured');
-  await expect(page.getByRole('heading',{name:'Daily Featured Vehicles',exact:true})).toBeVisible();await expect(page.locator('.featured-upcoming-days > a')).toHaveCount(7);
+  await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers',exact:true})).toBeVisible();await expect(page.locator('.featured-upcoming-days > a')).toHaveCount(7);
   await expect(page.getByRole('button',{name:'Prepare upcoming days',exact:true})).toBeVisible();
   await page.locator('.featured-operation-overview details > summary').click();
-  await expect(page.getByText(/Sunday uses those same turns/)).toBeVisible();await expect(page.getByText(/Manual drafts stay private until published/)).toBeVisible();
+  await expect(page.getByText(/A new round starts after every eligible account has had a turn/)).toBeVisible();await expect(page.getByText(/Manual drafts stay private until published/)).toBeVisible();
   await page.locator('.featured-operation-overview details > summary').click();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await capture(page,info,`admin-featured-${width}.png`);
@@ -121,6 +121,6 @@ test('administrator Overview final copy and settled phone Featured capture',asyn
  const overview=page.locator('.admin-overview-page');await expect(overview.getByText('People and provider accounts',{exact:true})).toBeVisible();
  await expect(overview.getByText('Registered vehicles',{exact:true})).toBeVisible();await expect(overview.getByText('Shipments and progress updates',{exact:true})).toBeVisible();
  await capture(page,info,'admin-overview-1440-final.png');
- await page.setViewportSize({width:320,height:900});await page.goto('/admin/featured',{waitUntil:'domcontentloaded',timeout:60000});await expect(page.getByRole('heading',{name:'Daily Featured Vehicles',exact:true})).toBeVisible({timeout:30000});
+ await page.setViewportSize({width:320,height:900});await page.goto('/admin/featured',{waitUntil:'domcontentloaded',timeout:60000});await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers',exact:true})).toBeVisible({timeout:30000});
  await capture(page,info,'admin-featured-320-settled.png');
 });

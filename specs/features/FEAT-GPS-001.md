@@ -11,6 +11,10 @@ rollout: Prepare additive RLS-enabled private schema and pinned isolated server 
 
 # Fleet GPS integration — accepted implementation, not deployed
 
+Providers can ask for tracker registration from GPS devices. The Support link
+preselects the GPS device setup topic without claiming their device is already
+connected or creating a request before they write and send it (FEAT-SUP-001).
+
 Owner October15: implement dashboard cleanup and GPS fleet management on web and
 Expo. Providers retain capacity publication/networking and gain device management
 inside Fleet. Admin/staff management stays web-only. No new billing/plans.

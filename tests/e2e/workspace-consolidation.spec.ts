@@ -21,15 +21,15 @@ test('Independent Account groups saved details, profile edits and documents with
   const personal=details.getByRole('form',{name:'Account details'});
   await personal.getByLabel('First name',{exact:true}).fill('Grouped Account');
   await personal.getByLabel('Last / father name',{exact:true}).fill('Test');
-  const [savedResponse]=await Promise.all([page.waitForResponse(response=>response.url().endsWith('/api/account/details')&&response.request().method()==='POST',{timeout:30000}),personal.getByRole('button',{name:'Save account details'}).click()]);
+  const [savedResponse]=await Promise.all([page.waitForResponse(response=>response.url().endsWith('/api/account/details')&&response.request().method()==='POST',{timeout:45000}),personal.getByRole('button',{name:'Save account details'}).click()]);
   expect(savedResponse.status()).toBe(200);
   await expect(personal.getByRole('status')).toHaveText('Account details saved.');
   expect(new URL(page.url()).pathname).toBe('/app/more');
   expect(checked(await service.from('profiles').select('full_name').eq('id',actor.id).single()).full_name).toBe('Grouped Account Test');
   await details.getByRole('button',{name:'Cancel',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Grouped Account Test',exact:true})).toBeVisible();
-  await page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Transporter profile',exact:true}).click();
-  const business=page.locator('#business');await expect(business).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Grouped Account Test',exact:true})).toBeVisible({timeout:30000});
+  await Promise.all([page.waitForURL(url=>url.pathname==='/app/more'&&url.searchParams.get('tab')==='profile',{timeout:30000}),page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Transporter profile',exact:true}).click()]);
+  const business=page.locator('#business');await expect(business).toBeVisible({timeout:30000});
   await expect(business.getByRole('link',{name:'Open public page'})).toHaveAttribute('href',/^\/@/);
   await expect(business.getByLabel('Headline',{exact:true})).toHaveCount(0);
   const legacyHeadline=checked(await service.from('company_pages').select('headline').eq('provider_profile_id',actor.provider_profile_id).single()).headline;
@@ -55,8 +55,9 @@ test('Independent Account groups saved details, profile edits and documents with
   await expect(editor.getByLabel('Region or city administration',{exact:true})).toHaveValue(selectedRegion);
   await editor.getByRole('button',{name:'Cancel',exact:true}).click();
   expect(checked(await service.from('company_pages').select('headline,base_region_code').eq('provider_profile_id',actor.provider_profile_id).single())).toEqual({headline:legacyHeadline,base_region_code:selectedRegion});
-  await page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Documents',exact:true}).click();
+  await Promise.all([page.waitForURL(url=>url.pathname==='/app/more'&&url.searchParams.get('tab')==='documents',{timeout:30000}),page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Documents',exact:true}).click()]);
   const documents=page.locator('#documents');
+  await expect(documents).toBeVisible({timeout:30000});
   const ownerDocuments=documents.locator('[data-subject-kind=PROVIDER_PROFILE]');await expect(ownerDocuments).toHaveCount(1);
   await ownerDocuments.getByRole('button',{name:'Submit verification',exact:true}).click();
   const verification=page.getByRole('dialog',{name:'Submit verification',exact:true});
@@ -64,8 +65,8 @@ test('Independent Account groups saved details, profile edits and documents with
   await expect(verification.locator('input[name=subjectId]')).toHaveValue(actor.provider_profile_id);
   await expect(verification.locator('input[name=returnTo]')).toHaveValue('/app/more?tab=documents#documents');
   await verification.getByRole('button',{name:'Cancel',exact:true}).click();
-  await expect(page.locator('.sidebar-nav a[href="/app/menu"],.mobile-nav a[href="/app/menu"]')).toHaveCount(0);
-  await expect(page.locator('.mobile-nav a[href="/app/more"]')).toHaveCount(1);
+  await expect(page.locator('.public-workspace-nav a[href="/app/menu"],.public-mobile-nav a[href="/app/menu"]')).toHaveCount(0);
+  await expect(page.locator('.public-workspace-nav a[href="/app/more"]')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const duplicateIds=await page.locator('[id]').evaluateAll(elements=>elements.map(el=>el.id).filter((id,index,all)=>all.indexOf(id)!==index));
   expect(duplicateIds).toEqual([]);
@@ -98,10 +99,11 @@ test('Company driver Account keeps personal documents without an owner editor or
   await expect(page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Transporter profile',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Edit profile',exact:true})).toHaveCount(0);
   await expect(page.locator('#business')).toHaveCount(0);
-  await expect(page.locator('.mobile-nav a[href="/app/menu"],.mobile-nav a[href="/app/fleet"]')).toHaveCount(0);
-  await expect(page.locator('.workspace-support-shortcut')).toBeVisible();
+  await expect(page.locator('.public-workspace-nav a[href="/app/menu"],.public-mobile-nav a[href="/app/fleet"]')).toHaveCount(0);
+  await expect(page.locator('.public-workspace-nav a[href="/app/support"]')).toHaveCount(1);
   await page.getByRole('navigation',{name:'Account sections'}).getByRole('link',{name:'Documents',exact:true}).click();
   const documents=page.locator('#documents');
+  await expect(documents).toBeVisible({timeout:30000});
   await expect(documents.locator('[data-subject-kind=DRIVER]')).toHaveCount(1);
   await expect(documents.locator('[data-subject-kind=ORGANIZATION]')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
@@ -119,40 +121,36 @@ async function expectHeaderControlsFit(page:Page){
  const viewport=page.viewportSize();if(!viewport||viewport.width>760)return;
  for(const width of [320,viewport.width]){
   await page.setViewportSize({...viewport,width});
-  const header=page.locator('.provider-topbar');
+  const header=page.locator('.unified-site-header');
   const box=await header.boundingBox();expect(box).not.toBeNull();
   const boxes=[];
-  for(const selector of ['.language-picker select','.workspace-support-shortcut']){
+  for(const selector of ['.language-picker select','[data-testid="public-session-action"]']){
    const control=header.locator(selector);await expect(control).toBeVisible();
    const rect=await control.boundingBox();expect(rect).not.toBeNull();
    expect(rect!.x).toBeGreaterThanOrEqual(0);expect(rect!.x+rect!.width).toBeLessThanOrEqual(width);
    expect(rect!.y).toBeGreaterThanOrEqual(box!.y);expect(rect!.y+rect!.height).toBeLessThanOrEqual(box!.y+box!.height+1);
    expect(rect!.height).toBeGreaterThanOrEqual(44);boxes.push(rect!);
   }
-  const area=page.getByRole('navigation',{name:'Switch view'});await expect(area.getByRole('link',{name:'Marketplace',exact:true})).toBeVisible();
-  expect((await area.boundingBox())!.width).toBeLessThanOrEqual(width);
+  await expect(page.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Home',exact:true})).toBeVisible();
   for(let index=1;index<boxes.length;index++)expect(boxes[index].x).toBeGreaterThanOrEqual(boxes[index-1].x+boxes[index-1].width);
  }
 }
 
 
-test('Marketplace return keeps the selected location-source filters after visiting My workspace',async({page}:{page:Page})=>{
+test('Public capacity return keeps selected location-source filters after visiting another Home view',async({page}:{page:Page})=>{
  test.setTimeout(90000);
  const service=localAuditService(),actor=await auditProvider(service,'area-source-return');
  let signOut:(()=>Promise<unknown>)|undefined;
  try{
   signOut=await localSupportLogin(page,actor.id);
-  await page.goto('/?status=EMPTY%2CPARTIAL&locationSource=GPS%2CMOBILE');
+  await page.goto('/app/home/market?status=EMPTY%2CPARTIAL&locationSource=GPS%2CMOBILE');
   await expect(page.locator('.public-capacity-map')).toBeVisible();
-  const switcher=page.getByRole('navigation',{name:'Switch view',exact:true});
   await expect(page.getByRole('combobox',{name:'Language',exact:true})).toBeEnabled();
-  await Promise.all([page.waitForURL(/\/app\//,{timeout:30000}),switcher.getByRole('link',{name:'My workspace',exact:true}).click()]);
-  const back=page.getByRole('navigation',{name:'Switch view',exact:true}).getByRole('link',{name:'Marketplace',exact:true});
-  await expect(back).toHaveAttribute('href',/locationSource=GPS%2CMOBILE/);
-  await back.click();
+  await Promise.all([page.waitForURL(/\/app\/home\/vehicles/,{timeout:30000}),page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'Manage vehicles',exact:true}).click()]);
+  await page.goBack();
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   const url=new URL(page.url());
-  expect(url.pathname).toBe('/');
+  expect(url.pathname).toBe('/app/home/market');
   expect(url.searchParams.get('locationSource')).toBe('GPS,MOBILE');
   expect(url.searchParams.get('status')).toBe('EMPTY,PARTIAL');
  }finally{

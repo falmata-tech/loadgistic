@@ -10,14 +10,14 @@ import {isDemoTrackingShipment,demoTrackingLabel} from '@/lib/demo-tracking-iden
 
 const imageTypes=new Set(['image/jpeg','image/png','image/webp']);
 
-function TrackingProofPhoto({shipmentId,eventId}:{shipmentId:string;eventId:string}){
+function TrackingProofPhoto({shipmentId,eventId,endpoint}:{shipmentId:string;eventId:string;endpoint?:string}){
   const {t}=useTranslation();const [image,setImage]=React.useState(''),[error,setError]=React.useState(''),[attempt,setAttempt]=React.useState(0);
   React.useEffect(()=>{
     const controller=new AbortController();let objectUrl='';let mounted=true;
     const timeout=window.setTimeout(()=>controller.abort(),15000);setImage('');setError('');
     void (async()=>{
       try{
-        const response=await fetch(`/api/provider-shipments/${shipmentId}/proofs/${eventId}`,{credentials:'same-origin',cache:'no-store',signal:controller.signal});
+        const response=await fetch(endpoint||`/api/provider-shipments/${shipmentId}/proofs/${eventId}`,{credentials:'same-origin',cache:'no-store',signal:controller.signal});
         if(!response.ok)throw new Error(response.status===404||response.status===401||response.status===403?'Proof is unavailable or access has expired.':'The proof could not be opened. Please retry.');
         const mime=response.headers.get('content-type')?.split(';')[0].trim().toLowerCase()||'';
         if(!imageTypes.has(mime))throw new Error('The proof could not be opened. Please retry.');
@@ -31,15 +31,15 @@ function TrackingProofPhoto({shipmentId,eventId}:{shipmentId:string;eventId:stri
       }finally{window.clearTimeout(timeout);}
     })();
     return()=>{mounted=false;controller.abort();window.clearTimeout(timeout);if(objectUrl)URL.revokeObjectURL(objectUrl);};
-  },[shipmentId,eventId,attempt]);
+  },[shipmentId,eventId,endpoint,attempt]);
   return <>{error?<div className="tracking-proof-error"><p role="alert"><Text message={error}/></p><button type="button" className="button secondary" onClick={()=>setAttempt((value:number)=>value+1)}><Text message="Try again"/></button></div>:image?<img className="tracking-proof-photo" src={image} alt={t('Shipment proof photo')} onError={()=>setError('The proof could not be opened. Please retry.')}/>:<p className="tracking-proof-loading" role="status"><Text message="Opening proof…"/></p>}</>;
 }
 
-export function TrackingProofLink({shipmentId,eventId}:{shipmentId:string;eventId:string}){
+export function TrackingProofLink({shipmentId,eventId,endpoint}:{shipmentId:string;eventId:string;endpoint?:string}){
   const [open,setOpen]=React.useState(false),[ready,setReady]=React.useState(false);
   const demo=isDemoTrackingShipment(shipmentId);
   React.useEffect(()=>setReady(true),[]);
   return <><button type="button" className="button secondary small" disabled={!ready} onClick={()=>setOpen(true)}><Image aria-hidden="true"/><Text message={demo?demoTrackingLabel('proof'):'Open proof'}/></button>
-    {open?<TrackingDetailDialog title={demo?demoTrackingLabel('proof'):'Shipment proof'} closeLabel="Close proof" className="tracking-proof-dialog" onClose={()=>setOpen(false)}><TrackingProofPhoto shipmentId={shipmentId} eventId={eventId}/></TrackingDetailDialog>:null}
+    {open?<TrackingDetailDialog title={demo?demoTrackingLabel('proof'):'Shipment proof'} closeLabel="Close proof" className="tracking-proof-dialog" onClose={()=>setOpen(false)}><TrackingProofPhoto shipmentId={shipmentId} eventId={eventId} endpoint={endpoint}/></TrackingDetailDialog>:null}
   </>;
 }

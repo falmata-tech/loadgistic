@@ -164,13 +164,11 @@ test('demo truck locations are distributed across real markets without diagonal 
   assert.ok(Math.max(...publicByPlace.values())<=6);
 });
 
-test('retained unbound legacy provider routes remain geographically coherent with the demonstration data',()=>{
-  const regularByOwner=new Map(tables.profile_routes
-    .map(route=>[route.organization_id||route.provider_profile_id,route]));
-  for(const capacity of tables.capacities){
-    const regular=regularByOwner.get(capacity.provider_organization_id||capacity.provider_profile_id);
-    assert.ok(regular,capacity.id);
-    assert.equal(regular.assigned_vehicle_id,null);assert.equal(regular.assigned_driver_user_id,null);
+test('demo corridor routes remain geographically coherent with their assigned vehicles',()=>{
+  const capacityByVehicle=new Map(tables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
+  for(const regular of tables.profile_routes){
+    const capacity=capacityByVehicle.get(regular.assigned_vehicle_id);
+    assert.ok(capacity,regular.id);
     const distanceToRegular=point=>{
       if(regular.geometry==='ROUTE')return capacityRoutePointMatch(point,json(regular.route_points_json),{radiusKm:10}).distance_km;
       const match=serviceAreaGeometryMatch(point,json(regular.area_boundary_json),{searchRadiusKm:10});
@@ -188,11 +186,11 @@ test('retained unbound legacy provider routes remain geographically coherent wit
   }
 });
 
-test('primary Driver demo retains its coherent unbound legacy route without assigning it to the current truck',()=>{
+test('primary Driver demo has a coherent Service area attached to the current vehicle',()=>{
   const capacity=tables.capacities.find(item=>item.vehicle_id==='veh-driver-1');
   const regular=tables.profile_routes.find(item=>item.provider_profile_id==='provider-driver');
   assert.ok(capacity&&regular);
-  assert.equal(regular.assigned_vehicle_id,null);assert.equal(regular.assigned_driver_user_id,null);
+  assert.equal(regular.assigned_vehicle_id,'veh-driver-1');assert.equal(regular.assigned_driver_user_id,'user-driver');
   const location={lat:capacity.location_lat,lng:capacity.location_lng};
   const currentPoints=json(capacity.current_route_points_json);
   assert.equal(capacity.location_place_ref,'builtin:sebeta');
@@ -207,12 +205,16 @@ test('primary Driver demo retains its coherent unbound legacy route without assi
   assert.equal(serviceAreaGeometryMatch(location,json(regular.area_boundary_json),{searchRadiusKm:0}).inside,true);
 });
 
-test('legacy provider route and Service area records are retained unbound rather than guessed onto trucks',()=>{
+test('demo Corridor routes and Service areas each belong to one current vehicle/Driver pair',()=>{
   assert.equal(tables.profile_routes.length,30);
   const ownerKeys=tables.profile_routes.map(route=>route.organization_id||route.provider_profile_id);
   assert.equal(new Set(ownerKeys).size,ownerKeys.length);
+  const vehicles=new Map(tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
+  const currentDrivers=new Map(tables.driver_vehicle_assignments.filter(assignment=>assignment.active===1).map(assignment=>[assignment.vehicle_id,assignment.driver_user_id]));
   for(const route of tables.profile_routes){
-    assert.equal(route.assigned_vehicle_id,null);assert.equal(route.assigned_driver_user_id,null);
+    const vehicle=vehicles.get(route.assigned_vehicle_id);
+    assert.ok(vehicle,route.id);
+    assert.equal(route.assigned_driver_user_id,currentDrivers.get(vehicle.id),route.id);
     assert.ok(['ROUTE','RADIUS'].includes(route.geometry));
     if(route.geometry==='ROUTE'){
       const points=json(route.route_points_json);

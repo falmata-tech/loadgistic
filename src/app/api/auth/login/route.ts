@@ -3,7 +3,7 @@ import { redirectWith, text } from '@/lib/redirects';
 import { checkRateLimit, requestKey } from '@/lib/rate-limit';
 import { createSupabaseRouteClient } from '@/lib/supabase/route';
 import { getManagedCurrentUser } from '@/lib/identity/supabase';
-import { localFixturePasswordLoginEnabled } from '@/lib/auth-flow.js';
+import { localFixturePasswordLoginEnabled, managedWorkspaceDestination } from '@/lib/auth-flow.js';
 
 export const runtime = 'nodejs';
 
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const password = text(form, 'password');
   const accountRate = await checkRateLimit(`${requestKey(request,'login-account')}:${email.toLowerCase()}`,accountLimit,60_000);
   if (!accountRate.allowed) return redirectWith(request, '/login', 'error', `Too many attempts. Try again in ${accountRate.retryAfterSeconds} seconds.`);
-  const response=new NextResponse(null,{status:303,headers:{Location:'/app/home'}});
+  const response=new NextResponse(null,{status:303,headers:{Location:'/'}});
   const client=createSupabaseRouteClient(request,response);
   const {data,error}=await client.auth.signInWithPassword({email,password});
   const projection=!error&&data.user?await getManagedCurrentUser(client,data.user):null;
@@ -27,6 +27,6 @@ export async function POST(request: NextRequest) {
     response.headers.set('Location','/login?error=The+email+or+password+is+incorrect.');
     return response;
   }
-  response.headers.set('Location',projection.role==='SUPPORT'?'/support':'/app/home');
+  response.headers.set('Location',managedWorkspaceDestination(projection.role,projection.selected_business_workspace));
   return response;
 }

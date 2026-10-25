@@ -8,7 +8,7 @@ import {
 import {buildEmailMessage} from './email-templates.js';
 import {emailDeliveryStatus,sendManagedEmail} from './email-provider.js';
 import {getProviderGuestTracking,listPendingEmailDeliveries,recordEmailDeliveryAttempt} from './provider-tracking.js';
-import {guestSupportAccessCode,providerTrackingOtpCode,reviewAccessCode,sharedCapacityOtpCode,trackingAccessCode,providerTrackingRecipientDigest} from './security.js';
+import {guestSupportAccessCode,providerTrackingOtpCode,reviewAccessCode,trackingAccessCode,providerTrackingRecipientDigest} from './security.js';
 
 export function emailDeliveryConfigured(environment=process.env){
   return emailDeliveryStatus(environment).configured;
@@ -18,22 +18,7 @@ export function localAccessCodeForDevelopment(challenge,delivery,environment=pro
   return environment!=='production'&&!delivery.configured&&challenge.deliveryQueued&&challenge.accessCode?challenge.accessCode:null;
 }
 
-const SHARED_CAPACITY_REQUEST_MESSAGE='Check your email for a one-time code.';
-const SHARED_CAPACITY_NO_SHARE_MESSAGE='No transporter has shared capacity with this email yet. Ask a transporter to share capacity with this email address.';
 const TRACKING_OTP_REQUEST_MESSAGE='If shipments are shared with this email, a code will arrive shortly. If it does not arrive, check spam or confirm your email with the transporter.';
-
-export function sharedCapacityOtpRequestResponse(challenge,{
-  configured=emailDeliveryConfigured(),
-  environment=process.env.NODE_ENV
-}={}){
-  if(!challenge.deliveryQueued){
-    return {ok:true,verificationRequired:false,message:SHARED_CAPACITY_NO_SHARE_MESSAGE};
-  }
-  const localTestCode=localAccessCodeForDevelopment(challenge,{configured},environment);
-  return localTestCode
-    ?{ok:true,verificationRequired:true,message:'Email delivery is not configured in this local environment. Use the local test code below.',localTestCode}
-    :{ok:true,verificationRequired:true,message:SHARED_CAPACITY_REQUEST_MESSAGE};
-}
 
 export function providerTrackingOtpRequestResponse(challenge,{
   configured=emailDeliveryConfigured(),
@@ -125,6 +110,7 @@ export async function deliverTargetedAccessEmail(kind,entityId,{
   recheckDelivery=accessEmailDeliveryIsDeliverable,
   sendEmail=sendManagedEmail
 }={}){
+  if(kind==='SHARED_CAPACITY')throw new Error('EMAIL_CAPACITY_RETIRED');
   const configuration=deliveryStatus();
   if(!configuration.configured)return {configured:false,provider:'none',attempted:0,sent:0,failed:0,skipped:0};
   const delivery=await claimDelivery(kind,entityId);
@@ -139,9 +125,13 @@ async function deliverAccessEmailRows(deliveries,{configuration,recordAttempt,re
       skipped+=1;
       continue;
     }
-    const shared=delivery.delivery_kind==='SHARED_CAPACITY';
+    // An old queued Capacity email must not be sent between web and SQL rollout.
+    if(delivery.delivery_kind==='SHARED_CAPACITY'){
+      skipped+=1;
+      continue;
+    }
     const tracking=delivery.delivery_kind==='TRACKING_OTP';
-    const shortLived=shared||tracking;
+    const shortLived=tracking;
     if(shortLived){
       const expiresAt=new Date(delivery.challenge_expires_at||0).getTime();
       if(!Number.isFinite(expiresAt)||expiresAt<=Date.now()+30_000){
@@ -160,11 +150,11 @@ async function deliverAccessEmailRows(deliveries,{configuration,recordAttempt,re
     }
     attempted+=1;
     const payload={
-      template:shared?'shared-capacity-access':tracking?'tracking-access-code':'assisted-matching-access',
+      template:tracking?'tracking-access-code':'assisted-matching-access',
       to:delivery.recipient_email,
       access:{
-        url:publicUrl(shared?'/shared-capacity':tracking?'/track':'/help'),
-        code:shared?sharedCapacityOtpCode(delivery.entity_id):tracking?providerTrackingOtpCode(delivery.entity_id):guestSupportAccessCode(delivery.entity_id)
+        url:publicUrl(tracking?'/track':'/help'),
+        code:tracking?providerTrackingOtpCode(delivery.entity_id):guestSupportAccessCode(delivery.entity_id)
       }
     };
     try{

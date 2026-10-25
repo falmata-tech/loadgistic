@@ -1,25 +1,23 @@
 import {
   grantSupabasePrivateCapacityAccess,
+  listSupabaseAccountCapacity,
   nameSupabasePrivateCapacityContact,
   listSupabaseLoadgisticSharedCapacity,
   listSupabasePrivateCapacityNetwork,
-  listSupabaseSharedCapacity,
-  requestSupabaseSharedCapacityOtp,
   revokeSupabasePrivateCapacityAccess,
   setSupabaseLoadgisticCapacityAccess,
-  verifySupabaseSharedCapacityAccess
 } from './repository/supabase.js';
+import {privateContactDigest} from './security.js';
 
 export const listPrivateCapacityNetwork=listSupabasePrivateCapacityNetwork;
 export const grantPrivateCapacityAccess=grantSupabasePrivateCapacityAccess;
 export const namePrivateCapacityContact=nameSupabasePrivateCapacityContact;
 export const setLoadgisticCapacityAccess=setSupabaseLoadgisticCapacityAccess;
 export const revokePrivateCapacityAccess=revokeSupabasePrivateCapacityAccess;
-export const requestSharedCapacityOtp=requestSupabaseSharedCapacityOtp;
-export const verifySharedCapacityAccess=verifySupabaseSharedCapacityAccess;
 
-export function listSharedCapacity(emailDigest,filters={}){
-  return listSupabaseSharedCapacity(emailDigest,filters,{pageSize:100,cursor:filters.cursor});
+export function listAccountCapacity(user,filters={}){
+  if(!user?.id||!user?.email||!user?.active)throw new Error('ACCOUNT_CAPACITY_FORBIDDEN');
+  return listSupabaseAccountCapacity(user.id,privateContactDigest(user.email),filters,{pageSize:100,cursor:filters.cursor});
 }
 
 export function listLoadgisticSharedCapacity(user,filters={}){

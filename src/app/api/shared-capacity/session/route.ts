@@ -1,13 +1,10 @@
 import {NextResponse} from 'next/server.js';
-import {clearSharedCapacitySession,getSharedCapacitySession,setSharedCapacitySession} from '@/lib/auth';
+import {clearSharedCapacitySession} from '@/lib/auth';
 
 export const runtime='nodejs';
 
 export async function POST(){
-  const session=await getSharedCapacitySession();
-  if(!session)return NextResponse.json({ok:false,error:'Email verification is required.'},{status:401,headers:{'Cache-Control':'no-store'}});
-  const renewed=await setSharedCapacitySession(session.emailDigest);
-  return NextResponse.json({ok:true,expiresAt:renewed.expiresAt},{headers:{'Cache-Control':'private, no-store'}});
+  return NextResponse.json({ok:false,error:'Sign in to view Shared capacity.'},{status:410,headers:{'Cache-Control':'no-store'}});
 }
 
 export async function DELETE(){

@@ -2,7 +2,7 @@
 import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, CircleHelp, Headphones, History, MessageCircle, MessagesSquare, PackageSearch, Plus, Send, Truck, UserRound } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, CircleHelp, Headphones, History, MessageCircle, MessagesSquare, PackageSearch, Plus, Satellite, Send, Truck, UserRound } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
 import { getOpenMemberSupportConversation, getSupportConversation, listMemberSupportConversations } from '@/lib/support.js';
 import { PageHeader } from '@/components/page-header';
@@ -16,13 +16,15 @@ const categories=[
   {value:'VERIFICATION',label:'Verification',icon:BadgeCheck},
   {value:'LOAD_TRACKING',label:'Shipment & tracking',icon:PackageSearch},
   {value:'CAPACITY',label:'Capacity',icon:Truck},
+  {value:'GPS_SETUP',label:'GPS device setup',icon:Satellite},
   {value:'OTHER',label:'Other',icon:CircleHelp}
 ];
-function supportCategoryName(value:string){return value==='PAYMENT'?'Other':value.replaceAll('_',' ');}
+function supportCategoryName(value:string){return value==='PAYMENT'?'Other':value==='GPS_SETUP'?'GPS device setup':value.replaceAll('_',' ');}
 
 export default async function MemberSupportPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser(['TRANSPORTER','DRIVER','CUSTOMER'],{allowLimited:true});
   const query=await searchParams;
+  const selectedCategory=categories.some(category=>category.value===query.category)?query.category:'ACCOUNT';
   const result:any=await listMemberSupportConversations(user,{page:query.page,pageSize:10,status:'CLOSED'});
   const open:any=await getOpenMemberSupportConversation(user);
   let conversation:any=null;
@@ -45,7 +47,7 @@ export default async function MemberSupportPage({searchParams}:{searchParams:Pro
     {conversation?<SupportThread conversation={conversation} user={user} canClose/>:showStart?<form className="form-card support-start-form" action="/api/support/conversations" method="post">
       <fieldset>
         <legend><span className="step-number">1</span><Text message="Choose a topic"/></legend>
-        <div className="support-category-grid">{categories.map((category,index)=>{const Icon=category.icon;return <label key={category.value}><input type="radio" name="category" value={category.value} defaultChecked={index===0}/><span><Icon aria-hidden="true"/><strong>{category.label}</strong></span></label>;})}</div>
+        <div className="support-category-grid">{categories.map(category=>{const Icon=category.icon;return <label key={category.value}><input type="radio" name="category" value={category.value} defaultChecked={category.value===selectedCategory}/><span><Icon aria-hidden="true"/><strong><Text message={category.label}/></strong></span></label>;})}</div>
       </fieldset>
       <div className="form-group"><label htmlFor="support-message"><span className="step-number">2</span><Send aria-hidden="true"/><Text message="What do you need?"/></label><Localized as="textarea" copy={["placeholder"]} id="support-message" name="body" maxLength={2000} rows={5} required placeholder="Describe the problem"/></div>
       <button className="button icon-button-label"><Send aria-hidden="true"/><Text message="Send to support"/></button>

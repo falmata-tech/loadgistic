@@ -9,12 +9,15 @@ import {MANAGED_OAUTH_COOKIE} from '@/lib/managed-oauth-flow.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectUrl,text} from '@/lib/redirects';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
+import {signupAudience,signupEntry} from '@/lib/signup-audience.js';
 
 export const runtime='nodejs';
 
-function redirectAccess(request:NextRequest,key:'error'|'success',message:string,step=''){
-  const location=redirectUrl(request,'/login');
+function redirectAccess(request:NextRequest,key:'error'|'success',message:string,step='',audience='EXISTING',from=''){
+  const location=redirectUrl(request,audience==='EXISTING'?'/login':'/signup');
   if(step)location.searchParams.set('step',step);
+  if(audience!=='EXISTING')location.searchParams.set('audience',audience);
+  if(from)location.searchParams.set('from',from);
   location.searchParams.set(key,message);
   const response=NextResponse.redirect(location,303);
   response.headers.set('Cache-Control','no-store');
@@ -24,18 +27,20 @@ function redirectAccess(request:NextRequest,key:'error'|'success',message:string
 export async function POST(request:NextRequest){
   const form=await request.formData();
   const email=normalizeManagedAuthEmail(text(form,'email'));
-  if(!email)return redirectAccess(request,'error','Enter a valid email address.');
+  const audience=signupAudience(text(form,'audience'));
+  const from=signupEntry(text(form,'from'));
+  if(!email)return redirectAccess(request,'error','Enter a valid email address.','',audience,from);
   const clientRate=await checkRateLimit(requestKey(request,'managed-account-email-request'),10,10*60_000);
   const accountRate=await checkRateLimit(`managed-account-email-request:${email}`,5,10*60_000);
   if(!clientRate.allowed||!accountRate.allowed){
     const seconds=Math.max(clientRate.retryAfterSeconds,accountRate.retryAfterSeconds);
     const minutes=Math.max(1,Math.ceil(seconds/60));
-    return redirectAccess(request,'error',`Too many code requests. Try again in about ${minutes} minute${minutes===1?'':'s'}.`);
+    return redirectAccess(request,'error',`Too many code requests. Try again in about ${minutes} minute${minutes===1?'':'s'}.`,'',audience,from);
   }
   const callbackUrl=managedAuthCallbackUrl({requestUrl:redirectUrl(request,'/').toString()});
-  if(!callbackUrl)return redirectAccess(request,'error',MANAGED_AUTH_UNAVAILABLE);
+  if(!callbackUrl)return redirectAccess(request,'error',MANAGED_AUTH_UNAVAILABLE,'',audience,from);
 
-  const response=redirectAccess(request,'success',MANAGED_AUTH_CODE_SENT,'code');
+  const response=redirectAccess(request,'success',MANAGED_AUTH_CODE_SENT,'code',audience,from);
   response.cookies.set(MANAGED_SIGNUP_COOKIE,createProviderSignupHandoff(email),{
     httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',
     maxAge:MANAGED_SIGNUP_MAX_AGE_SECONDS

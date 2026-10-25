@@ -12,7 +12,7 @@ do $scope$
 declare owner_id uuid:=gen_random_uuid();org uuid:=gen_random_uuid();driver_a uuid:=gen_random_uuid();driver_b uuid:=gen_random_uuid();
  outsider uuid:=gen_random_uuid();other_org uuid:=gen_random_uuid();independent uuid:=gen_random_uuid();independent_provider uuid:=gen_random_uuid();independent_truck uuid;independent_new uuid;independent_route uuid;truck_a uuid;truck_b uuid;cap_a uuid;cap_b uuid;route_a uuid;route_b uuid;legacy uuid:=gen_random_uuid();
  places jsonb;other_places jsonb;first_lat double precision;first_lng double precision;far_lat double precision;far_lng double precision;viewport jsonb;city_ref text;region text;handle text:='regular-'||org;command_a jsonb;command_b jsonb;
- original jsonb;legacy_before jsonb;workspace jsonb;payload jsonb;statement text;signature text;observed_a integer;observed_b integer;featured record;digest text:=repeat('4',64);before_audit bigint;page_id uuid;admin_id uuid;authority_source uuid;
+ original jsonb;legacy_before jsonb;workspace jsonb;payload jsonb;statement text;signature text;observed_a integer;observed_b integer;featured record;before_audit bigint;page_id uuid;admin_id uuid;authority_source uuid;broker_actor uuid:=gen_random_uuid();broker_workspace uuid;
  marker text:='Legacyservicessentinel140';about_marker text:='Aboutsearchsentinel140';
 begin
  select current_route_points_json into strict places from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
@@ -34,9 +34,11 @@ begin
  (driver_a,'regular-a-'||driver_a||'@example.test',now(),'{"full_name":"Synthetic Regular Driver A"}'),
  (driver_b,'regular-b-'||driver_b||'@example.test',now(),'{"full_name":"Synthetic Regular Driver B"}'),
  (outsider,'regular-other-'||outsider||'@example.test',now(),'{"full_name":"Synthetic unrelated owner"}'),
- (independent,'regular-independent-'||independent||'@example.test',now(),'{"full_name":"Synthetic independent Driver"}');
+ (independent,'regular-independent-'||independent||'@example.test',now(),'{"full_name":"Synthetic independent Driver"}'),
+ (broker_actor,'regular-broker-'||broker_actor||'@example.invalid',now(),'{}');
  update profiles set role='TRANSPORTER',active=true where id in(owner_id,outsider);
  update profiles set role='DRIVER',active=true where id in(driver_a,driver_b,independent);
+ update profiles set role='SHIPPER',active=true where id=broker_actor;
  update profiles set drives_truck=true where id=independent;
  perform accept_content_policy(owner_id,'2026-10-09');
  insert into organizations(id,name,handle,type,city,city_place_ref) values(org,'Synthetic Regular fleet',handle,'TRANSPORT_COMPANY','Synthetic city',city_ref),
@@ -44,6 +46,7 @@ begin
  insert into organization_members(organization_id,user_id,membership_role) values(org,owner_id,'OWNER'),(org,driver_a,'DRIVER'),(org,driver_b,'DRIVER'),(other_org,outsider,'OWNER');
  insert into company_pages(organization_id,published,base_region_code,contact_phone,show_contact_phone,about,services)
  values(org,true,region,'+251900000140',true,about_marker,marker) returning id into page_id;
+ broker_workspace:=(business_workspace_create(broker_actor,jsonb_build_object('name','Regular route broker','handle','regular-broker-'||left(broker_actor::text,12),'kind','BROKER'))->>'id')::uuid;
  insert into drivers(organization_id,user_id,name,active) values(org,driver_a,'Synthetic Regular Driver A',true),(org,driver_b,'Synthetic Regular Driver B',true);
  truck_a:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Synthetic','model','Regular A','plate','RA-'||left(org::text,8),'cargo_configuration','Cargo van','use_basis','OWNED'))->>'id')::uuid;
  truck_b:=(create_provider_vehicle(owner_id,jsonb_build_object('make','Synthetic','model','Regular B','plate','RB-'||left(org::text,8),'cargo_configuration','Pickup truck','use_basis','PERMISSION'))->>'id')::uuid;
@@ -84,14 +87,13 @@ begin
  perform pg_temp.assert_regular(not exists(select 1 from jsonb_array_elements(workspace->'corridors') r where r->>'id'=legacy::text),'LEGACY_ROUTE_PROJECTED');
  workspace:=provider_capacity_workspace(driver_a);
  perform pg_temp.assert_regular(jsonb_array_length(workspace->'corridors')=1 and workspace->'corridors'->0->>'vehicle_id'=truck_a::text and workspace->'corridors'->0->>'driver_user_id'=driver_a::text,'DRIVER_SCOPE_OR_SCOPE_IDS_WRONG');
- insert into capacity_access_grants(vehicle_id,audience_type,recipient_email,recipient_email_digest,created_by)
- values(truck_a,'EMAIL','regular-recipient@example.test',digest,owner_id),(truck_b,'EMAIL','regular-recipient@example.test',digest,owner_id);
+ insert into business_capacity_grants(vehicle_id,workspace_id,created_by)
+ values(truck_a,broker_workspace,owner_id),(truck_b,broker_workspace,owner_id);
  for statement in select unnest(array[
   format('select payload from public_capacity_page(%L)',jsonb_build_object('provider',handle)),
   format('select payload from capacity_search_public_rows(%L,null,null,14)',jsonb_build_object('provider',handle)),
-  format('select payload from private_capacity_projection(''EMAIL'',%L)',digest),
-  format('select payload from private_capacity_filtered_page(''EMAIL'',%L,null,null,null,100,%L)',digest,jsonb_build_object('provider',handle)),
-  format('select payload from capacity_search_private_rows(''EMAIL'',%L,null,null,null,100,%L)',digest,jsonb_build_object('provider',handle))
+  format('select payload from business_capacity_filtered_page(%L,%L,null,null,100,%L)',broker_actor,broker_workspace,jsonb_build_object('provider',handle)),
+  format('select payload from business_capacity_filtered_page(%L,%L,null,null,100,%L)',broker_actor,broker_workspace,jsonb_build_object('vehicle_ids',jsonb_build_array(truck_a,truck_b)))
  ]) loop
   observed_a:=0;observed_b:=0;
   for payload in execute statement loop
@@ -119,9 +121,9 @@ begin
  perform set_provider_capacity_sharing(owner_id,truck_a,'PRIVATE');
  update capacities set visibility='OPEN' where id=cap_a;
  perform pg_temp.assert_regular((select coalesce(sum((c.payload->>'count')::integer),0)=1 from public_capacity_clusters(jsonb_build_object('provider',handle,'viewport',jsonb_build_array(-180,-85,180,85))) c),'PRIVATE_CLUSTER_POLICY_NOT_AUTHORITATIVE');
- perform set_provider_capacity_sharing(owner_id,truck_a,'EXCLUSIVE','cluster-exclusive@example.test',repeat('6',64));
+ perform pg_temp.denied_regular(format('select set_provider_capacity_sharing(%L,%L,%L,%L,%L)',owner_id,truck_a,'EXCLUSIVE','cluster-exclusive@example.test',repeat('6',64)),'EMAIL_CAPACITY_RETIRED');
  update capacities set visibility='OPEN' where id=cap_a;
- perform pg_temp.assert_regular((select coalesce(sum((c.payload->>'count')::integer),0)=1 from public_capacity_clusters(jsonb_build_object('provider',handle,'viewport',jsonb_build_array(-180,-85,180,85))) c),'EXCLUSIVE_CLUSTER_POLICY_NOT_AUTHORITATIVE');
+ perform pg_temp.assert_regular((select coalesce(sum((c.payload->>'count')::integer),0)=1 from public_capacity_clusters(jsonb_build_object('provider',handle,'viewport',jsonb_build_array(-180,-85,180,85))) c),'RETIRED_EXCLUSIVE_DID_NOT_KEEP_PRIVATE_POLICY');
  perform set_provider_capacity_sharing(owner_id,truck_a,'BOTH');
  update organizations set content_hidden=true where id=org;
  perform pg_temp.assert_regular(not exists(select 1 from public_capacity_clusters(jsonb_build_object('provider',handle,'viewport',jsonb_build_array(-180,-85,180,85)))),'HIDDEN_FLEET_CLUSTER_EXPOSED');
@@ -174,8 +176,8 @@ begin
  perform pg_temp.assert_regular(not found or (featured.driver_user_id=driver_b and featured.regular_signal is null),'FEATURED_STALE_PAIR_ROUTE_VISIBLE');
  perform set_provider_capacity_sharing(owner_id,truck_a,'PRIVATE');
  perform pg_temp.assert_regular(not exists(select 1 from featured_truck_regular_signals(array[truck_a])),'PRIVATE_TRUCK_FEATURED_REGULAR_EXPOSED');
- perform set_provider_capacity_sharing(owner_id,truck_a,'EXCLUSIVE','regular-exclusive@example.test',repeat('5',64));
- perform pg_temp.assert_regular(not exists(select 1 from featured_truck_regular_signals(array[truck_a])),'EXCLUSIVE_TRUCK_FEATURED_REGULAR_EXPOSED');
+ perform pg_temp.denied_regular(format('select set_provider_capacity_sharing(%L,%L,%L,%L,%L)',owner_id,truck_a,'EXCLUSIVE','regular-exclusive@example.test',repeat('5',64)),'EMAIL_CAPACITY_RETIRED');
+ perform pg_temp.assert_regular(not exists(select 1 from featured_truck_regular_signals(array[truck_a])),'RETIRED_EXCLUSIVE_TRUCK_FEATURED_REGULAR_EXPOSED');
  perform set_provider_capacity_sharing(owner_id,truck_a,'BOTH');
  update capacities set updated_at=now()-interval '1 second' where vehicle_id=truck_a;
  perform set_provider_assigned_vehicle_duty(driver_b,jsonb_build_object('vehicle_id',truck_a,'on_duty',false));

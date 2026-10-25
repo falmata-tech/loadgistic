@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {workspaceCapabilities} from '../apps/mobile/src/navigation/destinations.ts';
-import {accountSections,hasWorkspace,activeDestination,isWorkspace,publicDestinations,workspaceDestinations,workspaceRoleLabel} from '../apps/mobile/src/navigation/destinations.ts';
+import {aboutDestination,accountSections,hasWorkspace,activeDestination,isWorkspace,phoneDestinations,publicDestinations,workspaceDestinations,workspaceRoleLabel} from '../apps/mobile/src/navigation/destinations.ts';
 import {fleetDriverEditorKey} from '../apps/mobile/src/navigation/current-driving-pair.ts';
-import {providerWorkspaceCapabilities} from '../src/lib/provider-workspace.js';
+import {providerHomeTab,providerHomeTabs,providerWorkspaceCapabilities} from '../src/lib/provider-workspace.js';
 import {paginateResults} from '../src/lib/pagination.js';
 import {capacityLocationSource,selectedCapacityLocation} from '../src/lib/capacity-location-selection.js';
 import {locationSourceLabel} from '../src/lib/location-source.js';
@@ -100,10 +100,10 @@ test('native self-assignment preserves owner authority and omits employee remova
 test('web driving-owner Home selects their exact driver assignment while fleet-only owners retain the fleet Home',async()=>{
  const view=runtime();let user={id:'owner',active:true,role:'TRANSPORTER',organization_id:'fleet',owns_provider_account:true,can_manage_fleet:true,drives_truck:true,current_driver_id:'owner',current_driven_vehicle_id:'mine'};
  const vehicles=[{id:'employee-truck',assigned_driver:{id:'employee'}},{id:'mine',assigned_driver:{id:'owner'}}],capacities=vehicles.map(vehicle=>({vehicle_id:vehicle.id})),corridors=vehicles.map(vehicle=>({vehicle_id:vehicle.id}));
- const screen=view.compile('src/app/app/home/page.tsx',{providerWorkspaceCapabilities,requireUser:async()=>user,getWorkspaceAccess:async()=>({granted:true}),getProviderCapacityWorkspace:async()=>({vehicles,capacities,corridors,access:{kind:'OWNER',can_manage_capacity:true}}),DriverCapacityHome:'DriverCapacityHome',FleetWorkspace:'FleetWorkspace',redirect(){throw Error('REDIRECT');}}).default;
- let tree=await screen({searchParams:Promise.resolve({})});assert.equal(tree.type,'DriverCapacityHome');assert.deepEqual(tree.props.vehicles.map(vehicle=>vehicle.id),['mine']);assert.deepEqual(tree.props.capacities.map(capacity=>capacity.vehicle_id),['mine']);assert.deepEqual(tree.props.corridors.map(corridor=>corridor.vehicle_id),['mine']);assert.equal(tree.props.ownsFleet,true);
- vehicles[1].assigned_driver.id='someone-else';tree=await screen({searchParams:Promise.resolve({})});assert.deepEqual(tree.props.vehicles,[],'a stale current-truck ID cannot replace proof of the current assigned driver');
- user={...user,drives_truck:false,current_driver_id:null,current_driven_vehicle_id:null};tree=await screen({searchParams:Promise.resolve({})});assert.equal(tree.type,'FleetWorkspace');
+ const screen=view.compile('src/components/provider-home.tsx',{providerWorkspaceCapabilities,providerHomeTab,providerHomeTabs,requireUser:async()=>user,getWorkspaceAccess:async()=>({granted:true}),getProviderCapacityWorkspace:async()=>({vehicles,capacities,corridors,access:{kind:'OWNER',can_manage_capacity:true}}),DriverCapacityHome:'DriverCapacityHome',FleetWorkspace:'FleetWorkspace',redirect(){throw Error('REDIRECT');}}).ProviderHome;
+ let tree=await screen({searchParams:Promise.resolve({})}),panel=find(tree,'DriverCapacityHome');assert.ok(panel);assert.deepEqual(panel.props.vehicles.map(vehicle=>vehicle.id),['mine']);assert.deepEqual(panel.props.capacities.map(capacity=>capacity.vehicle_id),['mine']);assert.deepEqual(panel.props.corridors.map(corridor=>corridor.vehicle_id),['mine']);assert.equal(panel.props.ownsFleet,true);
+ vehicles[1].assigned_driver.id='someone-else';tree=await screen({searchParams:Promise.resolve({})});panel=find(tree,'DriverCapacityHome');assert.deepEqual(panel.props.vehicles,[],'a stale current-truck ID cannot replace proof of the current assigned driver');
+ user={...user,drives_truck:false,current_driver_id:null,current_driven_vehicle_id:null};await assert.rejects(screen({searchParams:Promise.resolve({})}),/REDIRECT/);tree=await screen({requested:'vehicles',searchParams:Promise.resolve({})});assert.ok(find(tree,'FleetWorkspace'));
 });
 test('web personal-provider fleet lists multiple trucks and opens self-assignment only in its chosen task',async()=>{
  const {selectedCapacityLocation}=await import('../src/lib/capacity-location-selection.js');
@@ -171,9 +171,9 @@ test('employed My truck exposes its scoped documents and returns to Home for dri
 
 test('mobile members can open Support directly from Menu without notification history',()=>{
  const view=runtime(),navigations=[],session={state:'ACTIVE',user:{id:'employee',role:'DRIVER',operatingModel:'COMPANY_DRIVER'},access:{granted:true}};
- const ports={router:{navigate:path=>navigations.push(path)},require:()=>({}),useContext:()=>false,useAccount:()=>({session}),useChatUpdates:()=>({unreadCount:0,open(){}}),BackgroundNoticeLayout:{},navigationHeaderEdges:()=>[],useNavigation:()=>({navigate(){}}),usePathname:()=>'/account',hasWorkspace,activeDestination,isWorkspace,publicDestinations,workspaceDestinations,workspaceRoleLabel,StatusBar:'StatusBar',ChatUpdatesButton:'ChatUpdatesButton',ExternalButton:'ExternalButton',languages:[],Keyboard:{dismiss(){},addListener:()=>({remove(){}})}};
+ const ports={router:{navigate:path=>navigations.push(path)},require:()=>({}),useContext:()=>false,useAccount:()=>({session}),useChatUpdates:()=>({unreadCount:0,open(){}}),BackgroundNoticeLayout:{},navigationHeaderEdges:()=>[],useNavigation:()=>({navigate(){}}),usePathname:()=>'/account',hasWorkspace,activeDestination,isWorkspace,publicDestinations,phoneDestinations,aboutDestination,workspaceDestinations,workspaceRoleLabel,StatusBar:'StatusBar',ChatUpdatesButton:'ChatUpdatesButton',ExternalButton:'ExternalButton',languages:[],Keyboard:{dismiss(){},addListener:()=>({remove(){}})}};
  const screen=view.compile('apps/mobile/src/components/navigation-shell.tsx',ports).NavigationShell;
- let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Open menu').props.onPress();tree=view.render(screen);
+ let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='More').props.onPress();tree=view.render(screen);
  assert.ok(find(tree,'Text',node=>node.props.children?.includes('Support')));find(tree,'Pressable',node=>find(node,'Text',text=>text.props.children?.includes('Support'))).props.onPress();assert.deepEqual(navigations,['/support']);
 });
 

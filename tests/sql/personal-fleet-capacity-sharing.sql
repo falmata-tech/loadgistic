@@ -37,13 +37,17 @@ begin
   'current_route_places',route,'visibility','PRIVATE','location_source','DEVICE_OBSCURED',
   'approximate_lat',9.03,'approximate_lng',38.74,'location_precision_km',10,'sharing_mode','PRIVATE');
  perform pg_temp.sharing180_assert(private_capacity_actor_controls_vehicle(employee,vehicle),'assigned_personal_employee_authorized');
- foreach mode_value in array array['PRIVATE','PUBLIC','BOTH','EXCLUSIVE'] loop
-  result:=publish_provider_capacity(employee,command||jsonb_build_object('sharing_mode',mode_value,
-   'exclusive_email','sharing180-recipient@example.test','exclusive_digest',repeat('a',64),'exclusive_name','Sharing180 customer'));
+ foreach mode_value in array array['PRIVATE','PUBLIC','BOTH'] loop
+  result:=publish_provider_capacity(employee,command||jsonb_build_object('sharing_mode',mode_value));
   perform pg_temp.sharing180_assert(capacity_sharing_mode(vehicle)=mode_value,'saved_sharing_mode');
   perform pg_temp.sharing180_assert(exists(select 1 from capacities where id=result and updated_by=employee
    and visibility::text=case when mode_value in('PUBLIC','BOTH') then 'OPEN' else 'PRIVATE' end),'saved_capacity_and_publisher');
  end loop;
+ begin
+  perform publish_provider_capacity(employee,command||jsonb_build_object('sharing_mode','EXCLUSIVE',
+   'exclusive_email','sharing180-recipient@example.test','exclusive_digest',repeat('a',64),'exclusive_name','Sharing180 customer'));
+  raise exception 'RETIRED_EXCLUSIVE_MODE_ALLOWED';
+ exception when others then if sqlerrm<>'EMAIL_CAPACITY_RETIRED' then raise;end if;end;
  perform pg_temp.sharing180_assert(private_capacity_actor_controls_vehicle(owner_id,vehicle),'owner_retained');
  perform pg_temp.sharing180_assert(not private_capacity_actor_controls_vehicle(outsider,vehicle),'foreign_owner_denied');
  perform pg_temp.sharing180_assert(not private_capacity_actor_controls_vehicle(employee,foreign_vehicle),'foreign_vehicle_denied');
@@ -70,6 +74,6 @@ begin
  perform pg_temp.sharing180_assert(not has_function_privilege('anon','private_capacity_actor_controls_vehicle(uuid,uuid)','execute')
   and not has_function_privilege('authenticated','private_capacity_actor_controls_vehicle(uuid,uuid)','execute')
   and has_function_privilege('service_role','private_capacity_actor_controls_vehicle(uuid,uuid)','execute'),'unchanged_service_boundary');
- raise notice 'PASS: personal employer membership, current assignment, four sharing modes, permission/activity/assignment revocation, foreign denial and unchanged state/ACL.';
+ raise notice 'PASS: personal employer membership, current assignment, three sharing modes, retired Exclusive denial, permission/activity/assignment revocation, foreign denial and unchanged state/ACL.';
 end $test$;
 rollback;

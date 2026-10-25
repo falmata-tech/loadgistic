@@ -104,10 +104,10 @@ test('each isolated browser shard checks current synthetic fixture behavior befo
  assert.ok(fixtureImport>=0&&preflight>fixtureImport&&fullSuite>preflight);
 });
 
-test('each CI fixture import provides only a synthetic recipient for demo-world sharing',()=>{
- const imports=[...workflow.matchAll(/- name: Import and verify managed fixtures\n\s+env:\n\s+LOADGISTIC_DEMO_SHARED_EMAILS: ([^\n]+)\n\s+run: npm run supabase:local:configure/g)];
+test('CI fixture imports never restore retired email Capacity access',()=>{
+ const imports=[...workflow.matchAll(/- name: Import and verify managed fixtures\n\s+run: npm run supabase:local:configure/g)];
  assert.equal(imports.length,3,'validate, browser shards and Featured prepare must use the same fixture');
- assert.deepEqual([...new Set(imports.map(match=>match[1]))],['ci-capacity@example.test']);
+ assert.doesNotMatch(workflow,/LOADGISTIC_DEMO_SHARED_EMAILS/);
 });
 
 test('ordinary browser shard rejects missing tests, unreviewed skips, retries and failures',()=>{

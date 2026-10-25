@@ -128,15 +128,11 @@ test('public entry makes capacity immediately usable without an account',async({
   const currentPublicNav=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Public workspace navigation'}):page.getByRole('navigation',{name:'Public mobile navigation'});
   await expect(currentPublicNav.getByRole('link',{name:'Featured',exact:true})).toHaveAttribute('aria-current','page');
   const featured=page.locator('.featured-provider-section');
-  await expect(featured.locator('.featured-programme-current')).toContainText(/vehicles/i);
-  const weekPanel=featured.locator('.regional-expo-week-panel');
-  await expect(weekPanel).not.toHaveAttribute('open','');
-  await weekPanel.locator('summary').click();
-  await expect(featured.locator('.regional-expo-week>span')).toHaveCount(7);
-  await weekPanel.locator('summary').click();
+  await expect(featured.locator('.featured-programme-current')).toContainText(/Transport Providers/i);
+  await expect(featured.locator('.regional-expo-week-panel')).toHaveCount(0);
   const featuredTrucks=featured.locator('.featured-truck-tile');
   await expect.poll(()=>featuredTrucks.count()).toBeGreaterThan(1);
-  await expect(featuredTrucks.first()).toHaveAttribute('aria-label',/^Driver .+; .+; .+; .+$/);
+  await expect(featuredTrucks.first()).toHaveAttribute('aria-label',/^Featured account .+, \d+ vehicles$/);
   const sponsorPanel=featured.locator('.expo-sponsored-rail');
   await expect(sponsorPanel).toBeVisible();
   await expect(featured.locator('.expo-sponsored-card').first()).toBeVisible();
@@ -192,11 +188,11 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(providerDialog.getByText('Programme time')).toBeVisible();
   const featuredProfile=providerDialog.getByRole('link',{name:'Transporter profile'});
   await expect(featuredProfile).toHaveAttribute('href',/^\/@[a-z0-9-]+$/);
-  const featuredMap=providerDialog.getByRole('link',{name:'Find this vehicle'});
+  const featuredMap=providerDialog.getByRole('link',{name:'View available vehicles'});
   if(await featuredMap.count()){
-    await expect(featuredMap).toHaveAttribute('href',/^\/\?q=.+&truck=.+$/);
+    await expect(featuredMap).toHaveAttribute('href',/^\/\?provider=.+$/);
     await featuredMap.click();
-    await expect(page).toHaveURL(/\?q=.+$/);
+    await expect(page).toHaveURL(/\?provider=.+$/);
     await expect(providerDialog).toBeHidden();
     await expect(page.locator('.public-capacity-map')).toBeVisible();
     await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster').count()).toBeGreaterThan(0);
@@ -204,7 +200,7 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   }else{
     await expect(providerDialog.getByRole('link')).toHaveCount(1);
-    await providerDialog.getByRole('button',{name:'Close featured vehicle details'}).click();
+    await providerDialog.getByRole('button',{name:'Close featured account details'}).click();
   }
 });
 
@@ -346,7 +342,7 @@ test('route filters accept either endpoint without requiring the other',async({p
   await expect.poll(()=>page.locator('.capacity-truck-map-marker,.capacity-map-cluster,.capacity-overview-cell').count(),{timeout:30_000}).toBeGreaterThan(0);
 });
 
-test('administrator can review and publish an ordered daily truck-and-Driver roster',async({page}:{page:any})=>{
+test('administrator can review and publish an ordered daily provider-account roster',async({page}:{page:any})=>{
   test.setTimeout(90000);
   const service=localAuditService();
   const suffix=randomUUID().slice(0,8),headline=`Featured roster test ${suffix}`;
@@ -363,10 +359,10 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
   try{
   await login(page,'admin@loadgistic.local');
   await page.goto('/admin/featured');
-  await expect(page.getByRole('heading',{name:'Daily Featured Vehicles'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers'})).toBeVisible();
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();
-  await expect(page.getByText(/eligible vehicle-and-driver choices/).first()).toBeVisible();
-  await expect(page.getByRole('heading',{name:"Choose today's vehicles and Drivers"})).toBeVisible();
+  await expect(page.locator('.featured-admin-status')).toContainText('eligible Transport Providers');
+  await expect(page.getByRole('heading',{name:"Choose today's Transport Providers"})).toBeVisible();
   await expect(page.getByText('08:30–12:00 EAT',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Automatic'})).toHaveClass(/active/);
   await page.getByRole('link',{name:'Cancel editing',exact:true}).click();await page.getByRole('button',{name:'Schedule sponsor',exact:true}).click();
@@ -379,23 +375,23 @@ test('administrator can review and publish an ordered daily truck-and-Driver ros
   await expect(page).toHaveURL(new RegExp(`date=${featureDate}`));
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();
   await expect(page).toHaveURL(/edit=day/);
-  await expect(page.getByLabel('Add vehicle and Driver')).toBeEnabled();
-  await expect.poll(()=>page.getByLabel('Add vehicle and Driver').locator('option').count()).toBeGreaterThan(1);
+  await expect(page.getByLabel('Add Transport Provider')).toBeEnabled();
+  await expect.poll(()=>page.getByLabel('Add Transport Provider').locator('option').count()).toBeGreaterThan(1);
   // A streamed URL can arrive before the saved roster. Wait for the hydrated
-  // editor, then prepare a known three-driver roster without relying on today
-  // already having a schedule or appending another truck on every test run.
+  // editor, then prepare a known three-account roster without relying on today
+  // already having a schedule or appending another account on every test run.
   const remove=page.locator('.featured-roster-actions button.danger');
   while(await remove.count())await remove.first().click();
   for(let count=1;count<=3;count++){
-    await page.getByLabel('Add vehicle and Driver').selectOption({index:1});
+    await page.getByLabel('Add Transport Provider').selectOption({index:1});
     await page.getByRole('button',{name:'Add',exact:true}).click();
     await expect(page.locator('.featured-roster-list>li')).toHaveCount(count);
   }
-  await page.getByLabel('Featured vehicles').selectOption('3');
+  await page.getByLabel('Featured accounts').selectOption('3');
   await page.getByLabel('Sponsor mentions').selectOption('2');
   await expect(page.locator('.featured-schedule-timeline .programme-break').first()).toBeVisible();
   await page.getByLabel('Headline').fill(headline);
-  await page.getByLabel('Short introduction').fill('Meet today’s featured trucks and the Drivers operating them.');
+  await page.getByLabel('Short introduction').fill('Meet today’s featured Transport Providers and the vehicles they publish.');
   expect(checked(await service.from('featured_provider_days').select('id').eq('feature_date',featureDate))).toHaveLength(0);
   await page.getByRole('button',{name:'Publish this day'}).click();
   await expect(page.getByText('Daily feature published.')).toBeVisible();
@@ -509,7 +505,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   const legendColors=await page.locator('.public-map-legend').evaluate((legend:any)=>Object.fromEntries(['empty-status','partial-status','privacy','radius','empty-route','partial-route','corridor'].map(className=>{const style=getComputedStyle(legend.querySelector(`.${className}`),'::before');return [className,{background:style.backgroundColor,border:style.borderColor,borderTop:style.borderTopColor}];})));
   expect(legendColors['empty-status'].background).toBe('rgb(21, 94, 239)');
   expect(legendColors['partial-status'].background).toBe('rgb(102, 112, 133)');
-  expect(legendColors.privacy.border).toContain('rgb(21, 94, 239)');
+  expect(legendColors.privacy.border).toContain('rgb(120, 70, 167)');
   expect(legendColors.radius.border).toContain('rgb(215, 223, 235)');
   expect(legendColors['empty-route'].borderTop).toBe('rgb(21, 94, 239)');
   expect(legendColors['partial-route'].borderTop).toBe('rgb(102, 112, 133)');
@@ -1126,7 +1122,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   const expectedCapacityColor=emptyAvailability?'#155eef':'#667085';
   await expect(summary.locator(`path[stroke="${expectedCapacityColor}"]`).first()).toBeVisible();
   await expect(summary.locator('.capacity-setting-truck-marker-halo')).toHaveAttribute('stroke',expectedCapacityColor);
-  await expect(summary.locator('path[stroke="#1a73e8"]').first()).toBeVisible();
+  await expect(summary.locator('path[stroke="#7846a7"]').first()).toBeVisible();
   await expect(summary.locator('.capacity-map-key')).toContainText(emptyAvailability?'Empty vehicle marker':'Partial vehicle marker');
   await summary.locator('.capacity-radius-action').click();
   const privacyDialog=page.getByRole('dialog',{name:'Approximate location',exact:true});

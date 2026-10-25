@@ -16,7 +16,7 @@ test('eight showcases reserve four mentions and manual times persist through pub
  for(let offset=0;offset<7;offset++){
   const candidateDate=new Date(start+offset*86400000).toISOString().slice(0,10);
   const candidate=await getAdminFeaturedProviderDay(admin,candidateDate);
-  if(!candidate.day&&new Set(candidate.candidates.filter((c:any)=>c.eligible).map((c:any)=>c.driver_user_id)).size>=8){date=candidateDate;break;}
+  if(!candidate.day&&new Set(candidate.candidates.filter((c:any)=>c.eligible).map((c:any)=>c.provider_key)).size>=8){date=candidateDate;break;}
  }
  expect(date).not.toBe('');
  async function save(button:string,message:string){const response=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:button,exact:true}).click();const result=await response;expect(result.status()).toBe(303);expect(new URL(result.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBeNull();await expect(page.getByText(message,{exact:true})).toBeVisible();if(button!=='Save')await page.getByRole('link',{name:'Edit programme',exact:true}).click();}
@@ -26,17 +26,17 @@ test('eight showcases reserve four mentions and manual times persist through pub
   const login=await client.auth.verifyOtp({token_hash:link.properties.hashed_token,type:'magiclink'});expect(login.error).toBeNull();
   await page.context().addCookies(createChunks(`sb-${new URL(url).hostname.split('.')[0]}-auth-token`,'base64-'+Buffer.from(JSON.stringify(login.data.session)).toString('base64url')).map(c=>({...c,url:'http://127.0.0.1:3100',sameSite:'Lax' as const})));
   await page.goto(`/admin/featured?date=${date}&edit=day`);
-  const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add vehicle and Driver');
+  const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add Transport Provider');
   for(let i=0;i<8;i++){await expect(select).toBeEnabled();await select.selectOption((await select.locator('option').nth(1).getAttribute('value'))!);await editor.getByRole('button',{name:'Add',exact:true}).click();}
   await expect(editor.locator('.featured-roster-list>li')).toHaveCount(8);
   await expect(editor.getByRole('button',{name:'Add',exact:true})).toBeDisabled();
-  await expect(editor.getByRole('combobox',{name:'Featured vehicles',exact:true}).locator('option')).toHaveCount(8);
+  await expect(editor.getByRole('combobox',{name:'Featured accounts',exact:true}).locator('option')).toHaveCount(8);
   await expect(editor.getByRole('combobox',{name:'Sponsor mentions',exact:true})).toHaveValue('4');
   await expect(editor.locator('.featured-schedule-timeline>li')).toHaveCount(12);
   await expect(editor.locator('.featured-schedule-timeline>li').first()).toContainText('08:30–08:56');
   await expect(editor.locator('.featured-schedule-timeline>li').last()).toContainText('11:58–12:00');
   await page.getByLabel('Headline',{exact:true}).fill(`Broadcast review ${suffix}`);
-  await page.getByLabel('Short introduction',{exact:true}).fill('Meet the trucks and drivers in today’s programme.');
+  await page.getByLabel('Short introduction',{exact:true}).fill('Meet the Transport Providers in today’s programme.');
   await expect(editor.locator('[name=scheduleDayStart]')).toHaveValue('08:30');await expect(editor.locator('[name=scheduleDayEnd]')).toHaveValue('12:00');
   await save('Save draft','Draft saved.');expect((await getDailyFeaturedProviders(date)).providers).toHaveLength(0);
   await page.screenshot({path:info.outputPath('broadcast-automatic.png'),fullPage:true});

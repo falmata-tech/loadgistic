@@ -19,6 +19,7 @@ const verificationLabels:Record<string,string>={
   VEHICLE_OWNERSHIP:'Vehicle ownership',
   VEHICLE_AUTHORIZATION:'Permission to use vehicle'
 };
+const subjectTypeLabel=(value:string)=>value.replace(/^Company driver\b/,'Fleet driver');
 
 export default async function VerificationPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
   const user=await requireUser(['SHIPPER','RECEIVER','TRANSPORTER','DRIVER']);
@@ -30,7 +31,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
     subject_type:String(subject.subject_type),
     subject_id:String(subject.subject_id),
     name:String(subject.name),
-    type:String(subject.type),
+    type:subjectTypeLabel(String(subject.type)),
     pending_count:Number(subject.pending_count)||0,
     allowed_types:[...subject.allowed_types].map(String),
     vehicles:(subject.vehicles||[]).map((vehicle:any)=>({id:String(vehicle.id),label:String(vehicle.label)}))
@@ -41,7 +42,7 @@ export default async function VerificationPage({searchParams}:{searchParams:Prom
     <div className="two-col">
       <div className="stack">
         <section className="card"><div className="section-heading-icon"><BadgeCheck aria-hidden="true"/><div><h2><Text message="Badge status"/></h2><p className="meta"><Text message="Open any badge for its scope, review date, and expiry details."/></p></div></div>
-          <div className="verification-subject-list">{subjectResult.items.map((subject:any)=><div key={`${subject.subject_type}:${subject.subject_id}`}><div><strong>{subject.name}</strong><div className="meta">{subject.type}</div></div><VerificationBadges badges={subject.badges}/></div>)}</div>
+          <div className="verification-subject-list">{subjectResult.items.map((subject:any)=><div key={`${subject.subject_type}:${subject.subject_id}`}><div><strong>{subject.name}</strong><div className="meta">{subjectTypeLabel(String(subject.type))}</div></div><VerificationBadges badges={subject.badges}/></div>)}</div>
           <Pagination path="/app/verification" query={{requestPage:query.requestPage}} page={subjectResult.page} pageCount={subjectResult.pageCount} total={subjectResult.total} pageParam="subjectPage"/>
         </section>
         <VerificationForm subjects={formSubjects} initialTruckId={query.truck}/>

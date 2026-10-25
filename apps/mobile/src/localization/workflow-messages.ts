@@ -6,7 +6,6 @@ export const workflowRows: readonly (readonly string[])[] = [
   ["Your public driver photo", "ለሁሉም የሚታየው የአሽከርካሪ ፎቶዎ", "Suuraa keessan kan konkolaachisaa uummataaf mulʼatu"],
   ["Your transporter profile image", "የትራንስፖርት አቅራቢ መገለጫዎ ምስል", "Suuraa fuula keessan kan dhiyeessaa geejjibaa"],
   ["Remove capacity access?", "የጭነት ቦታዎን የማየት ፈቃድ ያስወግዱ?", "Hayyama iddoo feʼumsaa ilaaluu haquu?"],
-  ["This email will no longer see this truck in privately shared capacity.", "በዚህ ኢሜይል የሚገባው ሰው በግል ያጋሩትን የዚህን መኪና የጭነት ቦታ ከእንግዲህ ማየት አይችልም።", "Namni iimeelii kanaan seenu iddoo feʼumsaa konkolaataa kanaa dhuunfaan qooddan kana booda hin argu."],
   ["Keep access", "ፈቃዱን አቆይ", "Hayyamni haa turu"],
   ["Remove access", "ፈቃዱን አስወግድ", "Hayyama haqi"],
   ["Remove tracking access?", "ክትትሉን የማየት ፈቃድ ያስወግዱ?", "Hayyama hordoffii ilaaluu haquu?"],
@@ -457,9 +456,9 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ወቅታዊ መረጃ አድስ",
     "Odeeffannoo haaraa ilaali"],
   [
-    "Regular service route or area",
-    "መደበኛ የአገልግሎት መስመር ወይም አካባቢ",
-    "Karaa ykn naannoo tajaajila idilee"],
+    "Routes and areas",
+    "መስመሮችና የአገልግሎት አካባቢዎች",
+    "Karaawwan fi naannolee tajaajilaa"],
   [
     "Reload current details",
     "ወቅታዊ መረጃ እንደገና ጫን",
@@ -577,9 +576,20 @@ export const workflowRows: readonly (readonly string[])[] = [
     "የጭነት ቦታ ገጽ ክፍት ሲሆን ግምታዊ አካባቢው በየ10 ደቂቃው ይዘምናል።",
     "Iddoo feʼumsaa yeroo banamu, bakki tilmaamame daqiiqaa 10tti haaroma."],
   [
-    "Regular routes",
-    "የተለመዱ መስመሮች",
-    "Karaawwan yeroo baayʼee tajaajiltan"],
+    "Routes",
+    "መስመሮች",
+    "Karaawwan"],
+  [
+    "Manage corridor routes and service areas",
+    "የመጓጓዣ መስመሮችንና የአገልግሎት አካባቢዎችን አስተዳድር",
+    "Karaawwan geejjibaa fi naannolee tajaajilaa bulchi"],
+  ["Edit route", "መስመሩን አስተካክል", "Karaa gulaali"],
+  ["Edit area", "አካባቢውን አስተካክል", "Naannoo gulaali"],
+  ["Remove area", "አካባቢውን አስወግድ", "Naannoo haqi"],
+  ["Remove route?", "መስመሩን ያስወግዱ?", "Karaa kana haqxuu?"],
+  ["Remove area?", "አካባቢውን ያስወግዱ?", "Naannoo kana haqxuu?"],
+  ["Save route", "መስመሩን አስቀምጥ", "Karaa kuusi"],
+  ["Save area", "አካባቢውን አስቀምጥ", "Naannoo kuusi"],
   [
     "Save regular service",
     "መደበኛ አገልግሎት አስቀምጥ",
@@ -673,9 +683,9 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ጭነትዎ ወዴት እንደሚሄድ ይንገሩን። አጓጓዥ ለማግኘትና ዝርዝሮቹን ለመወያየት እናግዝዎታለን።",
     "Feʼumsi keessan eessa akka deemu nutti himaa. Geejjibaa argachuu fi balʼina irratti mariʼachuuf isin gargaarra."],
   [
-    "The driver is somewhere within the blue area. This is not a precise location.",
-    "ሹፌሩ በሰማያዊው አካባቢ ውስጥ ነው። ትክክለኛውን ቦታ አያሳይም።",
-    "Konkolaachisaan naannoo cuquliisaa keessaa jira. Bakkeeffama sirrii miti."],
+    "Location is approximate, not exact.",
+    "የተጠቀሰው ቦታ ግምታዊ ነው፤ ትክክለኛ ቦታን አያሳይም።",
+    "Bakkeeffamni tilmaama; iddoo sirrii hin agarsiisu."],
   [
     "The replacement truck’s assigned driver takes over. Earlier updates remain; a new location update is needed.",
     "የምትኩ መኪና ሹፌር ሥራውን ይረከባል። ያለፉ መረጃዎች ይቀመጣሉ፤ አዲስ የመገኛ መረጃ ያስፈልጋል።",
@@ -684,10 +694,6 @@ export const workflowRows: readonly (readonly string[])[] = [
     "The reported area cannot be shown on the map.",
     "የተጠቀሰውን አካባቢ በካርታው ማሳየት አልተቻለም።",
     "Naannoo ibsame kaartaa irratti agarsiisuun hin dandaʼamne."],
-  [
-    "They verify this email when opening privately shared capacity. The driver’s location privacy radius stays the same.",
-    "በግል የተጋራ የጭነት ቦታ ሲከፍቱ ይህን ኢሜይል ያረጋግጣሉ። የሹፌሩ የመገኛ ግላዊነት ራዲየስ አይቀየርም።",
-    "Iddoo feʼumsaa dhuunfaatti qoodame banuuf iimeelii kana mirkaneessu. Raadiyeesiin iccitii bakkeeffama konkolaachisaa hin jijjiiramu."],
   [
     "This is my photo. I agree to show it publicly on Loadgistic.",
     "ይህ የእኔ ፎቶ ነው። በLoadgistic በይፋ እንዲታይ እስማማለሁ።",
@@ -841,9 +847,9 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ወደ {email} የተላከውን ኮድ ያስገቡ።",
     "Koodii gara {email} ergame galchaa."],
   [
-    "Join as {name}, company driver.",
-    "እንደ {name}፣ የኩባንያ ሹፌር፣ ይቀላቀሉ።",
-    "Akka {name}, konkolaachisaa dhaabbataatti, makamaa."],
+    "Fleet driver invitation for {name}",
+    "ለ{name} የተላከ የተሽከርካሪ ቡድን ሹፌር ግብዣ",
+    "Affeerraa konkolaachisaa garee konkolaattotaa {name}f ergame"],
   [
     "Selected: {status}",
     "የተመረጠ፦ {status}",

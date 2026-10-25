@@ -34,7 +34,7 @@ async function webLogin(page:Page,email:string,expectedLanding:'/app/home'|'/adm
 }
 async function nativeLogin(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible();
- await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.getByLabel('Sign-in code',{exact:true})).toHaveCount(0);
+ await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));await page.getByRole('button',{name:'Sign in',exact:true}).last().click();await expect(page.getByLabel('Sign-in code',{exact:true})).toHaveCount(0);
 }
 async function chooseNativeDate(page:Page,label:string,date:string){
  await page.getByRole('button',{name:new RegExp('^'+escape(label)+':')}).click();const choice=page.getByRole('button',{name:new RegExp('^'+escape(calendarDay(date,'en').label)+'(?:,|$)')});

@@ -18,7 +18,7 @@ export default async function JoinFleetPage({searchParams}:{searchParams:Promise
     <header><UserRound aria-hidden="true"/><h1 className="page-title"><Text message="Join your fleet"/></h1><p><Text message="Signed in as "/>{data.user.email}</p></header>
     <Flash error={query.error}/>
     {invitations.map(invitation=><section className="card" key={invitation.id}>
-      <h2>{invitation.organization_name}</h2><p><Text message="Join as "/>{invitation.driver_name}<Text message=", Company driver."/></p>
+      <h2>{invitation.organization_name}</h2><p><Text message="Fleet driver invitation for {name}" values={{name:invitation.driver_name}}/></p>
       {invitation.can_accept?<><p className="meta"><Text message="Your fleet owner will assign your vehicle and choose your access to capacity and Tracking updates. Documents can be added later."/></p>
         <form action="/api/fleet/invitations/accept" method="post"><input type="hidden" name="invitationId" value={invitation.id}/><button className="button success"><Text message="Join fleet"/></button></form></>
         :<p><Text message="This account already has a workspace. Contact support before changing fleets; your current account will not be moved."/></p>}

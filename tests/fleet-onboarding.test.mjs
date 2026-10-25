@@ -16,7 +16,7 @@ test('Fleet redirects keep truck/pagination context without accepting external d
 
 test('Fleet invitation email explains consent and escapes provider content',()=>{
   const result=buildEmailMessage({template:'fleet-driver-invitation',to:'driver@example.test',organizationName:'Fleet <script>',url:'https://example.test/join-fleet'});
-  assert.match(result.text,/Company driver/);assert.match(result.text,/seven days/);
+  assert.match(result.text,/Fleet driver/);assert.match(result.text,/seven days/);
   assert.match(result.html,/Fleet &lt;script&gt;/);assert.doesNotMatch(result.html,/<script>/);
   assert.match(result.text,/assign your vehicle after you accept/);
 });

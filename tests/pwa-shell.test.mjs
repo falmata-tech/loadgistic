@@ -12,8 +12,18 @@ test('PWA launches into public discovery and keeps private pages network-first',
   assert.equal(manifest.display, 'standalone');
   assert.deepEqual(
     manifest.shortcuts.map(shortcut => shortcut.url),
-    ['/', '/shared-capacity', '/track', '/featured', '/app/home']
+    ['/', '/?view=private', '/track', '/featured', '/app/network']
   );
+  assert.deepEqual(manifest.shortcuts.map(shortcut=>shortcut.name),[
+    'Public Capacity','Capacity shared with you','Track a shipment','Featured Transport Providers','Network'
+  ]);
+  assert.deepEqual(manifest.screenshots.map(screenshot=>screenshot.src),[
+    '/landing/capacity-map-wide.png','/landing/capacity-map-phone.png'
+  ]);
+  for(const screenshot of manifest.screenshots){
+    const image=await readFile(new URL(`../public${screenshot.src}`,import.meta.url));
+    assert.equal(image.subarray(1,4).toString(),'PNG');
+  }
   assert.match(worker, /event\.request\.mode === 'navigate'/);
   assert.doesNotMatch(worker, /pathname\.startsWith\('\/_next\/'\)/);
   assert.doesNotMatch(worker, /pathname\.startsWith\('\/app\/'\)/);

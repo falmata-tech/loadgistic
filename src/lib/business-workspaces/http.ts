@@ -29,7 +29,7 @@ const messages:Record<string,string>={SIGN_IN_REQUIRED:'Sign in to continue.',VE
  BUSINESS_OWNER_HANDOVER_REQUIRED:'Transfer ownership or archive the workspace before leaving.',BUSINESS_INVITATION_UNAVAILABLE:'This invitation is no longer available.',
  RATE_LIMITED:'Please wait before trying again.',POLICY_REQUIRED:'Read and accept the current terms before continuing.'};
 
-export async function businessActor(request:Request):Promise<string>{
+export async function businessActorIdentity(request:Request):Promise<{id:string;email:string}>{
  const authorization=request.headers.get('authorization');let client;
  if(authorization!==null){
   const match=authorization.match(/^Bearer ([^\s]+)$/i);if(!match)throw new BusinessHttpError(401,'SIGN_IN_REQUIRED');
@@ -44,8 +44,9 @@ export async function businessActor(request:Request):Promise<string>{
   if(!mutationOriginAllowed(request.headers,request.url))throw new BusinessHttpError(403,'INVALID_ORIGIN');
   if(!await contentPolicyAccepted(data.user.id))throw new BusinessHttpError(403,'POLICY_REQUIRED');
  }
- return data.user.id;
+ return {id:data.user.id,email:data.user.email.trim().toLowerCase()};
 }
+export async function businessActor(request:Request):Promise<string>{return (await businessActorIdentity(request)).id;}
 export async function businessLimit(actorId:string,scope:string,limit=30):Promise<void>{
  if(!(await checkRateLimit(`business-workspace:${scope}:${actorId}`,limit,60_000)).allowed)throw new BusinessHttpError(429,'RATE_LIMITED');
 }

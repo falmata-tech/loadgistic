@@ -30,9 +30,13 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible({timeout:30_000});
   await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(identity.email,since,'Your Loadgistic sign-in code'));
   const verified=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();expect((await verified).status()).toBe(200);
+  await page.getByRole('button',{name:'Sign in',exact:true}).last().click();expect((await verified).status()).toBe(200);
+  await expect(page).toHaveURL('http://localhost:8084/');
+  await expect(page.getByRole('tab',{name:'Capacity',exact:true})).toHaveAttribute('aria-selected','true');
+  await page.getByRole('tab',{name:'Home',exact:true}).click();
+  await expect(page.getByRole('tab',{name:'Home',exact:true})).toHaveAttribute('aria-selected','true');
   await expect(page.getByTestId('driver-home-map')).toBeVisible({timeout:30_000});
-  await expect(page.getByText('Isuzu Expo preview')).toBeVisible({timeout:45_000});
+  await expect(page.getByText(new RegExp(`EXP-${owner.suffix}`))).toBeVisible({timeout:45_000});
   await expect(page.getByText('No driver location shared yet')).toBeVisible();
 
   await page.getByRole('button',{name:'Set vehicle location',exact:true}).click();
@@ -60,11 +64,11 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await ownerPage.goto(`/app/fleet/${vehicle.id}?view=details`,{waitUntil:'domcontentloaded'});
   await ownerPage.setViewportSize({width:390,height:844});
   const publishButton=ownerPage.getByRole('button',{name:'Go live',exact:true});
-  // The streamed loading screen may not have a scroll range yet.
+  // Check the reachable end of the page, below the fixed phone navigation.
   await expect(publishButton).toBeVisible();
-  await ownerPage.mouse.wheel(0,500);
+  await ownerPage.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   await expect.poll(async()=>{
-   const action=await publishButton.boundingBox(),nav=await ownerPage.locator('.mobile-nav').boundingBox();
+   const action=await publishButton.boundingBox(),nav=await ownerPage.locator('.public-mobile-nav').boundingBox();
    return action&&nav?action.y+action.height-nav.y:Number.POSITIVE_INFINITY;
   },{message:'Go live stays above the phone navigation after scrolling'}).toBeLessThanOrEqual(0);
   await ownerPage.screenshot({path:`${evidence}/owner-go-live-visible-phone.png`});

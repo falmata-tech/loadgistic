@@ -15,6 +15,7 @@ function compile(path,ports){const file=readFileSync(path,'utf8'),parsed=ts.crea
 const tracking=compile('src/lib/mobile/tracking-contract.ts',{z,dateOnly,trackingRoute,trackingMapLocation,trackingPublicTruck,phoneInstallationProof});
 const domain=compile('src/lib/tracking-sharing/domain.ts',{z,guestTrackingDetail:tracking.guestTrackingDetail,trackingSummary:tracking.trackingSummary});
 const {trackingSharingService}=compile('src/lib/tracking-sharing/server.ts',{...domain,providerTrackingRecipientDigest,createSupabaseAdminClient(){throw Error('Tests must inject the bounded RPC port');}});
+const {accountOwnerVerification}=compile('src/lib/tracking-sharing/account-owner.ts',{providerTrackingRecipientDigest,TrackingSharingError:domain.TrackingSharingError});
 const sharing={shipmentId:id,revision:1,canInvite:true,viewers:[],business:null,staff:[]};
 const raw=()=>({workspaceId:other,isOwner:false,shipment:{id,code:'LGX-SYNTHETIC',origin:'Origin',destination:'Destination',cargo_summary:'Cargo',
  operational_status:'LOADING',tracking_mode:'LOCATION_AND_STATUS',provider_name:'Synthetic provider',recipient_role:'BUSINESS_STAFF',
@@ -36,6 +37,75 @@ test('sharing adapter derives digests and receives freshness only from the inbou
  assert.equal(value.args.command.email,'person@example.test');assert.equal(value.args.command.digest,providerTrackingRecipientDigest('person@example.test'));assert.equal('actor_user_id'in value.args,false);
  await assert.rejects(service.command(id,proof,{action:'ADD_VIEWER',expectedRevision:1,name:'Receiver',email:'person@example.test',digest:'forged'}),/INVALID_TRACKING_RECIPIENTS/);assert.equal(calls.length,1);
  await service.attach(staff,other,id,proof,1);assert.equal(calls[1].args.actor_user_id,staff);assert.deepEqual(calls[1].args.command,{action:'ATTACH_BUSINESS',workspaceId:other,expectedRevision:1});
+});
+test('signed-in owner proof requires the workspace detail to confirm ownership',()=>{
+ assert.throws(()=>accountOwnerVerification('owner@example.test',false),/TRACKING_APPROVAL_FORBIDDEN/);
+ const proof=accountOwnerVerification(' OWNER@EXAMPLE.TEST ',true,Date.parse('2026-10-18T12:00:00Z'));
+ assert.deepEqual(proof,{digest:providerTrackingRecipientDigest('owner@example.test'),startedAt:Date.parse('2026-10-18T12:00:00Z')});
+});
+test('workspace tracking sharing route denies staff before owner commands and uses only verified account identity',async()=>{
+ const calls=[],state={isOwner:false};
+ const route=compile('src/app/api/business-workspaces/[workspaceId]/tracking/[shipmentId]/sharing/route.ts',{
+  after:()=>{},businessActorIdentity:async()=>({id:staff,email:'OWNER@EXAMPLE.TEST'}),businessBody:async request=>request.json(),
+  businessFailure:()=>Response.json({error:'unavailable'},{status:503}),businessJson:(value,status=200)=>Response.json(value,{status}),businessLimit:async()=>{},
+  trackingSharingFailure:error=>error instanceof domain.TrackingSharingError?Response.json({error:error.code},{status:403}):null,
+  trackingSharingId:value=>value,getBusinessTrackingDetail:async(...args)=>{calls.push(['detail',...args]);return {isOwner:state.isOwner};},
+  accountOwnerVerification,trackingSharingService:()=>({owner:async(...args)=>{calls.push(['owner',...args]);return sharing;},command:async(...args)=>{calls.push(['command',...args]);return sharing;}}),
+  deliverPendingShipmentEmails:async()=>{}
+ });
+ const context={params:Promise.resolve({workspaceId:other,shipmentId:id})};
+ assert.equal((await route.GET(new Request('http://localhost/test'),context)).status,403);
+ assert.deepEqual(calls,[['detail',staff,other,id]]);
+ state.isOwner=true;
+ const response=await route.POST(new Request('http://localhost/test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'REVOKE_VIEWER',recipientId:staff,expectedRevision:1})}),context);
+ assert.equal(response.status,200);
+ const command=calls.find(call=>call[0]==='command');
+ assert.equal(command[1],id);
+ assert.equal(command[2].digest,providerTrackingRecipientDigest('owner@example.test'));
+ assert.equal(command[3].action,'REVOKE_VIEWER');
+});
+test('workspace owner approval and review require account ownership and current shipment action',async()=>{
+ const calls=[],state={isOwner:false,canApprove:true,canReview:true};
+ const route=compile('src/app/api/business-workspaces/[workspaceId]/tracking/[shipmentId]/actions/route.ts',{
+  after:()=>{},z,businessActorIdentity:async()=>({id:staff,email:'owner@example.test'}),businessBody:async request=>request.json(),
+  businessFailure:()=>Response.json({error:'unavailable'},{status:503}),businessJson:(value,status=200)=>Response.json(value,{status}),businessLimit:async()=>{},
+  trackingSharingFailure:error=>error instanceof domain.TrackingSharingError?Response.json({error:error.code},{status:403}):null,
+  trackingSharingId:value=>value,TrackingSharingError:domain.TrackingSharingError,
+  getBusinessTrackingDetail:async()=>({isOwner:state.isOwner}),accountOwnerVerification,
+  getProviderGuestTracking:async()=>({recipient_role:'OWNER',can_approve:state.canApprove,can_review:state.canReview}),
+  approveProviderHandover:async(...args)=>calls.push(['approve',...args]),
+  submitTrackingEmailReview:async(...args)=>calls.push(['review',...args]),deliverPendingShipmentEmails:async()=>{}
+ });
+ const context={params:Promise.resolve({workspaceId:other,shipmentId:id})};
+ const post=body=>route.POST(new Request('http://localhost/test',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),context);
+ assert.equal((await post({action:'APPROVE'})).status,403);assert.deepEqual(calls,[]);
+ state.isOwner=true;state.canApprove=false;
+ assert.equal((await post({action:'APPROVE'})).status,403);assert.deepEqual(calls,[]);
+ state.canApprove=true;
+ assert.equal((await post({action:'APPROVE',actorId:staff})).status,403);assert.deepEqual(calls,[]);
+ assert.equal((await post({action:'APPROVE'})).status,200);
+ assert.equal(calls[0][0],'approve');assert.equal(calls[0][2],providerTrackingRecipientDigest('owner@example.test'));
+ state.canReview=false;assert.equal((await post({action:'REVIEW',rating:5,note:'Good',termsAccepted:true})).status,403);
+ state.canReview=true;assert.equal((await post({action:'REVIEW',rating:5,note:'Good',termsAccepted:true})).status,200);
+ assert.equal(calls.at(-1)[0],'review');
+});
+test('workspace proof read denies staff before private file access',async()=>{
+ let isOwner=false,reads=0;
+ const route=compile('src/app/api/business-workspaces/[workspaceId]/tracking/[shipmentId]/proof/[eventId]/route.ts',{
+  NextResponse:Response,businessActorIdentity:async()=>({id:staff,email:'owner@example.test'}),
+  businessFailure:()=>Response.json({error:'unavailable'},{status:503}),businessJson:(value,status=200)=>Response.json(value,{status}),businessLimit:async()=>{},
+  trackingSharingFailure:error=>error instanceof domain.TrackingSharingError?Response.json({error:error.code},{status:403}):null,
+  trackingSharingId:value=>value,TrackingSharingError:domain.TrackingSharingError,
+  getBusinessTrackingDetail:async()=>({isOwner}),accountOwnerVerification,
+  readProviderTrackingProof:async(...args)=>{reads++;assert.equal(args[3],providerTrackingRecipientDigest('owner@example.test'));return {bytes:Buffer.from('proof'),mimeType:'image/png',originalName:'photo.png'};},
+  privateDocumentHeaders:()=>({'Content-Type':'image/png','Cache-Control':'private, no-store'}),
+  privateFilePayload:()=>({base64:'cHJvb2Y=',mimeType:'image/png'})
+ });
+ const context={params:Promise.resolve({workspaceId:other,shipmentId:id,eventId:staff})};
+ assert.equal((await route.GET(new Request('http://localhost/test'),context)).status,403);assert.equal(reads,0);
+ isOwner=true;
+ const response=await route.GET(new Request('http://localhost/test?format=base64'),context);
+ assert.equal(response.status,200);assert.deepEqual(await response.json(),{base64:'cHJvb2Y=',mimeType:'image/png'});assert.equal(reads,1);
 });
 test('business detail minimizes private data and rejects a hidden position or delegated approval',()=>{
  const input=raw();input.shipment.privateToken='PRIVATE';input.shipment.latest_location={location_lat:1,location_lng:2};input.shipment.events[0].proof_url='PRIVATE';input.shipment.events[0].location_lat=1;

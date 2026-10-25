@@ -39,12 +39,11 @@ test('Tracking codes and digests do not change when SESSION_SECRET rotates',()=>
   );
 });
 
-test('Tracking email OTPs are numeric, deterministic per challenge, and isolated from Shared capacity codes',async()=>{
-  const {sharedCapacityOtpCode}=await import('../src/lib/security.js');
+test('Tracking email OTPs are numeric and deterministic per challenge',()=>{
   const challenge='11111111-1111-4111-8111-111111111111';
   assert.match(providerTrackingOtpCode(challenge),/^\d{6}$/);
   assert.equal(providerTrackingOtpCode(challenge),providerTrackingOtpCode(challenge));
-  assert.notEqual(providerTrackingOtpCode(challenge),sharedCapacityOtpCode(challenge));
+  assert.notEqual(providerTrackingOtpCode(challenge),providerTrackingOtpCode('22222222-2222-4222-8222-222222222222'));
 });
 
 test('Tracking code derivation fails closed without a dedicated strong Production secret',()=>{

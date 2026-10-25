@@ -35,7 +35,7 @@ const directoryMessages=[
  "You will lose access to this workspace's shared capacity and shipments.",
  'Workspace access is inactive.','Remove from workspace','Add to this workspace',
  'Workspaces','Receiver workspace','Workspace documents','Workspace','Transport Provider documents',
- 'Open My workspace to create or join a shipper or broker workspace.',
+ 'Create or join a shipper or broker team from Account.',
  'Your team access does not include that page. Contact your workspace admin.',
  'Open an authorized Transport Provider or Shipper / broker workspace to continue.',
  'When a shipment owner shares tracking with your workspace, it will appear here.',

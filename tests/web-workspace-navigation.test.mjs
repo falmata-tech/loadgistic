@@ -1,26 +1,62 @@
-import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import ts from'typescript';import{providerWorkspaceCapabilities}from'../src/lib/provider-workspace.js';
-const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];const css=new Proxy({},{get:(_t,key)=>key});
-function render(user){const element=(type,props)=>({type,props:props||{}}),imports={'react/jsx-runtime':{jsx:element,jsxs:element},'@/components/localization':{Localized:'nav',Text:'Text'},'./content-policy-consent':{ContentPolicyConsent:'Consent'},'next/navigation':{usePathname:()=>'/app/home',useSearchParams:()=>new URLSearchParams()},'next/link':{__esModule:true,default:'a'},'./localization':{LanguagePicker:'LanguagePicker'},'./logo':{Logo:'Logo'},'lucide-react':css,'./staff-account':{StaffAccount:'StaffAccount'},'./staff-account.module.css':{__esModule:true,default:css},'./workspace-shell.module.css':{__esModule:true,default:css},'./workspace-area-switch':{WorkspaceAreaSwitch:'AreaSwitch'},'./workspace-back-button':{WorkspaceBackButton:'Back'},'./chat-alerts':{ChatAlerts:'Alerts'},'@/lib/provider-workspace.js':{providerWorkspaceCapabilities}};const code=ts.transpileModule(readFileSync('src/components/app-shell.tsx','utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText,exports={};new Function('require','exports',code)(name=>{assert.ok(name in imports,name);return imports[name]},exports);return nodes(exports.AppShell({user,children:'content'}));}
-test('real owner and employed-driver navigation retains map Home, Fleet authority and one area switch',()=>{
- const owner={id:'owner',name:'Owner',active:true,role:'TRANSPORTER',organization_id:'owned-org',owns_provider_account:true,can_manage_fleet:true};
- for(const drives_truck of [true,false]){const tree=render({...owner,drives_truck});assert.equal(tree.filter(node=>node.type==='AreaSwitch').length,1);assert.equal(tree.some(node=>node.type==='a'&&node.props.href==='/app/home'),true);assert.equal(tree.some(node=>node.type==='a'&&node.props.href==='/app/fleet'),drives_truck);}
- const employee=render({id:'driver',name:'Driver',active:true,role:'DRIVER',driver_kind:'COMPANY',organization_name:'Employer',provider_operating_model:'COMPANY_DRIVER',drives_truck:true,owns_provider_account:false,can_manage_fleet:false});assert.equal(employee.some(node=>node.type==='a'&&node.props.href==='/app/fleet'),false);assert.equal(employee.some(node=>node.type==='a'&&node.props.href==='/app/home'),true);
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+ activeSiteDestination,accountHref,memberDestinations,phonePrimaryDestinations,publicDestinations,visitorDestinations
+} from '../src/components/site-navigation.ts';
+
+const provider={id:'owner',role:'TRANSPORTER',name:'Provider',canManageFleet:true,drivesTruck:true};
+const driver={id:'driver',role:'DRIVER',name:'Driver',canManageFleet:false,drivesTruck:true};
+
+test('one public shell gains account destinations after sign-in',()=>{
+ assert.deepEqual(visitorDestinations.map(item=>[item.label,item.href]),[
+  ['Capacity','/'],['Track','/track'],['Featured','/featured'],['About','/about']
+ ]);
+ assert.deepEqual(publicDestinations.map(item=>item.href),['/','/featured']);
+ assert.deepEqual(memberDestinations(null),[]);
+ assert.deepEqual(memberDestinations(provider).map(item=>item.href),[
+  '/app/home','/app/network','/app/provider-shipments','/app/support','/app/more'
+ ]);
+ assert.deepEqual(memberDestinations(provider).map(item=>item.label),['Home','Network','Tracking','Support','Account']);
+ assert.deepEqual(phonePrimaryDestinations(provider).map(item=>item.label),['Home','Network','Tracking']);
+ assert.deepEqual(phonePrimaryDestinations(null).map(item=>item.label),['Capacity','Track','Featured','About']);
+ assert.equal(memberDestinations(driver).some(item=>item.href==='/app/fleet'),false);
+ assert.equal(memberDestinations(driver).some(item=>item.href==='/app/home'),true);
+ assert.equal(accountHref(null),'/login');
+ assert.equal(accountHref(provider),'/app/more');
 });
-test('platform navigation has no retired brokerage or special private audience destination',()=>{
- for(const user of [{id:'admin',name:'Admin',role:'ADMIN'},{id:'support',name:'Support',role:'SUPPORT',can_manage_support:true,can_manage_brokerage:true,can_manage_operations:true}]){const tree=render(user),links=tree.filter(node=>node.type==='a').map(node=>node.props.href);assert.equal(links.includes('/brokerage'),false);assert.equal(links.includes('/admin/capacity-network'),false);assert.equal(tree.some(node=>node.type==='AreaSwitch'),false);assert.equal(links.some(href=>href==='/support'||href==='/admin/support'),true);}
+
+test('shipper and broker teams reach their network and permitted tracking',()=>{
+ const user={id:'shipper',role:'CUSTOMER',name:'Shipper',trackingAllowed:true};
+ assert.deepEqual(phonePrimaryDestinations(user).map(item=>item.href),['/','/app/network','/app/business/tracking']);
+ assert.deepEqual(memberDestinations(user).map(item=>item.href),[
+  '/app/network','/app/business/tracking','/app/business/account'
+ ]);
+ assert.deepEqual(publicDestinations.map(item=>item.href),['/','/featured']);
+ assert.equal(activeSiteDestination('/app/shared-capacity',user),'capacity');
+ assert.equal(activeSiteDestination('/app/business/tracking',user),'my-tracking');
+ assert.equal(accountHref(user),'/app/business/account');
 });
-test('software Support alerts remain available while driver handover polling follows verified base identity',()=>{
- const selected_business_workspace={id:'business',name:'Customer desk',membershipRole:'STAFF',permissions:{capacity:false,tracking:true,team:false,owner:false}};
- for(const [platform_role,allowHandoverAlerts]of [['SHIPPER',false],['DRIVER',true],['TRANSPORTER',true]]){
-  const tree=render({id:'actor',name:'Actor',active:true,role:'CUSTOMER',platform_role,selected_business_workspace});
-  const alerts=tree.find(node=>node.type==='Alerts');assert.ok(alerts);assert.equal(alerts.props.allowHandoverAlerts,allowHandoverAlerts);
-  assert.equal(tree.find(node=>node.type==='Logo').props.href,'/app/business/tracking');
+
+test('platform navigation follows actual grants without retired brokerage routes',()=>{
+ const admin={id:'admin',role:'ADMIN',name:'Administrator'};
+ const support={id:'support',role:'SUPPORT',name:'Support',canManageSupport:true,canManageOperations:true};
+ const denied={id:'support-denied',role:'SUPPORT',name:'Support'};
+ assert.equal(activeSiteDestination('/admin/support',admin),'support');
+ assert.equal(activeSiteDestination('/support',support),'support');
+ assert.equal(memberDestinations(support).some(item=>item.href==='/admin/operations'),true);
+ assert.equal(memberDestinations(denied).some(item=>item.href==='/admin/operations'),false);
+ for(const user of [admin,support,denied]){
+  const hrefs=memberDestinations(user).map(item=>item.href);
+  assert.equal(hrefs.some(href=>href.startsWith('/brokerage')||href.startsWith('/admin/capacity-network')),false);
  }
- for(const role of ['ADMIN','SUPPORT']){const alerts=render({id:'staff',name:'Staff',active:true,role,can_manage_support:true}).find(node=>node.type==='Alerts');assert.ok(alerts);assert.equal(alerts.props.allowHandoverAlerts,false);}
 });
-test('public desktop and phone navigation keep real crawlable destinations without retired chat or extra account categories',()=>{
- const element=(type,props)=>({type,props:props||{}}),imports={'react/jsx-runtime':{jsx:element,jsxs:element},'@/components/localization':{Localized:'nav',Text:'Text'},'next/link':{__esModule:true,default:'a'},'next/navigation':{usePathname:()=>'/featured',useRouter:()=>({replace:()=>{throw Error('UNEXPECTED_NAVIGATION')}})},'lucide-react':css,react:{__esModule:true,default:{useEffect:()=>{}}},'./public-navigation.module.css':{__esModule:true,default:css}};
- const code=ts.transpileModule(readFileSync('src/components/public-mobile-nav.tsx','utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText,exports={};new Function('require','exports',code)(name=>{assert.ok(name in imports,name);return imports[name]},exports);
- const tree=nodes(exports.PublicMobileNav({signedIn:false,providerWorkspace:false})),navs=tree.filter(node=>node.type==='nav');assert.equal(navs.length,2);
- for(const nav of navs){const links=nodes(nav.props.children).filter(node=>node.type==='a');for(const href of ['/','/track','/featured','/about'])assert.equal(links.some(link=>link.props.href===href),true,href);assert.equal(links.find(link=>link.props.href==='/featured').props['aria-current'],'page');assert.equal(links.some(link=>['/arrange-transport','/brokerage','/admin/capacity-network'].includes(link.props.href)),false);}
+
+test('capacity and provider details keep predictable return destinations',()=>{
+ assert.equal(activeSiteDestination('/',provider),'capacity');
+ assert.equal(activeSiteDestination('/providers/example',provider),'capacity');
+ assert.equal(activeSiteDestination('/@example',null),'capacity');
+ assert.equal(activeSiteDestination('/featured',null),'featured');
+ assert.equal(activeSiteDestination('/app/network',provider),'directory');
+ assert.equal(activeSiteDestination('/app/home/market',provider),'my-work');
+ assert.equal(activeSiteDestination('/app/home/vehicles',provider),'my-work');
 });

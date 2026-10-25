@@ -1,0 +1,11 @@
+.home{min-width:0}
+.home[data-view='capacity'],.home[data-view='market']{display:flex;flex-direction:column;height:calc(100dvh - 70px);min-height:0;overflow:hidden}
+.tabs{display:flex;flex:0 0 auto;gap:4px;min-height:54px;align-items:stretch;overflow-x:auto;padding:5px 12px;border-bottom:1px solid #d7dfeb;background:#fff;scrollbar-width:thin}
+.tabs a{display:flex;flex:0 0 auto;align-items:center;justify-content:center;min-height:44px;padding:8px 15px;border-radius:9px;color:#526375;font-size:.78rem;font-weight:750;white-space:nowrap;text-decoration:none}
+.tabs a:hover,.tabs a:focus-visible{background:#eaf1ff;color:#0b1d3a}
+.tabs a.selected{background:#155eef;color:#fff}
+.content{flex:1;min-width:0;min-height:0}
+.content :global(.capacity-home-page){height:100%;min-height:0}
+.content .market{height:100%;min-height:0}
+.content .market :global(.home-market-shell){height:100%;min-height:0}
+@media(max-width:768px){.home[data-view='capacity'],.home[data-view='market']{height:calc(100dvh - 128px)}.tabs{padding-inline:6px}.tabs a{padding-inline:11px;font-size:.73rem}}

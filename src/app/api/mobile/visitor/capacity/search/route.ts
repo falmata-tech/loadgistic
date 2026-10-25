@@ -1,3 +1,5 @@
-import { nativeDiscovery } from '@/lib/mobile/discovery-server';
+import {mobileFailure,MobileError} from '@/lib/mobile/server';
 export const runtime='nodejs';
-export async function GET(request:Request) { return nativeDiscovery(request,true); }
+export async function GET(){
+ return mobileFailure(new MobileError(410,'ACCOUNT_REQUIRED','Sign in to search Shared capacity.'));
+}

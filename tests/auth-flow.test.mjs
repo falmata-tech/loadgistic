@@ -128,10 +128,17 @@ test('local Google OAuth uses an ignored environment boundary and a dedicated ca
   assert.equal((workflow.match(/node scripts\/ci-start-local-supabase\.mjs/g)||[]).length,3);
 });
 
-test('local unified account access explains the isolated inbox before and after an OTP request',()=>{
+test('sign-in is separate from account-type selection and explains the local inbox',()=>{
   const login=readFileSync(new URL('../src/app/login/page.tsx',import.meta.url),'utf8');
+  const signup=readFileSync(new URL('../src/app/signup/page.tsx',import.meta.url),'utf8');
   const setup=readFileSync(new URL('../src/app/apply/page.tsx',import.meta.url),'utf8');
-  assert.match(login,/title=\{codeStep\?'Enter your code':'Log in'\}/);
+  assert.match(login,/title=\{codeStep\?'Enter your code':'Sign in'\}/);
+  assert.doesNotMatch(login,/type="radio" name="audience"/);
+  assert.match(login,/name="audience" value="EXISTING"/);
+  assert.match(login,/href="\/signup"/);
+  assert.match(signup,/type="radio" name="audience" value="BUSINESS"/);
+  assert.match(signup,/type="radio" name="audience" value="PROVIDER"/);
+  assert.match(signup,/href="\/login"/);
   assert.doesNotMatch(login,/Continue to Loadgistic/);
   assert.match(login,/Local testing: open the email inbox/);
   assert.match(login,/Open the local email inbox in a new tab/);
@@ -155,6 +162,7 @@ test('signup uses the same managed identity choices but may create only an inact
   assert.match(otp,/maxAge:0/);
   assert.match(verify,/readProviderSignupHandoff/);
   assert.match(verify,/projection\.active/);
+  assert.match(verify,/audience==='PROVIDER'\?'\/apply':audience==='BUSINESS'\?'\/workspaces\?start=business':'\/signup\?verified=1'/);
   assert.match(verify,/type:'signup'/);
   assert.match(verify,/MANAGED_AUTH_ERROR/);
   assert.match(verify,/clearOAuthCookie\(response\)/);

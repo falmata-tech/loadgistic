@@ -26,11 +26,11 @@ test('Featured explains automatic operation and persists a manual draft and publ
    const state=checked(await service.from('featured_automation_status').select('outcome,checked_at').eq('singleton',true).single());expect(state.outcome).toBe('READY');expect(state.checked_at).toBeTruthy();
   }
   await page.screenshot({path:info.outputPath('featured-overview.png'),fullPage:true});
-  await page.getByText('How automatic selection works',{exact:true}).click();await expect(page.getByText(/Each main vehicle type has its own rotation; Sunday uses those same turns/)).toBeVisible();
+  await page.getByText('How automatic selection works',{exact:true}).click();await expect(page.getByText(/Transport Providers who have not appeared in this round go first/)).toBeVisible();
   await page.goto(`/admin/featured?date=${date}`);await expect(page.locator('.featured-roster-editor')).toHaveCount(0);await page.getByRole('link',{name:'Edit programme',exact:true}).click();
-  const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add vehicle and Driver');
+  const editor=page.locator('.featured-roster-editor'),select=editor.getByLabel('Add Transport Provider');
   const value=await select.locator('option').nth(1).getAttribute('value');expect(value).toBeTruthy();await select.selectOption(value!);await editor.getByRole('button',{name:'Add',exact:true}).click();
-  await editor.getByRole('combobox',{name:'Featured vehicles',exact:true}).selectOption('1');await page.getByLabel('Headline',{exact:true}).fill(`Featured review ${suffix}`);await page.getByLabel('Short introduction',{exact:true}).fill('Meet this truck and the driver who operates it.');
+  await editor.getByRole('combobox',{name:'Featured accounts',exact:true}).selectOption('1');await page.getByLabel('Headline',{exact:true}).fill(`Featured review ${suffix}`);await page.getByLabel('Short introduction',{exact:true}).fill('Meet this Transport Provider and explore their vehicles.');
   const draft=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:'Save draft',exact:true}).click();expect((await draft).status()).toBe(303);
   await expect(page.getByText('Draft saved.',{exact:true})).toBeVisible({timeout:30000});let row=checked(await service.from('featured_provider_days').select('id,status,selection_source,target_count').eq('feature_date',date).single());dayId=row.id;expect(row).toMatchObject({status:'DRAFT',selection_source:'MANUAL',target_count:1});
   expect((await getDailyFeaturedProviders(date)).providers).toHaveLength(0);
@@ -49,7 +49,7 @@ test('public map and Featured keep useful controls without decorative or false-l
  test.setTimeout(60000);await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible({timeout:30000});await expect(page.getByText('Ethiopia capacity · East Africa view',{exact:true})).toHaveCount(0);
  await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({timeout:30000});
  await page.screenshot({path:info.outputPath('map-copy.png'),fullPage:true});
- await page.goto('/featured');await expect(page.getByRole('heading',{name:'Daily Featured Vehicles'}).first()).toBeAttached();
+ await page.goto('/featured');await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers'}).first()).toBeAttached();
  await expect(page.locator('.featured-rotation-note')).not.toHaveAttribute('open','');await page.getByText('How Featured works',{exact:true}).click();await expect(page.getByText(/A rotating showcase, not a ranking/)).toBeVisible();
  await expect(page.locator('.featured-card-feature').filter({hasText:/^View$|^Live$/})).toHaveCount(0);
  await expect(page.getByText(/roster is being prepared/)).toHaveCount(0);
@@ -69,7 +69,7 @@ test('copy polish keeps admin, member and transporter profile controls usable',a
   await login('ADMIN');await page.goto('/admin');await expect(page.getByRole('heading',{name:'Platform overview',exact:true})).toBeVisible();await expect(page.getByText('Platform data',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('admin-overview.png'),fullPage:true});
   await page.goto('/admin/operations');await expect(page.getByText(/Credentials, sessions, tracking secrets/)).toHaveCount(0);await page.screenshot({path:info.outputPath('admin-records.png'),fullPage:true});
   await page.goto('/admin/support');await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible();await expect(page.getByText('Assisted matching capacity',{exact:true})).toHaveCount(0);
-  await login('TRANSPORTER');await page.goto('/app/home');await expect(page.getByRole('heading',{name:'My Fleet',exact:true})).toBeVisible();await expect(page.getByRole('region',{name:'Vehicles'}).getByRole('link',{name:'View vehicle'}).first()).toBeVisible();await expect(page.getByText('Operating priorities',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
+  await login('TRANSPORTER');await page.goto('/app/home/vehicles');await expect(page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');await expect(page.getByRole('region',{name:'Vehicles'}).getByRole('link',{name:'View vehicle'}).first()).toBeVisible();await expect(page.getByText('Operating priorities',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
   await page.goto('/app/network');await expect(page.getByText('Lets our Assisted matching team consider this truck when a visitor asks for help.',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-network.png'),fullPage:true});
   // Use the managed seed, not an arbitrary published synthetic profile left by a manual preview.
   const org=checked(await service.from('organizations').select('id,handle').eq('handle','blueline-transport').single());

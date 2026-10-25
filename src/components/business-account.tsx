@@ -7,7 +7,7 @@ import type {BusinessCommand,BusinessMember,BusinessPendingInvitation,BusinessWo
 import {AccountDetailsForm} from './account-details-form';
 import {BusinessDocuments} from './business-documents';
 import {businessRequest} from './business-workspace-choice';
-import {Text,FeedbackText} from './localization';
+import {Text,FeedbackText,Localized} from './localization';
 import styles from './business-workspace.module.css';
 
 type Task={kind:'PERSONAL'}|{kind:'DETAILS'}|{kind:'INVITE'}|{kind:'MEMBER';member:BusinessMember}|{kind:'ARCHIVE'}|{kind:'LEAVE'}|{kind:'TRANSFER';member:BusinessMember}|null;
@@ -58,6 +58,7 @@ export function BusinessAccount({initial,name,email,firstName,lastName,phone}:{i
    <section className={styles.accountCard}>
     <div className={styles.sectionHeading}><h2><Building2 aria-hidden="true"/> <Text message="Workspace details"/></h2>{workspace.permissions.team?<button className="button secondary small" onClick={()=>setTask({kind:'DETAILS'})}><Pencil aria-hidden="true"/><Text message="Edit"/></button>:null}</div>
     <dl><div><dt><Text message="Account name"/></dt><dd>{workspace.name}</dd></div><div><dt><Text message="Handle"/></dt><dd>@{workspace.handle}</dd></div>{workspace.city?<div><dt><Text message="Office city"/></dt><dd>{workspace.city}</dd></div>:null}<div><dt><Text message="Your access"/></dt><dd><Text message={roleLabel(workspace.membershipRole)}/></dd></div></dl>
+    {workspace.permissions.owner?<NetworkVisibility key={workspace.id} workspaceId={workspace.id}/>:null}
     <BusinessDocuments key={workspace.id+workspace.membershipRole} workspaceId={workspace.id} canManage={workspace.permissions.owner}/>
     <div className={styles.accountLinks}>{workspace.permissions.owner?<button type="button" className="button secondary small" onClick={()=>setTask({kind:'ARCHIVE'})}><Text message="Archive workspace"/></button>:<button type="button" className="button secondary small" onClick={()=>setTask({kind:'LEAVE'})}><Text message="Leave workspace"/></button>}</div>
    </section>
@@ -92,4 +93,25 @@ export function BusinessAccount({initial,name,email,firstName,lastName,phone}:{i
 }
 function InvitationRow({invitation,canManage,busy,resend,revoke}:{invitation:BusinessPendingInvitation;canManage:boolean;busy:boolean;resend:()=>void;revoke:()=>void}){
  return <div className={styles.member}><Mail aria-hidden="true"/><div className={styles.memberMain}><strong>{invitation.email}</strong><small><Text message={roleLabel(invitation.role)}/> · <Text message={invitation.status==='EXPIRED'?'Expired':'Waiting to join'}/></small><small><Text message={invitation.emailSentAt?'Invitation emailed':'Email delivery not confirmed'}/></small></div>{canManage&&invitation.status==='PENDING'?<button type="button" className="button secondary small" disabled={busy} onClick={resend}><Text message="Resend"/></button>:null}{canManage?<button type="button" className="button secondary small" disabled={busy} onClick={revoke}><Text message="Revoke"/></button>:null}</div>;
+}
+function NetworkVisibility({workspaceId}:{workspaceId:string}){
+ const [setting,setSetting]=React.useState(null as {visible:boolean;version:number}|null),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
+ async function load(){
+  const response=await fetch(`/api/business-workspaces/${workspaceId}/network-visibility`,{cache:'no-store',signal:AbortSignal.timeout(15000)});
+  const value:unknown=await response.json();
+  if(!response.ok||!value||typeof value!=='object'||Array.isArray(value)||typeof (value as {visible?:unknown}).visible!=='boolean'||!Number.isSafeInteger((value as {version?:unknown}).version))throw Error('Could not load this setting. Try again.');
+  setSetting(value as {visible:boolean;version:number});setError('');
+ }
+ React.useEffect(()=>{void load().catch(problem=>setError(problem instanceof Error?problem.message:'Could not load this setting. Try again.'));},[workspaceId]);
+ async function change(visible:boolean){if(!setting||busy)return;setBusy(true);setError('');
+  try{const saved=await businessRequest(`/api/business-workspaces/${workspaceId}/network-visibility`,{visible,expectedVersion:setting.version});
+   if(!saved||saved.visible!==visible||!Number.isSafeInteger(saved.version))throw Error('Could not confirm the change. Refresh and try again.');
+   setSetting(saved as {visible:boolean;version:number});
+  }catch(problem){setError(problem instanceof Error?problem.message:'Could not save this setting. Try again.');}
+  finally{setBusy(false);}
+ }
+ return <Localized as="section" copy={['aria-label']} className={styles.networkPreference} aria-label="Network visibility">
+  <label><input type="checkbox" checked={setting?.visible||false} disabled={busy||!setting} onChange={event=>void change(event.target.checked)}/><span><strong><Text message="Show network size in Network"/></strong><small><Text message="Signed-in accounts see a vehicle count, never your connections or vehicle list."/></small></span></label>
+  {error?<div role="alert"><FeedbackText message={error} fallback="Could not load this setting. Try again."/> <button className="button secondary small" type="button" onClick={()=>void load().catch(()=>{})}><Text message="Refresh"/></button></div>:null}
+ </Localized>;
 }

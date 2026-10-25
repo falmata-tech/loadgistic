@@ -1,8 +1,5 @@
 import type {Locale,Messages} from './controller';
 const rows=[
- ['Marketplace','የጭነት መኪና ገበያ','Gabaa geejjibaa'],
- ['My workspace','የሥራ ማስተዳደሪያዬ','Bakka hojii koo'],
- ['Switch view','እይታ ይቀይሩ','Mulʼata jijjiiri'],
  ['Email and account security','ኢሜይልና የመለያ ደህንነት','Imeelii fi nageenya herregaa'],
  ['Your driver photo','የሹፌር ፎቶዎ','Suuraa konkolaachisaa keessanii'],
  ['Personal','የግል መረጃ','Odeeffannoo dhuunfaa'],

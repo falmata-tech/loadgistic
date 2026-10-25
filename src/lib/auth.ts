@@ -8,10 +8,9 @@ import { createSupabaseServerClient } from './supabase/server';
 
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
 export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
-export const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
+const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
 export const GUEST_SUPPORT_COOKIE = 'lg_guest_support';
 export const TRACKING_IDLE_SECONDS = 5 * 60;
-export const SHARED_CAPACITY_IDLE_SECONDS = 30 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
   const client=await createSupabaseServerClient();
@@ -81,22 +80,6 @@ export async function hasProviderReviewGrant(shipmentId:string) {
   const store=await cookies();
   const payload=verifySessionToken(store.get(REVIEW_GRANT_COOKIE)?.value);
   return payload?.sub===`provider-review:${shipmentId}`;
-}
-
-export async function setSharedCapacitySession(emailDigest:string) {
-  const store=await cookies();
-  const expiresAt=Date.now()+SHARED_CAPACITY_IDLE_SECONDS*1000;
-  store.set(SHARED_CAPACITY_COOKIE,createSessionToken(`shared-capacity:${emailDigest}`,SHARED_CAPACITY_IDLE_SECONDS),{
-    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:SHARED_CAPACITY_IDLE_SECONDS
-  });
-  return {expiresAt};
-}
-
-export async function getSharedCapacitySession() {
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(SHARED_CAPACITY_COOKIE)?.value);
-  const match=String(payload?.sub||'').match(/^shared-capacity:([a-f0-9]{64})$/);
-  return match?{emailDigest:match[1],expiresAt:Number(payload.exp)*1000}:null;
 }
 
 export async function clearSharedCapacitySession() {

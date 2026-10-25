@@ -1,0 +1,18 @@
+.board{display:grid;grid-template-columns:minmax(230px,300px) minmax(0,1fr);gap:1.2rem;align-items:start}
+.picker,.detail{border:1px solid #d7dfeb;border-radius:18px;background:#fff;box-shadow:0 6px 22px #10274d0a}
+.picker{padding:1rem;display:grid;gap:.8rem;position:sticky;top:1rem}
+.picker h2,.detail h2{margin:0;font-size:1.15rem;color:#10274d}
+.search{display:flex;align-items:center;gap:.55rem;border:1px solid #bdcde7;border-radius:10px;padding:.65rem .8rem}
+.search svg{width:18px;height:18px;color:#155eef;flex:none}
+.search input{border:0;background:transparent;min-width:0;width:100%;padding:0;color:#10274d;outline:0}
+.search:focus-within{outline:2px solid #155eef;outline-offset:2px}
+.list{display:grid;gap:.35rem;max-height:min(67vh,650px);overflow:auto}
+.choice{display:grid;gap:.15rem;text-align:left;border:1px solid transparent;background:transparent;border-radius:11px;padding:.65rem .7rem;color:#10274d;cursor:pointer}
+.choice:hover{background:#f3f6fb}.choice[aria-pressed="true"]{background:#eaf1ff;border-color:#155eef}
+.choice strong{font-size:.9rem}.choice span{font-size:.78rem;color:#526375}
+.detail{padding:clamp(1rem,2vw,1.5rem);display:grid;gap:1rem}
+.head{display:flex;align-items:flex-start;gap:.8rem}.head>svg{width:26px;height:26px;color:#155eef;flex:none}.head p{margin:.25rem 0 0;color:#526375}
+.actions{display:flex;gap:.6rem;flex-wrap:wrap}.section{border-top:1px solid #e3e9f2;padding-top:1rem;display:grid;gap:.55rem}.section h3{margin:0;font-size:1rem;color:#10274d}
+.grant{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border:1px solid #e3e9f2;border-radius:11px;padding:.65rem .8rem}.grant div{display:grid;gap:.1rem;min-width:0}.grant span{font-size:.78rem;color:#526375;overflow-wrap:anywhere}
+.grant form{flex:none}.empty{color:#526375;margin:0}
+@media(max-width:760px){.board{display:block}.picker{position:static}.list{display:flex;gap:.45rem;max-height:none;overflow:auto;padding-bottom:.2rem}.choice{min-width:150px;max-width:210px;flex:none}.detail{margin-top:1rem}.actions>*{flex:1}.grant{align-items:flex-start}.grant form{align-self:center}}

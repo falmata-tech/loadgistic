@@ -52,21 +52,14 @@ begin
  -- Revoking the publisher's business grant removes it for everyone immediately.
  perform revoke_business_capacity_access(provider_id,grant_id,1);
  perform pg_temp.assert_business_capacity((select count(*)=0 from business_capacity_filtered_page(owner_id,workspace)) and (select count(*)=0 from business_capacity_filtered_page(staff_id,workspace)),'REVOKED_TEAM_SHARE_RETAINED');
- perform grant_named_private_capacity_access(provider_id,truck,owner_email,digest,'Synthetic owner contact');
- select p.payload into payload from business_capacity_filtered_page(owner_id,workspace) p;
- perform pg_temp.assert_business_capacity(payload->>'access_scope'='PERSONAL','PERSONAL_EMAIL_SHARE_NOT_PRESERVED');
- perform pg_temp.assert_business_capacity((select count(*)=0 from business_capacity_filtered_page(staff_id,workspace)),'PERSONAL_OWNER_EMAIL_INHERITED_BY_STAFF');
- -- Exclusive remains one email even if an old team grant exists.
- perform set_provider_capacity_sharing(provider_id,truck,'EXCLUSIVE',owner_email,digest);
- perform pg_temp.capacity_business_denied(format('select grant_business_capacity_access(%L,%L,%L)',provider_id,truck,workspace),'EXCLUSIVE_RECIPIENT_ONLY');
- perform pg_temp.assert_business_capacity((select count(*)=1 from business_capacity_filtered_page(owner_id,workspace)) and (select count(*)=0 from business_capacity_filtered_page(staff_id,workspace)),'EXCLUSIVE_MEANING_CHANGED');
- perform set_provider_capacity_sharing(provider_id,truck,'PRIVATE');
+ perform pg_temp.capacity_business_denied(format('select grant_named_private_capacity_access(%L,%L,%L,%L,%L)',provider_id,truck,owner_email,digest,'Retired email share'),'EMAIL_CAPACITY_RETIRED');
+ perform pg_temp.assert_business_capacity((select count(*)=0 from business_capacity_filtered_page(owner_id,workspace)) and (select count(*)=0 from business_capacity_filtered_page(staff_id,workspace)),'RETIRED_EMAIL_SHARE_VISIBLE');
  result:=grant_business_capacity_access(provider_id,truck,workspace);
  version_value:=(select version from business_workspaces where id=workspace);
  perform business_workspace_command(owner_id,workspace,jsonb_build_object('action','REMOVE_MEMBER','expectedVersion',version_value,'userId',staff_id));
  perform pg_temp.capacity_business_denied(format('select * from business_capacity_filtered_page(%L,%L)',staff_id,workspace),'BUSINESS_FORBIDDEN');
  perform pg_temp.assert_business_capacity(not has_table_privilege('anon','business_capacity_grants','SELECT') and not has_table_privilege('authenticated','business_capacity_grants','SELECT') and (select relrowsecurity from pg_class where oid='business_capacity_grants'::regclass),'BROWSER_TABLE_ACCESS');
  perform pg_temp.assert_business_capacity(not has_function_privilege('service_role','business_capacity_rows(uuid,uuid,timestamptz,uuid,integer,jsonb)','EXECUTE') and not has_function_privilege('authenticated','business_capacity_filtered_page(uuid,uuid,timestamptz,uuid,integer,jsonb)','EXECUTE'),'PROJECTION_BYPASS');
- raise notice 'PASS: unverified businesses remain discoverable/shareable; team shares, staff, filters, personal-email isolation, exclusive policy, revocation and ACL';
+ raise notice 'PASS: unverified businesses remain discoverable/shareable; team shares, staff, filters, retired-email denial, revocation and ACL';
 end $test$;
 rollback;

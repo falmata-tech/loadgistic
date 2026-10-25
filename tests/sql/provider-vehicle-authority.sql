@@ -6,7 +6,7 @@ declare owner_id uuid:=gen_random_uuid();org uuid:=gen_random_uuid();admin_id uu
  req_before jsonb;command jsonb;state jsonb;summary jsonb;first_page jsonb;last_page jsonb;context jsonb;i integer;
  synthetic_driver uuid:=gen_random_uuid();origin_ref text;destination_ref text;license_query jsonb;licence_item jsonb;capacity_id uuid;
  original_revision text;
- hidden_draft uuid;baseline_summary jsonb;basic_rows jsonb:='[]'::jsonb;featured_row jsonb;page_index integer;legacy_truck uuid;
+ hidden_draft uuid;baseline_summary jsonb;basic_rows jsonb:='[]'::jsonb;featured_row jsonb;page_index integer;legacy_truck uuid;broker_actor uuid:=gen_random_uuid();broker_workspace uuid;connection_id uuid;
 begin
  -- CI's named market providers have explicit fictional relationship reviews.
  -- Own the no-review legacy scenario instead of deleting or revoking seed facts.
@@ -15,14 +15,17 @@ begin
  where p.active and p.role='TRANSPORTER' and m.membership_role='OWNER' and m.organization_id<>org order by p.id limit 1;
  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)values
   (owner_id,'authority-owner-'||owner_id||'@example.test',now(),'{}','{}'),
-  (driver_id,'authority-employee-'||driver_id||'@example.test',now(),'{}','{}');
+  (driver_id,'authority-employee-'||driver_id||'@example.test',now(),'{}','{}'),
+  (broker_actor,'authority-broker-'||broker_actor||'@example.invalid',now(),'{}','{}');
  update public.profiles set role='TRANSPORTER',active=true,drives_truck=false where id=owner_id;
+ update public.profiles set role='SHIPPER',active=true where id=broker_actor;
  insert into public.organizations(id,name,handle,type,city,city_place_ref,public_visibility)
  values(org,'Synthetic authority provider','authority-provider-'||org,'TRANSPORT_COMPANY','Addis Ababa',
   (select id from public.place_catalog where normalized_name='addis ababa'limit 1),'PUBLIC');
  insert into public.organization_members(user_id,organization_id,membership_role)values(owner_id,org,'OWNER');
  insert into public.company_pages(organization_id,published,base_region_code,contact_phone,show_contact_phone)
  values(org,true,'ADDIS_ABABA','+251900000146',true);
+ broker_workspace:=(public.business_workspace_create(broker_actor,jsonb_build_object('name','Authority broker','handle','authority-broker-'||left(broker_actor::text,12),'kind','BROKER'))->>'id')::uuid;
  perform public.accept_content_policy(owner_id,'2026-10-09');
  perform public.fleet_register_driver(owner_id,driver_id,jsonb_build_object('email','authority-employee-'||driver_id||'@example.test',
   'name','Synthetic authority employee','phone','+251900000147'));
@@ -112,13 +115,14 @@ begin
   and(row.payload->'authority'->'operatingLicence'->>'verified')::boolean) then raise exception 'PUBLIC_LICENCE_FILTER_MISSING';end if;
  if not exists(select 1 from public.capacity_search_public_rows(license_query,null,null,14) row where row.payload->>'vehicle_id'=licence_truck::text) then raise exception 'SEARCH_LICENCE_FILTER_MISSING';end if;
  if exists(select 1 from public.public_capacity_page(license_query||jsonb_build_object('truck_docs','VEHICLE_OWNERSHIP'),null,null,14) row) then raise exception 'WRONG_DOCUMENT_FILTER_RETURNED_TRUCK';end if;
- perform public.grant_private_capacity_access(owner_id,licence_truck,'authority-recipient@example.test',repeat('6',64));
- if not exists(select 1 from public.private_capacity_filtered_page('EMAIL',repeat('6',64),null,null,null,100,license_query) row
+ connection_id:=(public.request_account_connection(owner_id,'BUSINESS',broker_workspace)->>'id')::uuid;
+ perform public.decide_account_connection(broker_actor,connection_id,'ACCEPT');
+ perform public.grant_account_capacity_access(owner_id,connection_id,licence_truck);
+ if not exists(select 1 from public.account_capacity_filtered_page(broker_actor,repeat('6',64),null,null,100,license_query) row
   where row.payload->>'vehicle_id'=licence_truck::text and(row.payload->'authority'->'operatingLicence'->>'verified')::boolean)
   then raise exception 'PRIVATE_LICENCE_FILTER_MISSING';end if;
- if not exists(select 1 from public.capacity_search_private_rows('EMAIL',repeat('6',64),null,null,null,100,license_query) row
-  where row.payload->>'vehicle_id'=licence_truck::text) then raise exception 'PRIVATE_SEARCH_LICENCE_FILTER_MISSING';end if;
- if exists(select 1 from public.private_capacity_filtered_page('EMAIL',repeat('7',64),null,null,null,100,license_query))
+ if (public.account_capacity_search_results(broker_actor,repeat('6',64),license_query,1)->>'total')::integer<1 then raise exception 'PRIVATE_SEARCH_LICENCE_FILTER_MISSING';end if;
+ if exists(select 1 from public.account_capacity_filtered_page(owner_id,repeat('7',64),null,null,100,license_query))
   then raise exception 'FOREIGN_RECIPIENT_LICENSE_ACCESS';end if;
  for i in 1..13 loop
   truck:=(public.create_provider_vehicle(owner_id,jsonb_build_object('make','Isuzu','model','Pagination fixture','plate','AUTHORITY-PAGE-'||i,'cargo_configuration','Mini Box Truck','use_basis','PERMISSION'))->>'id')::uuid;
@@ -147,9 +151,12 @@ begin
  perform public.set_provider_capacity_sharing(owner_id,licence_truck,'PRIVATE');
  if public.provider_fleet_authority_summary(org,null)<>summary then raise exception 'PRIVATE_SHARING_CHANGED_PUBLIC_BASIC_COUNT';end if;
  if exists(select 1 from public.public_capacity_page(license_query,null,null,14)) then raise exception 'PRIVATE_SIGNAL_PUBLICLY_DISCLOSED';end if;
- if not exists(select 1 from public.private_capacity_filtered_page('EMAIL',repeat('6',64),null,null,null,100,license_query)) then raise exception 'PRIVATE_AUTHORIZED_SIGNAL_LOST';end if;
- perform public.set_provider_capacity_sharing(owner_id,licence_truck,'EXCLUSIVE','authority-recipient@example.test',repeat('6',64));
- if public.provider_fleet_authority_summary(org,null)<>summary or exists(select 1 from public.public_capacity_page(license_query,null,null,14)) then raise exception 'EXCLUSIVE_SHARING_PUBLIC_LEAK';end if;
+ if not exists(select 1 from public.account_capacity_filtered_page(broker_actor,repeat('6',64),null,null,100,license_query)) then raise exception 'PRIVATE_AUTHORIZED_SIGNAL_LOST';end if;
+ begin
+  perform public.set_provider_capacity_sharing(owner_id,licence_truck,'EXCLUSIVE','authority-recipient@example.test',repeat('6',64));
+  raise exception 'RETIRED_EXCLUSIVE_EMAIL_ALLOWED';
+ exception when others then if sqlerrm<>'EMAIL_CAPACITY_RETIRED' then raise;end if;end;
+ if public.provider_fleet_authority_summary(org,null)<>summary or exists(select 1 from public.public_capacity_page(license_query,null,null,14)) then raise exception 'PRIVATE_SHARING_PUBLIC_LEAK';end if;
  perform public.set_provider_capacity_sharing(owner_id,licence_truck,'BOTH');
  update public.organizations set content_hidden=true where id=org;
  if(public.provider_fleet_authority_summary(org,null)->>'total')::integer<>0 or public.public_provider_fleet_page(org,null,1) is not null then raise exception 'HIDDEN_OWNER_COUNT_LEAK';end if;
@@ -164,9 +171,9 @@ begin
  update public.verification_requests set expires_on=current_date-1 where id=licence_source;
  if(public.managed_provider_publication_eligibility(owner_id)->>'canPublish')::boolean then raise exception 'EXPIRED_SOURCE_QUALIFIED';end if;
  if public.capacity_search_matches(licence_item,license_query) or exists(select 1 from public.public_capacity_page(license_query,null,null,14)) then raise exception 'EXPIRED_LICENCE_FILTER_MATCHED';end if;
- if exists(select 1 from public.private_capacity_filtered_page('EMAIL',repeat('6',64),null,null,null,100,license_query))
+ if exists(select 1 from public.account_capacity_filtered_page(broker_actor,repeat('6',64),null,null,100,license_query))
   then raise exception 'PRIVATE_QUALIFIER_EXPIRY_BYPASS';end if;
- if not exists(select 1 from public.capacities where id=capacity_id) or not exists(select 1 from public.capacity_access_grants where vehicle_id=licence_truck and revoked_at is null)
+ if not exists(select 1 from public.capacities where id=capacity_id) or not exists(select 1 from public.account_capacity_grants where vehicle_id=licence_truck and revoked_at is null)
   then raise exception 'QUALIFICATION_LOSS_DELETED_HISTORY_OR_RECIPIENTS';end if;
  if exists(select 1 from pg_class c where c.oid='public.provider_vehicle_authority_reviews'::regclass and not c.relrowsecurity)
   or has_table_privilege('anon','public.provider_vehicle_authority_reviews','SELECT')

@@ -46,13 +46,13 @@ fixtureTables.vehicles=applyManagedFixtureVehicleCatalog(
 fixtureTables.capacities=applyManagedFixtureMarketPolicy(fixtureTables.capacities||[],fixtureTables.vehicles||[]);
 
 const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
-const {featuredTruckTypeForDate,selectBalancedFeaturedTruckRows}=await import('../src/lib/featured-trucks.js');
+const {FEATURED_PROVIDER_DAY,selectFeaturedProviderAccountRows}=await import('../src/lib/featured-trucks.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 
 function buildFeaturedFixtureTables(){
-  const iso=new Date().toISOString();const expo=regionalExpoGroupForDate(today);const theme=featuredTruckTypeForDate(today);
+  const iso=new Date().toISOString();const expo=regionalExpoGroupForDate(today);const theme=FEATURED_PROVIDER_DAY;
   const organizations=new Map((fixtureTables.organizations||[]).map(row=>[row.id,row]));
   const profiles=new Map((fixtureTables.provider_profiles||[]).map(row=>[row.id,row]));
   const ownerByOrganization=new Map((fixtureTables.memberships||[]).filter(row=>row.membership_role==='OWNER').map(row=>[row.organization_id,row.user_id]));
@@ -67,13 +67,13 @@ function buildFeaturedFixtureTables(){
   const eligible=(fixtureTables.vehicles||[]).filter(vehicle=>Number(vehicle.active)!==0&&theme.configurations.includes(vehicle.cargo_configuration))
     .map(vehicle=>{const owner=candidateByOwner.get(vehicle.organization_id?`organization:${vehicle.organization_id}`:`profile:${vehicle.provider_profile_id}`);const assignment=assignmentByVehicle.get(vehicle.id);return owner&&assignment?{vehicle,owner,assignment}:null;})
     .filter(Boolean).sort((first,second)=>String(first.vehicle.platform_number||first.vehicle.id).localeCompare(String(second.vehicle.platform_number||second.vehicle.id)));
-  const featured=selectBalancedFeaturedTruckRows(eligible,theme.configurations,8);
+  const featured=selectFeaturedProviderAccountRows(eligible,8);
   if(!featured.length)throw new Error('PRODUCTION_PILOT_FEATURED_CANDIDATES_MISSING');
   const dayId=`featured-pilot-${today}`;
   const featuredDay={
     id:dayId,feature_date:today,base_place_ref:`featured:${theme.key}`,base_place_label:theme.label,
-    expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],public_headline:'Daily Featured Trucks',
-    public_introduction:`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,tiktok_url:null,
+    expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],public_headline:'Daily Featured Transport Providers',
+    public_introduction:'Meet the transport accounts in today’s showcase and explore the vehicles they publish.',tiktok_url:null,
     broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule_mode:'AUTO',
     schedule_config_json:{dayStart:'07:30',dayEnd:'09:00',targetCount:featured.length,sponsorBreakEvery:2,sponsorBreakMinutes:2},
     manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',published_by:'user-admin',

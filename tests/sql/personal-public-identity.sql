@@ -10,7 +10,7 @@ end $$;
 do $identity$
 declare person uuid:=gen_random_uuid();other_person uuid:=gen_random_uuid();provider uuid:=gen_random_uuid();payload jsonb;value text;signature text;
  private_marker text:='Personalprivate141';original_name text;legacy_business text;public_phone text:='+251900000141';
- places jsonb;cities text[];truck uuid;capacity_id uuid;photo uuid:=gen_random_uuid();org uuid:=gen_random_uuid();company_driver uuid:=gen_random_uuid();shipment uuid:=gen_random_uuid();company_payload jsonb;command jsonb;before_extras jsonb;count_rows integer;candidate jsonb;signup_user uuid:=gen_random_uuid();signup_intent uuid;
+ places jsonb;cities text[];truck uuid;capacity_id uuid;photo uuid:=gen_random_uuid();org uuid:=gen_random_uuid();company_driver uuid:=gen_random_uuid();shipment uuid:=gen_random_uuid();company_payload jsonb;command jsonb;before_extras jsonb;count_rows integer;candidate jsonb;signup_user uuid:=gen_random_uuid();signup_intent uuid;broker_actor uuid:=gen_random_uuid();broker_workspace uuid;connection_id uuid;
 begin
  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
  (person,'identity-'||person||'@example.test',now(),'{}'),(other_person,'identity-'||other_person||'@example.test',now(),'{}');
@@ -59,19 +59,25 @@ begin
  perform set_provider_vehicle_publication(person,truck,'LIVE');
  capacity_id:=publish_provider_capacity(person,jsonb_build_object('vehicle_id',truck,'status','EMPTY','accepted_loads','BOTH','availability_geometry','ROUTE','location_source','DEVICE_OBSCURED',
  'approximate_lat',(places->0->>'lat')::float8,'approximate_lng',(places->0->>'lng')::float8,'location_precision_km',20,'current_route_places',places-2,'sharing_mode','BOTH'));
- perform grant_private_capacity_access(person,truck,'identity-guest@example.test',repeat('6',64));
+ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+ values(broker_actor,'identity-broker-'||broker_actor||'@example.invalid',now(),'{}');
+ update profiles set role='SHIPPER',active=true where id=broker_actor;
+ broker_workspace:=(business_workspace_create(broker_actor,jsonb_build_object('name','Identity broker','handle','identity-broker-'||left(broker_actor::text,12),'kind','BROKER'))->>'id')::uuid;
+ connection_id:=(request_account_connection(person,'BUSINESS',broker_workspace)->>'id')::uuid;
+ perform decide_account_connection(broker_actor,connection_id,'ACCEPT');
+ perform grant_account_capacity_access(person,connection_id,truck);
  insert into driver_portrait_uploads(id,user_id,file_path,size_bytes,state,upload_finished)
  values(photo,person,'supabase://provider-profile/driver-portrait/2026-10-13/'||photo||'.jpg',1024,'ACTIVE',true);
  perform pg_temp.assert_identity(public_person_portrait_url(person)='/api/public/driver-portraits/'||photo,'OWN_ACTIVE_PORTRAIT_MISSING');
  perform pg_temp.assert_identity(public_person_portrait_url(other_person) is null,'UNRELATED_PORTRAIT_INHERITED');
  -- Execute all five caller-appropriate projections, rather than checking their
- -- source strings. Private guest facts carry the same safe personal identity.
+ -- source strings. Registered-account facts carry the same safe personal identity.
  foreach signature in array array[
   format('select payload from public_capacity_page(%L)',jsonb_build_object('capacity_id',capacity_id)),
   format('select payload from capacity_search_public_rows(%L)',jsonb_build_object('capacity_id',capacity_id)),
-  format('select payload from private_capacity_projection(''EMAIL'',%L,null,null,null,100)',repeat('6',64)),
-  format('select payload from private_capacity_filtered_page(''EMAIL'',%L,null,null,null,100,%L)',repeat('6',64),jsonb_build_object('capacity_id',capacity_id)),
-  format('select payload from capacity_search_private_rows(''EMAIL'',%L,null,null,null,100,%L)',repeat('6',64),jsonb_build_object('capacity_id',capacity_id))
+  format('select payload from account_capacity_filtered_page(%L,%L,null,null,100,%L)',broker_actor,repeat('6',64),jsonb_build_object('capacity_id',capacity_id)),
+  format('select payload from account_capacity_filtered_page(%L,%L,null,null,100,%L)',broker_actor,repeat('6',64),jsonb_build_object('provider','identity-'||provider)),
+  format('select payload from account_capacity_filtered_page(%L,%L,null,null,100,%L)',broker_actor,repeat('6',64),jsonb_build_object('status','EMPTY','vehicle_category','Cargo van'))
  ] loop
   count_rows:=0;
   for payload in execute signature loop

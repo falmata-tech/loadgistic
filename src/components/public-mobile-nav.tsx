@@ -1,75 +1,50 @@
-"use client";
-
-
-import {Localized,Text} from '@/components/localization';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { FileText, Info, LayoutDashboard, LockKeyhole, Truck, MapPinned, Route, Users } from 'lucide-react';
+'use client';
 import React from 'react';
+import Link from 'next/link';
+import {usePathname,useRouter} from 'next/navigation';
+import {FileText,LockKeyhole,MoreHorizontal,X} from 'lucide-react';
+import {Localized,Text} from './localization';
+import {aboutDestination,activeSiteDestination,memberDestinations,phonePrimaryDestinations,publicDestinations,visitorDestinations,type SiteDestination,type SiteNavigationUser} from './site-navigation';
 import styles from './public-navigation.module.css';
 
-const destinations = [
-  { key: 'market', href: '/', label: 'Capacity', desktopLabel: 'Capacity', icon: MapPinned },
-  { key: 'track', href: '/track', label: 'Track', desktopLabel: 'Track', icon: Route },
-  { key: 'featured', href: '/featured', label: 'Featured', desktopLabel: 'Featured', icon: Users },
-  { key: 'about', href: '/about', label: 'About', desktopLabel: 'About', icon: Info }
-] as const;
-
-function routeDestination(pathname: string) {
-  if (pathname.startsWith('/shared-capacity')) return 'market';
-  if (pathname.startsWith('/help')) return 'help';
-  if (pathname.startsWith('/track')) return 'track';
-  if (pathname.startsWith('/featured')) return 'featured';
-  if (pathname.startsWith('/providers/') || pathname.startsWith('/@')) return 'market';
-  if (pathname.startsWith('/apply') || pathname.startsWith('/signup')) return 'join';
-  if (pathname.startsWith('/privacy')) return 'privacy';
-  if (pathname.startsWith('/terms')) return 'terms';
-  if (pathname.startsWith('/login')) return 'login';
-  if (pathname.startsWith('/about')) return 'about';
-  return pathname === '/' ? 'market' : '';
-}
-
-export function PublicMobileNav({signedIn=false,providerWorkspace=false}:{signedIn?:boolean;providerWorkspace?:boolean}) {
-  const pathname = usePathname();
-  const router=useRouter();
-  const active=routeDestination(pathname);
-
-  React.useEffect(() => {
-    if(pathname==='/'&&window.location.hash==='#featured-providers')router.replace('/featured');
-  },[pathname,router]);
-
-  const destinationLink=(destination:{key:string;href:string;label:string;desktopLabel:string;icon:any},mobile:boolean,className?:string) => {
-    const Icon = destination.icon;
-    const isActive = active === destination.key;
-    return (
-      <Link
-        key={destination.key}
-        href={destination.href}
-        className={[className,isActive?'active':''].filter(Boolean).join(' ')||undefined}
-        aria-current={isActive ? 'page' : undefined}
-      >
-        <Icon aria-hidden="true" />
-        <span>{<Text message={mobile?destination.label:destination.desktopLabel}/>}</span>
-      </Link>
-    );
-  };
-
-  const sessionDestination=signedIn
-    ?{key:'dashboard',href:'/app/home',label:providerWorkspace?'My workspace':'Dashboard',desktopLabel:providerWorkspace?'My workspace':'Dashboard',icon:LayoutDashboard}
-    :{key:'login',href:'/login',label:'Sign in',desktopLabel:'Sign in',icon:Truck};
-
-  return <>
-    <Localized as="nav" copy={["aria-label"]} className={`public-workspace-nav ${styles.rail}`} aria-label="Public workspace navigation">
-      {destinations.map(destination=>destinationLink(destination,false))}
-      {signedIn&&!providerWorkspace?destinationLink(sessionDestination,false,'public-nav-secondary'):null}
-      <div className={styles.legal}>
-        {destinationLink({key:'privacy',href:'/privacy',label:'Privacy',desktopLabel:'Privacy',icon:LockKeyhole},false,'public-nav-secondary')}
-        {destinationLink({key:'terms',href:'/terms',label:'Terms',desktopLabel:'Terms',icon:FileText},false,'public-nav-secondary')}
-      </div>
-    </Localized>
-    <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Public mobile navigation">
-      {destinations.slice(0,3).map(destination=>destinationLink(destination,true))}
-      {destinationLink(destinations[3],true)}
-    </Localized>
-  </>;
+export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
+ const pathname=usePathname(),router=useRouter(),active=activeSiteDestination(pathname,user),[menuOpen,setMenuOpen]=React.useState(false);
+ const privateItems=memberDestinations(user),primary=phonePrimaryDestinations(user);
+ const workItems=privateItems.filter(item=>!['support','account'].includes(item.key));
+ const utilityItems=privateItems.filter(item=>['support','account'].includes(item.key));
+ const primaryKeys=new Set(primary.map(item=>item.key));
+ const moreWork=workItems.filter(item=>!primaryKeys.has(item.key));
+ const provider=['DRIVER','TRANSPORTER'].includes(user?.role||'');
+ const customer=user?.role==='CUSTOMER';
+ const morePublic=publicDestinations.filter(item=>!(provider&&item.key==='capacity')&&!primaryKeys.has(item.key));
+ const moreUtility=utilityItems.filter(item=>!primaryKeys.has(item.key));
+ React.useEffect(()=>{if(pathname==='/'&&window.location.hash==='#featured-providers')router.replace('/featured');},[pathname,router]);
+ React.useEffect(()=>{setMenuOpen(false);},[pathname]);
+ const link=(item:SiteDestination,className?:string)=><Link key={item.key} href={item.href} className={[className,active===item.key?'active':''].filter(Boolean).join(' ')||undefined} aria-current={active===item.key?'page':undefined} onClick={()=>setMenuOpen(false)}><item.icon aria-hidden="true"/><span><Text message={item.label}/></span></Link>;
+ return <>
+  <Localized as="nav" copy={["aria-label"]} className={`public-workspace-nav ${styles.rail}`} aria-label="Site navigation">
+   {!user?visitorDestinations.map(item=>link(item)):<>
+   {customer?link(publicDestinations[0]):null}
+   {workItems.map(item=>link(item))}
+   {workItems.length?<div className={styles.group} aria-hidden="true"/>:null}
+   {publicDestinations.filter(item=>item.key!=='capacity'||!provider&&!customer).map(item=>link(item))}
+   {utilityItems.length?<div className={styles.group} aria-hidden="true"/>:null}
+   {utilityItems.map(item=>link(item))}
+   {link(aboutDestination)}
+   </>}
+   <div className={styles.legal}><Link href="/privacy"><LockKeyhole aria-hidden="true"/><span><Text message="Privacy"/></span></Link><Link href="/terms"><FileText aria-hidden="true"/><span><Text message="Terms"/></span></Link></div>
+  </Localized>
+  <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Mobile navigation">
+   {primary.map(item=>link(item))}
+   {user?<button type="button" className={menuOpen?'active':''} aria-expanded={menuOpen} aria-controls="site-more-menu" onClick={()=>setMenuOpen(true)}><MoreHorizontal aria-hidden="true"/><span><Text message="More"/></span></button>:null}
+  </Localized>
+  {menuOpen?<div className={styles.menuBackdrop} onClick={()=>setMenuOpen(false)}><div id="site-more-menu" className={styles.menu} role="dialog" aria-modal="true" aria-label="More navigation" onClick={event=>event.stopPropagation()} onKeyDown={event=>{if(event.key==='Escape')setMenuOpen(false);}}><div className={styles.menuTitle}><strong><Text message="More"/></strong><button type="button" aria-label="Close menu" onClick={()=>setMenuOpen(false)}><X aria-hidden="true"/></button></div>
+    {moreWork.map(item=>link(item))}
+    {moreWork.length?<div className={styles.group} aria-hidden="true"/>:null}
+    {morePublic.map(item=>link(item))}
+    {moreUtility.length?<div className={styles.group} aria-hidden="true"/>:null}
+    {moreUtility.map(item=>link(item))}
+    {link(aboutDestination)}
+    <div className={styles.legal}><Link href="/privacy"><Text message="Privacy"/></Link><Link href="/terms"><Text message="Terms"/></Link></div></div></div>:null}
+ </>;
 }

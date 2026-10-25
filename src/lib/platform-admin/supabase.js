@@ -2,7 +2,7 @@ import {normalizeOptionalCallbackPhone} from '../domain.js';
 import {buildFeaturedDaySchedule,validateFeaturedScheduleConfig} from '../expo-broadcast.js';
 import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate} from '../provider-regions.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
-import {featuredTruckTypeForDate} from '../featured-trucks.js';
+import {FEATURED_PROVIDER_DAY} from '../featured-trucks.js';
 import {loadFeaturedTruckCandidates} from '../featured-truck-candidates.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
@@ -184,10 +184,20 @@ export async function getAdminFeaturedProviderDay(user,date){
     requested_group_key:expo.key,requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)});
   if(error)throw managedError('SUPABASE_ADMIN_FEATURED_FAILED',error);
   const day=data?.day||null;const slots=data?.slots||[];const providerCandidates=(data?.candidates||[]).map(decorateCandidate);
-  const candidates=await loadFeaturedTruckCandidates(client,featureDate,providerCandidates);
+  const allCandidates=await loadFeaturedTruckCandidates(client,featureDate,providerCandidates);
+  const selectedIds=new Set(slots.map(slot=>slot.vehicle_id));
+  const byAccount=new Map();
+  for(const candidate of allCandidates){
+    if(!byAccount.has(candidate.provider_key)||selectedIds.has(candidate.vehicle_id))byAccount.set(candidate.provider_key,candidate);
+  }
+  const candidates=[...byAccount.values()];
   const byTruck=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
   const byProvider=new Map(providerCandidates.map(candidate=>[candidate.provider_key,candidate]));
-  const slotEvaluations=slots.map(slot=>{const key=`vehicle:${slot.vehicle_id}`;const candidate=byTruck.get(key)||null;return {...slot,candidate,eligible:Boolean(candidate?.eligible&&candidate.driver_user_id===slot.driver_user_id)};});
+  const slotEvaluations=slots.map(slot=>{const key=`vehicle:${slot.vehicle_id}`;
+    const accountKey=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;
+    const candidate=byTruck.get(key)||byAccount.get(accountKey)||null;
+    return {...slot,candidate,eligible:Boolean(candidate?.eligible)};
+  });
   const sponsorships=(data?.sponsorships||[]).map(sponsorship=>{
     const provider_key=sponsorship.sponsor_kind==='TRANSPORTER'
       ?(sponsorship.provider_organization_id?`organization:${sponsorship.provider_organization_id}`:`profile:${sponsorship.provider_profile_id}`):null;
@@ -206,7 +216,7 @@ export async function listFeaturedProviderCandidates(user,date){
 }
 
 export async function saveFeaturedProviderDay(user,input={}){
-  assertFeaturedManager(user);const featureDate=validateDate(input.featureDate);const theme=featuredTruckTypeForDate(featureDate);
+  assertFeaturedManager(user);const featureDate=validateDate(input.featureDate);const theme=FEATURED_PROVIDER_DAY;
   const truckKeys=(Array.isArray(input.truckKeys)?input.truckKeys:[]).map(String).filter(Boolean);
   if(new Set(truckKeys).size!==truckKeys.length)throw new Error('FEATURED_TRUCK_DUPLICATE');
   const scheduleMode=String(input.scheduleMode||'AUTO').toUpperCase();
@@ -216,7 +226,7 @@ export async function saveFeaturedProviderDay(user,input={}){
   if(typeof manualSchedule==='string'){try{manualSchedule=JSON.parse(manualSchedule||'[]');}catch{throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');}}
   if(!Array.isArray(manualSchedule))manualSchedule=[];
   const schedule=buildFeaturedDaySchedule(featureDate,truckKeys,{mode:scheduleMode,config:scheduleConfig,manualSchedule});
-  const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_featured_truck_day',{actor_user_id:user.id,command:{
+  const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_featured_provider_day',{actor_user_id:user.id,command:{
     feature_date:featureDate,theme_key:theme.key,theme_label:theme.label,theme_configurations:theme.configurations,target_count:scheduleConfig.targetCount,
     public_headline:validateText(input.publicHeadline,3,90,'FEATURED_HEADLINE_INVALID'),
     public_introduction:validateText(input.publicIntroduction,10,240,'FEATURED_INTRODUCTION_INVALID'),

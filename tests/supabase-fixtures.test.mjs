@@ -4,7 +4,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
-  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,MANAGED_COURIER_FIXTURE_VEHICLES,normalizeDemoSharedEmails,
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,MANAGED_COURIER_FIXTURE_VEHICLES,
   selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
@@ -57,16 +57,16 @@ test('fixture importer uses a credential-free managed source and creates the cur
   assert.match(source,/buildFeaturedFixtureTables\(\)/);
   assert.match(source,/provider_shipments: 1/);
   assert.match(source,/timeZone:'Africa\/Addis_Ababa'/);
-  assert.match(source,/public_headline:'Daily Featured Trucks'/);
+  assert.match(source,/public_headline:'Daily Featured Transport Providers'/);
   assert.match(source,/vehicle_id:candidate\.vehicle\.id,driver_user_id:candidate\.assignment\.driver_user_id/);
   assert.doesNotMatch(source,/find their current trucks in the Truck Market/);
   assert.doesNotMatch(source,/node:sqlite|DATABASE_PATH|db\.js|repository\.js/);
-  assert.match(source,/normalizeDemoSharedEmails\(process\.env\.LOADGISTIC_DEMO_SHARED_EMAILS\)/);
-  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_INCOMPLETE/);
+  assert.doesNotMatch(source,/capacity_access_grants.*\.insert\(|DEMO_SHARED_EMAILS/);
+  assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_RETIRED_EMAIL_GRANT_PRESENT/);
   assert.match(verifier,/SUPABASE_FIXTURE_VERIFY_RETIRED_LOADGISTIC_GRANT_PRESENT/);
   assert.match(verifier,/expectedPortraitCount=assignFixtureDriverPortraits\(fixtureDocument\.tables\.users\)/);
   assert.doesNotMatch(source,/audience_type:'LOADGISTIC'|loadgistic-platform|demo-capacity-grant:\$\{vehicleId\}:loadgistic/);
-  assert.match(source,/demoSharedEmails\.length\?sharedVehicleIds:new Set\(\)/);
+  assert.match(source,/managedFixtureSharingPolicies\(fixtureTables\.capacities,new Set\(\)\)/);
   assert.equal(fixture.schema_version,1);
   assert.equal(fixture.tables.users.length,154);
   assert.equal(fixture.tables.capacities.length,143);
@@ -220,15 +220,13 @@ test('managed import keeps Open capacity larger than each explicitly shared demo
   for(const vehicleId of HANDOVER_FIXTURE_VEHICLE_IDS){
     assert.equal(withRecipient.get(vehicleId),'PUBLIC');
   }
-  assert.deepEqual(normalizeDemoSharedEmails('TEST@example.com, test@example.com,second@example.com'),
-    ['test@example.com','second@example.com']);
-  assert.throws(()=>normalizeDemoSharedEmails('not-an-email'),/DEMO_SHARED_EMAIL_INVALID/);
 });
 
-test('Shared capacity verification chooses an unexpired market signal',()=>{
+test('Shared capacity verification rejects obsolete email-only records and reads',()=>{
   const source=fs.readFileSync(path.join(root,'scripts','verify-supabase-shared-capacity.mjs'),'utf8');
-  assert.match(source,/\.in\('market_status',\['EMPTY','PARTIAL'\]\)/);
-  assert.match(source,/\.gt\('expires_at',new Date\(\)\.toISOString\(\)\)/);
+  assert.match(source,/RETIRED_EMAIL_GRANTS_PRESENT/);
+  assert.match(source,/RETIRED_CAPACITY_CHALLENGES_PRESENT/);
+  assert.match(source,/RETIRED_CAPACITY_PROJECTION_AVAILABLE/);
 });
 
 test('fixture importer refuses a remote Supabase target before making requests',()=>{

@@ -36,8 +36,8 @@ async function providerLogin(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);
  const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
  await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,'Your Loadgistic sign-in code'));
- await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible({timeout:30000});
+ await page.getByRole('button',{name:'Sign in',exact:true}).last().click();
+ await expect(page.getByRole('button',{name:'Home',exact:true})).toBeVisible({timeout:30000});
 }
 async function visitorLogin(page:Page,email:string,shipmentId:string){
  await page.goto(preview+'/about');await page.getByRole('tab',{name:'Track',exact:true}).click();

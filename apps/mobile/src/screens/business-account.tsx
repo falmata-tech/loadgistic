@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import { AppState, StyleSheet, Switch, Text, View } from 'react-native';
+import { AppState, StyleSheet, Text, View } from 'react-native';
+import {Switch} from '../components/branded-switch';
 import {Redirect,router} from 'expo-router';
 import {useAccount} from '../session/provider';
 import {useAccountQuery} from '../hooks/account-query';
@@ -112,9 +113,23 @@ function MemberForm({data,member,onChanged,onCancel}:{data:BusinessWorkspaceDire
 function BusinessDetails({data,onChanged}:{data:BusinessWorkspaceDirectory;onChanged:()=>Promise<void>}){
  const [editing,setEditing]=useState(false),[archiving,setArchiving]=useState(false),[name,setName]=useState(data.workspace.name),[city,setCity]=useState(data.workspace.city||''),operation=useCommand(data,async()=>{await onChanged();});
  return <>{operation.conflict&&<Button secondary message="Refresh" busy={operation.busy} onPress={()=>{void onChanged();}}/>}{!editing&&!archiving?<><WorkspaceFact message="Account name" value={data.workspace.name}/><WorkspaceFact message="Handle" value={`@${data.workspace.handle}`}/><WorkspaceFact message="Office city" value={data.workspace.city||''}/>{data.workspace.permissions.team&&<Button secondary message="Edit workspace details" onPress={()=>setEditing(true)}/>}</>:archiving?<><Copy message="This workspace will stop receiving shared Capacity and Tracking. Its team will lose workspace access. Existing history is retained."/><ErrorText message={operation.error}/><Button message={operation.saved?'Refresh':'Archive workspace'} busy={operation.busy} onPress={()=>{void operation.command({action:'ARCHIVE'});}}/><Button secondary message="Cancel" disabled={operation.busy||operation.saved} onPress={()=>setArchiving(false)}/></>:<><Field message="Account name" value={name} onChangeText={setName} maxLength={100} editable={!operation.busy&&!operation.saved}/><Field message="Office city" value={city} onChangeText={setCity} maxLength={100} editable={!operation.busy&&!operation.saved}/><ErrorText message={operation.error}/><Button message={operation.saved?'Refresh':'Save changes'} busy={operation.busy} onPress={()=>{void operation.command({action:'UPDATE_DETAILS',name,city:city||null});}}/><Button secondary message="Cancel" disabled={operation.busy||operation.saved} onPress={()=>setEditing(false)}/></>}
+  {!editing&&!archiving&&data.workspace.permissions.owner&&<NetworkVisibility workspaceId={data.workspace.id}/>}
   {!editing&&!archiving&&<BusinessDocuments workspaceId={data.workspace.id} canManage={data.workspace.permissions.owner} summary/>}
   {data.workspace.permissions.owner&&!editing&&!archiving&&<Button secondary message="Archive workspace" onPress={()=>setArchiving(true)}/>}
  </>;
+}
+function NetworkVisibility({workspaceId}:{workspaceId:string}){
+ const account=useAccount(),{t}=useLanguage(),query=useAccountQuery<{visible:boolean;version:number}>(`/api/business-workspaces/${workspaceId}/network-visibility`);
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),lock=useRef(false);
+ const value=query.data&&typeof query.data.visible==='boolean'&&Number.isSafeInteger(query.data.version)?query.data:null;
+ async function change(visible:boolean){if(!value||lock.current)return;lock.current=true;setBusy(true);setError('');
+  try{const saved=await account.request(`/api/business-workspaces/${workspaceId}/network-visibility`,{visible,expectedVersion:value.version}) as {visible?:boolean;version?:number};
+   if(saved.visible!==visible||!Number.isSafeInteger(saved.version))throw Error(t('Could not confirm the change. Refresh and try again.'));
+   await query.reloadConfirmed();
+  }catch(problem){setError(problem instanceof Error?problem.message:t('Could not save this setting. Try again.'));}
+  finally{lock.current=false;setBusy(false);}
+ }
+ return <View style={styles.networkVisibility}><View style={styles.row}><Text style={[styles.name,{flex:1}]}>{t('Show network size in Network')}</Text><Switch accessibilityLabel={t('Show network size in Network')} value={value?.visible||false} disabled={!value||busy} onValueChange={next=>{void change(next);}}/></View><Copy message="Signed-in accounts see a vehicle count, never your connections or vehicle list."/><ErrorText message={error||query.error}/>{!!(query.error||error)&&<Button secondary message="Refresh" onPress={()=>{void query.reload();}}/>}</View>;
 }
 function Transfer({data,onChanged}:{data:BusinessWorkspaceDirectory;onChanged:()=>Promise<void>}){
  const account=useAccount(),[selected,setSelected]=useState(''),operation=useCommand(data,onChanged);
@@ -122,4 +137,4 @@ function Transfer({data,onChanged}:{data:BusinessWorkspaceDirectory;onChanged:()
 }
 function LeaveBusiness({data,onChanged}:{data:BusinessWorkspaceDirectory;onChanged:()=>Promise<void>}){const operation=useCommand(data,onChanged);return <><Copy message="You will lose access to this workspace's shared capacity and shipments."/><ErrorText message={operation.error}/><Button message={operation.saved?'Refresh':'Leave workspace'} busy={operation.busy} onPress={()=>{void operation.command({action:'LEAVE'});}}/></>;}
 function Toggle({message,value,onChange,disabled}:{message:string;value:boolean;onChange:(value:boolean)=>void;disabled:boolean}){const {t}=useLanguage();return <View style={styles.row}><Text style={[styles.name,{flex:1}]}>{t(message)}</Text><Switch accessibilityLabel={t(message)} value={value} onValueChange={onChange} disabled={disabled}/></View>;}
-const styles=StyleSheet.create({actionGroup:{borderWidth:1,borderColor:palette.border,borderRadius:14,backgroundColor:'#fff',paddingHorizontal:14,paddingTop:8,paddingBottom:12,gap:2},actionGroupHeading:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10,borderBottomWidth:1,borderColor:palette.borderSoft},actionGroupTitle:{fontSize:15,fontWeight:'700',color:palette.ink,flex:1},teamHeading:{alignItems:'flex-start',gap:12},row:{flexDirection:'row',alignItems:'center',gap:12,minHeight:54},member:{flexDirection:'row',alignItems:'center',gap:12,paddingVertical:16,borderBottomWidth:1,borderColor:palette.border},name:{fontSize:16,fontWeight:'600',color:palette.ink},note:{fontSize:13,lineHeight:19,color:palette.muted},subheading:{fontSize:17,fontWeight:'700',color:palette.ink,marginTop:12}});
+const styles=StyleSheet.create({actionGroup:{borderWidth:1,borderColor:palette.border,borderRadius:14,backgroundColor:'#fff',paddingHorizontal:14,paddingTop:8,paddingBottom:12,gap:2},actionGroupHeading:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10,borderBottomWidth:1,borderColor:palette.borderSoft},actionGroupTitle:{fontSize:15,fontWeight:'700',color:palette.ink,flex:1},teamHeading:{alignItems:'flex-start',gap:12},row:{flexDirection:'row',alignItems:'center',gap:12,minHeight:54},networkVisibility:{paddingVertical:14,borderTopWidth:1,borderBottomWidth:1,borderColor:palette.borderSoft,gap:6},member:{flexDirection:'row',alignItems:'center',gap:12,paddingVertical:16,borderBottomWidth:1,borderColor:palette.border},name:{fontSize:16,fontWeight:'600',color:palette.ink},note:{fontSize:13,lineHeight:19,color:palette.muted},subheading:{fontSize:17,fontWeight:'700',color:palette.ink,marginTop:12}});

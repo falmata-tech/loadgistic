@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {normalizeDemoSharedEmails} from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 
 const url=String(process.env.SUPABASE_SEED_URL||'').trim();
@@ -60,14 +59,10 @@ if(driverPortraitError||driverPortraits.length!==143
   throw new Error('SUPABASE_FIXTURE_VERIFY_DRIVER_PORTRAIT_MIX_FAILED');
 }
 
-const {privateContactDigest}=await import('../src/lib/security.js');
-const expectedSharedVehicles=Math.ceil(expectedMinimums.vehicles*.25);
-for(const email of normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS)){
-  const {count,error}=await service.from('capacity_access_grants').select('*',{count:'exact',head:true})
-    .eq('audience_type','EMAIL').eq('recipient_email_digest',privateContactDigest(email)).is('revoked_at',null);
-  if(error)throw new Error(`SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_FAILED:${error.message}`);
-  if((count||0)<expectedSharedVehicles)throw new Error('SUPABASE_FIXTURE_VERIFY_EMAIL_GRANTS_INCOMPLETE');
-}
+const {count:retiredEmailGrantCount,error:retiredEmailGrantError}=await service.from('capacity_access_grants')
+  .select('id',{count:'exact',head:true}).eq('audience_type','EMAIL');
+if(retiredEmailGrantError)throw new Error(`SUPABASE_FIXTURE_VERIFY_RETIRED_EMAIL_READ_FAILED:${retiredEmailGrantError.message}`);
+if(retiredEmailGrantCount!==0)throw new Error('SUPABASE_FIXTURE_VERIFY_RETIRED_EMAIL_GRANT_PRESENT');
 const {count:loadgisticGrantCount,error:loadgisticGrantError}=await service.from('capacity_access_grants')
   .select('*',{count:'exact',head:true}).eq('audience_type','LOADGISTIC').is('revoked_at',null);
 if(loadgisticGrantError)throw new Error(`SUPABASE_FIXTURE_VERIFY_LOADGISTIC_GRANTS_FAILED:${loadgisticGrantError.message}`);

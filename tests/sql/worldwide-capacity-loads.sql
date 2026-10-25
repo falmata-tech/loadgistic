@@ -2,6 +2,7 @@
 begin;
 do $test$
 declare owner_id uuid:=gen_random_uuid();driver_id uuid:=gen_random_uuid();other_driver uuid:=gen_random_uuid();
+  broker_id uuid:=gen_random_uuid();broker_workspace uuid;connection_id uuid;
   org_id uuid:=gen_random_uuid();other_provider uuid:=gen_random_uuid();truck_id uuid;admin_id uuid;source_id uuid;capacity_count integer;
   saved_id uuid; tracking_id uuid:=gen_random_uuid(); row jsonb; route_points jsonb; command jsonb; preference text;
   full_expected boolean; shared_expected boolean; malformed jsonb;
@@ -11,9 +12,11 @@ begin
  select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values
  (owner_id,owner_id||'@example.test',now(),'{}','{}'),(driver_id,driver_id||'@example.test',now(),'{}','{}'),
- (other_driver,other_driver||'@example.test',now(),'{}','{}');
+ (other_driver,other_driver||'@example.test',now(),'{}','{}'),
+ (broker_id,broker_id||'@example.test',now(),'{}','{}');
  update profiles set active=true,role='TRANSPORTER',full_name='Synthetic world owner' where id=owner_id;
  update profiles set active=true,role='DRIVER',drives_truck=true,full_name='Synthetic foreign driver' where id=other_driver;
+ update profiles set active=true,role='SHIPPER' where id=broker_id;
  insert into organizations(id,name,handle,type) values(org_id,'Synthetic world provider','world-'||owner_id,'TRANSPORT_COMPANY');
  insert into organization_members(user_id,organization_id,membership_role) values(owner_id,org_id,'OWNER');
  insert into provider_profiles(id,user_id,business_name,handle) values(other_provider,other_driver,'Synthetic foreign provider','world-'||other_driver);
@@ -44,21 +47,24 @@ begin
   begin perform refresh_provider_capacity_location(driver_id,command||malformed);raise exception 'INVALID_WORLD_FIX_ACCEPTED';exception when raise_exception then if sqlerrm<>(case when malformed ? 'location_precision_km' then 'INVALID_LOCATION_PRIVACY' else 'INVALID_APPROXIMATE_LOCATION' end) then raise;end if;end;
  end loop;
  select current_route_points_json into strict route_points from capacities where availability_geometry='ROUTE' and jsonb_array_length(current_route_points_json)>=2 limit 1;
- perform grant_private_capacity_access(owner_id,truck_id,'world-load-audit@example.invalid',recipient_digest);
+ broker_workspace:=(business_workspace_create(broker_id,jsonb_build_object('name','World load broker','handle','world-broker-'||substr(broker_id::text,1,12),'kind','BROKER'))->>'id')::uuid;
+ connection_id:=(request_account_connection(owner_id,'BUSINESS',broker_workspace)->>'id')::uuid;
+ perform decide_account_connection(broker_id,connection_id,'ACCEPT');
+ perform grant_account_capacity_access(owner_id,connection_id,truck_id);
  perform set_provider_capacity_sharing(owner_id,truck_id,'BOTH');
  foreach preference in array array['FTL','PTL','BOTH'] loop
   full_expected:=preference in ('FTL','BOTH');shared_expected:=preference in ('PTL','BOTH');
-  saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','EMPTY','availability_geometry','ROUTE','visibility','OPEN','accepted_loads',preference,'current_route_places',route_points,'location_source','PRESERVE_DRIVER','accepts_multi_pick',true,'accepts_multi_drop',false));
+  saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','EMPTY','availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads',preference,'current_route_places',route_points,'location_source','PRESERVE_DRIVER','accepts_multi_pick',true,'accepts_multi_drop',false));
   if (select id from capacities where vehicle_id=truck_id order by updated_at desc,id desc limit 1) is distinct from saved_id
   then raise exception 'LATEST_WORLD_LOAD_REPORT_LOST';end if;
   if not exists(select 1 from capacities where id=saved_id and accepts_full_load=full_expected and accepts_partial_load=shared_expected and location_lat=41.8781 and location_lng=-87.6298 and accepts_multi_pick and not accepts_multi_drop) then raise exception 'LOAD_PREFERENCE_NOT_PERSISTED';end if;
   if exists(select 1 from capacity_search_public_rows(jsonb_build_object('capacity_id',saved_id,'load_type','FTL'),null,null,14))<>full_expected then raise exception 'PUBLIC_FULL_MATRIX_FAILED';end if;
   if exists(select 1 from capacity_search_public_rows(jsonb_build_object('capacity_id',saved_id,'load_type','PTL'),null,null,14))<>shared_expected then raise exception 'PUBLIC_SHARED_MATRIX_FAILED';end if;
-  if not exists(select 1 from private_capacity_projection('EMAIL',recipient_digest) p where p.payload->>'id'=saved_id::text) then raise exception 'AUTHORIZED_PRIVATE_PAIR_MISSING';end if;
-  if exists(select 1 from private_capacity_projection('EMAIL',repeat('e',64)) p where p.payload->>'id'=saved_id::text) then raise exception 'UNKNOWN_RECIPIENT_EXPOSED';end if;
+  if not exists(select 1 from account_capacity_filtered_page(broker_id,recipient_digest) p where p.payload->>'id'=saved_id::text) then raise exception 'AUTHORIZED_PRIVATE_PAIR_MISSING';end if;
+  if exists(select 1 from account_capacity_filtered_page(other_driver,recipient_digest) p where p.payload->>'id'=saved_id::text) then raise exception 'FOREIGN_ACCOUNT_EXPOSED';end if;
  end loop;
  -- The database itself overrides a forged Partial/BOTH full-load claim.
- saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','PARTIAL','availability_geometry','ROUTE','visibility','OPEN','accepted_loads','BOTH','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
+ saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','PARTIAL','availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads','BOTH','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
  if (select id from capacities where vehicle_id=truck_id order by updated_at desc,id desc limit 1) is distinct from saved_id
  then raise exception 'LATEST_PARTIAL_REPORT_LOST';end if;
  if not exists(select 1 from capacities where id=saved_id and not accepts_full_load and accepts_partial_load) then raise exception 'PARTIAL_FULL_LOAD_SAVED';end if;

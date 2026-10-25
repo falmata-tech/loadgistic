@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {trackingAreaGeometry} from '../src/location/tracking-area.ts';
-import {coverageBounds,coverageGeometry} from '../src/map/coverage-preview.ts';
+import {canonicalRouteGeometry,coverageBounds,coverageGeometry} from '../src/map/coverage-preview.ts';
 import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import * as locationSource from '../../../src/lib/location-source.js';
 
@@ -28,7 +28,7 @@ function trackingMap(initial){
   'react-native':{Image:'Image',Text:'Text',View:'View'},
   './map-platform':{Map:'Map',Camera:'Camera',GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker'},
   './map-style':{mapStyle:{}},'../location/tracking-area':{trackingAreaGeometry},
-  './ui':{Copy:'Copy',ErrorText:'ErrorText'},'../map/coverage-preview':{coverageBounds,coverageGeometry},
+  './ui':{Copy:'Copy',ErrorText:'ErrorText'},'../map/coverage-preview':{canonicalRouteGeometry,coverageBounds,coverageGeometry},
   '../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/http':{apiOrigin:'http://127.0.0.1'},
   '../../../../src/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/truck.svg'},
   '../../../../src/lib/location-source.js':locationSource,'./app-icon':{AppIcon:'AppIcon'},
@@ -64,6 +64,21 @@ function find(tree,predicate){
 const route=[{placeRef:'origin',label:'Origin',coordinate:[39,8]},{placeRef:'via',label:'Passing city',coordinate:[40,9]},{placeRef:'destination',label:'Destination',coordinate:[41,10]}];
 const area=(longitude,latitude=8)=>({longitude,latitude,radius:3,area:'Reported area',updatedAt:'2026-10-13T00:00:00Z'});
 function contains(bounds,coordinate){assert.ok(coordinate[0]>=bounds[0]&&coordinate[0]<=bounds[2]&&coordinate[1]>=bounds[1]&&coordinate[1]<=bounds[3],`frame ${bounds} must contain ${coordinate}`);}
+
+test('driver map separates same-lane Capacity and corridor routes from location',()=>{
+ const coverage={kind:'ROUTE',places:route,partial:false};
+ const view=trackingMap({location:area(39),coverage,regular:[coverage],vehicleConfiguration:'Box truck',fill:true});
+ const tree=view.render();
+ assert.equal(find(tree,item=>item.props.id==='tracking-area-outline').props.paint['line-color'],'#7846a7');
+ assert.ok(find(find(tree,item=>item.props.id==='tracking-reported-truck'),item=>item.props.style?.borderColor==='#7846a7'));
+ assert.equal(find(tree,item=>item.props.id==='saved-capacity-outline').props.paint['line-offset'],-6);
+ assert.equal(find(tree,item=>item.props.id==='home-regular-line-0').props.paint['line-offset'],6);
+ assert.equal(find(tree,item=>item.props.id==='home-regular-line-0').props.paint['line-color'],'#c06620');
+ const reversed=view.render({location:area(39),coverage,regular:[{...coverage,places:[...route].reverse()}],vehicleConfiguration:'Box truck',fill:true});
+ assert.deepEqual(find(reversed,item=>item.props.id==='saved-capacity').props.data.geometry.coordinates,find(reversed,item=>item.props.id==='home-regular-0').props.data.geometry.coordinates,'reversed corridors need the same display direction before opposite lane offsets');
+ const single=view.render({location:area(39),coverage,regular:[],fill:true});
+ assert.equal(find(single,item=>item.props.id==='saved-capacity-outline').props.paint['line-offset'],undefined);
+});
 
 test('the first saved approximate location fits the route and area without remounting',()=>{
  const view=trackingMap({route,location:null,fill:true});

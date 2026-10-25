@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import {
-  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,normalizeDemoSharedEmails,
-  selectSharedFixtureVehicleIds,managedFixtureSharingPolicies,excludeRetiredGuestFixtureTables,HANDOVER_FIXTURE_VEHICLE_IDS
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,
+  managedFixtureSharingPolicies,excludeRetiredGuestFixtureTables
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 import {readFixtureSchema} from './lib/fixture-schema.mjs';
@@ -16,7 +16,7 @@ import {
 const localEnvironmentPath=path.join(process.cwd(),'.env.local');
 if(fs.existsSync(localEnvironmentPath)){
   const localEnvironment=fs.readFileSync(localEnvironmentPath,'utf8');
-  for(const key of ['SESSION_SECRET','LOADGISTIC_DEMO_SHARED_EMAILS']){
+  for(const key of ['SESSION_SECRET']){
     if(process.env[key])continue;
     const match=localEnvironment.match(new RegExp(`^${key}=(.*)$`,'m'));
     if(!match)continue;
@@ -35,10 +35,9 @@ assertLocalAuthorityFixtureTarget(url);
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
 const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
-const {featuredTruckTypeForDate,selectBalancedFeaturedTruckRows}=await import('../src/lib/featured-trucks.js');
+const {FEATURED_PROVIDER_DAY,selectFeaturedProviderAccountRows}=await import('../src/lib/featured-trucks.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
-const {privateContactDigest}=await import('../src/lib/security.js');
 const today=new Intl.DateTimeFormat('en-CA',{
   timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'
 }).format(new Date());
@@ -79,7 +78,7 @@ fixtureTables.capacities=applyManagedFixtureMarketPolicy(fixtureTables.capacitie
 function buildFeaturedFixtureTables(){
   const iso=new Date().toISOString();
   const expo=regionalExpoGroupForDate(today);
-  const theme=featuredTruckTypeForDate(today);
+  const theme=FEATURED_PROVIDER_DAY;
   const organizations=new Map((fixtureTables.organizations||[]).map(row=>[row.id,row]));
   const profiles=new Map((fixtureTables.provider_profiles||[]).map(row=>[row.id,row]));
   const ownerByOrganization=new Map((fixtureTables.memberships||[])
@@ -100,14 +99,14 @@ function buildFeaturedFixtureTables(){
   const eligible=(fixtureTables.vehicles||[]).filter(vehicle=>Number(vehicle.active)!==0&&theme.configurations.includes(vehicle.cargo_configuration))
     .map(vehicle=>{const owner=candidateByOwner.get(vehicle.organization_id?`organization:${vehicle.organization_id}`:`profile:${vehicle.provider_profile_id}`);const assignment=assignmentByVehicle.get(vehicle.id);return owner&&assignment?{vehicle,owner,assignment}:null;})
     .filter(Boolean).sort((first,second)=>String(first.vehicle.platform_number||first.vehicle.id).localeCompare(String(second.vehicle.platform_number||second.vehicle.id)));
-  const featured=selectBalancedFeaturedTruckRows(eligible,theme.configurations,8);
+  const featured=selectFeaturedProviderAccountRows(eligible,8);
   if(!featured.length)throw new Error('MANAGED_FIXTURE_FEATURED_CANDIDATES_MISSING');
   const dayId=`featured-demo-${today}`;
   const featuredDay={
     id:dayId,feature_date:today,base_place_ref:`featured:${theme.key}`,base_place_label:theme.label,
     expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],
-    public_headline:'Daily Featured Trucks',
-    public_introduction:`Meet today’s ${theme.label.toLowerCase()} and the Drivers operating them.`,
+    public_headline:'Daily Featured Transport Providers',
+    public_introduction:'Meet the transport accounts in today’s showcase and explore the vehicles they publish.',
     tiktok_url:null,broadcast_start_time:'08:30',broadcast_end_time:'12:00',schedule_mode:'AUTO',
     schedule_config_json:{dayStart:'08:30',dayEnd:'12:00',targetCount:featured.length,sponsorBreakCount:4,sponsorBreakMinutes:2},manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',
     published_by:'user-admin',created_at:iso,updated_at:iso,published_at:iso
@@ -412,37 +411,12 @@ if(definitions.provider_shipments&&definitions.provider_shipment_events){
   process.stdout.write('provider_shipments: 1\nprovider_shipment_events: 2\n');
 }
 
-const demoSharedEmails=normalizeDemoSharedEmails(process.env.LOADGISTIC_DEMO_SHARED_EMAILS);
-// The scheduled demo handover requires both exact vehicles to remain PUBLIC.
-// Select replacement shared examples so the private-feed cohort stays full.
-const sharedVehicleIds=selectSharedFixtureVehicleIds(fixtureTables.capacities,.25,{
-  excludedVehicleIds:HANDOVER_FIXTURE_VEHICLE_IDS
-});
-const capacityByVehicleId=new Map(fixtureTables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
-const grantRows=[];
-for(const vehicleId of sharedVehicleIds){
-  const capacity=capacityByVehicleId.get(vehicleId);
-  if(!capacity)continue;
-  const createdBy=mapUuid(capacity.updated_by);
-  const createdAt=capacity.updated_at||new Date().toISOString();
-  for(const email of demoSharedEmails){
-    grantRows.push({
-      id:uuidFor(`demo-capacity-grant:${vehicleId}:email:${email}`),vehicle_id:mapUuid(vehicleId),
-      audience_type:'EMAIL',recipient_email:email,recipient_email_digest:privateContactDigest(email),
-      created_by:createdBy,created_at:createdAt,expires_at:null,revoked_at:null,revoked_by:null
-    });
-  }
-}
-for(let index=0;index<grantRows.length;index+=250){
-  const {error}=await supabase.from('capacity_access_grants').insert(grantRows.slice(index,index+250));
-  if(error)throw new Error(`FIXTURE_IMPORT_FAILED:capacity_access_grants:${error.message}`);
-}
-process.stdout.write(`capacity_access_grants: ${grantRows.length} across ${sharedVehicleIds.size} vehicles\n`);
-
+// A reset cannot recreate retired email access. Account connections and vehicle
+// grants are established through the normal registered-account workflow.
 // Migration 116 backfills existing rows; a fresh fixture reset runs after it.
 // Initialize only these local fixture trucks. Missing real policies stay private.
 if(definitions.vehicle_capacity_sharing){
-  const sharingRows=managedFixtureSharingPolicies(fixtureTables.capacities,demoSharedEmails.length?sharedVehicleIds:new Set())
+  const sharingRows=managedFixtureSharingPolicies(fixtureTables.capacities,new Set())
     .map(row=>({...row,vehicle_id:mapUuid(row.vehicle_id)}));
   const {error}=await supabase.from('vehicle_capacity_sharing').insert(sharingRows);
   if(error)throw new Error('FIXTURE_IMPORT_FAILED:vehicle_capacity_sharing');

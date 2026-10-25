@@ -76,7 +76,7 @@ export function createAccountController(port: Port) {
   async verifyCode(handoff: string, code: string) {
    if (cleanupRequired) { await signOut(); if (cleanupRequired) throw new Error('Retry sign-out before signing in again.'); }
    const generation = ++epoch; restoreBlocked = true; session = null; emit();
-   await accept(await port.request('/api/mobile/auth/verify', { body: { handoff, code } }), generation);
+   return accept(await port.request('/api/mobile/auth/verify', { body: { handoff, code } }), generation);
   },
   async signInReview(email:string,password:string){
    if(cleanupRequired){await signOut();if(cleanupRequired)throw new Error('Retry sign-out before signing in again.');}

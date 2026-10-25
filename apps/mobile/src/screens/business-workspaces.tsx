@@ -11,15 +11,15 @@ import {WorkspaceTaskHeader} from '../components/workspace-task';
 import {parseBusinessContext,type BusinessWorkspaceContext} from '../api/business-workspaces';
 
 export function businessHome(workspace:{permissions:{capacity:boolean;tracking:boolean}}|null|undefined){return workspace?.permissions.capacity?'/business-capacity':workspace?.permissions.tracking?'/business-tracking':'/business-account';}
-export default function BusinessWorkspaces(){
+export default function BusinessWorkspaces({startBusiness=false}:{startBusiness?:boolean}={}){
  const account=useAccount();
  if(account.busy)return <Page><LoadingSpinner/></Page>;
  if(!account.session)return <Redirect href="/account"/>;
- return <WorkspaceChoice key={account.session.user.id}/>;
+ return <WorkspaceChoice key={account.session.user.id} startBusiness={startBusiness}/>;
 }
-function WorkspaceChoice(){
+function WorkspaceChoice({startBusiness}:{startBusiness:boolean}){
  const account=useAccount(),session=account.session!,{t}=useLanguage(),query=useAccountQuery<BusinessWorkspaceContext>('/api/business-workspaces'),eligibility=useAccountQuery<{canCreateProvider:boolean}>('/api/mobile/onboarding');
- const [creating,setCreating]=useState(false),[name,setName]=useState(''),[handle,setHandle]=useState(''),[city,setCity]=useState(''),[kind,setKind]=useState('BROKER'),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [creating,setCreating]=useState(startBusiness),[name,setName]=useState(''),[handle,setHandle]=useState(''),[city,setCity]=useState(''),[kind,setKind]=useState('BROKER'),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [saved,setSaved]=useState(false),lock=useRef(false);
  let data:BusinessWorkspaceContext|null=null;try{if(query.data)data=parseBusinessContext(query.data,session.user.id);}catch{/* Never present unvalidated or foreign context as a workspace. */}
  async function change(path:string,body:unknown){

@@ -11,6 +11,14 @@ rollout: Add exact truck-and-Driver slot references additively, migrate the disp
 
 # Daily Featured Trucks programme
 
+The deployed truck-and-driver programme below remains the historical contract
+until the next release. The approved local successor is [FEAT-CON-001](FEAT-CON-001.md):
+Featured introduces distinct Transport Provider accounts on any day, rotates
+accounts through complete rounds, and keeps saved/manual days. Its local-only
+migration 205 and web/Expo changes must pass their own release gates before
+this file's current-behavior summary is replaced. Do not treat a local preview
+as the hosted programme.
+
 ## October18 courier configurations — planned local restoration
 
 Restore `Courier car` and `Courier motorcycle` to the supported vehicle catalogue

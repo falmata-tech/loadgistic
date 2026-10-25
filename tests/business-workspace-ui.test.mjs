@@ -84,14 +84,16 @@ test('shipper/broker document tasks explain optional review and offline fees on 
 });
 
 test('demand-side labels distinguish Shippers/brokers from receivers across navigation and admin records',()=>{
- const shell=readFileSync('src/components/app-shell.tsx','utf8');
+ const choice=readFileSync('src/components/business-workspace-choice.tsx','utf8');
+ const navigation=readFileSync('src/components/site-navigation.ts','utf8');
  const account=readFileSync('src/components/business-account.tsx','utf8');
  const admin=readFileSync('src/app/admin/operations/page.tsx','utf8');
  const adminDetail=readFileSync('src/app/admin/operations/[view]/[id]/page.tsx','utf8');
  const documents=readFileSync('src/app/app/more/page.tsx','utf8');
  const vehicleDetails=readFileSync('src/components/map-truck-details.tsx','utf8');
- assert.match(shell,/SHIPPER:\s*'Shipper \/ broker'/);
- assert.match(shell,/RECEIVER:\s*'Receiver'/);
+ assert.match(choice,/value:'SHIPPER',label:'Shipper'/);
+ assert.match(choice,/value:'RECEIVER',label:'Receiver'/);
+ assert.match(navigation,/href:'\/app\/network',label:'Network'/);
  assert.match(account,/message="Workspace details"/);
  assert.match(admin,/label:'Workspaces'/);
  assert.match(admin,/type==='ENTERPRISE_SHIPPER'\)return 'Shipper \/ broker workspace'/);

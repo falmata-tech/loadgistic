@@ -71,7 +71,6 @@ begin
  -- driver check can run; it must never record a location for that truck.
  perform pg_temp.fleet_denied(format('select refresh_provider_capacity_location(%L,%L)',owner_id,jsonb_build_object('vehicle_id',second_truck,'approximate_lat',9.03,'approximate_lng',38.74,'location_precision_km',20)),'FORBIDDEN');
  perform pg_temp.fleet_assert(not exists(select 1 from vehicle_driver_locations where vehicle_id=second_truck),'unassigned_phone_fix_not_recorded');
- perform grant_private_capacity_access(owner_id,first_truck,'synthetic-recipient@example.test',repeat('9',64));
  -- The same foundation regression also runs after the reviewed-publication
  -- migration. Establish a real approved synthetic title rather than bypass it.
  if to_regprocedure('public.confirm_provider_vehicle_authority(uuid,uuid,jsonb)') is not null then
@@ -114,7 +113,7 @@ begin
  perform update_fleet_driver_access(owner_id,access||jsonb_build_object('driver_user_id',employee));
  perform pg_temp.fleet_assert(capacity_active_driver_id(first_truck)=employee and capacity_active_driver_id(second_truck) is null,'one_current_pair_after_reassignment');
  perform pg_temp.fleet_assert((select coalesce(market_status,status::text)='OFF_DUTY' from capacities where vehicle_id=first_truck order by updated_at desc,id desc limit 1),'changed_pair_off_duty');
- perform pg_temp.fleet_assert(exists(select 1 from capacities where id=history_id) and exists(select 1 from capacity_access_grants where vehicle_id=first_truck),'history_and_named_sharing_preserved');
+ perform pg_temp.fleet_assert(exists(select 1 from capacities where id=history_id) and not exists(select 1 from capacity_access_grants where vehicle_id=first_truck and audience_type='EMAIL'),'capacity_history_without_retired_email_access');
  perform pg_temp.fleet_assert(not exists(select 1 from jsonb_array_elements(provider_capacity_workspace(owner_id)->'vehicles') v
   where v->>'id'=first_truck::text and v->'driver_location' is not null and v->'driver_location'<>'null'::jsonb),'old_phone_location_not_relabelled');
  perform pg_temp.fleet_denied(format('select set_provider_assigned_vehicle_duty(%L,%L)',employee,

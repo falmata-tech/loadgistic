@@ -111,7 +111,7 @@ test('public signup proves identity first and provisions only after an authentic
   assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'signup'\}\)/);
   assert.match(otpVerify,/verifyOtp\(\{email:handoff\.email,token:code,type:'email'\}\)/);
   assert.match(otpVerify,/authenticatedEmail!==handoff\.email/);
-  assert.match(otpVerify,/redirectUrl\(request,'\/workspaces'\)/);
+  assert.match(otpVerify,/audience==='PROVIDER'\?'\/apply':audience==='BUSINESS'\?'\/workspaces\?start=business':'\/signup\?verified=1'/);
   assert.match(callback,/readProviderSignupHandoff/);
   assert.match(callback,/authenticatedEmail!==signupHandoff\.email/);
   assert.match(callback,/\/workspaces/);

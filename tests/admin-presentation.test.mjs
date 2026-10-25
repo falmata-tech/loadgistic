@@ -177,13 +177,13 @@ test('content review humanizes display but retains exact moderation command valu
   assert.deepEqual(decisions,status==='PENDING'?['HIDE','DISMISS']:status==='HIDDEN'?['RESTORE']:[]);
  }
 });
-test('Featured overview retains seven day links, state counts and accurate137/manual disclosure',()=>{
+test('Featured overview retains seven day links, account rotation and manual disclosure',()=>{
  const component=load('src/components/featured-operation-overview.tsx').FeaturedOperationOverview;
  const days=Array.from({length:7},(_,index)=>({date:`2026-10-${13+index}`,theme:'Cargo vans',status:'PUBLISHED',source:'AUTO',selected:8,invalid:0,eligible:15,remaining:7}));
  const tree=component({mode:'AUTO',overview:{eligible:131,remaining:15,days,run:{outcome:'FAILED',checked_at:'2026-10-13T12:00:00Z',succeeded_at:null,created_count:5,skipped_count:2,empty_count:0}}});
  assert.equal(all(tree,'Link').length,7);for(const day of days)assert.ok(all(tree,'Link').some(link=>link.props.href===`/admin/featured?date=${day.date}#featured-day-editor`));
  assert.ok(text(tree).includes('Every 15 minutes'));assert.ok(text(tree).includes('Saved days stay unchanged.'));assert.ok(text(tree).includes('Manual drafts stay private until published.'));
- assert.ok(text(tree).includes('Sunday uses those same turns.'));assert.ok(text(tree).includes('starts another round after its eligible vehicle-and-driver pairs have appeared.'));
+ assert.ok(text(tree).includes('Transport Providers who have not appeared in this round go first.'));assert.ok(text(tree).includes('A new round starts after every eligible account has had a turn.'));
  assert.ok(text(tree).includes('08:30 to 12:00 Ethiopia time'));assert.ok(text(tree).includes('Prepare upcoming days to retry.'));assert.ok(all(tree,'details').length===1);
 });
 test('retired platform Brokerage queue denies access without reading requests',async()=>{
@@ -200,7 +200,7 @@ test('Featured day starts read-only and the complete editor requires the explici
   '@/components/date-picker':{DatePicker:'DatePicker'},'@/components/featured-operation-overview':{FeaturedOperationOverview:'FeaturedOverview'},
   '@/lib/featured-automation.js':{getFeaturedOverview:async()=>({})},
   '@/lib/platform-admin.js':{hasPlatformPermission:()=>true,getAdminFeaturedProviderDay:async()=>({candidates:[],slots:[],slotEvaluations:[],sponsorships:[],walkthroughs:[],providerCandidates:[],day:null,schedule:{}})},
-  '@/lib/featured-trucks.js':{featuredTruckTypeForDate:()=>({key:'mini',label:'Mini trucks'}),featuredTruckWeekForDate:()=>[]},
+  '@/lib/featured-trucks.js':{FEATURED_PROVIDER_DAY:{label:'Transport Providers'}},
   '@/components/featured-roster-editor':{FeaturedRosterEditor:'RosterEditor'},'@/components/sponsor-admin-form':{SponsorAdminForm:'SponsorForm'},
   '@/lib/platform-controls.js':{getFeaturedControls:async()=>({featured_mode:'AUTO',featured_target_count:8})},
   '@/components/platform-controls-form':{FeaturedControlsForm:'ControlsForm',FeaturedPrepareForm:'PrepareForm'}

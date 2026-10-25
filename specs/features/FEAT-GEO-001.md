@@ -88,13 +88,13 @@ When the Market renders\
 Then one shared map is loaded and synchronized with the current filtered feed\
 And no per-truck tile map or ranked List view is instantiated\
 And its initial framing remains focused on Ethiopia while public and provider views may be panned only within a practical East Africa envelope\
-And blue approximate location, status-colored current Service area or Capacity route, and muted-orange regular service use shape, line style, icon, and text in addition to color\
+And violet approximate location, status-colored current Service area or Capacity route, and muted-orange Corridor route or service area use shape, line style, icon, and text in addition to color\
 And selecting a truck removes other truck markers and clusters until the selected card is closed\
 And the selected marker remains visually distinct and above its signal layers at every fitted zoom while a compact in-map information window carries its essential truck actions\
 And hovering or focusing one signal shows a temporary readable light-surface explanation with a restrained neutral border and signal-matched accent\
 And clicking or pressing a signal pins the explanation until it is dismissed or another map target is chosen\
 And clicking or pressing one signal pins only that signal's compact explanation until it is dismissed or another signal is chosen\
-And overlapping current and regular Capacity routes use small opposite visual offsets without changing their stored cities so each remains independently selectable\
+And overlapping current and Corridor routes use small opposite visual offsets on the public, Expo, and driver capacity-setting maps without changing their stored cities so each remains independently selectable\
 And Service-area and approximate-location interiors remain non-interactive while their wide outlines remain available to pointer and keyboard users.
 
 ### Closed signal outlines — owner request, 2026-09-22
@@ -105,7 +105,7 @@ When the map renders or zooms
 Then the current and regular outlines occupy separate small screen-space lanes,
 including the closing edge, regardless of vertex order or starting vertex
 And each can be activated directly by pointer, touch or keyboard without a chooser
-And the blue approximate-location circle retains its original center and radius
+And the violet approximate-location circle retains its original center and radius
 And stored cities, geographic matching, location precision and fit bounds do not change.
 
 The map currently draws outlines only for the selected truck, with at most one
@@ -169,7 +169,7 @@ And unresolved data stays preserved for rollback without inventing coordinates o
 - Frontend: provider editor, public Capacity Board filters, cards, and one shared map
 - Tests: domain, repository, authorization, E2E, and visual audit
 
-September 21 owner-requested palette and interaction update: blue identifies location; muted orange identifies regular service. The October 21 brand revision uses cobalt for Empty capacity and amber for Partial, with status labels and shapes carrying the meaning. FEAT-LST-001 defines compact map-key, non-blocking details and catalog-city proximity acceptance. Local verification precedes owner visual approval and rollout.
+The current map palette uses violet for approximate location, cobalt/slate for Empty/Partial capacity, and muted orange for Corridor routes or regular Service areas. Shapes, line styles and labels also carry the meaning. FEAT-LST-001 defines the compact map key, non-blocking details and catalog-city proximity acceptance.
 
 ## Location privacy across multiple views
 

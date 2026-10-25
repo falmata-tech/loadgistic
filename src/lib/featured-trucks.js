@@ -11,6 +11,13 @@ const FEATURED_TRUCK_DAYS=Object.freeze([
   {key:'mixed-trucks',label:'Mixed vehicles',shortLabel:'Mixed',configurations:["Courier motorcycle", "Courier car", "Cargo van", "Pickup truck", "Pickup stake body", "Mini Open Body Truck", "Mini Stake Body Truck", "Mini Box Truck", "Light Stake Body Truck", "Light Box Truck", "Medium Stake Body Truck", "Medium Box Truck", "Heavy Rigid Stake Body Truck", "Heavy Rigid Stake Body Truck + Trailer", "Tractor + Container Trailer", "Tractor + Dry Van Trailer", "Tractor + Heavy Equipment Trailer"]}
 ]);
 
+// Historical vehicle themes remain for old saved days and rollback evidence.
+// New Featured days rotate Transport Provider accounts across every vehicle type.
+export const FEATURED_PROVIDER_DAY=Object.freeze({
+  key:'provider-accounts',label:'Transport Providers',shortLabel:'Providers',
+  configurations:Object.freeze([...new Set(FEATURED_TRUCK_DAYS.flatMap(day=>day.configurations))])
+});
+
 function validDate(date){
   const text=String(date||'');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(text))throw new Error('FEATURED_DATE_INVALID');
@@ -41,6 +48,17 @@ export function selectBalancedFeaturedTruckRows(rows,configurations,limit=8){
     }
   }
   return selected;
+}
+
+export function selectFeaturedProviderAccountRows(rows,limit=8){
+  const seen=new Set();
+  return selectBalancedFeaturedTruckRows(rows,FEATURED_PROVIDER_DAY.configurations,rows.length)
+    .filter(row=>{
+      const key=row.owner?.organization_id? `organization:${row.owner.organization_id}`:
+        row.owner?.profile_id? `profile:${row.owner.profile_id}`:null;
+      if(!key||seen.has(key))return false;
+      seen.add(key);return true;
+    }).slice(0,limit);
 }
 
 export {FEATURED_TRUCK_DAYS};

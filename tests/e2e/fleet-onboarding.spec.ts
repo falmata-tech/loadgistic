@@ -439,13 +439,13 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
    await page.getByRole('button',{name:'Create transporter workspace'}).click();
    await expect(page).toHaveURL(/\/app\/home$/);
-   await expect(page.getByText('Choose the vehicle you drive in Fleet.',{exact:true})).toBeVisible();
+   await expect(page.getByText('Choose the vehicle you drive under Manage vehicles.',{exact:true})).toBeVisible();
    const identity=await service.from('profiles').select('id,role').eq('email',email).single();
    expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
    const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;
    const independentSubscriptions=await service.from('subscriptions').select('id',{count:'exact',head:true}).eq('provider_profile_id',providerId);
    expect(independentSubscriptions.error).toBeNull();expect(independentSubscriptions.count).toBe(0);
-   await page.locator('.driver-empty-fleet').getByRole('link',{name:'Fleet',exact:true}).click();
+   await page.locator('.driver-empty-fleet').getByRole('link',{name:'Manage vehicles',exact:true}).click();
    await page.getByRole('navigation',{name:'My Fleet',exact:true}).getByRole('link',{name:/^Vehicles/}).click();
    await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
    await page.getByRole('radio',{name:useBasis==='OWNED'?'I own this vehicle':'I rent it or have permission to use it',exact:true}).check();

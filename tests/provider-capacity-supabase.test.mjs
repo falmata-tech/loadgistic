@@ -113,7 +113,7 @@ test('historical migration043 repeats its original scope, subscription and permi
 
 test('active provider Capacity pages and routes use the application port, not SQLite',()=>{
   const pages=[
-    'src/app/app/home/page.tsx',
+    'src/components/provider-home.tsx',
     'src/components/provider-fleet-workspace.tsx',
     'src/app/app/fleet/[id]/page.tsx'
   ];
@@ -121,6 +121,8 @@ test('active provider Capacity pages and routes use the application port, not SQ
     const source=fs.readFileSync(path.join(root,relative),'utf8');
     assert.match(source,/getProviderCapacityWorkspace/);
   }
+  const home=fs.readFileSync(path.join(root,'src/app/app/home/page.tsx'),'utf8');
+  assert.match(home,/ProviderHome/);
 
   const routes=[
     'src/app/api/capacity/route.ts',

@@ -1,5 +1,6 @@
 import { useRef,useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
+import {Switch} from '../components/branded-switch';
 import { Redirect } from 'expo-router';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';

@@ -122,8 +122,6 @@ jobs:
         run: node scripts/verify-database-security-gate.mjs
 
       - name: Import and verify managed fixtures
-        env:
-          LOADGISTIC_DEMO_SHARED_EMAILS: ci-capacity@example.test
         run: npm run supabase:local:configure
 
       - name: Install server-matched PostgreSQL host client for disposable GPS clone
@@ -488,11 +486,12 @@ jobs:
           for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-owner-retention tracking-device-location capacity-launch-matching \
             independent-single-truck provider-owner-fleets provider-vehicle-authority provider-live-publication-limit provider-publication-owner-scope provider-authority-recovery provider-authority-command-denials provider-authority-search-path provider-authority-erasure provider-driving-intent provider-fleet-erasure provider-billing-retired capacity-search-metadata-cost capacity-multiple-options telematics telematics-account-privacy security-boundaries browser-boundaries account-details account-security capacity-viewport driver-portraits featured-random-rounds featured-continuous-rounds tracking-route-map \
             fleet-driver-onboarding driver-location-bootstrap driver-preverification dashboard-activity admin-service-geometry lifecycle-recovery public-provider-paging \
-            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts private-capacity-contact-names native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search profile-search-page-cost public-provider-map-page-cost public-map-assigned-driver-cost personal-fleet-capacity-sharing featured-operation-status featured-team-permission featured-broadcast-window featured-tiktok-broadcast-state provider-only-support freight-vehicle-catalogue \
+            public-provider-privacy support-attachments support-history support-polling chat-read-receipts driver-handover-alerts native-push-outbox tracking-proof-access tracking-email-session truck-document-alternatives capacity-ranked-search profile-search-page-cost public-provider-map-page-cost public-map-assigned-driver-cost personal-fleet-capacity-sharing featured-operation-status featured-team-permission featured-broadcast-window featured-tiktok-broadcast-state provider-only-support freight-vehicle-catalogue \
             account-deletion public-content-safety content-policy-acceptance app-review-accounts play-scope-safeguards play-review-business-isolation public-capacity-policy-scope \
             truck-regular-service-scope personal-public-identity staff-active-permission-preservation review-moderation-restrictions support-waiting-claim-eligibility \
             platform-brokerage-retirement customer-business-workspaces business-capacity-sharing tracking-owner-delegation location-radius-choices tracking-selected-sources \
-            phone-location-installations business-support-alerts business-native-push provider-public-account-identity business-directory-verification business-directory-retention capacity-published-location-source-filter driver-manual-capacity-location; do
+            phone-location-installations business-support-alerts business-native-push provider-public-account-identity business-directory-verification business-directory-retention capacity-published-location-source-filter driver-manual-capacity-location \
+            account-shared-capacity account-connections account-directory-status account-network-visibility account-capacity-search account-only-private-capacity featured-provider-rounds; do
             echo "::group::SQL regression: $suite"
             docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
             echo "::endgroup::"
@@ -569,8 +568,6 @@ jobs:
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
 
       - name: Import and verify managed fixtures
-        env:
-          LOADGISTIC_DEMO_SHARED_EMAILS: ci-capacity@example.test
         run: npm run supabase:local:configure
 
       - name: Verify the Data API guard through SQL, REST and GraphQL
@@ -649,8 +646,6 @@ jobs:
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
 
       - name: Import and verify managed fixtures
-        env:
-          LOADGISTIC_DEMO_SHARED_EMAILS: ci-capacity@example.test
         run: npm run supabase:local:configure
 
       - name: Verify the Data API guard through SQL, REST and GraphQL

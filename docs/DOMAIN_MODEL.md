@@ -23,21 +23,15 @@ Anonymous discovery combines only public truck facts. Service-area queries compa
 
 ## Private capacity network
 
-Current capacity may target either the public Market or a Private capacity
+Current capacity may target either the public Market or a private account
 network. Private current geometry and approximate location do not enter the
-anonymous projection; categorical Empty/Partial state may remain discoverable
-through the provider's separate public regular-service geometry, whose marker
-is explicitly not presented as current location. A truck-and-email Capacity access grant lets a verified account-free
-visitor see that truck in Shared capacity with the exact approximate-location
-radius selected by its Driver. One verified email sees every active grant for
-that email after one ten-minute, single-use email OTP; the signed restricted
-visitor session creates no member profile, password, workspace, or dashboard.
-It expires after 30 minutes without deliberate visitor activity, renews only
-from bounded explicit interaction, and can be ended immediately with Log out.
-Revocation removes only the affected truck immediately. A separate
-platform audience represents `Share with Loadgistic` without inventing an email
-identity and is readable only by Operations-authorized administrators. The one
-regular Service area or Capacity route remains public.
+anonymous projection. A provider owner or authorized driver grants one vehicle
+to a registered shipper/broker account; that account's permitted team sees the
+current signal in Shared with you. A connection alone grants no Capacity.
+Revocation removes the affected vehicle from the recipient's private map.
+Visitors may see the Shared with you invitation, but must sign in to see any
+private vehicle. Email-only Capacity grants, OTPs, delivery jobs and the old
+platform audience are retired. Public-link Tracking keeps separate email access.
 
 ## Sponsor
 
@@ -83,9 +77,7 @@ The emailed customer owner may submit one rating after completion. Every score p
 
 ## Retired demand model
 
-Shipment-demand posts, interests, Direct requests, pooled/along-route groups,
-Business accounts/profiles, and demand-side member relationships are not part
-of the active model. Local development migrations delete their fake fixtures;
-current routes block or redirect their former surfaces. Truck-scoped Private
-capacity network grants are a separate access-control model, not a restored
-demand relationship graph.
+Shipment-demand posts, interests, Direct requests and pooled/along-route groups
+are not part of the active model. Business workspaces and account connections
+support private Capacity coordination; they do not publish demand. Older
+email-only Capacity grants are retired by FEAT-SHR-001.

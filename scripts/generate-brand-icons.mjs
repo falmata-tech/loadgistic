@@ -6,14 +6,14 @@ const root=process.cwd();
 const iconSource=await fs.readFile(path.join(root,'public','icon.svg'),'utf8');
 const maskableSource=iconSource.replace('rx="108"','rx="0"');
 const foregroundSource=iconSource.replace(/\s*<rect x="16" y="16" width="480" height="480" rx="108" fill="url\(#navy\)"\/>/,'');
-const monochromeSource=foregroundSource.replaceAll('fill="#155EEF"','fill="#fff"');
+const monochromeSource=foregroundSource.replaceAll('fill="#6BA5FF"','fill="#fff"');
 const backgroundSource='<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#0B1D3A"/></svg>';
 
 async function render(source,output,size){
   await sharp(Buffer.from(source)).resize(size,size).png().toFile(output);
 }
 
-const brandSource=path.join(root,'public','brand','loadgistic-wordmark.png');
+const brandSource=path.join(root,'public','brand','loadgistic-wordmark-on-white.png');
 const {data:sourcePixels,info}=await sharp(brandSource).ensureAlpha().raw().toBuffer({resolveWithObject:true});
 
 function wordmarkPixels(onDark){
@@ -32,7 +32,8 @@ function wordmarkPixels(onDark){
       pixels[index+1]=useWhite?255:29;
       pixels[index+2]=useWhite?255:58;
     }else{
-      pixels[index]=21;pixels[index+1]=94;pixels[index+2]=239;
+      const accent=x<370?[107,165,255]:[21,94,239];
+      pixels[index]=accent[0];pixels[index+1]=accent[1];pixels[index+2]=accent[2];
     }
   }
   return pixels;
@@ -40,13 +41,11 @@ function wordmarkPixels(onDark){
 
 const primaryWordmark=wordmarkPixels(false);
 const darkWordmark=wordmarkPixels(true);
-const lightWordmarkPath=path.join(root,'public','brand','loadgistic-wordmark-blue.png');
 const darkWordmarkPath=path.join(root,'public','brand','loadgistic-wordmark-on-dark.png');
-await sharp(primaryWordmark,{raw:info}).png().toFile(lightWordmarkPath);
+await sharp(primaryWordmark,{raw:info}).png().toFile(brandSource);
 const contrastBorder='<svg xmlns="http://www.w3.org/2000/svg" width="1510" height="390"><rect x="37" y="36" width="314" height="332" rx="70" fill="none" stroke="#fff" stroke-width="5"/></svg>';
 await sharp(darkWordmark,{raw:info}).composite([{input:Buffer.from(contrastBorder)}]).png().toFile(darkWordmarkPath);
-await fs.copyFile(lightWordmarkPath,path.join(root,'apps','mobile','assets','loadgistic-wordmark.png'));
-await fs.copyFile(darkWordmarkPath,path.join(root,'apps','mobile','assets','loadgistic-wordmark-on-dark.png'));
+await fs.copyFile(brandSource,path.join(root,'apps','mobile','assets','loadgistic-wordmark-on-white.png'));
 
 const outputs=[
   {path:path.join(root,'public','favicon-32.png'),size:32,source:iconSource},

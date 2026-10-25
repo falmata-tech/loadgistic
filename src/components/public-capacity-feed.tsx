@@ -36,7 +36,7 @@ type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:num
 type Point={lat:number;lng:number};
 type VisitorLocationState='idle'|'locating'|'ready'|'denied'|'timeout'|'unavailable'|'unsupported'|'insecure'|'outside'|'error';
 
-type FeedProps={initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string;searchApiPath?:string};
+type FeedProps={initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string;searchApiPath?:string;ownSignalIds?:string[]};
 type ProfileSearchControls={
   searchTerm:string;submittedSearch:string|null;drawerOpen:boolean;setDrawerOpen:React.Dispatch<React.SetStateAction<boolean>>;
   inputRef:React.RefObject<HTMLInputElement|null>;change:(value:string)=>void;clear:()=>void;submit:()=>void;pause:()=>void;
@@ -68,14 +68,14 @@ export function PublicCapacityFeed(props:FeedProps){
   // Truck filters still reset map state and drafts. Profile search stays above
   // that boundary, with its request authority and exclusions owned separately.
   const queryKey=JSON.stringify(Object.entries(props.query).sort(([a],[b])=>a.localeCompare(b)));
-  return <CapacitySearchResults active={drawerOpen&&submittedSearch!==null} requestVersion={searchVersion} query={{q:submittedSearch||''}} mapQuery={props.query} view={props.apiPath==='/api/shared-capacity'?'private':props.apiPath==='/api/admin/capacity-network'?'loadgistic':'open'} searchPath={props.searchPath||'/'} apiPath={props.searchApiPath} onProfileSelect={pauseSearch} render={profileResults=><CapacityFeedState key={`${queryKey}:${resetVersion}`} {...props} search={search} profileResults={profileResults} onReset={()=>setResetVersion((value:number)=>value+1)}/>}/>;
+  return <CapacitySearchResults active={drawerOpen&&submittedSearch!==null} requestVersion={searchVersion} query={{q:submittedSearch||''}} mapQuery={props.query} view={props.apiPath==='/api/shared-capacity'?'private':props.apiPath==='/api/account-capacity'?'account':props.apiPath==='/api/admin/capacity-network'?'loadgistic':'open'} searchPath={props.searchPath||'/'} apiPath={props.searchApiPath} onProfileSelect={pauseSearch} render={profileResults=><CapacityFeedState key={`${queryKey}:${resetVersion}`} {...props} search={search} profileResults={profileResults} onReset={()=>setResetVersion((value:number)=>value+1)}/>}/>;
 }
 
-function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/capacity',onReset,search,profileResults}:FeedProps&{onReset:()=>void;search:ProfileSearchControls;profileResults:React.ReactNode}){
+function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/capacity',ownSignalIds=[],onReset,search,profileResults}:FeedProps&{onReset:()=>void;search:ProfileSearchControls;profileResults:React.ReactNode}){
   const {searchTerm,submittedSearch,drawerOpen,setDrawerOpen}=search;
   // A link to the current unfiltered URL does not navigate. Reset local drafts
   // and the map explicitly in that case; other clears use the new query key.
-  function clearUnappliedFilters(){if(!Object.values(query).some(Boolean))onReset();}
+  function clearUnappliedFilters(){if(!Object.entries(query).some(([key,value])=>key!=='view'&&Boolean(value)))onReset();}
   const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
   const [allItems,setItems]=React.useState(initial.items);
   const items=React.useMemo(()=>allItems.filter((item:any)=>!blocked.includes(item.provider_handle)),[allItems,blockKey]);
@@ -244,6 +244,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const clearSearchParams=new URLSearchParams(query);
   ['q','provider','truck','cursor'].forEach(key=>clearSearchParams.delete(key));
   const clearSearchHref=`${searchPath}${clearSearchParams.size?`?${clearSearchParams.toString()}`:''}`;
+  const clearFiltersHref=query.view==='private'?'/?view=private':searchPath;
   const hasSearch=Boolean(searchTerm||submittedSearch!==null);
   const locationNotice=locationFeedback||({
     denied:'Location permission is blocked. Enable location for this site in browser settings, then retry.',
@@ -255,7 +256,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   } as Partial<Record<VisitorLocationState,string>>)[locationState]||'';
   const overlayKind=error?'error':loading?'loading':!items.length?'empty':'';
 
-  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?<Text message="No vehicle signals match these filters. Adjust the filters or check again later."/>:locationNotice}</div>:null;
+  const privateAccountMap=apiPath==='/api/account-capacity'||apiPath.startsWith('/api/business-workspaces/');
+  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?privateAccountMap&&activeFilterCount===0?<><Text message="No vehicles are shared with this account yet."/> <Link href="/app/network"><Text message="Find connections"/></Link></>:<Text message="No vehicle signals match these filters. Adjust the filters or check again later."/>:locationNotice}</div>:null;
 
   const searchControls=<form className="capacity-people-search-form" onSubmit={event=>{event.preventDefault();search.submit();}}><div className={searchStyles.field}>
     <label className="sr-only" htmlFor="capacity-market-search"><Text message="Search transporters"/></label><Search aria-hidden="true"/>
@@ -266,6 +268,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
 
   return <div className="market-workbench market-map-view capacity-drawer-workbench">
     <Form action={searchPath} prefetch={false} scroll={false} className="capacity-discovery-form" onSubmit={closeFilters}>
+    {query.view==='private'?<input type="hidden" name="view" value="private"/>:null}
     {query.provider?<input type="hidden" name="provider" value={query.provider}/>:null}
     {query.truck?<input type="hidden" name="truck" value={query.truck}/>:null}
     {query.q?<input type="hidden" name="q" value={query.q}/>:null}
@@ -323,7 +326,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
         </details>
 
 
-        <div className="capacity-filter-actions"><Link href={searchPath} onClick={()=>{closeFilters();clearUnappliedFilters();}}><X aria-hidden="true"/><Text message="Clear"/></Link><button className="button" type="submit"><Truck aria-hidden="true"/><Text message="Show vehicles"/></button></div>
+        <div className="capacity-filter-actions"><Link href={clearFiltersHref} onClick={()=>{closeFilters();clearUnappliedFilters();}}><X aria-hidden="true"/><Text message="Clear"/></Link><button className="button" type="submit"><Truck aria-hidden="true"/><Text message="Show vehicles"/></button></div>
       </div>
     </dialog>
     </Form>
@@ -347,7 +350,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       <Localized as="button" copy={["aria-label","title"]} type="button" className="capacity-filter-trigger" disabled={!controlsReady} aria-haspopup="dialog" aria-label="Vehicle filters" title="Vehicle filters" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Filter"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</Localized>
     </div>
       <section id="capacity-map-view" className="public-map-shell">
-        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
+        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} ownSignalIds={ownSignalIds} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
         {feedback}
       </section>
     </div>;

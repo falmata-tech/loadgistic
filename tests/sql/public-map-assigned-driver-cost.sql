@@ -64,9 +64,7 @@ begin
     'Rollback-only map parity evidence' from public.vehicles v where v.id=vehicle;
   end if;
   if n in(19,20) then
-   perform public.grant_private_capacity_access(actor,vehicle,'map179-viewer@example.invalid',repeat('9',64));
-   perform public.set_provider_capacity_sharing(actor,vehicle,case when n=19 then 'PRIVATE' else 'EXCLUSIVE' end,
-    case when n=20 then 'map179-viewer@example.invalid' end,case when n=20 then repeat('9',64) end);
+   perform public.set_provider_capacity_sharing(actor,vehicle,'PRIVATE');
   elsif n=21 then
    -- Existing history survives returning a Live vehicle to Draft; a new
    -- available signal cannot be inserted while it is already Draft.

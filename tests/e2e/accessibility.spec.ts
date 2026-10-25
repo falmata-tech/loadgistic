@@ -194,7 +194,7 @@ test('featured truck details support keyboard entry, Escape, and focus restorati
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Close featured vehicle details' })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'Close featured account details' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(featured).toBeFocused();

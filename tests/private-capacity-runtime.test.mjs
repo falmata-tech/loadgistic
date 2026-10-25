@@ -2,18 +2,18 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import ts from 'typescript';
 
 const root=process.cwd();
 const activeFiles=[
   'src/app/api/capacity-network/route.ts',
   'src/app/app/network/page.tsx',
-  'src/app/page.tsx',
-  'src/app/api/shared-capacity/route.ts',
-  'src/app/api/shared-capacity/otp/route.ts',
-  'src/app/api/shared-capacity/access/route.ts'
+  'src/app/api/account-capacity/route.ts',
+  'src/app/api/mobile/account-capacity/route.ts',
+  'src/app/api/mobile/network/route.ts'
 ];
 
-test('active private-capacity routes use the dedicated managed port',()=>{
+test('account capacity and network routes use the dedicated managed port',()=>{
   for(const relativePath of activeFiles){
     const source=fs.readFileSync(path.join(root,relativePath),'utf8');
     assert.doesNotMatch(source,/lib\/repository\.js/);
@@ -22,6 +22,30 @@ test('active private-capacity routes use the dedicated managed port',()=>{
   const port=fs.readFileSync(path.join(root,'src/lib/private-capacity.js'),'utf8');
   assert.match(port,/repository\/supabase\.js/);
   assert.doesNotMatch(port,/DATA_BACKEND|repository\.js/);
+});
+
+test('the public Capacity page uses the business workspace for Shared with you',()=>{
+  const source=fs.readFileSync(path.join(root,'src/app/page.tsx'),'utf8');
+  assert.doesNotMatch(source,/lib\/repository\.js|lib\/private-capacity\.js/);
+  assert.match(source,/listBusinessCapacity/);
+  assert.match(source,/if\(privateView&&user&&user\.role!=='CUSTOMER'\)redirect\('\/'\)/);
+  assert.match(source,/if\(!user\)redirect\('\/login\?from=shared-capacity'\)/);
+});
+
+test('retired email-only Capacity endpoints cannot issue or redeem access',async()=>{
+ for(const [relativePath,method] of [
+  ['src/app/api/shared-capacity/route.ts','GET'],
+  ['src/app/api/shared-capacity/otp/route.ts','POST'],
+  ['src/app/api/shared-capacity/access/route.ts','POST']
+ ]){
+  const source=fs.readFileSync(path.join(root,relativePath),'utf8');
+  const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  const output={};
+  new Function('require','exports',compiled)(name=>{assert.equal(name,'next/server.js');return{NextResponse:{json:(body,options)=>({body,...options})}};},output);
+  const response=await output[method]();
+  assert.equal(response.status,410,relativePath);
+  assert.match(response.headers['Cache-Control'],/no-store/);
+ }
 });
 
 test('Shared capacity delivery leasing and retention fail closed around terminal OTPs',()=>{

@@ -28,7 +28,7 @@ import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
 import {FleetDevices} from './fleet-devices';
 import styles from './provider-fleet-workspace.module.css';
 
-export async function FleetWorkspace({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
+export async function FleetWorkspace({searchParams,basePath='/app/fleet',embedded=false}:{searchParams:Promise<Record<string,string|undefined>>;basePath?:string;embedded?:boolean}){
  const user=await requireUser();
  if(!canManageProviderVehicles(user))redirect('/app/home');
  const query=await searchParams;
@@ -50,14 +50,14 @@ export async function FleetWorkspace({searchParams}:{searchParams:Promise<Record
   catch(error){
    if(error instanceof Error&&error.message==='FORBIDDEN')redirect('/app/home');
    const unavailable=error instanceof Error&&error.message==='NOT_FOUND';
-   return <div className={'page '+styles.page}><PageHeader icon={Truck} title={<Text message="My Fleet"/>}/><p className="alert error" role="alert"><Text message={unavailable?'This driver is no longer available in your fleet.':'Unable to load driver details. Try again.'}/></p><Link className="button secondary" href="/app/fleet?view=drivers"><ArrowLeft aria-hidden="true"/><Text message="Drivers"/></Link></div>;
+   return <div className={'page '+styles.page}><PageHeader icon={Truck} title={<Text message="Manage vehicles"/>}/><p className="alert error" role="alert"><Text message={unavailable?'This driver is no longer available in your fleet.':'Unable to load driver details. Try again.'}/></p><Link className="button secondary" href={`${basePath}?view=drivers`}><ArrowLeft aria-hidden="true"/><Text message="Drivers"/></Link></div>;
   }
  }
  const archived=query.scope==='retired'&&retired.total>0;
  const baseQuery={truckPage:query.truckPage,driverPage:query.driverPage,vehicle:query.vehicle};
  const href=(next:Record<string,string|undefined>)=>{
   const params=new URLSearchParams();for(const [key,value]of Object.entries({...baseQuery,...next}))if(value)params.set(key,value);
-  return '/app/fleet?'+params;
+  return basePath+'?'+params;
  };
  const returnTo=fleetReturnPath(href({view:'drivers',driver:selectedDriver?.id,task:driverTask}));
  const [invitations,verification]=await Promise.all([
@@ -67,9 +67,9 @@ export async function FleetWorkspace({searchParams}:{searchParams:Promise<Record
  const addAction=view==='trucks'?<Link className="button success small" href="/app/fleet/new"><Plus aria-hidden="true"/><Text message="Add vehicle"/></Link>:
   view==='drivers'&&!selectedDriver?<Link className="button success small" href={'/app/fleet/drivers/new?returnTo='+encodeURIComponent(returnTo)}><Plus aria-hidden="true"/><Text message="Add driver"/></Link>:null;
  return <div className={'page '+styles.page}>
-  <PageHeader icon={Truck} title={<Text message="My Fleet"/>} action={addAction}/>
+  {embedded?<div className={styles.embeddedActions}>{addAction}</div>:<PageHeader icon={Truck} title={<Text message="Manage vehicles"/>} action={addAction}/>}
   <Flash error={query.error} success={query.success}/>
-  <Localized as="nav" copy={['aria-label']} className={styles.tabs} aria-label="My Fleet">
+  <Localized as="nav" copy={['aria-label']} className={styles.tabs} aria-label="Manage vehicles">
    <Link href={href({view:'trucks',vehicle:undefined})} aria-current={view==='trucks'?'page':undefined}><Truck aria-hidden="true"/><Text message="Vehicles"/><span>{allVehicles.length}</span></Link>
    <Link href={href({view:'drivers'})} aria-current={view==='drivers'?'page':undefined}><UserRound aria-hidden="true"/><Text message="Drivers"/><span>{driverResult.total}</span></Link>
    <Link href={href({view:'devices',vehicle:undefined})} aria-current={view==='devices'?'page':undefined}><Satellite aria-hidden="true"/><Text message="GPS devices"/></Link>
@@ -89,7 +89,7 @@ export async function FleetWorkspace({searchParams}:{searchParams:Promise<Record
        <Link href={'/app/fleet/'+vehicle.id} className="button secondary small"><Eye aria-hidden="true"/><Text message="View vehicle"/></Link>
       </article>;
      })}</div>:<div className={styles.empty}><Truck aria-hidden="true"/><h2><Text message="No vehicles added yet."/></h2><p><Text message="Add the first vehicle before publishing capacity or starting Tracking."/></p></div>}
-    {(archived?retired:vehicleResult).pageCount>1?<Pagination path="/app/fleet" query={{...baseQuery,view:'trucks',scope:archived?'retired':undefined}} page={(archived?retired:vehicleResult).page} pageCount={(archived?retired:vehicleResult).pageCount} total={(archived?retired:vehicleResult).total} pageParam={archived?'retiredPage':'truckPage'}/>:null}
+    {(archived?retired:vehicleResult).pageCount>1?<Pagination path={basePath} query={{...baseQuery,view:'trucks',scope:archived?'retired':undefined}} page={(archived?retired:vehicleResult).page} pageCount={(archived?retired:vehicleResult).pageCount} total={(archived?retired:vehicleResult).total} pageParam={archived?'retiredPage':'truckPage'}/>:null}
    </Localized>
   </>:null}
   {view==='devices'?<section className={styles.surface}><FleetDevices/></section>:null}
@@ -114,7 +114,7 @@ export async function FleetWorkspace({searchParams}:{searchParams:Promise<Record
     {targetVehicle?<p className="alert"><Text message="Assign a driver to {truck}. Choose a driver below and save." values={{truck:targetVehicle.make+' '+targetVehicle.model}}/></p>:null}
     <div className={styles.rows}>{drivers.map(driver=><article className={styles.driverRow} key={driver.id}><span className={styles.entityIcon}><UserRound aria-hidden="true"/></span><div className={styles.identity}><strong>{driver.name}{driver.is_owner?<small> · <Text message="You"/></small>:null}</strong><span>{driver.assigned_vehicles||<Text message="No vehicle assigned"/>}</span></div><span className={styles.phone}>{driver.phone||<Text message="Phone not added"/>}</span><Link className="button secondary small" href={href({view:'drivers',driver:driver.id})}><Text message="Manage"/><ArrowRight aria-hidden="true"/></Link></article>)}</div>
     {!drivers.length?<div className={styles.empty}><UserRound aria-hidden="true"/><h2><Text message="No driver assigned"/></h2><p><Text message="Add a driver, then assign their vehicle. They verify their email when signing in."/></p></div>:null}
-    {driverResult.pageCount>1?<Pagination path="/app/fleet" query={{...baseQuery,view:'drivers'}} page={driverResult.page} pageCount={driverResult.pageCount} total={driverResult.total} pageParam="driverPage"/>:null}
+    {driverResult.pageCount>1?<Pagination path={basePath} query={{...baseQuery,view:'drivers'}} page={driverResult.page} pageCount={driverResult.pageCount} total={driverResult.total} pageParam="driverPage"/>:null}
     <FleetInvitations invitations={invitations} returnTo={returnTo} showAdd={false}/>
    </>}
   </section>:null}

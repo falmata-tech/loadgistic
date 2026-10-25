@@ -9,7 +9,7 @@ import { createAccountController } from './account-controller';
 import type { AccountSession } from './contract';
 export type { AccountSession } from './contract';
 const storageKey = 'loadgistic.account.refresh.v1';
-type SessionContext = { session: AccountSession | null; busy: boolean; error: string; cleanupRequired: boolean; requestCode: (email: string) => Promise<string>; verifyCode: (handoff: string, code: string) => Promise<void>; signInReview:(email:string,password:string)=>Promise<void>; signOut: () => Promise<void>; reload: () => Promise<AccountSession | null>; request: (path: string, body?: unknown) => Promise<unknown> };
+type SessionContext = { session: AccountSession | null; busy: boolean; error: string; cleanupRequired: boolean; requestCode: (email: string) => Promise<string>; verifyCode: (handoff: string, code: string) => Promise<AccountSession | null>; signInReview:(email:string,password:string)=>Promise<void>; signOut: () => Promise<void>; reload: () => Promise<AccountSession | null>; request: (path: string, body?: unknown) => Promise<unknown> };
 const Context = createContext<SessionContext | null>(null);
 export function AccountProvider({ children }: PropsWithChildren) {
  const [, render] = useReducer(n => n + 1, 0);

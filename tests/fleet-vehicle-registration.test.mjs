@@ -87,12 +87,15 @@ test('the public catalogue includes courier configurations and distinct trailers
 
 test('fleet pages expose add and detail destinations while company drivers are filtered out',()=>{
   const route=fs.readFileSync(path.join(root,'src/app/app/fleet/page.tsx'),'utf8');
-  assert.match(route,/<FleetWorkspace searchParams=\{searchParams\}/);
+  const home=fs.readFileSync(path.join(root,'src/components/provider-home.tsx'),'utf8');
+  assert.match(route,/redirect\(`\/app\/home\/vehicles/);
+  assert.match(home,/<FleetWorkspace searchParams=\{Promise\.resolve\(query/);
   const fleet=fs.readFileSync(path.join(root,'src/components/provider-fleet-workspace.tsx'),'utf8');
   const menu=fs.readFileSync(path.join(root,'src/app/app/menu/page.tsx'),'utf8');
-  const shell=fs.readFileSync(path.join(root,'src/components/app-shell.tsx'),'utf8');
+  const navigation=fs.readFileSync(path.join(root,'src/components/site-navigation.ts'),'utf8');
   assert.match(fleet,/href="\/app\/fleet\/new"/);
   assert.match(fleet,/href=\{'\/app\/fleet\/\'\+vehicle\.id\}/);
   assert.match(menu,/canManageProviderVehicles/);
-  assert.match(shell,/\['\/app\/company-page','\/app\/fleet'\]\.includes\(item\.href\)/);
+  assert.match(navigation,/key:'my-work',href:'\/app\/home'/);
+  assert.doesNotMatch(navigation,/key:'fleet',href:'\/app\/fleet'/);
 });

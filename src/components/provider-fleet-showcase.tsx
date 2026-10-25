@@ -43,7 +43,7 @@ function capacityTitle(capacity:any,t:(message:string)=>string){
 function regularServiceTitle(capacity:any,t:(message:string)=>string){
   const signal=capacity?.recurring_corridors?.[0];
   if(!signal)return null;
-  if(signal.geometry==='ROUTE')return {label:'Regular capacity route',value:placeLabels(signal.route_points,' ↔ ')};
+  if(signal.geometry==='ROUTE')return {label:'Corridor route',value:placeLabels(signal.route_points,' ↔ ')};
   const boundary=placeLabels(signal.area_boundary,' · ');
   return {label:'Regular service area',value:boundary?`${signal.area_center_label||t('Service area')} · ${boundary}`:signal.area_center_label||t('Service area')};
 }

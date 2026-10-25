@@ -9,12 +9,15 @@ import {MANAGED_OAUTH_COOKIE} from '@/lib/managed-oauth-flow.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 import {redirectUrl,text} from '@/lib/redirects';
 import {createSupabaseRouteClient} from '@/lib/supabase/route';
+import {signupAudience,signupEntry} from '@/lib/signup-audience.js';
 
 export const runtime='nodejs';
 
-function responseFor(request:NextRequest,step='code',error=MANAGED_AUTH_ERROR){
-  const location=redirectUrl(request,'/login');
+function responseFor(request:NextRequest,step='code',error=MANAGED_AUTH_ERROR,audience='EXISTING',from=''){
+  const location=redirectUrl(request,audience==='EXISTING'?'/login':'/signup');
   if(step)location.searchParams.set('step',step);
+  if(audience!=='EXISTING')location.searchParams.set('audience',audience);
+  if(from)location.searchParams.set('from',from);
   if(error)location.searchParams.set('error',error);
   const response=NextResponse.redirect(location,303);
   response.headers.set('Cache-Control','no-store');
@@ -35,13 +38,16 @@ function clearOAuthCookie(response:NextResponse){
 
 export async function POST(request:NextRequest){
   const handoff=readProviderSignupHandoff(request.cookies.get(MANAGED_SIGNUP_COOKIE)?.value||'');
-  const code=text(await request.formData(),'code');
-  if(!handoff?.email||!isNumericEmailOtp(code))return responseFor(request);
+  const form=await request.formData();
+  const code=text(form,'code');
+  const audience=signupAudience(text(form,'audience'));
+  const from=signupEntry(text(form,'from'));
+  if(!handoff?.email||!isNumericEmailOtp(code))return responseFor(request,'code',MANAGED_AUTH_ERROR,audience,from);
   const clientRate=await checkRateLimit(requestKey(request,'managed-account-email-verify'),10,10*60_000);
   const accountRate=await checkRateLimit(`managed-account-email-verify:${handoff.email}`,6,10*60_000);
-  if(!clientRate.allowed||!accountRate.allowed)return responseFor(request,'code','Please wait before trying another code.');
+  if(!clientRate.allowed||!accountRate.allowed)return responseFor(request,'code','Please wait before trying another code.',audience,from);
 
-  const response=responseFor(request);
+  const response=responseFor(request,'code',MANAGED_AUTH_ERROR,audience,from);
   let client:ReturnType<typeof createSupabaseRouteClient>|null=null;
   try{
     client=createSupabaseRouteClient(request,response);
@@ -59,13 +65,13 @@ export async function POST(request:NextRequest){
       return response;
     }
     if(projection.active){
-      response.headers.set('Location',projection.role==='CUSTOMER'||['ADMIN','SUPPORT','DRIVER','TRANSPORTER'].includes(projection.role)?managedWorkspaceDestination(projection.role,projection.selected_business_workspace):'/workspaces');
+      response.headers.set('Location',from&&projection.role==='CUSTOMER'?'/?view=private':managedWorkspaceDestination(projection.role,projection.selected_business_workspace));
       clearSignupCookie(response);
       clearOAuthCookie(response);
       return response;
     }
     if(await managedProviderSignupEligible(data.user.id)){
-      response.headers.set('Location',redirectUrl(request,'/workspaces').toString());
+      response.headers.set('Location',redirectUrl(request,audience==='PROVIDER'?'/apply':audience==='BUSINESS'?'/workspaces?start=business':'/signup?verified=1').toString());
       clearOAuthCookie(response);
       return response;
     }

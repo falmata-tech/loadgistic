@@ -30,8 +30,6 @@ function PlaceSequenceEditor({items,setItems,name,refName,min,label}:{items:Edit
 export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,savedManualSource=false,onBusyChange,onSaved,onCancel}:{section:'CAPACITY'|'SHARING';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;savedManualSource?:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
   const [sharingMode,setSharingMode]=React.useState(capacitySharingMode(current?.sharing_mode,current?.visibility));
-  const [exclusiveEmail,setExclusiveEmail]=React.useState(current?.exclusive_email||'');
-  const [exclusiveName,setExclusiveName]=React.useState(current?.exclusive_name||'');
   const visibility=sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE';
   const [geometry,setGeometry]=React.useState(current?.status==='PARTIAL'?'ROUTE':current?.availability_geometry||'RADIUS');
   const [acceptedLoads,setAcceptedLoads]=React.useState(current?.accepts_partial_load?(current.accepts_full_load?'BOTH':'PTL'):'FTL');
@@ -76,7 +74,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
     finally{submitting.current=false;setBusy(false);onBusyChange(false);}
   }
   return <form action="/api/capacity" method="post" onSubmit={save} className="capacity-signal-form" data-testid="capacity-form">
-    <input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="status" value={status}/><input type="hidden" name="acceptedLoads" value={status==='PARTIAL'?'PTL':acceptedLoads}/><input type="hidden" name="availabilityGeometry" value={geometry}/><input type="hidden" name="visibility" value={visibility}/><input type="hidden" name="sharingMode" value={sharingMode}/>{section!=='SHARING'&&<><input type="hidden" name="exclusiveEmail" value={exclusiveEmail}/>{exclusiveName&&<input type="hidden" name="exclusiveName" value={exclusiveName}/>}</>}
+    <input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="status" value={status}/><input type="hidden" name="acceptedLoads" value={status==='PARTIAL'?'PTL':acceptedLoads}/><input type="hidden" name="availabilityGeometry" value={geometry}/><input type="hidden" name="visibility" value={visibility}/><input type="hidden" name="sharingMode" value={sharingMode}/>
     <input type="hidden" name="locationSource" value={captured?'DEVICE_OBSCURED':'PRESERVE_DRIVER'}/><input type="hidden" name="approximateLat" value={captured?.lat??''}/><input type="hidden" name="approximateLng" value={captured?.lng??''}/><input type="hidden" name="locationPrecisionKm" value={captured?.radius??''}/>
     <input type="hidden" name="acceptsMultiPick" value={multiPick?'on':''}/><input type="hidden" name="acceptsMultiDrop" value={multiDrop?'on':''}/>
     <div className="capacity-signal-dialog-body">
@@ -99,8 +97,8 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
         {section==='SHARING'?<section className="capacity-signal-group">
           <h3><Users aria-hidden="true"/><Text message="Who can see it?"/></h3>
           <div className="segmented-control capacity-visibility-choices">{CAPACITY_SHARING_CHOICES.map(([value,label])=><button key={value} type="button" aria-pressed={sharingMode===value} onClick={()=>setSharingMode(value)}><strong><Text message={label}/></strong></button>)}</div>
-          {sharingMode==='EXCLUSIVE'?<><label className="form-group"><Text message="Contact name"/><input name="exclusiveName" value={exclusiveName} onChange={event=>setExclusiveName(event.target.value)} maxLength={100} required/></label><label className="form-group"><Text message="Only this email can see the vehicle"/><input type="email" name="exclusiveEmail" value={exclusiveEmail} onChange={event=>setExclusiveEmail(event.target.value)} maxLength={254} required/></label></>:<p className="meta"><Text message={sharingMode==='BOTH'?'Invited contacts also see this vehicle in their private feed.':sharingMode==='PUBLIC'?'Anyone browsing the map can see this vehicle.':'Only approved contacts can see this vehicle.'}/></p>}
-          <p className="meta"><Text message="Manage contacts in Network. Changing sharing keeps their history and your location privacy."/></p><Link className="button secondary small" href="/app/network"><Text message="Manage shared contacts"/></Link>
+          <p className="meta"><Text message={sharingMode==='BOTH'?'Connected shippers and brokers can also see this vehicle privately.':sharingMode==='PUBLIC'?'Anyone browsing the map can see this vehicle.':'Only shippers and brokers you share with can see this vehicle.'}/></p>
+          <Link className="button secondary small" href="/app/network"><Text message="Manage vehicle sharing"/></Link>
         </section>:null}
         {showCoverage?<section className="capacity-signal-group">
           <h3><Route aria-hidden="true"/><Text message="Where is this vehicle available?"/></h3>

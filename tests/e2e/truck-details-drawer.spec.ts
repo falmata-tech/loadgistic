@@ -55,8 +55,10 @@ test('selected truck has centered readable modals and a separate attached exit r
  const before=await cameraView(page);
  await truckControl.click();await expect(card).toHaveClass(/truck/);await expect(card.getByRole('link',{name:'Profile',exact:true})).toHaveCount(1);
  await expect(card).toHaveAttribute('open','');await expect(card).toHaveRole('dialog');
+ await expect(card).not.toContainText('share private capacity with your email');
+ await page.screenshot({path:info.outputPath('truck-modal.png')});
  await page.keyboard.press('Escape');await expect(card).toHaveCount(0);await expect(truckControl).toBeFocused();await expect(marker).toBeVisible();
- await capacity.click();await expect(card.locator('.signal-route-stops li')).toHaveCount(2);await expect(card).toContainText('Follow the route in the order shown.');
+ await capacity.click();await expect(card.locator('.signal-route-stops li')).toHaveCount(2);await expect(card).toContainText('Partial capacity');
  const bounds=await card.boundingBox(),mapBox=await page.locator('.public-capacity-map').boundingBox();
  expect(Math.abs(bounds.x+bounds.width/2-mapBox.x-mapBox.width/2)).toBeLessThan(2);
  expect(Math.abs(bounds.y+bounds.height/2-mapBox.y-mapBox.height/2)).toBeLessThan(2);
@@ -67,9 +69,9 @@ test('selected truck has centered readable modals and a separate attached exit r
  await page.keyboard.press('Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
  await page.keyboard.press('Shift+Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
  await page.mouse.click(mapBox.x+5,mapBox.y+mapBox.height/2);await expect(card).toHaveCount(0);
- await location.click();await expect(card).toHaveCSS('border-top-color','rgb(26, 115, 232)');
+ await location.click();await expect(card).toHaveCSS('border-top-color','rgb(120, 70, 167)');
  await card.getByRole('button',{name:'Close map signal details'}).click();
- await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(192, 102, 32)');await expect(card).toContainText('both directions');
+ await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(192, 102, 32)');await expect(card).toContainText('Both directions');await expect(card.locator('.signal-route-summary')).toHaveText(/Addis Ababa.*Adama/);
  await page.screenshot({path:info.outputPath('regular-modal.png')});
  await card.getByRole('button',{name:'Close map signal details'}).click();await expect(marker).toBeVisible();
  expect(await cameraView(page)).toEqual(before);

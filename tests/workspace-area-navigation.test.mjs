@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {areaReturnPath,areaCamera} from '../src/lib/workspace-area-navigation.js';
 test('area returns preserve eligible destinations and combined discovery filters',()=>{
  for(const url of ['/?q=Adama&status=EMPTY&loadType=FTL&ownerDocs=IDENTITY&originRadiusKm=25','/featured','/track','/shared-capacity?view=private'])assert.equal(areaReturnPath(url,'marketplace'),url);
- for(const url of ['/app/home','/app/fleet/uuid-example','/app/provider-shipments/uuid-example','/app/more?paymentPage=2','/app/network'])assert.equal(areaReturnPath(url,'workspace'),url);
+ for(const url of ['/app/home','/app/fleet/uuid-example','/app/provider-shipments/uuid-example','/app/more?paymentPage=2','/app/network','/app/shared-capacity'])assert.equal(areaReturnPath(url,'workspace'),url);
 });
 test('current capacity filters survive area returns together, including multiple location sources',()=>{
  const filters=new URLSearchParams({

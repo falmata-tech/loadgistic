@@ -13,7 +13,7 @@ import {StatusPill} from '@/components/status-pill';
 import {SupportRefresh} from '@/components/support-refresh';
 import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
 
-function supportCategoryName(value:string){return value==='PAYMENT'?'Other':value.replaceAll('_',' ');}
+function supportCategoryName(value:string){return value==='PAYMENT'?'Other':value==='GPS_SETUP'?'GPS device setup':value.replaceAll('_',' ');}
 
 export default async function AdminSupportPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser(['ADMIN'],{allowLimited:true}),query=await searchParams;

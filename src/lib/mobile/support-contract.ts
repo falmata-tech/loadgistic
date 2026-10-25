@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const supportTopics = ['ACCOUNT', 'PAYMENT', 'VERIFICATION', 'LOAD_TRACKING', 'CAPACITY', 'OTHER'] as const;
+export const supportTopics = ['ACCOUNT', 'PAYMENT', 'VERIFICATION', 'LOAD_TRACKING', 'CAPACITY', 'GPS_SETUP', 'OTHER'] as const;
 const body = z.string().trim().min(1).max(2000);
 export const startSupport = z.object({ category: z.enum(supportTopics), body }).strict();
 export const supportCommand = z.discriminatedUnion('action', [

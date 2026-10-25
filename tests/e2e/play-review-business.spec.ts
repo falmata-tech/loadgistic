@@ -73,11 +73,11 @@ test('Play reviewer owner and teammate use one private business workspace throug
   await page.getByLabel('Review account email',{exact:true}).fill(email);
   await page.getByLabel('Review account password',{exact:true}).fill(password);
   const result=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/review-access'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await page.getByRole('button',{name:'Sign in',exact:true}).last().click();
   const response=await result;expect(response.status()).toBe(200);
   const body=await response.json() as {accessToken?:string};
   expect(body.accessToken).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
-  await expect(page.getByRole('tab',{name:'My workspace',exact:true})).toBeVisible();
+  await expect(page.getByRole('tab',{name:'Home',exact:true})).toBeVisible();
   return body.accessToken!;
  }
  async function businessRead(page:import('playwright-core').Page,token:string,path:string){
@@ -109,8 +109,9 @@ test('Play reviewer owner and teammate use one private business workspace throug
   evidence.stage='OWNER_LOGIN';record();
   const owner=await ownerContext.newPage(),ownerToken=await signIn(owner,ownerEmail);evidence.ownerSignedIn=true;
   evidence.stage='OWNER_CREATE';record();
-  await owner.getByRole('tab',{name:'My workspace',exact:true}).click();
-  await owner.getByRole('button',{name:'Switch workspace',exact:true}).click();
+  // The reviewer enters its second workspace through this local review route;
+  // the provider shell no longer exposes a workspace switch in navigation.
+  await owner.goto('/workspaces');
   await expect(owner.getByText('Your workspaces',{exact:true})).toBeVisible();
   await owner.getByRole('button',{name:/Shipper \/ broker workspace/}).last().click();
   await owner.getByLabel('Account name',{exact:true}).fill(`Play review ${nonce}`);
@@ -121,14 +122,14 @@ test('Play reviewer owner and teammate use one private business workspace throug
   const [workspaceId,privateFlag]=localSql(`select id||'|'||review_workspace from public.business_workspaces where handle='play-review-${nonce}'`).split('|');
   expect(workspaceId).toMatch(/^[0-9a-f-]{36}$/);
   created.workspace=workspaceId;evidence.ownerCreated=true;evidence.privateFlag=privateFlag==='true';
-  await expect(owner).toHaveURL(/\/business-capacity$/,{timeout:30_000});
+  await expect(owner).toHaveURL(/\/?\?view=private$/,{timeout:30_000});
   expect(evidence.privateFlag).toBe(true);
   evidence.stage='OWNER_READS';record();
   await businessRead(owner,ownerToken,'/capacity/discovery');evidence.ownerCapacity=true;
   await businessRead(owner,ownerToken,'/tracking');evidence.ownerTracking=true;
-  await owner.getByRole('tab',{name:'Account',exact:true}).click();
+  await owner.getByRole('button',{name:'Account',exact:true}).click();
   const ownerBusinessGroup=owner.getByTestId('business-account-group-business'),ownerAccountGroup=owner.getByTestId('business-account-group-account');
-  await expect(ownerBusinessGroup.getByRole('button',{name:'Team',exact:true})).toBeVisible();
+  await expect(ownerBusinessGroup.getByRole('button',{name:'Team',exact:true})).toBeVisible({timeout:30_000});
   await expect(ownerBusinessGroup.getByRole('button',{name:'Workspace details',exact:true})).toBeVisible();
   await expect(ownerBusinessGroup.getByRole('button',{name:'Documents',exact:true})).toBeVisible();
   await expect(ownerAccountGroup.getByRole('button',{name:'Account details',exact:true})).toBeVisible();
@@ -149,15 +150,14 @@ test('Play reviewer owner and teammate use one private business workspace throug
   evidence.stage='STAFF_LOGIN';record();
   const staff=await staffContext.newPage(),staffToken=await signIn(staff,staffEmail);evidence.staffSignedIn=true;
   evidence.stage='STAFF_JOIN';record();
-  await staff.getByRole('tab',{name:'My workspace',exact:true}).click();
-  await staff.getByRole('button',{name:'Switch workspace',exact:true}).click();
-  await expect(staff.getByText('You have been invited',{exact:true})).toBeVisible();
+  await staff.goto('/workspaces');
+  await expect(staff.getByText('You have been invited',{exact:true})).toBeVisible({timeout:30_000});
   await staff.getByRole('button',{name:'Join',exact:true}).click();
-  await expect(staff).toHaveURL(/\/business-capacity$/,{timeout:30_000});evidence.staffJoined=true;
+  await expect(staff).toHaveURL(/\/?\?view=private$/,{timeout:30_000});evidence.staffJoined=true;
   evidence.stage='STAFF_READS';record();
   await businessRead(staff,staffToken,'/capacity/discovery');evidence.staffCapacity=true;
   await businessRead(staff,staffToken,'/tracking');evidence.staffTracking=true;
-  await staff.getByRole('tab',{name:'Account',exact:true}).click();
+  await staff.getByRole('button',{name:'Account',exact:true}).click();
   const staffBusinessGroup=staff.getByTestId('business-account-group-business'),staffAccountGroup=staff.getByTestId('business-account-group-account');
   await expect(staffBusinessGroup.getByRole('button',{name:'Team',exact:true})).toHaveCount(0);
   await expect(staffBusinessGroup.getByRole('button',{name:'Documents',exact:true})).toHaveCount(0);

@@ -12,7 +12,7 @@ function fallbackFor(pathname:string) {
   if(pathname==='/app/shipments/new')return '/app/shipments?view=MY_LOADS';
   if(pathname.startsWith('/app/shipments/'))return '/app/shipments';
   if(pathname.startsWith('/app/capacity/'))return '/';
-  if(pathname.startsWith('/app/fleet/'))return '/app/fleet';
+  if(pathname.startsWith('/app/fleet/'))return '/app/home/vehicles';
   if(pathname.startsWith('/app/providers/'))return '/app/providers';
   return null;
 }

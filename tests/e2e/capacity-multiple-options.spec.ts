@@ -65,7 +65,7 @@ test('multiple configurations form a union while other option groups intersect u
  expect(filtered.length).toBeGreaterThan(0);expect(filtered.every(item=>item.status==='EMPTY'&&(item.accepts_full_load||item.accepts_partial_load)&&configurations.includes(String(item.cargo_configuration)))).toBe(true);
  expect(filtered.map(item=>item.id).sort()).toEqual(union.filter(item=>item.status==='EMPTY'&&(item.accepts_full_load||item.accepts_partial_load)).map(item=>item.id).sort());
  const canonical=await allPublicItems(page,{vehicleCategory:'Mini Box Truck,Cargo van,Mini Box Truck'});expect(canonical.map(item=>item.id).sort()).toEqual(union.map(item=>item.id).sort());
- expect((await page.request.get('/api/shared-capacity?vehicleCategory=Cargo%20van,Mini%20Box%20Truck')).status()).toBe(401);
+ expect((await page.request.get('/api/shared-capacity?vehicleCategory=Cargo%20van,Mini%20Box%20Truck')).status()).toBe(410);
  const unsupported=await page.request.get('/api/public/capacity?vehicleCategory=Cargo%20van,unsupported');expect(unsupported.status()).toBe(400);
 });
 

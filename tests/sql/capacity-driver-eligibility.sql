@@ -13,6 +13,7 @@ declare
   independent_truck uuid;
   command jsonb;
   recipient_digest text:=encode(extensions.digest(gen_random_uuid()::text,'sha256'),'hex');
+  broker_id uuid:=gen_random_uuid();broker_workspace uuid;connection_id uuid;
 begin
   -- A fresh workspace proves no-document eligibility without removing the
   -- fictional source documents or reviews that belong to the shared CI seed.
@@ -49,9 +50,15 @@ begin
   if not exists(select 1 from public.public_capacity_page(jsonb_build_object('capacity_id',published_id))) then
     raise exception 'NO_DOCUMENT_TRUCK_NOT_PUBLIC';
   end if;
-  -- Use the real grant command so the public signal also enables its private feed.
-  perform public.grant_private_capacity_access(owner_id,truck_id,'driver-check@example.invalid',recipient_digest);
-  if not exists(select 1 from public.private_capacity_projection('EMAIL',recipient_digest)) then
+  -- A registered broker sees this vehicle only after a specific account grant.
+  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+    values(broker_id,'eligibility-broker-'||broker_id||'@example.invalid',now(),'{}');
+  update public.profiles set role='SHIPPER',active=true where id=broker_id;
+  broker_workspace:=(public.business_workspace_create(broker_id,jsonb_build_object('name','Eligibility broker','handle','eligibility-'||substr(broker_id::text,1,12),'kind','BROKER'))->>'id')::uuid;
+  connection_id:=(public.request_account_connection(owner_id,'BUSINESS',broker_workspace)->>'id')::uuid;
+  perform public.decide_account_connection(broker_id,connection_id,'ACCEPT');
+  perform public.grant_account_capacity_access(owner_id,connection_id,truck_id);
+  if not exists(select 1 from public.account_capacity_filtered_page(broker_id,recipient_digest)) then
     raise exception 'NO_DOCUMENT_TRUCK_NOT_PRIVATE';
   end if;
 
@@ -64,7 +71,7 @@ begin
     if sqlerrm<>'DRIVER_REQUIRED_FOR_CAPACITY' then raise; end if;
   end;
   if exists(select 1 from public.public_capacity_page(jsonb_build_object('capacity_id',published_id)))
-    or exists(select 1 from public.private_capacity_projection('EMAIL',recipient_digest)) then
+    or exists(select 1 from public.account_capacity_filtered_page(broker_id,recipient_digest)) then
     raise exception 'INACTIVE_DRIVER_DISCOVERABLE';
   end if;
   update public.profiles set active=true where id=driver_id;
@@ -72,7 +79,7 @@ begin
   delete from public.organization_members where user_id=driver_id and organization_id=org_id;
   if public.capacity_active_driver_id(truck_id) is not null then raise exception 'NONMEMBER_DRIVER_RESOLVED'; end if;
   if exists(select 1 from public.public_capacity_page(jsonb_build_object('capacity_id',published_id)))
-    or exists(select 1 from public.private_capacity_projection('EMAIL',recipient_digest)) then
+    or exists(select 1 from public.account_capacity_filtered_page(broker_id,recipient_digest)) then
     raise exception 'NONMEMBER_DRIVER_DISCOVERABLE';
   end if;
   insert into public.organization_members(user_id,organization_id,membership_role) values(driver_id,org_id,'DRIVER');
@@ -88,7 +95,7 @@ begin
     if sqlerrm<>'DRIVER_REQUIRED_FOR_CAPACITY' then raise; end if;
   end;
   if exists(select 1 from public.public_capacity_page(jsonb_build_object('capacity_id',published_id)))
-    or exists(select 1 from public.private_capacity_projection('EMAIL',recipient_digest)) then
+    or exists(select 1 from public.account_capacity_filtered_page(broker_id,recipient_digest)) then
     raise exception 'UNASSIGNED_TRUCK_DISCOVERABLE';
   end if;
 
