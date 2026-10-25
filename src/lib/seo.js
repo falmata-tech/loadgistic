@@ -25,7 +25,9 @@ export function publicPageMetadata({path,title,description,query={},privateView=
  const filtered=Object.keys(query).some(key=>query[key]!==undefined&&query[key]!==null&&query[key]!=='');
  const canonical=privateView?null:PUBLIC_SITE_ORIGIN+path;
  return {title,description,alternates:{canonical},robots:searchRobots({privateView,filtered,environment}),
-  ...(canonical?{openGraph:{type:'website',siteName:'Loadgistic',title:typeof title==='string'?title:title.absolute,description,url:canonical}}:{})};
+  ...(canonical?{openGraph:{type:'website',siteName:'Loadgistic',title:typeof title==='string'?title:title.absolute,description,url:canonical,
+   images:[{url:'/landing/capacity-map-wide.png',width:1440,height:1000,alt:'Loadgistic vehicle Capacity map'}]},
+   twitter:{card:'summary_large_image',title:typeof title==='string'?title:title.absolute,description,images:['/landing/capacity-map-wide.png']}}:{})};
 }
 export function publicSitemap(environment=process.env){
  return isPublicSearchEnvironment(environment)?PUBLIC_SITEMAP_PATHS.map(path=>({url:PUBLIC_SITE_ORIGIN+path})):[];

@@ -4,7 +4,7 @@ import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditProvider
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {addProviderRegularCapacity,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
-test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes separately tappable',async({page}:{page:any},info:any)=>{
+test('JAC X200 shared Dire Dawa–Shinile leg keeps Capacity and corridor routes separately tappable',async({page}:{page:any},info:any)=>{
   test.setTimeout(120000);
   const service=localAuditService(),actor=await auditProvider(service,'shared-route');let vehicleId='';
   try{
@@ -89,7 +89,7 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps yellow and regular routes se
     // SVG rounding may consume a pixel of the 12px model clearance.
     expect(geometry.minimum,'separation along the shared leg, not an unrelated exposed segment').toBeGreaterThanOrEqual(10);
     expect(geometry.target,'both shared strokes need an unobscured test point').toBeTruthy();
-    for(const [selector,key,label] of [['.map-current-route','yellow','Capacity route'],['.map-regular-corridor','brown','Regular capacity route']]){
+    for(const [selector,key,label] of [['.map-current-route','yellow','Capacity route'],['.map-regular-corridor','brown','Corridor route']]){
       const cameraBefore=await page.locator('.leaflet-proxy').getAttribute('style');
       const point=geometry.target[key];
       if(info.project.name.includes('mobile'))await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);

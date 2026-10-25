@@ -179,9 +179,9 @@ test('Expo Web provider reads the saved spare, assignment, source and command li
   const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
   await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email!,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']));
   const verify=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();expect((await verify).status()).toBe(200);
+  await page.getByRole('button',{name:'Sign in',exact:true}).last().click();expect((await verify).status()).toBe(200);
   await expect(page.getByRole('tab',{name:'Home',exact:true}).filter({visible:true})).toBeVisible();
-  const fleet=page.getByRole('tab',{name:'Fleet',exact:true}).filter({visible:true});
+  const fleet=page.getByRole('tab',{name:'Manage vehicles',exact:true}).filter({visible:true});
   if(await fleet.count())await fleet.click();
   await page.getByRole('tab',{name:'GPS devices',exact:true}).filter({visible:true}).click();
   const devices=page.getByRole('region',{name:'GPS devices',exact:true}).filter({visible:true});
@@ -220,9 +220,9 @@ test('guarded Expo Web provider reassigns only the saved Demo spare',async({brow
   const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
   await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email!,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']));
   const verified=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();expect((await verified).status()).toBe(200);
+  await page.getByRole('button',{name:'Sign in',exact:true}).last().click();expect((await verified).status()).toBe(200);
   await expect(page.getByRole('tab',{name:'Home',exact:true}).filter({visible:true})).toBeVisible();
-  const fleet=page.getByRole('tab',{name:'Fleet',exact:true}).filter({visible:true});if(await fleet.count())await fleet.click();
+  const fleet=page.getByRole('tab',{name:'Manage vehicles',exact:true}).filter({visible:true});if(await fleet.count())await fleet.click();
   await page.getByRole('tab',{name:'GPS devices',exact:true}).filter({visible:true}).click();
   const workspace=page.getByRole('region',{name:'GPS devices',exact:true}).filter({visible:true});
   await expect(workspace.getByRole('button',{name:'View GPS device: Demo GPS 02'})).toBeVisible({timeout:20000});
@@ -257,38 +257,18 @@ test('guarded Expo Web provider reassigns only the saved Demo spare',async({brow
  }
 });
 
-test('private Capacity map labels the saved spare GPS fix as Demo without exposing IMEI',async({page},info)=>{
+test('private spare GPS fix stays out of public Capacity and email-only access',async({page},info)=>{
  test.skip(info.project.name!=='desktop-chromium'||process.env.LOADGISTIC_RUN_SPARE_MAP!=='1');
- test.setTimeout(120000);
  const service=localAuditService(),truck='76bea7fa-03b2-42f0-af51-fff05c62cbc7';
  const capacity=await service.from('capacities').select('id,visibility,location_source,demo_epoch').eq('vehicle_id',truck).order('updated_at',{ascending:false}).limit(1).single();
  expect(capacity.error).toBeNull();expect(capacity.data).toMatchObject({visibility:'PRIVATE',location_source:'TELEMATICS',demo_epoch:1});
- const grants=await service.from('capacity_access_grants').select('recipient_email,expires_at').eq('vehicle_id',truck).eq('audience_type','EMAIL').is('revoked_at',null);
- expect(grants.error).toBeNull();
- const recipient=grants.data?.find((row:{recipient_email:string|null;expires_at:string|null})=>row.recipient_email?.endsWith('@example.test')&&(!row.expires_at||Date.parse(row.expires_at)>Date.now()))?.recipient_email;
- expect(recipient).toBeTruthy();
  const query=new URLSearchParams({truck:capacity.data!.id});
  const open=await page.request.get('/api/public/capacity?'+query);
  expect(open.status()).toBe(200);
  expect((await open.json()).items.some((item:{id:string})=>item.id===capacity.data!.id)).toBe(false);
- await page.setViewportSize({width:390,height:844});
- await page.goto('/?view=private');await page.getByLabel('Email',{exact:true}).fill(recipient!);
- const since=Date.now();await page.getByRole('button',{name:'Continue with email',exact:true}).click();
- await page.getByLabel('6-digit email code',{exact:true}).fill(await localMailpitNumericCode(recipient!,since,'Your Private capacity code'));
- const verified=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/shared-capacity/access'&&response.request().method()==='POST');
- await page.getByRole('button',{name:'View shared signals',exact:true}).click();
- expect((await verified).status()).toBe(200);
- await expect(page.getByRole('region',{name:'Privately shared vehicle capacity'})).toBeVisible({timeout:20000});
- const shared=await page.request.get('/api/shared-capacity?'+query);
- expect(shared.status()).toBe(200);
- const rows=(await shared.json()).items as Array<{id:string;location_source:string;location_is_demo:boolean}>;
- const item=rows.find(row=>row.id===capacity.data!.id);
- expect(item).toMatchObject({location_source:'TELEMATICS',location_is_demo:true});
- expect(JSON.stringify(item)).not.toContain('990000000000013');
- query.set('view','private');await page.goto('/?'+query);
- const badge=page.locator('.capacity-truck-map-marker.selected [title="GPS device"]');
- await expect(badge).toBeVisible({timeout:20000});
- await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',/Demo location/);
- expect(await page.locator('body').innerText()).not.toContain('990000000000013');
- const path='.local/telematics/browser/admin-gps-intake/private-spare-gps-demo-map-390.png';await page.screenshot({path});chmodSync(path,0o600);
+ expect((await page.request.get('/api/shared-capacity?'+query)).status()).toBe(410);
+ expect((await page.request.get('/api/account-capacity?'+query)).status()).toBe(401);
+ await page.goto('/shared-capacity');
+ await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
+ await expect(page.getByLabel('6-digit email code')).toHaveCount(0);
 });

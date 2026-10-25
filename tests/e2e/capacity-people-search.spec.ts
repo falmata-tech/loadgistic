@@ -25,7 +25,7 @@ test('transporter search updates after a pause and applies identity only through
   await expect(people).toBeVisible();await expect(people.locator('.capacity-result-card')).toHaveCount(0);expect(searches).toEqual([]);
   const response=await page.request.get('/api/capacity-search?status=EMPTY');expect(response.status()).toBe(200);
   const data=await response.json(),profile=data.items.find((item:any)=>item.kind==='COMPANY')||data.items[0];expect(profile).toBeTruthy();expect(data.items.length).toBeLessThanOrEqual(15);expect(data.pageSize).toBe(15);
-  expect((await page.request.get('/api/capacity-search?view=private&q=Addis')).status()).toBe(401);
+  expect((await page.request.get('/api/capacity-search?view=private&q=Addis')).status()).toBe(410);
   const input=people.getByRole('searchbox',{name:'Search transporters'});await input.fill(profile.title);
   await expect(people.locator('.capacity-result-card')).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get('q')).toBeNull();

@@ -12,9 +12,9 @@ export default async function AddDriverPage({searchParams}:{searchParams:Promise
   const user=await requireUser();
   if(!canManageProviderFleet(user))redirect('/app/home');
   const query=await searchParams;
-  const returnTo=fleetReturnPath(query.returnTo,'/app/fleet?view=drivers');
+  const returnTo=fleetReturnPath(query.returnTo,'/app/home/vehicles?view=drivers');
   return <div className="page vehicle-registration-page">
-    <PageHeader icon={UserRound} title={<Text message="Add driver"/>} subtitle={<Text message="Add a driver and assign their vehicle right away."/>} action={<Link className="button secondary small" href={returnTo}><ArrowLeft aria-hidden="true"/><Text message="My Fleet"/></Link>}/>
+    <PageHeader icon={UserRound} title={<Text message="Add driver"/>} subtitle={<Text message="Add a driver and assign their vehicle right away."/>} action={<Link className="button secondary small" href={returnTo}><ArrowLeft aria-hidden="true"/><Text message="Manage vehicles"/></Link>}/>
     <form className="vehicle-registration-card" action="/api/fleet/drivers" method="post">
       <input type="hidden" name="returnTo" value={returnTo}/>
       <div className="form-grid">

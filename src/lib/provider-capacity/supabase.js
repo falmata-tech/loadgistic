@@ -1,7 +1,4 @@
-import {privateCapacityContactName} from '../private-capacity-contact.js';
 import {phoneLocationCommand} from '../phone-location-command.js';
-import {privateContactDigest} from '../security.js';
-import {normalizePrivateContactEmail} from '../domain.js';
 import {capacitySignalFreshness} from '../domain.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {getTruckAuthorities} from '../provider-authority.js';
@@ -115,6 +112,7 @@ function placeCommands(values){
 }
 
 export async function publishSupabaseProviderCapacity(user,input,photo=/** @type {any} */(null)){
+  if(input.sharingMode==='EXCLUSIVE'||input.exclusiveEmail||input.exclusiveName)throw new Error('EMAIL_CAPACITY_RETIRED');
   const command={
     vehicle_id:String(input.vehicleId||''),status:String(input.status||''),
     accepted_loads:String(input.acceptedLoads||''),availability_geometry:String(input.availabilityGeometry||''),
@@ -130,11 +128,6 @@ export async function publishSupabaseProviderCapacity(user,input,photo=/** @type
   };
   if(input.sharingMode){
     command.sharing_mode=String(input.sharingMode);
-    if(input.sharingMode==='EXCLUSIVE'){
-      const email=normalizePrivateContactEmail(input.exclusiveEmail);
-      command.exclusive_email=email;command.exclusive_digest=privateContactDigest(email);
-      if(input.exclusiveName!==undefined)command.exclusive_name=privateCapacityContactName(input.exclusiveName);
-    }
   }
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('publish_provider_capacity',{actor_user_id:user.id,command});

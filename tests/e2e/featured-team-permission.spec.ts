@@ -40,16 +40,22 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   stage='STAFF_LOGIN';staffContext=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:page.viewportSize()!,extraHTTPHeaders:{'x-forwarded-for':'127.0.0.245'}});const staff=await staffContext.newPage();staff.setDefaultTimeout(20000);staff.setDefaultNavigationTimeout(60000);
   await staff.goto('/login',{waitUntil:'domcontentloaded',timeout:30000});const since=Date.now();await staff.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);await staff.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(staff.getByTestId('email-code-form')).toBeVisible();
   const code=await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']);await staff.getByLabel('Six-digit code',{exact:true}).fill(code);await staff.getByRole('button',{name:'Continue',exact:true}).click();await expect(staff).toHaveURL(/\/admin\/featured$/,{timeout:30000});
-  await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});await expect(staff.locator('.sidebar-nav a')).toHaveCount(1);await expect(staff.locator('.sidebar-nav a')).toHaveAttribute('href','/admin/featured');
+  await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});
+  const siteNav=staff.locator('nav.public-workspace-nav');
+  await expect(siteNav.locator('a[href="/admin/featured"]')).toHaveCount(1);
+  if((staff.viewportSize()?.width??1000)<=760){
+   await expect(staff.getByRole('navigation',{name:'Mobile navigation'}).getByRole('link',{name:'Featured settings',exact:true})).toHaveAttribute('href','/admin/featured');
+  }else await expect(siteNav.getByRole('link',{name:'Featured settings',exact:true})).toBeVisible();
+  for(const href of ['/admin/operations','/admin/reviews','/support'])await expect(siteNav.locator(`a[href="${href}"]`)).toHaveCount(0);
   expect((await staff.request.post('/api/admin/settings',{form:{section:'ACCESS',mode:'TRIAL_PAYMENT',confirm:'ENABLE'}})).status()).toBe(403);
   expect((await staff.request.post('/api/admin/support-agents',{form:{name:'Unwanted',email:'unwanted@example.test'}})).status()).toBe(403);
   expect((await staff.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(410);
-  stage='SELECTION_SETTINGS';await staff.getByText('Selection settings',{exact:true}).click();await staff.getByLabel('Selection',{exact:true}).selectOption(prior.featured_mode);await staff.getByLabel('Maximum Drivers per day',{exact:true}).fill(String(prior.featured_target_count));
+  stage='SELECTION_SETTINGS';await staff.getByText('Selection settings',{exact:true}).click();await staff.getByLabel('Selection',{exact:true}).selectOption(prior.featured_mode);await staff.getByLabel('Maximum Transport Providers per day',{exact:true}).fill(String(prior.featured_target_count));
   await post(staff,()=>staff.getByRole('button',{name:'Save selection settings',exact:true}).click(),'/api/admin/settings');await expect(staff.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
   if(prior.featured_mode==='AUTO'){await post(staff,()=>staff.getByRole('button',{name:'Prepare upcoming days',exact:true}).click({noWaitAfter:true}),'/api/admin/settings');await expect(staff.getByText(/\d+ days prepared\. \d+ kept unchanged\./)).toBeVisible();}
   await staff.screenshot({path:info.outputPath('featured-staff-overview.png'),fullPage:true});
-  stage='FEATURED_DAY';await staff.goto(`/admin/featured?date=${date}&edit=day`);const editor=staff.locator('.featured-roster-editor'),select=editor.getByLabel('Add vehicle and Driver');await select.selectOption((await select.locator('option').nth(1).getAttribute('value'))!);await editor.getByRole('button',{name:'Add',exact:true}).click();await editor.getByRole('combobox',{name:'Featured vehicles',exact:true}).selectOption('1');
-  await staff.getByLabel('Headline',{exact:true}).fill(`Staff feature ${suffix}`);await staff.getByLabel('Short introduction',{exact:true}).fill('Meet the vehicle and its driver.');await staff.getByLabel('Live link (optional)',{exact:true}).fill('https://www.tiktok.com/@loadgistic/live');
+  stage='FEATURED_DAY';await staff.goto(`/admin/featured?date=${date}&edit=day`);const editor=staff.locator('.featured-roster-editor'),select=editor.getByLabel('Add Transport Provider');await select.selectOption((await select.locator('option').nth(1).getAttribute('value'))!);await editor.getByRole('button',{name:'Add',exact:true}).click();await editor.getByRole('combobox',{name:'Featured accounts',exact:true}).selectOption('1');
+  await staff.getByLabel('Headline',{exact:true}).fill(`Staff feature ${suffix}`);await staff.getByLabel('Short introduction',{exact:true}).fill('Meet the Transport Provider and its published vehicles.');await staff.getByLabel('Live link (optional)',{exact:true}).fill('https://www.tiktok.com/@loadgistic/live');
   await post(staff,()=>staff.getByRole('button',{name:'Save draft',exact:true}).click(),'/api/admin/featured');await expect(staff.getByText('Draft saved.',{exact:true})).toBeVisible();expect((await getDailyFeaturedProviders(date)).providers).toHaveLength(0);
   await staff.getByRole('link',{name:'Edit programme',exact:true}).click();await post(staff,()=>staff.getByRole('button',{name:'Publish this day',exact:true}).click(),'/api/admin/featured');await expect(staff.getByText('Daily feature published.',{exact:true})).toBeVisible();let publicFeature=await getDailyFeaturedProviders(date);expect(publicFeature.providers).toHaveLength(1);expect(publicFeature.tiktok_broadcast_status).toBe('SCHEDULED');expect(publicFeature.broadcast_start_time).toBeTruthy();await expect(staff.locator('.featured-broadcast-admin-state')).toContainText('TikTok LIVE broadcast planned');
   stage='TIKTOK_LIVE';await post(staff,()=>staff.getByRole('button',{name:'Mark TikTok LIVE',exact:true}).click(),'/api/admin/featured');await expect(staff.getByText('TikTok Live marked live.',{exact:true})).toBeVisible();publicFeature=await getDailyFeaturedProviders(date);expect(publicFeature.tiktok_broadcast_status).toBe('LIVE');expect(publicFeature.tiktok_url).toContain('tiktok.com');
@@ -68,10 +74,16 @@ test('admin grants Featured alone; staff sign in, publish and lose access when r
   await edit.locator('[name=available]').uncheck();
   await post(page,()=>edit.getByRole('button',{name:'Save permissions',exact:true}).click(),'/api/admin/support-agents');await expect(page).toHaveURL(/success=/);
   await staff.goto('/admin/featured');await expect(staff.locator('.featured-operation-overview')).toBeVisible({timeout:30000});
-  for(const href of ['/admin/featured','/support','/admin/operations','/admin/reviews'])await expect(staff.locator(`.sidebar-nav a[href="${href}"]`)).toHaveCount(1);
-  await expect(staff.locator('.sidebar-nav a[href="/brokerage"]')).toHaveCount(0);
+  for(const href of ['/admin/featured','/support','/admin/operations','/admin/reviews'])await expect(siteNav.locator(`a[href="${href}"]`)).toHaveCount(1);
+  await expect(siteNav.locator('a[href="/brokerage"]')).toHaveCount(0);
   expect((await staff.request.get('/api/brokerage/updates?queue=MINE&view=ALL')).status()).toBe(410);
-  await expect(staff.locator('.workspace-title .meta')).toHaveText('Platform team');
+  await expect(siteNav.locator('a[href="/admin/featured"]')).toHaveAttribute('aria-current','page');
+  if((staff.viewportSize()?.width??1000)<=760){
+   await staff.getByRole('navigation',{name:'Mobile navigation'}).getByRole('button',{name:'More'}).click();
+   const more=staff.getByRole('dialog',{name:'More navigation'});
+   for(const href of ['/admin/featured','/admin/operations','/admin/reviews'])await expect(more.locator(`a[href="${href}"]`)).toBeVisible();
+   await more.getByRole('button',{name:'Close menu'}).click();
+  }
   await staff.screenshot({path:info.outputPath('combined-responsibilities.png'),fullPage:true});
   await page.locator(`[data-member-id="${staffId}"]`).getByRole('button',{name:'Edit member',exact:true}).click();await edit.locator('[name=canManageFeatured]').uncheck();await post(page,()=>edit.getByRole('button',{name:'Save permissions',exact:true}).click(),'/api/admin/support-agents');await expect(page).toHaveURL(/success=/);
   expect((await staff.request.post('/api/admin/settings',{form:{section:'PREPARE_FEATURED'}})).status()).toBe(403);

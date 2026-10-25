@@ -84,7 +84,7 @@ function buildAutomatic(date,keys,config){
   keys.forEach((key,index)=>{
     const duration=baseMinutes+(remainder>0?1:0);if(remainder>0)remainder-=1;
     const end=cursor+duration*MINUTE;
-    const item=interval('PROVIDER','Featured vehicle',cursor,end,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
+    const item=interval('PROVIDER','Featured account',cursor,end,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
     entries.push(item);walkthroughs.push(item);cursor=end;
     if(breakPositions.has(index)){const end=cursor+config.sponsorBreakMinutes*MINUTE;entries.push(interval('PROGRAMME_BREAK','Programme pause',cursor,end,{session:'MORNING',session_label:'Morning programme'}));cursor=end;}
   });
@@ -107,7 +107,7 @@ function buildManual(date,keys,config,manualValue){
     const item=byKey.get(key);const start=timeToMinutes(item.startTime,'FEATURED_MANUAL_SCHEDULE_INVALID');const end=timeToMinutes(item.endTime,'FEATURED_MANUAL_SCHEDULE_INVALID');
     if(end<=start)throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');
     if(start<config.dayStartMinutes||end>config.dayEndMinutes)throw new Error('FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION');
-    return interval('PROVIDER','Featured vehicle',midnight+start*MINUTE,midnight+end*MINUTE,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
+    return interval('PROVIDER','Featured account',midnight+start*MINUTE,midnight+end*MINUTE,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
   });
   const entries=[];let breakCount=0;
   function pause(start,end){

@@ -16,14 +16,14 @@ contact providers and coordinate agreed shipments. Loadgistic does not own this
 fleet, publish customer demand or guarantee availability or service.
 
 - Visitors use public Capacity, Transporter search, Featured and About without
-  creating a provider account. Simple private Capacity and Tracking access uses
-  email verification, without creating a team workspace.
+  an account. The Shared with you entry invites them to sign in or create a
+  shipper/broker account; public-link Tracking retains its email access.
 - Transport Provider owners manage their vehicles, drivers, capacity, sharing,
   devices and Tracking. A driving owner or employee opens a map-based Home with
   immediate permitted work controls. A non-driving owner opens Fleet.
-- Shippers, brokers and receivers use private Capacity and Tracking with their
-  explicitly authorized team. A personal email grant stays personal; selecting
-  a business explicitly shares with its permitted team.
+- Shippers and brokers use private Capacity through vehicle grants to their
+  registered account and its explicitly authorized team. An email address alone
+  cannot receive private Capacity access. Tracking has separate permissions.
 - Platform administrators and assigned software staff manage customer accounts,
   software Support, document review and operational tools on the web. These are
   not customer-team roles and do not gain blanket private-location access.

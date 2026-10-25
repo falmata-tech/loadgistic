@@ -20,6 +20,7 @@ function harness(){
 const request=(path='',body,headers={})=>new Request(`http://localhost/api/business-workspaces${path}`,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'content-type':'application/json'}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});
 test('verified identity adapter validates cookie/bearer with Auth and never trusts user-selected actor or unverified email',async()=>{
  const h=harness();assert.equal(await h.http.businessActor(request()),actor);assert.deepEqual(h.events,['cookie-client','verified-getUser']);
+ assert.deepEqual(await h.http.businessActorIdentity(request()),{id:actor,email:'synthetic@example.test'});
  h.events.length=0;assert.equal(await h.http.businessActor(request('',undefined,{authorization:'Bearer synthetic-token'})),actor);assert.deepEqual(h.events,[['bearer-client','Bearer synthetic-token'],'verified-getUser']);
  await assert.rejects(h.http.businessActor(request('',undefined,{authorization:'invalid'})),/SIGN_IN_REQUIRED/);
  h.setIdentity({id:actor,email:'synthetic@example.test'});await assert.rejects(h.http.businessActor(request()),/VERIFIED_EMAIL_REQUIRED/);

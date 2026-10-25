@@ -9,10 +9,10 @@ import {PageHeader} from '@/components/page-header';
 
 const records=[
   {view:'TRUCKS',label:'Vehicles',count:'trucks',detail:'Registered vehicles',Icon:Truck},
-  {view:'DRIVERS',label:'Drivers',count:'drivers',detail:'Company Driver access and assignments',Icon:UserRoundCog},
+  {view:'DRIVERS',label:'Drivers',count:'drivers',detail:'Fleet driver access and assignments',Icon:UserRoundCog},
   {view:'TRACKING',label:'Tracking',count:'tracking',detail:'Shipments and progress updates',Icon:ClipboardCheck},
   {view:'CAPACITY',label:'Capacity',count:'board_capacity',detail:'Current Empty and Partial signals',Icon:Gauge},
-  {view:'ROUTES',label:'Routes',count:'routes',detail:'Regular service routes and areas',Icon:Route},
+  {view:'ROUTES',label:'Routes',count:'routes',detail:'Corridor routes and service areas',Icon:Route},
 ] as const;
 
 const workAreas=[

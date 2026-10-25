@@ -6,17 +6,17 @@ const expect=baseExpect.configure({timeout:30000});
 
 async function login(page:any,email='driver@loadgistic.local'){
   const identity=await auditIdentity(localAuditService(),email);
-  await localSupportLogin(page,identity.id);await page.goto('/app/home',{waitUntil:'domcontentloaded'});
-  await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
+  await localSupportLogin(page,identity.id);
 }
 
 test('personal Transport Provider owner can add trucks and drivers while new registration stays separate from assignment',async({page}:{page:any})=>{
   test.setTimeout(60000);
   await login(page,'driver@loadgistic.local');
   await page.goto('/app/fleet');
-  await expect(page.getByRole('heading',{name:'My Fleet'})).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/home\/vehicles/);
+  await expect(page.getByRole('navigation',{name:'Manage vehicles',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'Add vehicle',exact:true}).first()).toHaveAttribute('href','/app/fleet/new');
-  const fleetNavigation=page.getByRole('navigation',{name:'My Fleet',exact:true});
+  const fleetNavigation=page.getByRole('navigation',{name:'Manage vehicles',exact:true});
   await fleetNavigation.getByRole('link',{name:/^Drivers/}).click();
   await expect(page.getByRole('link',{name:'Add driver',exact:true})).toHaveAttribute('href',/^\/app\/fleet\/drivers\/new(?:\?|$)/);
   await fleetNavigation.getByRole('link',{name:/^Vehicles/}).click();
@@ -38,7 +38,8 @@ test('fleet transporter reaches truck registration while company driver cannot c
   test.setTimeout(60000);
   await login(page,'transporter@loadgistic.local');
   await page.goto('/app/fleet');
-  await expect(page.getByRole('heading',{name:'My Fleet'})).toBeVisible();
+  await expect(page).toHaveURL(/\/app\/home\/vehicles/);
+  await expect(page.getByRole('navigation',{name:'Manage vehicles',exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'Add vehicle'}).first()).toHaveAttribute('href','/app/fleet/new');
 
   await page.context().clearCookies();

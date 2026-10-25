@@ -130,7 +130,7 @@ test('managed access email treats Tracking OTP as a challenge-fenced short deliv
   assert.match(migration,/delivery_kind in \('SHARED_CAPACITY','GUEST_SUPPORT','TRACKING_OTP'\)/i);
   assert.match(migration,/delivery\.delivery_kind='TRACKING_OTP'[\s\S]*provider_tracking_email_otps/i);
   assert.match(migration,/delivery\.delivery_kind in \('SHARED_CAPACITY','TRACKING_OTP'\)/i);
-  assert.match(emailDelivery,/template:shared\?'shared-capacity-access':tracking\?'tracking-access-code'/);
+  assert.match(emailDelivery,/template:tracking\?'tracking-access-code':'assisted-matching-access'/);
   assert.match(emailDelivery,/providerTrackingOtpCode\(delivery\.entity_id\)/);
   assert.match(emailTemplates,/tracking-access-code/);
   assert.match(emailTemplates,/within 10 minutes to open the shipment updates/i);

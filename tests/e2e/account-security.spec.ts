@@ -1,6 +1,7 @@
 import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from './browser-test';
-import {localAuditService,checked,auditLogin,auditProvider} from './audit-helpers';
+import {localAuditService,checked,auditProvider} from './audit-helpers';
+import {localSupportLogin} from './provider-support-helper';
 import {localMailpitNumericCode,localMailpitEmailChangeLink} from './mailpit-helper';
 import {accountSecurityIdentity} from '../../src/lib/account-security.js';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
@@ -16,7 +17,7 @@ test('fresh email verification changes login identity and deactivation retains h
  try{
   actor=await auditProvider(service,'account-security');const newEmail=`changed-${actor.suffix}@loadgistic.local`;
   const vehicle=await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Security audit',plate:`SEC-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicleId=vehicle.id;
-  await auditLogin(page,actor.email);await page.goto('/app/more?tab=security');const security=page.getByRole('region',{name:'Account security'});
+  await localSupportLogin(page,actor.id);await page.goto('/app/more?tab=security',{waitUntil:'domcontentloaded'});const security=page.getByRole('region',{name:'Account security'});await expect(security).toBeVisible();
   await security.getByRole('button',{name:'Deactivate account',exact:true}).click();const initialDeactivation=page.getByRole('dialog',{name:'Deactivate account',exact:true});await expect(initialDeactivation.getByRole('button',{name:'Verify email to deactivate'})).toHaveCount(0);await initialDeactivation.getByRole('button',{name:'Cancel'}).click();
   // A direct closure request is denied before sending mail while work remains.
   const blocked=await page.evaluate(async()=>{const r=await fetch('/api/account/security/request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'DEACTIVATE',confirm:'DEACTIVATE'})});return {status:r.status,result:await r.json()};});
@@ -56,9 +57,9 @@ test('fresh email verification changes login identity and deactivation retains h
   const profile=checked(await service.from('profiles').select('email,active,role').eq('id',actor.id).single());expect(profile).toEqual({email:newEmail,active:true,role:'DRIVER'});
   expect(checked(await service.auth.admin.getUserById(actor.id)).user.email).toBe(newEmail);
   await page.goto(`/app/fleet/${vehicleId}?view=details`);await page.getByRole('button',{name:'Retire vehicle',exact:true}).click();const retirement=page.getByRole('dialog',{name:'Retire vehicle',exact:true});await page.screenshot({path:info.outputPath('current-vehicle-retirement.png'),fullPage:true});await retirement.getByLabel('Reason',{exact:true}).fill('Resolve vehicle before closing account');await retirement.getByRole('checkbox').check();await retirement.getByRole('button',{name:'Retire vehicle',exact:true}).click();
-  await expect(page).toHaveURL(/\/app\/fleet\?success=/,{timeout:30000});await expect(page.getByRole('heading',{name:'My Fleet',exact:true})).toBeVisible({timeout:30000});
+  await expect(page).toHaveURL(/\/app\/home\/vehicles\?success=/,{timeout:30000});await expect(page.getByRole('navigation',{name:'Manage vehicles',exact:true})).toBeVisible({timeout:30000});
   await expect(page.getByText('Vehicle retired. Its history is retained.',{exact:true})).toBeVisible();expect(checked(await service.from('vehicles').select('active').eq('id',vehicleId).single())).toEqual({active:false});
-  await page.goto('/app/more?tab=security');await security.getByRole('button',{name:'Deactivate account',exact:true}).click();const deactivation=page.getByRole('dialog',{name:'Deactivate account',exact:true});await deactivation.getByRole('checkbox').check();
+  await page.goto('/app/more?tab=security',{waitUntil:'domcontentloaded'});await expect(security).toBeVisible();await security.getByRole('button',{name:'Deactivate account',exact:true}).click();const deactivation=page.getByRole('dialog',{name:'Deactivate account',exact:true});await deactivation.getByRole('checkbox').check();
   requestedAt=Date.now();await deactivation.getByRole('button',{name:'Verify email to deactivate'}).click();await security.getByLabel('Current email code').fill(await localMailpitNumericCode(newEmail,requestedAt,'Your Loadgistic sign-in code')).catch(()=>{throw Error('The deactivation code field was unavailable.');});await Promise.all([page.waitForURL(/\/login\?/),security.getByRole('button',{name:'Verify current email'}).click()]);
   await expect(page).toHaveURL(/\/login\?/);await expect(page.getByText('Account deactivated. Your history is retained.',{exact:true})).toBeVisible();
   const closed=checked(await service.from('profiles').select('active,account_deactivated_at').eq('id',actor.id).single());expect(closed.active).toBe(false);expect(closed.account_deactivated_at).toBeTruthy();

@@ -40,11 +40,11 @@ export function parseBusinessTrackingList(value:unknown,workspaceId:string):Busi
   ||data.shipments.some(value=>!strings(row(value),['id','code','origin','destination','cargo','status','driver','truck','updatedAt'])))throw invalid();
  return data as unknown as BusinessTrackingList;
 }
-export type BusinessTrackingDetail=VisitorShipment&{workspaceId:string;isOwner:boolean;canViewLocation:boolean;ownerActionsRequireVerification:true};
+export type BusinessTrackingDetail=VisitorShipment&{workspaceId:string;isOwner:boolean;canViewLocation:boolean};
 export function parseBusinessTrackingDetail(value:unknown,workspaceId:string,shipmentId:string):BusinessTrackingDetail{
  const data=row(value),shipment=parseVisitorShipment(data);
  if(data.workspaceId!==workspaceId||shipment.id!==shipmentId||typeof data.isOwner!=='boolean'||typeof data.canViewLocation!=='boolean'
-  ||data.ownerActionsRequireVerification!==true||shipment.canApprove||shipment.canReview||shipment.canShare||shipment.events.some(event=>event.hasProof)
+  ||!data.isOwner&&(shipment.canApprove||shipment.canReview||shipment.canShare||shipment.events.some(event=>event.hasProof)||shipment.review!==null)
   ||data.canViewLocation===false&&shipment.location!==null)throw invalid();
  return data as unknown as BusinessTrackingDetail;
 }
@@ -53,6 +53,16 @@ export async function loadBusinessCapacity(workspaceId:string,signal:AbortSignal
  do{
   const params=discoveryParams('',filters);if(cursor)params.set('cursor',cursor);
   const page=parseCapacityPage(await request(`/api/business-workspaces/${encodeURIComponent(workspaceId)}/capacity?${params}`));
+  if(signal.aborted)return;
+  for(const item of page.items)items.set(item.id,item);onPage([...items.values()]);
+  if(!page.hasMore)return;cursor=page.nextCursor!;if(seen.has(cursor))throw invalid();seen.add(cursor);
+ }while(!signal.aborted);
+}
+export async function loadAccountCapacity(signal:AbortSignal,onPage:(items:CapacitySignal[])=>void,request:(path:string)=>Promise<unknown>,filters:TruckFilters={}):Promise<void>{
+ let cursor='';const seen=new Set<string>(),items=new Map<string,CapacitySignal>();
+ do{
+  const params=discoveryParams('',filters);if(cursor)params.set('cursor',cursor);
+  const page=parseCapacityPage(await request(`/api/mobile/account-capacity?${params}`));
   if(signal.aborted)return;
   for(const item of page.items)items.set(item.id,item);onPage([...items.values()]);
   if(!page.hasMore)return;cursor=page.nextCursor!;if(seen.has(cursor))throw invalid();seen.add(cursor);

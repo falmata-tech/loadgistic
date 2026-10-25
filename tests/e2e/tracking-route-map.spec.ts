@@ -40,6 +40,7 @@ test('Tracking keeps the saved route on its map without a location and hides ter
     checked(await service.from('provider_shipment_events').insert({shipment_id:shipmentId,status:'LOADING',event_type:'LOCATION',location_area:'Synthetic reported area',location_lat:9.02,location_lng:38.76,location_precision_km:10,location_source:'DEVICE_OBSCURED',created_by:actor.id}));
     await page.reload({waitUntil:'domcontentloaded'});
     await expect(map.locator('.tracking-truck-marker')).toHaveCount(1);await expect(map.locator('[data-location-radius-km="10"]')).toBeVisible();
+    await expect(map.locator('.tracking-approximate-circle')).toHaveAttribute('stroke','#7846a7');
     await map.getByRole('button',{name:'Open vehicle details'}).click();
     const truck=page.getByRole('dialog',{name:'Vehicle and driver'});await expect(truck).toBeVisible();
     await expect(truck).toContainText('Toyota');await expect(truck).not.toContainText(`TEST-${actor.suffix}`);

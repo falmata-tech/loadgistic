@@ -17,10 +17,11 @@ test('capacity networks lead About and both map choices in all three supported l
     await expect(page.locator('.market-introduction p')).toHaveText(translated(capacityIntroduction.body));
     const choices=page.locator('.capacity-view-choice');
     await expect(choices.getByRole('link',{name:translated('Open to the public'),exact:true})).toHaveAttribute('aria-current','page');
-    await choices.getByRole('link',{name:translated('Privately shared with you'),exact:true}).click();
-    await expect(page).toHaveURL(/view=private/);
-    await expect(page.locator('.market-introduction h1')).toHaveText(translated(capacityIntroduction.title));
-    await expect(page.locator('.capacity-view-choice a[aria-current=page]')).toHaveText(translated('Privately shared with you'));
+    await choices.getByRole('link',{name:translated('Shared with you'),exact:true}).click();
+    await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
+    await expect(page.getByRole('heading',{name:translated('Sign in'),exact:true})).toBeVisible();
+    await expect(page.getByText(translated('Sign in to see vehicles shared with your account.'),{exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:translated('Sign up'),exact:true})).toHaveAttribute('href','/signup');
     await page.goto('/about');
     await expect(page.locator('main h1')).toHaveText(translated(platformAbout.title));
     for(const audience of platformAbout.audiences){
@@ -32,8 +33,14 @@ test('capacity networks lead About and both map choices in all three supported l
     }
     await page.getByRole('tab',{name:translated(platformAbout.audiences[0].label),exact:true}).click();
     await expect(page.getByRole('link',{name:translated('Account and data deletion'),exact:true})).toHaveAttribute('href','/delete-account');
+    const footer=page.locator('main footer');
+    await expect(footer).toContainText(translated('Jigjiga, Somali Region, Ethiopia'));
+    await expect(footer).toContainText(`© ${new Date().getFullYear()} MarketVision Technology`);
+    await expect(footer.getByRole('link',{name:'MarketVision Technology'})).toHaveAttribute('href','https://marketvisiontech.com/');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`about-${locale}.png`)});
+    await footer.getByRole('link',{name:'MarketVision Technology'}).scrollIntoViewIfNeeded();
+    await page.screenshot({path:info.outputPath(`about-footer-${locale}.png`)});
   }
 });
 
@@ -74,7 +81,11 @@ test('native About stays audience-led in three supported languages and preserves
     }
     await page.getByRole('button',{name:translated(catalog,platformAbout.audiences[0].label),exact:true}).click();
     await expect(page.getByRole('link',{name:translated(catalog,'App review access'),exact:true})).toHaveCount(0);
+    await expect(page.getByText(translated(catalog,'Jigjiga, Somali Region, Ethiopia'),{exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:'MarketVision Technology'})).toBeVisible();
     await page.screenshot({path:info.outputPath(`native-about-${locale}.png`)});
+    await page.getByRole('link',{name:'MarketVision Technology'}).scrollIntoViewIfNeeded();
+    await page.screenshot({path:info.outputPath(`native-about-footer-${locale}.png`)});
     previous=catalog;
   }
 });

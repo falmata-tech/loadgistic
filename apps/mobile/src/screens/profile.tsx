@@ -1,6 +1,7 @@
 import { FilePicker, PrivateFile, uploadBody, useFileSelection } from '../components/private-file';
 import { useEffect,useRef, useState } from 'react';
-import { Modal, Switch, Text, View } from 'react-native';
+import { Modal, Text, View } from 'react-native';
+import {Switch} from '../components/branded-switch';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useAccount } from '../session/provider';

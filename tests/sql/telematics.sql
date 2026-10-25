@@ -20,22 +20,25 @@ declare owner_id uuid:=gen_random_uuid();other_owner uuid:=gen_random_uuid();emp
  digest text:=encode(extensions.digest(gen_random_uuid()::text,'sha256'),'hex');real_digest text:=encode(extensions.digest(gen_random_uuid()::text,'sha256'),'hex');
  truck uuid;other_truck uuid;replacement uuid;device uuid;real_device uuid;revision text;selection_revision text;capacity_id uuid;
  result jsonb;command jsonb;fix jsonb;rows jsonb;job jsonb;step jsonb;engine_command jsonb;published jsonb;old_assignment uuid;
- stamp timestamptz;nonce uuid:=gen_random_uuid();location_time timestamptz;
+ stamp timestamptz;nonce uuid:=gen_random_uuid();location_time timestamptz;broker_actor uuid:=gen_random_uuid();broker_workspace uuid;connection_id uuid;
 begin
  insert into auth.users(id,email,email_confirmed_at,last_sign_in_at,raw_app_meta_data,raw_user_meta_data) values
   (owner_id,'falmatad97+gps-owner-'||owner_id||'@gmail.com',now(),now(),'{"fixture_source":"loadgistic"}','{"fixture_key":"user-transporter"}'),
   (other_owner,'falmatad97+gps-other-'||other_owner||'@gmail.com',now(),now(),'{"fixture_source":"loadgistic"}','{"fixture_key":"user-transporter"}'),
   (employee,'gps-employee-'||employee||'@loadgistic.local',now(),now(),'{"fixture_source":"loadgistic"}','{}'),
-  (admin_id,'gps-admin-'||admin_id||'@loadgistic.local',now(),now(),'{"fixture_source":"loadgistic"}','{}');
+  (admin_id,'gps-admin-'||admin_id||'@loadgistic.local',now(),now(),'{"fixture_source":"loadgistic"}','{}'),
+  (broker_actor,'gps-broker-'||broker_actor||'@example.invalid',now(),now(),'{}','{}');
  update profiles set role='TRANSPORTER',active=true,drives_truck=true where id=owner_id;
  update profiles set role='TRANSPORTER',active=true,drives_truck=false where id=other_owner;
  update profiles set role='ADMIN',active=true where id=admin_id;
+ update profiles set role='SHIPPER',active=true where id=broker_actor;
  insert into organizations(id,name,handle,type,city,city_place_ref,public_visibility) values
   (org_id,'Synthetic GPS owner','gps-'||org_id,'TRANSPORT_COMPANY','Addis Ababa',(select id from place_catalog where normalized_name='addis ababa' limit 1),'PUBLIC'),
   (other_org,'Synthetic other GPS owner','gps-'||other_org,'TRANSPORT_COMPANY','Addis Ababa',(select id from place_catalog where normalized_name='addis ababa' limit 1),'PUBLIC');
  insert into organization_members(user_id,organization_id,membership_role) values(owner_id,org_id,'OWNER'),(other_owner,other_org,'OWNER');
  insert into company_pages(organization_id,published,base_region_code,contact_phone,show_contact_phone)
  values(org_id,true,'ADDIS_ABABA','+251900000151',true);
+ broker_workspace:=(business_workspace_create(broker_actor,jsonb_build_object('name','GPS broker','handle','gps-broker-'||left(broker_actor::text,12),'kind','BROKER'))->>'id')::uuid;
  perform accept_content_policy(owner_id,'2026-10-09');perform accept_content_policy(other_owner,'2026-10-09');
  perform fleet_accept_invitation(employee,fleet_invite_driver(owner_id,jsonb_build_object('email','gps-employee-'||employee||'@loadgistic.local','name','Synthetic GPS employee','phone','+251900000152')));
  truck:=(create_provider_vehicle(owner_id,'{"make":"Synthetic","model":"GPS truck","plate":"GPS-151-ONE","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;
@@ -91,14 +94,15 @@ begin
   or exists(select 1 from capacities where id=capacity_id and location_lat=9.031 and location_lng=38.748) then raise exception 'PUBLIC_GPS_PRIVACY_BROKEN';end if;
  select item into rows from jsonb_array_elements(telematics_workspace(owner_id,1)->'devices') item where item->>'id'=device::text;
  if rows->'position'->>'alarm' is distinct from 'vibration' then raise exception 'PRIVATE_ALARM_MISSING';end if;
- perform grant_private_capacity_access(owner_id,truck,'gps-recipient@example.invalid',repeat('d',64));
- select payload into rows from private_capacity_filtered_page('EMAIL',repeat('d',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text;
+ connection_id:=(request_account_connection(owner_id,'BUSINESS',broker_workspace)->>'id')::uuid;
+ perform decide_account_connection(broker_actor,connection_id,'ACCEPT');
+ perform grant_account_capacity_access(owner_id,connection_id,truck);
+ select payload into rows from account_capacity_filtered_page(broker_actor,repeat('d',64),null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text;
  if rows is null or rows->>'location_source' is distinct from 'TELEMATICS' or rows::text like '%990000000000151%'
   or rows ? 'manualPoint' or rows ? 'speedKph' or rows ? 'attributes'
   or(rows->>'location_lat'='9.031' and rows->>'location_lng'='38.748') then raise exception 'RECIPIENT_GPS_PROVENANCE_OR_PRIVACY';end if;
- select payload into rows from capacity_search_private_rows('EMAIL',repeat('d',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text;
- if rows is null or rows->>'location_source' is distinct from 'TELEMATICS' then raise exception 'RECIPIENT_SEARCH_GPS_SOURCE_MISSING';end if;
- if exists(select 1 from private_capacity_filtered_page('EMAIL',repeat('e',64),null,null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text)
+ if (account_capacity_search_results(broker_actor,repeat('d',64),'{}',1)->>'total')::integer<1 then raise exception 'RECIPIENT_SEARCH_GPS_SOURCE_MISSING';end if;
+ if exists(select 1 from account_capacity_filtered_page(other_owner,repeat('e',64),null,null,100,'{}') r where r.payload->>'vehicle_id'=truck::text)
   then raise exception 'UNAUTHORIZED_GPS_RECIPIENT_VISIBLE';end if;
  perform pg_temp.gps_denied(format('select telematics_workspace(%L,1)',employee),'FORBIDDEN');
  if jsonb_array_length(telematics_workspace(other_owner,1)->'devices')<>0 then raise exception 'CROSS_OWNER_DEVICE_VISIBLE';end if;

@@ -15,7 +15,7 @@ export default async function AddFleetTruckPage({searchParams}:{searchParams:Pro
   const query=await searchParams;
   const heading='Add vehicle';
   return <div className="page vehicle-registration-page">
-    <PageHeader icon={Truck} title={<Text message={heading}/>} subtitle={<Text message="New vehicles start as drafts."/>} action={<Link className="button secondary small" href="/app/fleet"><ArrowLeft aria-hidden="true"/><Text message="My Fleet"/></Link>}/>
+    <PageHeader icon={Truck} title={<Text message={heading}/>} subtitle={<Text message="New vehicles start as drafts."/>} action={<Link className="button secondary small" href="/app/home/vehicles"><ArrowLeft aria-hidden="true"/><Text message="Manage vehicles"/></Link>}/>
     <Flash error={query.error} success={query.success}/>
     <form action="/api/fleet/vehicles" method="post" className="vehicle-registration-card">
       <header><span><Truck aria-hidden="true"/></span><div><h2><Text message="Vehicle details"/></h2><p><Text message="Its Loadgistic vehicle number is created automatically."/></p></div></header>
@@ -28,7 +28,7 @@ export default async function AddFleetTruckPage({searchParams}:{searchParams:Pro
       </div>
       <aside className="vehicle-registration-preview"><span><ShieldCheck aria-hidden="true"/><span><strong><Text message="Registration is not verification"/></strong><small><Text message="Add ownership or authorization documents from Verification after saving."/></small></span></span></aside>
       <p className="meta"><Text message="Assign a driver, then go live. Document review adds verified badges."/></p>
-      <div className="vehicle-registration-actions"><Link className="button secondary" href="/app/fleet"><Text message="Cancel"/></Link><button className="button success"><Save aria-hidden="true"/><Text message={heading}/></button></div>
+      <div className="vehicle-registration-actions"><Link className="button secondary" href="/app/home/vehicles"><Text message="Cancel"/></Link><button className="button success"><Save aria-hidden="true"/><Text message={heading}/></button></div>
     </form>
   </div>;
 }

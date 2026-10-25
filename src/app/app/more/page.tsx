@@ -22,7 +22,7 @@ import styles from '@/components/account-workspace.module.css';
 
 const roleLabels:Record<string,string>={TRANSPORTER:'Transport Provider',DRIVER:'Transport Provider',ADMIN:'Platform administrator'};
 function accountRoleLabel(user:Awaited<ReturnType<typeof requireUser>>){
-  return user.provider_operating_model==='COMPANY_DRIVER'?'Company driver':roleLabels[user.role]||user.role;
+  return user.provider_operating_model==='COMPANY_DRIVER'?'Fleet driver':roleLabels[user.role]||user.role;
 }
 function Fact({label,children}:{label:string;children:React.ReactNode}){
   return <div className={styles.fact}><dt><Text message={label}/></dt><dd>{children||<Text message="Not set"/>}</dd></div>;

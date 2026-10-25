@@ -21,7 +21,7 @@ function route(path,authorized=true,failure=null){
  const exports={};new Function('require','exports',compiled)(name=>{assert.ok(name in imports);return imports[name];},exports);
  return{calls,get:query=>exports.GET({url:`http://127.0.0.1/test?${query}`,headers:{get:()=>null}})};
 }
-for(const path of ['../src/app/api/public/capacity/route.ts','../src/app/api/shared-capacity/route.ts','../src/app/api/capacity-search/route.ts']){
+for(const path of ['../src/app/api/public/capacity/route.ts','../src/app/api/capacity-search/route.ts']){
  test(`${path}: canonical group parsing occurs once and repeated/unknown selections never call persistence`,async()=>{
   const api=route(path);
   const accepted=await api.get('status=PARTIAL,EMPTY&loadType=PTL,FTL&vehicleCategory=Pickup+truck,Cargo+van&locationSource=MOBILE,GPS,MOBILE');
@@ -32,12 +32,12 @@ for(const path of ['../src/app/api/public/capacity/route.ts','../src/app/api/sha
   assert.equal(api.calls.length,1);
  });
 }
-test('invalid filter input cannot bypass the existing private authentication boundary',async()=>{
- for(const path of ['../src/app/api/shared-capacity/route.ts']){
-  const api=route(path,false);assert.equal((await api.get('status=EMPTY&status=PARTIAL')).status,401);assert.equal(api.calls.length,0);
- }
+test('retired guest Capacity cannot be reopened by valid or invalid filters',async()=>{
+ const oldMap=route('../src/app/api/shared-capacity/route.ts');
+ for(const query of ['status=EMPTY','status=EMPTY&status=PARTIAL'])assert.equal((await oldMap.get(query)).status,410);
+ assert.equal(oldMap.calls.length,0);
  const search=route('../src/app/api/capacity-search/route.ts',false);
- assert.equal((await search.get('view=private&status=EMPTY&status=PARTIAL')).status,401);assert.equal(search.calls.length,0);
+ assert.equal((await search.get('view=private&status=EMPTY&status=PARTIAL')).status,410);assert.equal(search.calls.length,0);
  assert.equal((await search.get('view=loadgistic&status=EMPTY&status=PARTIAL')).status,410);assert.equal(search.calls.length,0);
 });
 test('public map repository failure is a non-cacheable503 without internal cause or fake empty results',async()=>{

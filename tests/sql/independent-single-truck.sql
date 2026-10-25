@@ -28,7 +28,6 @@ begin
  old_truck:=(public.create_provider_vehicle(actor,command)->>'id')::uuid;
  perform public.update_fleet_driver_access(actor,jsonb_build_object('driver_user_id',actor,'vehicle_id',old_truck,'can_manage_capacity',true,'can_manage_tracking',true));
  perform public.refresh_provider_capacity_location(actor,jsonb_build_object('vehicle_id',old_truck,'approximate_lat',9.03,'approximate_lng',38.74,'location_precision_km',20));
- perform public.grant_private_capacity_access(actor,old_truck,'old-contact@example.test',repeat('8',64));
  if not exists(select 1 from public.vehicles where id=old_truck and active and use_basis='OWNED') then raise exception 'TRUCK_USE_BASIS_NOT_SAVED';end if;
  perform public.update_provider_vehicle_details(actor,command||jsonb_build_object('vehicle_id',old_truck,'use_basis','PERMISSION'));
  if not exists(select 1 from public.vehicles where id=old_truck and active and use_basis='PERMISSION') then raise exception 'TRUCK_USE_BASIS_EDIT_NOT_SAVED';end if;
@@ -83,7 +82,7 @@ begin
   or exists(select 1 from public.capacity_access_grants where vehicle_id=new_truck)
   or exists(select 1 from public.vehicle_driver_locations where vehicle_id=new_truck) then raise exception 'OLD_TRUCK_DATA_TRANSFERRED';end if;
  if not exists(select 1 from public.vehicle_driver_locations where vehicle_id=old_truck)
-  or not exists(select 1 from public.capacity_access_grants where vehicle_id=old_truck) then raise exception 'OLD_TRUCK_PRIVATE_HISTORY_REMOVED';end if;
+  or exists(select 1 from public.capacity_access_grants where vehicle_id=old_truck and audience_type='EMAIL') then raise exception 'OLD_TRUCK_LOCATION_OR_RETIRED_EMAIL_ACCESS_CHANGED';end if;
  if not exists(select 1 from public.verification_requests where id=proof_id and subject_id=old_truck and status='APPROVED') or
   not exists(select 1 from public.provider_shipments where id=shipment and assigned_vehicle_id=old_truck) then raise exception 'OLD_TRUCK_HISTORY_CHANGED';end if;
  if public.managed_verification_file(actor,proof_id) is null or public.managed_verification_file(other_actor,proof_id) is not null then raise exception 'HISTORICAL_DOCUMENT_PRIVACY_CHANGED';end if;

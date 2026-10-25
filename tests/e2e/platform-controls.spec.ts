@@ -19,15 +19,15 @@ test('Featured automatic selection can be switched off and prepared without losi
   await page.getByRole('button',{name:'Selection settings',exact:true}).click();
   const controls=page.getByRole('region',{name:'Featured selection settings'});
   const originalMode=await controls.getByLabel('Selection',{exact:true}).inputValue();
-  const originalCount=await controls.getByLabel('Maximum Drivers per day').inputValue();
+  const originalCount=await controls.getByLabel('Maximum Transport Providers per day').inputValue();
   try{
     await controls.getByLabel('Selection',{exact:true}).selectOption('MANUAL');
     await controls.getByRole('button',{name:'Save selection settings'}).click();
-    await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
+    await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible({timeout:30000});
     await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toHaveCount(0);
     if(!await page.getByRole('dialog',{name:'Selection settings',exact:true}).count())await page.getByRole('button',{name:'Selection settings',exact:true}).click();
     await controls.getByLabel('Selection',{exact:true}).selectOption('AUTO');
-    await controls.getByLabel('Maximum Drivers per day').fill(originalCount);
+    await controls.getByLabel('Maximum Transport Providers per day').fill(originalCount);
     await controls.getByRole('button',{name:'Save selection settings'}).click();
     await expect(page.getByRole('button',{name:'Prepare upcoming days'})).toBeVisible();
     await page.getByRole('button',{name:'Prepare upcoming days'}).click();
@@ -43,7 +43,7 @@ test('Featured automatic selection can be switched off and prepared without losi
     const trucks=page.locator('.featured-truck-tile');
     await expect(trucks.first()).toBeVisible();
     expect(await trucks.count()).toBeLessThanOrEqual(8);
-    await expect(trucks.first().locator('.featured-card-details > small').first()).toHaveText('Driver');
+    await expect(trucks.first().locator('.featured-card-details > small').first()).toHaveText('Transport Provider');
     await trucks.first().click();
     await expect(page.locator('.featured-truck-dialog')).toBeVisible();
     await expect(page.locator('.featured-truck-dialog').getByRole('link',{name:'Transporter profile'})).toBeVisible();
@@ -52,9 +52,9 @@ test('Featured automatic selection can be switched off and prepared without losi
     await page.getByRole('button',{name:'Selection settings',exact:true}).click();
     const restore=page.getByRole('region',{name:'Featured selection settings'});
     await restore.getByLabel('Selection',{exact:true}).selectOption(originalMode);
-    await restore.getByLabel('Maximum Drivers per day').fill(originalCount);
+    await restore.getByLabel('Maximum Transport Providers per day').fill(originalCount);
     await restore.getByRole('button',{name:'Save selection settings'}).click();
-    await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible();
+    await expect(page.getByText('Daily selection settings saved.',{exact:true})).toBeVisible({timeout:30000});
   }
 });
 

@@ -14,3 +14,16 @@ export function providerWorkspaceCapabilities(user) {
     ? user.drives_truck : user?.role === 'DRIVER');
   return { ownsProviderAccount, canManageFleet, currentDriverId, currentDrivenVehicleId, drivesTruck };
 }
+
+export function providerHomeTabs({drivesTruck,canManageFleet}) {
+  return [
+    ...(drivesTruck ? [{id:'capacity',label:'My capacity'}] : []),
+    ...(canManageFleet ? [{id:'vehicles',label:'Manage vehicles'}] : []),
+    {id:'market',label:'Public capacity'}
+  ];
+}
+
+export function providerHomeTab(capabilities,requested) {
+  const tabs=providerHomeTabs(capabilities);
+  return tabs.find(tab=>tab.id===requested)?.id||tabs[0].id;
+}

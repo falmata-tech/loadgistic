@@ -23,6 +23,11 @@ And only Show trucks on map applies that profile's identity to the truck map\
 And that explicit action retains the map's existing truck-filter choices\
 And changing map filters does not restart, clear or restrict an otherwise unchanged profile search.
 
+Given an older Capacity link contains a transporter `q` query
+When the page opens
+Then that query initializes the independent profile search and its results,
+while the vehicle map still loads without using `q` as a vehicle filter.
+
 Given JavaScript is available when applying the existing truck-filter GET form\
 Then client navigation submits the same form fields and action through the existing router while preserving profile-search state\
 And server validation, private authorization, multi-selection values and the map reset key remain unchanged\

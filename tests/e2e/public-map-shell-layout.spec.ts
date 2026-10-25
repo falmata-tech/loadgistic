@@ -1,13 +1,7 @@
-import {auditIdentity} from './audit-helpers';
 import {openCapacityFilters} from './capacity-drawer-helper';
 import {test,expect} from './browser-test';
-import nextEnv from '@next/env';
-import {createClient} from '@supabase/supabase-js';
-import {randomUUID} from 'node:crypto';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
-import {grantPrivateCapacityAccess,listPrivateCapacityNetwork,revokePrivateCapacityAccess} from '../../src/lib/private-capacity.js';
-import {localMailpitNumericCode} from './mailpit-helper';
 
 async function verifyShell(page:any,testInfo:any,surface:string){
   await expect(page.locator('.leaflet-container')).toBeVisible({timeout:30_000});
@@ -66,7 +60,7 @@ async function verifyShell(page:any,testInfo:any,surface:string){
       await page.screenshot({path:path.join(captures,`${surface}-map-${width}.png`),scale:'css'});
     }
   }
-  const nav=page.getByRole('navigation',{name:phone?'Public mobile navigation':'Public workspace navigation',exact:true});
+  const nav=page.getByRole('navigation',{name:phone?'Mobile navigation':'Site navigation',exact:true});
   await Promise.all([page.waitForURL(/\/about$/,{waitUntil:'domcontentloaded'}),nav.getByRole('link',{name:'About',exact:true}).click()]);
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.locator('main.public-market-workspace')).toHaveCount(0);
@@ -78,35 +72,9 @@ test('map and search reserve navigation space at every shell breakpoint',async({
   await verifyShell(page,testInfo,'open');
 });
 
-test('email-unlocked private map reserves navigation and logout space',async({page}:{page:any},testInfo:any)=>{
-  test.setTimeout(120_000);
-  nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
-  const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
-  const target=new URL(endpoint);
-  if(!['127.0.0.1','localhost'].includes(target.hostname)||target.port!=='55321')throw new Error('LOCAL_LOADGISTIC_REQUIRED');
-  const service=createClient(endpoint,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
-  const actor=await auditIdentity(service,'transporter@loadgistic.local');
-  const vehicles=await listPrivateCapacityNetwork(actor);
-  expect(vehicles.length).toBeGreaterThan(0);
-  const email=`shell-${randomUUID()}@example.test`;
-  await grantPrivateCapacityAccess(actor,{name:'Synthetic recipient',vehicleId:vehicles[0].id,email});
-  try{
-    await page.goto('/shared-capacity');
-    await page.getByLabel('Email',{exact:true}).fill(email);
-    const requestedAt=Date.now();
-    await page.getByRole('button',{name:'Continue with email'}).click();
-    await expect(page.getByLabel('6-digit email code')).toBeVisible({timeout:30_000});
-    await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Private capacity code'));
-    await page.getByRole('button',{name:'View shared signals'}).click();
-    await expect(page.getByRole('region',{name:'Privately shared vehicle capacity'})).toBeVisible({timeout:30_000});
-    await verifyShell(page,testInfo,'private');
-    await page.goto('/shared-capacity');
-    await page.getByRole('button',{name:'Log out',exact:true}).click();
-    await expect(page.getByRole('button',{name:'Continue with email'})).toBeVisible({timeout:30_000});
-  }finally{
-    const network=await listPrivateCapacityNetwork(actor);
-    for(const vehicle of network)for(const grant of vehicle.grants){
-      if(grant.recipient_email===email&&!grant.revoked_at)await revokePrivateCapacityAccess(actor,grant.id);
-    }
-  }
+test('retired email-only private map leads to account sign-in',async({page}:{page:any})=>{
+ await page.goto('/shared-capacity');
+ await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
+ await expect(page.getByLabel('6-digit email code')).toHaveCount(0);
+ expect((await page.request.get('/api/shared-capacity')).status()).toBe(410);
 });

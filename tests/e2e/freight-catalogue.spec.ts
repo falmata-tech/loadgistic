@@ -12,7 +12,7 @@ test('public courier filters and guest workspace entry retain their destinations
  await expect(config.getByRole('checkbox',{name:'Cargo van',exact:true})).toHaveCount(1);
  await page.screenshot({path:info.outputPath('freight-filter.png')});
  await drawer.getByRole('button',{name:'Close filters'}).click();
- const login=page.getByRole('link',{name:'My workspace',exact:true}).filter({visible:true});
+ const login=page.getByTestId('public-session-action').getByRole('link',{name:'Sign in',exact:true});
  await expect(login).toHaveAttribute('href','/login');await login.click();
  await expect(page.getByTestId('email-code-request-form')).toBeVisible();
  await page.screenshot({path:info.outputPath('transporter-login.png')});
@@ -38,12 +38,14 @@ test('provider registration retains courier choices and previews the container f
  }finally{await logout();}
 });
 
-test('Featured shows the mixed Sunday theme alongside the unchanged weekdays',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('Featured introduces distinct provider accounts without vehicle-type days',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);await page.goto('/featured');
- await expect(page.locator('.featured-provider-tile')).toHaveCount(8);
- await page.locator('.regional-expo-week-panel summary').click();
- await expect(page.getByRole('region',{name:'Weekly featured vehicle types'}).getByText('Mixed',{exact:true})).toBeVisible();
- await expect(page.getByRole('region',{name:'Weekly featured vehicle types'}).getByText('Vans & couriers',{exact:true})).toBeVisible();
+ const providers=page.locator('.featured-provider-tile');await expect.poll(()=>providers.count()).toBeGreaterThan(0);
+ expect(await providers.count()).toBeLessThanOrEqual(8);
+ const labels=await providers.evaluateAll(elements=>elements.map(element=>element.getAttribute('aria-label')));
+ expect(labels.every(label=>label?.startsWith('Featured account '))).toBe(true);
+ expect(new Set(labels).size).toBe(labels.length);
+ await expect(page.locator('.regional-expo-week-panel')).toHaveCount(0);
  await page.screenshot({path:info.outputPath('featured-freight.png'),fullPage:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

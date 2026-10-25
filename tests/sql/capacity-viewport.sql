@@ -5,7 +5,7 @@ declare item jsonb; route jsonb:='[{"lat":9,"lng":38,"label":"A"},{"lat":10,"lng
  area jsonb:='[{"lat":8,"lng":37,"label":"A"},{"lat":8,"lng":40,"label":"B"},{"lat":11,"lng":40,"label":"C"},{"lat":11,"lng":37,"label":"D"}]';
  actor uuid; provider uuid; source public.capacities%rowtype;
  synthetic_actor uuid;synthetic_provider uuid;synthetic_truck uuid;actors uuid[]:='{}';providers uuid[]:='{}';trucks uuid[]:='{}';
- recipient text:=repeat('c',64); chosen uuid; count_rows integer; result jsonb; n integer; before_count bigint; after_count bigint; capacity_columns text;
+ broker_actor uuid:=gen_random_uuid();broker_workspace uuid;chosen uuid; count_rows integer; result jsonb; n integer; before_count bigint; after_count bigint; capacity_columns text;
 begin
  item:=jsonb_build_object('id',gen_random_uuid(),'status','EMPTY','provider_handle','audit','cargo_configuration','Pickup truck',
  'availability_geometry','ROUTE','current_route_points',route,'capacity_area_boundary','[]'::jsonb,'recurring_corridors',jsonb_build_array(jsonb_build_object('geometry','RADIUS','area_boundary',area)),
@@ -24,6 +24,10 @@ begin
  -- The managed verifier can leave the source truck Partial or Off Duty. Its
  -- current status is irrelevant: every synthetic copy below is explicitly Empty.
  select * into strict source from capacities where provider_profile_id=provider order by updated_at desc limit 1;
+ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+ values(broker_actor,'viewport-broker-'||broker_actor||'@example.invalid',now(),'{}');
+ update public.profiles set role='SHIPPER',active=true where id=broker_actor;
+ broker_workspace:=(public.business_workspace_create(broker_actor,jsonb_build_object('name','Viewport broker','handle','viewport-broker-'||left(broker_actor::text,12),'kind','BROKER'))->>'id')::uuid;
  select string_agg(quote_ident(attname),',' order by attnum) into capacity_columns from pg_attribute where attrelid='public.capacities'::regclass and attnum>0 and not attisdropped and attgenerated='';
  for n in 1..1002 loop
   -- Each synthetic provider uses its one document-free Live slot and explicitly
@@ -40,7 +44,8 @@ begin
   perform update_fleet_driver_access(synthetic_actor,jsonb_build_object('driver_user_id',synthetic_actor,'vehicle_id',synthetic_truck,'can_manage_capacity',true,'can_manage_tracking',true));
   perform set_provider_vehicle_publication(synthetic_actor,synthetic_truck,'LIVE');
   perform refresh_provider_capacity_location(synthetic_actor,jsonb_build_object('vehicle_id',synthetic_truck,'approximate_lat',case when n=1002 then 14 else 9 end,'approximate_lng',case when n=1002 then 47 else 38 end,'location_precision_km',20));
-  perform grant_private_capacity_access(synthetic_actor,synthetic_truck,'spatial@example.test',recipient);
+  insert into public.business_capacity_grants(vehicle_id,workspace_id,created_by)
+  values(synthetic_truck,broker_workspace,synthetic_actor);
   perform set_provider_capacity_sharing(synthetic_actor,synthetic_truck,'PRIVATE');
   actors[n]:=synthetic_actor;providers[n]:=synthetic_provider;trucks[n]:=synthetic_truck;
  end loop;
@@ -59,14 +64,18 @@ begin
   execute format('insert into capacities(%s) select %s from jsonb_populate_record(null::public.capacities,$1)',capacity_columns,capacity_columns) using to_jsonb(source);
   if n=1002 then chosen:=source.id;end if;
  end loop;
- select count(*),min(payload->>'id')::uuid into count_rows,chosen from private_capacity_filtered_page('EMAIL',recipient,null,null,null,14,'{"near_lat":14,"near_lng":47,"near_radius_km":5}'::jsonb);
+ select count(*),min(payload->>'id')::uuid into count_rows,chosen from business_capacity_filtered_page(broker_actor,broker_workspace,null,null,14,'{"near_lat":14,"near_lng":47,"near_radius_km":5}'::jsonb);
  if count_rows<>1 or chosen is distinct from(select c.id from capacities c where c.vehicle_id=trucks[1002] order by c.updated_at desc,c.id desc limit 1) then raise exception 'MATCH_AFTER_1000_NOT_REACHABLE';end if;
- select count(*) into count_rows from private_capacity_filtered_page('EMAIL',repeat('d',64),null,null,null,14,'{}');
- if count_rows<>0 then raise exception 'WRONG_RECIPIENT_VISIBLE';end if;
+ begin
+  perform 1 from business_capacity_filtered_page(actor,broker_workspace,null,null,14,'{}');
+  raise exception 'WRONG_RECIPIENT_VISIBLE';
+ exception when others then
+  if sqlerrm<>'BUSINESS_FORBIDDEN' then raise;end if;
+ end;
  -- Platform Brokerage has no private Capacity audience after its retirement.
  -- Require the exact denial; an empty result could hide a restored access path.
  begin
-  perform private_capacity_filtered_page('LOADGISTIC',recipient,actor,null,null,14,'{}');
+  perform private_capacity_filtered_page('LOADGISTIC',repeat('0',64),actor,null,null,14,'{}');
   raise exception 'RETIRED_PLATFORM_AUDIENCE_ACCEPTED';
  exception when raise_exception then
   if sqlerrm<>'PLATFORM_CAPACITY_RETIRED' then raise;end if;

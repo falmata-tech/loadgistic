@@ -27,7 +27,8 @@ end $predicate$;
 create temporary table multi_fixture(ordinal integer,actor uuid,truck uuid,capacity uuid,status text,configuration text);
 do $projection$
 declare owner_id uuid:=gen_random_uuid();org uuid:=gen_random_uuid();actor uuid;truck uuid;cap uuid;route jsonb;city_ref text;region text;
- handle text:='multi-'||org;query jsonb;first_page jsonb[];second_page jsonb[];total integer;item jsonb;digest text:=repeat('9',64);grant_id uuid;
+ handle text:='multi-'||org;query jsonb;first_page jsonb[];second_page jsonb[];total integer;item jsonb;digest text:=repeat('9',64);grant_id uuid;connection_id uuid;
+ broker_actor uuid:=gen_random_uuid();broker_workspace uuid;
  admin_id uuid;authority_source uuid;context_revision text;setup_capacity uuid;
 begin
  select id into strict admin_id from profiles where active and role='ADMIN' order by id limit 1;
@@ -40,6 +41,10 @@ begin
  insert into organizations(id,name,handle,type,city,city_place_ref) values(org,'Synthetic multi fleet',handle,'TRANSPORT_COMPANY','Synthetic city',city_ref);
  insert into organization_members(organization_id,user_id,membership_role) values(org,owner_id,'OWNER');
  insert into company_pages(organization_id,published,base_region_code,contact_phone,show_contact_phone) values(org,true,region,'+251900000139',true);
+ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
+ values(broker_actor,'multi-broker-'||broker_actor||'@example.invalid',now(),'{}');
+ update profiles set role='SHIPPER',active=true where id=broker_actor;
+ broker_workspace:=(business_workspace_create(broker_actor,jsonb_build_object('name','Multi-filter broker','handle','multi-broker-'||left(broker_actor::text,12),'kind','BROKER'))->>'id')::uuid;
  for ordinal_value in 1..18 loop
   actor:=gen_random_uuid();
   insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values(actor,'multi-driver-'||actor||'@example.test',now(),'{"full_name":"Synthetic multi driver"}');
@@ -102,18 +107,20 @@ begin
  perform pg_temp.assert_multi((select count(*) from capacity_search_public_rows(query||'{"owner_docs":"IDENTITY"}',null,null,14))=18,'REVIEWED_DOCUMENT_POSITIVE_LOST');
  perform pg_temp.assert_multi(not exists(select 1 from capacity_search_public_rows(query||'{"owner_docs":"IDENTITY,BUSINESS_LICENSE"}',null,null,14)),'ALL_DOCUMENT_REQUIREMENTS_WEAKENED');
  select f.truck,f.capacity,f.actor into truck,cap,actor from multi_fixture f where f.ordinal=1;
- grant_id:=(grant_private_capacity_access(owner_id,truck,'multi-viewer@example.test',digest)->>'id')::uuid;
+ connection_id:=(request_account_connection(owner_id,'BUSINESS',broker_workspace)->>'id')::uuid;
+ perform decide_account_connection(broker_actor,connection_id,'ACCEPT');
+ grant_id:=(grant_account_capacity_access(owner_id,connection_id,truck)->>'id')::uuid;
  perform set_provider_capacity_sharing(owner_id,truck,'PRIVATE');
  perform pg_temp.assert_multi(not exists(select 1 from public_capacity_page(query,null,null,100) r where r.payload->>'vehicle_id'=truck::text),'PRIVATE_MULTI_MAP_LEAK');
- perform pg_temp.assert_multi(exists(select 1 from private_capacity_filtered_page('EMAIL',digest,null,null,null,100,query) r where r.payload->>'vehicle_id'=truck::text),'PRIVATE_OR_MATCH_LOST');
- perform pg_temp.assert_multi(exists(select 1 from capacity_search_private_rows('EMAIL',digest,null,null,null,100,query) r where r.payload->>'vehicle_id'=truck::text),'PRIVATE_SEARCH_OR_MATCH_LOST');
- perform pg_temp.assert_multi(exists(select 1 from private_capacity_filtered_page('EMAIL',digest,null,null,null,100,jsonb_build_object('capacity_id',cap,'status','EMPTY','vehicle_category','Mini Box Truck','load_type','FTL'))),'PRIVATE_LEGACY_SCALAR_LOST');
- perform pg_temp.assert_multi(not exists(select 1 from private_capacity_filtered_page('EMAIL',digest,null,null,null,100,query||'{"vehicle_category":"Cargo van"}')),'PRIVATE_GROUP_AND_WEAKENED');
- perform pg_temp.assert_multi(not exists(select 1 from capacity_search_private_rows('EMAIL',digest,null,null,null,100,query||'{"owner_docs":"IDENTITY,BUSINESS_LICENSE"}')),'PRIVATE_ALL_DOCUMENT_REQUIREMENTS_WEAKENED');
- perform pg_temp.assert_multi(not exists(select 1 from private_capacity_filtered_page('EMAIL',digest,null,null,null,100,query||'{"destination_lat":-80,"destination_lng":-160,"destination_radius_km":5}')),'PRIVATE_ENDPOINT_AND_WEAKENED');
- perform pg_temp.assert_multi(not exists(select 1 from private_capacity_filtered_page('EMAIL',repeat('8',64),null,null,null,100,query)),'MISSING_GRANT_EXPOSED');
- perform revoke_private_capacity_access(owner_id,grant_id);
- perform pg_temp.assert_multi(not exists(select 1 from private_capacity_filtered_page('EMAIL',digest,null,null,null,100,query)),'REVOKED_GRANT_EXPOSED');
+ perform pg_temp.assert_multi(exists(select 1 from account_capacity_filtered_page(broker_actor,digest,null,null,100,query) r where r.payload->>'vehicle_id'=truck::text),'PRIVATE_OR_MATCH_LOST');
+ perform pg_temp.assert_multi((account_capacity_search_results(broker_actor,digest,query,1)->>'total')::integer>0,'PRIVATE_SEARCH_OR_MATCH_LOST');
+ perform pg_temp.assert_multi(exists(select 1 from account_capacity_filtered_page(broker_actor,digest,null,null,100,jsonb_build_object('capacity_id',cap,'status','EMPTY','vehicle_category','Mini Box Truck','load_type','FTL'))),'PRIVATE_SCALAR_MATCH_LOST');
+ perform pg_temp.assert_multi(not exists(select 1 from account_capacity_filtered_page(broker_actor,digest,null,null,100,query||'{"vehicle_category":"Cargo van"}')),'PRIVATE_GROUP_AND_WEAKENED');
+ perform pg_temp.assert_multi((account_capacity_search_results(broker_actor,digest,query||'{"owner_docs":"IDENTITY,BUSINESS_LICENSE"}',1)->>'total')::integer=0,'PRIVATE_ALL_DOCUMENT_REQUIREMENTS_WEAKENED');
+ perform pg_temp.assert_multi(not exists(select 1 from account_capacity_filtered_page(broker_actor,digest,null,null,100,query||'{"destination_lat":-80,"destination_lng":-160,"destination_radius_km":5}')),'PRIVATE_ENDPOINT_AND_WEAKENED');
+ perform pg_temp.assert_multi(not exists(select 1 from account_capacity_filtered_page(owner_id,digest,null,null,100,query)),'MISSING_GRANT_EXPOSED');
+ perform revoke_account_capacity_access(owner_id,grant_id,1);
+ perform pg_temp.assert_multi(not exists(select 1 from account_capacity_filtered_page(broker_actor,digest,null,null,100,query)),'REVOKED_GRANT_EXPOSED');
  update profiles set active=false where id=actor;
  perform set_provider_capacity_sharing(owner_id,truck,'PUBLIC');
  perform pg_temp.assert_multi(not exists(select 1 from capacity_search_public_rows(query,null,null,14) r where r.payload->>'vehicle_id'=truck::text),'INACTIVE_DRIVER_MATCHED');

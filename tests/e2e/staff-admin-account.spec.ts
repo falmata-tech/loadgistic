@@ -93,7 +93,7 @@ function staffHarness(page:Page,browser:Browser,info:{outputPath:(name:string)=>
   await app.goto('http://localhost:8084/account',{waitUntil:'domcontentloaded',timeout:90000});await app.getByRole('textbox',{name:'Email',exact:true}).fill(email);
   const requestedAt=Date.now(),requested=app.waitForResponse(r=>r.url().endsWith('/api/mobile/auth/request')&&r.request().method()==='POST');await app.getByRole('button',{name:'Send code',exact:true}).click();expect((await requested).status()).toBe(200);await expect(app.getByRole('textbox',{name:'Sign-in code',exact:true})).toBeVisible({timeout:30000});
   const code=await localMailpitNumericCode(email,requestedAt,['Your Loadgistic signup code','Your Loadgistic sign-in code']);await app.getByRole('textbox',{name:'Sign-in code',exact:true}).fill(code);
-  const result=app.waitForResponse(r=>r.url().endsWith('/api/mobile/auth/verify')&&r.request().method()==='POST');await app.getByRole('button',{name:'Sign in',exact:true}).click();const response=await result;
+  const result=app.waitForResponse(r=>r.url().endsWith('/api/mobile/auth/verify')&&r.request().method()==='POST');await app.getByRole('button',{name:'Sign in',exact:true}).last().click();const response=await result;
   expect(response.status()).toBe(403);const denial=await response.json();expect(denial.error.code).toBe('WEB_ONLY');expect(denial.accessToken).toBeUndefined();expect(denial.refreshToken).toBeUndefined();
   await expect(app.getByText('Use the website for staff access.',{exact:true}).first()).toBeVisible();expect(await app.evaluate(()=>sessionStorage.getItem('loadgistic.account.refresh.v1'))).toBeNull();
   await app.screenshot({path:info.outputPath(`web-only-${id}.png`),mask:[app.getByRole('textbox',{name:'Sign-in code',exact:true})]});

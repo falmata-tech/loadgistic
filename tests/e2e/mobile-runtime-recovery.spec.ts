@@ -8,13 +8,14 @@ const preview='http://localhost:8084';
 
 test('mobile Featured recovers from unavailable and malformed responses without losing navigation',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);let failure:'unavailable'|'empty'|'whitespace'|'malformed'|'healthy'='empty';const errors:string[]=[];
+ const healthy={date:'2026-10-13',headline:'Daily Featured Transport Providers',introduction:'Featured recovery check.',theme:'Transport Providers',published:true,tiktokUrl:'',tiktokStatus:'NOT_SCHEDULED',start:'08:30',end:'12:00',week:[],programme:[{kind:'TRUCK',slot:1,label:'Featured account',startsAt:'2026-10-13T05:30:00Z',endsAt:'2026-10-13T09:00:00Z',timeLabel:'08:30–12:00'}],trucks:[{slot:1,name:'Recovery transporter',handle:'recovery-transporter',driver:'',driverKind:'Transport Provider',portrait:'',truck:'',configuration:'',image:'',place:'Addis Ababa',available:false,fleetSize:1,isCompany:false}],sponsors:[]};
  page.on('pageerror',error=>errors.push(error.name));
  page.on('console',message=>{if(message.type()==='error'&&/Unexpected text node|Text strings must be rendered/.test(message.text()))errors.push('INVALID_NATIVE_TEXT');});
- await page.route('**/api/mobile/public/featured',route=>failure==='healthy'?route.continue():route.fulfill({status:failure==='malformed'?200:503,contentType:'application/json',body:failure==='malformed'?'{}':failure==='unavailable'?JSON.stringify({message:'Please try again.'}):JSON.stringify({error:{code:'UNAVAILABLE',message:failure==='empty'?'':' \t\n '}})}));
+ await page.route('**/api/mobile/public/featured',route=>route.fulfill({status:failure==='healthy'||failure==='malformed'?200:503,contentType:'application/json',body:failure==='healthy'?JSON.stringify(healthy):failure==='malformed'?'{}':failure==='unavailable'?JSON.stringify({message:'Please try again.'}):JSON.stringify({error:{code:'UNAVAILABLE',message:failure==='empty'?'':' \t\n '}})}));
  await page.goto(preview+'/about');await page.getByRole('tab',{name:'Featured',exact:true}).click();
  await expect(page.getByRole('alert')).toHaveText('Please try again.');
  await expect(page.getByRole('button',{name:'Try again',exact:true})).toBeVisible();
- const retry=async()=>{const response=page.waitForResponse(result=>result.url().endsWith('/api/mobile/public/featured'));await page.getByRole('button',{name:'Try again',exact:true}).click();await response;};
+ const retry=async()=>{const response=page.waitForResponse(result=>result.url().endsWith('/api/mobile/public/featured'),{timeout:15000});await page.getByRole('button',{name:'Try again',exact:true}).click();await response;};
  failure='whitespace';await retry();
  await expect(page.getByRole('alert')).toHaveText('Please try again.');
  failure='unavailable';await retry();
@@ -23,7 +24,7 @@ test('mobile Featured recovers from unavailable and malformed responses without 
  await expect(page.getByText('Featured is unavailable right now. Please try again.',{exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-recoverable-error.png')});
  failure='healthy';await retry();
- await expect(page.getByRole('button',{name:'Weekly themes',exact:true})).toBeVisible({timeout:30000});
+ await expect(page.getByRole('button',{name:'View schedule',exact:true})).toBeVisible({timeout:30000});
  await page.getByRole('button',{name:'View schedule',exact:true}).click();
  await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-restored.png')});
@@ -35,21 +36,21 @@ test('mobile Featured recovers from unavailable and malformed responses without 
 for(const [name,message] of [['empty',''],['whitespace',' \t\n ']]){
  test(`mobile Featured retains a populated programme after a refresh error with ${name} text and retries safely`,async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
   let state:'loaded'|'failed'|'recovered'='loaded';const errors:string[]=[];
-  const feature={date:'2026-10-13',headline:'Featured recovery check',introduction:'Synthetic public programme for request recovery.',theme:'Cargo vans',published:true,tiktokUrl:'',tiktokStatus:'NOT_SCHEDULED',start:'08:30',end:'12:00',week:[{date:'2026-10-13',day:'Tuesday',label:'Cargo vans',dateLabel:'Oct 13'}],programme:[{kind:'TRUCK',slot:1,label:'Featured truck',startsAt:'2026-10-13T05:30:00Z',endsAt:'2026-10-13T09:00:00Z',timeLabel:'08:30–12:00'}],trucks:[{slot:1,name:'Recovery transporter',handle:'recovery-transporter',driver:'Recovery driver',driverKind:'Company driver',portrait:'',truck:'Recovery van',configuration:'Cargo van',image:'',place:'Addis Ababa',available:false}],sponsors:[]};
+  const feature={date:'2026-10-13',headline:'Featured recovery check',introduction:'Synthetic public programme for request recovery.',theme:'Transport Providers',published:true,tiktokUrl:'',tiktokStatus:'NOT_SCHEDULED',start:'08:30',end:'12:00',week:[],programme:[{kind:'TRUCK',slot:1,label:'Featured account',startsAt:'2026-10-13T05:30:00Z',endsAt:'2026-10-13T09:00:00Z',timeLabel:'08:30–12:00'}],trucks:[{slot:1,name:'Recovery transporter',handle:'recovery-transporter',driver:'',driverKind:'Transport Provider',portrait:'',truck:'',configuration:'',image:'',place:'Addis Ababa',available:false,fleetSize:1,isCompany:false}],sponsors:[]};
   page.on('pageerror',error=>errors.push(error.name));
   page.on('console',entry=>{if(entry.type()==='error'&&/Unexpected text node|Text strings must be rendered/.test(entry.text()))errors.push('INVALID_NATIVE_TEXT');});
-  await page.route('**/api/mobile/public/featured',route=>route.fulfill({status:state==='failed'?503:200,contentType:'application/json',body:JSON.stringify(state==='failed'?{error:{code:'UNAVAILABLE',message}}:{...feature,trucks:feature.trucks.map(truck=>({...truck,driver:state==='recovered'?'Updated recovery driver':truck.driver}))})}));
+  await page.route('**/api/mobile/public/featured',route=>route.fulfill({status:state==='failed'?503:200,contentType:'application/json',body:JSON.stringify(state==='failed'?{error:{code:'UNAVAILABLE',message}}:{...feature,trucks:feature.trucks.map(truck=>({...truck,name:state==='recovered'?'Updated recovery transporter':truck.name}))})}));
   await page.goto(preview+'/featured');
-  await expect(page.getByText('Recovery driver',{exact:true})).toBeVisible();
+  await expect(page.getByText('Recovery transporter',{exact:true})).toBeVisible();
   const refresh=()=>page.evaluate(()=>{for(const value of ['hidden','visible']){Object.defineProperty(document,'visibilityState',{configurable:true,value});document.dispatchEvent(new Event('visibilitychange'));}});
   state='failed';await refresh();
   await expect(page.getByRole('alert')).toHaveText('Please try again.');
-  await expect(page.getByText('Recovery driver',{exact:true})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Weekly themes',exact:true})).toBeVisible();
+  await expect(page.getByText('Recovery transporter',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'View schedule',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Try again',exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath(`featured-${name}-refresh-error.png`)});
   state='recovered';await page.getByRole('button',{name:'Try again',exact:true}).click();
-  await expect(page.getByText('Updated recovery driver',{exact:true})).toBeVisible();
+  await expect(page.getByText('Updated recovery transporter',{exact:true})).toBeVisible();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'Try again',exact:true})).toHaveCount(0);
   await page.screenshot({path:info.outputPath(`featured-${name}-refresh-restored.png`)});
@@ -74,7 +75,10 @@ test('mobile real email access restores Tracking, opens updates, recovers bad da
   shipment=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicle,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Synthetic shipment runtime check',customerEmail:email,trackingMode:'STATUS_ONLY'})).id;
   await page.goto(preview+'/about');await page.getByRole('tab',{name:'Track',exact:true}).click();
   await page.getByLabel('Your email',{exact:true}).fill(email);const since=Date.now();
+  const requested=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/visitor/tracking/request'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Send email code',exact:true}).click();
+  expect((await requested).status()).toBe(200);
+  await expect(page.getByLabel('Email verification code',{exact:true})).toBeVisible();
   const code=await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code');
   await page.getByLabel('Email verification code',{exact:true}).fill(code);await page.getByRole('button',{name:'Open private access',exact:true}).click();
   await expect(page.getByText('Your shipments',{exact:true})).toBeVisible();await page.reload();
@@ -93,7 +97,7 @@ test('mobile real email access restores Tracking, opens updates, recovers bad da
   await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close private access',exact:true}).click();
   await expect(page.getByLabel('Your email',{exact:true}).filter({visible:true})).toHaveCount(1);
-  await page.getByRole('tab',{name:'Featured',exact:true}).click();await expect(page.getByRole('button',{name:'Weekly themes',exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:'Featured',exact:true}).click();await expect(page.getByRole('button',{name:'View schedule',exact:true})).toBeVisible();
   expect(errors).toEqual([]);
  }finally{
   checked(await service.from('access_email_deliveries').delete().eq('recipient_email',email));
@@ -103,13 +107,14 @@ test('mobile real email access restores Tracking, opens updates, recovers bad da
  }
 });
 
-test('mobile private-capacity deep entry requires email verification and preserves the public switch',async({page}:{page:Page})=>{
+test('mobile private-capacity deep entry requires account sign-in and preserves public Capacity',async({page}:{page:Page})=>{
  await page.goto(preview+'/?view=private');
- await expect(page.getByRole('tab',{name:'Privately shared with you',exact:true})).toHaveAttribute('aria-selected','true');
- await expect(page.getByLabel('Your email',{exact:true}).filter({visible:true})).toHaveCount(1);
- await expect(page.getByRole('button',{name:'Send email code',exact:true})).toBeVisible();
+ await expect(page).toHaveURL(/\/account/);
+ await expect(page.getByText('Sign in',{exact:true}).first()).toBeVisible();
+ await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();
  expect(await page.locator('[data-marker-id]').count()).toBe(0);
- await page.getByRole('tab',{name:'Open to the public',exact:true}).click();
+ await page.getByRole('tab',{name:'Capacity',exact:true}).click();
+ await expect(page).toHaveURL(/localhost:8084\/$/);
  await expect(page.getByRole('tab',{name:'Open to the public',exact:true})).toHaveAttribute('aria-selected','true');
- await expect(page.getByLabel('Your email',{exact:true}).filter({visible:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Sign up',exact:true})).toHaveCount(0);
 });

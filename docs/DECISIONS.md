@@ -1,5 +1,11 @@
 # Architecture Decisions
 
+Current account-only Capacity sharing is specified in [FEAT-CON-001](../specs/features/FEAT-CON-001.md)
+and [FEAT-SHR-001](../specs/features/FEAT-SHR-001.md). Earlier decisions below
+record the designs accepted at their dates; their email-only Capacity and
+platform-Brokerage clauses were superseded on October 24. Public-link Tracking
+still uses its own email authorization.
+
 ## ADR-081 — Business workspace context and explicit recipient authority (2026-10-18)
 
 Status: **design approved October18; local implementation under release review**, FEAT-ENT-001.
@@ -2188,3 +2194,20 @@ unknown/oversized/repeated input before SQL and within SQL, and keep truck
 registration's configuration picker single-select.139 and the matching web/mobile
 controls are locally verified; their owner visual review and hosted rollout are
 pending. This does not expand the consumed Featured137 release exception.
+
+## October 24 account network and Featured accounts (FEAT-CON-001)
+
+Directory is the signed-in place to find accounts, request or end connections,
+and manage which vehicles a provider shares. A connection alone grants no
+capacity. Shared capacity is a separate signed-in map of the vehicle grants
+available to the selected account or team workspace; public Capacity remains
+separate and public-link Tracking keeps its own authorization. Old email-only
+private-capacity entry does not remain a parallel guest route. Server-side
+identity, membership and current vehicle authority decide each operation.
+
+Featured rotates eligible Transport Provider accounts through persisted rounds,
+with one representative vehicle stored in each existing slot for compatibility.
+Saved and manual days remain intact. A saved day imported after the schema
+change is counted before the next automatic selection. The additive local schema
+and web/Expo implementation are specified in [FEAT-CON-001](../specs/features/FEAT-CON-001.md);
+this decision does not claim a hosted rollout.

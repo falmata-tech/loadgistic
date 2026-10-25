@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Switch, View } from 'react-native';
+import { View } from 'react-native';
+import {Switch} from './branded-switch';
 import {ConfirmationButton} from './confirmation-button';
 import { useAccount } from '../session/provider';
 import {useLanguage} from '../localization/provider';

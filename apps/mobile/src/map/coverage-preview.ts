@@ -24,3 +24,13 @@ export function coverageBounds(feature:Feature<LineString|Polygon>):[number,numb
  // Keep horizontal/vertical routes and tiny city clusters visible to the camera.
  return [west-.01,south-.01,east+.01,north+.01];
 }
+
+/** MapLibre offsets follow line direction. Normalize display geometry so a
+ * reverse two-way corridor stays on the opposite lane from current Capacity. */
+export function canonicalRouteGeometry(feature:Feature<LineString|Polygon>):Feature<LineString|Polygon>{
+ if(feature.geometry.type!=='LineString')return feature;
+ const points=feature.geometry.coordinates;
+ const first=points[0],last=points.at(-1);
+ if(!first||!last||first[0]<last[0]||first[0]===last[0]&&first[1]<=last[1])return feature;
+ return {...feature,geometry:{...feature.geometry,coordinates:[...points].reverse()}};
+}

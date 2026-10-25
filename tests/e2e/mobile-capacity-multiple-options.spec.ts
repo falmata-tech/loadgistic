@@ -1,10 +1,5 @@
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
-import {randomUUID} from 'node:crypto';
-import {localAuditService,auditProvider,auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,checked} from './audit-helpers';
-import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
-import {grantPrivateCapacityAccess} from '../../src/lib/private-capacity.js';
-import {localMailpitNumericCode} from './mailpit-helper';
 import {VEHICLE_CONFIGURATIONS} from '../../src/lib/vehicle-configurations';
 import sharp from 'sharp';
 
@@ -104,31 +99,11 @@ test('Expo route and nearby filters use the same ranges and defaults as web',asy
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
-test('Expo multi configurations retain exact recipient pairs after real private email authorization',async({page,context},info)=>{
- test.setTimeout(180_000);await context.setExtraHTTPHeaders({'x-forwarded-for':info.project.name.includes('mobile')?'127.0.0.237':'127.0.0.236'});
- const db=localAuditService(),email=`native-multi-${randomUUID()}@example.test`,actors:Awaited<ReturnType<typeof auditProvider>>[]=[],vehicles:string[]=[],capacityIds:string[]=[];
- try{
-  const places=checked(await db.from('place_catalog').select('id,name').in('normalized_name',['addis ababa','adama'])),origin=places.find((item:any)=>item.name==='Addis Ababa'),destination=places.find((item:any)=>item.name==='Adama');expect(origin&&destination).toBeTruthy();
-  for(const configuration of ['Cargo van','Mini Box Truck']){
-   const actor=await auditProvider(db,'native-multi');actors.push(actor);checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
-   const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:actor.id,command:{use_basis:'OWNED',make:'Audit',model:'Multi filters',plate:`MOPT-${actor.suffix}`,cargo_configuration:configuration}}));vehicles.push(vehicle.id);
-   await auditAssignAndPublishSelfDrivenVehicle(db,actor,vehicle.id);
-   await publishProviderCapacity(actor,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.74,locationPrecisionKm:20,currentRoutePlaces:[{placeRef:origin.id,label:origin.name},{placeRef:destination.id,label:destination.name}]});
-   capacityIds.push(checked(await db.from('capacities').select('id').eq('vehicle_id',vehicle.id).eq('market_status','EMPTY').single()).id);
-   await grantPrivateCapacityAccess(actor,{name:'Synthetic multi-filter recipient',vehicleId:vehicle.id,email});
-  }
-  expect((await page.request.get(`/api/mobile/visitor/capacity/signals?vehicleCategory=${encodeURIComponent(csv)}`)).status()).toBe(401);
-  await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8084/?view=private');await expect(page.getByLabel('Your email')).toBeVisible({timeout:45_000});await page.getByLabel('Your email').fill(email);const requestedAt=Date.now();await page.getByRole('button',{name:'Send email code',exact:true}).click();
-  await page.getByLabel('Email verification code').fill(await localMailpitNumericCode(email,requestedAt,'Your Private capacity code'));await page.getByRole('button',{name:'Open private access',exact:true}).click();await expect(page.getByRole('button',{name:'Close private access',exact:true})).toBeVisible({timeout:30_000});
-  await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();await configs(page);for(const label of ['Empty vehicle','Partly loaded'])await page.getByRole('checkbox',{name:label,exact:true}).check();for(const label of ['Full truck','Shared space'])await expect(page.getByRole('checkbox',{name:label,exact:true})).toHaveCount(0);await checkControls(page);
-  const signals=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/mobile/visitor/capacity/signals'&&url.searchParams.get('vehicleCategory')===csv&&url.searchParams.get('status')==='EMPTY,PARTIAL'&&!url.searchParams.has('loadType');});
-  await page.getByRole('button',{name:'Show vehicles',exact:true}).click();const response=await signals;expect(response.status()).toBe(200);const result=await response.json();expect(result.items.map((item:any)=>item.id).sort()).toEqual(capacityIds.sort());expect(result.items.every((item:any)=>item.status==='EMPTY'&&['Cargo van','Mini Box Truck'].includes(item.cargo_configuration))).toBe(true);
- await mapPainted(page);await page.screenshot({path:info.outputPath('native-multiple-private-map.png'),scale:'css'});
-  await page.getByRole('button',{name:'Close private access',exact:true}).click();await expect(page.getByLabel('Your email')).toBeVisible();
-  expect((await page.request.get('/api/mobile/visitor/capacity/signals?vehicleCategory=unsupported')).status()).toBe(401);
- }finally{
-  const grants=checked(await db.from('capacity_access_grants').select('id').eq('recipient_email',email));checked(await db.from('access_email_deliveries').delete().eq('recipient_email',email));checked(await db.from('shared_capacity_email_otps').delete().eq('recipient_email',email));
-  checked(await db.from('audit_logs').delete().in('entity_id',[...vehicles,...capacityIds,...grants.map((item:any)=>item.id)]));
-  for(const actor of actors){checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await auditDeleteVehicles(db,'provider_profile_id',actor.provider_profile_id));checked(await db.auth.admin.deleteUser(actor.id));}
- }
+test('Expo private Capacity requires an account instead of an email code',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('http://127.0.0.1:8084/capacity?view=private');
+ await expect(page.getByLabel('Email verification code')).toHaveCount(0);
+ const denied=await page.request.get('/api/mobile/visitor/capacity/signals');
+ expect(denied.status()).toBe(410);
+ expect(await denied.json()).toMatchObject({error:{code:'ACCOUNT_REQUIRED'}});
 });

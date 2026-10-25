@@ -17,7 +17,7 @@ test('shared validation resolves only the pinned mobile runtime without widening
 const actor='16000000-0000-4000-8000-000000000001',workspace='16000000-0000-4000-8000-000000000002',foreign='16000000-0000-4000-8000-000000000003';
 const summary={id:workspace,name:'Synthetic business',handle:'synthetic',kind:'BROKER',city:null,version:1,actorId:actor,actorRole:'CUSTOMER',membershipRole:'STAFF',membershipRevision:1,permissions:{capacity:true,tracking:true,team:false,owner:false}};
 test('native transport and local proxy share bounded authenticated business paths',()=>{
- for(const path of ['/api/business-workspaces','/api/business-workspaces/search?q=cargo',`/api/business-workspaces/${workspace}`,`/api/business-workspaces/${workspace}/capacity/discovery?q=office`, `/api/business-workspaces/${workspace}/tracking/${foreign}`,`/api/business-workspaces/invitations/${foreign}/accept`,'/api/business-capacity-shares']){
+ for(const path of ['/api/business-workspaces','/api/business-workspaces/search?q=cargo',`/api/business-workspaces/${workspace}`,`/api/business-workspaces/${workspace}/network-visibility`,`/api/business-workspaces/${workspace}/capacity/discovery?q=office`, `/api/business-workspaces/${workspace}/tracking/${foreign}`,`/api/business-workspaces/invitations/${foreign}/accept`,'/api/business-capacity-shares','/api/account-directory?q=hauler','/api/account-connections']){
   assert.equal(businessApiPathAllowed(path),true,path);assert.equal(allowedPath(path),true,path);
  }
  for(const path of ['https://foreign.test/api/business-workspaces','//foreign.test/api/business-workspaces','/api/admin/accounts','/api/business-workspaces/not-a-uuid','/api/business-workspaces/../../admin','/api/business-workspaces/%2e%2e/admin','/api/business-workspaces#tracking','/api/business-workspaces\\admin'])assert.equal(businessApiPathAllowed(path),false,path);
@@ -36,9 +36,9 @@ test('native context and directory reject foreign identities, invalid selected c
 });
 test('customer tabs follow current explicit permissions without fleet/driver authority',()=>{
  const session={state:'ACTIVE',user:{id:actor,role:'CUSTOMER',selectedBusinessWorkspace:summary},access:{granted:true}};
- assert.deepEqual(workspaceDestinations(session).map(item=>item.href),['/business-capacity','/business-tracking','/business-account']);assert.equal(workspaceHome(session),'/business-capacity');
+ assert.deepEqual(workspaceDestinations(session).map(item=>item.href),['/directory','/business-tracking','/business-account']);assert.equal(workspaceHome(session),'/business-capacity');
  const trackingOnly={...session,user:{...session.user,selectedBusinessWorkspace:{...summary,permissions:{...summary.permissions,capacity:false}}}};
- assert.deepEqual(workspaceDestinations(trackingOnly).map(item=>item.href),['/business-tracking','/business-account']);assert.equal(workspaceHome(trackingOnly),'/business-tracking');
+ assert.deepEqual(workspaceDestinations(trackingOnly).map(item=>item.href),['/directory','/business-tracking','/business-account']);assert.equal(workspaceHome(trackingOnly),'/business-tracking');
  assert.equal(activeDestination('/business-shipment',true,session),'/business-tracking');assert.equal(workspaceCapabilities(session).canManageFleet,false);assert.equal(workspaceCapabilities(session).drivesTruck,false);
 });
 test('shipper/broker Account groups workspace and personal work without widening role actions',()=>{
@@ -57,9 +57,10 @@ test('shipper/broker Account groups workspace and personal work without widening
  assert.deepEqual(unavailable[0].actions.map(action=>action.id),['SWITCH']);
  assert.deepEqual(unavailable[1].actions.map(action=>action.id),['PERSONAL','SECURITY','SUPPORT']);
 });
-test('business Tracking refuses location/approval/proof escalation in normalized server responses',()=>{
- const detail={workspaceId:workspace,isOwner:false,ownerActionsRequireVerification:true,id:foreign,code:'SYNTHETIC',origin:'A',destination:'B',cargo:'Synthetic',status:'IN_TRANSIT',driver:'Synthetic',truck:'Synthetic',updatedAt:'',provider:'Synthetic',mode:'STATUS_ONLY',canShare:false,canApprove:false,canReview:false,canViewLocation:false,route:[],publicTruck:null,events:[],location:null,review:null};
+test('business Tracking keeps staff limited while the verified owner can act and view proof',()=>{
+ const detail={workspaceId:workspace,isOwner:false,id:foreign,code:'SYNTHETIC',origin:'A',destination:'B',cargo:'Synthetic',status:'IN_TRANSIT',driver:'Synthetic',truck:'Synthetic',updatedAt:'',provider:'Synthetic',mode:'STATUS_ONLY',canShare:false,canApprove:false,canReview:false,canViewLocation:false,route:[],publicTruck:null,events:[],location:null,review:null};
  assert.equal(parseBusinessTrackingDetail(detail,workspace,foreign).location,null);
+ assert.equal(parseBusinessTrackingDetail({...detail,isOwner:true,canApprove:true,canReview:true,canShare:true,events:[{id:foreign,status:'LOADING',note:'',createdAt:'2026-10-18',hasProof:true}]},workspace,foreign).canApprove,true);
  for(const value of [{...detail,workspaceId:foreign},{...detail,canApprove:true},{...detail,canShare:true},{...detail,location:{latitude:9,longitude:38,radius:10,area:'A',updatedAt:'2026-10-18'}},{...detail,events:[{id:'event',status:'LOADING',note:'',createdAt:'2026-10-18',hasProof:true}]}])assert.throws(()=>parseBusinessTrackingDetail(value,workspace,foreign));
 });
 test('business capacity reads every authorized page, binds workspace/filter and discards aborted returns',async()=>{

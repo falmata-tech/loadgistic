@@ -9,8 +9,9 @@ test.setTimeout(120_000);
 async function login(page: Page, email: string, destination = '/app/home') {
   // This suite tests workspace accessibility, not the optional fixture widget.
   // Use an actual caller-bound managed session, as the workflow suites do.
-  await auditLogin(page,email);
-  await expect(page).toHaveURL(new RegExp(destination.replaceAll('/', '\\/')));
+  const currentRoute=destination==='/app/fleet'?'/app/home/vehicles':destination==='/app/menu'?'/app/more':destination;
+  await auditLogin(page,email,currentRoute);
+  await expect(page).toHaveURL(new RegExp(currentRoute.replaceAll('/', '\\/')));
 }
 
 async function waitForPage(page: Page) {
@@ -137,8 +138,7 @@ for (const [role, email, routes] of [
 ] as const) {
   for (const route of routes) {
     test(`${role} ${route} has no serious accessibility violations`, async ({ page }: { page: Page }) => {
-      await login(page, email);
-      await page.goto(route,{waitUntil:'domcontentloaded'});
+      await login(page, email, route);
       if(route==='/app/menu')await expect(page).toHaveURL(/\/app\/more$/,{timeout:20_000});
       await expectAccessible(page,`${role} ${route}`);
     });
@@ -194,7 +194,7 @@ test('featured truck details support keyboard entry, Escape, and focus restorati
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Close featured vehicle details' })).toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'Close featured account details' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(featured).toBeFocused();

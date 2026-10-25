@@ -7,7 +7,8 @@ import {randomUUID} from 'node:crypto';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
-import {featuredTruckTypeForDate} from '../../src/lib/featured-trucks.js';
+import {FEATURED_PROVIDER_DAY} from '../../src/lib/featured-trucks.js';
+import {PROVIDER_REGIONS} from '../../src/lib/provider-regions.js';
 import {removePrivateUpload} from '../../src/lib/private-storage.js';
 
 function localService(){
@@ -19,8 +20,8 @@ function localService(){
 function checked(result:any){expect(result.error).toBeNull();return result.data;}
 async function login(page:any,email:string){
   const identity=checked(await localService().from('profiles').select('id').eq('email',email).single());
-  await localSupportLogin(page,identity.id);await page.goto('/app/home');
-  await expect(page).toHaveURL(/\/app\/home(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
+  await localSupportLogin(page,identity.id);await page.goto('/app/more',{waitUntil:'domcontentloaded'});
+  await expect(page).toHaveURL(/\/app\/more(?:\?.*)?$/);await expect(page.locator('.app-main')).toBeVisible();
 }
 async function openPortrait(page:any){
  await page.getByRole('button',{name:'Change photo',exact:true}).click();
@@ -40,7 +41,7 @@ async function post(page:any,values:Record<string,string>){
     return {status:response.status,url:response.url};
   },values);
 }
-for(const kind of ['independent','company'])test(`${kind} Driver controls their public portrait through real Storage and Featured`,async({page,browser}:{page:any;browser:any},info:any)=>{
+for(const kind of ['independent','company'])test(`${kind} Driver controls their public portrait while Featured keeps the provider's separate identity`,async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(150000);const service=localService();const suffix=randomUUID().slice(0,8);const ids:string[]=[];
   let actorId='';let orgId='';let providerId='';let vehicleId='';let slotId='';let ownedDay='';let originalSlot:any=null;
   let ownerEmail='';let companyPageId='';let providerImagePath='';let providerPreviewUrl='';
@@ -105,16 +106,17 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
       await expect(page.locator('.alert.success')).toBeVisible();
       expect((await visitor.request.get(`/api/public/providers/portrait-${suffix}/image`)).status()).toBe(200);
     }
-    const theme=featuredTruckTypeForDate(date);
+    const theme=FEATURED_PROVIDER_DAY;
     checked(await service.rpc('accept_content_policy',{actor_user_id:ownerId,policy_version:'2026-10-09'}));
     if(!orgId)checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actorId,requested_drives_truck:true}));
-    vehicleId=checked(await service.from('vehicles').insert({...scope,label:`Portrait test ${suffix}`,category:'TRUCK',make:'Test',model:'Portrait',cargo_configuration:theme.configurations[0],plate:`PHOTO-${suffix}`,active:true}).select('id').single()).id;
+    vehicleId=checked(await service.from('vehicles').insert({...scope,label:`Portrait test ${suffix}`,category:'TRUCK',make:'Test',model:'Portrait',cargo_configuration:'Mini Box Truck',plate:`PHOTO-${suffix}`,active:true}).select('id').single()).id;
     checked(await service.rpc('update_fleet_driver_access',{actor_user_id:ownerId,command:{driver_user_id:actorId,vehicle_id:vehicleId,can_manage_capacity:true,can_manage_tracking:true}}));
     checked(await service.rpc('set_provider_vehicle_publication',{actor_user_id:ownerId,target_vehicle_id:vehicleId,requested_state:'LIVE'}));
     // Explicit synthetic eligibility evidence for this test provider only; no real proof is implied.
     const evidence=orgId?['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS']:['IDENTITY','DRIVER_IDENTITY','VEHICLE_OWNERSHIP'];
     checked(await service.from('verification_requests').insert(evidence.map(verification_type=>({
-      subject_type:orgId?'ORGANIZATION':'PROVIDER_PROFILE',subject_id:orgId||providerId,verification_type,
+      subject_type:verification_type==='VEHICLE_OWNERSHIP'?'VEHICLE':orgId?'ORGANIZATION':'PROVIDER_PROFILE',
+      subject_id:verification_type==='VEHICLE_OWNERSHIP'?vehicleId:orgId||providerId,verification_type,
       document_name:'Synthetic portrait browser fixture',storage_path:'synthetic-portrait-fixture',original_name:'fixture.txt',mime_type:'text/plain',status:'APPROVED',submitted_by:actorId
     }))));
     let day=checked(await service.from('featured_provider_days').select('id,status').eq('feature_date',date).maybeSingle());
@@ -126,6 +128,11 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     // fixture slot and restore it in finally instead of appending a ninth.
     if(slots.length>=8){originalSlot=slots.at(-1);slotId=originalSlot.id;checked(await service.from('featured_provider_slots').update(synthetic).eq('id',slotId));}
     else slotId=checked(await service.from('featured_provider_slots').insert({day_id:day.id,slot_position:Math.max(0,...slots.map((p:any)=>p.slot_position))+1,...synthetic}).select('id').single()).id;
+
+    const candidates=checked(await service.rpc('public_featured_provider_candidates',{requested_region_codes:PROVIDER_REGIONS.map(item=>item.code)}));
+    const candidate=candidates.find((row:any)=>orgId?row.provider_organization_id===orgId:row.provider_profile_id===providerId);
+    expect(candidate,'synthetic provider must be present in the actual Featured projection').toBeTruthy();
+    expect(candidate.eligible,'synthetic provider must satisfy the current Featured eligibility contract').toBe(true);
 
     await login(page,driver.email);await page.goto('/app/more');await openPortrait(page);
     if(kind==='company')expect((await page.context().request.get(providerPreviewUrl)).status()).toBe(403);
@@ -149,9 +156,11 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     const raw=await visitor.request.get(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/provider-profile/${objectPath}`);expect(raw.ok()).toBe(false);
     await publicPage.goto('/featured');
     expect(await publicPage.content()).not.toContain('PrivateSurname');
-    const tile=publicPage.getByRole('button',{name:new RegExp(`^Driver ${driverName},`)});
-    await expect(tile).toBeVisible();await expect(tile.locator('.featured-card-photo>img')).toHaveAttribute('src',firstUrl);
-    await expect.poll(()=>tile.locator('.featured-card-photo>img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth)).toBe(512);
+    const tile=publicPage.locator('.featured-provider-tile').filter({hasText:`@portrait-${suffix}`});
+    await expect(tile).toBeVisible();
+    const providerPhoto=tile.locator('.featured-card-photo img');
+    if(kind==='company')await expect(providerPhoto).toHaveAttribute('src',/\/api\/public\/providers\/portrait-/);
+    else{await expect(providerPhoto).toHaveCount(0);await expect(tile.locator('.featured-card-photo svg')).toBeVisible();}
     await card.getByRole('button',{name:'Remove Driver photo',exact:true}).scrollIntoViewIfNeeded();
     await page.screenshot({path:path.join(dir,`${info.project.name}-${kind}-account.png`),fullPage:true,scale:'css'});
     await tile.screenshot({path:path.join(dir,`${info.project.name}-${kind}-featured.png`),scale:'css'});
@@ -190,7 +199,9 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     await page.reload();await openPortrait(page);await card.getByRole('button',{name:'Remove Driver photo',exact:true}).click();
     await expect(page.getByRole('status').filter({hasText:'Driver photo removed.'})).toBeVisible();await openPortrait(page);await expect(photo).toHaveCount(0);
     expect((await visitor.request.get(nextUrl)).status()).toBe(404);
-    await publicPage.reload();await expect(tile.locator('.driver-portrait-fallback')).toBeVisible();
+    await publicPage.reload();await expect(tile).toBeVisible();
+    if(kind==='company')await expect(tile.locator('.featured-card-photo img')).toHaveAttribute('src',/\/api\/public\/providers\/portrait-/);
+    else await expect(tile.locator('.featured-card-photo img')).toHaveCount(0);
     expect(checked(await service.from('driver_portrait_uploads').select('id').eq('user_id',actorId))).toHaveLength(0);
     if(kind==='company'){
       expect(checked(await service.from('company_pages').select('profile_image_path').eq('id',companyPageId).single()).profile_image_path).toBe(providerImagePath);

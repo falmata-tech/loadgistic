@@ -54,8 +54,8 @@ test('logout redirect honestly distinguishes managed success from unconfirmed re
    '@/lib/supabase/logout':{signOutSupabaseRoute:async()=>({remoteRevocationConfirmed:confirmed})}
   });
   await route.POST({url:'http://internal-next:3100/api/auth/logout',headers:new Headers({origin:'https://loadgistic.com'})});
-  assert.ok(response.headers.get('Location').startsWith('/login?'));
-  const destination=new URL(response.headers.get('Location'),'https://loadgistic.com');assert.equal(destination.origin,'https://loadgistic.com');assert.equal(response.status,303);assert.equal(destination.pathname,'/login');assert.equal(response.headers.get('Cache-Control'),'no-store');
+  assert.ok(response.headers.get('Location').startsWith('/?'));
+  const destination=new URL(response.headers.get('Location'),'https://loadgistic.com');assert.equal(destination.origin,'https://loadgistic.com');assert.equal(response.status,303);assert.equal(destination.pathname,'/');assert.equal(response.headers.get('Cache-Control'),'no-store');
   assert.equal(destination.searchParams.has('success'),confirmed);assert.equal(destination.searchParams.has('error'),!confirmed);
   if(!confirmed)assert.match(destination.searchParams.get('error'),/could not confirm sign-out on other devices/);
  }

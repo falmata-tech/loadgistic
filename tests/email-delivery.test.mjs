@@ -55,8 +55,8 @@ test('managed email configuration prefers a verified direct provider and retains
 test('local application email is captured by loopback Mailpit without leaking its raw idempotency key',async()=>{
   let request;
   const message=buildEmailMessage({
-    template:'shared-capacity-access',to:'guest@example.test',
-    access:{url:'http://127.0.0.1:3100/shared-capacity',code:'123456'}
+    template:'tracking-access-code',to:'guest@example.test',
+    access:{url:'http://127.0.0.1:3100/track',code:'123456'}
   });
   const result=await sendManagedEmail(message,'loadgistic/access/local-stable-key',{
     environment:{NODE_ENV:'development',LOADGISTIC_LOCAL_MAILPIT_URL:'http://127.0.0.1:55324'},
@@ -72,7 +72,7 @@ test('local application email is captured by loopback Mailpit without leaking it
   const body=JSON.parse(request.options.body);
   assert.deepEqual(body.From,{Email:'local@loadgistic.local',Name:'Loadgistic local'});
   assert.deepEqual(body.To,[{Email:'guest@example.test'}]);
-  assert.equal(body.Subject,'Your Private capacity code');
+  assert.equal(body.Subject,'Your Loadgistic tracking sign-in code');
   assert.match(body.Text,/123456/);
   assert.match(body.HTML,/123456/);
   assert.match(body.Headers['X-Loadgistic-Idempotency-Key'],/^[a-f0-9]{64}$/);
@@ -82,8 +82,8 @@ test('local application email is captured by loopback Mailpit without leaking it
 
 test('local Mailpit delivery fails with a bounded non-secret adapter error',async()=>{
   const message=buildEmailMessage({
-    template:'shared-capacity-access',to:'guest@example.test',
-    access:{url:'http://127.0.0.1:3100/shared-capacity',code:'123456'}
+    template:'tracking-access-code',to:'guest@example.test',
+    access:{url:'http://127.0.0.1:3100/track',code:'123456'}
   });
   await assert.rejects(
     sendManagedEmail(message,'loadgistic/access/local-failure',{
@@ -97,8 +97,8 @@ test('local Mailpit delivery fails with a bounded non-secret adapter error',asyn
 test('direct email delivery uses a stable provider request without exposing the secret in content',async()=>{
   const requests=[];
   const message=buildEmailMessage({
-    template:'shared-capacity-access',to:'guest@example.test',
-    access:{url:'https://loadgistic.example/shared-capacity',code:'123456'}
+    template:'tracking-access-code',to:'guest@example.test',
+    access:{url:'https://loadgistic.example/track',code:'123456'}
   });
   const result=await sendManagedEmail(message,'loadgistic/access/stable-key',{
     environment:{
@@ -133,8 +133,8 @@ test('SMTP delivery requires TLS, bounded timeouts, and stable non-secret idempo
     LOADGISTIC_EMAIL_FROM:'Loadgistic <sender@example.test>',LOADGISTIC_EMAIL_REPLY_TO:'support@example.test'
   };
   const message=buildEmailMessage({
-    template:'shared-capacity-access',to:'guest@example.test',
-    access:{url:'https://loadgistic.example/shared-capacity',code:'123456'}
+    template:'tracking-access-code',to:'guest@example.test',
+    access:{url:'https://loadgistic.example/track',code:'123456'}
   });
   const createTransportImpl=options=>{
     transports.push(options);
@@ -211,17 +211,8 @@ test('webhook adapter preserves the bounded template payload and idempotency key
   assert.doesNotMatch(request.options.body,/private-token/);
 });
 
-test('Shared Capacity and Tracking use distinct customer-safe application templates',()=>{
-  const shared=buildEmailMessage({
-    template:'shared-capacity-access',to:'guest@example.test',
-    access:{url:'https://loadgistic.example/shared-capacity',code:'123456'}
-  });
-  assert.equal(shared.subject,'Your Private capacity code');
-  assert.match(shared.text,/six-digit code/i);
-  assert.match(shared.text,/within 10 minutes/i);
-  assert.match(shared.text,/does not create a Loadgistic account/i);
-  assert.match(shared.text,/123456/);
-
+test('retired Capacity email template is rejected while Tracking remains available',()=>{
+  assert.throws(()=>buildEmailMessage({template:'shared-capacity-access',to:'guest@example.test'}),/UNKNOWN_EMAIL_TEMPLATE/);
   const tracking=buildEmailMessage({
     template:'tracking-started',to:'owner@example.test',
     tracking:{url:'https://loadgistic.example/track',code:'LG-0000-1111-2222-3333'},
@@ -257,7 +248,7 @@ test('completion email escapes customer-visible data and excludes private event 
   assert.doesNotMatch(`${message.text}${message.html}`,/private\/proof|private-user|approximate_lat/);
 });
 
-test('Shared capacity delivery is rechecked immediately before provider submission',async()=>{
+test('retired Capacity delivery is skipped while other access email can be delivered',async()=>{
   const sent=[];
   const recorded=[];
   const claimLimits=[];
@@ -306,7 +297,7 @@ test('global access recovery claims one row only after the previous row is termi
   assert.equal(queue[0]?.id,'unclaimed-third');
 });
 
-test('Shared capacity recheck infrastructure failure leaves its delivery unattempted and does not abort the batch',async()=>{
+test('retired Capacity delivery remains unattempted when the queue continues',async()=>{
   const recorded=[];
   const sent=[];
   const queue=[
@@ -326,28 +317,12 @@ test('Shared capacity recheck infrastructure failure leaves its delivery unattem
   assert.deepEqual(recorded,[{id:'support-after-failure',attempt:{leaseToken:'support-lease',sent:true}}]);
 });
 
-test('targeted access delivery claims and sends only the requested outbox target',async()=>{
-  const claims=[];
-  const rechecks=[];
-  const recorded=[];
-  const sent=[];
-  const future=new Date(Date.now()+120_000).toISOString();
-  const result=await deliverTargetedAccessEmail('SHARED_CAPACITY','new-challenge',{
-    deliveryStatus:()=>({configured:true,provider:'smtp'}),
-    claimDelivery:async(kind,entityId)=>{
-      claims.push({kind,entityId});
-      return {id:'new-delivery',lease_token:'new-lease',delivery_kind:kind,entity_id:entityId,
-        recipient_email:'guest@example.test',challenge_expires_at:future};
-    },
-    recheckDelivery:async(id,leaseToken)=>{rechecks.push({id,leaseToken});return true;},
-    sendEmail:async message=>{sent.push(message);},
-    recordAttempt:async(id,attempt)=>{recorded.push({id,attempt});return true;}
-  });
-  assert.deepEqual(claims,[{kind:'SHARED_CAPACITY',entityId:'new-challenge'}]);
-  assert.deepEqual(rechecks,[{id:'new-delivery',leaseToken:'new-lease'}]);
-  assert.deepEqual(recorded,[{id:'new-delivery',attempt:{leaseToken:'new-lease',sent:true}}]);
-  assert.equal(sent.length,1);
-  assert.deepEqual(result,{configured:true,provider:'smtp',attempted:1,sent:1,failed:0,skipped:0});
+test('targeted Capacity email delivery is rejected before claiming a job',async()=>{
+  let claims=0;
+  await assert.rejects(deliverTargetedAccessEmail('SHARED_CAPACITY','new-challenge',{
+    claimDelivery:async()=>{claims+=1;return null;}
+  }),/EMAIL_CAPACITY_RETIRED/);
+  assert.equal(claims,0);
 });
 
 test('targeted Tracking OTP delivery uses the live challenge lease and Tracking template',async()=>{
@@ -391,12 +366,12 @@ test('retained Guest delivery adapter fences an injected historical job before s
   assert.deepEqual(recorded,[]);
 });
 
-test('Shared capacity delivery keeps a final thirty-second validity margin',async()=>{
+test('Tracking code delivery keeps a final thirty-second validity margin',async()=>{
   let rechecks=0,sends=0;
-  const result=await deliverTargetedAccessEmail('SHARED_CAPACITY','near-expiry-challenge',{
+  const result=await deliverTargetedAccessEmail('TRACKING_OTP','near-expiry-challenge',{
     deliveryStatus:()=>({configured:true,provider:'smtp'}),
     claimDelivery:async()=>({
-      id:'near-expiry-delivery',lease_token:'near-expiry-lease',delivery_kind:'SHARED_CAPACITY',
+      id:'near-expiry-delivery',lease_token:'near-expiry-lease',delivery_kind:'TRACKING_OTP',
       entity_id:'near-expiry-challenge',recipient_email:'guest@example.test',
       challenge_expires_at:new Date(Date.now()+20_000).toISOString()
     }),

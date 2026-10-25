@@ -19,7 +19,7 @@ test('admin support and Team controls fit desktop and phones while brokerage sta
    await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible();
    await expect(page.locator('form[action="/api/admin/support-agents"]')).toHaveCount(0);
    await expect(page.getByRole('link',{name:'Guest support',exact:true})).toHaveCount(0);
-   if(width<980){const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});for(const label of['Support','More'])await expect(nav.getByRole('link',{name:label,exact:true})).toBeVisible();await expect(nav.getByRole('link',{name:'Brokerage',exact:true})).toHaveCount(0);}
+   if(width<980){const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});const more=nav.getByRole('button',{name:'More',exact:true});await expect(more).toBeVisible();await more.click();const menu=page.getByRole('dialog',{name:'More navigation'});await expect(menu.getByRole('link',{name:'Support',exact:true})).toBeVisible();await expect(menu.getByRole('link',{name:'Brokerage',exact:true})).toHaveCount(0);await menu.getByRole('button',{name:'Close menu'}).click();}
    await capture(page,info,`admin-provider-support-${width}.png`);
    await page.getByRole('navigation',{name:'Support workspace',exact:true}).getByRole('link',{name:'Team',exact:true}).click();
    const form=page.locator('form[action="/api/admin/support-agents"]');await expect(form).toHaveCount(0);await page.getByRole('button',{name:'Add member',exact:true}).click();await expect(page.getByRole('dialog',{name:'Add member',exact:true})).toBeVisible();
@@ -54,12 +54,12 @@ test('Support staff can reach sign-out from the phone header without additional 
   const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});await expect(nav.getByRole('link',{name:'Support',exact:true})).toBeVisible();
   await expect(nav.getByRole('link',{name:'Brokerage',exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Guest support',exact:true})).toHaveCount(0);
-  const account=page.locator('.app-topbar summary[aria-label="Staff account"]');await expect(account).toHaveCount(1);await expect(account).toBeVisible();
+  const account=page.locator('.public-session-compact summary[aria-label="Account"]');await expect(account).toHaveCount(1);await expect(account).toBeVisible();
   await account.click();const signOut=page.getByRole('button',{name:'Log out',exact:true});
   await expect(signOut).toBeVisible();await signOut.click({trial:true});await capture(page,info,'staff-phone-account.png');
   const signOutForm=signOut.locator('..');await expect(signOutForm).toHaveAttribute('action','/api/auth/logout');await expect(signOutForm).toHaveAttribute('method','post');diagnostic.nativeFormReady=true;
   const signedOut=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/auth/logout'&&response.request().method()==='POST',{timeout:20000});
-  await signOut.click();expect((await signedOut).status()).toBe(303);await expect(page).toHaveURL(/\/login\?success=/,{timeout:30000});
+  await signOut.click();expect((await signedOut).status()).toBe(303);await expect(page).toHaveURL(/\/\?success=/,{timeout:30000});
  }catch(error){
   if(process.env.LOADGISTIC_LOGOUT_DIAGNOSIS==='1'){
    try{const result=await page.request.post('/api/auth/logout',{maxRedirects:0,timeout:8000});const destination=new URL(result.headers().location||'/login','http://127.0.0.1:3100');diagnostic.apiFallback={status:result.status(),destination:knownPath(String(destination)),remoteConfirmed:destination.searchParams.has('success')};}catch{diagnostic.apiFallback={failure:'NO_BOUNDED_RESPONSE'};}

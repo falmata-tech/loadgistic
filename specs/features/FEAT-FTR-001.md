@@ -11,6 +11,14 @@ rollout: Add exact truck-and-Driver slot references additively, migrate the disp
 
 # Daily Featured Trucks programme
 
+The deployed truck-and-driver programme below remains the historical contract
+until the next release. The approved local successor is [FEAT-CON-001](FEAT-CON-001.md):
+Featured introduces distinct Transport Provider accounts on any day, rotates
+accounts through complete rounds, and keeps saved/manual days. Its local-only
+migration 205 and web/Expo changes must pass their own release gates before
+this file's current-behavior summary is replaced. Do not treat a local preview
+as the hosted programme.
+
 ## October18 courier configurations — planned local restoration
 
 Restore `Courier car` and `Courier motorcycle` to the supported vehicle catalogue
@@ -134,9 +142,11 @@ And diagnostics remain server-side without exposing identifiers or raw database 
 October 11 diagnosis: the local Sunday candidate lookup failed with HTTP 414
 because its capacity query included 236 vehicle identifiers in one URL. This is
 a read-path defect, independently of round exhaustion. Regression:
-`tests/featured-candidate-reads.test.mjs`. The existing rollback suite
-`tests/sql/featured-random-rounds.sql` verifies complete rounds, restart, retained
-history, retry stability, manual precedence and unauthorized denial.
+`tests/featured-candidate-reads.test.mjs`. The pre-205 truck-theme rollback suite
+established the historical guarantees. The local account-rotation successor in
+`tests/sql/featured-provider-rounds.sql` checks full rounds, random order,
+retained history, retry stability, manual precedence, failure rollback and
+unauthorized denial against the new policy.
 
 ### Scenario: automatic daily selection with a manual day override
 
@@ -269,9 +279,11 @@ And its day, slot order, vehicle/Driver identities and round history are unchang
 And a MANUAL day is never regenerated as a recovery shortcut.
 
 Regression: `tests/sql/featured-optional-documents.sql` owns rollback-only personal
-and fleet fixtures. Existing `tests/sql/featured-continuous-rounds.sql` and
-`tests/sql/featured-random-rounds.sql` retain seven-day themes, waiting-first round
-exhaustion/reuse, distinct Drivers, manual-day protection and privacy denials.
+and fleet fixtures. The pre-205 truck-theme tests covered seven-day themes and
+pair rounds. The account-based successor uses `tests/sql/featured-provider-rounds.sql`
+for complete provider rounds, saved/manual-day protection, privacy denials and
+atomic generation; `tests/sql/featured-team-permission.sql` covers loss and
+recovery of provider eligibility without changing a saved day.
 Migration080 already removed the historical extra Featured document gate; this
 scenario does not introduce a new publication exception or require a new migration.
 

@@ -10,12 +10,13 @@ import { AppLink } from '../components/app-link';
 import { Cities } from '../components/cities';
 import { ProfileSetup } from '../components/profile-setup';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Modal, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { AppState, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import {Switch} from '../components/branded-switch';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import { Redirect, useFocusEffect } from 'expo-router';
 import { useAccountQuery } from '../hooks/account-query';
 import { useAccount } from '../session/provider';
-import { Page, Card, Title, Copy, Field, Button, ErrorText, palette, LoadingSpinner } from '../components/ui';
+import { Page, Card, Title, Copy, Button, ErrorText, palette, LoadingSpinner } from '../components/ui';
 import { emptyPlace, PlacePicker } from '../components/place-picker';
 import { captureCapacityLocation } from '../location/capture';
 import { privacyRadii, type ApproximateFix } from '../location/privacy';
@@ -52,7 +53,7 @@ function TruckCapacity({truck,showIdentity,active,canPublish,canRegular,canManag
   const mapLocation=truck.location?.coordinate?{latitude:truck.location.coordinate[1],longitude:truck.location.coordinate[0],radius:truck.location.radius,area:truck.location.area,updatedAt:truck.location.updatedAt,source:truck.publishedLocationSource,...(truck.locationIsDemo?{demo:true as const}:{})}:null;
   const coverage=truck.current&&truck.current.status!=='OFF_DUTY'?{kind:truck.current.availabilityGeometry,places:truck.current.availabilityGeometry==='ROUTE'?truck.current.route:truck.current.boundary,partial:truck.current.status==='PARTIAL'}:undefined;
   const hasMapSignals=Boolean(mapLocation||coverage||regular.length);
-  const taskTitle=editingSection==='CAPACITY'?(canPublish?'Update capacity':'Update duty status'):editingSection==='SHARING'?'Sharing settings':editingSection==='ROUTES'?'Usual routes or area':'Vehicle location';
+  const taskTitle=editingSection==='CAPACITY'?(canPublish?'Update capacity':'Update duty status'):editingSection==='SHARING'?'Sharing settings':editingSection==='ROUTES'?'Routes and areas':'Vehicle location';
   const close=()=>{if(saving)return;onCancel();void refresh();};
   return <>
     <Card>{showIdentity&&<><Title>{truck.label}</Title><Copy>{truck.plate} · {truck.driver||t('No driver assigned')}</Copy></>}
@@ -68,7 +69,7 @@ function TruckCapacity({truck,showIdentity,active,canPublish,canRegular,canManag
           <View style={{gap:7}}>
             <MapTaskButton label={canPublish?'Capacity':'Duty'} hint={canPublish?'Update capacity':'Update duty status'} icon="truck" onPress={()=>onEdit('CAPACITY')}/>
             <MapTaskButton label="Sharing" hint="Update sharing settings" icon="network" disabled={!canPublish||!truck.current} onPress={()=>onEdit('SHARING')}/>
-            {canRegular&&Boolean(truck.driverId)&&<MapTaskButton label="Regular routes" hint="Manage usual routes" icon="route" onPress={()=>onEdit('ROUTES')}/>}
+            {canRegular&&Boolean(truck.driverId)&&<MapTaskButton label="Routes" hint="Manage corridor routes and service areas" icon="route" onPress={()=>onEdit('ROUTES')}/>}
             {canManageLocation&&<MapTaskButton label="Location" hint="Set vehicle location" icon="pin" onPress={()=>onEdit('LOCATION')}/>}
           </View>
         </View>
@@ -109,7 +110,7 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
   const home=section==='HOME', [advanced,setAdvanced]=useState(false);
   const all=section==='ALL'||(home&&!canPublish);
   const show=(group:'CAPACITY'|'COVERAGE'|'SHARING'|'LOADS'|'LOCATION')=>all||section===group||(section==='CAPACITY'&&(group==='CAPACITY'||group==='COVERAGE'||group==='LOADS'))||(home&&(group==='CAPACITY'||group==='COVERAGE'||group==='SHARING'||(group==='LOADS'&&advanced)||(group==='LOCATION'&&!truck.location)));
-  const [status, setStatus] = useState(current?.status || 'EMPTY'), [loads, setLoads] = useState(current?.acceptedLoads || 'FTL'), [geometry, setGeometry] = useState(current?.availabilityGeometry || 'ROUTE'), [sharingMode, setSharingMode] = useState<string>(capacitySharingMode(current?.sharingMode,current?.visibility)), [exclusiveEmail,setExclusiveEmail]=useState(current?.exclusiveEmail||''),[exclusiveName,setExclusiveName]=useState(current?.exclusiveName||'');
+  const [status, setStatus] = useState(current?.status || 'EMPTY'), [loads, setLoads] = useState(current?.acceptedLoads || 'FTL'), [geometry, setGeometry] = useState(current?.availabilityGeometry || 'ROUTE'), [sharingMode, setSharingMode] = useState<string>(capacitySharingMode(current?.sharingMode,current?.visibility));
   const [route, setRoute] = useState(current?.route.length ? current.route : [emptyPlace(), emptyPlace()]), [boundary, setBoundary] = useState(current?.boundary.length ? current.boundary : [emptyPlace(), emptyPlace(), emptyPlace()]), [center, setCenter] = useState(current?.areaCenter || emptyPlace());
   const [multiPick, setMultiPick] = useState(current?.acceptsMultiPick || false), [multiDrop, setMultiDrop] = useState(current?.acceptsMultiDrop || false), [radius, setRadius] = useState(Math.min(20,truck.location?.radius || 10));
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [locationSaved, setLocationSaved] = useState(false), [fix, setFix] = useState<ApproximateFix | null>(null);
@@ -134,7 +135,7 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
       const places = geometry === 'ROUTE' ? route : [center, ...boundary];
       if (places.some(place => !place.placeRef)) throw new Error('Choose each city from the suggestions.');
     }
-    await account.request('/api/mobile/capacity', { action: 'PUBLISH', vehicleId: truck.id, status, acceptedLoads: status === 'PARTIAL' ? 'PTL' : loads, availabilityGeometry: geometry, visibility:sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE', sharingMode, exclusiveEmail,...((show('SHARING')||exclusiveName)?{exclusiveName}:{}),
+    await account.request('/api/mobile/capacity', { action: 'PUBLISH', vehicleId: truck.id, status, acceptedLoads: status === 'PARTIAL' ? 'PTL' : loads, availabilityGeometry: geometry, visibility:sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE', sharingMode,
       currentRoutePlaces: route.filter(place => place.placeRef).map(place => ({ placeRef: place.placeRef })), capacityAreaCenterPlaceRef: center.placeRef,
       capacityAreaBoundaryPlaces: boundary.filter(place => place.placeRef).map(place => ({ placeRef: place.placeRef })), acceptsMultiPick: multiPick, acceptsMultiDrop: multiDrop });
     onSaved();
@@ -160,12 +161,10 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
         </View></>}{show('SHARING')&&<>
           <TaskHeading message="Who can see it?" icon="users"/>
           <Choices value={sharingMode} options={CAPACITY_SHARING_CHOICES} busy={busy} onChange={setSharingMode}/>
-          {sharingMode==='EXCLUSIVE'?<><Field message="Contact name" value={exclusiveName} onChangeText={setExclusiveName} maxLength={100} editable={!busy}/><Field message="Only this email can see the vehicle" value={exclusiveEmail} onChangeText={setExclusiveEmail} keyboardType="email-address" autoCapitalize="none" maxLength={254} editable={!busy}/></>
-            :sharingMode==='BOTH'?<Copy message="Invited contacts also see this vehicle in their private feed."/>
+          {sharingMode==='BOTH'?<Copy message="Connected shippers and brokers can also see this vehicle privately."/>
             :sharingMode==='PUBLIC'?<Copy message="Anyone browsing the map can see this vehicle."/>
-            :<Copy message="Only approved contacts can see this vehicle."/>}
-          <Copy message="Manage contacts in Network. Changing sharing keeps their history and your location privacy."/>
-          <AppLink href="/network" message="Manage shared contacts" style={{color:'#155eef',fontWeight:'700',paddingVertical:12}}/>
+            :<Copy message="Only shippers and brokers you share with can see this vehicle."/>}
+          <AppLink href="/network" message="Manage vehicle sharing" style={{color:'#155eef',fontWeight:'700',paddingVertical:12}}/>
         </>}
         {!truck.canLocate && !truck.location && <Copy message={truck.canSetManualLocation?"Set your location using Vehicle location on Home before publishing.":"Choose the vehicle’s location source in Fleet, then refresh before publishing."}/>}
       </>}

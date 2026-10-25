@@ -141,13 +141,6 @@ export function managedFixtureSharingPolicies(capacities,sharedVehicleIds){
     mode:capacity.visibility==='OPEN'?(sharedVehicleIds.has(capacity.vehicle_id)?'BOTH':'PUBLIC'):'PRIVATE'}));
 }
 
-export function normalizeDemoSharedEmails(value,{maximum=5}={}){
-  const emails=[...new Set(String(value||'').split(',').map(email=>email.trim().toLowerCase()).filter(Boolean))];
-  if(emails.length>maximum)throw new Error('DEMO_SHARED_EMAIL_LIMIT_EXCEEDED');
-  if(emails.some(email=>!/^\S+@\S+\.\S+$/.test(email)))throw new Error('DEMO_SHARED_EMAIL_INVALID');
-  return emails;
-}
-
 /** @param {Record<string,unknown[]>} tables @returns {Record<string,unknown[]>} */
 export function excludeRetiredGuestFixtureTables(tables){
   // Public general-help is retired. Never let a later fixture export restore

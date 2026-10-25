@@ -8,6 +8,7 @@ const workflowMessages=(column:number):Messages=>Object.fromEntries(workflows.ma
 export const nativeMessages:Record<Locale,Messages>={
  en:{},
  am:{
+  'No written comment.':'የጽሑፍ አስተያየት የለም።',
   "Choose all cities to see the coverage preview.":"የመስመሩን ወይም የአካባቢውን ቅድመ እይታ ለማየት ሁሉንም ከተሞች ይምረጡ።",
   "Coverage preview · not driving directions":"የአገልግሎት አካባቢ ቅድመ እይታ፤ የመንገድ መመሪያ አይደለም",
   "Map tiles could not load. Your selected cities are still available.":"ካርታው አልተጫነም። የመረጧቸው ከተሞች አልጠፉም።",
@@ -64,6 +65,7 @@ export const nativeMessages:Record<Locale,Messages>={
   'Your chat':'የእርስዎ ውይይት',
  },
  om:{
+  'No written comment.':'Yaada barreeffamaa hin jiru.',
   "Choose all cities to see the coverage preview.":"Karaa ykn naannoo tajaajilaa kaartaa irratti ilaaluuf magaalota hunda filadhaa.",
   "Coverage preview · not driving directions":"Naannoo tajaajilaa dursee ilaali; qajeelfama konkolaachisuu miti",
   "Map tiles could not load. Your selected cities are still available.":"Kaartaan banamuu hin dandeenye. Magaalonni filattan hin badne.",

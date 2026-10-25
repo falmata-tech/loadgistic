@@ -16,4 +16,6 @@
 .legal{display:flex;gap:6px 20px;flex-wrap:wrap;margin-top:14px}
 .legal a{display:inline-flex;align-items:center;min-height:44px;font-size:.85rem;color:#526875;text-decoration:none}
 .legal a:hover{text-decoration:underline}
+.office{display:flex;gap:4px 18px;flex-wrap:wrap;flex-basis:100%;font-size:.85rem;line-height:1.5;color:#526875}
+.office a{display:inline-flex;min-height:44px;align-items:center;color:inherit;font-size:inherit;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:600px){.about{width:calc(100% - 32px);margin-top:20px}.introduction p{margin-bottom:18px}.tabs{gap:6px;margin-bottom:12px}.tabs button{flex-direction:column;gap:6px;padding:10px 5px;font-size:.8rem;line-height:1.3;min-height:84px}.tabs svg{width:20px;height:20px}.panel{padding:18px}.panel h2{font-size:1.15rem;margin-bottom:18px}.facts{gap:16px;margin-bottom:20px}.facts h3{font-size:.9rem}.facts p{font-size:.875rem}.legal{gap:2px 16px}.legal a{font-size:.8rem}}

@@ -912,8 +912,8 @@ Full-truck space cannot silently combine with a partial-only availability select
 Invalid filters produce a visible error, never silently broader results.
 
 Given a truck is selected
-Then reported location is blue, current capacity geometry uses its status colour
-and regular service is brown with its separate meaning. Existing display-only
+Then approximate location is violet, current capacity geometry uses its status colour
+and the Corridor route is muted orange with its separate meaning. Existing display-only
 parallel-path separation also handles partially shared legs and closed boundaries;
 it cannot change coordinates sent to matching or persistence. Cluster counts and
 truck configuration images replace placeholder-only markers. Cluster taps zoom

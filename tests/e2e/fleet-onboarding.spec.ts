@@ -71,8 +71,9 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     // No seeded owner, driver, membership or assignment: both identities use the public flow.
     await verifyNewEmail(page,ownerEmail);
     const signupIdentity=await service.from('profiles').select('id').eq('email',ownerEmail).single();expect(signupIdentity.error).toBeNull();owned.ownerId=signupIdentity.data!.id;evidence();
+    await expect(page.getByRole('heading',{name:'Choose your account',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Continue as Transport Provider',exact:true}).click();
     await acceptContentRules(page);
-    await page.getByRole('button',{name:/Transport Provider.*Set up your vehicles/}).click();
     await expect(page.getByTestId('provider-details-form')).toBeVisible();
     await expect(page.getByLabel('Account name',{exact:true})).toBeEmpty();
     await expect(page.getByLabel('Handle',{exact:true})).toBeEmpty();
@@ -100,8 +101,8 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.goto('/app/provider-shipments/new');
     await expect(page.getByRole('link',{name:'Add vehicle'})).toBeVisible();
     await expect(page.locator('form.provider-shipment-form')).toHaveCount(0);
-    await page.goto('/app/network');
-    await expect(page.getByRole('link',{name:'Manage drivers'})).toBeVisible();
+    await page.goto('/app/home/vehicles');
+    await expect(page.getByRole('navigation',{name:'Manage vehicles'})).toBeVisible();
     await page.getByRole('link',{name:'Add vehicle'}).click();
     await page.getByLabel('Make',{exact:true}).fill('Isuzu');
     await page.getByLabel('Model',{exact:true}).fill('Workflow mini');
@@ -257,7 +258,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await expect(driverPage.locator('input[name=vehicleId]')).toHaveValue(truckId);
     await expect(driverPage.getByRole('combobox',{name:/Vehicle/})).toHaveCount(0);
     await driverPage.goto('/app/network');
-    await expect(driverPage.getByRole('button',{name:'Add access',exact:true})).toBeVisible();
+    await expect(driverPage.getByRole('tab',{name:'Vehicle sharing',exact:true})).toBeVisible();
 
     checkpoint('REASSIGNMENT');
     // Reassignment creates only a new-pair Off Duty reset; the owner controls publication.
@@ -426,8 +427,9 @@ for(const useBasis of ['OWNED','PERMISSION']){
   let userId='',providerId='',vehicleId='';
   try{
    await verifyNewEmail(page,email);
+   await expect(page.getByRole('heading',{name:'Choose your account',exact:true})).toBeVisible();
+   await page.getByRole('link',{name:'Continue as Transport Provider',exact:true}).click();
    await acceptContentRules(page);
-   await page.getByRole('button',{name:/Transport Provider.*Set up your vehicles/}).click();
    await expect(page.locator('input[name="applicationType"]')).toHaveValue('TRANSPORT_PROVIDER');
    await expect(page.getByLabel('Account name',{exact:true})).toBeEmpty();
    await expect(page.getByLabel('Handle',{exact:true})).toBeEmpty();
@@ -439,14 +441,14 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
    await page.getByRole('button',{name:'Create transporter workspace'}).click();
    await expect(page).toHaveURL(/\/app\/home$/);
-   await expect(page.getByText('Choose the vehicle you drive in Fleet.',{exact:true})).toBeVisible();
+   await expect(page.getByText('Choose the vehicle you drive under Manage vehicles.',{exact:true})).toBeVisible();
    const identity=await service.from('profiles').select('id,role').eq('email',email).single();
    expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
    const provider=await service.from('provider_profiles').select('id').eq('user_id',userId).single();expect(provider.error).toBeNull();providerId=provider.data!.id;
    const independentSubscriptions=await service.from('subscriptions').select('id',{count:'exact',head:true}).eq('provider_profile_id',providerId);
    expect(independentSubscriptions.error).toBeNull();expect(independentSubscriptions.count).toBe(0);
-   await page.locator('.driver-empty-fleet').getByRole('link',{name:'Fleet',exact:true}).click();
-   await page.getByRole('navigation',{name:'My Fleet',exact:true}).getByRole('link',{name:/^Vehicles/}).click();
+   await page.locator('.driver-empty-fleet').getByRole('link',{name:'Manage vehicles',exact:true}).click();
+   await page.getByRole('navigation',{name:'Manage vehicles',exact:true}).getByRole('link',{name:/^Vehicles/}).click();
    await page.getByRole('link',{name:'Add vehicle',exact:true}).first().click();
    await page.getByRole('radio',{name:useBasis==='OWNED'?'I own this vehicle':'I rent it or have permission to use it',exact:true}).check();
    await page.getByLabel('Make',{exact:true}).fill('Isuzu');await page.getByLabel('Model',{exact:true}).fill('Independent mini');

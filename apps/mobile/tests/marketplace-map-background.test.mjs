@@ -114,13 +114,13 @@ function capacityScreen(){
  const screen=render.compile('../src/screens/capacity.tsx',{
   'react-native':{...native,Keyboard:{dismiss(){}}},'expo-router':{Link:'Link',useLocalSearchParams:()=>({}),useFocusEffect:()=>{}},
   '../session/chat-alert-provider':{useChatUpdates:()=>({transportUnreadCount:2})},'../hooks/content-blocks':{useBlockedProviders:()=>({blocked:[]})},
-  '../localization/provider':language,'../session/visitor-provider':{useVisitor:()=>visitor},'../components/visitor-access':{VisitorAccess:'VisitorAccess'},
+  '../localization/provider':language,'../session/visitor-provider':{useVisitor:()=>visitor},'../session/provider':{useAccount:()=>({session:null,busy:false})},'../components/visitor-access':{VisitorAccess:'VisitorAccess'},
   '../components/app-icon':{AppIcon:'AppIcon'},'../components/CapacityMap':{__esModule:true,default:'CapacityMap'},'../api/http':{apiOrigin:'http://127.0.0.1',apiRequest:async()=>{}},
   '../api/discovery':discovery,'../components/discovery-filters':{DiscoveryFilters:'DiscoveryFilters'},'../components/results-drawer':{ResultsDrawer:'ResultsDrawer'},
   '../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},
   '../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},
   '../api/public-capacity':{loadCapacity:async()=>{},loadSharedCapacity:async()=>{}},'../../../../src/lib/transporter-search.js':transporterSearch,
-  '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by public Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},
+  '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by public Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},'../hooks/account-query':{useAccountQuery:()=>({data:null})},
   '../components/ui':ui
  });
  return{render:()=>render.render(screen.default)};

@@ -129,6 +129,14 @@ And the public subset is weighted toward Empty medium and heavy trucks on plausi
 And enough fleet and independent profiles, current Service areas, current Capacity routes, and both regular-service geometries remain represented to exercise public discovery\
 And older fixture signals retain explicit age metadata while Off Duty and unpublished signals remain excluded.
 
+### Scenario: demo corridor routes reach the map
+
+Given a synthetic provider has a saved two-way corridor route or regular Service area\
+When the local fixture is imported\
+Then that signal belongs to one active demo vehicle and its current Driver\
+And its first city or center is near the vehicle's approximate demo location\
+And public or authorized private Capacity displays the signal as its own selectable map layer without claiming current availability.
+
 ### Scenario: fresh local fixtures initialize authoritative sharing
 
 Given all migrations have been applied before the disposable fixture import\

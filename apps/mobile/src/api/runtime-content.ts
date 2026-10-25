@@ -19,7 +19,7 @@ export type VisitorShipment=TrackingSummary&{provider:string;mode:string;canRevi
 export function parseFeatured(value:unknown):Featured{
  if(!row(value)||!strings(value,['date','headline','introduction','theme','tiktokUrl','start','end'])||!['NOT_SCHEDULED','SCHEDULED','LIVE','ENDED'].includes(String(value.tiktokStatus))||typeof value.published!=='boolean'
   ||!list(value.week,item=>row(item)&&strings(item,['date','day','label','dateLabel']))
-  ||!list(value.trucks,item=>row(item)&&integer(item.slot)&&strings(item,['name','handle','driver','driverKind','portrait','truck','configuration','image','place'])&&typeof item.available==='boolean')
+  ||!list(value.trucks,item=>row(item)&&integer(item.slot)&&strings(item,['name','handle','driver','driverKind','portrait','truck','configuration','image','place'])&&typeof item.available==='boolean'&&integer(item.fleetSize)&&typeof item.isCompany==='boolean')
   ||!list(value.programme,item=>row(item)&&strings(item,['kind','label','startsAt','endsAt','timeLabel'])&&(item.slot===null||integer(item.slot)))
   ||!list(value.sponsors,item=>row(item)&&strings(item,['kind','name','handle','description','website','phone','image'])))
   throw Error('Featured is unavailable right now. Please try again.');

@@ -4,14 +4,25 @@ import type {Page} from 'playwright-core';
 import {localAuditService,auditIdentity} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 
-test('private truck access recovers from a stalled request without losing email',async({page}:{page:Page})=>{
- await page.goto('/shared-capacity');await expect(page.locator('.language-picker select:visible')).toBeEnabled();await page.clock.install();
- let calls=0,release=()=>{};const held=new Promise<void>(r=>{release=r});
- await page.route('**/api/shared-capacity/otp',async route=>{calls++;await held;await route.abort().catch(()=>{});});
- try{
-  await page.getByLabel('Email',{exact:true}).fill('held@example.test');await page.getByRole('button',{name:'Continue with email'}).click();await expect.poll(()=>calls).toBe(1);
-  await page.clock.runFor(16000);await expect(page.locator('.form-error[role=alert]')).toContainText('Try again');await expect(page.getByRole('button',{name:'Continue with email'})).toBeEnabled();await expect(page.getByLabel('Email',{exact:true})).toHaveValue('held@example.test');expect(calls).toBe(1);
- }finally{release();await page.unrouteAll({behavior:'wait'});}
+test('signed-out Shared capacity reaches account signup and retired email access stays closed',async({page}:{page:Page})=>{
+ await page.goto('/shared-capacity');
+ await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
+ await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();
+ await page.getByRole('link',{name:'Sign up',exact:true}).click();
+ await expect(page).toHaveURL(/\/signup$/);
+ await expect(page.getByRole('radio',{name:/Find room for your load/})).toBeVisible();
+ await page.getByRole('radio',{name:/Put your vehicles on the map/}).check();
+ await page.getByLabel('Email',{exact:true}).fill('held@example.test');
+ await expect(page.getByLabel('Email',{exact:true})).toHaveValue('held@example.test');
+ expect((await page.request.post('/api/shared-capacity/otp',{data:{email:'held@example.test'}})).status()).toBe(410);
+});
+
+test('a forged verified signup URL does not reveal account continuation',async({page}:{page:Page})=>{
+ await page.goto('/signup?verified=1');
+ await expect(page.getByRole('heading',{name:'Create an account',exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Continue as Transport Provider',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Continue as Shipper / broker',exact:true})).toHaveCount(0);
+ await expect(page.getByLabel('Email',{exact:true})).toBeVisible();
 });
 
 test('uncertain Tracking creation preserves the draft and prevents another save',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{

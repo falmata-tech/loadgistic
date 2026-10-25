@@ -5,8 +5,9 @@ import {localAuditService,checked,auditProvider,auditAssignAndPublishSelfDrivenV
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 
 test.use({trace:'off',screenshot:'off'});
-test('review login leaves a usable Marketplace and preserves both area destinations',async({page}:{page:Page})=>{
- test.setTimeout(120000);
+test('review login keeps one shell across provider Home, Network and public capacity',async({page}:{page:Page},info)=>{
+ test.setTimeout(180000);
+ await page.setViewportSize({width:390,height:844});
  const service=localAuditService(),actor=await auditProvider(service,'review-nav');
  const password=randomUUID()+randomUUID();let vehicle='';
  try{
@@ -18,27 +19,48 @@ test('review login leaves a usable Marketplace and preserves both area destinati
   await page.goto('http://localhost:8084/review-access');
   await page.getByLabel('Review account email',{exact:true}).fill(actor.email);
   await page.getByLabel('Review account password',{exact:true}).fill(password);
-  await page.getByRole('button',{name:'Sign in',exact:true}).click();
-  await expect(page.getByText('Find space for your next load',{exact:true})).toBeVisible({timeout:30000});
-  await page.getByRole('tab',{name:'My workspace',exact:true}).click();
-  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible();
-  await page.getByRole('tab',{name:'Marketplace',exact:true}).click();
-  await expect(page.getByText('Find space for your next load',{exact:true})).toBeVisible();
-  await page.getByRole('tab',{name:'About',exact:true}).click();
+  await page.getByRole('button',{name:'Sign in',exact:true}).last().click();
+  await expect(page.getByRole('tab',{name:'Home',exact:true})).toBeVisible({timeout:30000});
+  await expect(page.getByRole('tab',{name:'My capacity',exact:true})).toBeVisible();
+  await expect(page.getByRole('tab',{name:'Manage vehicles',exact:true})).toBeVisible();
+  await expect(page.getByRole('tab',{name:'Public capacity',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Account',exact:true})).toBeVisible();
+  await expect(page.getByRole('tab',{name:'My workspace',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('tab',{name:'Capacity',exact:true})).toHaveCount(0);
+  await page.getByRole('tab',{name:'Network',exact:true}).click();
+  await expect(page.getByText('Find transport accounts',{exact:true})).toBeVisible();
+  await page.screenshot({path:info.outputPath('expo-directory-phone.png')});
+  await page.getByRole('textbox',{name:'Find transport accounts'}).fill('no-such-synthetic-account-xyz');
+  await expect(page.getByText('No accounts match this search.')).toBeVisible({timeout:30_000});
+  await page.getByRole('button',{name:'Clear search'}).click();
+  await expect(page.getByRole('textbox',{name:'Find transport accounts'})).toHaveValue('');
+  await page.getByRole('tab',{name:'Connections',exact:true}).click();
+  await expect(page.getByText(/A connection does not share vehicles/)).toBeVisible();
+  await expect(page.getByRole('link',{name:'Shared with you',exact:true})).toHaveCount(0);
+  await page.getByRole('tab',{name:'Home',exact:true}).click();
+  await expect(page).toHaveURL(/\/account$/);
+  await page.screenshot({path:info.outputPath('expo-provider-home-phone.png')});
+  await page.getByRole('tab',{name:'Manage vehicles',exact:true}).click();
+  await expect(page.getByRole('tab',{name:/^Vehicles/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/^Manage vehicle:/}).first()).toBeVisible({timeout:30_000});
+  await page.getByRole('tab',{name:'Public capacity',exact:true}).click();
+  await expect(page.getByRole('region',{name:'Map'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Vehicle filters'})).toBeVisible();
+  await page.getByRole('tab',{name:'More',exact:true}).click();
+  await page.getByRole('button',{name:'About',exact:true}).click();
   await expect(page).toHaveURL(/\/about$/);const aboutUrl=page.url();
-  await page.getByRole('tab',{name:'My workspace',exact:true}).click();
-  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toBeVisible();
-  await page.getByRole('tab',{name:'Marketplace',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Account',exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:'More',exact:true}).click();
+  const visibleClose=page.getByRole('button',{name:'Close menu',exact:true}).filter({visible:true});
+  await expect(visibleClose).toHaveCount(1);
+  await visibleClose.click();
   await expect(page).toHaveURL(aboutUrl);
-  await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toHaveCount(1);
-  await page.getByRole('button',{name:'Open menu',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Switch workspace',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Close menu',exact:true}).click();
-  await page.getByRole('button',{name:'Open menu',exact:true}).click();
+  await page.getByRole('tab',{name:'More',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
   await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Sign out',exact:true})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'My workspace',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('tab',{name:'Network',exact:true})).toHaveCount(0);
   await page.goto('http://localhost:8084/account',{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('button',{name:'Send code',exact:true})).toBeVisible();
  }finally{

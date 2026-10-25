@@ -319,7 +319,7 @@ And regular service asks for no date and never claims that a truck is currently 
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
 And a regular Capacity route joins its cities with ↔ while a regular Service area names its center and boundary cities\
 And both state Confirm availability\
-And the shared map uses a blue dashed polyline for Regular capacity route or a blue outlined polygon for Regular service area.
+And the shared map uses an orange dashed line for a Corridor route or an orange outline for a regular Service area, distinct from violet approximate location and status-colored current capacity.
 
 ### Scenario: regular routes cannot leak across trucks or assignments
 

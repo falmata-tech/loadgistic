@@ -43,7 +43,7 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
       await expect(language).toBeEnabled();await language.selectOption(locale);
       await expect(page.locator('html')).toHaveAttribute('lang',locale);
       await expect(steps.nth(0)).toContainText(t('Going to pickup'));
-      await expect(page.locator('.workspace-title .meta')).toHaveText(t('Transport Provider'));
+      await expect(page.getByRole('heading',{level:1})).toContainText(t('Tracking'));
       await expect(panel.locator('textarea[name=note]')).toHaveValue('Home <b>Account</b>');
       await page.locator('input[name=nextStatus][value=ISSUE]').check();
       const note=panel.locator('textarea[name=note]');await note.fill('Home <b>Account</b>');

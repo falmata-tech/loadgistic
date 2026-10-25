@@ -26,7 +26,7 @@ export function capacityMapData(items: CapacitySignal[]): Record<CapacityStatus,
   return result;
 }
 
-export function renderedCapacityPoints(features: Feature[], status: CapacityStatus): MapPoint[] {
+export function renderedCapacityPoints(features: Feature[], status: CapacityStatus, mine=false): MapPoint[] {
   const unique = new Map<string, MapPoint>();
   for (const feature of features) {
     if (feature.geometry?.type !== 'Point') continue;
@@ -39,8 +39,8 @@ export function renderedCapacityPoints(features: Feature[], status: CapacityStat
     const count = clustered ? Number(properties.point_count) : 1;
     const itemId = typeof properties.id === 'string' ? properties.id : '';
     if (clustered ? !Number.isInteger(cluster) || cluster! < 0 || !Number.isInteger(count) || count < 2 : !itemId) continue;
-    const key = cluster === null ? `truck:${itemId}` : `cluster:${status}:${cluster}`;
-    unique.set(key, {key, status, cluster, count, itemId, coordinate: coordinate as LngLat});
+    const key = cluster === null ? `truck:${itemId}` : `cluster:${mine?'own:':''}${status}:${cluster}`;
+    unique.set(key, {key, status, cluster, count, itemId, coordinate: coordinate as LngLat,mine});
   }
   return [...unique.values()];
 }

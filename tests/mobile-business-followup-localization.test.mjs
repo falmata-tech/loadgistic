@@ -8,7 +8,7 @@ const keys=[
  'Current viewers','Former team member',
  'Invitation saved, but email delivery failed. Use Resend.',
  'Loading sharing…','Loading your workspaces','No map or shipment access',
- 'No viewers added.','Open My workspace to create or join a business.',
+ 'No viewers added.','Create or join a shipper or broker team from Account.',
  'Permitted team members can see the route and status. Only staff you select can see vehicle location.',
  'Please sign in again.','Remove from business','Remove viewer',
  'Share tracking','Shipment owner',

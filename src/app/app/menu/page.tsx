@@ -35,6 +35,6 @@ export default async function WorkspaceMenuPage(){
     {href:'/featured',label:'Public featured programme',detail:'Preview today’s transporter programme.',Icon:Sparkles,public:true}
   ];
   const visible=links.filter(link=>access.granted||(provider&&link.href==='/app/support')||['/app/more','/','/featured'].includes(link.href));
-  const groups=[{label:'Management',items:visible.filter(link=>!link.public&&link.href!=='/app/more')},{label:'Account',items:visible.filter(link=>link.href==='/app/more')},{label:'Marketplace',items:visible.filter(link=>link.public)}];
+  const groups=[{label:'Management',items:visible.filter(link=>!link.public&&link.href!=='/app/more')},{label:'Account',items:visible.filter(link=>link.href==='/app/more')},{label:'Explore',items:visible.filter(link=>link.public)}];
   return <div className="page workspace-menu-page"><PageHeader icon={LayoutGrid} title={<Text message="More"/>}/>{groups.filter(group=>group.items.length).map(group=><section className="workspace-menu-group" key={group.label}><h2><Text message={group.label}/></h2><div className="workspace-menu-grid">{group.items.map(({href,label,detail,Icon,public:publicLink})=><Link href={href} className="workspace-menu-card" key={href}><span><Icon aria-hidden="true"/></span><div><strong><Text message={label}/></strong><p><Text message={detail}/></p></div>{publicLink?<ExternalLink aria-hidden="true"/>:null}</Link>)}</div></section>)}<div className="workspace-menu-signout"><LogoutButton/></div></div>;
 }

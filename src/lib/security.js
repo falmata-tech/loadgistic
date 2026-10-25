@@ -80,12 +80,6 @@ export function providerTrackingRecipientDigest(email,environment=process.env) {
     .digest('hex');
 }
 
-export function sharedCapacityOtpCode(challengeId) {
-  const digest=crypto.createHmac('sha256',secret()).update(`shared-capacity-otp:${challengeId}`).digest();
-  const value=digest.readUInt32BE(0)%1_000_000;
-  return String(value).padStart(6,'0');
-}
-
 export function providerTrackingOtpCode(challengeId) {
   const digest=crypto.createHmac('sha256',secret()).update(`provider-tracking-otp:${challengeId}`).digest();
   const value=digest.readUInt32BE(0)%1_000_000;

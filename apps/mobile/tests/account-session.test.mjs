@@ -14,6 +14,13 @@ test('restore rotates saved credentials and concurrent refresh uses one request'
  const a=h.controller.refresh(),b=h.controller.refresh();assert.equal(a,b);await Promise.resolve();assert.equal(requests,1);pending.resolve(identity(2));await a;
  assert.equal(h.stored(),'refresh-2');assert.equal(h.controller.snapshot().session.user.id,'user-2');
 });
+test('code verification returns the accepted session without another refresh',async()=>{
+ const paths=[];const h=setup({request:async path=>{paths.push(path);return path.endsWith('/verify')?identity(3):identity(2);}});
+ const session=await h.controller.verifyCode('handoff','123456');
+ assert.equal(session?.user.id,'user-3');
+ assert.equal(h.controller.snapshot().session,session);
+ assert.deepEqual(paths,['/api/mobile/auth/verify']);
+});
 test('logout during refresh discards late credentials, revokes them and cannot auto-restore',async()=>{
  const pending=deferred(),revoked=[];const h=setup({request:async(path,options)=>{if(path.endsWith('/refresh'))return pending.promise;revoked.push(options.body.refreshToken);return {};}});
  const refresh=h.controller.refresh();await Promise.resolve();await h.controller.signOut();pending.resolve(identity(2));await refresh;

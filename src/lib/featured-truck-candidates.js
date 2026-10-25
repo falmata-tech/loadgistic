@@ -1,4 +1,4 @@
-import {featuredTruckTypeForDate} from './featured-trucks.js';
+import {FEATURED_PROVIDER_DAY} from './featured-trucks.js';
 
 export function featuredTruckMapHref(candidate){
   if(!candidate.public_capacity_available||!candidate.public_capacity_id||!candidate.handle)return null;
@@ -29,7 +29,7 @@ async function readIdentifiers(ids,query,errorCode){
 }
 
 export async function loadFeaturedTruckCandidates(client,date,providers){
-  const theme=featuredTruckTypeForDate(date);
+  const theme=FEATURED_PROVIDER_DAY;
   const vehicles=await readFeaturedRows(()=>client.from('vehicles')
     .select('id,organization_id,provider_profile_id,platform_number,label,category,make,model,cargo_configuration,active')
     .eq('active',true).in('cargo_configuration',theme.configurations).order('platform_number').order('id'),

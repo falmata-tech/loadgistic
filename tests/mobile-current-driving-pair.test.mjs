@@ -5,22 +5,25 @@ import ts from 'typescript';
 import {workspaceCapabilities} from '../apps/mobile/src/navigation/destinations.ts';
 import {currentDrivingTruck,fleetDriverEditorKey} from '../apps/mobile/src/navigation/current-driving-pair.ts';
 
-function home({user,vehicles}){
- const React={createElement:(type,props,...children)=>({type,props:{...props,children:children.flat(Infinity)}}),Fragment:'Fragment'};
+function home({user,vehicles,activeStates=[true]}){
+ let mountedRef,refreshes=0;
+ const React={createElement:(type,props,...children)=>({type,props:{...props,children:children.flat(Infinity)}}),Fragment:'Fragment',
+  useRef:initial=>mountedRef??={current:initial},useEffect:effect=>effect()};
  const module={};
  const compiled=ts.transpileModule(readFileSync('apps/mobile/src/screens/driver-home.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText;
  const ports={react:React,'react-native':{View:'View',Text:'Text',StyleSheet:{create:value=>value,absoluteFill:{}}},
   '../localization/provider':{useLanguage:()=>({t:value=>value})},'../session/provider':{useAccount:()=>({session:{state:'ACTIVE',user,access:{granted:true}}})},
-  '../hooks/account-query':{useAccountQuery:()=>({data:{vehicles,canPublish:true},error:'',reload:async()=>{}})},
+  '../hooks/account-query':{useAccountQuery:()=>({data:{vehicles,canPublish:true},error:'',reload:async()=>{},refresh:async()=>{refreshes++;}})},
   '../navigation/destinations':{workspaceCapabilities},'../navigation/current-driving-pair':{currentDrivingTruck},'../components/ui':{palette:{border:'#cbd5e1',blue:'#155eef',ink:'#0b1d3a',muted:'#526375'}}};
  new Function('require','exports','React',compiled)(name=>ports[name]||{},module,React);
- return module.DriverHome();
+ let tree;for(const active of activeStates)tree=module.DriverHome({active});
+ return {tree,refreshes};
 }
 function assigned(tree){if(tree?.props?.truck)return tree.props.truck;for(const child of tree?.props?.children||[]){const found=assigned(child);if(found)return found;}return undefined;}
 const owner={id:'owner',role:'DRIVER',operatingModel:'SELF_MANAGED_DRIVER',ownsProviderAccount:true,canManageFleet:true,drivesTruck:true,currentDriverId:'owner',currentDrivenVehicleId:'old-truck'};
 test('actual native Home follows the server current pair after owner A-to-B reassignment without Auth rotation',()=>{
  const vehicles=[{id:'old-truck',driverId:'employee'},{id:'new-truck',driverId:'owner'}];
- assert.equal(assigned(home({user:owner,vehicles}))?.id,'new-truck');
+ assert.equal(assigned(home({user:owner,vehicles}).tree)?.id,'new-truck');
 });
 test('driver editor identity follows saved assignment, permissions and contact fields, not a pending local revision',()=>{
  const row={id:'driver',vehicleId:'truck-A',canManageCapacity:true,canManageTracking:false,name:'Driver',phone:'phone',email:'driver@example.test'};
@@ -29,9 +32,12 @@ test('driver editor identity follows saved assignment, permissions and contact f
 });
 test('actual native Home follows an employed driver’s current authorized pair despite an older sign-in truck ID',()=>{
  const user={...owner,id:'employee',operatingModel:'COMPANY_DRIVER',ownsProviderAccount:false,canManageFleet:false,currentDriverId:'employee'};
- assert.equal(assigned(home({user,vehicles:[{id:'old-truck',driverId:'someone-else'},{id:'replacement',driverId:'employee'}]}))?.id,'replacement');
+ assert.equal(assigned(home({user,vehicles:[{id:'old-truck',driverId:'someone-else'},{id:'replacement',driverId:'employee'}]}).tree)?.id,'replacement');
 });
 test('actual native Home never substitutes another driver or an ambiguous pair',()=>{
- assert.equal(assigned(home({user:owner,vehicles:[{id:'old-truck',driverId:'someone-else'}]})),undefined);
- assert.equal(assigned(home({user:owner,vehicles:[{id:'old-truck',driverId:'owner'},{id:'duplicate',driverId:'owner'}]})),undefined);
+ assert.equal(assigned(home({user:owner,vehicles:[{id:'old-truck',driverId:'someone-else'}]}).tree),undefined);
+ assert.equal(assigned(home({user:owner,vehicles:[{id:'old-truck',driverId:'owner'},{id:'duplicate',driverId:'owner'}]}).tree),undefined);
+});
+test('native Home refreshes the assigned vehicle when its Capacity tab reopens',()=>{
+ assert.equal(home({user:owner,vehicles:[],activeStates:[true,false,true]}).refreshes,1);
 });

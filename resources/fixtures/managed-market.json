@@ -9473,8 +9473,8 @@
         "destination_place_ref": "builtin:addis ababa",
         "destination_lat": 9.03,
         "destination_lng": 38.74,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-trans-1",
+        "assigned_driver_user_id": "user-company-driver",
         "route_points_json": "[]"
       },
       {
@@ -9497,8 +9497,8 @@
         "destination_place_ref": "builtin:sebeta",
         "destination_lat": 8.91,
         "destination_lng": 38.62,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-driver-1",
+        "assigned_driver_user_id": "user-driver",
         "route_points_json": "[]"
       },
       {
@@ -9521,8 +9521,8 @@
         "destination_place_ref": "builtin:addis ababa",
         "destination_lat": 9.03,
         "destination_lng": 38.74,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-01-13",
+        "assigned_driver_user_id": "user-public-fleet-driver-013",
         "route_points_json": "[]"
       },
       {
@@ -9545,8 +9545,8 @@
         "destination_place_ref": "osm:node/8486668766",
         "destination_lat": 8.4886591,
         "destination_lng": 39.2140338,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-02-13",
+        "assigned_driver_user_id": "user-public-fleet-driver-028",
         "route_points_json": "[{\"key\":\"adama\",\"place_ref\":\"builtin:adama\",\"label\":\"Adama, Ethiopia\",\"name\":\"Adama\",\"lat\":8.54,\"lng\":39.27,\"place_type\":\"town\"},{\"key\":\"gudedo\",\"place_ref\":\"osm:node/8486668769\",\"label\":\"Gudedo, Ethiopia\",\"name\":\"Gudedo\",\"lat\":8.5624426,\"lng\":39.208974,\"place_type\":\"hamlet\",\"distance\":7.159349356989673},{\"key\":\"luto\",\"place_ref\":\"osm:node/8486668765\",\"label\":\"Luto, Ethiopia\",\"name\":\"Luto\",\"lat\":8.5088557,\"lng\":39.2075728,\"place_type\":\"hamlet\",\"distance\":7.688944311717156},{\"key\":\"melka-hida\",\"place_ref\":\"osm:node/8486668766\",\"label\":\"Melka Hida, Ethiopia\",\"name\":\"Melka Hida\",\"lat\":8.4886591,\"lng\":39.2140338,\"place_type\":\"hamlet\",\"distance\":8.39462241606349}]"
       },
       {
@@ -9569,8 +9569,8 @@
         "destination_place_ref": "builtin:bahir dar",
         "destination_lat": 11.59,
         "destination_lng": 37.39,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-03-11",
+        "assigned_driver_user_id": "user-public-fleet-driver-041",
         "route_points_json": "[]"
       },
       {
@@ -9593,8 +9593,8 @@
         "destination_place_ref": "osm:node/1150908767",
         "destination_lat": 13.4526088,
         "destination_lng": 39.5200259,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-04-13",
+        "assigned_driver_user_id": "user-public-fleet-driver-058",
         "route_points_json": "[{\"key\":\"mekelle\",\"place_ref\":\"builtin:mekelle\",\"label\":\"Mekelle, Ethiopia\",\"name\":\"Mekelle\",\"lat\":13.5,\"lng\":39.48,\"place_type\":\"town\"},{\"key\":\"aynalem\",\"place_ref\":\"osm:node/1150948679\",\"label\":\"ዓይኒ ዓለም Aynalem, Ethiopia\",\"name\":\"ዓይኒ ዓለም Aynalem\",\"lat\":13.4557615,\"lng\":39.4890041,\"place_type\":\"village\",\"distance\":5.014527063948887},{\"key\":\"safiya\",\"place_ref\":\"osm:node/1150926835\",\"label\":\"Safiya, Ethiopia\",\"name\":\"Safiya\",\"lat\":13.55535,\"lng\":39.47901,\"place_type\":\"village\",\"distance\":6.155569734115764},{\"key\":\"shefta\",\"place_ref\":\"osm:node/1150908767\",\"label\":\"Shefta, Ethiopia\",\"name\":\"Shefta\",\"lat\":13.4526088,\"lng\":39.5200259,\"place_type\":\"village\",\"distance\":6.819242466573356}]"
       },
       {
@@ -9617,8 +9617,8 @@
         "destination_place_ref": "osm:node/1150881802",
         "destination_lat": 11.6921666,
         "destination_lng": 40.9531065,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-05-13",
+        "assigned_driver_user_id": "user-public-fleet-driver-073",
         "route_points_json": "[{\"key\":\"semera\",\"place_ref\":\"builtin:semera\",\"label\":\"Semera, Ethiopia\",\"name\":\"Semera\",\"lat\":11.79,\"lng\":41.01,\"place_type\":\"town\"},{\"key\":\"logiya\",\"place_ref\":\"builtin:logiya\",\"label\":\"Logiya, Ethiopia\",\"name\":\"Logiya\",\"lat\":11.7230913,\"lng\":40.976098,\"place_type\":\"town\",\"distance\":8.3050060051983},{\"key\":\"dubti\",\"place_ref\":\"builtin:dubti\",\"label\":\"Dubti, Ethiopia\",\"name\":\"Dubti\",\"lat\":11.7368315,\"lng\":41.0840355,\"place_type\":\"town\",\"distance\":9.995381600812747},{\"key\":\"tendaho\",\"place_ref\":\"osm:node/1150881802\",\"label\":\"Tendaho, Ethiopia\",\"name\":\"Tendaho\",\"lat\":11.6921666,\"lng\":40.9531065,\"place_type\":\"village\",\"distance\":12.51830268615037}]"
       },
       {
@@ -9641,8 +9641,8 @@
         "destination_place_ref": "osm:node/1150931652",
         "destination_lat": 9.2397234,
         "destination_lng": 42.5978825,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-06-1",
+        "assigned_driver_user_id": "user-public-fleet-driver-076",
         "route_points_json": "[{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"},{\"key\":\"xoodhleey\",\"place_ref\":\"osm:node/6575426386\",\"label\":\"Xoodhleey, Ethiopia\",\"name\":\"Xoodhleey\",\"lat\":9.3079659,\"lng\":42.9101754,\"place_type\":\"village\",\"distance\":12.961013695762405},{\"key\":\"camadhle\",\"place_ref\":\"osm:node/6575497902\",\"label\":\"Camadhle, Ethiopia\",\"name\":\"Camadhle\",\"lat\":9.260866,\"lng\":42.9959489,\"place_type\":\"hamlet\",\"distance\":23.67614678051563},{\"key\":\"dhagahle\",\"place_ref\":\"osm:node/1150931652\",\"label\":\"Dhagahle, Ethiopia\",\"name\":\"Dhagahle\",\"lat\":9.2397234,\"lng\":42.5978825,\"place_type\":\"town\",\"distance\":25.343345412547023}]"
       },
       {
@@ -9665,8 +9665,8 @@
         "destination_place_ref": "builtin:harar",
         "destination_lat": 9.31,
         "destination_lng": 42.12,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-07-13",
+        "assigned_driver_user_id": "user-public-fleet-driver-103",
         "route_points_json": "[]"
       },
       {
@@ -9689,8 +9689,8 @@
         "destination_place_ref": "osm:node/12031624739",
         "destination_lat": 9.4567769,
         "destination_lng": 41.9204432,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-fleet-08-1",
+        "assigned_driver_user_id": "user-public-fleet-driver-106",
         "route_points_json": "[{\"key\":\"dire-dawa\",\"place_ref\":\"builtin:dire dawa\",\"label\":\"Dire Dawa, Ethiopia\",\"name\":\"Dire Dawa\",\"lat\":9.6,\"lng\":41.87,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\",\"distance\":9.484061736833132},{\"key\":\"melka-jebdu\",\"place_ref\":\"osm:node/316855944\",\"label\":\"Melka Jebdu, Ethiopia\",\"name\":\"Melka Jebdu\",\"lat\":9.6193211,\"lng\":41.7836794,\"place_type\":\"town\",\"distance\":9.704523914311896},{\"key\":\"dengego\",\"place_ref\":\"osm:node/12031624739\",\"label\":\"Dengego, Ethiopia\",\"name\":\"Dengego\",\"lat\":9.4567769,\"lng\":41.9204432,\"place_type\":\"village\",\"distance\":16.85901597275891}]"
       },
       {
@@ -9713,8 +9713,8 @@
         "destination_place_ref": "builtin:sululta",
         "destination_lat": 9.18,
         "destination_lng": 38.75,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-01",
+        "assigned_driver_user_id": "user-public-owner-01",
         "route_points_json": "[{\"key\":\"addis ababa\",\"place_ref\":\"builtin:addis ababa\",\"label\":\"Addis Ababa, Ethiopia\",\"lat\":9.03,\"lng\":38.74},{\"key\":\"sululta\",\"place_ref\":\"builtin:sululta\",\"label\":\"Sululta, Ethiopia\",\"lat\":9.18,\"lng\":38.75}]"
       },
       {
@@ -9737,8 +9737,8 @@
         "destination_place_ref": "builtin:dire dawa",
         "destination_lat": 9.6,
         "destination_lng": 41.87,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-02",
+        "assigned_driver_user_id": "user-public-owner-02",
         "route_points_json": "[{\"key\":\"adama\",\"place_ref\":\"builtin:adama\",\"label\":\"Adama, Ethiopia\",\"name\":\"Adama\",\"lat\":8.54,\"lng\":39.27,\"place_type\":\"town\"},{\"key\":\"awash\",\"place_ref\":\"builtin:awash\",\"label\":\"Awash, Ethiopia\",\"name\":\"Awash\",\"lat\":8.98,\"lng\":40.17,\"place_type\":\"town\"},{\"key\":\"mieso\",\"place_ref\":\"builtin:mieso\",\"label\":\"Mieso, Ethiopia\",\"name\":\"Mieso\",\"lat\":9.24,\"lng\":40.75,\"place_type\":\"town\"},{\"key\":\"dire-dawa\",\"place_ref\":\"builtin:dire dawa\",\"label\":\"Dire Dawa, Ethiopia\",\"name\":\"Dire Dawa\",\"lat\":9.6,\"lng\":41.87,\"place_type\":\"town\"}]"
       },
       {
@@ -9761,8 +9761,8 @@
         "destination_place_ref": "builtin:gondar",
         "destination_lat": 12.6,
         "destination_lng": 37.47,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-03",
+        "assigned_driver_user_id": "user-public-owner-03",
         "route_points_json": "[{\"key\":\"bahir-dar\",\"place_ref\":\"builtin:bahir dar\",\"label\":\"Bahir Dar, Ethiopia\",\"name\":\"Bahir Dar\",\"lat\":11.59,\"lng\":37.39,\"place_type\":\"town\"},{\"key\":\"debre-tabor\",\"place_ref\":\"builtin:debre tabor\",\"label\":\"Debre Tabor, Ethiopia\",\"name\":\"Debre Tabor\",\"lat\":11.86,\"lng\":38,\"place_type\":\"town\"},{\"key\":\"gondar\",\"place_ref\":\"builtin:gondar\",\"label\":\"Gondar, Ethiopia\",\"name\":\"Gondar\",\"lat\":12.6,\"lng\":37.47,\"place_type\":\"town\"}]"
       },
       {
@@ -9785,8 +9785,8 @@
         "destination_place_ref": "builtin:aynalem",
         "destination_lat": 13.4557615,
         "destination_lng": 39.4890041,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-04",
+        "assigned_driver_user_id": "user-public-owner-04",
         "route_points_json": "[{\"key\":\"mekelle\",\"place_ref\":\"builtin:mekelle\",\"label\":\"Mekelle, Ethiopia\",\"lat\":13.5,\"lng\":39.47},{\"key\":\"aynalem\",\"place_ref\":\"builtin:aynalem\",\"label\":\"Aynalem, Ethiopia\",\"lat\":13.4557615,\"lng\":39.4890041}]"
       },
       {
@@ -9809,8 +9809,8 @@
         "destination_place_ref": "builtin:logiya",
         "destination_lat": 11.7230913,
         "destination_lng": 40.976098,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-05",
+        "assigned_driver_user_id": "user-public-owner-05",
         "route_points_json": "[{\"key\":\"semera\",\"place_ref\":\"builtin:semera\",\"label\":\"Semera, Ethiopia\",\"lat\":11.79,\"lng\":41.01},{\"key\":\"logiya\",\"place_ref\":\"builtin:logiya\",\"label\":\"Logiya, Ethiopia\",\"lat\":11.7230913,\"lng\":40.976098}]"
       },
       {
@@ -9833,8 +9833,8 @@
         "destination_place_ref": "builtin:degehabur",
         "destination_lat": 8.22,
         "destination_lng": 43.56,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-06",
+        "assigned_driver_user_id": "user-public-owner-06",
         "route_points_json": "[{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"},{\"key\":\"kebri-beyah\",\"place_ref\":\"builtin:kebri beyah\",\"label\":\"Kebri Beyah, Ethiopia\",\"name\":\"Kebri Beyah\",\"lat\":9.1000628,\"lng\":43.1786727,\"place_type\":\"town\"},{\"key\":\"degehabur\",\"place_ref\":\"builtin:degehabur\",\"label\":\"Degehabur, Ethiopia\",\"name\":\"Degehabur\",\"lat\":8.22,\"lng\":43.56,\"place_type\":\"town\"}]"
       },
       {
@@ -9857,8 +9857,8 @@
         "destination_place_ref": "builtin:jigjiga",
         "destination_lat": 9.35,
         "destination_lng": 42.8,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-07",
+        "assigned_driver_user_id": "user-public-owner-07",
         "route_points_json": "[{\"key\":\"harar\",\"place_ref\":\"builtin:harar\",\"label\":\"Harar, Ethiopia\",\"name\":\"Harar\",\"lat\":9.31,\"lng\":42.12,\"place_type\":\"town\"},{\"key\":\"babile\",\"place_ref\":\"builtin:babile\",\"label\":\"Babile, Ethiopia\",\"name\":\"Babile\",\"lat\":9.21,\"lng\":42.33,\"place_type\":\"town\"},{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"}]"
       },
       {
@@ -9881,8 +9881,8 @@
         "destination_place_ref": "builtin:adama",
         "destination_lat": 8.54,
         "destination_lng": 39.27,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-08",
+        "assigned_driver_user_id": "user-public-owner-08",
         "route_points_json": "[{\"key\":\"dire-dawa\",\"place_ref\":\"builtin:dire dawa\",\"label\":\"Dire Dawa, Ethiopia\",\"name\":\"Dire Dawa\",\"lat\":9.6,\"lng\":41.87,\"place_type\":\"town\"},{\"key\":\"mieso\",\"place_ref\":\"builtin:mieso\",\"label\":\"Mieso, Ethiopia\",\"name\":\"Mieso\",\"lat\":9.24,\"lng\":40.75,\"place_type\":\"town\"},{\"key\":\"awash\",\"place_ref\":\"builtin:awash\",\"label\":\"Awash, Ethiopia\",\"name\":\"Awash\",\"lat\":8.98,\"lng\":40.17,\"place_type\":\"town\"},{\"key\":\"adama\",\"place_ref\":\"builtin:adama\",\"label\":\"Adama, Ethiopia\",\"name\":\"Adama\",\"lat\":8.54,\"lng\":39.27,\"place_type\":\"town\"}]"
       },
       {
@@ -9905,8 +9905,8 @@
         "destination_place_ref": "builtin:wondo genet",
         "destination_lat": 7.0854757,
         "destination_lng": 38.6141113,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-09",
+        "assigned_driver_user_id": "user-public-owner-09",
         "route_points_json": "[{\"key\":\"hawassa\",\"place_ref\":\"builtin:hawassa\",\"label\":\"Hawassa, Ethiopia\",\"lat\":7.05,\"lng\":38.47},{\"key\":\"wondo genet\",\"place_ref\":\"builtin:wondo genet\",\"label\":\"Wondo Genet, Ethiopia\",\"lat\":7.0854757,\"lng\":38.6141113}]"
       },
       {
@@ -9929,8 +9929,8 @@
         "destination_place_ref": "builtin:gubre",
         "destination_lat": 8.2071534,
         "destination_lng": 37.7902814,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-10",
+        "assigned_driver_user_id": "user-public-owner-10",
         "route_points_json": "[{\"key\":\"wolkite\",\"place_ref\":\"builtin:wolkite\",\"label\":\"Wolkite, Ethiopia\",\"lat\":8.28,\"lng\":37.78},{\"key\":\"gubre\",\"place_ref\":\"builtin:gubre\",\"label\":\"Gubre, Ethiopia\",\"lat\":8.2071534,\"lng\":37.7902814}]"
       },
       {
@@ -9953,8 +9953,8 @@
         "destination_place_ref": "builtin:dorze",
         "destination_lat": 6.1948568,
         "destination_lng": 37.5743447,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-11",
+        "assigned_driver_user_id": "user-public-owner-11",
         "route_points_json": "[{\"key\":\"arba minch\",\"place_ref\":\"builtin:arba minch\",\"label\":\"Arba Minch, Ethiopia\",\"lat\":6.04,\"lng\":37.55},{\"key\":\"dorze\",\"place_ref\":\"builtin:dorze\",\"label\":\"Dorze, Ethiopia\",\"lat\":6.1948568,\"lng\":37.5743447}]"
       },
       {
@@ -9977,8 +9977,8 @@
         "destination_place_ref": "builtin:dembi dolo",
         "destination_lat": 8.53,
         "destination_lng": 34.8,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-12",
+        "assigned_driver_user_id": "user-public-owner-12",
         "route_points_json": "[{\"key\":\"assosa\",\"place_ref\":\"builtin:assosa\",\"label\":\"Assosa, Ethiopia\",\"name\":\"Assosa\",\"lat\":10.07,\"lng\":34.53,\"place_type\":\"town\"},{\"key\":\"bambasi\",\"place_ref\":\"builtin:bambasi\",\"label\":\"Bambasi, Ethiopia\",\"name\":\"Bambasi\",\"lat\":9.75,\"lng\":34.73,\"place_type\":\"town\"},{\"key\":\"dembi-dolo\",\"place_ref\":\"builtin:dembi dolo\",\"label\":\"Dembi Dolo, Ethiopia\",\"name\":\"Dembi Dolo\",\"lat\":8.53,\"lng\":34.8,\"place_type\":\"town\"}]"
       },
       {
@@ -10001,8 +10001,8 @@
         "destination_place_ref": "builtin:nekemte",
         "destination_lat": 9.09,
         "destination_lng": 36.55,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-13",
+        "assigned_driver_user_id": "user-public-owner-13",
         "route_points_json": "[{\"key\":\"gambella\",\"place_ref\":\"builtin:gambella\",\"label\":\"Gambella, Ethiopia\",\"name\":\"Gambella\",\"lat\":8.25,\"lng\":34.59,\"place_type\":\"town\"},{\"key\":\"dembi-dolo\",\"place_ref\":\"builtin:dembi dolo\",\"label\":\"Dembi Dolo, Ethiopia\",\"name\":\"Dembi Dolo\",\"lat\":8.53,\"lng\":34.8,\"place_type\":\"town\"},{\"key\":\"nekemte\",\"place_ref\":\"builtin:nekemte\",\"label\":\"Nekemte, Ethiopia\",\"name\":\"Nekemte\",\"lat\":9.09,\"lng\":36.55,\"place_type\":\"town\"}]"
       },
       {
@@ -10025,8 +10025,8 @@
         "destination_place_ref": "builtin:jimma",
         "destination_lat": 7.67,
         "destination_lng": 36.83,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-14",
+        "assigned_driver_user_id": "user-public-owner-14",
         "route_points_json": "[{\"key\":\"mizan-aman\",\"place_ref\":\"builtin:mizan aman\",\"label\":\"Mizan Aman, Ethiopia\",\"name\":\"Mizan Aman\",\"lat\":7,\"lng\":35.58,\"place_type\":\"town\"},{\"key\":\"bonga\",\"place_ref\":\"builtin:bonga\",\"label\":\"Bonga, Ethiopia\",\"name\":\"Bonga\",\"lat\":7.27,\"lng\":36.23,\"place_type\":\"town\"},{\"key\":\"jimma\",\"place_ref\":\"builtin:jimma\",\"label\":\"Jimma, Ethiopia\",\"name\":\"Jimma\",\"lat\":7.67,\"lng\":36.83,\"place_type\":\"town\"}]"
       },
       {
@@ -10049,8 +10049,8 @@
         "destination_place_ref": "builtin:arba minch",
         "destination_lat": 6.04,
         "destination_lng": 37.55,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-15",
+        "assigned_driver_user_id": "user-public-owner-15",
         "route_points_json": "[{\"key\":\"moyale\",\"place_ref\":\"osm:node/44927166\",\"label\":\"Moyale, Ethiopia\",\"name\":\"Moyale\",\"lat\":3.5241898,\"lng\":39.0512683,\"place_type\":\"town\"},{\"key\":\"yabelo\",\"place_ref\":\"builtin:yabelo\",\"label\":\"Yabelo, Ethiopia\",\"name\":\"Yabelo\",\"lat\":4.88,\"lng\":38.08,\"place_type\":\"town\"},{\"key\":\"konso\",\"place_ref\":\"builtin:konso\",\"label\":\"Konso, Ethiopia\",\"name\":\"Konso\",\"lat\":5.34,\"lng\":37.44,\"place_type\":\"town\"},{\"key\":\"arba-minch\",\"place_ref\":\"builtin:arba minch\",\"label\":\"Arba Minch, Ethiopia\",\"name\":\"Arba Minch\",\"lat\":6.04,\"lng\":37.55,\"place_type\":\"town\"}]"
       },
       {
@@ -10073,8 +10073,8 @@
         "destination_place_ref": "builtin:dessie",
         "destination_lat": 11.13,
         "destination_lng": 39.63,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-16",
+        "assigned_driver_user_id": "user-public-owner-16",
         "route_points_json": "[{\"key\":\"addis-ababa\",\"place_ref\":\"builtin:addis ababa\",\"label\":\"Addis Ababa, Ethiopia\",\"name\":\"Addis Ababa\",\"lat\":9.03,\"lng\":38.74,\"place_type\":\"town\"},{\"key\":\"debre-birhan\",\"place_ref\":\"builtin:debre birhan\",\"label\":\"Debre Birhan, Ethiopia\",\"name\":\"Debre Birhan\",\"lat\":9.68,\"lng\":39.53,\"place_type\":\"town\"},{\"key\":\"dessie\",\"place_ref\":\"builtin:dessie\",\"label\":\"Dessie, Ethiopia\",\"name\":\"Dessie\",\"lat\":11.13,\"lng\":39.63,\"place_type\":\"town\"}]"
       },
       {
@@ -10097,8 +10097,8 @@
         "destination_place_ref": "builtin:dire dawa",
         "destination_lat": 9.6,
         "destination_lng": 41.87,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-17",
+        "assigned_driver_user_id": "user-public-owner-17",
         "route_points_json": "[{\"key\":\"adama\",\"place_ref\":\"builtin:adama\",\"label\":\"Adama, Ethiopia\",\"name\":\"Adama\",\"lat\":8.54,\"lng\":39.27,\"place_type\":\"town\"},{\"key\":\"awash\",\"place_ref\":\"builtin:awash\",\"label\":\"Awash, Ethiopia\",\"name\":\"Awash\",\"lat\":8.98,\"lng\":40.17,\"place_type\":\"town\"},{\"key\":\"mieso\",\"place_ref\":\"builtin:mieso\",\"label\":\"Mieso, Ethiopia\",\"name\":\"Mieso\",\"lat\":9.24,\"lng\":40.75,\"place_type\":\"town\"},{\"key\":\"dire-dawa\",\"place_ref\":\"builtin:dire dawa\",\"label\":\"Dire Dawa, Ethiopia\",\"name\":\"Dire Dawa\",\"lat\":9.6,\"lng\":41.87,\"place_type\":\"town\"}]"
       },
       {
@@ -10121,8 +10121,8 @@
         "destination_place_ref": "builtin:gondar",
         "destination_lat": 12.6,
         "destination_lng": 37.47,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-18",
+        "assigned_driver_user_id": "user-public-owner-18",
         "route_points_json": "[{\"key\":\"bahir-dar\",\"place_ref\":\"builtin:bahir dar\",\"label\":\"Bahir Dar, Ethiopia\",\"name\":\"Bahir Dar\",\"lat\":11.59,\"lng\":37.39,\"place_type\":\"town\"},{\"key\":\"debre-tabor\",\"place_ref\":\"builtin:debre tabor\",\"label\":\"Debre Tabor, Ethiopia\",\"name\":\"Debre Tabor\",\"lat\":11.86,\"lng\":38,\"place_type\":\"town\"},{\"key\":\"gondar\",\"place_ref\":\"builtin:gondar\",\"label\":\"Gondar, Ethiopia\",\"name\":\"Gondar\",\"lat\":12.6,\"lng\":37.47,\"place_type\":\"town\"}]"
       },
       {
@@ -10145,8 +10145,8 @@
         "destination_place_ref": "builtin:adigrat",
         "destination_lat": 14.28,
         "destination_lng": 39.46,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-19",
+        "assigned_driver_user_id": "user-public-owner-19",
         "route_points_json": "[{\"key\":\"mekelle\",\"place_ref\":\"builtin:mekelle\",\"label\":\"Mekelle, Ethiopia\",\"name\":\"Mekelle\",\"lat\":13.5,\"lng\":39.48,\"place_type\":\"town\"},{\"key\":\"wukro\",\"place_ref\":\"builtin:wukro\",\"label\":\"Wukro, Ethiopia\",\"name\":\"Wukro\",\"lat\":13.79,\"lng\":39.6,\"place_type\":\"town\"},{\"key\":\"adigrat\",\"place_ref\":\"builtin:adigrat\",\"label\":\"Adigrat, Ethiopia\",\"name\":\"Adigrat\",\"lat\":14.28,\"lng\":39.46,\"place_type\":\"town\"}]"
       },
       {
@@ -10169,8 +10169,8 @@
         "destination_place_ref": "builtin:dessie",
         "destination_lat": 11.13,
         "destination_lng": 39.63,
-        "assigned_vehicle_id": null,
-        "assigned_driver_user_id": null,
+        "assigned_vehicle_id": "veh-public-owner-20",
+        "assigned_driver_user_id": "user-public-owner-20",
         "route_points_json": "[{\"key\":\"semera\",\"place_ref\":\"builtin:semera\",\"label\":\"Semera, Ethiopia\",\"name\":\"Semera\",\"lat\":11.79,\"lng\":41.01,\"place_type\":\"town\"},{\"key\":\"mille\",\"place_ref\":\"builtin:mille\",\"label\":\"Mille, Ethiopia\",\"name\":\"Mille\",\"lat\":11.42,\"lng\":40.77,\"place_type\":\"town\"},{\"key\":\"bati\",\"place_ref\":\"builtin:bati\",\"label\":\"Bati, Ethiopia\",\"name\":\"Bati\",\"lat\":11.18,\"lng\":40.02,\"place_type\":\"town\"},{\"key\":\"dessie\",\"place_ref\":\"builtin:dessie\",\"label\":\"Dessie, Ethiopia\",\"name\":\"Dessie\",\"lat\":11.13,\"lng\":39.63,\"place_type\":\"town\"}]"
       }
     ],

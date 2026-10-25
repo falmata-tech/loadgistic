@@ -1,10 +1,10 @@
-import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditIdentity,auditProvider,checked,localAuditService} from './audit-helpers';
+import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditFleetDriver,auditFleetProvider,auditProvider,checked,localAuditService} from './audit-helpers';
 import {auditLogin} from './audit-helpers';
 import {expect,test} from './browser-test';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
-import {getProviderCapacityWorkspace,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
+import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 async function login(page:any,email='driver@loadgistic.local'){await auditLogin(page,email);}
 
@@ -195,11 +195,21 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
   const savedRoute=checked(await service.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id,route_points_json').eq('assigned_vehicle_id',vehicleId).single());
   expect(savedRoute.assigned_driver_user_id).toBe(actor.id);expect(savedRoute.route_points_json).toHaveLength(2);
   await expect(map).toHaveAttribute('data-original-map','yes');
+  const currentLane=map.locator('.capacity-setting-current-route'),corridorLane=map.locator('.capacity-setting-corridor-route');
+  await expect(currentLane).toBeVisible();await expect(corridorLane).toBeVisible();
+  const lanes=await map.evaluate((element:HTMLElement)=>{
+    const current=element.querySelector<SVGPathElement>('.capacity-setting-current-route')!;
+    const corridor=element.querySelector<SVGPathElement>('.capacity-setting-corridor-route')!;
+    const a=current.getPointAtLength(current.getTotalLength()/2),b=corridor.getPointAtLength(corridor.getTotalLength()/2);
+    return {gap:Math.hypot(a.x-b.x,a.y-b.y),halfStroke:(Number(current.getAttribute('stroke-width'))+Number(corridor.getAttribute('stroke-width')))/2};
+  });
+  expect(lanes.gap,'current and Corridor routes need separately visible strokes').toBeGreaterThan(lanes.halfStroke);
   const locationAction=page.getByRole('navigation',{name:'Edit capacity signals'}).getByRole('button',{name:'Edit approximate location',exact:true});
   await expect(locationAction).toBeEnabled({timeout:20000});
   await locationAction.click();
   const location=page.getByRole('dialog',{name:'Approximate location',exact:true});
-  await expect(location.getByRole('combobox')).toHaveCount(1);
+  // The source read may take several seconds on a freshly started local API.
+  await expect(location.getByRole('combobox')).toHaveCount(1,{timeout:20000});
   const originalRadius=await location.getByLabel('Shared location accuracy').inputValue();
   const nextRadius=originalRadius==='10'?'5':'10';
   await location.getByLabel('Shared location accuracy').selectOption(nextRadius);
@@ -230,13 +240,18 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
 });
 
 test('fleet owners edit capacity but cannot substitute their device location',async({page}:{page:any})=>{
-  test.setTimeout(60_000);
-  const actor=await auditIdentity(localAuditService(),'transporter@loadgistic.local');
-  const workspace=await getProviderCapacityWorkspace(actor);
-  const assigned=workspace.vehicles.find((vehicle:any)=>vehicle.assigned_driver?.id&&vehicle.assigned_driver.id!==actor.id);
-  expect(assigned,'A distinct employed Driver vehicle is required for this owner-permission check.').toBeTruthy();
-  await login(page,'transporter@loadgistic.local');
-  await page.goto(`/app/fleet/${assigned.id}`);
+  test.setTimeout(90_000);
+  const service=localAuditService(),owner=await auditFleetProvider(service,'capacity-owner-location');
+  let vehicleId='',driver:Awaited<ReturnType<typeof auditFleetDriver>>|null=null;
+  try{
+  vehicleId=(await createProviderVehicle(owner,{useBasis:'OWNED',make:'Audit fleet',model:'Location owner',plate:`COL-${owner.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
+  driver=await auditFleetDriver(service,owner,vehicleId);
+  checked(await service.rpc('set_provider_vehicle_publication',{actor_user_id:owner.id,target_vehicle_id:vehicleId,requested_state:'LIVE'}));
+  checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:driver.id,command:{vehicle_id:vehicleId,approximate_lat:9.03,approximate_lng:38.76,location_precision_km:20}}));
+  const places=checked(await service.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
+  const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
+  await publishProviderCapacity(owner,{vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'PRIVATE',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:routePlaces});
+  await auditLogin(page,owner.email,`/app/fleet/${vehicleId}`);
   await expect(page.getByRole('button',{name:'Refresh vehicle location'})).toHaveCount(0);
   await page.getByRole('navigation',{name:'Edit capacity signals'}).getByRole('link',{name:'Manage location source'}).click();
   await expect(page).toHaveURL(/\?view=location$/);
@@ -254,6 +269,11 @@ test('fleet owners edit capacity but cannot substitute their device location',as
   await page.getByRole('button',{name:/^Edit current capacity:/}).click();
   await expect(page.getByRole('dialog',{name:'Capacity',exact:true})).toBeVisible();
   await expect(page.getByTestId('capacity-summary')).toBeVisible();
+  }finally{
+    if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await service.from('telematics_location_sources').delete().eq('vehicle_id',vehicleId));checked(await service.from('driver_vehicle_assignments').delete().eq('vehicle_id',vehicleId));}
+    if(driver){checked(await service.from('drivers').delete().eq('user_id',driver.id));checked(await service.from('organization_members').delete().eq('user_id',driver.id));checked(await service.from('audit_logs').delete().eq('actor_user_id',driver.id));checked(await service.auth.admin.deleteUser(driver.id));}
+    checked(await auditDeleteVehicles(service,'organization_id',owner.organization_id));checked(await service.from('company_pages').delete().eq('organization_id',owner.organization_id));checked(await service.from('organization_members').delete().eq('user_id',owner.id));checked(await service.from('audit_logs').delete().eq('actor_user_id',owner.id));checked(await service.from('audit_logs').delete().eq('organization_id',owner.organization_id));checked(await service.from('organizations').delete().eq('id',owner.organization_id));checked(await service.auth.admin.deleteUser(owner.id));
+  }
 });
 
 test('anonymous JSON capacity mutations stay denied',async({request}:{request:any})=>{

@@ -8,7 +8,7 @@ test('public map keeps its controls usable without retired transport chat',async
  test.setTimeout(90000);
  await page.goto('/');
  await expect(page.locator('.leaflet-container')).toBeVisible();
- await expect(page.getByRole('navigation',{name:'Switch view'}).getByRole('link',{name:'My workspace'})).toHaveAttribute('href','/login');
+ await expect(page.getByTestId('public-session-action').getByRole('link',{name:'Sign in'})).toHaveAttribute('href','/login');
  await expect(page.locator('.public-assistance-dock,.public-assistance-request,.transport-request-form')).toHaveCount(0);
  for(const open of [true,false]){
   if(open)await openCapacityFilters(page);else await closeCapacityFilters(page);

@@ -39,6 +39,16 @@ And the conversation is assigned to the least-loaded available agent when capaci
 And the redirect immediately renders that stored message inside the member's active chat\
 And no shipment, tracking, verification, location, or payment record is copied into chat automatically.
 
+### Scenario: ask for GPS setup from the fleet
+
+Given an active Transport Provider opens GPS devices on web or Expo
+When they choose Ask Support to add GPS
+Then Support opens a new request with GPS device setup selected
+And the member enters their own message before it is sent
+And staff see GPS device setup as the conversation topic in their queue
+And if the member already has an active conversation, Support shows it instead
+of silently creating another request.
+
 ### Scenario: support agents receive bounded work
 
 Given multiple available customer-service agents and queued conversations\

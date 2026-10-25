@@ -7,7 +7,7 @@ declare
  owner_org constant uuid:='6727b198-d771-436a-9f1f-7bf27b8cea2f';
  truck constant uuid:='76bea7fa-03b2-42f0-af51-fff05c62cbc7';
  spare_device_id uuid;device_revision text;source_revision text;report_stamp timestamptz;gateway_device_number bigint;
- saved jsonb;capacity_id uuid;recipient_digest text;private_row jsonb;
+ saved jsonb;capacity_id uuid;
  test_event_key text:='admin-spare-provenance-test-'||substr(gen_random_uuid()::text,1,8);
 begin
  if current_database()<>'loadgistic_demo_gps_192_ci' and current_database()<>'loadgistic_telematics_ci'
@@ -22,20 +22,8 @@ begin
    and u.raw_user_meta_data->>'fixture_key'='user-transporter';
  select id,token_digest into spare_gateway_id,gateway_digest from telematics_gateways where active and synthetic_only limit 1;
  select id into capacity_id from capacities where vehicle_id=truck order by updated_at desc limit 1;
- select recipient_email_digest into recipient_digest from capacity_access_grants
-  where vehicle_id=truck and audience_type='EMAIL' and revoked_at is null order by id limit 1;
  if admin_id is null or provider_id is null or spare_gateway_id is null or capacity_id is null
  then raise exception 'SPARE_PROVENANCE_FIXTURE_MISSING';end if;
- -- Managed fixtures keep this private truck unshared. Create the test viewer
- -- through the provider command, inside the rollback-only transaction.
- if recipient_digest is null then
-  recipient_digest:=repeat('c',64);
-  perform grant_private_capacity_access(provider_id,truck,
-   'gps-provenance@example.test',recipient_digest);
- end if;
- if not exists(select 1 from capacity_access_grants where vehicle_id=truck
-   and audience_type='EMAIL' and recipient_email_digest=recipient_digest and revoked_at is null)
- then raise exception 'SPARE_PRIVATE_VIEWER_MISSING';end if;
  select d.id,d.gateway_device_id into spare_device_id,gateway_device_number from telematics_devices d
   where d.imei='990000000000013' and d.gateway_id=spare_gateway_id and d.active and d.synthetic
    and d.protocol='gt06' and d.protocol_device_id='990000000000013'
@@ -70,12 +58,10 @@ begin
  if not exists(select 1 from capacities where id=capacity_id and location_source='TELEMATICS'
    and demo_epoch=1 and location_updated_at=report_stamp)
  then raise exception 'SPARE_CAPACITY_PROVENANCE_NOT_SAVED';end if;
- select p.payload into private_row from public.private_capacity_filtered_page(
-  'EMAIL',recipient_digest,null,null,null,100,'{}'::jsonb) p
-  where p.payload->>'id'=capacity_id::text limit 1;
- if private_row is null or private_row->>'location_source'<>'TELEMATICS'
-  or private_row->>'location_is_demo'<>'true' or private_row ? 'imei'
- then raise exception 'PRIVATE_SPARE_DEMO_PROJECTION_FAILED';end if;
+ if exists(select 1 from public.private_capacity_filtered_page(
+  'EMAIL',repeat('c',64),null,null,null,100,'{}'::jsonb) p
+  where p.payload->>'id'=capacity_id::text)
+ then raise exception 'RETIRED_EMAIL_SPARE_VIEW_VISIBLE';end if;
  if exists(select 1 from public.public_capacity_page(jsonb_build_object('capacity_id',capacity_id),null,null,20) p
   where p.payload->>'id'=capacity_id::text)
  then raise exception 'PRIVATE_SPARE_PUBLICLY_VISIBLE';end if;

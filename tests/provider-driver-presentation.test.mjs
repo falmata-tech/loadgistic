@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {listSupabasePublicCapacityCursor,listSupabaseSharedCapacity,getSupabasePublicProvider} from '../src/lib/repository/supabase.js';
+import {listSupabasePublicCapacityCursor,listSupabaseAccountCapacity,getSupabasePublicProvider} from '../src/lib/repository/supabase.js';
 import {emptyTruckAuthority} from '../src/lib/provider-authority-contract.js';
 
 const ownerId='00000000-0000-4000-8000-000000000001',providerId='00000000-0000-4000-8000-000000000002',vehicleId='00000000-0000-4000-8000-000000000003',driverId='00000000-0000-4000-8000-000000000004';
@@ -16,11 +16,11 @@ test('public and private capacity label the actual assigned person Driver withou
  for(const kind of ['FLEET_TRANSPORTER','SELF_MANAGED_DRIVER','OWNER_OPERATOR'])for(const audience of ['public','private']){
   const row={id:'capacity',vehicle_id:vehicleId,provider_kind:kind,provider_organization_id:kind==='FLEET_TRANSPORTER'?providerId:null,provider_profile_id:kind==='FLEET_TRANSPORTER'?null:providerId,assigned_driver_first_name:'Assigned',updated_at:'2026-10-14T00:00:00Z',location_updated_at:'2026-10-14T00:00:00Z',status:'EMPTY',driver_documents:[reviewed('DRIVER_IDENTITY')],vehicle_documents:[],authorization_documents:[]};
   await withResponses(call=>{
-   if(call.path==='/rest/v1/rpc/public_capacity_page'||call.path==='/rest/v1/rpc/private_capacity_filtered_page')return [{payload:row}];
+   if(call.path==='/rest/v1/rpc/public_capacity_page'||call.path==='/rest/v1/rpc/account_capacity_filtered_page')return [{payload:row}];
    if(call.path==='/rest/v1/rpc/capacity_owner_documents')return [{subject_id:providerId,subject_type:kind==='FLEET_TRANSPORTER'?'ORGANIZATION':'PROVIDER_PROFILE',documents:[reviewed('IDENTITY')]}];
    assert.fail('Unexpected projection query');
   },async calls=>{
-   const page=audience==='public'?await listSupabasePublicCapacityCursor():await listSupabaseSharedCapacity('synthetic-recipient-digest');assert.equal(page.items.length,1);const item=page.items[0];
+   const page=audience==='public'?await listSupabasePublicCapacityCursor():await listSupabaseAccountCapacity(ownerId,'a'.repeat(64));assert.equal(page.items.length,1);const item=page.items[0];
    assert.equal(item.driver_kind_label,'Driver');assert.equal(item.driver_kind,kind==='FLEET_TRANSPORTER'?'COMPANY_DRIVER':kind,'Existing machine enums remain compatible');assert.equal(item.assigned_driver_first_name,'Assigned');
    assert.equal(item.driver_verification_badges.find(badge=>badge.type==='DRIVER_IDENTITY').verified,true);assert.equal(item.driver_verification_badges.find(badge=>badge.type==='IDENTITY').verified,false,'Employer identity must not become driver identity');assert.equal(item.owner_verification_badges.find(badge=>badge.type==='IDENTITY').verified,true);
    assert.equal(calls.length,2,'Neutral presentation adds no identity lookup per row');assert.equal(row.driver_documents.length,1);

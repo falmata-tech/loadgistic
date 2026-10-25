@@ -15,7 +15,7 @@ const rows=[
  ['Loading your workspaces','የሥራ ቦታዎችዎ እየተጫኑ ናቸው','Bakka hojii keessan feʼaa jira'],
  ['No map or shipment access','ካርታና ጭነት ማየት አይችልም','Kaartaa yookaan feʼumsa ilaaluu hin dandaʼu'],
  ['No viewers added.','እስካሁን ተከታታይ አልተጨመረም።','Namni hordofu hin dabalamiin.'],
- ['Open My workspace to create or join a business.','ድርጅት ለመፍጠር ወይም ለመቀላቀል «የሥራ ማስተዳደሪያዬ»ን ይክፈቱ።','Dhaabbata uumuuf yookaan itti makamuuf “Bakka hojii koo” bani.'],
+ ['Create or join a shipper or broker team from Account.','ከመለያዎ የጭነት ላኪ ወይም ደላላ ቡድን ይፍጠሩ ወይም ይቀላቀሉ።','Herrega kee irraa garee abbaa feʼumsaa ykn daldalaa giddu-galeessaa uumi yookaan itti makami.'],
  ['Permitted team members can see the route and status. Only staff you select can see vehicle location.','ፈቃድ ያላቸው የቡድን አባላት መስመሩንና ሁኔታውን ማየት ይችላሉ። የመኪናውን ቦታ የሚያዩት እርስዎ የመረጧቸው ሠራተኞች ብቻ ናቸው።','Miseensonni garee hayyama qaban karaa fi haala feʼumsaa ni argu. Bakka konkolaataa kan argu hojjettoota isin filattan qofa.'],
  ['Please sign in again.','እንደገና ይግቡ።','Irra deebiʼii seenaa.'],
  ['Remove from business','ከድርጅቱ አስወግድ','Dhaabbata irraa haqi'],

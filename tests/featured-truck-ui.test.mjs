@@ -7,19 +7,17 @@ import test from 'node:test';
 const root=process.cwd();
 const source=relative=>fs.readFileSync(path.join(root,relative),'utf8');
 
-test('public featured cards lead with the assigned Driver portrait and retain the exact truck',()=>{
+test('public Featured cards lead with account identity and link to that provider',()=>{
   const venue=source('src/components/transport-expo-venue.tsx');
-  assert.match(venue,/DriverPortrait/);
-  assert.match(venue,/truck\.driver_portrait_url/);
-  assert.match(venue,/truck\.driver_first_name/);
-  assert.match(venue,/truck\.driver_kind_label/);
-  assert.match(venue,/truck\.cargo_configuration/);
-  assert.match(venue,/truck\.name/);
-  assert.match(venue,/truck\.truck_key/);
-  assert.match(venue,/truck\.public_capacity_available/);
-  assert.match(venue,/Find this vehicle/);
-  assert.match(venue,/driver-portrait-fallback/);
-  assert.match(venue,/driver-steering-wheel/);
+  assert.match(venue,/PublicIdentityImage/);
+  assert.match(venue,/provider\.profile_image_url/);
+  assert.match(venue,/provider\.name/);
+  assert.match(venue,/provider\.handle/);
+  assert.match(venue,/provider\.fleet_size/);
+  assert.match(venue,/provider\.public_capacity_available&&provider\.map_href/);
+  assert.match(venue,/Transporter profile/);
+  assert.match(venue,/View available vehicles/);
+  assert.doesNotMatch(venue,/truck\.driver_portrait_url/);
   assert.doesNotMatch(venue,/Disc3/);
   assert.match(venue,/entry\.type==='PROGRAMME_BREAK'/);
   assert.doesNotMatch(venue,/SPONSOR_BREAK|INTERMISSION/);
@@ -36,7 +34,7 @@ test('empty featured roster keeps readable full-width copy and one market action
   const section=source('src/components/featured-provider-section.tsx');
   const styles=source('src/app/globals.css');
   assert.match(section,/regional-expo-empty/);
-  assert.match(section,/No vehicles are scheduled today\./);
+  assert.match(section,/No Transport Providers are scheduled today\./);
   assert.match(section,/href="\/"><Text message="Find capacity"\s*\/>/);
   assert.match(styles,/\.regional-expo-empty\{display:grid;grid-template-columns:minmax\(0,1fr\) auto/);
   assert.match(styles,/@media\(max-width:760px\)\{\.regional-expo-empty\{grid-template-columns:minmax\(0,1fr\)/);

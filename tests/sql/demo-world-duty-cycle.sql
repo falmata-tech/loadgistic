@@ -7,7 +7,7 @@ declare target_vehicle uuid:='626ff53a-3c93-44c7-8afb-b175a84403c1';
  owner_id uuid;driver_id uuid;first_job bigint;first_token uuid;second_job bigint;second_token uuid;
  before_count bigint;before_featured bigint;before_assignment bigint;before_source timestamptz;
  before_capacity uuid;off_capacity uuid;restored_capacity uuid;baseline_route jsonb;
- result jsonb;denied boolean;baseline_failure text;source_result jsonb;
+ result jsonb;denied boolean;baseline_failure text;source_result jsonb;test_workspace uuid:=gen_random_uuid();
  old_capacity public.capacities%rowtype;old_source public.telematics_location_sources%rowtype;
  manual_lat double precision;manual_lng double precision;
 begin
@@ -112,9 +112,10 @@ begin
  if not denied then raise exception 'DUTY_SOURCE_DRIFT_ACCEPTED';end if;
  denied:=false;
  begin
-  insert into public.capacity_access_grants(vehicle_id,audience_type,recipient_email,
-   recipient_email_digest,created_by)
-  values(target_vehicle,'EMAIL','fixture@loadgistic.test',repeat('a',64),owner_id);
+  insert into public.business_workspaces(id,name,handle,kind)
+  values(test_workspace,'Synthetic duty recipient','duty-'||substr(test_workspace::text,1,12),'BROKER');
+  insert into public.business_capacity_grants(vehicle_id,workspace_id,created_by)
+  values(target_vehicle,test_workspace,owner_id);
   perform public.demo_world_execute_duty(first_job,first_token);
  exception when others then denied:=sqlerrm='DEMO_DUTY_SHARING_REFUSED';end;
  if not denied then raise exception 'DUTY_PRIVATE_GRANT_DRIFT_ACCEPTED';end if;

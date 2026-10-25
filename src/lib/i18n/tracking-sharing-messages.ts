@@ -22,7 +22,7 @@ const rows:readonly (readonly [string,string,string])[]=[
  ['Sharing updated.','የማጋራት ፈቃዱ ተቀይሯል።','Hayyamni qoodinsaa haaromfameera.'],
  ['Could not load sharing. Please try again.','የማጋራት መረጃው አልተከፈተም። እንደገና ይሞክሩ።','Odeeffannoon qoodinsaa hin banamne. Irra deebiʼii yaali.'],
  ['Your business account must use the shipment owner email.','የድርጅት መለያዎ ኢሜይል ከጭነቱ ባለቤት ኢሜይል ጋር አንድ መሆን አለበት።','Imeeliin herrega dhaabbata keessanii kan abbaa feʼumsaa waliin tokko taʼuu qaba.'],
- ['Open My workspace to create or join a business.','ድርጅት ለመፍጠር ወይም ለመቀላቀል የሥራ ቦታዬን ይክፈቱ።','Dhaabbata banuuf yookaan itti makamuuf Iddoo hojii koo bani.'],
+ ['Create or join a shipper or broker team from Account.','ከመለያዎ የጭነት ላኪ ወይም ደላላ ቡድን ይፍጠሩ ወይም ይቀላቀሉ።','Herrega kee irraa garee abbaa feʼumsaa ykn daldalaa giddu-galeessaa uumi yookaan itti makami.'],
  ['Loading sharing…','የማጋራት መረጃ በመክፈት ላይ…','Odeeffannoon qoodinsaa banamaa jira…'],
  ['Only the shipment owner can manage sharing.','የማጋራት ፈቃድ መቀየር የሚችለው የጭነቱ ባለቤት ብቻ ነው።','Hayyama qoodinsaa kan toʼatu abbaa feʼumsaa qofa.'],
  ['Verify your email again to manage sharing.','የማጋራት ፈቃድን ለመቀየር ኢሜይልዎን እንደገና ያረጋግጡ።','Hayyama qoodinsaa toʼachuuf imeelii kee irra deebiʼii mirkaneessi.'],

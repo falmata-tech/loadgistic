@@ -9,7 +9,7 @@ import type {CapacitySearchKind,CapacitySearchResult,CapacitySearchItem} from '@
 import {TRANSPORTER_SEARCH_TIMEOUT_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
 import {CAPACITY_FILTER_PRESENTATION as filterPresentation} from '@/lib/capacity-filter-presentation';
 export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport Provider',OWNER_OPERATOR:'Transport Provider',SELF_MANAGED_DRIVER:'Transport Provider',COMPANY_DRIVER:'Driver'};
-export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiPath='/api/capacity-search',active=true,requestVersion=0,render,onProfileSelect}:{query:Record<string,string>;mapQuery?:Record<string,string>;view:'open'|'private'|'loadgistic';searchPath:string;apiPath?:string;active?:boolean;requestVersion?:number;render?:(content:React.ReactNode)=>React.ReactNode;onProfileSelect?:()=>void}){
+export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiPath='/api/capacity-search',active=true,requestVersion=0,render,onProfileSelect}:{query:Record<string,string>;mapQuery?:Record<string,string>;view:'open'|'private'|'account'|'loadgistic';searchPath:string;apiPath?:string;active?:boolean;requestVersion?:number;render?:(content:React.ReactNode)=>React.ReactNode;onProfileSelect?:()=>void}){
  const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
  const key=JSON.stringify({...query,...(blocked.length?{blocked:blockKey}:{})});
  const searchKey=JSON.stringify([key,view,searchPath,apiPath,requestVersion]);

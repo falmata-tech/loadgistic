@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {featuredTruckTypeForDate,featuredTruckWeekForDate,selectBalancedFeaturedTruckRows} from '../src/lib/featured-trucks.js';
+import {FEATURED_PROVIDER_DAY,featuredTruckTypeForDate,featuredTruckWeekForDate,selectBalancedFeaturedTruckRows,selectFeaturedProviderAccountRows} from '../src/lib/featured-trucks.js';
 
 test('the seven-day programme rotates through distinct truck-type themes',()=>{
   const week=featuredTruckWeekForDate('2026-09-07');
@@ -26,4 +26,16 @@ test('multi-configuration days demonstrate each heavy configuration before repea
   const selected=selectBalancedFeaturedTruckRows(rows,configurations,8);
   assert.deepEqual(selected.slice(0,configurations.length).map(row=>row.vehicle.cargo_configuration),configurations);
   assert.equal(selected.length,8);
+});
+
+test('new fixture days feature distinct accounts across vehicle configurations',()=>{
+  const rows=[
+    {vehicle:{id:'one',cargo_configuration:'Mini Box Truck'},owner:{organization_id:'fleet-a'}},
+    {vehicle:{id:'two',cargo_configuration:'Cargo van'},owner:{organization_id:'fleet-a'}},
+    {vehicle:{id:'three',cargo_configuration:'Courier motorcycle'},owner:{profile_id:'provider-b'}},
+    {vehicle:{id:'four',cargo_configuration:'Pickup truck'},owner:{organization_id:'fleet-c'}}
+  ];
+  assert.equal(FEATURED_PROVIDER_DAY.label,'Transport Providers');
+  assert.deepEqual(selectFeaturedProviderAccountRows(rows,8).map(row=>row.vehicle.id),['one','three','four']);
+  assert.equal(selectFeaturedProviderAccountRows(rows,2).length,2);
 });

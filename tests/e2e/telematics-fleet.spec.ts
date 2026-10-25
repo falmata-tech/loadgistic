@@ -38,14 +38,13 @@ async function mobileLogin(page:Page,email:string,checkpoint:(stage:string)=>voi
  checkpoint('EXPO_SEND_CODE');await page.getByRole('button',{name:'Send code',exact:true}).click();checkpoint('EXPO_CODE_FIELD');await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible();
  checkpoint('EXPO_INBOX_CODE');await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']));
  checkpoint('EXPO_VERIFY_CODE');const verified=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
- await page.getByRole('button',{name:'Sign in',exact:true}).click();requireValue((await verified).status()===200,'MOBILE_OTP_VERIFY_FAILED');
+ await page.getByRole('button',{name:'Sign in',exact:true}).last().click();requireValue((await verified).status()===200,'MOBILE_OTP_VERIFY_FAILED');
 }
 async function openNativeFleet(page:Page){
- // Non-driving owners use Fleet as Home; driving owners have a separate Fleet tab.
+ // Provider Home contains vehicle management for both driving and non-driving owners.
  await expect(page.getByRole('tab',{name:'Home',exact:true}).filter({visible:true})).toBeVisible();
- const fleetTab=page.getByRole('tab',{name:'Fleet',exact:true}).filter({visible:true});
- if(await fleetTab.count()){await fleetTab.click();await expect(page).toHaveURL(/\/fleet$/);}
- else await expect(page).toHaveURL(/\/account$/);
+ await page.getByRole('tab',{name:'Manage vehicles',exact:true}).click();
+ await expect(page).toHaveURL(/\/account$/);
 }
 
 test('fictional GPS fleet source saves worldwide manual coordinates, restores GPS and preserves owner/employee controls on web and Expo',async({browser},info)=>{
@@ -133,12 +132,12 @@ test('fictional GPS fleet source saves worldwide manual coordinates, restores GP
  }
 });
 
-test('fictional GPS capacity has an honest top-left source badge on its existing public and private audiences',async({browser},info)=>{
+test('fictional GPS capacity marks public signals and keeps private ones off the retired email route',async({browser},info)=>{
  test.skip(process.env.LOADGISTIC_TELEMATICS_DEMO!=='1','Opt in only after the guarded local gateway demo is provisioned.');
  test.skip(info.project.name!=='desktop-chromium','One serialized browser checks the existing public/private audiences.');test.setTimeout(100_000);
  const db=localAuditService(),manifest=JSON.parse(readFileSync('.local/telematics/application-demo-manifest.json','utf8')) as Manifest;
  requireValue(manifest.purpose==='local-fictional-gps'&&manifest.targets.length===2,'DEMO_MANIFEST_REFUSED');
- const evidence={publicApplicable:0,privateApplicable:0,publicBadges:0,privateBadges:0,privateFixtureUnavailable:false,noIdentifiersPublished:true,complete:false};
+ const evidence={publicApplicable:0,privateApplicable:0,publicBadges:0,noIdentifiersPublished:true,complete:false};
  const context=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:{width:390,height:844},extraHTTPHeaders:{'x-forwarded-for':'127.0.0.246'}}),page=await context.newPage();
  async function marker(name:string){const badge=page.locator('.capacity-truck-map-marker.selected [title="GPS device"]');await expect(badge).toHaveCount(1);await expect(badge).toBeVisible();
   expect(await badge.evaluate(element=>{const marker=element.closest('.vehicle-marker-image');if(!marker)return false;const a=element.getBoundingClientRect(),b=marker.getBoundingClientRect();return a.x+a.width/2<b.x+b.width/2&&a.y+a.height/2<b.y+b.height/2;})).toBe(true);expect(await capture(page,info,name)).toBe(true);
@@ -150,11 +149,8 @@ test('fictional GPS capacity has an honest top-left source badge on its existing
    const capacity=data<{id:string}|null>(await db.from('capacities').select('id').eq('vehicle_id',target.vehicleId).order('updated_at',{ascending:false}).order('id',{ascending:false}).limit(1).maybeSingle());requireValue(capacity,'DEMO_CURRENT_CAPACITY_MISSING');
    const query=new URLSearchParams({truck:capacity.id});const response=await page.request.get('/api/public/capacity?'+query);requireValue(response.status()===200,'PUBLIC_CAPACITY_READ_FAILED');const result=await response.json() as {items:Array<{id:string;location_source:string}>};
    const visible=result.items.find(row=>row.id===capacity.id);if(visible){evidence.publicApplicable++;requireValue(['TELEMATICS','GPS'].includes(visible.location_source),'PUBLISHED_GPS_SOURCE_MISMATCH');requireValue(!JSON.stringify(visible).includes(target.imei),'DEVICE_IDENTIFIER_PUBLISHED');await page.goto('/?'+query);await marker(`gps-public-source-${evidence.publicApplicable}-phone.png`);evidence.publicBadges++;}
-   const grants=data<Array<{recipient_email:string|null;expires_at:string|null}>>(await db.from('capacity_access_grants').select('recipient_email,expires_at').eq('vehicle_id',target.vehicleId).eq('created_by',target.ownerId).eq('audience_type','EMAIL').is('revoked_at',null));
-   const recipient=grants.find(row=>row.recipient_email&&/^falmatad97\+[a-z0-9][a-z0-9._-]{0,80}@gmail\.com$/.test(row.recipient_email)&&(!row.expires_at||Date.parse(row.expires_at)>Date.now()))?.recipient_email;
-   if(!recipient){evidence.privateFixtureUnavailable=true;continue;}await context.clearCookies();await page.goto('/?view=private');await page.getByLabel('Email',{exact:true}).fill(recipient);const since=Date.now();await page.getByRole('button',{name:'Continue with email',exact:true}).click();await expect(page.getByLabel('6-digit email code',{exact:true})).toBeVisible();await page.getByLabel('6-digit email code',{exact:true}).fill(await localMailpitNumericCode(recipient,since,'Your Private capacity code'));await page.getByRole('button',{name:'View shared signals',exact:true}).click();
-   const shared=await page.request.get('/api/shared-capacity?'+query);requireValue(shared.status()===200,'PRIVATE_CAPACITY_READ_FAILED');const privateResult=await shared.json() as {items:Array<{id:string;location_source:string}>},privateTruck=privateResult.items.find(row=>row.id===capacity.id);if(!privateTruck)continue;evidence.privateApplicable++;requireValue(['TELEMATICS','GPS'].includes(privateTruck.location_source)&&!JSON.stringify(privateTruck).includes(target.imei),'PRIVATE_SOURCE_OR_IDENTIFIER_MISMATCH');query.set('view','private');await page.goto('/?'+query);await marker(`gps-private-source-${evidence.privateApplicable}-phone.png`);evidence.privateBadges++;
-  }requireValue(evidence.publicApplicable+evidence.privateApplicable>0,'NO_EXISTING_DEMO_DISCOVERY_AUDIENCE');expect(evidence.publicBadges).toBe(evidence.publicApplicable);expect(evidence.privateBadges).toBe(evidence.privateApplicable);evidence.complete=true;
+   if(!visible){evidence.privateApplicable++;requireValue((await page.request.get('/api/shared-capacity?'+query)).status()===410,'RETIRED_EMAIL_CAPACITY_OPEN');}
+  }requireValue(evidence.publicApplicable+evidence.privateApplicable>0,'NO_EXISTING_DEMO_DISCOVERY_AUDIENCE');expect(evidence.publicBadges).toBe(evidence.publicApplicable);evidence.complete=true;
  }finally{writeFileSync(info.outputPath('telematics-capacity-badge-evidence.json'),JSON.stringify(evidence,null,2),{mode:0o600});await context.close();}
 });
 
