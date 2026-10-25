@@ -110,9 +110,18 @@ const firstPage=await listSupabasePublicCapacityCursor({},{pageSize:14});
 if(firstPage.items.length!==14||!firstPage.hasMore||!firstPage.nextCursor){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_CURSOR_FAILED');
 }
-// Imported legacy routes intentionally have no truck/Driver binding. Retain
-// those records, but never infer one route for every truck belonging to an owner.
-if(firstPage.items.some(item=>item.recurring_corridors.length!==0
+// Demo corridor routes now belong to vehicle/driver pairs. The public
+// projection may show one attached route, but never another vehicle's route.
+const corridorIds=firstPage.items.flatMap(item=>item.recurring_corridors.map(signal=>signal.id));
+const {data:corridorOwners,error:corridorOwnersError}=corridorIds.length
+  ?await service.from('profile_routes').select('id,assigned_vehicle_id').in('id',corridorIds)
+  :{data:[],error:null};
+if(corridorOwnersError)throw new Error('SUPABASE_FIXTURE_VERIFY_CORRIDOR_SCOPE_READ_FAILED');
+const corridorVehicleById=new Map(corridorOwners.map(signal=>[signal.id,signal.assigned_vehicle_id]));
+if(firstPage.items.some(item=>item.recurring_corridors.length>1
+  ||item.recurring_corridors.some(signal=>corridorVehicleById.get(signal.id)!==item.vehicle_id
+    ||signal.geometry==='ROUTE'&&signal.route_points.length<2
+    ||signal.geometry==='RADIUS'&&signal.area_boundary.length<3)
   ||item.driver_verification_badges.length!==2)){
   throw new Error('SUPABASE_FIXTURE_VERIFY_CAPACITY_PROJECTION_FAILED');
 }

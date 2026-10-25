@@ -43,6 +43,13 @@ current task list.
   account loses and regains eligibility when all its vehicles are deactivated
   and restored; it passes locally with `ROLLBACK`. A fresh PR and exact-head CI
   remain to be completed before any hosted release.
+- PR22 first run `40156679092` stopped in fixture validation before browser and
+  container jobs: an old verifier required every public vehicle to have zero
+  corridor routes, contrary to the current attached demo routes. The verifier
+  now checks each visible route against its authoritative vehicle and geometry.
+  The focused local projection check passes (14 vehicles, three routes, zero
+  mismatches) and ten corridor/market unit tests pass. A new exact-head CI run
+  is required; the failed run is not release evidence.
 
 ## Current delivery
 
