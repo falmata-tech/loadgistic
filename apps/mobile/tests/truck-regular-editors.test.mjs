@@ -64,6 +64,20 @@ test('Home discards an open regular editor when the active driver assignment cha
  truck.driverId=driverB;tree=view.render(screen);assert.equal(find(tree,'RegularService'),undefined,'a new active pair must not inherit the previous open editor');assert.equal(find(tree,'Modal'),undefined);assert.equal(find(tree,'TrackingMap'),undefined,'a stale session cannot display the new driver’s job as the owner’s own');assert.ok(find(tree,'Copy',node=>node.props.message==='Choose the vehicle you drive under Manage vehicles.'));
 });
 
+test('driver Home names Capacity and Location consistently and opens the assigned vehicle editor',()=>{
+ const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Courier car',plate:'LOCAL',canLocate:false,canSetManualLocation:true,location:null,current:null,regularServices:[]};
+ const screen=view.compile('../src/screens/driver-home.tsx',{...common,DriverLocationEditor:'DriverLocationEditor',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+ let tree=view.render(screen);
+ const capacity=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update capacity');
+ const location=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Set vehicle location');
+ assert.ok(nodes(capacity).some(node=>node.type==='Text'&&node.props.children.includes('Capacity')));
+ assert.ok(nodes(location).some(node=>node.type==='Text'&&node.props.children.includes('Location')));
+ assert.ok(!nodes(tree).some(node=>node.type==='Text'&&node.props.children.some(value=>['Available space','Truck location'].includes(value))));
+ location.props.onPress();tree=view.render(screen);
+ assert.equal(find(tree,'Modal').props.visible,true);
+ assert.equal(find(tree,'DriverLocationEditor').props.truck.id,vehicleA);
+});
+
 test('selected fleet capacity exposes Usual routes only for the selected assigned pair and an owner',()=>{
  const view=renderer();let operatingModel='FLEET_OWNER';
  const truck=(id,driverId)=>({id,driverId,driver:driverId?'Assigned driver':'',label:'Fleet truck',plate:'LOCAL',canLocate:false,current:null,location:null,regularServices:[service(id,driverId)]});

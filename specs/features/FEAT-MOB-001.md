@@ -33,6 +33,12 @@ Then its name retains the translated action, including while its text is replace
 by a spinner, and returns to that action after loading\
 And loading disables the action without leaving an idle button named only “busy”.
 
+Driver Home uses the same concise Capacity and Location action labels as the web;
+permission-limited drivers retain Duty status. Vehicle location is not called
+Truck location because the assigned vehicle may also be a car or motorcycle.
+Verification: `apps/mobile/tests/truck-regular-editors.test.mjs` exercises the
+rendered action names and assigned-vehicle editor destination.
+
 Given a signed-out visitor opens Shared with you\
 When mobile opens authentication\
 Then it explains that sign-in is required to see vehicles shared with the account\
