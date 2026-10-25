@@ -28,21 +28,20 @@ current task list.
   source/spec/workflow checks and typecheck. All 331 native unit tests, native
   lint/typecheck and the 769-message translation audit pass. The web production
   build passes with 164 static pages. Android export bundles 3,737 modules.
-  The local Android 1.2.0/code 10 APK builds and verifies at
-  `.local/loadgistic-1.2.0-code10-account-network-local-test.apk` (SHA-256
+  The first local Android 1.2.0/code 10 APK built and verified (SHA-256
   `ddc3f26706cfd9993a388f214ffcd76aee9cc17def89bc3b24c14b32efb5607c`);
-  it contains the live API host and no local API host. This is debug-signed
-  for local testing, not a Play artifact. This candidate has no GitHub PR,
-  current-source CI result, hosted SQL rollout, web deployment or Play delivery
-  yet. Play remains paused by owner instruction.
+  its ignored file was subsequently lost with the checkout and is being rebuilt.
+  It was debug-signed for local testing, not Play. PR22 is open; its first two
+  CI runs failed as detailed below. No hosted SQL rollout, web deployment or Play
+  delivery has occurred. Play remains paused by owner instruction.
 - The 396 source/spec/test paths from the reviewed local manifest were committed
   as `6f24250`, excluding the generated `next-env.d.ts` and the separate mobile
   `.claude` setting. Current `main` was integrated in merge commit `cf4b25d`.
   That integration exposed a stale rollback-only Featured test which assumed
   vehicle-type days. The corrected test now checks that a scheduled provider
   account loses and regains eligibility when all its vehicles are deactivated
-  and restored; it passes locally with `ROLLBACK`. A fresh PR and exact-head CI
-  remain to be completed before any hosted release.
+  and restored; it passes locally with `ROLLBACK`. PR22 is open; passing
+  exact-head CI is still required before any hosted release.
 - PR22 first run `40156679092` stopped in fixture validation before browser and
   container jobs: an old verifier required every public vehicle to have zero
   corridor routes, contrary to the current attached demo routes. The verifier
@@ -50,6 +49,19 @@ current task list.
   The focused local projection check passes (14 vehicles, three routes, zero
   mismatches) and ten corridor/market unit tests pass. A new exact-head CI run
   is required; the failed run is not release evidence.
+- PR22 second run `40157370979` passed fixture import, then stopped in the
+  disposable simulator test. Fresh account-only fixtures start two demo vehicles
+  in PUBLIC mode without private recipients, while their older scenario tests
+  require BOTH. The rollback-only test now explicitly opts those two synthetic
+  policies into BOTH before exercising the simulator; its safety checks remain
+  unchanged. The focused test passed after modeling the fresh PUBLIC state and
+  rolled back all writes. A new exact-head CI run is required.
+- The original local checkout and ignored artifacts unexpectedly disappeared
+  during PR22 diagnosis. The committed branch was recovered from GitHub into
+  the original directory without deleting its remaining generated dev files.
+  The ignored local APK and protected release artifacts did **not** survive;
+  the local APK is being rebuilt. Fresh backup and rollout evidence must be
+  prepared again. No hosted write or web publication occurred.
 
 ## Current delivery
 

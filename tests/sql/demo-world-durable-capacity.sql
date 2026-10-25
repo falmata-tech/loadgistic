@@ -12,6 +12,19 @@ begin
  if (select enabled from public.demo_world_control where id=1) then raise exception 'DEMO_WORLD_DEFAULT_ENABLED';end if;
  if (select count(*) from public.demo_world_targets)<>5 or
   (select count(*) from public.demo_world_schedule)<>14 then raise exception 'DEMO_WORLD_ALLOWLIST_DRIFT';end if;
+ -- Fresh account-only fixtures have no private recipient yet, so these two
+ -- exact demo vehicles start PUBLIC. Exercise their existing BOTH scenarios
+ -- by opting the policies in within this disposable, rolled-back test.
+ update public.vehicle_capacity_sharing sharing set mode='BOTH'
+ from public.demo_world_targets target
+ where target.vehicle_id=sharing.vehicle_id
+   and target.target_key in('fleet-02-partial','fleet-06-partial')
+   and sharing.mode='PUBLIC' and sharing.exclusive_email is null
+   and sharing.exclusive_digest is null;
+ if exists(select 1 from public.demo_world_targets target
+   left join public.vehicle_capacity_sharing sharing on sharing.vehicle_id=target.vehicle_id
+   where sharing.mode is distinct from target.expected_sharing_mode)
+   then raise exception 'DEMO_WORLD_SHARING_FIXTURE_MISMATCH';end if;
  if has_table_privilege('anon','public.demo_world_steps','SELECT') or
   has_table_privilege('authenticated','public.demo_world_receipts','SELECT') or
   has_table_privilege('service_role','public.demo_world_targets','UPDATE') or
