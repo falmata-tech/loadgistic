@@ -1,11 +1,48 @@
 # Current work and release status
 
-Updated 2026-10-23. Work in Loadgistic even when the IDE displays Suqpage. Start
+Updated 2026-10-24. Work in Loadgistic even when the IDE displays Suqpage. Start
 with the controlling spec in [traceability](../specs/TRACEABILITY.md), then the
 [product brief](PRODUCT_MASTER_PROMPT.md). Historical run-by-run evidence was
 moved to [October 23 history](PROGRESS_HISTORY_20261023.md); earlier history is
 in [October 20 history](PROGRESS_HISTORY_20261020.md). Neither history file is a
 current task list.
+
+## October 24 account-network candidate — local only
+
+- The single public shell now leads signed-in Transport Providers from Home to
+  their driving Capacity, Manage vehicles and public market views. Broker and
+  shipper Capacity keeps its shared-with-you view; Network handles discovery,
+  connection requests and vehicle sharing. Signed-out visitors retain public
+  Capacity, Track, Featured and About. Signup chooses account type before email
+  verification. Account badges and Featured use provider accounts rather than a
+  fixed vehicle/day category. Private Capacity is account-only; migration 207
+  removes obsolete demo email grants and prevents their return. Migrations
+  199–207 are installed locally, **not hosted**.
+- Agent-led desktop, phone web and Expo previews exercised provider, driver and
+  broker navigation, sharing, Account and Capacity tasks. Focused browser checks
+  for Account details/profile/documents, driver Account, public-market return,
+  Featured recovery and Expo sign-in/account save pass. One desktop real-email
+  Tracking check timed out at the local API request; the earlier phone journey
+  passed. CI must settle that remaining case before publication.
+- Root `npm run quality` passes 1,188 tests and one existing skip, plus
+  source/spec/workflow checks and typecheck. All 331 native unit tests, native
+  lint/typecheck and the 769-message translation audit pass. The web production
+  build passes with 164 static pages. Android export bundles 3,737 modules.
+  The local Android 1.2.0/code 10 APK builds and verifies at
+  `.local/loadgistic-1.2.0-code10-account-network-local-test.apk` (SHA-256
+  `ddc3f26706cfd9993a388f214ffcd76aee9cc17def89bc3b24c14b32efb5607c`);
+  it contains the live API host and no local API host. This is debug-signed
+  for local testing, not a Play artifact. This candidate has no GitHub PR,
+  current-source CI result, hosted SQL rollout, web deployment or Play delivery
+  yet. Play remains paused by owner instruction.
+- The 396 source/spec/test paths from the reviewed local manifest were committed
+  as `6f24250`, excluding the generated `next-env.d.ts` and the separate mobile
+  `.claude` setting. Current `main` was integrated in merge commit `cf4b25d`.
+  That integration exposed a stale rollback-only Featured test which assumed
+  vehicle-type days. The corrected test now checks that a scheduled provider
+  account loses and regains eligibility when all its vehicles are deactivated
+  and restored; it passes locally with `ROLLBACK`. A fresh PR and exact-head CI
+  remain to be completed before any hosted release.
 
 ## Current delivery
 
@@ -56,7 +93,9 @@ current task list.
   non-trailer saved vehicle, changes its category and configuration together,
   requires a usable fixture, and restores both fields. The exact local SQL test
   passed with `ROLLBACK`. Read PR21's terminal CI and merge status on GitHub;
-  this local result alone does not qualify that later commit.
+  this local result alone did not qualify that later commit. The account-based
+  Featured change superseded this vehicle-theme assertion; the October 24
+  candidate replaces it with the account-eligibility regression above.
 
 ## Next steps
 

@@ -5,7 +5,7 @@ begin
  raise exception 'EXPECTED_FEATURED_DENIAL';
 end $$;
 do $test$
-declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;vehicle_id_value uuid;old_configuration text;old_category text;new_configuration constant text:='Cargo van';day_value date;
+declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;account_org uuid;account_profile uuid;account_vehicle_ids uuid[];day_value date;baseline_invalid integer;
 begin
  select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  foreach uid in array array[staff_id,other_id] loop
@@ -36,21 +36,29 @@ begin
   perform pg_temp.expect_featured_denied(format('select disable_managed_sponsorship(%L,%L)',uid,gen_random_uuid()));
  end loop;
 
- -- Change one saved non-trailer vehicle to another valid type outside its
- -- scheduled day's theme. A tractor cannot be changed to a courier/van type:
- -- its supported-trailer constraint would fail before Featured is exercised.
- select s.vehicle_id,v.cargo_configuration,v.category,d.feature_date into vehicle_id_value,old_configuration,old_category,day_value
- from featured_provider_slots s join featured_provider_days d on d.id=s.day_id join vehicles v on v.id=s.vehicle_id
+ -- Featured now follows provider accounts across vehicle types. Removing every
+ -- eligible vehicle from a scheduled account must flag that account, then recover.
+ select s.provider_organization_id,s.provider_profile_id,d.feature_date into account_org,account_profile,day_value
+ from featured_provider_slots s join featured_provider_days d on d.id=s.day_id
  where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6
- and not v.trailer_interchangeable
- and (featured_truck_theme(d.feature_date)->'configurations') ? v.cargo_configuration
- and not ((featured_truck_theme(d.feature_date)->'configurations') ? new_configuration)
+ and exists(select 1 from featured_eligible_account_links() eligible
+   where eligible.provider_organization_id=s.provider_organization_id
+     or eligible.provider_profile_id=s.provider_profile_id)
  limit 1;
- if vehicle_id_value is null then raise exception 'FEATURED_TEST_VEHICLE_UNAVAILABLE';end if;
- update vehicles set cargo_configuration=new_configuration,category=new_configuration where id=vehicle_id_value;
+ if day_value is null then raise exception 'FEATURED_TEST_ACCOUNT_UNAVAILABLE';end if;
  result:=managed_featured_overview(staff_id);
- if not exists(select 1 from jsonb_array_elements(result->'days') d where d->>'date'=day_value::text and (d->>'invalid')::integer>0) then raise exception 'CHANGED_TRUCK_TYPE_NOT_FLAGGED';end if;
- update vehicles set cargo_configuration=old_configuration,category=old_category where id=vehicle_id_value;
+ select (day->>'invalid')::integer into baseline_invalid from jsonb_array_elements(result->'days') day where day->>'date'=day_value::text;
+ select array_agg(id) into account_vehicle_ids from vehicles where active and
+   (organization_id=account_org or provider_profile_id=account_profile);
+ if coalesce(cardinality(account_vehicle_ids),0)=0 then raise exception 'FEATURED_TEST_ACCOUNT_HAS_NO_VEHICLES';end if;
+ update vehicles set active=false where id=any(account_vehicle_ids);
+ result:=managed_featured_overview(staff_id);
+ if not exists(select 1 from jsonb_array_elements(result->'days') day where day->>'date'=day_value::text and (day->>'invalid')::integer>baseline_invalid)
+   then raise exception 'FEATURED_ACCOUNT_LOSS_NOT_FLAGGED';end if;
+ update vehicles set active=true where id=any(account_vehicle_ids);
+ result:=managed_featured_overview(staff_id);
+ if not exists(select 1 from jsonb_array_elements(result->'days') day where day->>'date'=day_value::text and (day->>'invalid')::integer=baseline_invalid)
+   then raise exception 'FEATURED_ACCOUNT_RECOVERY_NOT_CONFIRMED';end if;
  -- Independent responsibilities combine, and revoking Featured preserves others.
  perform update_managed_support_agent(admin_id,other_id,'{"active":true,"available":false,"max_open_conversations":3,"can_manage_support":true,"can_manage_brokerage":false,"can_manage_featured":true,"can_manage_billing":true,"can_manage_customers":true}');
  if not can_manage_featured(other_id) or can_manage_brokerage(other_id) or not exists(select 1 from support_agent_profiles where user_id=other_id and can_manage_support and can_manage_billing and can_manage_customers) then raise exception 'COMBINED_CAPABILITIES_LOST';end if;
