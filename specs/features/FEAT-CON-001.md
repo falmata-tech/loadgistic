@@ -123,8 +123,12 @@ vehicle type, from those not yet shown in the current cycle
 And it starts a newly shuffled cycle only after all currently eligible accounts
 have had a turn, avoiding duplicate accounts within one day
 And a manually saved day remains unchanged and may deliberately repeat an
-account; its selection is recorded so automatic scheduling does not immediately
-repeat it by accident
+account; its first eligible turn counts in the current cycle, while an intentional
+repeat remains in manual history without adding a second turn to that cycle
+And automatic scheduling does not reuse an account before every eligible account
+completes that cycle
+And after a cycle completes, a newly shuffled cycle may show that account again,
+including on the next day; each day's accounts remain distinct
 And an imported published day is observed at most once: a current-round
 conflict must not become a new turn in a later round on retry
 And retrying a saved week preserves its days, slots and account-turn history;

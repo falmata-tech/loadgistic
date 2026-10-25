@@ -90,6 +90,14 @@ Current findings and evidence (October25):
   including both OWNED/PERMISSION signup cases and completed fixture cleanup.
   The initial API and Auth-cleanup failures did not reproduce; their CI causes
   remain unconfirmed. Do not merge or publish from this failed CI receipt.
+- `e2fdb3d` run `40221972550` stopped in the Featured SQL regression, before
+  browser jobs. The unchanged test forbade a next-day repeat even after a complete
+  round; this contradicts the owner's allowed later-cycle appearances. The
+  corrected test retains the saved turn/observation checks and proves eight
+  distinct accounts, exact old/new round allocation and full eligible-round
+  completion before reuse. Two independent source reviews and focused local
+  rollback runs pass; the preview counts are unchanged. FEAT-CON-001 clarifies
+  the existing rule, not a new cooldown. No production migration is needed.
 - The final local1.2.0/code10 APK and AAB are built from `0d9ce6f`, with ARM64 and
   x86-64 runtime libraries. Archive, signature, bundle, required/forbidden
   permission and all50 native-library16KB structural checks pass. Both contain

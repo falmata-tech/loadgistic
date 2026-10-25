@@ -203,3 +203,11 @@ paced input and the inspected form button passed with unchanged credentials and
 Auth code. Read the installed `input` usage before changing flags. Unsupported
 test deep links must be compared with `normalizeNativeLink` before diagnosing an
 app defect; Capacity's canonical native path is `/`, not `/capacity`.
+
+Featured rotation tests must enforce complete eligible cycles, rather than ban
+legitimate repeats across a completed cycle. The fresh30-account CI fixture
+crossed a round boundary inside one day's eight slots; an unconditional next-day
+ban failed randomly despite valid scheduling. Preserve saved-turn idempotency,
+daily uniqueness and exact round completion in the regression. Compare the
+installed function, fixture size and owner's rule before changing production SQL
+or retrying a stochastic assertion.
