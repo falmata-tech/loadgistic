@@ -34,6 +34,18 @@ web-only. Play submission is not complete. Ordered work:
 
 Current findings and evidence (October25):
 
+- `cf3d755` CI40224817354 passed13 jobs but timed out in one mobile Tracking
+  smoke; the two aggregate gates consequently failed. The raw job report had
+  no failing step. The isolated Chrome journey passes locally in54 seconds,
+  including all three email sign-ins, sharing, viewer denial and cleanup;
+  the CI cause remains unconfirmed. Seven literal test stages and an explicit
+  stage-enum reporter allowlist now preserve bounded future diagnosis without
+  exposing raw reports or increasing the180-second timeout. Driver Home's two
+  remaining generic labels now match web Capacity/Location. The full root gate
+  passes1194 of1195 tests (one existing intentional skip) and typecheck;
+  all342 native tests, native typecheck/lint/translations/export also pass.
+  Final replacement packaging/source CI remain open.
+
 - Final installed review found Refresh and failed Sign in retaining the Android
   accessibility name “busy” after loading. The installed React Native adapter
   retains its prior description when no explicit action label is present. The

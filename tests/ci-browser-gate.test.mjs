@@ -191,6 +191,31 @@ function diagnosticReport({file=diagnosticFile,line=12,project='mobile-chromium'
   tests:[{projectName:project,status,results}]}]}],errors:[],stats:{expected:0,skipped:0,unexpected:1,flaky:0}};
 }
 
+test('Tracking timeout diagnosis exposes only an allowlisted failed workflow stage and duration',()=>{
+ const report=diagnosticReport({file:'smoke.spec.ts',results:[{status:'timedOut',steps:[
+  {title:'tracking: provider email sign-in',duration:12000},
+  {title:'tracking: owner email access and viewer invitation',duration:170000,error:{message:'PRIVATE_TOKEN contact@example.test'},steps:[{title:'PRIVATE_URL'}]},
+  {title:'tracking: clean up synthetic records',duration:20,error:{message:'PRIVATE_CLEANUP'}}
+ ]}]});
+ report.suites[0].specs[0].title='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].workflow,{stage:'OWNER_SHARING',durationMs:170000});
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',7,report,chunk=>chunks.push(chunk));
+ assert.match(chunks.join(''),/CI_BROWSER_STAGE file=smoke.spec.ts project=mobile-chromium stage=OWNER_SHARING duration_ms=170000/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|example|provider starts|tracking:|viewer invitation/);
+});
+
+test('workflow stage diagnosis rejects other cases and never stringifies private or malformed fields',()=>{
+ const title='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
+ const make=(steps)=>{const report=diagnosticReport({file:'smoke.spec.ts',results:[{status:'timedOut',steps}]});report.suites[0].specs[0].title=title;return report;};
+ for(const steps of [null,{},'PRIVATE',[],[{title:'PRIVATE contact@example.test',error:{}}],[{title:'tracking: provider email sign-in',duration:1}]])assert.equal(failedBrowserCaseDiagnostics(make(steps))[0].workflow,undefined);
+ for(const duration of ['PRIVATE_DURATION',{},-1,0.5,Infinity,3_600_001]){
+  assert.deepEqual(failedBrowserCaseDiagnostics(make([{title:'tracking: provider email sign-in',duration,error:{message:'PRIVATE'}}]))[0].workflow,{stage:'PROVIDER_SIGN_IN',durationMs:null});
+ }
+ const other=make([{title:'tracking: provider email sign-in',duration:1,error:{}}]);other.suites[0].specs[0].title='PRIVATE';assert.equal(failedBrowserCaseDiagnostics(other)[0].workflow,undefined);
+ const file=make([{title:'tracking: provider email sign-in',duration:1,error:{}}]);file.suites[0].specs[0].file='tests/e2e/driver-manual-mobile-preview.spec.ts';assert.equal(failedBrowserCaseDiagnostics(file)[0].workflow,undefined);
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',7,other,chunk=>chunks.push(chunk));assert.doesNotMatch(chunks.join(''),/PRIVATE|CI_BROWSER_STAGE/);
+});
+
 test('known layout failures retain only typed geometry differences without assertion text',()=>{
  const report=diagnosticReport({file:'truck-profile-layout.spec.ts',results:[{status:'failed',error:{message:
   'PRIVATE_ASSERTION contact@example.test\n\u001b[32m-   "verticalOverflow": 0,\u001b[39m\n\u001b[31m+   "verticalOverflow": 8.5,\u001b[39m\n    "peopleStacked": true,\n    "contact": "PRIVATE_PHONE",\n    "horizontalOverflow": "PRIVATE_TOKEN",'

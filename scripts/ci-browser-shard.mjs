@@ -16,6 +16,27 @@ const resultCategories=new Map([['failed','FAILED'],['timedOut','TIMED_OUT'],['i
 const knownAxeRules=new Set(axe.getRules().map(rule=>rule.ruleId));
 const publicA11yRoutes=new Set(['/','/shared-capacity','/featured','/about','/privacy','/terms','/track','/login','/apply','/@blueline-transport']);
 const sourceLine=value=>Number.isSafeInteger(value)&&value>0&&value<=1_000_000?value:null;
+const trackingSmokeTitle='provider starts Tracking for one owner, who shares status with a viewer after verifying email';
+const trackingStages=new Map([
+ ['tracking: prepare synthetic provider and vehicle','FIXTURE'],
+ ['tracking: provider email sign-in','PROVIDER_SIGN_IN'],
+ ['tracking: create shipment and open provider detail','CREATE_SHIPMENT'],
+ ['tracking: provider status and proof','STATUS_AND_PROOF'],
+ ['tracking: owner email access and viewer invitation','OWNER_SHARING'],
+ ['tracking: viewer email access and restricted detail','VIEWER_RESTRICTIONS'],
+ ['tracking: clean up synthetic records','CLEANUP'],
+]);
+
+function failedWorkflowStage(result,file,title){
+ if(file!=='smoke.spec.ts'||title!==trackingSmokeTitle||!Array.isArray(result?.steps))return null;
+ for(const step of result.steps.slice(0,32)){
+  if(!step||typeof step!=='object'||!trackingStages.has(step.title)
+   ||!step.error||typeof step.error!=='object'||Array.isArray(step.error))continue;
+  const duration=step.duration;
+  return {stage:trackingStages.get(step.title),durationMs:Number.isSafeInteger(duration)&&duration>=0&&duration<=3_600_000?duration:null};
+ }
+ return null;
+}
 
 function cases(report){
  const rows=[];
@@ -122,9 +143,10 @@ export function failedBrowserCaseDiagnostics(report){
   const result=results.find(result=>result.status==='failed'||result.status==='timedOut'||result.status==='interrupted')||results.at(-1);
   const layout=layoutMeasurements(result,file);
   const a11y=accessibilityFailure(result,file,test.title);
+  const workflow=failedWorkflowStage(result,file,test.title);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{})});
+   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),...(workflow?{workflow}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -133,11 +155,12 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine,layout,a11y} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout,a11y,workflow} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
   if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
   if(a11y)write(`::error ${location}::CI_BROWSER_A11Y route=${a11y.route} rules=${a11y.rules.join(',')||'unknown'}\n`);
+  if(workflow)write(`::error ${location}::CI_BROWSER_STAGE file=${file} project=${project} stage=${workflow.stage} duration_ms=${workflow.durationMs??'unknown'}\n`);
  }
 }
 

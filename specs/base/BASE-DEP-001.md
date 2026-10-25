@@ -415,6 +415,10 @@ And a source error line prefers a stack frame matching that failing spec over st
 And annotation line numbers are positive safe integers no greater than one million; malformed field values are never stringified and unsafe/unknown filenames produce no case annotation\
 And only the two existing map-shell and vehicle-modal layout specs may additionally report allowlisted layout booleans and bounded nonnegative pixel measurements parsed from complete standalone comparison lines; unknown keys, strings, arbitrary message text and malformed values are discarded\
 And no test title, assertion body, contact, header, payload or raw report enters the annotation\
+And the named provider/owner/viewer Tracking smoke may additionally report one
+fixed workflow-stage enum and a bounded integer duration from its failed
+top-level Playwright step; exact source-case and literal stage allowlists are
+required, and unknown titles, step errors and malformed durations remain private\
 And the existing selection, retry, skip and pass/fail requirements remain authoritative.
 
 Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.
