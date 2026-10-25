@@ -107,7 +107,7 @@ test('every current Operations inventory opens a real bounded record detail',asy
   const timing=recordAdminNavigation(page,baseURL);
   try{
   await loginAsAdministrator(page);
-  const listLabels:Record<string,string>={WORKSPACES:'Client',TRUCKS:'Vehicle',DRIVERS:'Driver access',TRACKING:'Tracking',CAPACITY:'Capacity',ROUTES:'Regular service'};
+  const listLabels:Record<string,string>={WORKSPACES:'Client',TRUCKS:'Vehicle',DRIVERS:'Driver access',TRACKING:'Tracking',CAPACITY:'Capacity',ROUTES:'Preferred corridor'};
   for(const view of inventoryViews){
     timing.task('OPEN_LIST',view);
     await page.goto(`/admin/operations?view=${view}`);

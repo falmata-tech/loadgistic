@@ -58,12 +58,20 @@ test('visible fixed JSX copy does not bypass localization',()=>{
 });
 test('public and role-aware navigation have copy in every supported language',async()=>{
  const {publicDestinations,workspaceDestinations}=await import('../src/navigation/destinations.ts');
- const keys=new Set(['Account details','Your driver photo','Email and account security','Transporter profile','Regular service','Documents','On-duty Vehicles','Active Tracking','Published Reviews','Completed Tracking','Recent tracking','Back','Dashboard','Language','Open menu','Close menu','Menu','Your workspace','Explore','Finish account setup','Sign out','Sign-out could not finish. Please try again.','Your driving workspace','Your transport workspace','Close vehicle details','Close transporter results','Transporters','Partial capacity']);
+ const keys=new Set(['Account details','Your driver photo','Email and account security','Transporter profile','Preferred corridor','Preferred service area','Manage preferred corridor or service area','Documents','On-duty Vehicles','Active Tracking','Published Reviews','Completed Tracking','Recent tracking','Back','Dashboard','Language','Open menu','Close menu','Menu','Your workspace','Explore','Finish account setup','Sign out','Sign-out could not finish. Please try again.','Your driving workspace','Your transport workspace','Close vehicle details','Close transporter results','Transporters','Partial capacity']);
  for(const role of ['TRANSPORTER','DRIVER'])for(const operatingModel of ['COMPANY_DRIVER','OWNER_OPERATOR','SELF_MANAGED_DRIVER'])for(const granted of [true,false]){
   const session={state:'ACTIVE',user:{role,operatingModel},access:{granted}};
   for(const item of [...publicDestinations,...workspaceDestinations(session)])keys.add(item.label);
  }
  for(const locale of ['am','om']){const messages={...JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale]};for(const key of keys)assert.ok(messages[key]?.trim(),`${locale}: ${key}`);}
+});
+test('preferred corridor and area labels preserve their meaning in Amharic and Oromo',()=>{
+ for(const [locale,preferred,route,area] of [['am','ተመራጭ','መስመር','አካባቢ'],['om','filatam','Daandii','Naannoo']]){
+  const messages=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
+  assert.ok(messages['Preferred corridor'].includes(preferred)&&messages['Preferred corridor'].includes(route),`${locale}: preferred route meaning`);
+  assert.ok(messages['Preferred service area'].includes(preferred)&&messages['Preferred service area'].includes(area),`${locale}: preferred area meaning`);
+  assert.notEqual(messages['Preferred corridor'],messages['Capacity route'],`${locale}: saved preference differs from current capacity`);
+ }
 });
 test('About uses existing nonempty catalog messages in every supported language',()=>{
  const source=readFileSync(new URL('../src/screens/about.tsx',import.meta.url),'utf8');

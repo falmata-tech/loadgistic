@@ -11,6 +11,39 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — Android test release verified
 
+## Android/web parity qualification — October 25 candidate
+
+Given a visitor, Transport Provider, assigned driver, or shipper/broker team member\
+When the same authorized task is available on web and Android\
+Then Android preserves its business outcome, permission boundary, essential labels,
+icon meanings and explicit save/cancel/return actions in a layout suited to a phone\
+And platform staff/Admin tools remain web-only\
+And a vehicle's public profile map action selects that vehicle's already-public
+Capacity signal, rather than merely filtering to its whole provider\
+And no private vehicle identifier or unpublished signal is added to public data\
+And private Capacity sharing uses connected shipper/broker accounts under
+FEAT-SHR-001; no email-only Capacity entry or obsolete exclusive-email guidance appears\
+And signup keeps the chosen account type through verification, with Transport
+Provider as the default only when no explicit business choice was supplied\
+And loading and switch accessibility labels follow the selected app language.
+
+Given a signed-out visitor opens Shared with you\
+When mobile opens authentication\
+Then it explains that sign-in is required to see vehicles shared with the account\
+And Sign up retains the private-Capacity entry and shipper/broker account choice\
+And successful shipper/broker sign-in returns to private Capacity; provider accounts
+retain their authorized Home rather than receiving private-Capacity access.
+
+
+Given a release APK or AAB is described as supporting ARM64 and x86-64\
+When its actual archive is inspected\
+Then both ABIs contain the required native runtime libraries\
+And an unfiltered output-metadata entry alone cannot establish ABI support\
+And installed Android startup and role tasks must pass before Closed Alpha upload.
+
+Qualification is pending installed Android review and current-source gates.
+The source inventory is not a claim that all screens or native capabilities passed.
+
 ## Public Capacity vehicle-detail parity — local implementation pending review
 
 Given a visitor selects an eligible public vehicle\
@@ -181,13 +214,11 @@ FEAT-FLT-001, including server/SQL authority and old-client/race denials.
 
 ## Capacity status and accepted loads — October 7 owner correction
 
-The owner's later correction also requires explicit Public / Private network /
-Public + private network / Exclusive to one email sharing choices on web/native.
-Use the shared FEAT-SHR-001 server contract, keep recipients' identities private
-in visitor projections and preserve named contacts' private-feed inclusion in
-Both. Exclusive changes are atomic and enforce one email plus no public exposure;
-additional grant commands cannot bypass it. A mode badge describes actual saved
-authority, never a client draft or a claim that transport has been booked.
+Current account-only Capacity sharing follows FEAT-SHR-001. Private grants use
+connected shipper/broker accounts; recipient identities remain private in visitor
+projections. Historical email-only Capacity access and Exclusive email policy are
+retired; email-based shipment Tracking remains separate. A mode badge describes
+saved authority, never a draft or a transport booking.
 
 ### October 11 launch-blocking runtime and world-zoom verification
 
@@ -718,7 +749,7 @@ And the old link returns to Account; stale billing writes are rejected before up
 And workspace access depends on current identity/ownership/driver permissions,
 not billing status (FEAT-BIL-001). Historical records remain protected and retained.
 
-Given a transporter owner manages their regular service on mobile
+Given a transporter owner manages their preferred corridor on mobile
 When adding, replacing or removing its route or service area
 Then the existing single-service limit and atomic replacement apply; real catalog
 cities are required and company drivers cannot change the owner's service even
@@ -825,16 +856,27 @@ Then that session is not exposed to screens and its server credential is revoked
 
 Given a guest opens Featured
 When the existing published programme loads
-Then native cards show the real truck/driver pairs, their public portraits, truck
-configuration illustrations, sponsor disclosure and Ethiopia-time intervals.
-Weekly themes, empty days and manual schedules preserve FEAT-FTR-001. Reading
-the page never generates or publishes a roster. A refresh failure is visible.
+Then native cards show selected Transport Provider accounts, public portraits,
+eligible vehicle examples, sponsor disclosure and Ethiopia-time intervals.
+Account rounds and manual schedules preserve FEAT-FTR-001. Reading the page never
+generates or publishes a roster. A refresh failure is visible.
+
+Given Featured is opened on phone web or Android at a narrow phone width\
+Then the compact programme header, TikTok broadcast state, schedule control and
+numbered two-column provider portrait grid carry the same hierarchy\
+And tapping a provider opens a focused detail view with its profile and available
+vehicles actions\
+And Close or Android Back dismisses that detail without leaving Featured\
+And English, Amharic and Afaan Oromo labels wrap within the screen without
+horizontal overflow or hiding the detail actions.
 
 Given a guest opens a published transporter profile
-Then about, services, published contacts, reviewed-document details, regular service
-and shipment reviews appear before its fleet. One truck is immediately visible;
+Then About, published contacts, reviewed-document details and shipment reviews
+appear with its fleet. One vehicle is immediately visible;
 larger fleets expand explicitly and retain the backend's twelve-item pagination.
-Only public projections are accepted: no private record IDs, source document paths,
+Vehicle map actions may contain the Capacity signal UUID already exposed by the
+public map, validated with the public handle in a bounded relative URL. Only public
+projections are accepted: no private vehicle/record IDs, source document paths,
 internal notes or unpublished contacts are added. Badges describe specific review
 status, never a blanket guarantee. Invalid/unpublished handles return not found.
 
@@ -913,7 +955,7 @@ Invalid filters produce a visible error, never silently broader results.
 
 Given a truck is selected
 Then approximate location is violet, current capacity geometry uses its status colour
-and the Corridor route is muted orange with its separate meaning. Existing display-only
+and the Preferred corridor is muted orange with its separate meaning. Existing display-only
 parallel-path separation also handles partially shared legs and closed boundaries;
 it cannot change coordinates sent to matching or persistence. Cluster counts and
 truck configuration images replace placeholder-only markers. Cluster taps zoom
@@ -954,8 +996,9 @@ Given a visitor opens About
 Then native content explains public/private capacity, direct transporter contact,
 shipment collaboration and the limits of document review using the existing product
 copy. Capacity and transporter entry remain accessible without creating an account.
-Privacy and terms open the published website in the phone browser; mobile must not
-silently rewrite unresolved legal wording (WEB-MOB-006).
+Privacy opens the existing in-app Privacy screen, including its native account/data
+controls, consistently from About and More. Terms opens the published website in
+the phone browser; mobile must not silently rewrite legal wording (WEB-MOB-006).
 
 Given English, Amharic or Afaan Oromo is selected
 Then app-owned messages use the shared catalogs and a device-local saved preference.

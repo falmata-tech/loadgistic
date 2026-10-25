@@ -56,13 +56,13 @@ Then every point is selected from the reviewed place catalog\
 And the public map shows a cobalt Empty or amber Partial route relationship with direction\
 And no travel date is requested or inferred.
 
-### Scenario: regular service is clearly labeled and limited
+### Scenario: preferred corridors are clearly labeled and limited
 
-Given a provider records regular service\
+Given a provider records an undated preferred corridor or service area\
 When they are published on the Capacity Board or microsite\
-Then no more than one undated regular Service area or structured two-way Capacity route appears\
+Then no more than one undated Preferred service area or structured two-way Preferred corridor appears\
 And a route is presented as its complete ordered Place A ↔ Place B sequence while an area names its center and surrounding cities\
-And the user-facing label states Regular service area or Regular capacity route plus Confirm availability\
+And the user-facing label states Preferred service area or Preferred corridor plus Confirm availability\
 And it is not represented as a currently located truck.
 
 ### Scenario: visitor location is optional and client-private
@@ -88,13 +88,13 @@ When the Market renders\
 Then one shared map is loaded and synchronized with the current filtered feed\
 And no per-truck tile map or ranked List view is instantiated\
 And its initial framing remains focused on Ethiopia while public and provider views may be panned only within a practical East Africa envelope\
-And violet approximate location, status-colored current Service area or Capacity route, and muted-orange Corridor route or service area use shape, line style, icon, and text in addition to color\
+And violet approximate location, status-colored current Service area or Capacity route, and muted-orange Preferred corridor or Preferred service area use shape, line style, icon, and text in addition to color\
 And selecting a truck removes other truck markers and clusters until the selected card is closed\
 And the selected marker remains visually distinct and above its signal layers at every fitted zoom while a compact in-map information window carries its essential truck actions\
 And hovering or focusing one signal shows a temporary readable light-surface explanation with a restrained neutral border and signal-matched accent\
 And clicking or pressing a signal pins the explanation until it is dismissed or another map target is chosen\
 And clicking or pressing one signal pins only that signal's compact explanation until it is dismissed or another signal is chosen\
-And overlapping current and Corridor routes use small opposite visual offsets on the public, Expo, and driver capacity-setting maps without changing their stored cities so each remains independently selectable\
+And overlapping current Capacity routes and Preferred corridors use small opposite visual offsets on the public, Expo, and driver capacity-setting maps without changing their stored cities so each remains independently selectable\
 And Service-area and approximate-location interiors remain non-interactive while their wide outlines remain available to pointer and keyboard users.
 
 ### Closed signal outlines — owner request, 2026-09-22

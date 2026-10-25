@@ -175,8 +175,8 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
   const map=page.getByTestId('capacity-summary').locator('.leaflet-container');
   await expect(map).toBeVisible();
   await map.evaluate((element:HTMLElement)=>element.setAttribute('data-original-map','yes'));
-  await page.getByRole('button',{name:/^Edit regular service:/}).click();
-  const regular=page.getByRole('dialog',{name:'Regular service',exact:true});
+  await page.getByRole('button',{name:/^Edit preferred corridor:/}).click();
+  const regular=page.getByRole('dialog',{name:'Preferred corridor',exact:true});
   await expect(regular.locator('input[name="vehicleId"]')).toHaveValue(vehicleId);
   await expect(regular.locator('input[name="expectedDriverId"]')).toHaveValue(actor.id);
   await expect(regular.getByRole('combobox').first()).toHaveValue('');

@@ -640,7 +640,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await expect(page.locator('.public-map-legend')).toContainText('Empty service area');
   await expect(page.locator('.public-map-legend')).toContainText('Empty capacity route');
   await expect(page.locator('.public-map-legend')).toContainText('Partial capacity route');
-  await expect(page.locator('.public-map-legend')).toContainText('Corridor route');
+  await expect(page.locator('.public-map-legend')).toContainText('Preferred corridor');
   await expect(page.locator('.public-map-legend')).not.toContainText('Next trip');
   await page.screenshot({path:path.join(captures,`${info.project.name}-selected-truck.png`),scale:'css'});
   const closeCard=page.getByRole('button',{name:'Close map signal details'});
@@ -1126,7 +1126,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(summary.locator('.capacity-setting-truck-label')).toContainText('Vehicle area');
   await expect(summary.locator('.capacity-summary-map-header')).toBeVisible();
   await expect(summary.getByRole('navigation',{name:'Edit capacity signals'})).toBeVisible();
-  await expect(summary.locator('.capacity-map-key')).toContainText('Corridor route');
+  await expect(summary.locator('.capacity-map-key')).toContainText('Preferred corridor');
   await expect(summary.getByRole('region',{name:'Approximate vehicle location controls'})).toBeVisible();
   const zones=await summary.evaluate((root:HTMLElement)=>{
     const box=(selector:string)=>{const rect=(root.querySelector(selector) as HTMLElement|null)?.getBoundingClientRect();return rect?{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom}:null;};
@@ -1191,9 +1191,9 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('heading',{name:'Available by radius or corridor'})).toHaveCount(0);
   await expect(summary).toContainText('just now');
   await expect(summary).not.toContainText('Next trip');
-  await expect(summary).toContainText('Corridor route');
+  await expect(summary).toContainText('Preferred corridor');
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
-  await page.getByRole('button',{name:/^Edit regular service:/}).click();
+  await page.getByRole('button',{name:/^Edit preferred corridor:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
   await expect(page.getByTestId('capacity-planning-editor')).toContainText('The area or two-way route you serve regularly');
   await page.getByRole('button',{name:'Close editor'}).click();

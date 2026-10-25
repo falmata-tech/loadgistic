@@ -70,6 +70,13 @@ a secret. Owner: local development workflow maintainer. Review future tool
 commands that touch protected paths before execution; keep values out of command
 arguments, output and committed evidence.
 
+**Additional occurrence October 25:** a local Supabase diagnostic command printed
+development credentials in a private tool trace during browser review. No hosted
+credential or customer data was accessed, and the output was not saved to the
+repository. The review switched to status-only HTTP probes and made no further
+credential-bearing diagnostic calls. Treat this as an NR-71 recurrence: local
+health checks should select and redact only the fields needed for the task.
+
 ## NR-70 — A shared filter-shape change leaves a web-only initializer behind
 
 **Observed October21:** Capacity document choices moved from an object to a

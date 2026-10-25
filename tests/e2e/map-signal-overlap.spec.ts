@@ -57,7 +57,7 @@ test('coincident closed areas and routes remain separately tappable through zoom
         await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touch.detach();
         await expect(pane).not.toHaveAttribute('style',before!);await expect(page.locator('.leaflet-pan-anim')).toHaveCount(0);
       }
-      for(const [selector,label] of [[current,mode==='area'?'Service area':'Capacity route'],['.map-regular-corridor',mode==='area'?'Regular service area':'Corridor route'],['.map-location-privacy-circle','approximate location']]){
+      for(const [selector,label] of [[current,mode==='area'?'Service area':'Capacity route'],['.map-regular-corridor',mode==='area'?'Preferred service area':'Preferred corridor'],['.map-location-privacy-circle','approximate location']]){
         const signal=page.locator(selector);
         await expect.poll(()=>signal.evaluate(async(element:SVGPathElement)=>{
           const signature=()=>{const m=element.getScreenCTM();return JSON.stringify([element.getAttribute('d'),m?.a,m?.d,m?.e,m?.f]);};

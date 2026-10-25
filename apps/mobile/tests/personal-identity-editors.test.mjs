@@ -161,3 +161,26 @@ test('a committed native public-identity save retries authoritative reading with
  let tree=view.render(screen);find(tree,'Button',node=>node.props.message==='Edit transporter profile').props.onPress();tree=view.render(screen);find(tree,'Field',node=>node.props.message==='Account name').props.onChangeText('New public name');find(tree,'Field',node=>node.props.message==='Handle').props.onChangeText('@New-name');tree=view.render(screen);find(tree,'Button',node=>node.props.message==='Save transporter profile').props.onPress();await settle();tree=view.render(screen);assert.equal(writes.length,1);assert.equal(find(tree,'Field',node=>node.props.message==='Account name').props.editable,false);assert.ok(find(tree,'Button',node=>node.props.message==='Refresh'));
  fail=false;find(tree,'Button',node=>node.props.message==='Refresh').props.onPress();await settle();tree=view.render(screen);assert.equal(writes.length,1);assert.equal(find(tree,'Field'),undefined);assert.ok(JSON.stringify(tree).includes('New public name'));assert.ok(nodes(tree).filter(node=>node.type==='Text').some(node=>node.props.children.flat(Infinity).join('')==='@new-name'));assert.equal(writes[0].accountName,'New public name');assert.equal(writes[0].handle,'new-name');assert.equal('managerName'in writes[0],false);
 });
+
+
+function authEntry({mode='LOGIN',params={},session={state:'ACTIVE',user:{role:'CUSTOMER',selectedBusinessWorkspace:{id:'broker'}}}}={}){
+ const view=renderer(),destinations=[],requests=[];
+ const account={error:'',requestCode:async email=>{requests.push(email);return'synthetic-handoff';},verifyCode:async()=>session};
+ const screen=view.compile('../src/screens/account.tsx',{...common,AppLink:'AppLink',useAccount:()=>account,usePathname:()=>'/account',useLocalSearchParams:()=>params,router:{replace:href=>destinations.push(href)},businessHome:()=>'/business',signupBenefits:{provider:[],business:[]}}).AuthEntry;
+ return{render:()=>view.render(screen,{mode}),destinations,requests};
+}
+test('private Capacity authentication explains the destination and keeps it through sign-up and sign-in links',()=>{
+ let view=authEntry({params:{from:'capacity'}}),tree=view.render();
+ assert.ok(find(tree,'Copy',node=>node.props.message==='Sign in to see vehicles shared with your account.'));
+ assert.equal(find(tree,'AppLink',node=>node.props.message==='Sign up').props.href,'/signup?from=capacity&setup=business');
+ view=authEntry({mode:'SIGNUP',params:{from:'capacity',setup:'business'}});tree=view.render();
+ assert.equal(find(tree,'AppLink',node=>node.props.message==='Sign in').props.href,'/account?from=capacity');
+ assert.equal(find(tree,'Pressable',node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityState.checked).props.accessibilityLabel,'Find room for your load');
+ const normal=authEntry().render();assert.ok(find(normal,'Copy',node=>node.props.message==='Enter your email to sign in securely.'));assert.equal(find(normal,'AppLink',node=>node.props.message==='Sign up').props.href,'/signup');
+});
+test('private Capacity code verification returns brokers to their map and does not send providers to broker-only Capacity',async()=>{
+ for(const role of ['CUSTOMER','TRANSPORTER']){
+  const view=authEntry({params:{from:'capacity'},session:{state:'ACTIVE',user:{role}}});let tree=view.render();find(tree,'Field',node=>node.props.message==='Email').props.onChangeText('broker@example.test');tree=view.render();await find(tree,'Button',node=>node.props.label==='Send code').props.onPress();tree=view.render();find(tree,'Field',node=>node.props.message==='Sign-in code').props.onChangeText('123456');tree=view.render();await find(tree,'Button',node=>node.props.label==='Sign in').props.onPress();
+  assert.deepEqual(view.requests,['broker@example.test']);assert.deepEqual(view.destinations,role==='CUSTOMER'?['/?view=private']:[]);
+ }
+});

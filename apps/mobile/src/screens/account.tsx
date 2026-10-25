@@ -55,10 +55,10 @@ export function AuthEntry({mode}:{mode:'LOGIN'|'SIGNUP'}) {
   const account = useAccount();
   const path=usePathname();
   const {setup,from}=useLocalSearchParams<{setup?:string;from?:string}>();
-  const [audience,setAudience]=useState<'PROVIDER'|'BUSINESS'>(setup==='provider'?'PROVIDER':'BUSINESS');
+  const [audience,setAudience]=useState<'PROVIDER'|'BUSINESS'>(setup==='business'?'BUSINESS':'PROVIDER');
   const [email, setEmail] = useState(''), [code, setCode] = useState(''), [handoff, setHandoff] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const submit = async () => { if (busy) return; setBusy(true); setError(''); try { if (!handoff){setHandoff(await account.requestCode(email.trim()));} else {const next=await account.verifyCode(handoff, code.trim());if(!next)throw new Error('Sign-in changed. Please try again.');const target=next.state==='ONBOARDING'?mode==='SIGNUP'?audience==='PROVIDER'?'/account?setup=provider':'/account?setup=business':'/signup':next.user.role==='CUSTOMER'?(from==='capacity'?'/?view=private':businessHome(next.user.selectedBusinessWorkspace)):'/account';if(target!==path)router.replace(target);} } catch (error) { setError(message(error)); } finally { setBusy(false); } };
-  return <Page><Title message={mode==='LOGIN'?'Sign in':'Create an account'}/><Copy message={mode==='LOGIN'?'Enter your email to sign in securely.':'Choose your account type, then verify your email.'}/>
+  return <Page><Title message={mode==='LOGIN'?'Sign in':'Create an account'}/><Copy message={from==='capacity'?'Sign in to see vehicles shared with your account.':mode==='LOGIN'?'Enter your email to sign in securely.':'Choose your account type, then verify your email.'}/>
     <ErrorText message={error || account.error} />
     {account.cleanupRequired && <Button secondary message="Retry sign-out" onPress={() => { void account.signOut(); }} />}
     {mode==='SIGNUP'&&!handoff?<View accessibilityRole="radiogroup" style={{gap:8}}>{([
@@ -70,7 +70,7 @@ export function AuthEntry({mode}:{mode:'LOGIN'|'SIGNUP'}) {
     <Button label={t(handoff ? 'Sign in' : 'Send code')} onPress={submit} busy={busy} />
     {!!handoff && <Button secondary message="Use another email or resend" onPress={() => { setHandoff(''); setCode(''); setError(''); }} busy={busy} />}
     <Copy message={"Your email code signs you in securely. No password needed."}/>
-    {mode==='LOGIN'?<View style={{flexDirection:'row',gap:4,flexWrap:'wrap'}}><Copy message="Don't have an account?"/><AppLink href="/signup" message="Sign up"/></View>:<View style={{flexDirection:'row',gap:4,flexWrap:'wrap'}}><Copy message="Already have an account?"/><AppLink href="/account" message="Sign in"/></View>}
+    {mode==='LOGIN'?<View style={{flexDirection:'row',gap:4,flexWrap:'wrap'}}><Copy message="Don't have an account?"/><AppLink href={from==='capacity'?'/signup?from=capacity&setup=business':'/signup'} message="Sign up"/></View>:<View style={{flexDirection:'row',gap:4,flexWrap:'wrap'}}><Copy message="Already have an account?"/><AppLink href={from==='capacity'?'/account?from=capacity':'/account'} message="Sign in"/></View>}
     <AppLink href="/review-access" message="Review access" style={{color:'#526875',fontSize:13,paddingVertical:12,minHeight:44}}/>
   </Page>;
 }

@@ -89,7 +89,7 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps Capacity and corridor routes
     // SVG rounding may consume a pixel of the 12px model clearance.
     expect(geometry.minimum,'separation along the shared leg, not an unrelated exposed segment').toBeGreaterThanOrEqual(10);
     expect(geometry.target,'both shared strokes need an unobscured test point').toBeTruthy();
-    for(const [selector,key,label] of [['.map-current-route','yellow','Capacity route'],['.map-regular-corridor','brown','Corridor route']]){
+    for(const [selector,key,label] of [['.map-current-route','yellow','Capacity route'],['.map-regular-corridor','brown','Preferred corridor']]){
       const cameraBefore=await page.locator('.leaflet-proxy').getAttribute('style');
       const point=geometry.target[key];
       if(info.project.name.includes('mobile'))await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);

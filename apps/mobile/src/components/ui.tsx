@@ -4,9 +4,9 @@ import { useLanguage } from '../localization/provider';
 type AppCopy=PropsWithChildren<{message?:string}>;
 type Label=({label:string;message?:never}|{message:string;label?:never});
 export const palette = { ink: '#0b1d3a', blue: '#155eef', blueSoft: '#eaf1ff', muted: '#526375', border: '#cbd5e1', borderSoft: '#e5eaf1', canvas: '#f3f5f7', success: '#155eef', successSoft: '#eaf1ff' };
-export function LoadingSpinner(props: ActivityIndicatorProps) { return <ActivityIndicator {...props} color={props.color ?? palette.blue} />; }
+export function LoadingSpinner(props: ActivityIndicatorProps) { const {t}=useLanguage();return <ActivityIndicator {...props} accessibilityLabel={props.accessibilityLabel?t(props.accessibilityLabel):undefined} color={props.color ?? palette.blue} />; }
 export function Page({ children,embedded=false,...scroll }: PropsWithChildren<{embedded?:boolean}&Pick<ScrollViewProps,'onLayout'|'onScroll'|'scrollEventThrottle'>>) { return embedded?<View style={{gap:16}}>{children}</View>:<ScrollView {...scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>{children}</ScrollView>; }
-export function Title({ children,message }: AppCopy) { const {t}=useLanguage();return <Text style={styles.title}>{message===undefined?children:t(message)}</Text>; }
+export function Title({ children,message }: AppCopy) { const {t}=useLanguage();return <Text accessibilityRole="header" style={styles.title}>{message===undefined?children:t(message)}</Text>; }
 export function Copy({ children,message }: AppCopy) { const {t}=useLanguage();return <Text style={styles.copy}>{message===undefined?children:t(message)}</Text>; }
 export function Card({ children }: PropsWithChildren) { return <View style={styles.card}>{children}</View>; }
 export function Field({ label,message, ...props }: TextInputProps & Label) { const {t}=useLanguage();const text=message===undefined?label:t(message);return <View style={styles.field}><Text style={styles.label}>{text}</Text><TextInput {...props} accessibilityLabel={text} style={[styles.input, props.style]} /></View>; }

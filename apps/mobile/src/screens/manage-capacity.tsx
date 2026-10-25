@@ -53,7 +53,7 @@ function TruckCapacity({truck,showIdentity,active,canPublish,canRegular,canManag
   const mapLocation=truck.location?.coordinate?{latitude:truck.location.coordinate[1],longitude:truck.location.coordinate[0],radius:truck.location.radius,area:truck.location.area,updatedAt:truck.location.updatedAt,source:truck.publishedLocationSource,...(truck.locationIsDemo?{demo:true as const}:{})}:null;
   const coverage=truck.current&&truck.current.status!=='OFF_DUTY'?{kind:truck.current.availabilityGeometry,places:truck.current.availabilityGeometry==='ROUTE'?truck.current.route:truck.current.boundary,partial:truck.current.status==='PARTIAL'}:undefined;
   const hasMapSignals=Boolean(mapLocation||coverage||regular.length);
-  const taskTitle=editingSection==='CAPACITY'?(canPublish?'Update capacity':'Update duty status'):editingSection==='SHARING'?'Sharing settings':editingSection==='ROUTES'?'Routes and areas':'Vehicle location';
+  const taskTitle=editingSection==='CAPACITY'?(canPublish?'Update capacity':'Update duty status'):editingSection==='SHARING'?'Sharing settings':editingSection==='ROUTES'?'Preferred corridor':'Vehicle location';
   const close=()=>{if(saving)return;onCancel();void refresh();};
   return <>
     <Card>{showIdentity&&<><Title>{truck.label}</Title><Copy>{truck.plate} · {truck.driver||t('No driver assigned')}</Copy></>}
@@ -69,7 +69,7 @@ function TruckCapacity({truck,showIdentity,active,canPublish,canRegular,canManag
           <View style={{gap:7}}>
             <MapTaskButton label={canPublish?'Capacity':'Duty'} hint={canPublish?'Update capacity':'Update duty status'} icon="truck" onPress={()=>onEdit('CAPACITY')}/>
             <MapTaskButton label="Sharing" hint="Update sharing settings" icon="network" disabled={!canPublish||!truck.current} onPress={()=>onEdit('SHARING')}/>
-            {canRegular&&Boolean(truck.driverId)&&<MapTaskButton label="Routes" hint="Manage corridor routes and service areas" icon="route" onPress={()=>onEdit('ROUTES')}/>}
+            {canRegular&&Boolean(truck.driverId)&&<MapTaskButton label="Preferred corridor" hint="Manage preferred corridor or service area" icon="route" onPress={()=>onEdit('ROUTES')}/>}
             {canManageLocation&&<MapTaskButton label="Location" hint="Set vehicle location" icon="pin" onPress={()=>onEdit('LOCATION')}/>}
           </View>
         </View>

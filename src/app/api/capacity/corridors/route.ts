@@ -13,13 +13,13 @@ export async function POST(request:NextRequest){
   const wantsJson=request.headers.get('accept')?.includes('application/json');
   const json=(body:{ok?:boolean;error?:string},status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'private, no-store'}});
   const user=await getCurrentUser();
-  if(!user)return wantsJson?json({error:'Sign in again to save regular service.'},401):NextResponse.redirect(new URL('/login',request.url),303);
+  if(!user)return wantsJson?json({error:'Sign in again to save your preferred corridor.'},401):NextResponse.redirect(new URL('/login',request.url),303);
   const form=await request.formData();const back=destination(form);
   try{
     const parsed=regularScope.safeParse({vehicleId:text(form,'vehicleId'),expectedDriverId:text(form,'expectedDriverId')});
     if(!parsed.success||form.getAll('vehicleId').length!==1||form.getAll('expectedDriverId').length!==1)throw new Error('REGULAR_TRUCK_DRIVER_REQUIRED');
     if(text(form,'action')==='REMOVE')await removeProviderRegularCapacity(user,text(form,'id'),parsed.data);
     else await addProviderRegularCapacity(user,{...parsed.data,geometry:text(form,'geometry'),routePlaces:routePlaces(form),areaCenter:text(form,'areaCenter'),areaCenterPlaceRef:text(form,'areaCenterPlaceRef'),areaBoundaryPlaces:areaBoundaryPlaces(form)},text(form,'action')==='UPDATE'?text(form,'id'):null);
-    return wantsJson?json({ok:true}):redirectWith(request,back,'success',text(form,'action')==='REMOVE'?'Regular service removed.':'Regular service published.');
+    return wantsJson?json({ok:true}):redirectWith(request,back,'success',text(form,'action')==='REMOVE'?'Preferred corridor removed.':'Preferred corridor published.');
   }catch(error){return wantsJson?json({error:errorMessage(error)},error instanceof Error&&error.message==='TRUCK_DRIVER_CHANGED'?409:400):redirectWith(request,back,'error',errorMessage(error));}
 }

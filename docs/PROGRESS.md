@@ -6,6 +6,69 @@ checkpoints remain in Git and the [October 23](PROGRESS_HISTORY_20261023.md)
 and [October 20](PROGRESS_HISTORY_20261020.md) histories; this page records the
 current delivery state.
 
+## Current task — Android cross-platform qualification
+
+The owner now authorizes emulator testing and Closed Alpha upload only after the
+app passes, including screen-by-screen web/native clarity, feature and translation
+parity for customer roles. Platform staff/Admin stay web-only. Play submission is
+not complete. Ordered work:
+
+1. Correct the packaging qualification: the original code-10 APK contained only
+   ARM64 libraries and crashed on the x86-64 emulator. The earlier “universal”
+   description was wrong; preserve its hash and inspect actual library members.
+2. Fix the observed public-vehicle map handoff, obsolete email Capacity copy,
+   internal Privacy navigation, labels/icons and accessibility translations;
+   preserve permissions and verify the selected signup type.
+3. Address the owner's final inspection findings: explain private-Capacity sign-in
+   on mobile, preserve its signup/return context, use Preferred corridor wording,
+   and verify actual demo corridor geometry on web and mobile. Deploy matching web
+   changes after qualification; no further visual approval is requested.
+4. Exercise installed Android visitor/provider/driver and available shipper/broker
+   journeys, inspect phone layouts and compare web outcomes. Record gaps and native
+   capability limits before declaring parity.
+5. Run focused checks and the required source gates once for the resulting source;
+   package and verify the matching APK/AAB and existing upload certificate.
+6. Upload only that qualified bundle to the existing Closed Alpha track, then read
+   back version, review state and tester availability. No public Play rollout.
+
+Current findings and evidence (October25):
+
+- Live demo inspection found 30 unassigned legacy route preferences. A restored
+  hosted-data clone verified the exact 20 public-demo corridor repair and its
+  rollback. The agent reviewed and applied that finite correction under the
+  owner's instruction to fix demo data and self-review. Independent database and
+  public API checks confirm 20 visible corridors; only vehicle/driver assignment
+  columns changed, ledger208 unchanged. Protected review and receipts:
+  `.local/corridor-demo-20261025/owner-review.md` and `applied-receipt.json`.
+- Preferred corridor wording now distinguishes the saved preference from current
+  Capacity routes; radius preferences use Preferred service area. Web/Expo phone
+  route dialogs passed actual Chrome interactions and en/am/om inspection. The
+  optional radius browser branch did not run; deterministic radius tests remain.
+- Native Featured now follows the web's compact command strip and two-column
+  provider portrait board. Chrome/Expo320px detail/close/schedule and translated
+  Amharic/Oromo journeys pass. The long English profile journey hit local API
+  timeout; this is not recorded as a completed native installed task.
+- Private-Capacity authentication explains why sign-in is needed, retains the
+  business signup selection and destination, and passes actual Chrome320/390px
+  link/return checks. Shared native titles now expose heading semantics.
+- Root1192-test run:1190 passed, one existing skipped, one browser-skip inventory
+  failure. The reviewed inventory correction passes25 focused gate tests. Mobile
+ 338-test run:337 passed, one native raw-text guard caught a Featured condition;
+  its boolean correction passes the7 focused guard/card cases. Do not relabel the
+  initial failed runs as green; current-source CI is still required. A subsequent complete root test run passes1192
+  of1193 (one existing intentional skip); final root typecheck passes after using
+  the existing typed browser-test adapter. All338 mobile tests now pass.
+- The dedicated x86-64 emulator launched the intermediate APK, but later Android
+  system ANRs/hung QEMU and test-driver installation stalls prevented reliable
+  installed role qualification. Emulator is stopped during heavy gates. These
+  are infrastructure limits, not proof that final native workflows pass.
+
+The English Play listing has been saved as an unsubmitted Console draft and
+reloaded successfully. Internal and Alpha still serve code7. Existing background
+location and reviewer sign-in declaration changes remain unsent. Protected current
+evidence is under `.local/play-code10-20261025/` and
+`.local/release-20261025-ae03/play-preparation-20261025.json`.
+
 ## Live delivery
 
 - The web app is live at https://loadgistic.com on Netlify production deploy
@@ -21,11 +84,12 @@ current delivery state.
   not remove email-based Tracking. Hosted security advisors report zero errors
   and the same two separately accepted warnings. The SQL hashes, protected
   backup/rehearsal and apply readback are in `.local/release-20261025-ae03/`.
-- Android 1.2.0/code 10 is a **local, debug-signed test APK** at
-  `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`, SHA-256
+- The original Android 1.2.0/code 10 **ARM64-only, debug-signed test APK** is
+  preserved at `.local/play-code10-20261025/loadgistic-code10-arm64-original.apk`, SHA-256
   `1195fbbc9d72c300d5b7df522ede9664d5ee9dbbcfc1d82dadde5c19d1cdde66`.
-  It is not a Play upload artifact. Google Play signing, upload and publication
-  remain paused by the owner.
+  It is not a Play upload artifact. A two-ABI APK/AAB rebuild succeeds, but the
+  later parity corrections and Featured redesign must finish installed review
+  and source qualification before the newly authorized Closed Alpha upload.
 
 ## Production verification and limits
 

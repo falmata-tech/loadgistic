@@ -6,10 +6,10 @@ import { apiOrigin } from '../api/http';
 import { externalDestination,type PublicBadge } from '../api/public-content';
 import { Button,Copy,ErrorText,palette } from './ui';
 import {AppIcon} from './app-icon';
-export function ExternalButton({label,url}:{label:string;url:string}){
+export function ExternalButton({label,url,failureMessage='This phone could not open that contact. Please try another contact method.'}:{label:string;url:string;failureMessage?:string}){
  const [error,setError]=useState('');const destination=externalDestination(url);
  if(!destination)return null;
- return <><Button secondary label={label} onPress={()=>{setError('');void Linking.openURL(destination).catch(()=>setError('This phone could not open that contact. Please try another contact method.'));}}/><ErrorText message={error}/></>;
+ return <><Button secondary label={label} onPress={()=>{setError('');void Linking.openURL(destination).catch(()=>setError(failureMessage));}}/><ErrorText message={error}/></>;
 }
 export function PublicImage({path,label,portrait=false,identity}:{path:string;label:string;portrait?:boolean;identity?:'company'|'person'}){
  const [failed,setFailed]=useState('');

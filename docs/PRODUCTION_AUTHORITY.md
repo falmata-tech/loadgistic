@@ -1,3 +1,24 @@
+## October25 demo corridor repair — applied
+
+The owner's current instruction authorizes checking, fixing and rechecking demo
+corridors, deploying matching web changes, and agent-led review without another
+visual approval question. This supersedes the earlier requirement to request a
+fresh owner visual decision for this task; it does not authorize unrelated
+configuration, credential or real-user changes.
+
+The agent reviewed the exact20 production-pilot fixture route IDs, existing
+ownership/current-driver/public visibility, protected full-row backup and a
+successful apply/rollback rehearsal on the restored ledger208 clone. SQL digest
+`cbe558daf6da6b4b4bd8c8ecef841250cdfa368aa458d38fdf8655ddaab30c49` was applied
+once at2026-10-25T16:31:17Z, after a fresh protected backup and full-row drift check.
+Independent readback confirms only `assigned_vehicle_id` and
+`assigned_driver_user_id` changed on20 rows; all30 route rows and ledger208 remain.
+Independent public pagination confirms all20 exact corridor preferences now
+appear. Four ownership-drift rows, two private/non-open rows and four unpublished
+projection rows were excluded. No schema, document, account or route geometry
+change occurred. Exact scoped rollback refuses later edited rows and is prepared,
+not applied. Review/evidence remain in `.local/corridor-demo-20261025/`.
+
 ## October21 additional Play phone session and web readback
 
 The owner answered “Yes, finish the Play phone session” to

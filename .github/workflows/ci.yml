@@ -583,7 +583,7 @@ jobs:
         working-directory: apps/mobile
         run: npm ci
 
-      - name: Start the isolated Loadgistic Expo preview for staff mobile-denial workflows
+      - name: Start the isolated Loadgistic Expo preview for browser workflows
         working-directory: apps/mobile
         run: |
           mkdir -p ../../.local

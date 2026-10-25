@@ -85,9 +85,9 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  const measureModal=useCallback(()=>host.current?.measureInWindow((left,top,width,height)=>{if(width&&height)setModalFrame({left,top,width,height});}),[]);
  useEffect(()=>{if(active)measureModal();},[active,measureModal,windowSize.width,windowSize.height]);
  const color=(kind:InfoKind)=>kind==='current'&&selected?.status==='PARTIAL'?capacityStatusPresentation.PARTIAL.color:colors[kind];
- const label=(kind:InfoKind)=>kind==='truck'?'Vehicle details':kind==='location'?'Approximate location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Regular service area':'Corridor route'):selected?.geometry==='RADIUS'?'Service area':'Capacity route';
+ const label=(kind:InfoKind)=>kind==='truck'?'Vehicle details':kind==='location'?'Approximate location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred service area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Service area':'Capacity route';
  const choices: {kind:InfoKind;index:number}[]=selected?[{kind:'truck',index:-1},...paths.map((path,index)=>({kind:path.kind,index}))]:[];
- const shortLabel=(kind:InfoKind)=>kind==='truck'?'Vehicle':kind==='location'?'Location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Service area':'Corridor'):'Capacity';
+ const shortLabel=(kind:InfoKind)=>kind==='truck'?'Vehicle':kind==='location'?'Location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):'Capacity';
  const regular=active?.kind==='regular';
  const regularSignal=regular?selected?.regular[0]:null;
  const area=regular?regularSignal?.geometry==='RADIUS':selected?.geometry==='RADIUS';

@@ -100,8 +100,10 @@ test('each isolated browser shard checks current synthetic fixture behavior befo
  const shard=workflow.slice(workflow.indexOf('  e2e-shards:\n'),workflow.indexOf('  e2e:\n'));
  const fixtureImport=shard.indexOf('Import and verify managed fixtures');
  const preflight=shard.indexOf('run: node scripts/ci-fixture-preflight.mjs');
+ const expoInstall=shard.indexOf('Install locked Expo preview dependencies');
+ const expoStart=shard.indexOf('Start the isolated Loadgistic Expo preview for browser workflows');
  const fullSuite=shard.indexOf('run: node scripts/ci-browser-shard.mjs');
- assert.ok(fixtureImport>=0&&preflight>fixtureImport&&fullSuite>preflight);
+ assert.ok(fixtureImport>=0&&preflight>fixtureImport&&expoInstall>preflight&&expoStart>expoInstall&&fullSuite>expoStart);
 });
 
 test('CI fixture imports never restore retired email Capacity access',()=>{

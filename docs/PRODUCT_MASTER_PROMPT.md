@@ -20,7 +20,8 @@ fleet, publish customer demand or guarantee availability or service.
   shipper/broker account; public-link Tracking retains its email access.
 - Transport Provider owners manage their vehicles, drivers, capacity, sharing,
   devices and Tracking. A driving owner or employee opens a map-based Home with
-  immediate permitted work controls. A non-driving owner opens Fleet.
+  immediate permitted work controls. A non-driving owner opens Home's Manage
+  vehicles tab.
 - Shippers and brokers use private Capacity through vehicle grants to their
   registered account and its explicitly authorized team. An email address alone
   cannot receive private Capacity access. Tracking has separate permissions.
@@ -28,11 +29,15 @@ fleet, publish customer demand or guarantee availability or service.
   software Support, document review and operational tools on the web. These are
   not customer-team roles and do not gain blanket private-location access.
 
-Marketplace and My workspace are two areas of one application, with a persistent
-switch and current workspace context. Group related management within the relevant
-record or Account; avoid turning every database resource into another menu item.
-Web desktop, phone web and Expo follow the same task structure where appropriate.
-Admin and platform-staff management remain web-only.
+One application shell keeps public navigation available and adds role-appropriate
+menus after sign-in. Providers use Home tabs for their driving controls, managed
+vehicles and public market; shippers/brokers use Capacity with public and Shared
+with you views. Group related management within the relevant record or Account;
+avoid turning every database resource into another menu item. Web desktop, phone
+web and Android preserve the same task structure, essential labels, icon meanings
+and feature outcomes in layouts suited to each device. Admin and platform-staff
+management remain web-only. Privacy stays inside the native app; external Terms
+opens the published legal page. FEAT-MOB-001 controls installed parity qualification.
 
 ## Discovery and identity
 

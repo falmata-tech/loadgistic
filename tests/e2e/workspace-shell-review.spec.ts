@@ -74,7 +74,7 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await capture(page,path.join(output,`${project}-driver-home.png`));
   const currentWorkspace=await getProviderCapacityWorkspace(await auditIdentity(localAuditService(),'driver@loadgistic.local'));
   const currentTruck=currentWorkspace.vehicles[0];expect(currentTruck.assigned_driver?.id).toBeTruthy();
-  await page.getByRole('button',{name:/^Edit regular service:/}).click();
+  await page.getByRole('button',{name:/^Edit preferred corridor:/}).click();
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
   await expect(page.getByTestId('capacity-planning-editor').locator('#regular-service-form input[name="vehicleId"]')).toHaveValue(currentTruck.id);
   await expect(page.getByTestId('capacity-planning-editor').locator('#regular-service-form input[name="expectedDriverId"]')).toHaveValue(currentTruck.assigned_driver.id);
