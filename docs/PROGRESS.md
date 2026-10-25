@@ -32,7 +32,7 @@ Ordered checkpoint:
    cancel, private signup choice, Featured detail and Android Back pass. Earlier
    unchanged-screen receipts separately cover corridor/Partial, fleet GPS/Support
    and Account edit/cancel; they retain their original source and hash.
-4. Current: finish the web-only keyboard-loading repair and bounded authenticated
+4. Implemented: the web-only keyboard-loading repair and bounded authenticated
    Axe diagnostics, then quality, exact-source web packaging and PR24 CI. Both
    map-action rails now receive visible keyboard focus even when their buttons
    are disabled. The real server-rendered regression passes desktop1280 and
@@ -43,14 +43,32 @@ Ordered checkpoint:
    flag passed; the root test command now enables that mode explicitly while
    preserving two workers and every test. The complete corrected gate passes
    1197/1198 tests (one existing intentional skip), source/spec/workflow checks
-   and typecheck in213s. Next: freeze this repair, build its web artifact and
-   run exact-head remote CI.
+   and typecheck in213s. Exact52477bb PR CI40235307637 passed all16 jobs; PR24
+   merged as5892cc7 with an identical tree. Its isolated Linux web build and eight
+   function archives pass inspection. Unpublished draft6ade7acca3ae982b016fad3f
+   serves matching static/image bytes; production is unchanged.
    New immutable web package: `.local/release-20261025-focus/`. Review native
    input equivalence to the resulting head before reusing the tested APK/AAB.
-5. Pending: merge only after exact-head PR gates pass; verify independent
-   merged-main CI, fresh site/ledger/advisors, immutable artifact and recovery
-   evidence; publish once and verify actual production UI/API/private-file flows.
-   The old0d9 web package/draft cannot certify this new web focus repair.
+5. Current: repair the reproduced accessibility harness race before new CI.
+   Main CI40237550136's fleet Home scan lost its execution context during the
+   expected streamed `/app/home`→`/app/home/vehicles` redirect. Desktop and phone
+   reproduce the failure; a diagnostic awaiting the exact final route passes
+   both Axe scans. The repaired existing case passes desktop and phone, and all14
+   provider route scans pass on phone. The same run also failed a desktop
+   portrait replacement readback; its actual HTTP statuses were absent from
+   sanitized output. Both strict404/200 requirements remain, now in a named
+   readback step with fixed numeric diagnostics. Two local portrait attempts
+   failed earlier during dev-page/image loading, so they do not explain the CI
+   readback failure; outputs and cleanup evidence remain protected separately.
+   Reporter32/32, workflow checks and the complete pinned-Node22 quality gate
+   pass (1199 tests, zero failures, one existing skip;73s total). Ordered work:
+   commit the coherent test-only PR and run exact-source CI;
+   require its PR and merged-main gates, then refresh release prerequisites,
+   publish once and verify production UI/API/private-file flows. Preserve the
+   failed run. Application, native and immutable524 web inputs stay unchanged;
+   prove equivalence rather than rebuild or relabel artifacts.
+   Follow-up qualification is in `.local/release-20261025-settled/`; the original
+   `.local/release-20261025-focus/` build, draft and failed-main receipts remain.
 6. Pending/separate: installed broker/staff journeys, fleet saves and physical
    phone/background location are unqualified. Ask before a new owner-phone
    session. Play signing/upload remains unqualified; local build delivery is not

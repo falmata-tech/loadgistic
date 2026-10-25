@@ -423,6 +423,51 @@ test('authenticated accessibility diagnosis rejects unreviewed cases and private
  assert.equal(failedBrowserCaseDiagnostics(report)[0].authenticatedA11y,undefined);
 });
 
+test('portrait replacement diagnosis emits only fixed case kind and bounded HTTP statuses',()=>{
+ const titles=new Map([
+  ["independent Driver controls their public portrait while Featured keeps the provider's separate identity",'SELF_MANAGED'],
+  ["company Driver controls their public portrait while Featured keeps the provider's separate identity",'COMPANY']
+ ]);
+ for(const [title,kind] of titles){
+  const report=diagnosticReport({file:'driver-portraits.spec.ts',project:'desktop-chromium',results:[{
+   status:'failed',steps:[{title:'portrait: replacement HTTP old=503 new=200',error:{message:'PRIVATE_TOKEN contact@example.test'}}],
+   error:{message:'PRIVATE_PASSWORD',request:{url:'PRIVATE_URL'}}
+  }]});
+  report.suites[0].specs[0].title=title;
+  assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].portrait,{kind,oldStatus:503,newStatus:200});
+  const output=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',2,report,value=>output.push(value));
+  assert.match(output.at(-1),new RegExp(`^::error file=tests/e2e/driver-portraits\\.spec\\.ts::CI_BROWSER_PORTRAIT kind=${kind} old_status=503 new_status=200\\n$`));
+  assert.doesNotMatch(output.join(''),/PRIVATE|example\.test|independent Driver|company Driver|replacement HTTP/);
+ }
+});
+
+test('portrait replacement diagnosis rejects other cases, incomplete stages and unbounded values',()=>{
+ const title="company Driver controls their public portrait while Featured keeps the provider's separate identity";
+ const make=(step,options={})=>{
+  const report=diagnosticReport({file:options.file||'driver-portraits.spec.ts',results:[{status:'failed',steps:step===null?[]:[step],error:{message:'PRIVATE_TOKEN contact@example.test'}}]});
+  report.suites[0].specs[0].title=options.title||title;
+  return report;
+ };
+ for(const step of [null,{title:'portrait: replacement HTTP old=404 new=200'},
+  {title:'portrait: replacement HTTP old=404 new=200',error:'PRIVATE_ERROR'},
+  {title:'portrait: replacement HTTP old=99 new=200',error:{}},
+  {title:'portrait: replacement HTTP old=600 new=200',error:{}},
+  {title:'portrait: replacement HTTP old=404 new=099',error:{}},
+  {title:'portrait: replacement HTTP old=404 new=200.0',error:{}},
+  {title:'portrait: replacement HTTP old=404 new=200 PRIVATE_TOKEN',error:{}},
+  {title:'portrait: replacement HTTP old=404 new=200\n::error::PRIVATE_TOKEN',error:{}}]){
+  const report=make(step);assert.equal(failedBrowserCaseDiagnostics(report)[0].portrait,undefined);
+  const output=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',2,report,value=>output.push(value));
+  assert.doesNotMatch(output.join(''),/CI_BROWSER_PORTRAIT|PRIVATE|example\.test/);
+ }
+ for(const options of [{title:'PRIVATE contact@example.test'},{file:'smoke.spec.ts'}]){
+  const report=make({title:'portrait: replacement HTTP old=404 new=200',error:{message:'PRIVATE_TOKEN'}},options);
+  assert.equal(failedBrowserCaseDiagnostics(report)[0].portrait,undefined);
+  const output=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',2,report,value=>output.push(value));
+  assert.doesNotMatch(output.join(''),/CI_BROWSER_PORTRAIT|PRIVATE|example\.test/);
+ }
+});
+
 test('case diagnostics are bounded per failed case without changing completed-report gate decisions',()=>{
  const report=diagnosticReport();
  const spec=report.suites[0].specs[0];

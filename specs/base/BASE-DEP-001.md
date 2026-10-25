@@ -424,11 +424,33 @@ And only the fourteen existing provider role/route accessibility cases may
 report a fixed role, route and failed analysis-stage enum, known Axe rule IDs,
 a bounded duration and a fixed error category; arbitrary titles, DOM targets,
 error messages, contact data and unsupported routes remain private\
+And only the two existing Driver portrait identity cases may report a fixed
+account-kind enum and old/new HTTP status integers100–599 from their exact
+failed replacement-readback step; unrelated cases, nested/unfailed steps,
+malformed values, URLs, identifiers and arbitrary text remain private\
 And the existing selection, retry, skip and pass/fail requirements remain authoritative.
 
 Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.
 This changes failure diagnosis only; rollback removes the annotations without
 relaxing the browser gate or exposing the raw report.
+
+### Scenario: accessibility scans wait for the final workspace route
+
+Given the managed fleet-owner fixture does not drive a vehicle\
+When its browser opens `/app/home` and the App Router streams the redirect to
+`/app/home/vehicles`\
+Then the accessibility test waits for that exact final pathname and its loaded
+document before starting either Axe scan\
+And other provider routes use their exact canonical pathname, including the
+Fleet and Menu aliases\
+And the test still opens the requested Home route, preserving redirect coverage\
+And both desktop and phone retain the same primary and target-size rules,
+serious/critical assertions, overall timeout, retry and skip requirements.
+
+Evidence: `tests/e2e/accessibility.spec.ts`. The October25 unchanged test failed
+in desktop and phone Chrome; a bounded navigation trace showed it starting Axe
+before the streamed redirect completed. Waiting for the final route passed both
+scans. This repairs harness readiness; it changes no application navigation.
 
 ### Scenario: Featured Prepare browser writes are isolated and required
 

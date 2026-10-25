@@ -8,6 +8,19 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+Accessibility audit readiness: a URL prefix, an old shell and absent skeletons
+do not prove that an App Router redirect has completed. October25 main CI
+40237550136 reported `CONTEXT_DESTROYED` for fleet Home; both local Chrome sizes
+reproduced it. The navigation trace returned from login at3.728s but redirected
+at5.373s. Await the exact role-specific final pathname and its DOM before Axe;
+retain the redirect under test and both rule sets. Do not retry until lucky or
+label this execution failure an accessibility violation. See BASE-DEP-001 and
+`tests/e2e/accessibility.spec.ts`.
+Keep each replay's output directory distinct so a passing Playwright run cannot
+erase its earlier failure screenshots. When multiple HTTP assertions share one
+line, split them and use bounded numeric diagnostics; never weaken retired-image
+404 or replacement-image200/privacy requirements to remove a CI failure.
+
 | What went wrong | Required prevention | Detailed record |
 | --- | --- | --- |
 | `npm test` relied on an implicit TypeScript loader available in newer Node installations, while `.nvmrc` pins22.16. Selecting that documented runtime caused15 loader failures before the affected tests ran. | Run gates on the pinned runtime and explicitly enable its supported type-stripping mode. Preserve worker limits and test selection; verify real imported-TypeScript cases before another full gate. | BASE-DEP-001; `package.json`; October25 Node22 loader probe10/10; initial failed gate preserved under `.local/release-20261025-focus/quality.log`. |

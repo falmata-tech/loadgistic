@@ -9,6 +9,19 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- BASE-DEP-001: provider accessibility scans now await exact canonical route
+  completion. The fleet-owner Home fixture streams a redirect to its vehicle
+  view; prefix matching allowed Axe to run in the document being replaced.
+  `tests/e2e/accessibility.spec.ts` retains both Axe scans and redirect coverage.
+  Red desktop/phone replays and a successful settled-route diagnostic are in
+  `.local/accessibility-nav-diagnostic-20261025/`; final repaired checks and
+  release state remain in [current progress](../docs/PROGRESS.md). The repaired
+  case passes desktop/phone and all14 provider route scans pass on phone.
+  Portrait replacement checks retain strict old404/new200 requirements while
+  reporting only allowlisted kind/status numbers; reporter32/32 and the
+  complete1199-pass/one-skip quality gate pass. The earlier local portrait
+  loading failures do not diagnose the CI replacement-readback failure.
+
 - FEAT-UIX-001 / BASE-DEP-001: the October25 Driver action-rail repair keeps
   its labeled scroll region keyboard reachable before hydration and during
   disabled updates. The real server-rendered regression and role/route audits

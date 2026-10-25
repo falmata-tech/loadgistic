@@ -11,7 +11,14 @@ async function login(page: Page, email: string, destination = '/app/home') {
   // Use an actual caller-bound managed session, as the workflow suites do.
   const currentRoute=destination==='/app/fleet'?'/app/home/vehicles':destination==='/app/menu'?'/app/more':destination;
   await auditLogin(page,email,currentRoute);
-  await expect(page).toHaveURL(new RegExp(currentRoute.replaceAll('/', '\\/')));
+  // The fleet fixture manages vehicles without driving one. Home streams a
+  // redirect after its first shell; a prefix match can pass before it finishes
+  // and leave Axe running inside the document that is about to be replaced.
+  const finalRoute=email==='transporter@loadgistic.local'&&currentRoute==='/app/home'
+    ?'/app/home/vehicles':currentRoute;
+  await expect(page).toHaveURL((url:URL)=>url.pathname===finalRoute,{timeout:20_000});
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('.app-main')).toBeVisible();
 }
 
 async function waitForPage(page: Page) {
