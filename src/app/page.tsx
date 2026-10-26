@@ -9,6 +9,7 @@ import {listPublicCapacityCursor} from '@/lib/capacity-market.js';
 import {capacityIntroduction} from '@/lib/platform-copy.js';
 import {CAPACITY_FILTER_CHOICES,capacityFilterRecord,type CapacityFilterGroups} from '@/lib/capacity-filter-values.js';
 import {getCurrentUser} from '@/lib/auth';
+import {getWorkspaceAccess} from '@/lib/workspace.js';
 import {listBusinessCapacity} from '@/lib/business-capacity/supabase';
 
 export const dynamic='force-dynamic';
@@ -23,6 +24,14 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const raw=Object.fromEntries(Object.entries(input).map(([key,value])=>[key,Array.isArray(value)?value[0]:value])) as Record<string,string|undefined>;
   const privateView=raw.view==='private';
   const user=await getCurrentUser({allowLimited:true});
+  if(user?.active===true&&['DRIVER','TRANSPORTER'].includes(user.role)&&(await getWorkspaceAccess(user)).granted){
+    const publicQuery=new URLSearchParams();
+    for(const [key,value]of Object.entries(input))for(const item of Array.isArray(value)?value:[value]){
+      if(typeof item==='string'&&!(key==='view'&&item==='private'))publicQuery.append(key,item);
+    }
+    const search=publicQuery.toString();
+    redirect(search?`/app/home/market?${search}`:'/app/home');
+  }
   const canViewShared=!user||user.role==='CUSTOMER'&&Boolean(user.selected_business_workspace?.permissions.capacity);
   if(privateView&&user&&user.role!=='CUSTOMER')redirect('/');
   let selections:CapacityFilterGroups;let filterError:string|undefined;
@@ -53,9 +62,10 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   return <><PublicHeader user={user}/><main className="public-app-page public-market-workspace public-market-introduced unified-capacity-workspace">
     <header className="market-introduction">
       <h1><Text message={capacityIntroduction.title}/></h1>
+      <p><Text message={capacityIntroduction.webDescription}/></p>
       {canViewShared?<Localized as="nav" copy={["aria-label"]} className="capacity-view-choice" aria-label="Capacity views">
-        <a href="/" aria-current={!privateView?'page':undefined}><Text message="Open to the public"/></a>
-        <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Shared with you"/></a>
+        <a href="/" aria-current={!privateView?'page':undefined}><Text message="Openly shared"/></a>
+        <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Privately shared with you"/></a>
       </Localized>:null}
     </header>
     <div className="capacity-view-body">

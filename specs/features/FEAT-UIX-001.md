@@ -27,6 +27,69 @@ owner visual approval. No release readiness is inferred from this plan.
 
 # Low-friction interface
 
+## October26 provider Home work-first correction — locally qualified
+
+The implemented work-first entry/order supersedes the earlier Market-first
+review; current local qualification is recorded below.
+
+Given an active provider or employed Driver has current workspace access\
+When they open ordinary Home, public `/` without market query intent, or complete
+ordinary sign-in with no onboarding/invitation taking precedence\
+Then the existing work Home opens My capacity when driving, otherwise Manage
+vehicles when authorized, otherwise Analyze the Market\
+And Home tabs are My capacity when driving, Manage vehicles when authorized,
+then Analyze the Market, with no duplicate standalone public Capacity menu.
+
+Given a public entry has explicit search/filter/provider/vehicle intent\
+When the authorized provider follows it\
+Then the existing Market route preserves every public query value, including
+duplicates, apart from private-view values and retired `loadType`\
+And existing filtering and duplicate-input denial remain authoritative\
+And owned highlighting decorates matching public results only; private, Draft,
+Full or Off Duty supply is never inserted into public results.
+
+Given the provider is at a Home tab root\
+When Home is normally pressed\
+Then that selected view, URL filters and work state remain intact\
+And modified/new-tab clicks retain ordinary browser behavior\
+And Home from a deeper record or other task, the brand link and legacy `/app`
+entry open the default work Home rather than trapping the user on the record.
+
+Given the provider Home is displayed on a phone\
+When it contains two or three permitted tabs\
+Then the controls share the available row evenly, remain centered and at least
+44px high, and wrap translated labels without truncation or horizontal overflow\
+And desktop keeps a conventional tab row aligned with the page content.
+
+Given Manage vehicles is the default work view on a narrow phone\
+When a vehicle row has long translated location or action text\
+Then its location occupies its own full-width row and View vehicle follows in
+its own touch-sized row, with no fixed text-width reservation or overlap\
+And wider-screen vehicle rows retain their existing layout.
+
+Visitors, brokers/shippers, platform roles, limited provider access and existing
+invitation/onboarding precedence retain their current behavior. Focused tests:
+`tests/capacity-filter-ssr.test.mjs`, `tests/web-workspace-navigation.test.mjs`,
+`tests/provider-owner-presentation.test.mjs` and actual Home browser cases.
+Current-source Chrome desktop1280 and phone320/390 qualify fleet-only two-tab
+and driving-owner three-tab entry, ordinary sign-in, Home continuity/work return,
+and en/am/om fit. The corrected Fleet row passes actual translated-action waits,
+separate location/action geometry and touch-height checks. Expo qualifies the
+same driving-owner default, three-tab layout and return tasks. Current R3 root/
+native gates, strict translations, Android JavaScript export and the compiled web
+build pass for the same1,856 source inputs;
+[traceability](../TRACEABILITY.md#current-audit-evidence) owns exact counts,
+receipts and the bounded freshness/profile qualification.
+The final compiled driver's ordinary sign-in replay passes identity200, work
+Home/three tabs and normal logout303/private401, with no recurring runtime error.
+Earlier unclassified Error, Connection closed and Suspense fallback receipts
+remain preserved. The bounded broker walkthrough also passes representative
+result/detail/Back/reopen tasks without business writes; it is not the complete
+filter matrix. Earlier physical/Market-first reviews are historical; later
+physical/workspace-admin, final standalone APK/signing, exact-source CI and
+hosted rollout remain unqualified. A local debug-signed Android candidate now
+exists; static archive/signature/16KB and installed acceptance remain pending.
+
 ## October26 overlapping markers and shell copyright — local work pending
 
 Given multiple available vehicles occupy the same displayed map position\

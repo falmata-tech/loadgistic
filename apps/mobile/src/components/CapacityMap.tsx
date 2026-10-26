@@ -20,6 +20,7 @@ import { vehicleConfigurationImage } from '../../../../src/lib/vehicle-configura
 import { apiOrigin } from '../api/http';
 import {palette} from './ui';
 import {capacityStatusPresentation} from '../theme/capacity-status-presentation';
+import {localizedUpdateLabel} from '../../../../src/lib/i18n/update-label.js';
 type VisiblePoint=MapPoint;
 const colors={truck:'#155eef',location:'#7846a7',current:capacityStatusPresentation.EMPTY.color,regular:'#c06620'};
 const EXPO_CAPACITY_CAMERA={...DEFAULT_CAPACITY_CAMERA,zoom:DEFAULT_CAPACITY_CAMERA.zoom-1};
@@ -141,9 +142,9 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  const measureModal=useCallback(()=>host.current?.measureInWindow((left,top,width,height)=>{if(width&&height)setModalFrame({left,top,width,height});}),[]);
  useEffect(()=>{if(active)measureModal();},[active,measureModal,windowSize.width,windowSize.height]);
  const color=(kind:InfoKind)=>kind==='current'&&selected?.status==='PARTIAL'?capacityStatusPresentation.PARTIAL.color:colors[kind];
- const label=(kind:InfoKind)=>kind==='truck'?'Vehicle details':kind==='location'?'Approximate location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Area':'Route';
+ const label=(kind:InfoKind)=>kind==='truck'?'Vehicle details':kind==='location'?'Approximate location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Planned area':'Planned route';
  const choices: {kind:InfoKind;index:number}[]=selected?[{kind:'truck',index:-1},...paths.map((path,index)=>({kind:path.kind,index}))]:[];
- const shortLabel=(kind:InfoKind)=>kind==='truck'?'Vehicle':kind==='location'?'Location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Area':'Route';
+ const shortLabel=(kind:InfoKind)=>kind==='truck'?'Vehicle':kind==='location'?'Location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Planned area':'Planned route';
  const regular=active?.kind==='regular';
  const regularSignal=regular?selected?.regular[0]:null;
  const area=regular?regularSignal?.geometry==='RADIUS':selected?.geometry==='RADIUS';
@@ -199,8 +200,8 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
    <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.EMPTY.color}]}/><Text style={styles.mapKeyText}>{t('Empty')}</Text></View>
    <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.PARTIAL.color}]}/><Text style={styles.mapKeyText}>{t('Partial')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyLocation}/><Text style={styles.mapKeyText}>{t('Approximate location')}</Text></View>
-   <View style={styles.mapKeyItem}><View style={styles.mapKeyArea}/><Text style={styles.mapKeyText}>{t('Area')}</Text></View>
-   <View style={styles.mapKeyItem}><View style={styles.mapKeyRoute}/><Text style={styles.mapKeyText}>{t('Route')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyArea}/><Text style={styles.mapKeyText}>{t('Planned area')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyRoute}/><Text style={styles.mapKeyText}>{t('Planned route')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred area')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred corridor')}</Text></View>
   </ScrollView>}
@@ -210,11 +211,11 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  {!!selected&&<Pressable accessibilityRole="button" accessibilityLabel={t('Back to map')} onPress={()=>{setInfo(null);onDeselect();}} style={[styles.selectionExit,{position:'absolute',left:12,top:topInset}]}><Text style={{fontSize:28,color:'#155eef'}}>×</Text></Pressable>}
  {!!error&&<Text accessibilityRole="alert" style={[styles.error,{top:topInset+(selected?50:0),right:selected?122:16}]}>{error}</Text>}
  {selected&&active&&<Modal transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={()=>setInfo(null)}><View style={styles.modalBackdrop}><Pressable accessibilityRole="button" accessibilityLabel={t('Close map signal details')} style={StyleSheet.absoluteFill} onPress={()=>setInfo(null)}/><View pointerEvents="box-none" style={[styles.modalPosition,detailFrame]}><View accessibilityViewIsModal style={[styles.infoCard,active.kind==='truck'&&{maxWidth:540}]}><View style={styles.infoHeader}><View style={styles.infoHeading}><View style={[styles.infoAccent,{backgroundColor:color(active.kind)}]}/><Text accessibilityRole="header" style={styles.infoTitle}>{t(label(active.kind))}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Close map signal details')} onPress={()=>setInfo(null)} style={styles.close}><Text style={{fontSize:25,color:'#0b1d3a'}}>×</Text></Pressable></View><ScrollView style={{flexGrow:0,flexShrink:1}} contentContainerStyle={{padding:14,gap:12}}>
- {active.kind==='truck'?<CapacityTruckDetails truck={selected}/>:active.kind==='location'?<><Text style={styles.summary}>{t('Within {distance} km',{distance:selected.precisionKm})}</Text><Text style={styles.infoText}>{t('Approximate, not live')}</Text>{locationSourceLabel(selected.locationSource)&&<Text style={styles.infoText}>{t(locationSourceLabel(selected.locationSource))}</Text>}<Text style={styles.update}>{selected.locationIsDemo?t('Demo location')+' · ':''}{selected.locationAge}</Text></>:<>
+ {active.kind==='truck'?<CapacityTruckDetails truck={selected}/>:active.kind==='location'?<><Text style={styles.summary}>{t('Within {distance} km',{distance:selected.precisionKm})}</Text><Text style={styles.infoText}>{t('Approximate, not live')}</Text>{locationSourceLabel(selected.locationSource)&&<Text style={styles.infoText}>{t(locationSourceLabel(selected.locationSource))}</Text>}<Text style={styles.update}>{selected.locationIsDemo?t('Demo location')+' · ':''}{localizedUpdateLabel(selected.locationAge,t,'location')}</Text></>:<>
  {regular&&!area&&<Text style={styles.summary}>{t('Both directions')}</Text>}
  {!regular&&<Text style={styles.infoText}>{t(selected.status==='EMPTY'?'Empty vehicle':'Partial capacity')}</Text>}
  {regular&&!area?<Text style={styles.infoText}>{routeNames?.map(point=>point.label).join(' ↔ ')}</Text>:<View style={area?styles.areaPlaces:undefined}>{routeNames?.map((point,index)=>area?<Text key={index} style={styles.areaPlace}>{point.label}</Text>:<View key={index}><View style={styles.stop}><Text style={[styles.stopNumber,{borderColor:color(active.kind)}]}>{index+1}</Text><Text style={[styles.infoText,{flex:1,fontWeight:'600'}]}>{point.label}</Text></View>{index<(routeNames?.length||0)-1&&<Text style={[styles.direction,{color:color(active.kind)}]}>↓</Text>}</View>)}</View>}
- <Text style={styles.update}>{regular?t('Ask about availability'):selected.capacityAge}</Text>
+ <Text style={styles.update}>{regular?t('Confirm availability'):localizedUpdateLabel(selected.capacityAge,t)}</Text>
  </>}
 
  </ScrollView>{active.kind==='truck'&&<CapacityTruckContact truck={selected}/>}</View></View></View></Modal>}

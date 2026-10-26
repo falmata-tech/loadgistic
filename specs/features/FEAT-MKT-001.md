@@ -300,7 +300,10 @@ native interfaces already use cursor results; this correction adds no UI mode.
 Given a visitor opens Loadgistic\
 When the public application shell and default Market workspace render\
 Then the selected Capacity navigation identifies the workspace and a shared introduction explains the platform\
-And one visible Find space for your next load heading names the page\
+And one visible “The visibility you need to serve your customers reliably” heading names the page\
+And web shows “Build trusted partnerships and coordinate your transport network together.” beneath it when vertical space permits; short phone views keep the headline and map choices while preserving usable map space\
+And native keeps the heading alone, with natural Amharic and Afaan Oromo wording rather than literal English sentence structure\
+And the two map choices are “Openly shared” and “Privately shared with you”, with natural translations that describe access without implying an exclusive vehicle booking\
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\

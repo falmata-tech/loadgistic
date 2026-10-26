@@ -8,6 +8,7 @@ import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
 import {capacityLoadLabel} from '../../../src/lib/capacity-load-preferences.js';
 import {capacitySharingLabel} from '../../../src/lib/capacity-sharing.js';
 import {translateMessage} from '../../../src/lib/i18n/core.js';
+import {localizedUpdateLabel} from '../../../src/lib/i18n/update-label.js';
 import {nativeMessages} from '../src/localization/messages.ts';
 const React={createElement:(type,props,...children)=>({type,props:{...props,children},children:children.flat(Infinity)}),Fragment:'Fragment'};
 const style=node=>Object.assign({},...[node.props.style].flat());
@@ -23,7 +24,7 @@ function fixture(extra={}){return parseCapacityPage({items:[{id:'public-signal',
 function components({expanded=null,locale='en'}={}){
  const messages=locale==='en'?{}:{...JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale]},calls=[],changes=[],translated=[];
  const t=(message,values={})=>{translated.push(message);return translateMessage(messages,message,values);};
- const dependencies={React,useState:initial=>[initial===null?expanded:initial,value=>changes.push(value)],useLanguage:()=>({t}),Image:'Image',Pressable:'Pressable',Text:'Text',View:'View',Link:'Link',Linking:{openURL:async url=>{calls.push(url);}},AppIcon:'AppIcon',PublicCardImage:'PublicCardImage',TruckAuthorityBadges:'TruckAuthorityBadges',ErrorText:'ErrorText',StyleSheet:{create:value=>value},palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526875'},apiOrigin:'http://127.0.0.1:3100',vehicleConfigurationImage:()=>'/truck.png',capacityStatusPresentation:{PARTIAL:{text:'#805c00'}},capacityLoadLabel,capacitySharingLabel,externalDestination};
+ const dependencies={React,useState:initial=>[initial===null?expanded:initial,value=>changes.push(value)],useLanguage:()=>({t}),Image:'Image',Pressable:'Pressable',Text:'Text',View:'View',Link:'Link',Linking:{openURL:async url=>{calls.push(url);}},AppIcon:'AppIcon',PublicCardImage:'PublicCardImage',TruckAuthorityBadges:'TruckAuthorityBadges',ErrorText:'ErrorText',StyleSheet:{create:value=>value},palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526875'},apiOrigin:'http://127.0.0.1:3100',vehicleConfigurationImage:()=>'/truck.png',capacityStatusPresentation:{PARTIAL:{text:'#805c00'}},capacityLoadLabel,capacitySharingLabel,externalDestination,localizedUpdateLabel};
  const path='../src/components/capacity-truck-details.tsx',source=ts.createSourceFile(path,readFileSync(new URL(path,import.meta.url),'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),stripped=ts.factory.updateSourceFile(source,source.statements.filter(node=>!ts.isImportDeclaration(node))),compiled=ts.transpileModule(ts.createPrinter().printFile(stripped),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={};
  new Function(...Object.keys(dependencies),'exports',compiled)(...Object.values(dependencies),exports);return {...exports,calls,changes,translated,t};
 }

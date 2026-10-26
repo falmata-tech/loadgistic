@@ -2,13 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
+import {translateMessage} from '../../../src/lib/i18n/core.js';
+import {localizedUpdateLabel} from '../../../src/lib/i18n/update-label.js';
 import {publicFleetRowKey} from '../../../src/lib/public-fleet-row.js';
 import {featuredTikTokPresentation} from '../../../src/lib/featured-tiktok-presentation.js';
 import {featuredClock,featuredRange,featuredRangeLabel} from '../../../src/lib/featured-time-presentation.js';
 import {FEATURED_PUBLIC_HEADING,curatedFeaturedHeadline} from '../../../src/lib/featured-heading-presentation.js';
 const React={createElement:(type,props,...children)=>({type,props:{...props,children},children:children.flat(Infinity)}),Fragment:'Fragment'};
 const hooks={useState:initial=>[typeof initial==='function'?initial():initial,()=>{}],useMemo:compute=>compute(),useCallback:value=>value};
-const host={React,...hooks,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',StyleSheet:{create:value=>value,flatten:values=>Object.assign({},...values.filter(Boolean)),absoluteFill:{}},Text:'Text',View:'View',Image:'Image',ScrollView:'ScrollView',SafeAreaView:'SafeAreaView',Modal:'Modal',Pressable:'Pressable',Link:'Link',AppIcon:'AppIcon',apiOrigin:'https://local.test',palette:{ink:'#0b1d3a',muted:'#526875',blue:'#155eef',border:'#cbd5e1',borderSoft:'#e5eaf1'},featuredTikTokPresentation,featuredClock,featuredRange,featuredRangeLabel,FEATURED_PUBLIC_HEADING,curatedFeaturedHeadline,useLanguage:()=>({locale:'en',t:(value,values={})=>String(value).replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match))})};
+const host={React,localizedUpdateLabel,...hooks,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',StyleSheet:{create:value=>value,flatten:values=>Object.assign({},...values.filter(Boolean)),absoluteFill:{}},Text:'Text',View:'View',Image:'Image',ScrollView:'ScrollView',SafeAreaView:'SafeAreaView',Modal:'Modal',Pressable:'Pressable',Link:'Link',AppIcon:'AppIcon',apiOrigin:'https://local.test',palette:{ink:'#0b1d3a',muted:'#526875',blue:'#155eef',border:'#cbd5e1',borderSoft:'#e5eaf1'},featuredTikTokPresentation,featuredClock,featuredRange,featuredRangeLabel,FEATURED_PUBLIC_HEADING,curatedFeaturedHeadline,useLanguage:()=>({locale:'en',t:(value,values={})=>String(value).replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match))})};
 function compile(path,parameters){const parsed=ts.createSourceFile(path,readFileSync(new URL(path,import.meta.url),'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),stripped=ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))),code=ts.transpileModule(ts.createPrinter().printFile(stripped),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={};new Function(...Object.keys(parameters),'exports',code)(...Object.values(parameters),exports);return exports;}
 const presentation=compile('../src/components/public-card.tsx',host);
 function nodes(root){if(root===null||root===undefined||root===false)return[];if(Array.isArray(root))return root.flatMap(nodes);if(typeof root!=='object')return[{text:String(root)}];if(typeof root.type==='function')return nodes(root.type(root.props));return[root,...root.children.flatMap(nodes)];}
@@ -58,10 +60,36 @@ test('transporter presentation retains contacts, documents, user content and tru
  assert.deepEqual(all.filter(node=>node.type==='ExternalButton').map(node=>node.props.url),['tel:000','https://wa.me/111','mailto:public@example.test','https://example.test','tel:222']);
  assert.equal(all.filter(node=>node.type==='PublicBadges').length,3);assert.deepEqual(all.find(node=>node.type==='Link').props.href,{pathname:'/',params:{provider:provider.handle}},'the explicit map action opens this transporter’s truck signals');
   const mapAction=all.find(node=>node.type==='Link'&&renderedText(node).includes('See vehicles on the map'));assert.ok(mapAction);assert.deepEqual(mapAction.props.href,{pathname:'/',params:{provider:provider.handle}});assert.ok(text.indexOf('See vehicles on the map')<text.indexOf('Vehicles and drivers'));
- const truckMapAction=all.find(node=>node.type==='Link'&&renderedText(node).includes('View capacity on map'));assert.ok(truckMapAction);assert.equal(truckMapAction.props.href,provider.trucks[0].capacity.mapHref);
+ const truckMapAction=all.find(node=>node.type==='Link'&&renderedText(node).includes('View planned capacity on map'));assert.ok(truckMapAction);assert.equal(truckMapAction.props.href,provider.trucks[0].capacity.mapHref);assert.ok(text.includes('Planned capacity'));
  assert.equal(all.filter(node=>node.type==='ContentSafety').length,2,'provider and review reporting remain available');
  for(const key of ['Transport Provider','Call transporter','WhatsApp','Email transporter','Website','Under dispute','Empty','Cargo van','Independent driver'])assert.ok(translated.includes(key),key+' is app-owned copy');
  for(const value of [provider.name,provider.about,provider.services,provider.headline,'Original customer note /reference','Public Driver',provider.city])assert.ok(!translated.includes(value),value+' remains unaltered record content');
+});
+
+test('native provider cards distinguish planned geometry from Preferred area and respect hidden geometry',()=>{
+ for(const coverage of [{kind:'AREA',places:['Area center','Boundary A','Boundary B','Boundary C']},{kind:'ROUTE',places:['Route A','Via','Route B']},null,undefined]){
+  const capacity={status:'PARTIAL',updated:'Capacity updated today',locationUpdated:'Location updated today',origin:'Legacy origin',destination:'Legacy destination',mapHref:'/?provider=local-provider',...(coverage===undefined?{}:{coverage})};
+  const truck={number:'LOCAL',name:'Local vehicle',configuration:'Cargo van',image:'',driver:'Local driver',driverKind:'Company driver',phone:'',driverBadges:[],truckBadges:[],regular:{kind:'AREA',places:['Preferred center','Preferred boundary']},capacity};
+  const provider={handle:'local-provider',name:'Local provider',image:'',kind:'Fleet transporter',city:'Adama',headline:'',contacts:{},about:'',services:'',badges:[],regular:null,reviewCount:0,averageRating:null,reviews:[],fleet:{total:1,page:1,pages:1},trucks:[truck]};
+  const text=renderedText(screen('../src/screens/transporter.tsx',provider,{useLocalSearchParams:()=>({handle:provider.handle})}).default());assert.ok(text.includes('Planned capacity'));assert.ok(text.includes('Preferred area'));assert.ok(text.includes('Confirm availability'));assert.ok(text.includes('Location updated today'));
+  if(coverage){assert.ok(text.includes(coverage.kind==='AREA'?'Planned area':'Planned route'));assert.ok(text.includes(coverage.places.join(coverage.kind==='AREA'?' · ':' → ')));}
+  if(coverage===undefined)assert.ok(text.includes('Legacy origin → Legacy destination'));
+  else assert.ok(!text.includes('Legacy origin')&&!text.includes('Legacy destination'),'explicit null/structured geometry cannot fall back to stale route labels');
+  if(coverage===null)assert.ok(!text.includes('Planned area')&&!text.includes('Planned route'));
+ }
+});
+
+for(const locale of ['am','om'])for(const entry of [
+ {name:'days',capacity:'Capacity updated 2 days ago',location:'Location updated 1 day ago',capacityKey:'Capacity updated {days} days ago',locationKey:'Location updated {days} day ago'},
+ {name:'absent',capacity:undefined,location:'',capacityKey:'Capacity update unavailable',locationKey:'Location update unavailable'},
+])test(`native profile freshness labels localize ${locale} ${entry.name} without translating records`,()=>{
+ const catalog=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),translated=[],t=(message,values)=>{translated.push(message);return translateMessage(catalog,message,values);};
+ const truck={number:'LOCAL',name:'Record vehicle',configuration:'Cargo van',image:'',driver:'Location updated today',driverKind:'Company driver',phone:'',driverBadges:[],truckBadges:[],regular:null,capacity:{status:'PARTIAL',updated:entry.capacity,locationUpdated:entry.location,origin:'Record city A',destination:'Record city B',mapHref:''}};
+ const provider={handle:'local-provider',name:'Capacity updated today',image:'',kind:'Fleet transporter',city:'Record city',headline:'',contacts:{},about:'Record description',services:'',badges:[],regular:null,reviewCount:0,averageRating:null,reviews:[],fleet:{total:1,page:1,pages:1},trucks:[truck]};
+ const text=renderedText(screen('../src/screens/transporter.tsx',provider,{localizedUpdateLabel,useLocalSearchParams:()=>({handle:provider.handle}),useLanguage:()=>({t,locale})}).default());
+ assert.deepEqual([text.includes(t(entry.capacityKey,{days:2})),text.includes(t(entry.locationKey,{days:1}))],[true,true]);
+ for(const record of [provider.name,provider.about,provider.city,truck.driver,truck.capacity.origin,truck.capacity.destination])if(record)assert.ok(!translated.includes(record),'user records are not formatter inputs');
+ assert.ok(text.includes(provider.name)&&text.includes(truck.driver)&&text.includes(provider.about)&&text.includes('Record city A → Record city B'));
 });
 
 test('unnumbered public fleet rows have distinct page keys without displaying invented identifiers',()=>{

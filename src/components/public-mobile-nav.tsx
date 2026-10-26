@@ -15,13 +15,17 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
  const primaryKeys=new Set(primary.map(item=>item.key));
  const moreWork=workItems.filter(item=>!primaryKeys.has(item.key));
  const provider=['DRIVER','TRANSPORTER'].includes(user?.role||'');
+ const currentHomeTab=['/app/home','/app/home/vehicles','/app/home/market'].includes(pathname);
  const customer=user?.role==='CUSTOMER';
  const morePublic=publicDestinations.filter(item=>!(provider&&item.key==='capacity')&&!primaryKeys.has(item.key));
  const moreUtility=utilityItems.filter(item=>!primaryKeys.has(item.key));
  React.useEffect(()=>{if(pathname==='/'&&window.location.hash==='#featured-providers')router.replace('/featured');},[pathname,router]);
  React.useEffect(()=>{setMenuOpen(false);},[pathname]);
  React.useEffect(()=>{setReady(true);},[]);
- const link=(item:SiteDestination,className?:string)=><Link key={item.key} href={item.href} className={[className,active===item.key?'active':''].filter(Boolean).join(' ')||undefined} aria-current={active===item.key?'page':undefined} onClick={()=>setMenuOpen(false)}><item.icon aria-hidden="true"/><span><Text message={item.label}/></span></Link>;
+ const link=(item:SiteDestination,className?:string)=><Link key={item.key} href={item.href} className={[className,active===item.key?'active':''].filter(Boolean).join(' ')||undefined} aria-current={active===item.key?'page':undefined} onClick={(event:React.MouseEvent<HTMLAnchorElement>)=>{
+  if(item.key==='my-work'&&active==='my-work'&&currentHomeTab&&!event.defaultPrevented&&event.button===0&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&(!event.currentTarget.target||event.currentTarget.target==='_self'))event.preventDefault();
+  setMenuOpen(false);
+ }}><item.icon aria-hidden="true"/><span><Text message={item.label}/></span></Link>;
  return <>
   <Localized as="nav" copy={["aria-label"]} className={`public-workspace-nav ${styles.rail}`} aria-label="Site navigation">
    {!user?visitorDestinations.map(item=>link(item)):<>

@@ -9,6 +9,134 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- FEAT-UIX/MOB/CAP-001 work-first Home and Planned/Preferred presentation:
+  current-source Chrome covers fleet-only/driving owners, ordinary sign-in/root,
+  selected-tab continuity and work return from Network/deep vehicle records.
+  Desktop1280, phone web320/390 and Expo's driving-owner three-tab en/am/om fit
+  pass. Translated Fleet action/location geometry, focused open/Cancel, selected
+  map and visible profile facts pass with saved facts/actor flags unchanged for
+  that review. Source hashes, captures, withdrawn harness claims and limits:
+  `.local/broker-capacity-resume-20261026/terminal-browser-handoff.json`.
+  Renderer regressions cover geometry combinations, hidden coverage and fitting
+  without inventing a reported position; actual actors had reported locations.
+  Admin labels have source/test evidence only.
+
+  Current R4 root quality1295/1295 passes196.910s:
+  `.local/launch-experience-20261026/gates/work-first-planned-r4-root-gates.json`.
+  Required CI validation now executes the three new discovery parity SQL suites;
+  `ci-browser-gate.test.mjs` proves registration and rollback, red before/green
+  after, with33 focused tests passing. Workflow lint passes108 scripts/actionlint;
+  ShellCheck is unavailable. Native R3 types9.441s, lint7.177s, tests412/412,
+  strict translations784/784 and Android JavaScript export53.898s pass in
+  `work-first-planned-r3-native-gates.json` beside it. R3 pinned1,856 inputs and
+  digest24b0d45ea329d03bc6cf186349f3c135027ee37955478ffeaa34418ca64d035d.
+  R4 additionally inventories two existing workflow files; the only shared-input
+  differences are the CI regression and generated local Next type include.
+  Native executable inputs remain unchanged.
+  Current web build passes87.644s with unchanged inputs/metadata restored:
+  `.local/provider-home-entry-20261026/work-first-planned-web-build-r2.json`.
+  The compiled preview is pinned by `work-first-planned-web-r2-installed.json`
+  beside it, build`qoJzaaesAJxvw5uWFzgIU`, localAPI55321/TLS3443.
+  The earlier483.747s type-phase build timeout is retained, not a passed build.
+  Local Android APK/AAB build passes153.803s: version1.2.0/code10, arm64/x86_64,
+  production API target, existing development/debug certificate only,565 runtime
+  inputs unchanged. Receipt:
+  `.local/launch-experience-20261026/android-final/build-receipt.json`.
+  Static permissions/signature, two-ABI/16KB structure, identical Hermes bundle
+  and known-secret-marker checks pass in `archive-qualification.json` beside it.
+  The build pins its original worktree input hashes; installation, production-
+  backend acceptance and source-commit equivalence are separate qualification. No upload key,
+  installed/current-commit CI or Play readiness is claimed.
+  Relevant source/UI tests include `provider-home-entry.test.mjs`,
+  `provider-home-tabs-helper.ts`, `provider-owner-fleet.spec.ts`,
+  `truck-regular-editors.test.mjs` and `provider-fleet-showcase.test.mjs` in their
+  existing native/root/E2E directories. Current Android artifact qualification,
+  exact-source CI, signing and hosted delivery remain separate.
+
+- FEAT-SIM/GPS-001 local runtime restart: existing ten-target motion runner has
+  accepted GPS fixes and advancing phone/GPS timestamps;9GPS+1phone capacities
+  are fresh. The normal marketplace supervisor reached8healthy ticks after
+  five-control activation and reviewed empty-backlog checkpoint recovery.
+  All22 reviewed historical jobs and scope/permissions stayed intact. No
+  Capacity/sharing job was due during this finite one-hour sample; next Capacity
+  is October27 08:00UTC and needs a later active worker. Hosted recurrence is
+  unqualified. Runtime proof:
+  `.local/provider-home-entry-20261026/local-demo-runtime-qualified.json`;
+  activation/rehearsal/checkpoint history: `.local/demo-world-startup-20261026/`.
+  Normal status/restart limits are in
+  [the local operator guide](../docs/operations/DEMO-WORLD-LOCAL-SUPERVISOR.md).
+
+- FEAT-MOB/CAP-001 localized freshness:50 focused actual-renderer tests pass,
+  including12 am/om days/unavailable cases. Protected source/test proof:
+  `.local/native-freshness-20261026/source-result.json`. Actual web am/om320/390
+  qualifies Planned/location dialogs, vehicle and profile ages4/4; Expo qualifies
+  Map/Location/Vehicle4/4 in `actual-web.json` and `actual-expo.json` there.
+  Expo's earlier profile captures are withdrawn. Only direct Oromo320 profile
+  proof against its own returned DTO is qualified in
+  `actual-expo-profile-terminal.json`; other profile neighbors retain renderer/
+  source evidence. All contexts closed with no Auth/business writes or runtime
+  errors in these final reviews. No real hidden Preferred Area row existed, so
+  its geometry-aware web-caption correction has11 renderer regressions only.
+
+- FEAT-CAP/GEO-001 local discovery/profile parity and performance:
+  migrations214/215/216 and producer-only217 are installed locally. The217
+  addendum in FEAT-CAP-001 owns22 PUBLIC dispatcher/fast checks, whole-offer/
+  non-geographic AND/privacy negatives, complete account-JSON parity, exact
+  recovery and the unchanged5,000-record gate. Final source-bound handoff:
+  `.local/capacity-offers217/final-local-qualification-handoff.json`.
+  `postcheck-only-run/receipt.json` there passes36.716s; the complete canonical
+  gate passes51.498s in `scale-5000-after217-cleanup-receipt.json`, preserving
+  every5s/count/order/filter/lookahead/payload limit. Independent cleanup finds
+  zero synthetic vehicles/drivers and exact source/authority/data/ledger pins.
+  The first operator RuntimeError cause remains UNKNOWN; original failures are
+  preserved, with no reapply or automatic recovery. Earlier21652.602s performance
+  evidence remains valid for its source. This is one isolated local pass, not
+  repeated reliability, hosted performance or hosted installation proof.
+
+- FEAT-CAP/UIX-001 bounded compiled-preview broker and sign-in walkthrough:
+  `.local/broker-capacity-resume-20261026/broker217-production-terminal-handoff.json`
+  pins the current compiled build and217 postcheck. Owner passes private Empty
+  Area at the exact earlier Route endpoint, private Partial Route, public Partial
+  Area and existing Preferred coverage; Staff repeats the original private Area
+  case. Each covers actual Apply/result/detail/Back/reopen/reload. Current private
+  baseline is8 vehicles (2 Empty/6 Partial); public profile comparison requires
+  the matching account and matching_trucks>=1, not equal account/vehicle counts.
+  The Preferred case overlaps Planned Area and returns a Planned reason;
+  independent Preferred-only OR is not claimed. The first one-cluster helper
+  timeout remains in `broker217-owner-receipt.json`; the Preferred-only resume
+  passes separately. Exact Owner/Staff membership revision and permissions are
+  unchanged; all normal global logouts303/private401 pass, contexts close and
+  business writes are zero. Private business profile search intentionally ignores
+  map filters, so no profile/map filter parity assertion was made. The full
+  broker matrix and current Expo filter walkthrough remain unfinished.
+
+  The same handoff includes the prior managed driver's single compiled normal
+  OTP replay: identity200, `/app/home`, three work-first tabs, Edit planned
+  capacity and logout303/private401 pass. `signin-only-receipt.json` beside it
+  retains exact response paths/timestamps and no recurring runtime error.
+  Earlier `signin-runtime-error-extract.json`, the name-only Error, Connection
+  closed and Suspense fallback remain preserved; one clean replay does not
+  retroactively classify those failures. All actors are released. Earlier
+  physical/Market-first and installed broker receipts qualify their recorded
+  bundles only; workspace-admin, later physical/current standalone APK, CI and
+  hosted qualification remain pending. Current finite local motion and marketplace
+  restart evidence is recorded in the FEAT-SIM/GPS-001 entry above; use its normal
+  status commands for expiry rather than treating that sample as always-on hosting.
+
+- FEAT-ENT/MOB-001 business Tracking transport: the shared strict path allowlist
+  now reaches existing authenticated sharing/action/proof handlers. The actual
+  adapter and Metro proxy regressions in
+  [`business-tracking-transport.test.mjs`](../apps/mobile/tests/business-tracking-transport.test.mjs)
+  retain malformed-path and HTTP403 denials. Owner/Staff Chrome and Expo task
+  receipts are under
+  `.local/play-code10-upload-20261025/broker-supply/local-tracking-ui/`;
+  installed development-client list/detail/Sharing/Team/Back/refresh/sign-out
+  evidence is pinned in
+  `.local/launch-experience-20261026/native-fix-review/team-native-review.json`.
+  Staff received no live location or privileged actions. No approval/proof
+  mutation was exercised on the CREATED Demo. This is local role evidence,
+  not qualification of the final standalone APK or hosted reviewer accounts.
+
 - FEAT-CAP/GEO/MOB-001 availability matching: migrations211/213 are applied
   only to the backed-up local preview. The pure cross-shape regression in
   [`audit-geographic-matching.test.mjs`](../tests/audit-geographic-matching.test.mjs)
@@ -18,9 +146,10 @@ are historical, not the status of today's source or hosted release.
   under `.local/capacity-area-213/`. Installed Android Staff searches the exact
   offered city, opens the matching vehicle and retains the filter after reopening;
   `.local/launch-experience-20261026/native-installed-review/` records the actual
-  task and its limits. Root quality passes1274 tests with one reviewed skip;
-  native types/lint,376 tests,783 fixed-copy translations and Android export pass.
-  These are local source gates, not CI, hosted rollout or final APK evidence.
+  task and its limits. This earlier installed role evidence remains tied to
+  that bundle; current source gates are linked above. The complete broker
+  public/private Area/Route filter matrix remains unfinished. No hosted rollout,
+  final APK or exact-source CI qualification follows from these local receipts.
 
 - FEAT-UIX-001 company footer: the local candidate renders one compact
   MarketVision Technology link and office row in the shared web layout. Actual

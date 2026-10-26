@@ -80,7 +80,7 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await expect(page.getByTestId('capacity-planning-editor').locator('#regular-service-form input[name="expectedDriverId"]')).toHaveValue(currentTruck.assigned_driver.id);
   await capture(page,path.join(output,`${project}-driver-regular-service.png`));
   await page.getByRole('button',{name:'Close editor'}).click();
-  await page.getByRole('button',{name:/^Edit current capacity:/}).click();
+  await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
   await expect(page.getByTestId('capacity-form')).toBeVisible();
   await capture(page,path.join(output,`${project}-driver-capacity-editor.png`));
   await page.getByRole('button',{name:'Close editor'}).click();

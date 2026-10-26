@@ -60,7 +60,7 @@ export function phonePrimaryDestinations(user:SiteNavigationUser|null):SiteDesti
 }
 export function activeSiteDestination(path:string,user:SiteNavigationUser|null){
  const destinations=[...visitorDestinations,...memberDestinations(user)];
- if(['DRIVER','TRANSPORTER'].includes(user?.role||'')&&path.startsWith('/app/fleet'))return 'my-work';
+ if(['DRIVER','TRANSPORTER'].includes(user?.role||'')&&(path==='/app/home'||path.startsWith('/app/home/')||path==='/app/fleet'||path.startsWith('/app/fleet/')))return 'my-work';
  if(path==='/')return 'capacity';
  if(path==='/shared-capacity'||path==='/app/shared-capacity')return 'capacity';
  if(path.startsWith('/providers/')||path.startsWith('/@'))return 'capacity';

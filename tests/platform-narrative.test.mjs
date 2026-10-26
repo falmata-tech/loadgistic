@@ -5,7 +5,7 @@ import {capacityIntroduction,platformAbout,signupBenefits} from '../src/lib/plat
 const audienceMessages=()=>platformAbout.audiences.flatMap(audience=>[audience.label,audience.heading,audience.action,...audience.facts.flat()]);
 
 test('brief capacity heading and the fuller About story are localized across web and native',()=>{
-  const messages=[capacityIntroduction.title,platformAbout.title,platformAbout.body,...audienceMessages(),...signupBenefits.business,...signupBenefits.provider,'See how Loadgistic works','Find room for your load','Put your vehicles on the map','From one vehicle to a whole network','Show available space, find the right capacity, and keep trusted partners moving together.'];
+  const messages=[capacityIntroduction.title,capacityIntroduction.webDescription,platformAbout.title,platformAbout.body,...audienceMessages(),...signupBenefits.business,...signupBenefits.provider,'See how Loadgistic works','Find room for your load','Put your vehicles on the map','From one vehicle to a whole network','Show available space, find the right capacity, and keep trusted partners moving together.'];
   for(const locale of ['am','om']){
     const catalog=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
     for(const message of messages)assert.ok(catalog[message]?.trim()&&catalog[message]!==message,`${locale}: ${message}`);
@@ -13,7 +13,7 @@ test('brief capacity heading and the fuller About story are localized across web
   for(const file of ['src/app/page.tsx','apps/mobile/src/screens/capacity.tsx']){
     const source=readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
     assert.match(source,/capacityIntroduction\.title/);assert.doesNotMatch(source,/capacityIntroduction\.body/);
-    assert.match(source,/Open to the public/);assert.match(source,/Shared with you/);
+    assert.match(source,/Openly shared/);assert.match(source,/Privately shared with you/);
   }
   for(const file of ['src/components/about-audiences.tsx','apps/mobile/src/screens/about.tsx']){
     const source=readFileSync(new URL(`../${file}`,import.meta.url),'utf8');
@@ -34,7 +34,8 @@ test('signup benefits match the actual two account jobs across web and native',(
 });
 
 test('story leads with the known transporter network and leaves tracking after agreement',()=>{
-  assert.match(capacityIntroduction.title,/space.*load/);
+  assert.equal(capacityIntroduction.title,'The visibility you need to serve your customers reliably');
+  assert.equal(capacityIntroduction.webDescription,'Build trusted partnerships and coordinate your transport network together.');
   assert.deepEqual(platformAbout.audiences.map(audience=>audience.id),['shipping','individual','company']);
   assert.match(platformAbout.audiences[0].facts[0][1],/vehicle type.*route.*current load.*confirm the job/);
   assert.match(platformAbout.audiences[0].facts[1][1],/provider shares with your business.*team.*private map/);

@@ -6,10 +6,97 @@ problem: Transport providers and visitors need the existing verified web workflo
 behavior: Native screens follow the reviewed phone web structure with Capacity, Featured, Tracking and transporter workspace entry; provider and verified-email visitor sessions retain the existing authorization and expiry rules.
 contracts: [MobileApiV1, NativeIdentity, NativeVisitorGrant, NativeMap, MobileReleaseEvidence]
 observability: [mobile_request_failed, mobile_session_expired, mobile_build_verified]
-rollout: Android development preview first; owner visual review before extensive release checks; signed test APK only after required workflows pass. The owner requested Google Play preparation on October 9; prepare an internal-test AAB, preserving existing keys/package and keeping console enrollment, store declarations and public publication separate. Keep production deployment unchanged; the owner separately authorized web workspace consolidation on October 6.
+rollout: Review affected actual web, Expo and installed Android tasks under the current AGENTS.md workflow, then qualify the local APK/AAB and exact source gates. Preserve package and signing provenance; signing, testing-track upload, hosted SQL/web rollout and public publication retain their separate authority and readback requirements. Current delivery status belongs in docs/PROGRESS.md.
 ---
 
-# Native application — Android test release verified
+# Native application
+
+## One provider Home on entry — October26 work-first correction
+
+Work-first entry/order is implemented and locally qualified in current-source
+Expo; it supersedes the earlier Market-first review.
+
+Given a confirmed Active Transport Provider or Driver has operating access\
+When restoration finishes at ordinary public `/`, or ordinary sign-in returns\
+Then existing Home opens My capacity if driving, otherwise Manage vehicles if
+permitted, otherwise Analyze the Market\
+And tabs follow that same work-first order, with Analyze the Market last\
+And the native two- or three-tab row is centered and evenly fills available width,
+with 44px touch targets and wrapping English/Amharic/Oromo labels.
+
+Given a public entry has an explicit bounded search or provider/vehicle identity\
+When the authorized provider opens it\
+Then Market opens with that existing context and validators preserved\
+And owned styling decorates matching public results only, never private, Draft,
+Full or Off Duty signals.
+
+Given account restoration is unresolved\
+When initial Capacity renders\
+Then neutral restoration feedback precedes the context choice without flashing
+a second public map.
+
+Given a provider is already on any Home tab with filters or an unsaved work draft\
+When Home is pressed\
+Then the selected tab and visited work panes remain intact\
+And Home from another destination opens the default work view\
+And explicit market identity changes reset only the Market pane.
+
+Given a visitor, broker/shipper, platform role or provider without operating access\
+When public Capacity chooses its entry context\
+Then existing public discovery, private Capacity, invitations and onboarding
+retain their authorization and precedence.
+
+Verification: actual-handler regressions in
+`apps/mobile/tests/provider-home-entry.test.mjs`, shared tab/navigation tests and
+balanced-tab rendering checks pass. Current-source Expo qualifies the verified
+driving owner through normal OTP, My capacity default, three-tab en/am/om320/390
+geometry, selected-tab continuity, Network-to-work return, Planned/Preferred
+read/open/Close and normal Account sign-out to public Capacity. Web separately
+qualifies fleet-only/driving-owner entry and the final compiled normal sign-in
+replay. All actors are signed out; the earlier read/open/Close review left saved
+facts unchanged. Current R3 native types/lint,412 tests, strict784 translations
+and Android JavaScript export pass with the same1,856 inputs as the current web
+build. [Traceability](../TRACEABILITY.md#current-audit-evidence) owns exact source
+pins, counts and retained harness/loading limits.
+The public freshness helper correction passes50 focused tests; actual Expo
+Map/Location/Vehicle am/om320/390 passes4/4. Direct profile qualification is only
+Oromo320 against its own DTO without a retained map modal; earlier profile
+captures are withdrawn and neighboring cases retain renderer/source evidence.
+The final bounded broker walkthrough is Chrome web evidence, not a new Expo
+filter-matrix qualification. Earlier physical Market-first and installed broker
+Owner/Staff evidence qualifies its recorded bundle only. Workspace-admin, later
+physical/native-only capability checks, static/installed qualification of the
+built local debug-signed candidate, final standalone APK/signing, exact-source CI
+and hosted rollout remain separate.
+No service, permission or dependency change is introduced by this presentation.
+
+## Private Capacity sign-in return path — October26 correction
+
+Given a signed-out visitor is viewing public Capacity\
+When they choose Shared with you\
+Then the ordinary sign-in screen explains that an account is required\
+And Android Back and the visible Back control return to public Capacity rather
+than closing the application\
+And entering sign-in preserves the previous public map and filter history,
+without requesting private Capacity before authentication.
+Switching between Sign in and Sign up remains within that auth entry; Back
+returns to the originating Capacity task without cycling through auth modes.
+
+Given a broker or shipper is already signed in with Capacity permission\
+When they switch between public Capacity and Shared with you\
+Then the selected view changes inside Capacity without an unnecessary sign-in
+screen or repeated map-view history entries.
+
+Verification: `apps/mobile/tests/transporter-search.test.mjs` executes the
+actual Capacity handlers; installed Android must prove both Back controls and
+the retained task. The original standalone failure is preserved separately
+from the corrected build and its runtime evidence.
+
+Map cluster status labels stay compact in English, Amharic and Afaan Oromo.
+The short Partial label must fit inside its circle alongside the count; longer
+availability descriptions belong to vehicle details. Shared catalogs keep web
+and native wording aligned. `apps/mobile/tests/language.test.mjs` guards the
+compact labels; actual phone web/Expo/Android review establishes visible fit.
 
 ## Business invitation entry — October 25 repair in progress
 

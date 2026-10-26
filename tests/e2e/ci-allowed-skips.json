@@ -233,7 +233,7 @@
     },
     {
       "file": "preferred-corridor-parity.spec.ts",
-      "title": "preferred corridor keeps current capacity distinct on phone web and Expo",
+      "title": "preferred corridor keeps planned capacity distinct on phone web and Expo",
       "project": "desktop-chromium"
     },
     {
@@ -323,7 +323,7 @@
     },
     {
       "file": "truck-regular-editors.spec.ts",
-      "title": "Expo selected fleet corridor route saves updates removes without changing another vehicle or current capacity",
+      "title": "Expo selected fleet corridor route saves updates removes without changing another vehicle or planned capacity",
       "project": "desktop-chromium"
     },
     {

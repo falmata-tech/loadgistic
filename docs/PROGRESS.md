@@ -16,127 +16,129 @@ The agent performs actual Chrome/Expo visual review without routine owner approv
 
 Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
 
-0. Current priority: October26 Capacity meaning/input/filter/map alignment.
-   Owner confirmed that current and Preferred routes/areas are all availability:
-   a complete match to any one returns the vehicle once; no separate
-   current-versus-Preferred search mode. Empty and Partial may both use Area or
-   Route. Read-only web/native and installed-function audits are complete.
-   Capacity211 is now implemented, rehearsed and applied only locally after a
-   verified backup: ten rollback SQL suites, new publication/OR/private-age
-   regressions, current-area API/SSR serialization26/26 and types pass. Existing
-   531 Capacity and35 Preferred rows have unchanged byte hashes. Provider/map
-   source78/78 and new filter source57/57 pass with web/native types and complete
-   explicit localization. Actual provider Chrome save/reopen and broker installed
-   search results follow; final release-APK qualification remains pending.
-   Preserve the existing
-   OR geography, AND other filters and whole-signal pickup/delivery matching.
-   Ordered implementation plan (FEAT-CAP/GEO/MKT/MOB-001): acceptance/negative
-   examples → allow Partial areas through publication and matching → align
-   public/private older-signal visibility → consistent Area/Route inputs and
-   availability filters → shaded areas/directed routes/dashed Preferred layers,
-   keeping reported GPS/phone/manual position independent → actual provider and
-   broker Chrome/Expo/installed tasks → one source-frozen full gate/release.
-   Proposed filter layout must stay concise; existing authoritative geography
-   helpers already support route/area matching and need no new GIS dependency.
-   Audit: `.local/play-code10-upload-20261025/capacity-experience-review/`.
-   Additional owner UI requests: small overlapping vehicle groups must fan out
-   into selectable markers instead of the narrow selection popup; preserve real
-   coordinates and privacy, with large groups bounded. Assess/add compact web
-   shell copyright for MarketVision Technology with reserved layout space above
-   phone navigation and no map/attribution overlap. FEAT-UIX-001 owns both.
-   Small-group display-only marker fan-out now passes focused desktop/phone
-   Chrome and Expo checks; large groups retain a bounded responsive list.
-   The existing zoom-transition test uses distinct nearby positions so it still
-   exercises zoom, while exact overlaps have their own fan-out regression.
-   The compact web footer is implemented with normal-flow space reserved for
-   maps and fixed phone navigation. Public Capacity, Featured, Track, About and
-   signed-in provider Chrome checks pass, including en/am/om and map attribution.
-   The normal Track form and Capacity also pass320×568/844×390 short-screen
-   checks. A scoped short-landscape form layout keeps its action and privacy
-   text visible. The combined footer Chrome case passes on the final welcome
-   source. Admin read-only Featured also retains the normal-flow footer without
-   horizontal overflow; short-landscape Tracking error states remain outside
-   this focused qualification.
-   Evidence: `.local/capacity-fan/` and
-   `.local/play-code10-upload-20261025/footer-review/`.
-   Finish the new Capacity input/filter tasks before the expensive final gate;
-   none of this candidate is published yet.
-   The latest owner request is implemented locally: the welcome paragraph is
-   removed from web/native, keeping one shared heading and the public/private
-   choice. Native tabs remain44px. Agent-led actual Chrome review passes phone
-   web and Expo in en/am/om at320×568 and390×844, plus a desktop spot check,
-   including search/filter open-close and the private sign-in explanation.
-   Settled Expo readback shows16 markers from eight successful public API
-   responses; initial loading screenshots are not the settled-state evidence.
-   Before/after native component checks failed on the old paragraph and now
-   pass; the consolidated focused batch passes31 tests with root/native types
-   and753 source checks. Matching source/screenshot hashes and limitations:
-   `.local/play-code10-upload-20261025/welcome-map-review/final-review.json`.
-   No Play Store listing change is part of this UI work; current APK status is
-   recorded in step8.
-   Provider current-offer Chrome saves/reopens now pass all four Empty/Partial
-   ×Area/Route combinations and Cancel, with GPS point/source/time unchanged.
-   Original business fields were restored through the ordinary API; only town
-   labels canonicalized while place identities/coordinates/order stayed equal.
-   Preserve the strict-label comparison failure and two restore history entries.
-   Broker sign-in/private API readback passes (eight existing vehicles), but
-   city selection stopped before Apply when a suggestion was clipped inside
-   the current filter dialog. DOM geometry confirmed the defect; scoped
-   in-flow suggestions now pass anonymous phone city selection→Apply→public
-   API200/three matches→reopen at390/320. The full broker filter matrix is not
-   yet qualified. Both browser sessions logged out safely.
-   Three missing dynamic load-preference translations were fixed with a real
-   rendered-editor regression (22/22); authenticated post-fix language captures
-   remain a production-preview follow-up. Frozen31-path handoff:
-   `.local/play-code10-upload-20261025/capacity-experience-review/final-ui-handoff.md`.
-   First combined local Node22 quality finished in63.3s:1242 pass, five failures,
-   one existing skip. The failures were old paragraph/account-driver expectations
-   and the reviewed skip inventory, caught and repaired locally before any CI
-   push. Final root quality now passes1247/1248 with that one reviewed skip,
-   source/spec/workflow checks and typecheck in81.8s. Root uses
-   Node22; the separate native full gate must match CI's Node24 runtime.
-   Native first full gate: types and783/783 fixed-copy translations pass;
-   lint found an effect-time fan reset and tests found invalid JSX whitespace,
-   two string-valued Featured conditions and an outdated map harness (368/375).
-   Those are repaired with native text/filter24/24, Featured13/13 and map20/20
-   focused checks. Fan reset retains clear-on-data/selection/back behavior and
-   adds a no-resurrection regression. Final native Node24 typecheck/lint,
-   376/376 tests,783/783 fixed-message translations and actual Android export
-   pass; export took64.7s. Current Expo fan/select/details/Back also passes320/390.
-   Preserve the initial failure logs under
-   `.local/launch-experience-20261026/gates/`.
-   Settled final web captures show loaded tiles on390/1280, one footer, no
-   welcome paragraph or horizontal overflow, and attribution above the footer.
-   `.local/launch-experience-20261026/web-settled-review/review.json` records
-   geometry; this SSR review observed no separate public API request.
-   The source-matched local production-mode web build passes in99.1s and restores
-   user-owned generated metadata. It is explicitly a local-only artifact, not
-   the hosted deployment package. Production preview uses3100 and localAPI55321
-   with HTTP200 home/health. Its initial normal browser sign-in was blocked by
-   the local HTTP callback configuration, so a temporary loopback TLS proxy at
-   https://localhost:3443 now supplies the runtime's matching HTTPS APP_URL.
-   No app guard, hosted setting, upload key or OS trust store was changed.
-   Current Admin/broker HTTPS and installed development-client results follow;
-   the replacement APK/AAB is recorded in step8.
-   HTTPS Admin normal sign-in/read-only Featured overview now passes without an
-   SSR error; it does not replay the earlier Sponsor Save. The HTTPS broker
-   walk-through found a confirmed matching-contract defect: its visible Empty
-   Route matches a single-origin50km query, but Area50km at the same exact catalog
-   endpoint returned no match. The pure and installed predicates excluded Route
-   offers from Area queries. Migration213 now repairs that defect only locally,
-   after a fresh backup, exact function/ACL audit, isolated rehearsal and rollback
-   check. Public page/search/clusters and private-account/business SQL regressions
-   preserve hidden geometry, explicit constraints, whole-offer matching and grant
-   revocation. Installed Android Staff now finds the route vehicle through the
-   exact offered city's Area50km search, opens it and retains the filter on reopen.
-   No location, grant, vehicle data or hosted change was made.
-   Final Node22 quality passes1274 tests with one reviewed skip in69.5s;
-   the matching local web build passes in109.3s. Native source-map input comparison
-   confirms the backend-only213 change does not alter the234 application/shared
-   files in the already passing Android export. This is export-input evidence,
-   not complete APK provenance or hosted qualification.
-   Receipts: `.local/capacity-area-213/` and
-   `.local/launch-experience-20261026/gates/`.
+0. Locally qualified: work-first provider Home and Planned/Preferred presentation
+   are implemented and reviewed in current-source Chrome/Expo. My capacity is
+   first when driving, Manage vehicles follows when authorized, and Analyze the
+   Market is last. Ordinary sign-in/root and Home from another task open the
+   appropriate work view; explicit public search/identity keeps Market intent,
+   and Home within a selected tab preserves its state. Desktop1280, phone
+   web320/390 and Expo's driving-owner three-tab en/am/om320/390 layout pass.
+   The Fleet phone location/action overlap is corrected and verified after
+   actual translated labels settle.
+
+   Planned capacity names the current/next-work Empty/Partial Area/Route offer;
+   Preferred corridor/area remains separate regular coverage. Chrome/Expo
+   read/open/Cancel and selected-map/profile facts pass with saved facts
+   unchanged for that review. Either-offer OR, other-filter AND, whole-offer
+   endpoints and existing wire/storage fields remain. Reported GPS/phone/manual
+   location is separate; source regressions cover fitted coverage without a
+   reported point. The actual actors had reported locations, so no position was
+   removed to stage that case. No business, role or permission write was used.
+
+   The owner-locked headline and partnership/network support line live in the
+   product brief and FEAT-MKT-001. Native and short phone web retain the heading
+   alone; roomier web adds the support line. Map choices are Openly shared and
+   Privately shared with you. Guest entry/Back, attribution and Oromo marker-fit
+   evidence stays scoped to the unchanged surfaces.
+
+   Current R4 root quality passes1295/1295 in196.910s. The required CI SQL loop
+   now executes all three new discovery parity suites; its missing-registration
+   regression failed before the repair and passes with32 existing workflow tests.
+   Workflow lint passes for108 operational scripts and actionlint; ShellCheck is
+   unavailable. Native R3 types9.441s, lint7.177s, tests412/412, strict translations
+   784/784 and Android JavaScript export53.898s pass without native input changes.
+   All1,856 R3 input hashes matched the compiled web build at its freeze,
+   which passed in87.644s. The earlier483.747s build timeout during types remains
+   preserved. [Traceability](../specs/TRACEABILITY.md#current-audit-evidence) owns
+   the source-bound receipts, focused tests and review evidence.
+
+   Native public freshness is locally qualified through the existing bounded
+   localization helper:50 focused tests pass. Actual Chrome web am/om320/390
+   passes4/4 states; Expo Map/Location/Vehicle passes the same4/4. Direct Expo
+   profile proof is only Oromo320 against its own returned DTO; earlier profile
+   captures were withdrawn because they selected a retained map row. Missing
+   labels and neighboring profile locales/sizes retain renderer/source evidence.
+   The hidden Preferred Area web caption has11 renderer regressions, with no
+   matching real hidden row available for browser proof. Final freshness reviews
+   used no Auth/business writes or phone actions.
+
+   Local214/215/216 and producer-only217 correctness, installation and recovery
+   checks pass. The217 postcheck-only run passed36.716s, followed by the complete
+   unchanged5,000-record/five-second gate in51.498s. All count/order/filter/
+   lookahead/payload limits passed, with zero synthetic vehicles/drivers left and
+   exact source/data/authority/ledger fingerprints. The first operator
+   verification failure remains UNKNOWN; no migration reapply or automatic
+   recovery occurred. FEAT-CAP-001 owns the detailed performance and217 evidence.
+   This is one isolated local pass, not hosted or repeated-run reliability proof.
+
+   The compiled-preview broker walkthrough now passes four representative Owner
+   cases: private Empty Area at the original Route endpoint, private Partial
+   Route, public Partial Area and existing Preferred coverage. Staff repeats the
+   original private Area case. Actual result/detail/Back/reopen/reload and normal
+   global logout303/private401 pass, with exact membership/permissions unchanged.
+   Public217 profile search includes the matching account; account and vehicle
+   counts are not equated. Preferred coverage overlaps Planned Area and returns
+   a Planned reason, so independent Preferred-only OR is not claimed. The first
+   cluster-selection harness limit is retained; one Preferred-only continuation
+   passed without replaying the completed cases. The complete filter matrix,
+   including all vehicle/load/source/document combinations, remains unfinished.
+
+   The retained driver's single compiled-production sign-in replay passes normal
+   OTP, exact identity200, work Home/three tabs and logout303/private401, with no
+   runtime error recurring. Earlier unclassified Error, Connection closed and
+   Suspense fallback receipts remain preserved; this is not a diagnosis of those
+   earlier errors or a claim that every browser run was error-free. All broker/
+   driver contexts are closed and actors signed out; business writes are zero.
+
+   The compiled preview completed its review and is preserved; the current same-
+   source development preview runs3100/TLS3443 for the deliberately local-only
+   movement endpoint. Expo8084 is restored and its protected business Sharing
+   proxy returns JSON401; physical Metro8285 remains stopped. Only generated
+   Next type metadata differs from the qualified Git baseline and is excluded
+   from the task commit, along with the user's mobile settings.
+
+   Existing local workers now run on bounded one-hour leases. Ten managed motion
+   targets report each60s; independent snapshots prove accepted GPS positions
+   and GPS/phone timestamps advance, with9fresh GPS capacities and1fresh phone
+   capacity. The marketplace supervisor reached8healthy30s ticks with all six
+   lanes enabled. No Capacity/sharing job was due in this sample; next natural
+   Capacity is October27 08:00UTC, beyond this finite run. Do not claim that later
+   execution or always-on hosting. Its restarted activation passed protected
+   backup, rollback rehearsal and exact five-control readback. The original
+   owner-assumption refusal and long-gap pause are preserved; actual existing
+   privileges were pinned, all22 reviewed historical jobs remained DONE/unchanged,
+   and only the previous activation's five dispatcher checkpoints were cleared
+   after review. No role, ownership, grant, clock, schedule or job history changed.
+   Evidence: `.local/provider-home-entry-20261026/local-demo-runtime-qualified.json`
+   and the protected `.local/demo-world-startup-20261026/` receipts. Query the
+   documented normal status commands for current liveness/expiry. No real-user
+   target, phone session, hosted worker or paid resource was added.
+
+   Prior provider save/reopen/Cancel evidence covers Empty/Partial × Area/Route
+   on its recorded source without changing GPS position/source/time. The clipped
+   city-suggestion repair also passed anonymous390/320 selection, Apply, result
+   and reopen; the compiled broker case now resumes that original blocked task.
+   Marker fan/Back, compact footer and short-phone attribution evidence remains
+   scoped to its unchanged surfaces. No coverage, cursor, eligibility, permission
+   or gate threshold was weakened.
+
+   The current local Android APK/AAB build passed153.803s, version1.2.0/code10,
+   arm64/x86_64, with565 runtime inputs unchanged. It targets the production API
+   but uses only the existing development/debug certificate; no upload key or
+   provider write was used. Static permissions, signature, two-ABI/16KB structure,
+   matching Hermes bundle and known-secret-marker checks pass in
+   `.local/launch-experience-20261026/android-final/archive-qualification.json`.
+   Installation and production-backend acceptance remain pending. The build
+   receipt pins its original worktree hashes; commit equivalence and exact-source
+   CI are separate evidence. It is not upload-key-signed or Play-ready.
+
+   Next dependencies: complete Android installed qualification,
+   workspace-admin and later physical-device qualification, remaining broker
+   filter combinations, exact-source CI and hosted recurring simulator rollout. Earlier
+   Market-first Provider02/Driver018 development-client and installed broker
+   Owner/Staff receipts qualify only their recorded bundles, not the later layout
+   or final standalone APK. The owner phone session is closed. Final APK/signing,
+   testing-track delivery, hosted SQL/web rollout and deployment remain pending.
 
 1. Verified: existing web release and native source/input receipts below. Reuse
    source-matched passing gates; do not restart the completed web release.
@@ -157,18 +159,16 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    exact reviewer2 global logout/readback subsequently confirmed sessions1→0.
    Spec: FEAT-MOB-001 business invitation entry. Branch:
    `fix/launch-experience`. Regression tests precede production edits.
-4. In progress: migration209 locally rehearsed account-only search across public,
-   private account, business and Network Find. Existing connection records and
-   driver per-vehicle sharing remain. Focused permission/result tests pass;
-   Correct account-based scale results pass (one provider/5010 vehicles), but
-   local timing remains above the unchanged5s gate (~5.65–9.05s after a19.44s
-   baseline); unchanged overview timing is also above5s. Optimization is frozen,
-   failed receipts preserved, and no scale pass or hardware cause is claimed.
-   No hosted209 apply or CI is claimed. Provider-account search (self-managed searchable; fleet drivers
-   within provider only), account→vehicles→assigned-driver profile hierarchy and
-   flat readable verified/neutral badges. Vehicle badges must use the same
-   current authority facts as document filters; old generic approvals are not
-   current ownership. FEAT-MKT/VER-001.
+4. Account-only search is implemented/rehearsed locally across public,
+   private account, business and Network Find. Self-managed provider accounts are
+   searchable; employed drivers appear only under their provider's vehicle.
+   Current vehicle, driver and reviewed-document facts stay scoped to that
+   account; generic approval never implies ownership. Existing connections and
+   per-vehicle sharing remain. Correctness/denial evidence is retained, while
+   the source-matched local optimizer and canonical scale qualification are
+   recorded above. No hosted209+ rollout or current exact-source CI is claimed.
+   FEAT-MKT/VER/CAP-001.
+
 5. Source implemented/review in progress: provider profile hierarchy, flat
    document rows, stronger native cards/sections and concise Network/team UI.
    Provider Chrome/Expo en/am/om tasks and focused tests pass; installed parity
@@ -216,26 +216,41 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    Team controls and unsaved permission-edit Cancel pass with authoritative
    unchanged role/permissions. Normal visitor Tracking OTP opens the sole new
    delivered Demo, Status-only shipment and its route/status without live location.
-   Populated business Tracking, distinct Admin and saved permission changes remain
-   unqualified. Automatic approval review rejected the exact Add-to-workspace
-   mutation, so it was not retried indirectly. Read-only inventory found no
-   proven synthetic already-attached team fixture; an unproven team was not used.
-   No membership or attachment was changed. Owner UI sign-out is confirmed and
-   only the owned emulator was stopped. A single narrow local-test/cleanup
-   permission question is pending; provider cancellation is held while the
-   existing fixture is preserved. Evidence:
+   The owner subsequently approved the exact local attachment and cleanup after
+   automatic approval review had blocked it; no indirect workaround was used.
+   Ordinary Chrome Attach succeeded once, HTTP200, for the exact synthetic
+   broker190 workspace. CREATED/STATUS_ONLY, roles and zero location grants are
+   preserved. Owner/Staff desktop/phone list/detail/reload/Back and authoritative
+   location/action denials pass. Expo Staff Back, reload, Team absence and normal
+   sign-out now pass, including actual Sharing HTTP403 JSON through the proxy.
+   Installed Owner/Staff populated Tracking, route/status, refresh/Back and
+   role-specific Account/Team controls pass. Owner Sharing loaded its real
+   attached-workspace snapshot; no location grant, permission, approval or proof
+   was changed. Both actors signed out normally. Distinct Admin and saved role
+   changes remain unqualified. The exact approved Demo was cancelled through
+   normal provider UI with HTTP303 and authoritative CANCELLED readback. History
+   remains, capacity/location/source/assignment hashes are unchanged, and normal
+   logout leaves private APIs denied. No other records or roles were changed.
+   Evidence:
    `.local/launch-experience-20261026/native-installed-review/`.
-   One private supplier grant is saved and Chrome/API verified. Existing
-   review-owner alias differs from login email, preventing ordinary team
-   Tracking attachment by source contract; no new Tracking/email/identity or
-   unreviewed fixture correction was performed. Resolve safely before claiming
-   populated owner/staff Tracking passed.
-   Reuse the existing isolated local Broker `scenario-broker-190` for populated
-   installed journeys through the ordinary local API and a development build.
-   Keep release HTTPS enforcement and review-account isolation unchanged; do not
-   rewrite reviewer identities or read production Tracking secrets to prepare a
-   test. The final production-targeted APK still needs its separate installed
-   checks; local fixture success is not hosted/reviewer-data success.
+   Current team handoff:
+   `.local/play-code10-upload-20261025/broker-supply/local-tracking-ui/team-handoff.json`.
+   FEAT-ENT-001 transport repair: audit existing authenticated Bearer handlers →
+   red exact sharing/actions/proof path and denial tests → extend only the shared
+   native/Metro allowlist → focused API/role/proof regressions → coordinated
+   preview restart and actual Owner sharing/Staff denial review. No new endpoint,
+   authority or database migration is intended. Do not mistake Metro's HTML200
+   for a JSON API success, or remove existing unknown-path/private-file guards.
+   This narrow repair passes focused transport/API/role/proof regressions and
+   actual installed Owner Sharing/Expo Staff denial. Proof and approval commands
+   retain automated authority tests because they are unavailable on this CREATED
+   fixture. Evidence is linked in traceability, pinned to bundlec6d31d87 and the
+   recorded inputs; later provider navigation changes require their own review.
+   One private supplier grant is saved and Chrome/API verified. The hosted
+   review-owner alias still differs from its login email, so local broker190
+   success does not qualify hosted reviewer attachment. Keep release HTTPS and
+   reviewer isolation unchanged; no identity rewrite or production secret read.
+   The final production-targeted APK requires its separate installed checks.
    Exact production provider shipment review found repeated status,
    no alternative in Change vehicle, and a web date
    field inconsistent with the server lock. FEAT-TRK-001 records the pending
@@ -254,6 +269,25 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    old bytes and source labels. Expo Free Android quota is15/15; local signing
    needs a new exact-artifact one-use approval after final inputs are qualified.
    The existing code10 signing question/review covers only its pinned old bytes.
+   Standalone visitor testing found Android Back from the private-Capacity
+   sign-in entry exits the app; the toolbar Back returns correctly. FEAT-MOB-001
+   records the expected retained public history. Ordered correction: reproduce
+   in actual-handler regression → preserve history for guest sign-in entry while
+   retaining authenticated map-switch behavior → focused/native review → one
+   incremental APK/AAB build after all current visitor findings are consolidated.
+   The earlier APK remains immutable; do not relabel it as the corrected build.
+   The same installed pass found clipped Amharic/Oromo Partial cluster labels.
+   The shared catalogs now use short status labels while retaining full detail
+   descriptions. Both new regressions failed before their fixes; the combined
+   focused batch passes28/28. Actual installed development-client Back retains
+   the filtered map, and both short cluster labels fit. Current web fit and one
+   final build follow the consolidated provider navigation review. Startup initially failed
+   then recovered automatically; its cause is unconfirmed. The actual current
+   public loader/parser separately read48 hosted vehicles over four HTTP200
+   pages in3.265s, which does not independently capture Android HTTP traffic.
+   Source0f1789f is committed and pushed to `fix/launch-experience`; only the
+   current small corrections remain uncommitted. PR/CI is deliberately deferred
+   until this local finding batch is finished, avoiding superseded full matrices.
 9. Pending: accurate current Play policy/reviewer/background-location evidence,
    one Closed Alpha upload and independent bundle/track/review readback. Preserve
    Internal, tester lists, country eligibility and empty public Production.

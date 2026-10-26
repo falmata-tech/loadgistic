@@ -24,7 +24,7 @@ async function preferredSignals(page:import('playwright-core').Page){
  return {route:route!,area};
 }
 
-test('preferred corridor keeps current capacity distinct on phone web and Expo',async({page},info)=>{
+test('preferred corridor keeps planned capacity distinct on phone web and Expo',async({page},info)=>{
  test.skip(info.project.name!=='mobile-chromium','The terminology review targets phone layouts.');
  test.setTimeout(150_000);await page.setViewportSize({width:390,height:844});
  const {route:signal,area}=await preferredSignals(page);
@@ -35,7 +35,7 @@ test('preferred corridor keeps current capacity distinct on phone web and Expo',
  const legend=page.locator('.public-map-legend');await expect(legend).toBeVisible();
  if(await legend.getAttribute('open')===null)await legend.locator('summary').click();
  await expect(legend.locator('.corridor')).toHaveText(['Preferred area','Preferred corridor']);
- await expect(legend.locator('.empty-route')).toHaveText('Route');
+ await expect(legend.locator('.empty-route')).toHaveText('Planned route');
  await expect.poll(()=>page.locator('.leaflet-tile-loaded').count(),{timeout:30_000}).toBeGreaterThan(5);
  await page.screenshot({path:info.outputPath('web-preferred-corridor-phone.png'),scale:'css'});
 

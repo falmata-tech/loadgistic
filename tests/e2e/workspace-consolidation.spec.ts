@@ -137,7 +137,7 @@ async function expectHeaderControlsFit(page:Page){
 }
 
 
-test('Public capacity return keeps selected location-source filters after visiting another Home view',async({page}:{page:Page})=>{
+test('Analyze the Market return keeps selected location-source filters after visiting another Home view',async({page}:{page:Page})=>{
  test.setTimeout(90000);
  const service=localAuditService(),actor=await auditProvider(service,'area-source-return');
  let signOut:(()=>Promise<unknown>)|undefined;

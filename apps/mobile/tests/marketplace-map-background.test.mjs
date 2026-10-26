@@ -6,6 +6,7 @@ import * as discovery from '../src/api/discovery.ts';
 import {capacityIntroduction} from '../../../src/lib/platform-copy.js';
 import * as transporterSearch from '../../../src/lib/transporter-search.js';
 import * as capacityRefresh from '../src/map/capacity-refresh.ts';
+import * as navigation from '../src/navigation/destinations.ts';
 
 // Execute the real screens and verification handlers with native hosts substituted.
 // These are layout/auth-boundary component checks, not backend or pixel-rendering evidence.
@@ -122,6 +123,7 @@ function capacityScreen(){
   '../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},
   '../api/public-capacity':{loadCapacity:async()=>{},loadSharedCapacity:async()=>{}},'../../../../src/lib/transporter-search.js':transporterSearch,
   '../map/capacity-refresh':capacityRefresh,
+  '../navigation/destinations':navigation,
   '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by public Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},'../hooks/account-query':{useAccountQuery:()=>({data:null})},
   '../components/ui':ui
  });

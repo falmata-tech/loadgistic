@@ -25,6 +25,15 @@ test('native navigation additions have matching nonempty keys in both supported 
   assert.ok(Object.values(nativeMessages[locale]).every(value=>value.trim()));
  }
 });
+test('map cluster status uses compact shared translations while details retain their full meaning',()=>{
+ for(const locale of ['am','om']){
+  const shared=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
+  const messages={...shared,...nativeMessages[locale]};
+  const label=translateMessage(messages,'Partial');
+  assert.ok(label&&label!=='Partial'&&!/\s/u.test(label)&&Array.from(label).length<=10,`${locale}: compact map status label required`);
+  assert.notEqual(translateMessage(messages,'Partial capacity'),label,`${locale}: details keep their distinct longer description`);
+ }
+});
 test('generic UI translations are explicitly marked literals, never user-record expressions',()=>{
  const root=fileURLToPath(new URL('../src/',import.meta.url));
  const files=directory=>readdirSync(directory,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?files(path.join(directory,entry.name)):entry.name.endsWith('.tsx')?[path.join(directory,entry.name)]:[]);

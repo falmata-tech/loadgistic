@@ -21,6 +21,20 @@ function publicTruckRegular(value){
  if(signal.geometry==='RADIUS'){const boundary=list(signal.area_boundary).slice(0,5).map(point=>text(object(point).label)).filter(Boolean),center=text(signal.area_center_label);return center&&boundary.length>=3?{kind:'AREA',places:[center,...boundary]}:null;}
  return null;
 }
+function publicPlannedCoverage(value){
+ const signal=object(value);
+ if(signal.current_signal_geometry_visible===false)return null;
+ if(signal.availability_geometry==='ROUTE'){
+  const places=list(signal.current_route_points).slice(0,5).map(point=>text(object(point).label)).filter(Boolean);
+  return places.length>=2?{kind:'ROUTE',places}:null;
+ }
+ if(signal.availability_geometry==='RADIUS'){
+  const boundary=list(signal.capacity_area_boundary).slice(0,5).map(point=>text(object(point).label)).filter(Boolean);
+  const center=text(signal.capacity_area_center_label);
+  return center&&boundary.length>=3?{kind:'AREA',places:[center,...boundary]}:null;
+ }
+ return null;
+}
 function publicCapacityMapHref(handle,capacity){
  const provider=text(handle),id=text(capacity.id);
  if(!/^[a-z0-9][a-z0-9_-]{1,63}$/i.test(provider)||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)||!['EMPTY','PARTIAL'].includes(capacity.status))return '';
@@ -35,7 +49,7 @@ export function nativePublicProvider(value){
  badges:publicBadges(row.verification_badges),regular:null,...(row.authoritySummary?{authoritySummary:publicProviderAuthoritySummary(row.authoritySummary)}:{}),
  reviewCount:number(row.review_count),averageRating:row.average_rating==null?null:number(row.average_rating),reviews:list(row.reviews).map(raw=>{const review=object(raw);return {id:text(review.id),rating:number(review.rating),note:text(review.note),createdAt:text(review.created_at),disputed:review.dispute_status==='OPEN'};}),
  fleet:{page:number(fleet.page),pages:number(fleet.pageCount),total:number(fleet.total)},
- trucks:list(row.trucks).map(raw=>{const truck=object(raw),capacity=object(truck.capacity);return {...(truck.authority?{authority:publicTruckAuthority(truck.authority)}:{}),number:text(truck.platform_number),name:[text(truck.make),text(truck.model)].filter(Boolean).join(' '),configuration:text(truck.cargo_configuration),driver:text(truck.assigned_driver_first_name),portrait:publicAsset(truck.assigned_driver_portrait_url),driverKind:text(truck.driver_kind_label),phone:phone(truck.assigned_driver_phone),driverBadges:publicBadges(truck.driver_verification_badges),truckBadges:publicBadges(truck.truck_verification_badges),regular:publicTruckRegular(capacity.recurring_corridors),capacity:truck.capacity?{status:text(capacity.status),updated:text(capacity.capacity_updated_label),locationUpdated:text(capacity.location_updated_label),origin:text(capacity.origin),destination:text(capacity.destination),mapHref:publicCapacityMapHref(row.handle,capacity)}:null};})};
+ trucks:list(row.trucks).map(raw=>{const truck=object(raw),capacity=object(truck.capacity);return {...(truck.authority?{authority:publicTruckAuthority(truck.authority)}:{}),number:text(truck.platform_number),name:[text(truck.make),text(truck.model)].filter(Boolean).join(' '),configuration:text(truck.cargo_configuration),driver:text(truck.assigned_driver_first_name),portrait:publicAsset(truck.assigned_driver_portrait_url),driverKind:text(truck.driver_kind_label),phone:phone(truck.assigned_driver_phone),driverBadges:publicBadges(truck.driver_verification_badges),truckBadges:publicBadges(truck.truck_verification_badges),regular:publicTruckRegular(capacity.recurring_corridors),capacity:truck.capacity?{status:text(capacity.status),updated:text(capacity.capacity_updated_label),locationUpdated:text(capacity.location_updated_label),origin:capacity.current_signal_geometry_visible===false?'':text(capacity.origin),destination:capacity.current_signal_geometry_visible===false?'':text(capacity.destination),coverage:publicPlannedCoverage(capacity),mapHref:publicCapacityMapHref(row.handle,capacity)}:null};})};
 }
 export function nativeFeatured(value){
  const row=object(value),schedule=object(row.schedule),providers=list(row.providers);

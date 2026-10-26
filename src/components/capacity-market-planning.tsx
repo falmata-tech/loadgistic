@@ -34,12 +34,11 @@ export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,ret
     const removing=new FormData(form).get('action')==='REMOVE';
     active.current=true;setBusy(true);onBusyChange(true);setError('');
     try{await submitCapacityForm(form);if(removing){setRemoved(true);onRemoved();}else onSaved(geometry);}
-    catch(reason){setError(reason instanceof Error?reason.message:'Preferred corridor could not be saved. Please try again.');}
+    catch(reason){setError(reason instanceof Error?reason.message:geometry==='RADIUS'?'Preferred area could not be saved. Please try again.':'Preferred corridor could not be saved. Please try again.');}
     finally{active.current=false;setBusy(false);onBusyChange(false);}
   }
   return <section className="capacity-signal-form" data-testid="capacity-planning-editor">
     <div className="capacity-signal-dialog-body">
-    <p className="meta"><Text message="The area or two-way route you serve regularly. Customers still confirm current availability with you."/></p>
     {error?<p className="alert error" role="alert">{error}</p>:null}
     <form id="regular-service-form" action="/api/capacity/corridors" method="post" onSubmit={submit} className="planning-editor-form recurring-signal-form"><fieldset className="capacity-signal-fields" disabled={busy}><input type="hidden" name="returnTo" value={returnTo}/><input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="expectedDriverId" value={expectedDriverId}/><input type="hidden" name="action" value={published?'UPDATE':'ADD'}/><input type="hidden" name="id" value={published?.id||''}/><input type="hidden" name="geometry" value={geometry}/>
       <div className="segmented-control geometry-choice"><button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong><Text message="Preferred area"/></strong><small><Text message="Nearby towns"/></small></button><button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong><Text message="Preferred corridor"/></strong><small><Text message="Both directions"/></small></button></div>

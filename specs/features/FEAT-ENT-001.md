@@ -21,6 +21,36 @@ grant with the existing server checks\
 And removing general explanatory prose does not imply that the team toggle
 automatically shares a moving vehicle's location.
 
+### October26 native workspace Tracking transport — locally qualified
+
+Given a current business member opens a shipment in the native app or Expo preview\
+When the existing interface requests owner sharing, an allowed approval/review,
+or an exact event's private proof\
+Then the native HTTP adapter and local preview proxy accept only the canonical
+UUID-scoped `/api/business-workspaces/{workspaceId}/tracking/{shipmentId}/sharing`,
+`/actions`, and `/proof/{eventId}` paths\
+And the existing handlers repeat verified bearer identity, current workspace and
+shipment access, primary-owner authority, action eligibility and exact proof
+membership before returning data or changing state\
+And staff retain route/status access without sharing, approval or proof rights\
+And malformed IDs, traversal, unknown subpaths, external targets and private
+Storage URLs remain outside the business transport allowlist.
+
+Focused regressions: `apps/mobile/tests/business-tracking-transport.test.mjs`,
+`apps/mobile/tests/business-workspaces.test.mjs`,
+`apps/mobile/tests/web-preview.test.mjs`, `tests/tracking-sharing.test.mjs` and
+`tests/business-workspace-api.test.mjs`. This repairs transport reachability for
+existing commands; it adds no handler, grant, permission or schema. Normal local
+Owner/Staff sign-in, shipment list/detail, route/status, Back, refresh and sign-out
+passed in Chrome, Expo and the installed development client. Owner Sharing loaded
+the actual attached-workspace snapshot without changing it; Staff saw no Sharing,
+approval, proof or location-grant controls, and its canonical Sharing request was
+denied with HTTP403 JSON through Expo. The CREATED fixture did not permit a
+real approval or proof action, so those branches retain focused transport/role
+tests rather than a claimed end-to-end mutation. Installed review is pinned to
+its recorded development bundle; the final standalone APK remains separate.
+Evidence is linked once from `specs/TRACEABILITY.md`.
+
 ## Play-review business isolation — planned local follow-up
 
 A registered synthetic Play reviewer may use an ordinary business workspace

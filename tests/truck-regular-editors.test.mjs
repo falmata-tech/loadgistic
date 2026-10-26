@@ -112,5 +112,35 @@ test('public selected Partial Area renders its saved polygon and Area details wi
  const props={items:[item],viewer:null,selectedId:item.id,onSelect(){},onDeselect(){}};let tree=view.render(component,props);
  const area=find(tree,'OffsetPolyline',node=>node.props.pathOptions.className.includes('map-service-area'));assert.ok(area,'a permitted Partial Area is a visible area');assert.deepEqual(area.props.positions,boundary.map(place=>[place.lat,place.lng]));assert.equal(area.props.pathOptions.color,capacityStatusPresentation.PARTIAL.color);assert.equal(area.props.offset,-12);
  assert.equal(find(tree,'Circle'),undefined);assert.equal(find(tree,'Marker'),undefined);assert.equal(find(tree,'button',node=>node.props['aria-label']==='Location'),undefined);
- find(tree,'button',node=>node.props['aria-label']==='Area').props.onClick();tree=view.render(component,props);const detail=find(tree,'dialog');assert.equal(detail.props['aria-label'],'Area');assert.ok(find(detail,'ul'));assert.equal(find(detail,'ol'),undefined);assert.equal(nodes(detail).filter(node=>node.type==='li').length,3);
+ const action=find(tree,'button',node=>node.props['aria-label']==='Planned area');assert.ok(action,'Planned area action');action.props.onClick();tree=view.render(component,props);const detail=find(tree,'dialog');assert.equal(detail.props['aria-label'],'Planned area');assert.ok(find(detail,'ul'));assert.equal(find(detail,'ol'),undefined);assert.equal(nodes(detail).filter(node=>node.type==='li').length,3);
+});
+
+
+test('public map names planned and preferred coverage separately while retaining geometry and location privacy',()=>{
+ for(const plannedGeometry of ['ROUTE','RADIUS'])for(const preferredGeometry of ['ROUTE','RADIUS']){
+  const view=renderer(),map={getZoom:()=>6,getBounds:()=>({pad:()=>({contains:()=>true})})};
+  const component=view.compile('../src/components/public-capacity-map-leaflet.tsx',{...common,Localized:({as,...props})=>({type:as||'div',props}),MapContainer:'MapContainer',Circle:'Circle',CircleMarker:'CircleMarker',Tooltip:'Tooltip',Marker:'Marker',Popup:'Popup',BaseMapTiles:'BaseMapTiles',OffsetPolyline:'OffsetPolyline',isTrailerVehicleConfiguration:()=>false,L:{divIcon:()=>({}),latLng:(lat,lng)=>({lat,lng,distanceTo:other=>Math.hypot(lat-other.lat,lng-other.lng)})},useMap:()=>map,useMapEvents(){},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,capacityStatusPresentation,localizedUpdateLabel:value=>value||'Reported earlier'}).PublicCapacityMapLeaflet;
+  const boundary=[{...point('Sululta'),lat:9.18,lng:38.75},{...point('Bishoftu'),lat:8.75,lng:38.98},{...point('Sebeta'),lat:8.91,lng:38.62}],route=[{...point('Addis Ababa'),lat:9.03,lng:38.75},{...point('Adama'),lat:8.54,lng:39.27}];
+  const item={id:'planned-preferred',provider_name:'Synthetic provider',status:'EMPTY',availability_geometry:plannedGeometry,current_signal_geometry_visible:true,location_lat:null,location_lng:null,capacity_area_boundary:boundary,current_route_points:route,recurring_corridors:[{id:'regular',geometry:preferredGeometry,route_points:route,area_boundary:boundary}]},original=structuredClone(item);
+  const props={items:[item],viewer:null,selectedId:item.id,onSelect(){},onDeselect(){}},planned=plannedGeometry==='ROUTE'?'Planned route':'Planned area',preferred=preferredGeometry==='ROUTE'?'Preferred corridor':'Preferred area';let tree=view.render(component,props);
+  for(const label of [planned,preferred]){
+   const action=find(tree,'button',node=>node.props['aria-label']===label);assert.ok(action,label);action.props.onClick();tree=view.render(component,props);
+   const dialog=find(tree,'dialog');assert.equal(dialog.props['aria-label'],label);assert.ok(find(dialog,'Text',node=>node.props.message===label));
+   if(label==='Planned route')assert.equal(nodes(find(dialog,'ol')).filter(node=>node.type==='li').length,2);
+   if(label.endsWith('area'))assert.equal(nodes(find(dialog,'ul')).filter(node=>node.type==='li').length,3);
+   if(label==='Preferred corridor')assert.ok(find(dialog,'Text',node=>node.props.message==='Both directions'));
+  }
+  assert.equal(find(tree,'Circle'),undefined);assert.equal(find(tree,'button',node=>node.props['aria-label']==='Location'),undefined);
+  assert.deepEqual(item,original,'presentation cannot rewrite a saved offer or reported position');
+  const hidden=view.render(component,{...props,items:[{...item,current_signal_geometry_visible:false}]});
+  assert.equal(find(hidden,'button',node=>node.props['aria-label']===planned),undefined,'hidden planned geometry remains hidden');assert.ok(find(hidden,'button',node=>node.props['aria-label']===preferred));
+ }
+});
+
+test('vehicle detail labels the existing planned timestamp separately from reported location',()=>{
+ const view=renderer(),component=view.compile('../src/components/map-truck-details.tsx',{...common,CalendarClock:'CalendarClock',presentation:{summary:'summary'},identity:{mapPerson:'map-person'},TruckAuthorityBadges:'TruckAuthorityBadges',TruckDocumentSummary:'TruckDocumentSummary',localizedUpdateLabel:value=>value}).MapTruckDetails;
+ const truck={provider_name:'Synthetic provider',provider_handle:'synthetic-provider',status:'PARTIAL',capacity_updated_label:'Saved offer age',location_updated_label:'Reported position age',current_signal_geometry_visible:true};
+ let tree=view.render(component,{truck});assert.equal(nodes(tree).filter(node=>node.type==='Text'&&node.props.message==='Planned capacity').length,1);assert.ok(find(tree,'p',node=>nodes(node).some(child=>child.props?.message==='Planned capacity')));assert.ok(find(tree,'p',node=>node.props.children.includes('Reported position age')));
+ tree=view.render(component,{truck:{...truck,current_signal_geometry_visible:false}});assert.equal(find(tree,'p',node=>node.props.children.includes('Reported position age')),undefined);assert.ok(find(tree,'Text',node=>node.props.message==='Preferred corridor—not current location'));
+ tree=view.render(component,{truck:{...truck,current_signal_geometry_visible:false,recurring_corridors:[{geometry:'RADIUS'}]}});assert.ok(find(tree,'Text',node=>node.props.message==='Preferred area—not current location'));assert.equal(find(tree,'Text',node=>node.props.message==='Preferred corridor—not current location'),undefined);assert.equal(find(tree,'p',node=>node.props.children.includes('Reported position age')),undefined);
 });

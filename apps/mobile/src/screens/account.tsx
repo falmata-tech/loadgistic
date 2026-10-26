@@ -1,6 +1,6 @@
 import FleetScreen from './fleet';
 import {DriverHome} from './driver-home';
-import {workspaceCapabilities} from '../navigation/destinations';
+import {hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../navigation/destinations';
 import {providerHomeTab,providerHomeTabs} from '../../../../src/lib/provider-workspace.js';
 import {PublicCapacityHome} from './capacity';
 import {WorkspaceTabs} from '../components/workspace-task';
@@ -22,7 +22,7 @@ import {signupBenefits} from '../../../../src/lib/platform-copy.js';
 const message = (error: unknown) => error instanceof Error ? error.message : 'Please try again.';
 export default function AccountScreen() {
   const account = useAccount();
-  const {setup,tab}=useLocalSearchParams<{setup?:string;tab?:string}>();
+  const params=useLocalSearchParams<{setup?:string;tab?:string;q?:string;provider?:string;truck?:string}>(),{setup,tab}=params;
   const [committed,setCommitted]=useState<{actorId:string;kind:'ONBOARDING'|'JOIN_FLEET'}|null>(null);
   if (account.busy) return <Page><LoadingSpinner accessibilityLabel="Restoring your account" /></Page>;
   if (!account.session) return <AuthEntry mode="LOGIN" />;
@@ -32,18 +32,19 @@ export default function AccountScreen() {
   if (account.session.state === 'JOIN_FLEET') return <Invitations key={account.session.user.id} committed={committed?.actorId===account.session.user.id&&committed.kind==='JOIN_FLEET'} onCommitted={()=>setCommitted({actorId:account.session!.user.id,kind:'JOIN_FLEET'})}/>;
   if(account.session.user.role==='CUSTOMER')return <Redirect href={businessHome(account.session.user.selectedBusinessWorkspace)}/>;
   const capabilities=workspaceCapabilities(account.session);
-  if (account.session.access?.granted) return <ProviderHomeScreen key={`${account.session.user.id}:${tab||''}`} requested={tab} capabilities={capabilities}/>;
+  if (hasProviderHome(account.session)) return <ProviderHomeScreen key={account.session.user.id} requested={tab} capabilities={capabilities} market={providerMarketContext(params)}/>;
   return <Dashboard />;
 }
-function ProviderHomeScreen({requested,capabilities}:{requested?:string;capabilities:ReturnType<typeof workspaceCapabilities>}){
+function ProviderHomeScreen({requested,capabilities,market}:{requested?:string;capabilities:ReturnType<typeof workspaceCapabilities>;market:ReturnType<typeof providerMarketContext>}){
  const tabs=providerHomeTabs(capabilities);
- const [view,setView]=useState(()=>providerHomeTab(capabilities,requested));
- const [visited,setVisited]=useState<string[]>(()=>[providerHomeTab(capabilities,requested)]);
- const changeView=(next:string)=>{setView(next);setVisited(current=>current.includes(next)?current:[...current,next]);};
+ const view=providerHomeTab(capabilities,requested);
+ const [visited,setVisited]=useState<string[]>(()=>[view]);
+ if(!visited.includes(view))setVisited([...visited,view]);
+ const changeView=(next:string)=>{if(next!==view&&tabs.some(tab=>tab.id===next))router.setParams({tab:next});};
  return <View style={{flex:1,backgroundColor:'#fff'}}>
-  <WorkspaceTabs value={view} items={tabs.map(tab=>({id:tab.id,message:tab.label}))} onChange={changeView}/>
+  <WorkspaceTabs balanced value={view} items={tabs.map(tab=>({id:tab.id,message:tab.label}))} onChange={changeView}/>
   {tabs.map(tab=>visited.includes(tab.id)?<HomePane key={tab.id} active={view===tab.id}>
-   {tab.id==='capacity'?<DriverHome active={view===tab.id}/>:tab.id==='vehicles'?<FleetScreen embeddedHome/>:<PublicCapacityHome active={view===tab.id}/>}
+   {tab.id==='capacity'?<DriverHome active={view===tab.id}/>:tab.id==='vehicles'?<FleetScreen embeddedHome/>:<PublicCapacityHome key={JSON.stringify(market)} {...market} active={view===tab.id}/>}
   </HomePane>:null)}
  </View>;
 }
@@ -57,7 +58,7 @@ export function AuthEntry({mode}:{mode:'LOGIN'|'SIGNUP'}) {
   const {setup,from}=useLocalSearchParams<{setup?:string;from?:string}>();
   const [audience,setAudience]=useState<'PROVIDER'|'BUSINESS'>(setup==='business'||from==='workspaces'?'BUSINESS':'PROVIDER');
   const [email, setEmail] = useState(''), [code, setCode] = useState(''), [handoff, setHandoff] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
-  const submit = async () => { if (busy) return; setBusy(true); setError(''); try { if (!handoff){setHandoff(await account.requestCode(email.trim()));} else {const next=await account.verifyCode(handoff, code.trim());if(!next)throw new Error('Sign-in changed. Please try again.');const target=from==='workspaces'&&['ACTIVE','ONBOARDING'].includes(next.state)?'/workspaces':next.state==='ONBOARDING'?mode==='SIGNUP'?audience==='PROVIDER'?'/account?setup=provider':'/account?setup=business':'/signup':next.user.role==='CUSTOMER'?(from==='capacity'?'/?view=private':businessHome(next.user.selectedBusinessWorkspace)):'/account';if(target!==path)router.replace(target);} } catch (error) { setError(message(error)); } finally { setBusy(false); } };
+  const submit = async () => { if (busy) return; setBusy(true); setError(''); try { if (!handoff){setHandoff(await account.requestCode(email.trim()));} else {const next=await account.verifyCode(handoff, code.trim());if(!next)throw new Error('Sign-in changed. Please try again.');const target=from==='workspaces'&&['ACTIVE','ONBOARDING'].includes(next.state)?'/workspaces':next.state==='ONBOARDING'?mode==='SIGNUP'?audience==='PROVIDER'?'/account?setup=provider':'/account?setup=business':'/signup':next.user.role==='CUSTOMER'?(from==='capacity'?'/?view=private':businessHome(next.user.selectedBusinessWorkspace)):workspaceHome(next);if(target!==path)router.replace(target);} } catch (error) { setError(message(error)); } finally { setBusy(false); } };
   return <Page><Title message={mode==='LOGIN'?'Sign in':'Create an account'}/><Copy message={from==='workspaces'?(mode==='LOGIN'?'Sign in to view your invitations.':'Verify your email to view your invitations.'):from==='capacity'?'Sign in to see vehicles shared with your account.':mode==='LOGIN'?'Enter your email to sign in securely.':'Choose your account type, then verify your email.'}/>
     <ErrorText message={error || account.error} />
     {account.cleanupRequired && <Button secondary message="Retry sign-out" onPress={() => { void account.signOut(); }} />}

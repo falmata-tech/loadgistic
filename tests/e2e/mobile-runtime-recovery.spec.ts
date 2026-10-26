@@ -30,7 +30,7 @@ test('mobile Featured recovers from unavailable and malformed responses without 
  await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-restored.png')});
  await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Your email',{exact:true})).toBeVisible();
- await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open to the public',exact:true})).toBeVisible();
+ await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toBeVisible();
  expect(errors).toEqual([]);
 });
 
@@ -58,7 +58,7 @@ for(const [name,message] of [['empty',''],['whitespace',' \t\n ']]){
   state='failed';await refresh();
   await expect(page.getByRole('alert')).toHaveText('Please try again.');
   await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Your email',{exact:true})).toBeVisible();
-  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open to the public',exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toBeVisible();
   expect(errors).toEqual([]);
  });
 }
@@ -116,6 +116,6 @@ test('mobile private-capacity deep entry requires account sign-in and preserves 
  expect(await page.locator('[data-marker-id]').count()).toBe(0);
  await page.getByRole('tab',{name:'Capacity',exact:true}).click();
  await expect(page).toHaveURL(/localhost:8084\/$/);
- await expect(page.getByRole('tab',{name:'Open to the public',exact:true})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toHaveAttribute('aria-selected','true');
  await expect(page.getByRole('link',{name:'Sign up',exact:true})).toHaveCount(0);
 });

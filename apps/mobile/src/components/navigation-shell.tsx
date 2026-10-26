@@ -6,7 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 import {useAccount} from '../session/provider';
 import {useLanguage} from '../localization/provider';
 import {languages} from '../localization/controller';
-import {aboutDestination,activeDestination,hasWorkspace,isWorkspace,phoneDestinations,publicDestinations,workspaceDestinations,type Destination} from '../navigation/destinations';
+import {aboutDestination,activeDestination,hasWorkspace,isWorkspace,navigationTarget,phoneDestinations,publicDestinations,workspaceDestinations,type Destination} from '../navigation/destinations';
 import {AppIcon,type IconName} from './app-icon';
 import {Button,ErrorText,palette} from './ui';
 import {ExternalButton} from './public-details';
@@ -36,7 +36,7 @@ export function NavigationShell({children}:PropsWithChildren){
  const primary=destinations.some(item=>item.href===path);
  useEffect(()=>{const show=Keyboard.addListener('keyboardDidShow',()=>setKeyboard(true)),hide=Keyboard.addListener('keyboardDidHide',()=>setKeyboard(false));return()=>{show.remove();hide.remove();};},[]);
  function open(kind:'all'|'language'){Keyboard.dismiss();setError('');setMenu(kind);}
- function navigate(href:string){if(href==='#menu'){open('all');return;}setMenu(null);Keyboard.dismiss();if(path!==href)router.navigate(href as Href);}
+ function navigate(href:string){if(href==='#menu'){open('all');return;}setMenu(null);Keyboard.dismiss();const target=navigationTarget(path,href,account.session);if(target)router.navigate(target as Href);}
  async function signOut(){if(signingOut)return;setSigningOut(true);setError('');try{await account.signOut();setMenu(null);router.replace('/');}catch{setError(t('Sign-out could not finish. Please try again.'));}finally{setSigningOut(false);}}
  return <View style={styles.root}><StatusBar style="dark"/>
   <SafeAreaView edges={navigationHeaderEdges(noticeAbove)} style={styles.headerSafe}><View style={styles.header}>

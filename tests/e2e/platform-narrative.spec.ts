@@ -14,10 +14,11 @@ test('capacity networks lead About and both map choices in all three supported l
     const picker=page.locator('.language-picker select:visible');
     await expect(picker).toBeEnabled();await picker.selectOption(locale);
     await expect(page.locator('.market-introduction h1')).toHaveText(translated(capacityIntroduction.title));
-    await expect(page.locator('.market-introduction p')).toHaveCount(0);
+    await expect(page.locator('.market-introduction p')).toHaveCount(1);
+    await expect(page.locator('.market-introduction p')).toHaveText(translated(capacityIntroduction.webDescription));
     const choices=page.locator('.capacity-view-choice');
-    await expect(choices.getByRole('link',{name:translated('Open to the public'),exact:true})).toHaveAttribute('aria-current','page');
-    await choices.getByRole('link',{name:translated('Shared with you'),exact:true}).click();
+    await expect(choices.getByRole('link',{name:translated('Openly shared'),exact:true})).toHaveAttribute('aria-current','page');
+    await choices.getByRole('link',{name:translated('Privately shared with you'),exact:true}).click();
     await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
     await expect(page.getByRole('heading',{name:translated('Sign in'),exact:true})).toBeVisible();
     await expect(page.getByText(translated('Sign in to see vehicles shared with your account.'),{exact:true})).toBeVisible();

@@ -9,6 +9,16 @@ const reviewedSkips=JSON.parse(readFileSync('tests/e2e/ci-allowed-skips.json','u
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const preflightRunner=readFileSync('scripts/ci-fixture-preflight.mjs','utf8');
 const featuredRunner=readFileSync('scripts/ci-featured-prepare.mjs','utf8');
+test('required database validation executes every new discovery parity suite',()=>{
+ const validation=workflow.slice(workflow.indexOf('  validate:\n'),workflow.indexOf('  e2e-shards:\n'));
+ const registered=new Set([...validation.matchAll(/for suite in ([\s\S]*?); do/g)]
+  .flatMap(match=>match[1].replace(/\\/g,' ').split(/\s+/).filter(Boolean)));
+ for(const name of ['capacity-discovery-reuse','capacity-discovery-noop-guards','capacity-discovery-input-projection']){
+  assert.ok(registered.has(name),`${name} must execute in the required validation job`);
+  assert.ok(readFileSync(`tests/sql/${name}.sql`,'utf8').includes('rollback;'));
+ }
+ assert.match(validation,/psql[^\n]+< "tests\/sql\/\$suite\.sql"/);
+});
 test('every intentional browser skip is reviewed before CI starts',()=>{
  const expected=[];
  for(const file of readdirSync('tests/e2e').filter(name=>name.endsWith('.spec.ts'))){

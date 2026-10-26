@@ -74,7 +74,7 @@ test('copy polish keeps admin, member and transporter profile controls usable',a
   // Use the managed seed, not an arbitrary published synthetic profile left by a manual preview.
   const org=checked(await service.from('organizations').select('id,handle').eq('handle','blueline-transport').single());
   expect(checked(await service.from('company_pages').select('published').eq('organization_id',org.id).single()).published).toBe(true);
-  await page.goto(`/@${org.handle}`);const toggle=page.locator('.provider-fleet-toggle');if(await toggle.count())await toggle.click();await expect(page.locator('.provider-fleet-showcase')).toBeVisible();await expect(page.getByText('Active fleet',{exact:true})).toHaveCount(0);
+  await page.goto(`/@${org.handle}`);const disclosure=page.locator('#provider-trucks.provider-fleet-disclosure');if(await disclosure.count()){if(!await disclosure.evaluate((element:HTMLElement)=>(element as HTMLDetailsElement).open))await disclosure.locator('summary').click();await expect(disclosure).toHaveJSProperty('open',true);}await expect(page.locator('.provider-fleet-showcase')).toBeVisible();await expect(page.getByText('Active fleet',{exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'View capacity on map',exact:true}).first().click();await expect(page.getByText('Blue outlines show the driver’s approximate location. Confirm availability directly with the transporter.',{exact:true})).toBeVisible();await expect(page.locator('.ethiopia-map-label')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('provider-map.png'),fullPage:true});
  }finally{for(const session of sessions)await session.auth.signOut({scope:'local'});}

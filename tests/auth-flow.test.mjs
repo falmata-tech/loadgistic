@@ -73,9 +73,17 @@ test('email-code inputs are bounded and normalized without account disclosure',(
   assert.equal(isNumericEmailOtp('12345678'),false);
   assert.equal(isNumericEmailOtp('12345'),false);
   assert.equal(isNumericEmailOtp('123 456'),false);
+});
+
+test('completed provider access enters work Home while business and platform destinations remain role-specific',()=>{
   assert.equal(managedWorkspaceDestination('SUPPORT'),'/support');
   assert.equal(managedWorkspaceDestination('ADMIN'),'/admin');
-  assert.equal(managedWorkspaceDestination('DRIVER'),'/app/home');
+  for(const role of ['DRIVER','TRANSPORTER'])assert.equal(managedWorkspaceDestination(role),'/app/home');
+  assert.equal(managedWorkspaceDestination('CUSTOMER'),'/app/business/capacity');
+  assert.equal(managedWorkspaceDestination('CUSTOMER',{permissions:{capacity:true,tracking:true}}),'/app/business/capacity');
+  assert.equal(managedWorkspaceDestination('CUSTOMER',{permissions:{capacity:false,tracking:true}}),'/app/business/tracking');
+  assert.equal(managedWorkspaceDestination('CUSTOMER',{permissions:{capacity:false,tracking:false}}),'/app/business/account');
+  assert.equal(managedWorkspaceDestination('UNKNOWN'),'/app/home');
 });
 
 test('unified account access requests minimum Google scopes and creates only an inactive OTP identity',()=>{

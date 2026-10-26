@@ -23,6 +23,9 @@ line, split them and use bounded numeric diagnostics; never weaken retired-image
 
 | What went wrong | Required prevention | Detailed record |
 | --- | --- | --- |
+| Public-profile search preserved an older Partial/Area exclusion while map/private offer tests passed; optimization parity also preserved that defect. | Exercise each active consumer entry point against the accepted offer model. Assert positive results and full account projection through the actual dispatcher, plus whole-offer, AND-filter and privacy negatives; legacy-output parity alone cannot prove intended behavior. | FEAT-CAP-001; migration217; `tests/sql/capacity-offer-union.sql`. |
+| Three new SQL parity suites passed locally but were absent from required CI validation. | Register each suite in its required job alongside the test change, and prove the job executes the suite rather than merely storing its file. The workflow regression fails when a registration is missing. | FEAT-CAP-001; `tests/ci-browser-gate.test.mjs`; `.github/workflows/ci.yml`. |
+| A finite local installer committed its intended function, then returned only `RuntimeError` from verification; discarded stderr and an unchanged stage left the failed check unknown. | Retain fixed command stages and protected diagnostic output. After failure, stop writes and independently verify installed source, permissions and data before a separately authorized postcheck. Serialize long SQL verification with browser/build work; elapsed time alone does not establish the cause. | BASE-DEP-001; October26 migration217; `.local/capacity-offers217/apply-failure-independent-readback.json`. |
 | `npm test` relied on an implicit TypeScript loader available in newer Node installations, while `.nvmrc` pins22.16. Selecting that documented runtime caused15 loader failures before the affected tests ran. | Run gates on the pinned runtime and explicitly enable its supported type-stripping mode. Preserve worker limits and test selection; verify real imported-TypeScript cases before another full gate. | BASE-DEP-001; `package.json`; October25 Node22 loader probe10/10; initial failed gate preserved under `.local/release-20261025-focus/quality.log`. |
 | The Driver map's scrollable action rail had no keyboard-accessible element while all four buttons were disabled before hydration. Earlier ready-state audits did not expose it; authenticated Axe failures also lost their role/route and analysis stage in sanitized CI output. | Audit the actual server-rendered disabled state as well as the hydrated screen. Keep labeled scrollable rails keyboard focusable with a visible focus treatment. Report only fixed role/route/stage/error enums and known Axe rules; distinguish an analysis rejection from a returned violation instead of assuming they have the same cause. | FEAT-UIX-001; BASE-DEP-001; `tests/e2e/accessibility.spec.ts`; October25 local14-case review and CI40229087647. |
 | A three-person Tracking browser test timed out in CI, but sanitized output retained only its declaration line; raw logs contained no stage, so the stall could not be located. | Give long workflows fixed named steps. Emit only reviewed stage enums and bounded timings from failed steps, never arbitrary step titles or error bodies. Preserve first failure through cleanup, reproduce one case locally, and keep unknown CI causes explicit. | BASE-DEP-001; `scripts/ci-browser-shard.mjs`; `tests/ci-browser-gate.test.mjs`; October25 focused Tracking replay54s. |
@@ -101,6 +104,7 @@ using those tools; optimize the slow step before introducing another service.
 | Scripts and CI | `npm run tools:workflow:setup` explicitly installs checksum-pinned actionlint in ignored `.local/tools`; `npm run check:workflow` parses operational JS and checks workflow syntax/expressions without executing scripts. | Runs in local quality and early CI validation. Behavioral runner tests still prove retry, skip, failure and diagnostic contracts; static checks cannot establish those. |
 | Local resources | Run browser and root unit gates sequentially; keep the two-worker unit cap. Keep separate app ports, databases and process ownership. | Existing full quality passed in46.27s at the earlier checkpoint; compare future measured runs rather than promising an unmeasured speedup. |
 | Gate runtime/output | Use the runtime declared by each CI job, rather than applying the root Node version to mobile. Choose an explicit TAP reporter when parsing test output. | The October26 Node24 native run emitted the spec reporter; an initial TAP-only scan missed its seven failed-case names despite correctly retaining exit1. The protected log preserved all failures; the subsequent bounded scan classified them before any CI push. |
+| Preview source identity | Local interactive Expo previews omit CI so Metro watches edits; use CI for frozen gates/exports. After a restart or source change, inspect the HTML-served bundle URL and verify its hash/current entry, tab order and labels before reviewing a role. | October26 port8084 served an old cached CI bundle despite current files on disk; its first-entry result was invalid for the candidate. A scoped cache-cleared restart restored the current bundle. A listening port and packager status do not prove the source revision. |
 | Production-mode local review | Inspect the actual runtime's feature-specific health blockers before starting a write journey. HTTP200 and successful Supabase sign-in do not qualify application email or Tracking signing. Preserve production guards; use isolated local test configuration and a loopback delivery sink, without production keys or rekeying existing records. | October26 local HTTPS resolved the callback gate; separate application email and Tracking-key gates then stopped fixture creation before records existed. Protected local receipts distinguish those setup failures from product defects and real delivery. |
 | Existing filter parameters | Verify the meaning of a reused parameter against each advertised offer shape before making it the default UI path. Cover Area/Route queries against current/Preferred Area/Route offers and both capacity states, then perform one real account search with a known positive vehicle. Serialization and layout tests alone do not prove matching. | October26 broker Area search rejected a visible Route endpoint because the old Area parameter meant area offers only. The red pure/SQL regressions and migration213 repair are in FEAT-CAP/GEO-001, `tests/audit-geographic-matching.test.mjs` and `tests/sql/capacity-offer-union.sql`. |
 | Database rehearsal | For DDL against an existing preview or hosted schema, preserve object owners and grants in the disposable restore and execute the rehearsal as the intended migration role. A `--no-owner` restore proves behavior but cannot prove that role may alter the original objects. Stop on an ownership denial; do not switch to a stronger role without the exact reviewed scope. | The October22 profile-copy rehearsal with `--no-owner` passed, but preview migration197 failed on `supabase_admin`-owned objects. An ownership-faithful clone then reproduced the intended role and passed while preview controls stayed off. |
@@ -198,6 +202,15 @@ fixture cleanup, and switch to the completed production preview before retrying
 slow authentication journeys. The demo importer now fails before writes when a
 target schema would omit route vehicle/driver bindings; negative tests protect
 that specific recurrence.
+October26's owned AVD stayed offline beyond six minutes on the earlier renderer
+setup. A resource/acceleration preflight and installed-supported renderer with
+two cores/2GB then booted within90 seconds without wiping it. Preserve both
+receipts; changed load/settings do not isolate one proven cause. Check the actual
+installed CLI and owned process before another bounded boot, never a shared ADB
+reset. A visible toolbar Back also does not qualify Android hardware Back: test
+both from the same entry with retained filters. The private-Capacity regression
+in `apps/mobile/tests/transporter-search.test.mjs` guards the discarded-history
+failure found by the standalone review.
 For phone-web/Expo parity, start Expo with `npm run preview:web` from
 `apps/mobile`. Plain `npm run web` leaves the local API proxy disabled: an auth
 request can receive Expo's `200 text/html` page, which the app correctly reports
@@ -232,3 +245,14 @@ ban failed randomly despite valid scheduling. Preserve saved-turn idempotency,
 daily uniqueness and exact round completion in the regression. Compare the
 installed function, fixture size and owner's rule before changing production SQL
 or retrying a stochastic assertion.
+
+For new rollback SQL fixtures, reuse a passing creator and check the installed
+enums, column checks/foreign keys and command preconditions together before the
+first run. The214 fixture needed three local corrections because those contracts
+were inspected piecemeal; no product defect or timing pass followed from those
+failures. Preserve exact rollback proof and classify the harness separately.
+Before claiming partial scale success, inspect where the canonical assertions
+actually execute; a query completing before a later failure is not proof that
+its final assertions passed. Use the configured root test flags, including
+`--experimental-strip-types` on Node22, when selecting direct `.test.mjs` files
+that import TypeScript. These are working procedures, not a new automated guard.

@@ -34,7 +34,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await expect(map).toBeVisible();
   await map.evaluate((element:HTMLElement)=>element.setAttribute('data-original-map','yes'));
   await expect(page.getByRole('button',{name:/Edit all/i})).toHaveCount(0);
-  const capacity=page.getByRole('button',{name:/^Edit current capacity:/});
+  const capacity=page.getByRole('button',{name:/^Edit planned capacity:/});
   const sharing=page.getByRole('button',{name:/^Edit capacity sharing:/});
   const rail=page.getByRole('navigation',{name:'Edit capacity signals',exact:true});
   await expect(rail.locator('button, a')).toHaveCount(4);
@@ -42,7 +42,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await expect(rail.getByRole('button',{name:/^Edit load preferences:/})).toHaveCount(0);
   const mapHeader=page.locator('.capacity-summary-map-header');
   await capacity.click();
-  const previewDialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+  const previewDialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
   await expect(previewDialog).toBeVisible();
   const statusPrecedesLoad=await previewDialog.locator('.capacity-status-load-grid').evaluate((grid:HTMLElement)=>{
     const status=grid.querySelector('.capacity-status-choice-column'),load=grid.querySelector('.capacity-load-choice-column');
@@ -75,7 +75,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await page.screenshot({path:testInfo.outputPath('fleet-capacity-home-narrow.png')});
   await page.setViewportSize({width:390,height:844});
   await capacity.click();
-  let dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+  let dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('Choose where this vehicle is available.',{exact:true})).toHaveCount(0);
   await page.screenshot({path:testInfo.outputPath('capacity-editor-phone.png')});
@@ -99,7 +99,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await dialog.getByRole('button',{name:nextStatus,exact:true}).click();
   await save(page,dialog);
   await expect(capacity).toBeEnabled({timeout:15000});
-  await expect(capacity).toHaveAttribute('aria-label',`Edit current capacity: ${nextStatus}`);
+  await expect(capacity).toHaveAttribute('aria-label',`Edit planned capacity: ${nextStatus}`);
   await sharing.click();
   dialog=page.getByRole('dialog',{name:'Capacity sharing',exact:true});
   await expect(dialog.getByRole('button',{name:'Empty',exact:true})).toHaveCount(0);
@@ -116,7 +116,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
 
   await capacity.click();
-  dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+  dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
   await expect(dialog.getByRole('combobox',{name:'City 1',exact:true})).toHaveValue(/Addis Ababa/);
   await expect(dialog.getByRole('combobox',{name:'City 2',exact:true})).toHaveValue(/Adama/);
   const pickups=dialog.getByLabel('Multiple pickups'),dropoffs=dialog.getByLabel('Multiple drop-offs');
@@ -134,7 +134,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await expect(page).toHaveURL(/\/app\/home$/);
   await expect(map).toHaveAttribute('data-original-map','yes');
   await capacity.click();
-  dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+  dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
   await expect(dialog.getByLabel('Multiple pickups')).toBeChecked();
   await expect(dialog.getByLabel('Multiple drop-offs')).toBeChecked();
   await dialog.getByLabel('Multiple pickups').setChecked(originalPick);
@@ -145,12 +145,12 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await dialog.getByRole('button',{name:originalVisibility,exact:true}).click();
   await save(page,dialog);
   await capacity.click();
-  dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+  dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
   await dialog.getByRole('button',{name:originalStatus==='PARTIAL'?'Partial':'Empty',exact:true}).click();
   if(originalStatus==='EMPTY')await dialog.getByRole('radio',{name:'Full or shared',exact:true}).check();
   await save(page,dialog);
   await expect(capacity).toBeEnabled({timeout:15000});
-  await expect(capacity).toHaveAttribute('aria-label',`Edit current capacity: ${originalStatus==='PARTIAL'?'Partial':'Empty'}`);
+  await expect(capacity).toHaveAttribute('aria-label',`Edit planned capacity: ${originalStatus==='PARTIAL'?'Partial':'Empty'}`);
   }finally{
     const capacityIds=vehicleId?checked(await service.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
     const ids=[vehicleId,...capacityIds.map((row:{id:string})=>row.id)].filter(Boolean);
@@ -266,8 +266,8 @@ test('fleet owners edit capacity but cannot substitute their device location',as
     await source.getByRole('button',{name:'Cancel'}).click();
   }
   await page.getByRole('navigation',{name:'Vehicle'}).getByRole('link',{name:'Capacity signals'}).click();
-  await page.getByRole('button',{name:/^Edit current capacity:/}).click();
-  await expect(page.getByRole('dialog',{name:'Capacity',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
+  await expect(page.getByRole('dialog',{name:'Planned capacity',exact:true})).toBeVisible();
   await expect(page.getByTestId('capacity-summary')).toBeVisible();
   }finally{
     if(vehicleId){checked(await service.from('capacities').delete().eq('vehicle_id',vehicleId));checked(await service.from('telematics_location_sources').delete().eq('vehicle_id',vehicleId));checked(await service.from('driver_vehicle_assignments').delete().eq('vehicle_id',vehicleId));}
@@ -305,8 +305,8 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
     // Assigning a driver creates an Off Duty snapshot; publishing begins by
     // explicitly choosing Empty, just as it does for a newly assigned truck.
     await page.screenshot({path:testInfo.outputPath('first-capacity-before-update.png')});
-    await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
-    let dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+    await page.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true}).click();
+    let dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await dialog.getByRole('button',{name:'Empty',exact:true}).click();
     await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeDisabled();
     async function choose(label:string,query:string){
@@ -320,10 +320,10 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
     await dialog.getByRole('button',{name:'Use my location'}).click();
     await expect(dialog.getByRole('status')).toContainText('Location ready');
     await save(page,dialog);
-    await expect(page.getByRole('button',{name:'Edit current capacity: Empty',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Empty',exact:true})).toBeVisible();
     await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
-    await page.getByRole('button',{name:'Edit current capacity: Empty',exact:true}).click();
-    dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+    await page.getByRole('button',{name:'Edit planned capacity: Empty',exact:true}).click();
+    dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await dialog.getByRole('button',{name:'Partial',exact:true}).click();
     await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
     await expect(dialog.locator('input[name="availabilityGeometry"]')).toHaveValue('RADIUS');
@@ -335,23 +335,23 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
     const partialArea=checked(await service.from('capacities').select('market_status,availability_geometry,capacity_area_center_label,capacity_area_boundary').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1))[0];
     expect(partialArea).toMatchObject({market_status:'PARTIAL',availability_geometry:'RADIUS',capacity_area_center_label:expect.stringMatching(/Sebeta/)});
     expect(partialArea.capacity_area_boundary.map((point:{label:string})=>point.label)).toEqual([expect.stringMatching(/Alem Gena/),expect.stringMatching(/Teji/),expect.stringMatching(/Boneya/)]);
-    await page.getByRole('button',{name:'Edit current capacity: Partial',exact:true}).click();
-    dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+    await page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true}).click();
+    dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
     await expect(dialog.getByRole('combobox',{name:'Area center',exact:true})).toHaveValue(/Sebeta/);
     await dialog.getByRole('button',{name:'Route',exact:true}).click();
     await choose('City 1','Sebeta');
     await choose('City 2','Alem Gena');
     await save(page,dialog);
-    await expect(page.getByRole('button',{name:'Edit current capacity: Partial',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true})).toBeVisible();
     const {data,error}=await service.from('capacities').select('market_status,availability_geometry,visibility').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1);
     expect(error).toBeNull();
     expect(data?.[0]).toMatchObject({market_status:'PARTIAL',availability_geometry:'ROUTE',visibility:'PRIVATE'});
-    await page.getByRole('button',{name:'Edit current capacity: Partial',exact:true}).click();
-    dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+    await page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true}).click();
+    dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await dialog.getByRole('button',{name:'Off Duty',exact:true}).click();
     await save(page,dialog);
-    await expect(page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true})).toBeVisible();
     await expect(page.getByRole('button',{name:/^Edit current coverage:/})).toHaveCount(0);
     const {data:offDuty}=await service.from('capacities').select('market_status').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1);
     expect(offDuty?.[0]?.market_status).toBe('OFF_DUTY');

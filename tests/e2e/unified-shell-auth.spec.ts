@@ -1,6 +1,7 @@
 import {test,expect} from './browser-test';
 import {auditProvider,checked,localAuditService} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
+import {expectBalancedProviderHomeTabs} from './provider-home-tabs-helper';
 
 test('one shell gains account navigation after sign-in and returns to Capacity after sign-out',async({page},info)=>{
  test.setTimeout(120_000);
@@ -24,19 +25,26 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  try{
  await localSupportLogin(page,actor.id);
  await page.goto('/');
+ await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search);
+ const homeTabs=page.getByRole('navigation',{name:'Home views'});
+ await expect(homeTabs.getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
+ await expectBalancedProviderHomeTabs(page,homeTabs,'link',['Manage vehicles','Analyze the Market']);
  await expect(header.locator('summary[aria-label="Account"]')).toBeVisible();
  const accountNavigation=page.getByRole('navigation',{name:info.project.name==='mobile-chromium'?'Mobile navigation':'Site navigation'});
  await expect(accountNavigation.getByRole('link',{name:'Home'})).toHaveCount(1);
  await expect(accountNavigation.getByRole('link',{name:'Capacity'})).toHaveCount(0);
  await expect(accountNavigation.getByRole('link',{name:'Network'})).toHaveCount(1);
- await expect(accountNavigation.getByRole('link',{name:'Shared with you'})).toHaveCount(0);
+ for(const name of ['Shared with you','Privately shared with you'])await expect(accountNavigation.getByRole('link',{name,exact:true})).toHaveCount(0);
  await page.screenshot({path:info.outputPath('unified-shell-signed-in.png')});
  await expect(page.getByRole('navigation',{name:'Switch view'})).toHaveCount(0);
  await expect(page.getByRole('navigation',{name:'Capacity views'})).toHaveCount(0);
  await page.goto('/?view=private');
- await expect(page).toHaveURL(url=>url.pathname==='/'&&!url.search);
+ await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search);
  await page.goto('/app/home');
+ await expect(page).toHaveURL(/\/app\/home\/vehicles$/);
  await expect(page.locator('.unified-app-main [data-view="vehicles"]')).toBeVisible();
+ await accountNavigation.getByRole('link',{name:'Home',exact:true}).click();
+ await expect(page).toHaveURL(/\/app\/home\/vehicles$/);
  await expect(page.locator('body>.site-copyright')).toBeVisible();
  expect(await page.evaluate(()=>{
   const footer=document.querySelector('.site-copyright')?.getBoundingClientRect();
@@ -55,7 +63,7 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  await expect(page).toHaveURL(url=>url.pathname==='/',{timeout:30_000});
  await expect(header.getByRole('link',{name:'Sign in'})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Site navigation'}).getByRole('link',{name:'Network'})).toHaveCount(0);
- await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Shared with you'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'})).toBeVisible();
  await expect(visitorNavigation.getByRole('link',{name:'Track',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('unified-shell-signed-out.png')});
  }finally{

@@ -34,9 +34,9 @@ function placeLabels(points:any[]|undefined,separator:string){
 }
 
 function capacityTitle(capacity:any,t:(message:string)=>string){
-  if(capacity.availability_geometry==='ROUTE')return placeLabels(capacity.current_route_points,' → ')||t('Published Capacity route');
+  if(capacity.availability_geometry==='ROUTE')return placeLabels(capacity.current_route_points,' → ')||t('Planned route');
   const boundary=placeLabels(capacity.capacity_area_boundary,' · ');
-  return boundary?`${capacity.capacity_area_center_label||t('Service area')} · ${boundary}`:capacity.capacity_area_center_label||t('Published Service area');
+  return boundary?`${capacity.capacity_area_center_label||t('Planned area')} · ${boundary}`:capacity.capacity_area_center_label||t('Planned area');
 }
 
 function regularServiceTitle(capacity:any,t:(message:string)=>string){
@@ -44,7 +44,7 @@ function regularServiceTitle(capacity:any,t:(message:string)=>string){
   if(!signal)return null;
   if(signal.geometry==='ROUTE')return {label:'Preferred corridor',value:placeLabels(signal.route_points,' ↔ ')};
   const boundary=placeLabels(signal.area_boundary,' · ');
-  return {label:'Preferred service area',value:boundary?`${signal.area_center_label||t('Service area')} · ${boundary}`:signal.area_center_label||t('Service area')};
+  return {label:'Preferred area',value:boundary?`${signal.area_center_label||t('Preferred area')} · ${boundary}`:signal.area_center_label||t('Preferred area')};
 }
 
 function panelId(rowKey:string){
@@ -125,13 +125,13 @@ export function ProviderFleetShowcase({providerName,trucks,total=trucks.length,s
             {capacity?<div className="provider-truck-capacity-grid">
               <section className={`provider-truck-current ${capacity.status==='PARTIAL'?'partial':'empty'}`}>
                 {capacity.availability_geometry==='ROUTE'?<Route aria-hidden="true"/>:<CircleDotDashed aria-hidden="true"/>}
-                <span><small>{capacityHeading} · {capacity.availability_geometry==='ROUTE'?<Text message="Capacity route"/>:<Text message="Service area"/>}</small><strong>{capacityTitle(capacity,t)}</strong></span>
+                <span><small>{capacityHeading} · {capacity.availability_geometry==='ROUTE'?<Text message="Planned route"/>:<Text message="Planned area"/>}</small><strong>{capacityTitle(capacity,t)}</strong></span>
               </section>
               <div className="provider-truck-meta">
-                <span><Clock3 aria-hidden="true"/><span><small><Text message="Capacity update"/></small><strong>{localizedUpdateLabel(capacity.capacity_updated_label,t)}</strong>{capacity.location_updated_label?<em>{localizedUpdateLabel(capacity.location_updated_label,t,'location')}</em>:null}</span></span>
+                <span><Clock3 aria-hidden="true"/><span><small><Text message="Planned capacity update"/></small><strong>{localizedUpdateLabel(capacity.capacity_updated_label,t)}</strong>{capacity.location_updated_label?<em>{localizedUpdateLabel(capacity.location_updated_label,t,'location')}</em>:null}</span></span>
                 {regularService?<span><Navigation aria-hidden="true"/><span><small><Text message={regularService.label}/></small><strong>{regularService.value||t('Confirm route directly')}</strong></span></span>:null}
               </div>
-            </div>:<div className="provider-truck-off-duty"><CalendarClock aria-hidden="true"/><span><strong><Text message="No current capacity published"/></strong><small><Text message="Ask the transporter about this vehicle's next availability."/></small></span></div>}
+            </div>:<div className="provider-truck-off-duty"><CalendarClock aria-hidden="true"/><span><strong><Text message="No planned capacity published"/></strong><small><Text message="Ask the transporter about this vehicle's next availability."/></small></span></div>}
           </div>
 
           <div className="provider-truck-actions">

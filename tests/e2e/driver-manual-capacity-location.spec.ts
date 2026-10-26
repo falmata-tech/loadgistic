@@ -42,7 +42,7 @@ test('assigned driver chooses a manual Capacity point, sees its source, and can 
   expect(selected).toMatchObject({source:'MANUAL',manual_latitude:40.015,manual_longitude:-105.27,selected_by:driver.id,precision_km:5});
 
   await page.reload({waitUntil:'domcontentloaded'});await expect(page.locator('.capacity-location-dock')).toContainText('Manually entered');
-  await expect(page.getByRole('button',{name:'Edit current capacity: Off Duty'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Edit planned capacity: Off Duty'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Edit approximate location'}).first()).toBeVisible();
   checked(await db.rpc('update_fleet_driver_access',{actor_user_id:owner.id,command:{driver_user_id:driver.id,vehicle_id:vehicles[0],can_manage_capacity:false,can_manage_tracking:true}}));
   await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByTestId('restricted-driver-map')).toContainText('Manually entered');
@@ -77,7 +77,7 @@ test('assigned driver chooses a manual Capacity point, sees its source, and can 
   expect(manualItem.location_lat).not.toBe(40.015);expect(manualItem.location_lng).not.toBe(-105.27);
   const phoneBefore=await page.request.get(`/api/public/capacity?locationSource=MOBILE&${filterQuery}`);expect(phoneBefore.status()).toBe(200);
   expect((await phoneBefore.json()).items.some((item:{vehicle_id:string})=>item.vehicle_id===vehicles[0])).toBe(false);
-  await page.goto('/',{waitUntil:'domcontentloaded'});await page.locator('.capacity-map-controls .capacity-filter-trigger').click();
+  await page.goto('/app/home/market',{waitUntil:'domcontentloaded'});await page.locator('.capacity-map-controls .capacity-filter-trigger').click();
   const filters=page.getByRole('dialog',{name:'Vehicle filters'});await filters.locator('[data-filter-group="locationSource"] input[value="MANUAL"]').check();
   await page.screenshot({path:`${screenshots}/public-manual-source-filter-phone.png`});
   await filters.getByRole('button',{name:'Show vehicles'}).click();

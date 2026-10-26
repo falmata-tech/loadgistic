@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-import {workspaceCapabilities} from '../src/navigation/destinations.ts';
+import {hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../src/navigation/destinations.ts';
 import {parseBusinessContext} from '../src/api/business-workspaces.ts';
 
 // Execute the actual screens/handlers with native hosts and HTTP substituted.
@@ -20,7 +20,7 @@ const find=(tree,type,match=()=>true)=>nodes(tree).find(node=>node.type===type&&
 const settle=async()=>{for(let index=0;index<8;index++)await Promise.resolve();};
 const native=Object.fromEntries(['ActivityIndicator','LoadingSpinner','Redirect','Page','Title','Copy','Card','Button','ErrorText','View','Text','Pressable','Image','Field','Security','Profile','WorkspaceSection','WorkspaceFact','WorkspaceTaskHeader','WorkspaceTaskPane','WorkspaceAction','AppIcon','PublicImage','PublicCardImage','FilePicker','Switch'].map(name=>[name,name]));
 class ApiError extends Error{constructor(status){super('Synthetic access response');this.status=status;}}
-const common={...native,useLocalSearchParams:()=>({setup:'provider'}),ApiError,workspaceCapabilities,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',useLanguage:()=>({t:message=>message}),StyleSheet:{create:value=>value},apiOrigin:'https://local.test',palette:{ink:'#0b1d3a'}};
+const common={...native,useLocalSearchParams:()=>({setup:'provider'}),ApiError,hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',useLanguage:()=>({t:message=>message}),StyleSheet:{create:value=>value},apiOrigin:'https://local.test',palette:{ink:'#0b1d3a'}};
 
 test('native onboarding submits structured private identity and one Transport Provider category',async()=>{
  const view=renderer(),requests=[],account={session:{state:'ONBOARDING',user:{id:'new-provider'}},request:async(path,body)=>{requests.push({path,body});},reload:async()=>account.session};

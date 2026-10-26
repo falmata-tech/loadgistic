@@ -6,10 +6,10 @@ import {localSupportLogin} from './provider-support-helper';
 test('Capacity choices lead to the public map and account sign-in',async({page},info)=>{
   await page.goto('/');
   const choice=page.getByRole('navigation',{name:'Capacity views'});
-  await expect(choice.getByRole('link',{name:'Open to the public'})).toHaveAttribute('aria-current','page');
+  await expect(choice.getByRole('link',{name:'Openly shared'})).toHaveAttribute('aria-current','page');
   await expect(page.getByRole('region',{name:'Open transport capacity'})).toBeVisible();
   await page.screenshot({path:info.outputPath('public-capacity.png')});
-  await choice.getByRole('link',{name:'Shared with you'}).click();
+  await choice.getByRole('link',{name:'Privately shared with you'}).click();
   await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
   await expect(page.getByText('Sign in to see vehicles shared with your account.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Email me a code'})).toBeVisible();
@@ -31,8 +31,13 @@ test('provider Capacity stays public while Network remains a separate task',asyn
   await page.goto('/');
   await expect(page.getByRole('navigation',{name:'Capacity views'})).toHaveCount(0);
   await page.goto('/?view=private');
-  await expect(page).toHaveURL(url=>url.pathname==='/'&&!url.search);
-  await expect(page.getByRole('region',{name:'Open transport capacity'})).toBeVisible();
+  await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search);
+  const home=page.getByRole('navigation',{name:'Home views'});
+  await expect(home.getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
+  await home.getByRole('link',{name:'Analyze the Market',exact:true}).click();
+  await expect(page).toHaveURL(url=>url.pathname==='/app/home/market'&&!url.search);
+  await expect(home.getByRole('link',{name:'Analyze the Market',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('region',{name:'Public capacity market',exact:true})).toBeVisible();
   await expect(page.getByRole('tablist',{name:'Network views'})).toHaveCount(0);
   const navigation=page.getByRole('navigation',{name:(page.viewportSize()?.width||0)<980?'Mobile navigation':'Site navigation'});
   await navigation.getByRole('link',{name:'Network'}).click();
@@ -44,7 +49,7 @@ test('provider Capacity stays public while Network remains a separate task',asyn
   }
 });
 
-test('signed-out Shared with you entry is readable at narrow phone width in Amharic and Oromo',async({page},info)=>{
+test('signed-out Privately shared with you entry is readable at narrow phone width in Amharic and Oromo',async({page},info)=>{
   test.setTimeout(90_000);
   await page.setViewportSize({width:320,height:720});
   for(const locale of ['am','om']){
@@ -52,7 +57,7 @@ test('signed-out Shared with you entry is readable at narrow phone width in Amha
     await page.goto('/');
     await page.locator('.language-picker select:visible').selectOption(locale);
     const entry=page.locator('.capacity-view-choice a[href="/?view=private"]');
-    await expect(entry).toHaveText(messages['Shared with you']);
+    await expect(entry).toHaveText(messages['Privately shared with you']);
     await entry.click();
     await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
     await expect(page.getByText(messages['Sign in to see vehicles shared with your account.'])).toBeVisible();

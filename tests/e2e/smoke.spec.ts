@@ -90,7 +90,7 @@ async function findCapacitySignal(page:any,query:Record<string,string>,predicate
 
 test('public entry makes capacity immediately usable without an account',async({page}:{page:any})=>{
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('a[href="/featured"]:visible').first()).toHaveAttribute('href','/featured');
   await expect(page.locator('.featured-provider-section')).toHaveCount(0);
@@ -540,8 +540,8 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   }
   await expect(page.locator('.public-map-legend .empty-status')).toHaveText('Empty');
   await expect(page.locator('.public-map-legend .partial-status')).toHaveText('Partial');
-  await expect(page.locator('.public-map-legend .radius')).toHaveText('Area');
-  await expect(page.locator('.public-map-legend .empty-route')).toHaveText('Route');
+  await expect(page.locator('.public-map-legend .radius')).toHaveText('Planned area');
+  await expect(page.locator('.public-map-legend .empty-route')).toHaveText('Planned route');
   await expect(page.locator('.public-map-legend')).toBeVisible();
   const legendColors=await page.locator('.public-map-legend').evaluate((legend:any)=>Object.fromEntries(['empty-status','partial-status','privacy','radius','empty-route','corridor'].map(className=>{const style=getComputedStyle(legend.querySelector(`.${className}`),'::before');return [className,{background:style.backgroundColor,border:style.borderColor,borderTop:style.borderTopColor}];})));
   expect(legendColors['empty-status'].background).toBe('rgb(21, 94, 239)');
@@ -637,8 +637,8 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await expect(signalInspector).toBeHidden();
   await page.locator('.map-info-bubble.truck').click();
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
-  await expect(page.locator('.public-map-legend .radius')).toHaveText('Area');
-  await expect(page.locator('.public-map-legend .empty-route')).toHaveText('Route');
+  await expect(page.locator('.public-map-legend .radius')).toHaveText('Planned area');
+  await expect(page.locator('.public-map-legend .empty-route')).toHaveText('Planned route');
   await expect(page.locator('.public-map-legend .corridor')).toHaveText(['Preferred area','Preferred corridor']);
   await expect(page.locator('.public-map-legend')).not.toContainText('Next trip');
   await page.screenshot({path:path.join(captures,`${info.project.name}-selected-truck.png`),scale:'css'});
@@ -1179,7 +1179,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   expect(zones.legendOverlapsDock).toBe(false);
   expect(zones.legendOverlapsAttribution).toBe(false);
   expect(zones.dockOverlapsAttribution).toBe(false);
-  const availabilityControl=page.getByRole('button',{name:/^Edit current capacity:/});
+  const availabilityControl=page.getByRole('button',{name:/^Edit planned capacity:/});
   const availabilityText=await availabilityControl.getAttribute('aria-label');
   const emptyAvailability=Boolean(availabilityText?.includes('Empty'));
   const expectedCapacityColor=emptyAvailability?'#155eef':'#667085';
@@ -1217,7 +1217,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
   await expect(page.getByTestId('capacity-planning-editor')).toContainText('The area or two-way route you serve regularly');
   await page.getByRole('button',{name:'Close editor'}).click();
-  await page.getByRole('button',{name:/^Edit current capacity:/}).click();
+  await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
   await expect(page.getByRole('heading',{name:'Availability'})).toBeVisible();
   await expect(page.getByRole('group',{name:'Load type'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Where is this vehicle available?'})).toBeVisible();
@@ -1229,7 +1229,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByRole('heading',{name:'Approximate current location'})).toHaveCount(0);
   await page.goto('/app/capacity');
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();

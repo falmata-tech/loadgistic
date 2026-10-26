@@ -103,3 +103,16 @@ test('permission denial and unavailable geolocation clear an earlier marker whil
   });
  }
 });
+
+
+test('profile facts distinguish planned routes and areas from preferred coverage',()=>{
+ for(const geometry of ['ROUTE','RADIUS']){
+  const view=showcase(),planned={...capacity('planned'),availability_geometry:geometry,capacity_area_center_label:'Planned center',capacity_area_boundary:[{label:'Planned edge'}],recurring_corridors:[{geometry,route_points:[{label:'Preferred origin'},{label:'Preferred destination'}],area_center_label:'Preferred center',area_boundary:[{label:'Preferred edge'}]}]},original=structuredClone(planned);
+  const tree=view.render({providerName:'Synthetic provider',trucks:[{platform_number:'LG-PLANNED',capacity:planned}],total:1,startIndex:0}),card=all(tree,'article')[0];
+  const plannedFact=all(card,'section').find(node=>node.props.className.startsWith('provider-truck-current'));
+  assert.ok(text(plannedFact).includes(geometry==='ROUTE'?'Planned route':'Planned area'));assert.ok(text(card).includes(geometry==='ROUTE'?'Preferred corridor':'Preferred area'));assert.ok(text(card).includes('Planned capacity update'));
+  assert.equal(all(card,'Text').some(node=>['Capacity route','Preferred service area'].includes(node.props.message)),false);
+  assert.deepEqual(planned,original);
+ }
+ const empty=showcase().render({providerName:'Synthetic provider',trucks:[{platform_number:'LG-NO-PLAN',capacity:null}],total:1,startIndex:0});assert.ok(text(empty).includes('No planned capacity published'));assert.equal(all(empty,'PublicCapacityMap').length,0);
+});

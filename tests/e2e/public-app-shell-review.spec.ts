@@ -58,8 +58,8 @@ test('capture focused public application shell review',async({page}:{page:any})=
   const project=test.info().project.name;
 
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1,exact:true})).toHaveCount(1);
-  await expect(page.getByRole('heading',{name:'Find space for your next load',level:1,exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1,exact:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1,exact:true})).toBeVisible();
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

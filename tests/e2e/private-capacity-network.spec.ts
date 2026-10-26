@@ -2,11 +2,11 @@ import {expect,test} from './browser-test';
 import {auditProvider,checked,localAuditService} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 
-test('signed-out visitors cannot open Network or Shared with you',async({page,request})=>{
+test('signed-out visitors cannot open Network or Privately shared with you',async({page,request})=>{
   test.setTimeout(60_000);
   await page.goto('/');
-  await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Shared with you'})).toBeVisible();
-  await page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Shared with you'}).click();
+  await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'})).toBeVisible();
+  await page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'}).click();
   await expect(page).toHaveURL(/\/login\?from=shared-capacity/,{timeout:30_000});
   await expect(page.getByText('Sign in to see vehicles shared with your account.')).toBeVisible();
   await page.goto('/app/network');
@@ -41,8 +41,13 @@ test('provider finds accounts in Network without a shared Capacity entry',async(
   await expect(views.getByRole('tab',{name:'Vehicle sharing'})).toHaveAttribute('aria-selected','true');
   await expect(page.getByRole('link',{name:'Shared with you'})).toHaveCount(0);
   await page.goto('/?view=private');
-  await expect(page).toHaveURL(url=>url.pathname==='/'&&!url.search);
-  await expect(page.getByRole('region',{name:'Open transport capacity'})).toBeVisible();
+  await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search);
+  const home=page.getByRole('navigation',{name:'Home views'});
+  await expect(home.getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
+  await home.getByRole('link',{name:'Analyze the Market',exact:true}).click();
+  await expect(page).toHaveURL(url=>url.pathname==='/app/home/market'&&!url.search);
+  await expect(home.getByRole('link',{name:'Analyze the Market',exact:true})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('region',{name:'Public capacity market',exact:true})).toBeVisible();
   const response=await page.request.get('/api/account-capacity');
   expect(response.status()).toBe(200);
   expect(response.headers()['cache-control']).toMatch(/no-store/i);

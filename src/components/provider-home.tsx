@@ -51,6 +51,7 @@ async function publicMarket(input:SearchParams,ownSignalIds:string[]){
  try{selections=capacityFilterRecord(input);}catch{
   filterError='Check your search and vehicle filters.';
   selections=Object.fromEntries(Object.keys(CAPACITY_FILTER_CHOICES).map(key=>[key,Array.isArray(input[key])?'INVALID_CAPACITY_FILTER':raw[key]||''])) as CapacityFilterGroups;
+  if(Object.values(input).some(Array.isArray)&&!Object.keys(CAPACITY_FILTER_CHOICES).some(key=>Array.isArray(input[key])))selections.status='INVALID_CAPACITY_FILTER';
  }
  const {loadType:_retiredSelection,...visibleSelections}=selections;
  const mapQuery=Object.fromEntries(Object.entries({...raw,...visibleSelections,q:''})

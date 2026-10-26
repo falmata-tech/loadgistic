@@ -86,7 +86,8 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await expect(page.getByRole('checkbox',{name:/^I drive a vehicle/})).not.toBeChecked();
     await page.getByLabel('Account phone',{exact:true}).fill('+251900000011');
     await page.getByRole('button',{name:'Create transporter workspace'}).click();
-    await expect(page).toHaveURL(/\/app\/home$/);
+    await expect(page).toHaveURL(/\/app\/home\/vehicles$/);
+    await expect(page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
     await expect(page.getByRole('heading',{name:'No vehicles added yet.',exact:true})).toBeVisible({timeout:15000});
     const createdProvider=await service.from('provider_profiles').select('id').eq('user_id',owned.ownerId).single();expect(createdProvider.error).toBeNull();providerId=createdProvider.data!.id;owned.providerId=providerId;checkpoint('FIRST_TRUCK');
     await page.screenshot({path:info.outputPath('first-truck-guidance.png'),fullPage:true});
@@ -149,6 +150,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.screenshot({path:info.outputPath('assigned-before-verification.png')});
     await verifyNewEmail(driverPage,driverEmail,true);
     await expect(driverPage).toHaveURL(/\/app\/home$/);
+    await expect(driverPage.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'My capacity',exact:true})).toHaveAttribute('aria-current','page');
     await acceptContentRules(driverPage);
     expect((await service.auth.admin.getUserById(identity.data!.id)).data.user?.email_confirmed_at).toBeTruthy();
     await page.getByRole('link',{name:'Vehicle details',exact:true}).click();await page.getByRole('button',{name:'Edit vehicle details',exact:true}).click();
@@ -199,7 +201,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
       return [...document.querySelectorAll('.capacity-map-empty>svg,.capacity-map-empty>strong,.capacity-map-empty>span')].some(el=>overlaps(banner,el.getBoundingClientRect()));
     });
     expect(obstruction,'vehicle banner must not cover first-publication content').toBe(false);
-    await expect(driverPage.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true})).toBeEnabled();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true})).toBeEnabled();
     await expect(driverPage.getByRole('button',{name:'Edit approximate location',exact:true})).toBeEnabled();
     // Hold hydration on a fresh load: the first enabled action must work.
     let releaseScripts=()=>{};
@@ -208,10 +210,10 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.route(scriptPattern,async(route:any)=>{await scriptsReady;await route.continue();});
     try{
       await driverPage.goto('/app/home',{waitUntil:'commit'});
-      await expect(driverPage.getByRole('button',{name:'Set capacity',exact:true})).toBeDisabled();
-      await expect(driverPage.getByRole('button',{name:/^Edit current capacity:/})).toBeDisabled();
+      await expect(driverPage.getByRole('button',{name:'Plan capacity',exact:true})).toBeDisabled();
+      await expect(driverPage.getByRole('button',{name:/^Edit planned capacity:/})).toBeDisabled();
     }finally{releaseScripts();}
-    checkpoint('FIRST_CAPACITY');const firstAction=driverPage.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true});
+    checkpoint('FIRST_CAPACITY');const firstAction=driverPage.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true});
     await expect(firstAction).toBeEnabled();
     await driverPage.unroute(scriptPattern);
     if(info.project.name.includes('mobile'))await driverPage.setViewportSize({width:320,height:640});
@@ -221,7 +223,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     expect(await driverPage.evaluate(({x,y}:any)=>Boolean(document.elementFromPoint(x,y)?.closest('.capacity-summary-toolrail button')),{x:box.x+box.width/2,y:box.y+box.height/2})).toBe(true);
     await driverPage.screenshot({path:info.outputPath('new-driver-ready-to-set-capacity.png')});
     if(info.project.name.includes('mobile'))await firstAction.tap();else await firstAction.click();
-    const capacity=driverPage.getByRole('dialog',{name:'Capacity',exact:true});
+    const capacity=driverPage.getByRole('dialog',{name:'Planned capacity',exact:true});
     await expect(capacity).toBeVisible();
     await expect(capacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await expect(capacity.getByRole('button',{name:'Save',exact:true})).toBeEnabled();
@@ -247,9 +249,9 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     const stored=await service.from('capacities').select('market_status,visibility,vehicle_id,updated_by').eq('vehicle_id',truckId).order('updated_at',{ascending:false}).limit(1).single();
     expect(stored.error).toBeNull();
     expect(stored.data).toMatchObject({market_status:'EMPTY',visibility:'PRIVATE',vehicle_id:truckId,updated_by:identity.data!.id});
-    await expect(driverPage.getByRole('button',{name:'Edit current capacity: Empty'})).toBeVisible();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeVisible();
     await expect(driverPage.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
-    await expect(driverPage.getByRole('button',{name:'Edit current capacity: Empty'})).toBeEnabled();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
     if(info.project.name.includes('mobile'))await driverPage.setViewportSize(page.viewportSize()!);
     await expect(driverPage.locator('.capacity-location-map img.leaflet-tile-loaded').first()).toBeVisible({timeout:15000});
     await driverPage.screenshot({path:info.outputPath('new-driver-published-capacity.png')});
@@ -286,8 +288,8 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.goto(truckPath+'?view=details');await page.getByRole('button',{name:'Move to draft',exact:true}).click();
     await page.goto(secondPath+'?view=details');await page.getByRole('button',{name:'Go live',exact:true}).click();
     await page.goto(secondPath);
-    await page.getByRole('button',{name:'Set capacity',exact:true}).click();
-    const ownerCapacity=page.getByRole('dialog',{name:'Capacity',exact:true});
+    await page.getByRole('button',{name:'Plan capacity',exact:true}).click();
+    const ownerCapacity=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await expect(ownerCapacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await ownerCapacity.getByRole('button',{name:'Empty',exact:true}).click();
     await expect(ownerCapacity).toContainText('Ask the assigned driver to open Home');
@@ -317,14 +319,14 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     expect(firstFix.error).toBeNull();expect(firstFix.data).toMatchObject({driver_user_id:identity.data!.id,precision_km:10});
     expect(firstFix.data!.latitude).not.toBe(9.03);expect(firstFix.data!.longitude).not.toBe(38.76);
     await page.reload();
-    await page.getByRole('button',{name:/^Edit current capacity:/}).click();
+    await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
     await expect(ownerCapacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await ownerCapacity.getByRole('button',{name:'Empty',exact:true}).click();
     await ownerCapacity.getByRole('button',{name:'Route',exact:true}).click();
     await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
     await ownerCapacity.getByRole('button',{name:'Save',exact:true}).click();
     await expect(ownerCapacity).toHaveCount(0);
-    await expect(page.getByRole('button',{name:'Edit current capacity: Empty'})).toBeEnabled();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
     const ownerSignal=await service.from('capacities').select('updated_by,market_status,visibility,location_lat,location_lng').eq('vehicle_id',secondId).order('updated_at',{ascending:false}).limit(1).single();
     expect(ownerSignal.error).toBeNull();expect(ownerSignal.data).toMatchObject({updated_by:owner.data!.id,market_status:'EMPTY',visibility:'PRIVATE',location_lat:firstFix.data!.latitude,location_lng:firstFix.data!.longitude});
     await expect.poll(async()=>{
@@ -449,6 +451,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
    await page.getByRole('button',{name:'Create transporter workspace'}).click();
    await expect(page).toHaveURL(/\/app\/home$/);
+   await expect(page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'My capacity',exact:true})).toHaveAttribute('aria-current','page');
    await expect(page.getByText('Choose the vehicle you drive under Manage vehicles.',{exact:true})).toBeVisible();
    const identity=await service.from('profiles').select('id,role').eq('email',email).single();
    expect(identity.error).toBeNull();userId=identity.data!.id;expect(identity.data!.role).toBe('DRIVER');
@@ -468,8 +471,8 @@ for(const useBasis of ['OWNED','PERMISSION']){
    const truckPath=new URL(page.url()).pathname;await clickFleetLink(page,page.getByRole('region',{name:'Vehicle driver'}).getByRole('link',{name:'Assign driver',exact:true}));
    const self=await openFleetDriver(page,{id:userId},true);await self.getByRole('combobox',{name:'Vehicle',exact:true}).selectOption(vehicleId);await self.getByRole('button',{name:'Save driver',exact:true}).click();await expect(page).toHaveURL(new RegExp(truckPath));
    expect((await service.from('driver_vehicle_assignments').select('driver_user_id').eq('vehicle_id',vehicleId).eq('active',true).single()).data?.driver_user_id).toBe(userId);await showVehicleDetails(page);await page.getByRole('button',{name:'Go live',exact:true}).click();
-   await page.goto('/app/home');await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
-   const dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
+   await page.goto('/app/home');await page.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true}).click();
+   const dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
    await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
    await dialog.getByRole('button',{name:'Route',exact:true}).click();
@@ -483,7 +486,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.evaluate(()=>(window as any).restoreGps());await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.76});
    await dialog.getByRole('button',{name:'Use my location',exact:true}).click();await expect(dialog.getByText(/Location ready/)).toBeVisible();
    await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
-   await expect(page.getByRole('button',{name:'Edit current capacity: Empty'})).toBeEnabled();
+   await expect(page.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
    const published=await service.from('capacities').select('updated_by,visibility,location_lat,location_precision_km').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1).single();
    expect(published.error).toBeNull();expect(published.data).toMatchObject({updated_by:userId,visibility:'PRIVATE',location_precision_km:10});expect(published.data!.location_lat).not.toBe(9.03);
    await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();

@@ -1828,7 +1828,7 @@ body,.public-capacity-page,.home-capacity-market,.public-provider-directory,.pro
 .market-list-view>.empty-state,.market-list-view>.alert:not(.market-command-column .alert){grid-column:2;margin:20px}
 .capacity-map-cluster.empty{border-color:#fff;background:#155eef;color:#fff;box-shadow:0 0 0 4px #0b1d3a,0 6px 18px rgba(11,29,58,.34)}
 .capacity-map-cluster.partial{border-color:#fff;background:var(--capacity-partial);color:#fff;box-shadow:0 0 0 4px var(--capacity-partial-soft),0 6px 18px rgba(11,29,58,.24)}
-.capacity-map-cluster small{font-size:.53rem;font-weight:950;letter-spacing:.025em}
+.capacity-map-cluster small{font-size:.6rem;font-weight:950;letter-spacing:0;text-transform:none}
 .capacity-cluster-picker .leaflet-popup-content-wrapper{border:1px solid #d7dfeb;border-radius:14px;box-shadow:0 12px 32px rgba(5,44,55,.24)}
 .capacity-cluster-picker.empty .leaflet-popup-content-wrapper{border-left:5px solid #d7dfeb}.capacity-cluster-picker.partial .leaflet-popup-content-wrapper{border-left:5px solid var(--capacity-partial)}
 .capacity-cluster-picker .leaflet-popup-content{margin:12px;width:auto!important}.capacity-cluster-picker-content{display:grid;gap:5px;color:#102a43}.capacity-cluster-picker-content>strong{font-size:.85rem}.capacity-cluster-picker-content>span{font-size:.69rem;color:#155eef}.capacity-cluster-picker-content>div{display:grid;gap:5px;max-height:240px;overflow-y:auto}.capacity-cluster-picker-content button{display:grid;gap:1px;width:100%;min-height:44px;padding:7px 9px;border:1px solid #e5eaf1;border-radius:9px;background:#f3f5f7;color:#102a43;text-align:left}.capacity-cluster-picker-content button:hover,.capacity-cluster-picker-content button:focus-visible{border-color:#155eef;background:#eaf1ff}.capacity-cluster-picker-content button b{font-size:.72rem}.capacity-cluster-picker-content button small{overflow:hidden;text-overflow:ellipsis;color:#155eef;font-size:.65rem;white-space:nowrap}
@@ -3826,7 +3826,7 @@ body:has(>.unified-app-frame .public-market-workspace),body:has(>.unified-app-fr
 .unified-capacity-workspace .market-introduction h1{margin:0;font-size:19px;line-height:1.2}
 .unified-capacity-workspace .market-introduction p{grid-column:1;font-size:12px;line-height:1.4}
 .unified-capacity-workspace .capacity-view-choice{grid-column:2;grid-row:1;gap:6px;margin:0}
-.unified-capacity-workspace .capacity-view-choice a{min-height:40px;padding:6px 10px;font-size:12px}
+.unified-capacity-workspace .capacity-view-choice a{min-height:44px;padding:6px 10px;font-size:12px}
 .public-market-console .capacity-drawer-workbench .capacity-people-drawer{top:68px;bottom:8px}
 .capacity-map-controls{display:flex;align-items:flex-start;gap:8px}
 .capacity-map-controls button{min-height:44px;font-size:.75rem}.capacity-map-controls .capacity-filter-trigger{display:flex}
@@ -3835,12 +3835,15 @@ body:has(>.unified-app-frame .public-market-workspace),body:has(>.unified-app-fr
 .capacity-search-instruction{margin:0;color:#526375;font-size:.8rem;line-height:1.45}
 .capacity-identity-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:10px;border:1px solid #e5eaf1;border-radius:8px;color:#526375;font-size:.8rem}.capacity-identity-filter a{font-weight:750}
 @media(max-width:760px){
- .unified-capacity-workspace.public-market-introduced{grid-template-rows:auto minmax(322px,1fr);gap:5px}.unified-capacity-workspace .market-introduction{grid-template-columns:minmax(0,1fr);gap:4px;width:calc(100% - 8px);margin-top:0;padding:8px 10px}.unified-capacity-workspace .market-introduction h1{font-size:17px}.unified-capacity-workspace .market-introduction p{font-size:11px;line-height:1.35}.unified-capacity-workspace .capacity-view-choice{grid-column:1;grid-row:auto;display:grid;grid-template-columns:1fr 1fr;margin:2px 0 0}.unified-capacity-workspace .capacity-view-choice a{display:flex;align-items:center;justify-content:center;min-height:40px;padding:6px 5px;font-size:12px;text-align:center}.capacity-map-controls{left:8px;top:8px;right:8px;gap:6px}.capacity-map-controls button{flex:1;min-width:0;padding:8px;font-size:.7rem;gap:6px}.capacity-map-controls button svg{width:19px;height:19px;flex:none}.capacity-map-controls button span{font-size:.63rem}.public-market-console .capacity-drawer-workbench .capacity-people-drawer{top:60px;left:8px;bottom:8px;width:330px;max-width:calc(100% - 16px)}.capacity-people-drawer .capacity-drawer-scroll{padding:12px}
+ .unified-capacity-workspace.public-market-introduced{grid-template-rows:auto minmax(322px,1fr);gap:5px}.unified-capacity-workspace .market-introduction{grid-template-columns:minmax(0,1fr);gap:4px;width:calc(100% - 8px);margin-top:0;padding:8px 10px}.unified-capacity-workspace .market-introduction h1{font-size:17px}.unified-capacity-workspace .market-introduction p{font-size:11px;line-height:1.35}.unified-capacity-workspace .capacity-view-choice{grid-column:1;grid-row:auto;display:grid;grid-template-columns:1fr 1fr;margin:2px 0 0}.unified-capacity-workspace .capacity-view-choice a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 5px;font-size:12px;text-align:center}.capacity-map-controls{left:8px;top:8px;right:8px;gap:6px}.capacity-map-controls button{flex:1;min-width:0;padding:8px;font-size:.7rem;gap:6px}.capacity-map-controls button svg{width:19px;height:19px;flex:none}.capacity-map-controls button span{font-size:.63rem}.public-market-console .capacity-drawer-workbench .capacity-people-drawer{top:60px;left:8px;bottom:8px;width:330px;max-width:calc(100% - 16px)}.capacity-people-drawer .capacity-drawer-scroll{padding:12px}
 }
 
 .public-market-console .market-map-view>.capacity-people-drawer .capacity-map-search button{display:flex}
 
 @media(max-width:760px){.capacity-drawer-workbench .public-map-shell .leaflet-top.leaflet-left{top:64px}.capacity-drawer-workbench .map-info-controls{top:146px;max-height:calc(100% - 158px)}.capacity-drawer-workbench .public-map-shell>.public-feed-overlay.error{right:66px;left:8px}}
+
+/* Keep the map usable when a phone has little vertical space. */
+@media(max-width:760px) and (max-height:700px){.unified-capacity-workspace .market-introduction p{display:none}}
 
 /* FEAT-MKT-001 / FEAT-TRK-001: basemaps fill the workspace behind entry actions. */
 body:has(>main.tracking-entry-workspace){display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;box-sizing:border-box}

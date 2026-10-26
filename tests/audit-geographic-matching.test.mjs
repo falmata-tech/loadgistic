@@ -9,6 +9,15 @@ const area=[{lat:8.95,lng:37.95},{lat:9.15,lng:37.95},{lat:9.15,lng:38.15},{lat:
 const truck={status:'PARTIAL',availability_geometry:'ROUTE',current_route_points:route,recurring_corridors:[]};
 const filters={originRadiusKm:5,destinationRadiusKm:5,currentAreaRadiusKm:5,nearLat:'',nearLng:''};
 
+test('match reasons distinguish Planned route/area from Preferred coverage without substituting a reported point',()=>{
+ const planned=match(truck,filters,a,b);assert.equal(planned.matched,true);assert.match(planned.label,/^Planned route aligns/);
+ const preferred=match({...truck,current_route_points:[],recurring_corridors:[{geometry:'ROUTE',route_points:route}]},filters,a,b);
+ assert.equal(preferred.matched,true);assert.match(preferred.label,/^Preferred corridor aligns/);
+ const plannedArea=match({status:'PARTIAL',availability_geometry:'RADIUS',capacity_area_boundary:area},filters,a,b);
+ assert.equal(plannedArea.matched,true);assert.match(plannedArea.label,/^Planned area covers both/);
+ assert.deepEqual(match({...truck,current_route_points:[],location_lat:a.center_lat,location_lng:a.center_lng},filters,a,b),{matched:false,label:null});
+});
+
 test('private query cannot degrade a failed pair to one matching endpoint or blank proximity',()=>{
   for(const endpoints of [[a,far],[far,b],[far,far]])assert.deepEqual(match(truck,filters,...endpoints),{matched:false,label:null});
   assert.equal(match(truck,filters,a,b).matched,true);
@@ -40,7 +49,7 @@ test('direction, every route segment, and Partial area evidence are retained',()
   assert.equal(match({...truck,recurring_corridors:[{geometry:'RADIUS',area_boundary:area}]},filters,a,far).matched,false);
 });
 
-test('current and Preferred offers match independently without splitting two endpoints',()=>{
+test('Planned capacity and Preferred coverage match independently without splitting two endpoints',()=>{
   const distantArea=[{lat:11.95,lng:40.95},{lat:12.15,lng:40.95},{lat:12.15,lng:41.15},{lat:11.95,lng:41.15}];
   const item={...truck,recurring_corridors:[{geometry:'RADIUS',area_boundary:distantArea}]};
   const nearPreferred=place(12,41);
@@ -69,7 +78,7 @@ for(const status of ['EMPTY','PARTIAL'])for(const source of ['current','Preferre
       const result=match(item,filters,null,null,queryPlace);
       assert.equal(result.matched,true);
       assert.equal(result.label,match(item,filters,queryPlace).label);
-      assert.match(result.label,source==='current'?/^Current capacity route passes within /:/^Preferred corridor passes within /);
+      assert.match(result.label,source==='current'?/^Planned route passes within /:/^Preferred corridor passes within /);
     });
   }
   test(`Area query excludes ${status} ${source} Route outside the chosen radius`,()=>{

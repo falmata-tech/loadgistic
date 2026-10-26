@@ -12,6 +12,8 @@ import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
 import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import {capacityLoadExplanation} from '../../../src/lib/capacity-load-preferences.js';
 import {translateMessage} from '../../../src/lib/i18n/core.js';
+import {localizedUpdateLabel} from '../../../src/lib/i18n/update-label.js';
+import {locationSourceKind,locationSourceLabel,locationSourceColor} from '../../../src/lib/location-source.js';
 
 // Real screen state/handlers with native views and transport substituted. This
 // proves caller scope, not SQL authorization or native pixels.
@@ -31,7 +33,7 @@ const place=label=>({placeRef:label,label,coordinate:[38.7,9.0]});
 const service=(vehicleId=vehicleA,driverId=driverA)=>({id:vehicleId,vehicleId,driverId,geometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],center:place('Adama'),boundary:[]});
 const native=Object.fromEntries(['ActivityIndicator','Redirect','Page','Title','Copy','Card','Button','ErrorText','Choices','Cities','PlacePicker','View','Text','Pressable','ScrollView','Modal','SafeAreaView','Switch','Image','Field','WorkspaceSection','WorkspaceAction','WorkspaceTaskHeader','WorkspaceFact','TrackingMap','Map','Camera','AppIcon','AppLink','TruckLocationSource'].map(name=>[name,name]));
 const t=(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match));
-const common={...native,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
+const common={...native,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
 
 function regular(){
  const view=renderer(),requests=[],paths=[];let data={services:[service(),service(vehicleB,driverB),{...service(),vehicleId:'',driverId:'',id:'legacy'}]},saved=0;
@@ -65,6 +67,18 @@ test('company-driver Home displays only its authorized pair regular overlay and 
  const tree=view.render(screen);assert.equal(find(tree,'TrackingMap').props.regular.length,1);assert.deepEqual(find(tree,'TrackingMap').props.regular[0].places,service().route);assert.ok(!nodes(tree).some(node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Manage preferred corridor or service area'),'a fleet driver cannot open the owner-only corridor editor');assert.deepEqual(paths,['/api/mobile/capacity']);
 });
 
+test('driver Home shows saved Planned and Preferred coverage without inventing reported location',()=>{
+ for(const location of [null,{coordinate:null,radius:20,area:'',updatedAt:''}]){
+  const view=renderer(),current={id:'plan',status:'PARTIAL',acceptedLoads:'PTL',sharingMode:'PRIVATE',availabilityGeometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],boundary:[]};
+  const truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,canSetManualLocation:true,publishedLocationSource:'GPS',location,current,regularServices:[service(),service(vehicleB,driverB)]};
+  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+  const tree=view.render(screen),map=find(tree,'TrackingMap');assert.ok(map,'saved coverage must not depend on reported coordinates');assert.equal(map.props.location,null);assert.equal(map.props.coverage.kind,'ROUTE');assert.deepEqual(map.props.coverage.places,current.route);assert.equal(map.props.regular.length,1);assert.deepEqual(map.props.regular[0].places,service().route);
+  const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string').join(' ');assert.ok(!text.includes('GPS device'));assert.ok(text.includes('No driver location shared yet'));
+  truck.current=null;const preferredOnly=view.render(screen);assert.ok(find(preferredOnly,'TrackingMap'));assert.equal(find(preferredOnly,'TrackingMap').props.coverage,undefined);
+  truck.regularServices=[];const empty=view.render(screen);assert.equal(find(empty,'TrackingMap'),undefined);assert.ok(find(empty,'Pressable',node=>node.props.accessibilityLabel==='Set vehicle location'));
+ }
+});
+
 test('Home discards an open regular editor when the active driver assignment changes',()=>{
  const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service()]};
  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'OWNER_OPERATOR',currentDriverId:driverA,currentDrivenVehicleId:vehicleA}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
@@ -76,9 +90,9 @@ test('driver Home names Capacity and Location consistently and opens the assigne
  const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Courier car',plate:'LOCAL',canLocate:false,canSetManualLocation:true,location:null,current:null,regularServices:[]};
  const screen=view.compile('../src/screens/driver-home.tsx',{...common,DriverLocationEditor:'DriverLocationEditor',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
  let tree=view.render(screen);
- const capacity=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update capacity');
+ const capacity=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update planned capacity');
  const location=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Set vehicle location');
- assert.ok(nodes(capacity).some(node=>node.type==='Text'&&node.props.children.includes('Capacity')));
+ assert.ok(nodes(capacity).some(node=>node.type==='Text'&&node.props.children.includes('Planned capacity')));
  assert.ok(nodes(location).some(node=>node.type==='Text'&&node.props.children.includes('Location')));
  assert.ok(!nodes(tree).some(node=>node.type==='Text'&&node.props.children.some(value=>['Available space','Truck location'].includes(value))));
  location.props.onPress();tree=view.render(screen);
@@ -117,11 +131,11 @@ test('selected Fleet capacity keeps its map in first use and provides four focus
  const screen=view.compile('../src/screens/manage-capacity.tsx',{...common,RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true,profilePublished:false},error:'',reload:async()=>{}}),useCapacityLocation:(_truck,paused)=>{pauses.push(paused);return{busy:false,error:''};},capacitySharingMode:()=> 'PUBLIC',CAPACITY_SHARING_CHOICES:[],CAPACITY_LOAD_CHOICES:[],privacyRadii:[20]}).default;
  let tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:false});assert.equal(pauses.at(-1),true);
  let map=find(tree,'TrackingMap');assert.ok(map,'first use still renders the map');assert.equal(map.props.fill,true);assert.equal(map.props.location,null,'no device fix is invented');assert.equal(map.props.vehicleConfiguration,'Box truck');assert.equal(map.props.regular.length,0);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('No signal on the map yet')));assert.equal(find(tree,'ProfileSetup'),undefined,'account setup does not leak into a vehicle task');
- for(const label of ['Update capacity','Update sharing settings','Manage preferred corridor or service area','Set vehicle location'])assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel===label),`${label} is reachable from the map`);
+ for(const label of ['Update planned capacity','Update sharing settings','Manage preferred corridor or service area','Set vehicle location'])assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel===label),`${label} is reachable from the map`);
  assert.equal(find(tree,'Field'),undefined,'opening Fleet does not start editing');
  tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(pauses.at(-1),false);
- find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update capacity').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'TrackingMap'),'the selected map stays mounted underneath the editor');assert.ok(find(tree,'Button',node=>node.props.message==='Save capacity'));assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor'));
- for(const heading of ['Availability','Load type','Where is this vehicle available?'])assert.ok(find(tree,'Text',node=>node.props.children===heading||(Array.isArray(node.props.children)&&node.props.children.includes(heading))),`${heading} gives the capacity task a clear place in the workflow`);
+ find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update planned capacity').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'TrackingMap'),'the selected map stays mounted underneath the editor');assert.ok(find(tree,'Button',node=>node.props.message==='Save planned capacity'));assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor'));
+ for(const heading of ['Planned capacity','Load type','Where is this vehicle available?'])assert.ok(find(tree,'Text',node=>node.props.children===heading||(Array.isArray(node.props.children)&&node.props.children.includes(heading))),`${heading} gives the capacity task a clear place in the workflow`);
  for(const icon of ['truck','boxes','route'])assert.ok(find(tree,'AppIcon',node=>node.props.name===icon),`${icon} identifies a capacity section`);
  find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,false);assert.ok(find(tree,'TrackingMap'));
 });
@@ -131,7 +145,7 @@ test('saved capacity geometry stays on the owner map and sharing opens only its 
  const truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Fleet truck',plate:'LOCAL',configuration:'Box truck',canLocate:false,location:null,current,regularServices:[]};
  const screen=view.compile('../src/screens/manage-capacity.tsx',{...common,RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true,profilePublished:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:''}),capacitySharingMode:()=> 'PRIVATE',CAPACITY_SHARING_CHOICES:[['PRIVATE','Private']],CAPACITY_LOAD_CHOICES:[],privacyRadii:[20]}).default;
  let tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});let map=find(tree,'TrackingMap');assert.deepEqual(map.props.coverage.places,route);assert.equal(map.props.coverage.partial,false);assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update sharing settings').props.disabled===false);
- find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update sharing settings').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'Button',node=>node.props.message==='Save sharing settings'));assert.equal(find(tree,'Text',node=>node.props.children==='Availability'||(Array.isArray(node.props.children)&&node.props.children.includes('Availability'))),undefined,'the Sharing task does not repeat Capacity controls');assert.ok(find(tree,'TrackingMap'),'saved geometry stays mounted beneath the focused task');
+ find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update sharing settings').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'Button',node=>node.props.message==='Save sharing settings'));assert.equal(find(find(tree,'Modal'),'Text',node=>node.props.children==='Planned capacity'||(Array.isArray(node.props.children)&&node.props.children.includes('Planned capacity'))),undefined,'the Sharing editor does not repeat Planned capacity controls');assert.ok(find(tree,'TrackingMap'),'saved geometry stays mounted beneath the focused task');
 });
 
 const currentArea=status=>({status,visibility:'PRIVATE',sharingMode:'PRIVATE',updatedAt:'2026-10-26',acceptedLoads:'BOTH',availabilityGeometry:'RADIUS',route:[place('Addis Ababa'),place('Adama')],boundary:[place('Sululta'),place('Bishoftu'),place('Sebeta')],areaCenter:place('Addis Ababa'),acceptsMultiPick:true,acceptsMultiDrop:false});
@@ -144,19 +158,19 @@ function capacityEditor(current,locale='en'){
 }
 const currentChoice=(tree,label)=>find(tree,'Pressable',node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityLabel===label);
 
-test('native new current capacity uses the same Area default as web',()=>{
- const editor=capacityEditor(null),tree=editor.render();assert.equal(currentChoice(tree,'Area')?.props.accessibilityState.checked,true);assert.equal(currentChoice(tree,'Route')?.props.accessibilityState.checked,false);
+test('native new Planned capacity uses the Planned area default',()=>{
+ const editor=capacityEditor(null),tree=editor.render();assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);assert.equal(currentChoice(tree,'Planned route')?.props.accessibilityState.checked,false);assert.ok(find(tree,'TaskHeading',node=>node.props.message==='Planned capacity')||nodes(tree).some(node=>node.type==='Text'&&node.props.children.includes('Planned capacity')));
 });
 
 test('native Empty to Partial keeps Area and submits the saved area without changing reported position',async()=>{
  const editor=capacityEditor(currentArea('EMPTY'));let tree=editor.render();currentChoice(tree,'Partial').props.onPress();tree=editor.render();
- assert.equal(currentChoice(tree,'Area')?.props.accessibilityState.checked,true);assert.ok(find(tree,'PlacePicker',node=>node.props.label==='Area center'));
- find(tree,'Button',node=>node.props.message==='Save capacity').props.onPress();await settle();
+ assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);assert.ok(find(tree,'PlacePicker',node=>node.props.label==='Area center'));
+ find(tree,'Button',node=>node.props.message==='Save planned capacity').props.onPress();await settle();
  assert.equal(editor.requests.length,1);const {path,body}=editor.requests[0];assert.equal(path,'/api/mobile/capacity');assert.equal(body.status,'PARTIAL');assert.equal(body.availabilityGeometry,'RADIUS');assert.equal(body.capacityAreaCenterPlaceRef,'Addis Ababa');assert.deepEqual(body.capacityAreaBoundaryPlaces,[{placeRef:'Sululta'},{placeRef:'Bishoftu'},{placeRef:'Sebeta'}]);assert.equal(body.acceptsMultiPick,true);assert.equal(body.acceptedLoads,'PTL');assert.equal(Object.hasOwn(body,'approximateLat'),false);
 });
 
 test('native saved Partial Area reopens and status changes do not replace an explicit Route',()=>{
- const editor=capacityEditor(currentArea('PARTIAL'));let tree=editor.render();assert.equal(currentChoice(tree,'Area')?.props.accessibilityState.checked,true);currentChoice(tree,'Route').props.onPress();tree=editor.render();currentChoice(tree,'Empty').props.onPress();tree=editor.render();assert.equal(currentChoice(tree,'Route')?.props.accessibilityState.checked,true);
+ const editor=capacityEditor(currentArea('PARTIAL'));let tree=editor.render();assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);currentChoice(tree,'Planned route').props.onPress();tree=editor.render();currentChoice(tree,'Empty').props.onPress();tree=editor.render();assert.equal(currentChoice(tree,'Planned route')?.props.accessibilityState.checked,true);
 });
 
 test('native saved Preferred Area uses area actions and submits unnumbered town facts',async()=>{
@@ -171,19 +185,43 @@ test('native Preferred corridor shows saved stop order and both-way direction',(
  assert.deepEqual(facts.filter(value=>[1,2,'Adama','Addis Ababa','↔'].includes(value)),[1,'Adama','↔',2,'Addis Ababa']);
 });
 
-function publicMap(){
+test('native failed Preferred area save retains Area wording and the same scoped command',async()=>{
+ const view=regular(),area={...service(),geometry:'RADIUS',route:[],boundary:[place('Sululta'),place('Bishoftu'),place('Sebeta')]};view.data({services:[area]});view.request(async()=>{throw Error('Synthetic save failure');});let tree=view.render();find(tree,'Button',node=>node.props.message==='Edit preferred area').props.onPress();tree=view.render();find(tree,'Button',node=>node.props.message==='Save preferred area').props.onPress();await settle();tree=view.render();assert.ok(find(tree,'Copy',node=>node.props.message==='Refresh to check your saved preferred area before trying again.'));assert.equal(view.saved(),0);assert.equal(find(tree,'Choices').props.value,'RADIUS');
+});
+
+function publicMap(locale='en',overrides={}){
  const view=renderer();
- const component=view.compile('../src/components/CapacityMap.tsx',{...common,memo:value=>value,useLayoutEffect(){},useWindowDimensions:()=>({width:390,height:844}),GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',CapacityTruckContact:'CapacityTruckContact',CapacityTruckDetails:'CapacityTruckDetails',DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,markerLocation,signalBounds,signalPaths,focusedMarkers,capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,capacityMarkerOffsets,capacityDetailFrame,capacityStatusPresentation,apiOrigin:'https://local.invalid',vehicleConfigurationImage:()=>'/truck.png'}).default;
- const item={id:'partial-area',status:'PARTIAL',geometry:'RADIUS',currentVisible:true,latitude:null,longitude:null,precisionKm:10,currentPoints:[{latitude:9.2,longitude:38.7,label:'Sululta'},{latitude:8.8,longitude:39,label:'Bishoftu'},{latitude:8.9,longitude:38.6,label:'Sebeta'}],regular:[],capacityAge:'Capacity updated earlier',locationAge:'Not reported yet',configuration:'Pickup truck'};
- return{item,render:selected=>view.render(component,{items:[item],selected,onSelect(){},onDeselect(){}})};
+ const catalog=locale==='en'?{}:JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),translated=[],t=(message,values)=>{translated.push(message);return translateMessage(catalog,message,values);};
+ const component=view.compile('../src/components/CapacityMap.tsx',{...common,localizedUpdateLabel,locationSourceKind,locationSourceLabel,locationSourceColor,useLanguage:()=>({t,locale}),memo:value=>value,useLayoutEffect(){},useWindowDimensions:()=>({width:390,height:844}),GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',CapacityTruckContact:'CapacityTruckContact',CapacityTruckDetails:'CapacityTruckDetails',DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,markerLocation,signalBounds,signalPaths,focusedMarkers,capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,capacityMarkerOffsets,capacityDetailFrame,capacityStatusPresentation,apiOrigin:'https://local.invalid',vehicleConfigurationImage:()=>'/truck.png'}).default;
+ const item={id:'partial-area',status:'PARTIAL',geometry:'RADIUS',currentVisible:true,latitude:null,longitude:null,precisionKm:10,currentPoints:[{latitude:9.2,longitude:38.7,label:'Sululta'},{latitude:8.8,longitude:39,label:'Bishoftu'},{latitude:8.9,longitude:38.6,label:'Sebeta'}],regular:[],capacityAge:'Capacity updated earlier',locationAge:'Not reported yet',configuration:'Pickup truck',...overrides};
+ return{item,t,translated,render:selected=>view.render(component,{items:[item],selected,onSelect(){},onDeselect(){}})};
+}
+
+const freshnessCases=[{name:'days',capacity:'Capacity updated 2 days ago',location:'Location updated 1 day ago',capacityKey:'Capacity updated {days} days ago',locationKey:'Location updated {days} day ago'},
+ {name:'absent',capacity:undefined,location:'',capacityKey:'Capacity update unavailable',locationKey:'Location update unavailable'}];
+const renderedStrings=tree=>nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string');
+for(const locale of ['am','om'])for(const entry of freshnessCases){
+ test(`native map freshness labels localize ${locale} ${entry.name}`,()=>{
+  const h=publicMap(locale,{latitude:9,longitude:38,capacityAge:entry.capacity,locationAge:entry.location}),expectedCapacity=h.t(entry.capacityKey,{days:2}),expectedLocation=h.t(entry.locationKey,{days:1});
+  let tree=h.render(h.item);find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Planned area')).props.onPress();tree=h.render(h.item);const capacity=renderedStrings(tree);
+  find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Close map signal details')).props.onPress();tree=h.render(h.item);find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Approximate location')).props.onPress();tree=h.render(h.item);const location=renderedStrings(tree);
+  assert.deepEqual([capacity.includes(expectedCapacity),location.includes(expectedLocation)],[true,true]);assert.ok(!h.translated.includes('Sululta'),'catalog place labels remain records');
+ });
+ test(`native vehicle freshness labels localize ${locale} ${entry.name} without translating records`,()=>{
+  const view=renderer(),catalog=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),translated=[],t=(message,values)=>{translated.push(message);return translateMessage(catalog,message,values);};
+  const screen=view.compile('../src/components/capacity-truck-details.tsx',{...common,localizedUpdateLabel,useLanguage:()=>({t,locale}),TruckAuthorityBadges:'TruckAuthorityBadges',PublicCardImage:'PublicCardImage',apiOrigin:'https://local.invalid',vehicleConfigurationImage:()=>'/truck.png'}).CapacityTruckDetails;
+  const truck={provider:'Capacity updated today',driver:'Location updated today',truck:'Record vehicle',configuration:'Pickup truck',status:'PARTIAL',driverKind:'Company driver',driverPhone:'',providerPhone:'',handle:'',portrait:'',sharingMode:'',ownerDocumentsLabel:'Owner documents',ownerBadges:[],driverBadges:[],truckBadges:[],currentVisible:true,capacityAge:entry.capacity,locationAge:entry.location};
+  let tree=view.render(screen,{truck}),text=renderedStrings(tree);assert.deepEqual([text.includes(t(entry.capacityKey,{days:2})),text.includes(t(entry.locationKey,{days:1}))],[true,true]);assert.ok(text.includes(truck.provider)&&text.includes(truck.driver));assert.ok(!translated.includes(truck.provider)&&!translated.includes(truck.driver),'only owned freshness fields use the formatter');
+  tree=view.render(screen,{truck:{...truck,currentVisible:false}});assert.ok(!renderedStrings(tree).includes(t(entry.locationKey,{days:1})),'hidden location freshness stays hidden');
+ });
 }
 test('native selected Partial Area retains the saved outline, slate color and town facts without a fabricated location',()=>{
  const h=publicMap();let tree=h.render(h.item);const source=find(tree,'GeoJSONSource',node=>node.props.id==='selected-signals');assert.equal(source.props.data.features.length,1);const feature=source.props.data.features[0];assert.equal(feature.properties.kind,'current');assert.deepEqual(feature.geometry.coordinates[0],feature.geometry.coordinates.at(-1));assert.equal(find(tree,'Layer',node=>node.props.id==='current-route').props.paint['line-color'],capacityStatusPresentation.PARTIAL.color);assert.equal(find(tree,'Marker'),undefined);
- const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Area');assert.ok(action);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Approximate location'),undefined);action.props.onPress();tree=h.render(h.item);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Sululta')));assert.equal(find(tree,'Text',node=>node.props.children?.includes?.('↓')),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Partial capacity')));
+ const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Planned area');assert.ok(action);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Approximate location'),undefined);action.props.onPress();tree=h.render(h.item);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Sululta')));assert.equal(find(tree,'Text',node=>node.props.children?.includes?.('↓')),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Partial capacity')));
 });
 test('native overview exposes a compact expandable map key for the same status and geometry vocabulary',()=>{
  const h=publicMap();let tree=h.render(null);const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key');assert.ok(action);assert.equal(action.props.accessibilityState.expanded,false);action.props.onPress();tree=h.render(null);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key').props.accessibilityState.expanded,true);
- const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]);for(const label of ['Empty','Partial','Area','Route','Preferred area','Preferred corridor','Approximate location'])assert.ok(text.includes(label),label);
+ const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]);for(const label of ['Empty','Partial','Planned area','Planned route','Preferred area','Preferred corridor','Approximate location'])assert.ok(text.includes(label),label);
  tree=h.render(h.item);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key'),undefined,'selected signal controls take over without duplicating the overview key');
 });
 

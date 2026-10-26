@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {workspaceCapabilities} from '../apps/mobile/src/navigation/destinations.ts';
-import {aboutDestination,accountSections,hasWorkspace,activeDestination,isWorkspace,phoneDestinations,publicDestinations,workspaceDestinations,workspaceRoleLabel} from '../apps/mobile/src/navigation/destinations.ts';
+import {aboutDestination,accountSections,hasWorkspace,activeDestination,isWorkspace,navigationTarget,phoneDestinations,publicDestinations,workspaceDestinations,workspaceRoleLabel} from '../apps/mobile/src/navigation/destinations.ts';
 import {fleetDriverEditorKey} from '../apps/mobile/src/navigation/current-driving-pair.ts';
 import {providerHomeTab,providerHomeTabs,providerWorkspaceCapabilities} from '../src/lib/provider-workspace.js';
 import {paginateResults} from '../src/lib/pagination.js';
 import {capacityLocationSource,selectedCapacityLocation} from '../src/lib/capacity-location-selection.js';
 import {locationSourceLabel} from '../src/lib/location-source.js';
+import {CAPACITY_FILTER_CHOICES,capacityFilterRecord,canonicalCapacityFilters} from '../src/lib/capacity-filter-values.js';
 
 // Run the actual presentation/submit handlers. Database authority, HTTP adapters,
 // native rendering and browser pixels have their own focused checks.
@@ -29,6 +30,22 @@ const find=(tree,type,match=()=>true)=>nodes(tree).find(node=>node.type===type&&
 const settle=async()=>{for(let i=0;i<12;i++)await Promise.resolve();};
 const publication={canPublish:false,liveTruckCount:1,qualifyingTruckCount:0,qualifyingOwnershipCount:0,qualifyingLicenceCount:0};
 const blank={verified:false,reviewedAt:null,expiresOn:null};
+
+test('provider Home puts authorized work first and keeps Market last with explicit tab resolution',()=>{
+ for(const [capabilities,ids,work] of [
+  [{drivesTruck:true,canManageFleet:true},['capacity','vehicles','market'],'capacity'],
+  [{drivesTruck:false,canManageFleet:true},['vehicles','market'],'vehicles'],
+  [{drivesTruck:true,canManageFleet:false},['capacity','market'],'capacity'],
+  [{drivesTruck:false,canManageFleet:false},['market'],'market'],
+ ]){
+  assert.deepEqual(providerHomeTabs(capabilities).map(tab=>tab.id),ids);
+  assert.equal(providerHomeTabs(capabilities).at(-1).label,'Analyze the Market');
+  assert.equal(providerHomeTab(capabilities),work);
+  assert.equal(providerHomeTab(capabilities,'unknown'),work);
+  for(const id of ids)assert.equal(providerHomeTab(capabilities,id),id);
+  if(!capabilities.canManageFleet)assert.notEqual(providerHomeTab(capabilities,'vehicles'),'vehicles');
+ }
+});
 
 test('web permits one unreviewed Live truck, gates additional trucks and keeps withdrawal available after qualification loss',()=>{
  const view=runtime(),ui=view.compile('src/components/truck-authority.tsx');
@@ -96,7 +113,7 @@ test('native self-assignment preserves owner authority and omits employee remova
  const view=runtime(),writes=[],account={session:{state:'ACTIVE',user:{id:'owner',role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true,drivesTruck:true},access:{granted:true}},request:async(path,body)=>writes.push({path,body})};
  const data={canManage:true,canAddTruck:true,canManageDrivers:true,singleTruck:false,publication,vehicles:[{id:'truck',make:'Make',model:'Model',configuration:'Pickup truck',image:'/pickup.jpg',publicationState:'DRAFT'}],drivers:[{id:'owner',isOwner:true,name:'Owner',phone:'phone',email:'owner@example.test',vehicleId:'truck',canManageCapacity:false,canManageTracking:false}],retired:[],invitations:[],configurations:[],driverPage:1,driverPageCount:1,retiredPage:1,retiredPageCount:1};
  const screen=view.compile('apps/mobile/src/screens/fleet.tsx',{useAccount:()=>account,useAccountQuery:()=>({data,error:'',reload:async()=>{},reloadConfirmed:async()=>true}),ProviderPublicationNotice:'ProviderPublicationNotice',TruckAuthorityBadges:'TruckAuthorityBadges',TruckPublicationControl:'TruckPublicationControl'}).default;
- let tree=view.render(screen);find(tree,'WorkspaceTabs').props.onChange('DRIVERS');tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage driver: Owner').props.onPress();tree=view.render(screen);find(tree,'Button',node=>node.props.message==='Edit assignment and access').props.onPress();tree=view.render(screen);assert.equal(find(tree,'DriverContact'),undefined);assert.equal(find(tree,'Switch',node=>node.props.accessibilityLabel==='Driver can update capacity'),undefined);find(tree,'Button',node=>node.props.message==='Save assignment and access').props.onPress();await settle();assert.deepEqual(writes,[{path:'/api/mobile/fleet',body:{action:'ASSIGN_DRIVER',driverId:'owner',vehicleId:'truck',canManageCapacity:true,canManageTracking:true}}]);
+ let tree=view.render(screen);find(tree,'WorkspaceTabs').props.onChange('DRIVERS');tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage driver: Owner').props.onPress();tree=view.render(screen);find(tree,'Button',node=>node.props.message==='Edit assignment and access').props.onPress();tree=view.render(screen);assert.equal(find(tree,'DriverContact'),undefined);assert.equal(find(tree,'Switch',node=>node.props.accessibilityLabel==='Update planned capacity'),undefined);find(tree,'Button',node=>node.props.message==='Save assignment and access').props.onPress();await settle();assert.deepEqual(writes,[{path:'/api/mobile/fleet',body:{action:'ASSIGN_DRIVER',driverId:'owner',vehicleId:'truck',canManageCapacity:true,canManageTracking:true}}]);
 });
 test('web driving-owner Home selects their exact driver assignment while fleet-only owners retain the fleet Home',async()=>{
  const view=runtime();let user={id:'owner',active:true,role:'TRANSPORTER',organization_id:'fleet',owns_provider_account:true,can_manage_fleet:true,drives_truck:true,current_driver_id:'owner',current_driven_vehicle_id:'mine'};
@@ -105,6 +122,18 @@ test('web driving-owner Home selects their exact driver assignment while fleet-o
  let tree=await screen({searchParams:Promise.resolve({})}),panel=find(tree,'DriverCapacityHome');assert.ok(panel);assert.deepEqual(panel.props.vehicles.map(vehicle=>vehicle.id),['mine']);assert.deepEqual(panel.props.capacities.map(capacity=>capacity.vehicle_id),['mine']);assert.deepEqual(panel.props.corridors.map(corridor=>corridor.vehicle_id),['mine']);assert.equal(panel.props.ownsFleet,true);
  vehicles[1].assigned_driver.id='someone-else';tree=await screen({searchParams:Promise.resolve({})});panel=find(tree,'DriverCapacityHome');assert.deepEqual(panel.props.vehicles,[],'a stale current-truck ID cannot replace proof of the current assigned driver');
  user={...user,drives_truck:false,current_driver_id:null,current_driven_vehicle_id:null};await assert.rejects(screen({searchParams:Promise.resolve({})}),/REDIRECT/);tree=await screen({requested:'vehicles',searchParams:Promise.resolve({})});assert.ok(find(tree,'FleetWorkspace'));
+});
+test('existing provider Home market highlights only matching public signals without adding owned private, Draft or Off Duty records',async()=>{
+ const view=runtime(),user={id:'owner',active:true,role:'TRANSPORTER',organization_id:'fleet',drives_truck:true};
+ const owned=['own-public-match','own-other-route','own-private','own-draft','own-off-duty'],publicMatches=[{id:'own-public-match'},{id:'other-public-match'}],calls=[];
+ const screen=view.compile('src/components/provider-home.tsx',{providerWorkspaceCapabilities,providerHomeTab,providerHomeTabs,CAPACITY_FILTER_CHOICES,capacityFilterRecord,requireUser:async()=>user,getWorkspaceAccess:async()=>({granted:true}),getProviderCapacityWorkspace:async()=>({capacities:owned.map(id=>({id}))}),listPublicCapacityCursor:async query=>{calls.push(query);return{items:publicMatches,hasMore:false,nextCursor:null,pageSize:14};},PublicCapacityFeed:'Feed',redirect(){throw Error('REDIRECT');}}).ProviderHome;
+ const tree=await screen({requested:'market',searchParams:Promise.resolve({status:'EMPTY',provider:'matching-public-provider'})}),feed=find(tree,'Feed');
+ assert.equal(tree.props['data-view'],'market');assert.equal(calls.length,1);assert.equal(calls[0].provider,'matching-public-provider');assert.deepEqual(feed.props.initial.items,publicMatches);assert.deepEqual(feed.props.ownSignalIds,owned);assert.equal(feed.props.searchPath,'/app/home/market');
+ assert.deepEqual(feed.props.initial.items.filter(row=>feed.props.ownSignalIds.includes(row.id)).map(row=>row.id),['own-public-match']);
+ for(const query of [{status:['EMPTY','PARTIAL']},{vehicleCategory:['Cargo van','Mini Box Truck']},{q:['first','second']},{ownerDocs:['APPROVED','MISSING']}]){
+  const denied=await screen({requested:'market',searchParams:Promise.resolve(query)}),feed=find(denied,'Feed');assert.equal(calls.length,1);assert.deepEqual(feed.props.initial.items,[]);assert.ok(feed.props.initial.filterError);
+  assert.throws(()=>canonicalCapacityFilters(feed.props.query),/INVALID_CAPACITY_FILTER/,'hydration must retain the same invalid-array denial as the public root');
+ }
 });
 test('web personal-provider fleet lists multiple trucks and opens self-assignment only in its chosen task',async()=>{
  const {selectedCapacityLocation}=await import('../src/lib/capacity-location-selection.js');
@@ -136,9 +165,9 @@ test('native fleet separates tasks and opens saved details before any editor',()
  const view=runtime(),account={session:{state:'ACTIVE',user:{id:'owner',role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true,drivesTruck:false},access:{granted:true}}};
  const data={canManage:true,canAddTruck:true,canManageDrivers:true,publication,vehicles:[{id:'truck',make:'Make',model:'Model',plate:'PLATE',configuration:'Pickup truck',image:'/pickup.jpg',publicationState:'LIVE',capacityStatus:'OFF_DUTY'}],drivers:[{id:'employee',isOwner:false,name:'Employee',email:'employee@example.test',phone:'phone',vehicleId:'truck',canManageCapacity:true,canManageTracking:false}],retired:[],invitations:[],configurations:[],driverPage:1,driverPageCount:1,retiredPage:1,retiredPageCount:1};
  const screen=view.compile('apps/mobile/src/screens/fleet.tsx',{useAccount:()=>account,useAccountQuery:()=>({data,error:'',reload:async()=>{},reloadConfirmed:async()=>true}),ProviderPublicationNotice:'ProviderPublicationNotice',TruckAuthorityBadges:'TruckAuthorityBadges',TruckPublicationControl:'TruckPublicationControl'}).default;
- let tree=view.render(screen);assert.equal(find(tree,'TruckControls'),undefined);assert.equal(find(tree,'Button',node=>node.props.message==='Add driver'),undefined);assert.equal(find(tree,'FleetDevices'),undefined);assert.equal(find(tree,'Button',node=>node.props.message==='Retired trucks'),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes('Live')));
+ let tree=view.render(screen);assert.equal(find(tree,'TruckControls'),undefined);assert.equal(find(tree,'Button',node=>node.props.message==='Add driver'),undefined);assert.equal(find(tree,'FleetDevices'),undefined);assert.equal(find(tree,'Button',node=>node.props.message==='Retired trucks'),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes('Live')));data.vehicles[0].capacityStatus='';tree=view.render(screen);assert.ok(find(tree,'Text',node=>node.props.children?.includes('No planned capacity published yet')));data.vehicles[0].capacityStatus='OFF_DUTY';tree=view.render(screen);
  find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage vehicle: Make Model · PLATE').props.onPress();tree=view.render(screen);assert.ok(find(tree,'CapacityManagement'));assert.equal(find(tree,'TruckControls'),undefined);find(tree,'WorkspaceTabs').props.onChange('DETAILS');tree=view.render(screen);assert.ok(find(tree,'TruckControls'));find(tree,'WorkspaceTaskHeader').props.onBack();tree=view.render(screen);
- find(tree,'WorkspaceTabs').props.onChange('DRIVERS');tree=view.render(screen);assert.equal(nodes(tree).filter(node=>node.type==='Button'&&node.props.message==='Add driver').length,1);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage driver: Employee').props.onPress();tree=view.render(screen);assert.equal(find(tree,'Button',node=>node.props.message==='Save assignment and access'),undefined);assert.equal(find(tree,'Switch'),undefined);find(tree,'Button',node=>node.props.message==='Edit assignment and access').props.onPress();tree=view.render(screen);assert.ok(find(tree,'Button',node=>node.props.message==='Save assignment and access'));find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=view.render(screen);assert.equal(find(tree,'Switch'),undefined);
+ find(tree,'WorkspaceTabs').props.onChange('DRIVERS');tree=view.render(screen);assert.equal(nodes(tree).filter(node=>node.type==='Button'&&node.props.message==='Add driver').length,1);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage driver: Employee').props.onPress();tree=view.render(screen);assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Update planned capacity').props.value,'Allowed');assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Update capacity'),undefined);assert.equal(find(tree,'Button',node=>node.props.message==='Save assignment and access'),undefined);assert.equal(find(tree,'Switch'),undefined);find(tree,'Button',node=>node.props.message==='Edit assignment and access').props.onPress();tree=view.render(screen);assert.ok(find(tree,'Button',node=>node.props.message==='Save assignment and access'));assert.equal(find(tree,'Switch',node=>node.props.accessibilityLabel==='Update planned capacity').props.value,true);assert.ok(find(tree,'Copy',node=>node.props.message==='Update planned capacity'));find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=view.render(screen);assert.equal(find(tree,'Switch'),undefined);
 });
 
 test('restricted web employees keep a map with duty/location actions and no capacity editor',()=>{
@@ -167,12 +196,12 @@ test('native Account keeps both provider and own-driver documents together witho
 test('employed My truck exposes its scoped documents and returns to Home for driving actions',()=>{
  const view=runtime(),session={state:'ACTIVE',user:{id:'employee',role:'DRIVER',ownsProviderAccount:false,canManageFleet:false,drivesTruck:true,operatingModel:'COMPANY_DRIVER'},access:{granted:true}};
  const screen=view.compile('apps/mobile/src/screens/manage-capacity.tsx',{useAccount:()=>({session}),useAccountQuery:()=>({data:{vehicles:[{id:'assigned',label:'Assigned truck',plate:'PLATE',driver:'Employee',current:{status:'OFF_DUTY'},location:null}],canPublish:false},error:'',reload:async()=>{},reloadConfirmed:async()=>true}),AppLink:'AppLink'}).default;
- const tree=view.render(screen);assert.equal(find(tree,'AppLink').props.href,'/account');assert.equal(find(tree,'Button',node=>node.props.message==='Save capacity'),undefined);assert.deepEqual(find(tree,'Documents').props.scope,{kind:'ENTITY',subjectKind:'VEHICLE',id:'assigned'});
+ const tree=view.render(screen);assert.equal(find(tree,'AppLink').props.href,'/account');assert.equal(find(tree,'Button',node=>node.props.message==='Save planned capacity'),undefined);assert.deepEqual(find(tree,'Documents').props.scope,{kind:'ENTITY',subjectKind:'VEHICLE',id:'assigned'});
 });
 
 test('mobile members can open Support directly from Menu without notification history',()=>{
  const view=runtime(),navigations=[],session={state:'ACTIVE',user:{id:'employee',role:'DRIVER',operatingModel:'COMPANY_DRIVER'},access:{granted:true}};
- const ports={router:{navigate:path=>navigations.push(path)},require:()=>({}),useContext:()=>false,useAccount:()=>({session}),useChatUpdates:()=>({unreadCount:0,open(){}}),BackgroundNoticeLayout:{},navigationHeaderEdges:()=>[],useNavigation:()=>({navigate(){}}),usePathname:()=>'/account',hasWorkspace,activeDestination,isWorkspace,publicDestinations,phoneDestinations,aboutDestination,workspaceDestinations,workspaceRoleLabel,StatusBar:'StatusBar',ChatUpdatesButton:'ChatUpdatesButton',ExternalButton:'ExternalButton',languages:[],Keyboard:{dismiss(){},addListener:()=>({remove(){}})}};
+ const ports={router:{navigate:path=>navigations.push(path)},require:()=>({}),useContext:()=>false,useAccount:()=>({session}),useChatUpdates:()=>({unreadCount:0,open(){}}),BackgroundNoticeLayout:{},navigationHeaderEdges:()=>[],useNavigation:()=>({navigate(){}}),usePathname:()=>'/account',hasWorkspace,activeDestination,isWorkspace,navigationTarget,publicDestinations,phoneDestinations,aboutDestination,workspaceDestinations,workspaceRoleLabel,StatusBar:'StatusBar',ChatUpdatesButton:'ChatUpdatesButton',ExternalButton:'ExternalButton',languages:[],Keyboard:{dismiss(){},addListener:()=>({remove(){}})}};
  const screen=view.compile('apps/mobile/src/components/navigation-shell.tsx',ports).NavigationShell;
  let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='More').props.onPress();tree=view.render(screen);
  assert.ok(find(tree,'Text',node=>node.props.children?.includes('Support')));find(tree,'Pressable',node=>find(node,'Text',text=>text.props.children?.includes('Support'))).props.onPress();assert.deepEqual(navigations,['/support']);
