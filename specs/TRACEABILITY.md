@@ -21,8 +21,8 @@ are historical, not the status of today's source or hosted release.
   without inventing a reported position; actual actors had reported locations.
   Admin labels have source/test evidence only.
 
-  Current R4 root quality1295/1295 passes196.910s:
-  `.local/launch-experience-20261026/gates/work-first-planned-r4-root-gates.json`.
+  Current R5 root quality1298/1298 passes73.501s:
+  `.local/launch-experience-20261026/gates/work-first-planned-r5-root-gates.json`.
   Required CI validation now executes the three new discovery parity SQL suites;
   `ci-browser-gate.test.mjs` proves registration and rollback, red before/green
   after, with33 focused tests passing. Workflow lint passes108 scripts/actionlint;
@@ -33,6 +33,15 @@ are historical, not the status of today's source or hosted release.
   R4 additionally inventories two existing workflow files; the only shared-input
   differences are the CI regression and generated local Next type include.
   Native executable inputs remain unchanged.
+  R4's exact-head CI40408008712 passed mobile but stopped at the stale fixture
+  vehicle-badge assertion before browser execution. The verifier-only repair
+  requires all three current categories; three regressions fail before/pass
+  after, and33 focused tests pass. The actual read-only14-row API reproduction
+  is `.local/launch-experience-20261026/ci-fixture-authority-repair-api.json`;
+  the exact old guard fails and the current assertion passes without writes.
+  `ci-fixture-authority-repair-plan.json` there preserves diagnosis and limits.
+  A fresh full import and next-head remote CI remain required. Earlier R4/root
+  receipts remain preserved; native/build application inputs are unchanged.
   Current web build passes87.644s with unchanged inputs/metadata restored:
   `.local/provider-home-entry-20261026/work-first-planned-web-build-r2.json`.
   The compiled preview is pinned by `work-first-planned-web-r2-installed.json`
@@ -44,9 +53,16 @@ are historical, not the status of today's source or hosted release.
   `.local/launch-experience-20261026/android-final/build-receipt.json`.
   Static permissions/signature, two-ABI/16KB structure, identical Hermes bundle
   and known-secret-marker checks pass in `archive-qualification.json` beside it.
-  The build pins its original worktree input hashes; installation, production-
-  backend acceptance and source-commit equivalence are separate qualification. No upload key,
-  installed/current-commit CI or Play readiness is claimed.
+  The build pins its original worktree input hashes. The exact-byte installed
+  emulator renders populated anonymous Capacity; repeated Android System UI ANRs
+  block the first Filter tap after one Wait recovery. The owned AVD is stopped.
+  `.local/launch-experience-20261026/android-final/standalone-smoke-a577819e/result.json`
+  preserves that partial result; filters/details/Featured/hardware Back and
+  authenticated production-backend acceptance remain unqualified. No product
+  crash diagnosis follows from the system dialog. Source-commit equivalence is
+  in `work-first-commit-artifact-equivalence.json` under the same release folder.
+  No upload key, full installed acceptance, current exact-head CI or Play
+  readiness is claimed.
   Relevant source/UI tests include `provider-home-entry.test.mjs`,
   `provider-home-tabs-helper.ts`, `provider-owner-fleet.spec.ts`,
   `truck-regular-editors.test.mjs` and `provider-fleet-showcase.test.mjs` in their

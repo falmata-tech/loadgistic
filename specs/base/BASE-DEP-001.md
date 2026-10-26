@@ -487,6 +487,16 @@ And its dedicated CI invocation reports exactly one passed test, zero skipped, z
 And a failing preflight stops that shard before the long desktop and phone workflows\
 And a passing preflight never substitutes for those workflows or the all-shards-pass gate.
 
+Given a fresh fixture import projects public vehicle documents through current authority facts\
+When the fixture verifier checks the public Capacity rows\
+Then it requires the separate ownership, permission and operating-licence categories, including unverified categories\
+And it rejects missing, duplicate or unknown categories and verified claims without a review date or with expired evidence\
+And it does not restore the retired one-or-two-badge or generic-authority presentation.
+
+Regression: `tests/fixture-provider-authority.test.mjs`, using the actual public
+authority projector and the fixture verifier's shared assertion. This check
+changes verification only; it grants no authority and changes no customer data.
+
 Evidence: `tests/e2e/fixture-contract-preflight.spec.ts`,
 `scripts/ci-fixture-preflight.mjs`, `tests/ci-browser-gate.test.mjs`,
 `.github/workflows/ci.yml`, and NR-21 in

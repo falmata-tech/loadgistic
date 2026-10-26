@@ -41,7 +41,7 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    Privately shared with you. Guest entry/Back, attribution and Oromo marker-fit
    evidence stays scoped to the unchanged surfaces.
 
-   Current R4 root quality passes1295/1295 in196.910s. The required CI SQL loop
+   Current R5 root quality passes1298/1298 in73.501s. The required CI SQL loop
    now executes all three new discovery parity suites; its missing-registration
    regression failed before the repair and passes with32 existing workflow tests.
    Workflow lint passes for108 operational scripts and actionlint; ShellCheck is
@@ -51,6 +51,16 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    which passed in87.644s. The earlier483.747s build timeout during types remains
    preserved. [Traceability](../specs/TRACEABILITY.md#current-audit-evidence) owns
    the source-bound receipts, focused tests and review evidence.
+
+   PR26 head a577819's CI40408008712 passed the mobile boundary job but stopped
+   before browser jobs: its fixture verifier still allowed the retired maximum
+   of two vehicle badges. The current public projection has three independent
+   ownership/permission/operating-licence categories. The verifier-only repair
+   has three red/green regressions,33 focused passes and a read-only14-row API
+   reproduction: the exact former guard rejects those rows and the corrected
+   guard accepts them. Duplicate/unknown categories and expired or undated
+   verified claims still fail. No app, SQL, authority or Android input changed;
+   the next exact-head CI must still verify a fresh fixture import.
 
    Native public freshness is locally qualified through the existing bounded
    localization helper:50 focused tests pass. Actual Chrome web am/om320/390
@@ -97,7 +107,7 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    Next type metadata differs from the qualified Git baseline and is excluded
    from the task commit, along with the user's mobile settings.
 
-   Existing local workers now run on bounded one-hour leases. Ten managed motion
+   Existing local workers were qualified on bounded one-hour leases. Ten managed motion
    targets report each60s; independent snapshots prove accepted GPS positions
    and GPS/phone timestamps advance, with9fresh GPS capacities and1fresh phone
    capacity. The marketplace supervisor reached8healthy30s ticks with all six
@@ -128,7 +138,13 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    provider write was used. Static permissions, signature, two-ABI/16KB structure,
    matching Hermes bundle and known-secret-marker checks pass in
    `.local/launch-experience-20261026/android-final/archive-qualification.json`.
-   Installation and production-backend acceptance remain pending. The build
+   The exact APK installs and renders the populated anonymous Capacity map in
+   the emulator. Repeated Android System UI ANRs block the first Filter tap;
+   one Wait recovery was used, then the owned emulator was stopped. Filters,
+   details, Featured, hardware Back and authenticated production-backend
+   acceptance remain unqualified; this does not establish an application crash.
+   Receipt: `.local/launch-experience-20261026/android-final/standalone-smoke-a577819e/result.json`.
+   The build
    receipt pins its original worktree hashes; commit equivalence and exact-source
    CI are separate evidence. It is not upload-key-signed or Play-ready.
 

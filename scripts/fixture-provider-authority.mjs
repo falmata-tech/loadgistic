@@ -7,6 +7,19 @@ const reviewNote='Fictional local test evidence. No real ownership or operating 
 const preparedPlans=new WeakSet();
 const verifiedFiles=new WeakMap();
 
+export function assertPublicFixtureVehicleDocumentBadges(truck){
+  const categories=['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION','VEHICLE_OPERATING_LICENSE'];
+  if(!Array.isArray(truck)||truck.length!==categories.length
+    ||truck.some(badge=>!badge||typeof badge.verified!=='boolean'||typeof badge.expired!=='boolean')){
+    throw new Error('SUPABASE_FIXTURE_VERIFY_TRUCK_DOCUMENT_CATEGORIES_FAILED');
+  }
+  const types=truck.map(badge=>badge.type);
+  if(new Set(types).size!==categories.length||types.some(type=>!categories.includes(type))
+    ||truck.some(badge=>badge.verified&&(!badge.reviewedAt||badge.expired))){
+    throw new Error('SUPABASE_FIXTURE_VERIFY_TRUCK_DOCUMENT_CATEGORIES_FAILED');
+  }
+}
+
 // This adapter only prepares the named, disposable Loadgistic local dataset.
 // It is not a legacy-data migration or a hosted authority backfill.
 export function assertLocalAuthorityFixtureTarget(url,{nodeEnv=process.env.NODE_ENV}={}){
