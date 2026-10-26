@@ -8,11 +8,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import {loadBrowserRaster,rasterProtocol} from '../map/browser-raster-request';
 
 type Coordinate=[number,number];
-export type ViewState={center:Coordinate;zoom:number;bearing:number;pitch:number};
+export type ViewState={center:Coordinate;zoom:number;bearing:number;pitch:number;userInteraction?:boolean};
 type RegionEvent={nativeEvent:ViewState};
-export type MapRef={queryRenderedFeatures:(options:{layers:string[]})=>Promise<Feature[]>};
+export type MapRef={queryRenderedFeatures:(options:{layers:string[]})=>Promise<Feature[]>;project:(point:Coordinate)=>Promise<Coordinate>;unproject:(point:Coordinate)=>Promise<Coordinate>};
 export type CameraRef={fitBounds:(bounds:[number,number,number,number],options:FitBoundsOptions)=>void;jumpTo:(options:CameraOptions)=>void;easeTo:(options:EaseToOptions)=>void};
-export type GeoJSONSourceRef={getClusterExpansionZoom:(id:number)=>Promise<number>};
+export type GeoJSONSourceRef={getClusterExpansionZoom:(id:number)=>Promise<number>;getClusterLeaves:(id:number,limit:number,offset:number)=>Promise<Feature[]>};
 type PressEvent={nativeEvent:{features:Feature[]};stopPropagation:()=>void};
 const Context=createContext<BrowserMap|null>(null);
 const SourceContext=createContext<string>('');
@@ -25,19 +25,19 @@ export const Map=forwardRef<MapRef,MapProps>(function BrowserMapView(props,ref){
  useImperativeHandle(ref,()=>({queryRenderedFeatures:async({layers})=>{
   const map=instance.current;if(!map)return [];
   return map.queryRenderedFeatures(undefined,{layers:layers.filter(id=>Boolean(map.getLayer(id)))});
- }}),[]);
+ },project:async point=>{const map=instance.current;if(!map)throw Error('Map not ready');const pixel=map.project(point);return[pixel.x,pixel.y];},unproject:async point=>{const map=instance.current;if(!map)throw Error('Map not ready');const coordinate=map.unproject(point);return[coordinate.lng,coordinate.lat];}}),[]);
  useEffect(()=>{
   if(!node.current)return;
   let map:BrowserMap;
   try{maplibre.addProtocol(rasterProtocol,(params,controller)=>loadBrowserRaster(params.url,controller.signal));maplibre.setWorkerUrl('/__loadgistic-map-worker.js');maplibre.setWorkerCount(2);map=new maplibre.Map({container:node.current,style:latest.current.mapStyle,center:[39.5,9],zoom:5,attributionControl:latest.current.attribution?{compact:true}:false});}
   catch{latest.current.onDidFailLoadingMap?.();return;}
   instance.current=map;
-  const region=():RegionEvent=>({nativeEvent:{center:map.getCenter().toArray() as Coordinate,zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}});
+  const region=(userInteraction=false):RegionEvent=>({nativeEvent:{center:map.getCenter().toArray() as Coordinate,zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch(),userInteraction}});
   map.on('load',()=>{setReady(map);latest.current.onDidFinishLoadingMap?.();});
   map.on('error',()=>latest.current.onDidFailLoadingMap?.());
   map.on('render',()=>latest.current.onDidFinishRenderingFrame?.());
-  map.on('move',()=>latest.current.onRegionIsChanging?.(region()));
-  map.on('moveend',()=>latest.current.onRegionDidChange?.(region()));
+  map.on('move',event=>latest.current.onRegionIsChanging?.(region(Boolean(event.originalEvent))));
+  map.on('moveend',event=>latest.current.onRegionDidChange?.(region(Boolean(event.originalEvent))));
   map.on('click',event=>latest.current.onPress?.({nativeEvent:{lngLat:event.lngLat.toArray() as Coordinate,point:[event.point.x,event.point.y]}}));
   const resize=new ResizeObserver(()=>map.resize());resize.observe(node.current);
   return()=>{resize.disconnect();instance.current=null;map.remove();};
@@ -57,7 +57,7 @@ type SourceProps=PropsWithChildren<{id:string;data:GeoJSON;cluster?:boolean;clus
 export const GeoJSONSource=forwardRef<GeoJSONSourceRef,SourceProps>(function BrowserGeoJSON(props,ref){
  const map=useContext(Context),[ready,setReady]=useState(false),initial=useRef(props),latest=useRef(props);
  useLayoutEffect(()=>{latest.current=props;},[props]);
- useImperativeHandle(ref,()=>({getClusterExpansionZoom:async id=>{const source=map?.getSource(props.id) as BrowserSource|undefined;if(!source)throw Error('Map not ready');return source.getClusterExpansionZoom(id);}}),[map,props.id]);
+ useImperativeHandle(ref,()=>({getClusterExpansionZoom:async id=>{const source=map?.getSource(props.id) as BrowserSource|undefined;if(!source)throw Error('Map not ready');return source.getClusterExpansionZoom(id);},getClusterLeaves:async(id,limit,offset)=>{const source=map?.getSource(props.id) as BrowserSource|undefined;if(!source)throw Error('Map not ready');return source.getClusterLeaves(id,limit,offset);}}),[map,props.id]);
  useEffect(()=>{
   if(!map)return;const p=initial.current;
   map.addSource(props.id,{type:'geojson',data:p.data,cluster:p.cluster,clusterRadius:p.clusterRadius,clusterMaxZoom:p.clusterMaxZoom,maxzoom:Math.max(18,(p.clusterMaxZoom||17)+1)});let active=true;queueMicrotask(()=>{if(active)setReady(true);});

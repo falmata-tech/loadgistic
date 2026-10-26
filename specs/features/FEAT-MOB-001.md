@@ -11,7 +11,58 @@ rollout: Android development preview first; owner visual review before extensive
 
 # Native application — Android test release verified
 
+## Business invitation entry — October 25 repair in progress
+
+The installed 1.2.0/code10 candidate rejects the canonical business invitation
+destination as an unavailable link. Its staff invitation remains pending; web
+setup does not qualify Android Join. This repair must pass installed owner,
+workspace-admin and staff tasks before a replacement Play candidate is signed.
+
+Given a business teammate opens the canonical `/workspaces` invitation destination
+on Loadgistic's HTTPS host or its native scheme\
+When Android resolves the link\
+Then it opens the ordinary authenticated invitation/workspace screen\
+And a signed-out teammate signs in or creates their identity and returns to that
+screen without being asked to create an unrelated provider or business\
+And using the dedicated review sign-in preserves the same intended destination\
+And Join uses only the signed-in identity's current pending invitation, never
+membership, role, email or credentials supplied by the link\
+And foreign hosts, unexpected parameters, fragments and credential-bearing
+destinations remain unavailable.
+
+Given the owner changes a teammate's workspace role or Capacity/Tracking access\
+When the installed teammate refreshes or resumes the relevant task\
+Then the current permissions determine visible actions and server outcomes\
+And only the shipment owner and explicitly authorized team members see its
+location; other permitted members retain route/status without location data\
+And Back, Cancel, sign-out and relaunch preserve the same task boundaries as web.
+
+Given a shipper/broker opens private Capacity with no vehicles shared yet\
+When no vehicle filters are active\
+Then Android shows the same concise private-empty state as web and an actionable
+Find connections destination in Network\
+And an active filter with no results retains the normal filter-empty message;
+the empty state never invents a signal or exposes another workspace's vehicles.
+
+Qualification must record actual installed results separately from fixtures,
+unit tests and Expo browser review. Test actors and invitation email remain
+isolated synthetic review data under FEAT-ENT-001/FEAT-PLY-001.
+
 ## Android/web parity qualification — October 25 candidate
+
+The October25 owner also requires stronger native section boundaries matching
+the web's hierarchy: shared cards and focused sections use solid readable
+borders, deliberate spacing and clear headings on a contrasting canvas.
+Parent sections group related tasks without adding duplicate nested card frames.
+Provider profiles follow FEAT-MKT-001's account/vehicle/driver hierarchy and
+FEAT-VER-001's flat verified/unverified document states. This is pending actual
+phone/desktop Expo and installed-role review, not a claim of released parity.
+
+Pending provider shipment-detail clarity follows FEAT-TRK-001: one current
+status/next action, the existing authorized map, focused update controls outside
+the map, and distinct
+facts/history. Recovery field locks and eligible replacement vehicles must match
+the server and web; no new location or editing authority is granted.
 
 Given a visitor, Transport Provider, assigned driver, or shipper/broker team member\
 When the same authorized task is available on web and Android\

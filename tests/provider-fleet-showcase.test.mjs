@@ -34,6 +34,8 @@ const props={providerName:'Example transporter',trucks,total:15,startIndex:12};
 test('legacy null-number fleet rows start closed with independent keys and map controls',()=>{
  const view=showcase(),tree=view.render(props),cards=all(tree,'article');
  assert.equal(cards.length,3);assert.equal(new Set(cards.map(card=>card.key)).size,3);
+ assert.equal(all(tree,'TruckAuthorityBadges').length,0,'Vehicle review appears in one document group per card');
+ for(const card of cards)assert.deepEqual(all(card,'VerificationBadges').map(badge=>badge.props.label),['Vehicle documents','Driver documents']);
  assert.equal(all(tree,'PublicCapacityMap').length,0);
  const buttons=cards.map(card=>all(card,'button').find(button=>button.props['aria-controls']));
  assert.equal(new Set(buttons.map(button=>button.props['aria-controls'])).size,3);

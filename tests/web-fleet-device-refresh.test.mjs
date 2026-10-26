@@ -5,6 +5,7 @@ import ts from 'typescript';
 import {parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint} from '../src/lib/telematics-workspace.ts';
 import {nextCapacityPrivacyRadius} from '../src/lib/location-privacy.js';
 import {isDemoAdminSpare,gpsDeviceDisplayLabel} from '../src/lib/demo-admin-spare.js';
+import {commandStateLabel,telematicsAlarmLabel} from '../src/lib/telematics-copy.js';
 const workspace=page=>({canManage:true,page,pageSize:20,total:1,pageCount:1,devices:[],vehicles:[],commands:[]});
 function harness(fetcher){
  let slots=[],cursor=0;const effects=[],timers=new Set();
@@ -14,7 +15,7 @@ function harness(fetcher){
  const file=readFileSync('src/components/fleet-devices.tsx','utf8'),parsed=ts.createSourceFile('fleet-devices.tsx',file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))))+'\nexport {useFleetDevices,SourceForm,SourceSummary,DeviceRow};';
  const exports={},code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText;
- const ports={React,window:{setInterval:fn=>{timers.add(fn);return fn;},clearInterval:fn=>timers.delete(fn)},document,fetch:fetcher,parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint,nextCapacityPrivacyRadius,isDemoAdminSpare,gpsDeviceDisplayLabel,useTranslation:()=>({t:value=>value,locale:'en'}),Text:'Text',ManualTruckLocation:'ManualTruckLocation',Satellite:'Satellite',Smartphone:'Smartphone',Pencil:'Pencil',RefreshCw:'RefreshCw',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',Truck:'Truck',CapacityEditDialog:'CapacityEditDialog',styles:new Proxy({},{get:(_target,key)=>String(key)}),telematicsAlarmLabel:()=>null,commandStateLabel:value=>value,exports};
+ const ports={React,window:{setInterval:fn=>{timers.add(fn);return fn;},clearInterval:fn=>timers.delete(fn)},document,fetch:fetcher,parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint,nextCapacityPrivacyRadius,isDemoAdminSpare,gpsDeviceDisplayLabel,useTranslation:()=>({t:value=>value,locale:'en'}),Text:'Text',Link:'Link',ManualTruckLocation:'ManualTruckLocation',Satellite:'Satellite',Smartphone:'Smartphone',Pencil:'Pencil',RefreshCw:'RefreshCw',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight',Truck:'Truck',CapacityEditDialog:'CapacityEditDialog',styles:new Proxy({},{get:(_target,key)=>String(key)}),telematicsAlarmLabel,commandStateLabel,exports};
  new Function(...Object.keys(ports),code)(...Object.values(ports));
  return {document,host,render(name='useFleetDevices',props){cursor=0;const value=exports[name](props);if(value?.host)value.host.current=host;while(effects.length)effects.shift()();return value;},tick(){for(const fn of timers)fn();},close(){for(const slot of slots)slot?.cleanup?.();}};
 }
@@ -93,4 +94,54 @@ test('web source editor closes only after the saved change is confirmed by rerea
  let tree=h.render('SourceForm',props);control(tree,'select',()=>true).props.onChange({target:{value:'5'}});tree=h.render('SourceForm',props);
  await tree.props.onSubmit({preventDefault(){}});tree=h.render('SourceForm',props);assert.equal(closed,0);assert.equal(control(tree,'select',()=>true).props.value,5,'an unconfirmed change keeps its draft');
  confirmed=true;await tree.props.onSubmit({preventDefault(){}});assert.equal(closed,1);h.close();
+});
+
+const reportDevice=overrides=>({id:'00000000-0000-4000-8000-000000000001',label:'Test GPS',imei:'990000000000001',protocol:'gt06',protocolDeviceId:'990000000000001',gatewayDeviceId:1,modelProfile:'UNVERIFIED',synthetic:false,active:true,revision:'2026-10-25T10:00:00Z',vehicleId:null,lastSeenAt:'2026-10-25T10:06:00Z',connection:'ONLINE',capabilities:[],position:{latitude:9,longitude:38,speedKph:0,course:0,ignition:null,battery:0,observedAt:'2026-10-25T10:00:00Z',receivedAt:'2026-10-25T10:05:00Z'},...overrides});
+const reportProps=(device,commands=[],save=async()=>false)=>({device,workspace:{...workspace(1),devices:[device],commands},busy:false,markDirty:()=>{},save});
+const reportFact=(tree,label)=>{const row=control(tree,'div',props=>props.children?.some(child=>child?.type==='dt'&&treeNodes(child).some(node=>node.props?.message===label)));return row?.props.children.find(child=>child?.type==='dd')?.props.children.join('');};
+
+test('web GPS report shows zero heading/speed/battery and distinct location/receipt times without inventing ignition',()=>{
+ const h=harness(async()=>response(workspace(1))),device=reportDevice(),tree=h.render('DeviceRow',reportProps(device));
+ assert.equal(reportFact(tree,'Heading'),'0°');assert.equal(reportFact(tree,'Speed'),'0 km/h');assert.equal(reportFact(tree,'Battery'),'0%');
+ assert.equal(reportFact(tree,'Location time'),new Date(device.position.observedAt).toLocaleString('en'));
+ assert.equal(reportFact(tree,'Received at'),new Date(device.position.receivedAt).toLocaleString('en'));
+ assert.equal(reportFact(tree,'Last report'),new Date(device.lastSeenAt).toLocaleString('en'));
+ assert.equal(reportFact(tree,'Ignition'),undefined);h.close();
+});
+
+test('web GPS report keeps missing telemetry unavailable while a reported false ignition remains Off',()=>{
+ const h=harness(async()=>response(workspace(1))),device=reportDevice({position:null}),props=reportProps(device);let tree=h.render('DeviceRow',props);
+ for(const label of ['Heading','Speed','Battery','Location time','Received at'])assert.equal(reportFact(tree,label),'—',label);
+ props.device={...device,position:{...reportDevice().position,course:null,battery:null,ignition:false}};tree=h.render('DeviceRow',props);
+ assert.equal(reportFact(tree,'Heading'),'—');assert.equal(reportFact(tree,'Battery'),'—');assert.equal(reportFact(tree,'Ignition'),'Off');h.close();
+});
+
+test('web list and device header describe report age without claiming TCP connectivity',async()=>{
+ for(const [connection,label] of [['ONLINE','Recent report'],['STALE','Older report'],['UNKNOWN','Not reported yet']]){
+  const device=reportDevice({connection}),data={...workspace(1),devices:[device]},h=harness(async()=>response(data));h.render('FleetDevices');await settle();const list=h.render('FleetDevices');
+  assert.ok(treeNodes(list).some(node=>node.props?.message===label),`list ${connection}`);
+  const detail=harness(async()=>response(data)),tree=detail.render('DeviceRow',reportProps(device));assert.ok(treeNodes(tree).some(node=>node.props?.message===label),`detail ${connection}`);
+  for(const view of [list,tree])assert.equal(treeNodes(view).some(node=>['Connected','Not reporting','Not connected yet'].includes(node.props?.message)),false);
+  h.close();detail.close();
+ }
+});
+
+test('web receive-only commands omit engine help and actions; a capable synthetic locate sends the existing scoped request',async()=>{
+ const writes=[],h=harness(async()=>response(workspace(1)));let device=reportDevice(),props=reportProps(device,[],async(...args)=>{writes.push(args);return true;}),tree=h.render('DeviceRow',props);
+ button(tree,'Device commands').props.onClick();tree=h.render('DeviceRow',props);
+ assert.equal(treeNodes(tree).some(node=>node.props?.message==='Engine control requires a separately checked safety installation.'),false);
+ for(const label of ['Request location','Restart GPS device','Reporting interval'])assert.equal(button(tree,label),undefined);
+ assert.deepEqual(writes,[]);
+ props={...props,device:{...device,synthetic:true,modelProfile:'SYNTHETIC_GT06',capabilities:['LOCATE','ENGINE_CUT']}};tree=h.render('DeviceRow',props);
+ assert.ok(treeNodes(tree).some(node=>node.props?.message==='Engine control requires a separately checked safety installation.'));
+ await button(tree,'Request location').props.onClick();assert.equal(writes.length,1);assert.equal(writes[0][0],'COMMAND');assert.equal(writes[0][1].deviceId,device.id);assert.equal(writes[0][1].command,'LOCATE');assert.ok(writes[0][1].idempotencyKey);h.close();
+});
+
+test('web simulated command activity distinguishes Sending from sent, confirmed, failed, expired and unknown',()=>{
+ const device=reportDevice({synthetic:true}),states=['REQUESTED','DISPATCHING','DISPATCHED','ACKNOWLEDGED','FAILED','EXPIRED','UNKNOWN'];
+ for(const [index,state] of states.entries()){
+  const h=harness(async()=>response(workspace(1))),props=reportProps(device,[{id:`command-${index}`,deviceId:device.id,command:'LOCATE',state,requestedAt:'2026-10-25T10:00:00Z'}]);let tree=h.render('DeviceRow',props);button(tree,'Device commands').props.onClick();tree=h.render('DeviceRow',props);
+  const expected={REQUESTED:'Waiting to send',DISPATCHING:'Sending…',DISPATCHED:'Sent · waiting for device',ACKNOWLEDGED:'Device confirmed',FAILED:'Failed',EXPIRED:'Expired',UNKNOWN:'Delivery not confirmed'}[state];
+  assert.ok(treeNodes(tree).some(node=>node.props?.message===expected),state);h.close();
+ }
 });

@@ -1,7 +1,6 @@
 "use client";
 
 import React from 'react';
-import {TruckAuthorityBadges} from './truck-authority';
 
 import {Text,useTranslation} from '@/components/localization';
 import {localizedUpdateLabel} from '@/lib/i18n/update-label.js';
@@ -121,7 +120,7 @@ export function ProviderFleetShowcase({providerName,trucks,total=trucks.length,s
             </div>
 
             <div className={`public-truck-driver ${identity.fleetRow}`}><PublicIdentityImage path={truck.assigned_driver_portrait_url} kind="person" label={truck.assigned_driver_first_name||''} size="small"/><span><strong>{truck.assigned_driver_first_name||t('Driver not named')} · {t(truck.driver_kind_label||'Driver')}</strong><small>{truck.assigned_driver_phone||t('Driver phone not published')}{truck.driver_kind==='COMPANY_DRIVER'?` · ${providerName}`:''}</small></span>{truck.assigned_driver_phone?<a href={`tel:${truck.assigned_driver_phone}`}><Phone aria-hidden="true"/><Text message="Call driver"/></a>:null}</div>
-            <TruckAuthorityBadges authority={truck.authority}/><div className="public-truck-verification"><VerificationBadges badges={truck.driver_verification_badges} compact label="Driver documents"/><VerificationBadges badges={truck.truck_verification_badges} compact label="Vehicle documents"/></div>
+            <div className="public-truck-verification"><VerificationBadges badges={truck.truck_verification_badges} compact rows label="Vehicle documents"/><VerificationBadges badges={truck.driver_verification_badges} compact rows label="Driver documents"/></div>
 
             {capacity?<div className="provider-truck-capacity-grid">
               <section className={`provider-truck-current ${capacity.status==='PARTIAL'?'partial':'empty'}`}>

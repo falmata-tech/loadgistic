@@ -31,7 +31,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
   const [sharingMode,setSharingMode]=React.useState(capacitySharingMode(current?.sharing_mode,current?.visibility));
   const visibility=sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE';
-  const [geometry,setGeometry]=React.useState(current?.status==='PARTIAL'?'ROUTE':current?.availability_geometry||'RADIUS');
+  const [geometry,setGeometry]=React.useState(current?.availability_geometry||'RADIUS');
   const [acceptedLoads,setAcceptedLoads]=React.useState(current?.accepts_partial_load?(current.accepts_full_load?'BOTH':'PTL'):'FTL');
   const [multiPick,setMultiPick]=React.useState(Boolean(current?.accepts_multi_pick));
   const [multiDrop,setMultiDrop]=React.useState(Boolean(current?.accepts_multi_drop));
@@ -46,7 +46,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
   const onDuty=status!=='OFF_DUTY';
   // Only a new signal or a status transition can require coverage in the
   // availability dialog. An ordinary capacity edit never exposes other groups.
-  const needsCoverage=!current?.availability_geometry||current.status==='OFF_DUTY'||(status==='PARTIAL'&&current.availability_geometry!=='ROUTE');
+  const needsCoverage=!current?.availability_geometry||current.status==='OFF_DUTY';
   const showCoverage=onDuty&&(section==='CAPACITY'||needsCoverage);
   const needsLocation=onDuty&&allowDeviceLocation&&!location;
   const waitingForDriverLocation=onDuty&&!allowDeviceLocation&&!location&&!savedManualSource;
@@ -55,8 +55,6 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
 
   function chooseStatus(value:string){
     setStatus(value);
-    if(value==='PARTIAL')setGeometry('ROUTE');
-    else if(value==='EMPTY'&&current?.availability_geometry)setGeometry(current.availability_geometry);
   }
 
   async function capture(){
@@ -102,8 +100,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
         </section>:null}
         {showCoverage?<section className="capacity-signal-group">
           <h3><Route aria-hidden="true"/><Text message="Where is this vehicle available?"/></h3>
-          {section==='CAPACITY'&&status==='PARTIAL'?<p className="meta"><Text message="Partial capacity needs a route. Choose the cities below."/></p>:null}
-          <div className="segmented-control geometry-choice">{status==='EMPTY'?<button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong><Text message="Service area"/></strong></button>:null}<button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong><Text message="Capacity route"/></strong></button></div>
+          <div className="segmented-control geometry-choice"><button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong><Text message="Area"/></strong></button><button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong><Text message="Route"/></strong></button></div>
           {geometry==='RADIUS'?<><div className="form-group"><label htmlFor="capacity-area-center"><MapPin aria-hidden="true"/><Text message="Area center"/></label><EthiopiaPlaceInput id="capacity-area-center" name="capacityAreaCenter" placeRefName="capacityAreaCenterPlaceRef" defaultPlaceRef={areaCenter.place_ref} defaultValue={areaCenter.label} onChange={event=>setAreaCenter({place_ref:'',label:event.target.value})} onPlaceSelect={place=>setAreaCenter({place_ref:place.id,label:place.display_name})} required/></div><PlaceSequenceEditor items={areaBoundary} setItems={setAreaBoundary} name="capacityAreaBoundary" refName="capacityAreaBoundaryPlaceRef" min={3} label="Boundary city"/></>:<PlaceSequenceEditor items={routePoints} setItems={setRoutePoints} name="currentRoutePlace" refName="currentRoutePlaceRef" min={2} label="City"/>}
           {onDuty&&section==='CAPACITY'?<div className="capacity-editor-subgroup"><h4><Route aria-hidden="true"/><Text message="Stops"/></h4><div className="capacity-stop-choices"><label><input type="checkbox" checked={multiPick} onChange={event=>setMultiPick(event.target.checked)}/><Text message="Multiple pickups"/></label><label><input type="checkbox" checked={multiDrop} onChange={event=>setMultiDrop(event.target.checked)}/><Text message="Multiple drop-offs"/></label></div></div>:null}
         </section>:<>

@@ -5,6 +5,8 @@ import ts from 'typescript';
 import {capacityLocationSource,selectedCapacityLocation} from '../src/lib/capacity-location-selection.js';
 import {locationSourceLabel} from '../src/lib/location-source.js';
 import {errorMessage} from '../src/lib/errors.ts';
+import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../src/lib/map-initial-camera.js';
+import {capacityStatusPresentation} from '../src/lib/capacity-status-presentation.js';
 
 function renderer(){
  const stores=new Map();let slots=[],cursor=0;
@@ -48,4 +50,67 @@ test('web profile editor omits retired Services while retaining authored About a
  const view=renderer(),component=view.compile('../src/components/provider-profile-workspace.tsx',{...common,redirect(){throw new Error('Unexpected redirect');},getOwnCompanyPage:async()=>({name:'Local provider',handle:'local-provider',services:'Legacy service text',about:'Authored About',profile_image_url:'',city:'Adama'}),getVerificationCenter:async()=>({subjects:[]}),PROVIDER_REGIONS:[],privateUploadMaxMebibytes:()=>5}).ProviderProfileWorkspace;
  const tree=view.resolve(await component({user:{id:driverA,organization_id:vehicleA,provider_handle:'local-provider'},embedded:true})),inputs=nodes(tree).filter(node=>node.props?.name);
  assert.equal(inputs.find(node=>node.props.name==='services'),undefined);assert.equal(inputs.find(node=>node.props.name==='about').props.defaultValue,'Authored About');for(const name of ['contactPhone','contactWhatsapp','contactEmail','contactWebsite','published'])assert.ok(inputs.find(node=>node.props.name===name),name);
+});
+
+const messageButton=(tree,message)=>find(tree,'button',node=>nodes(node.props.children).some(child=>child.props?.message===message));
+const hiddenValue=(tree,name)=>find(tree,'input',node=>node.props.name===name).props.value;
+function currentEditor(current){
+ const view=renderer(),submitted=[];
+ const component=view.compile('../src/components/capacity-signal-editor.tsx',{...common,PowerOff:'PowerOff',Users:'Users',FeedbackText:'FeedbackText',nextCapacityPrivacyRadius:()=>10,CAPACITY_SHARING_CHOICES:[],CAPACITY_LOAD_CHOICES:[],capacityLoadExplanation:value=>value,submitCapacityForm:async form=>submitted.push(form)}).CapacitySignalEditor;
+ const props={section:'CAPACITY',vehicleId:vehicleA,hasAssignedDriver:true,current,location:{lat:9,lng:38.7,radius:10,area:'Saved reported point',updatedAt:'2026-10-26'},allowDeviceLocation:false,onBusyChange(){},onSaved(){},onCancel(){}};
+ return {render:()=>view.render(component,props),submitted};
+}
+const areaCapacity=status=>({status,availability_geometry:'RADIUS',capacity_area_center_place_ref:'Addis Ababa',capacity_area_center_label:'Addis Ababa',capacity_area_boundary:[point('Sululta'),point('Bishoftu'),point('Sebeta')],current_route_points:[point('Adama'),point('Addis Ababa')]});
+
+test('web current capacity defaults to Area and status changes preserve the chosen geometry',()=>{
+ const editor=currentEditor(null);let tree=editor.render();
+ assert.equal(hiddenValue(tree,'availabilityGeometry'),'RADIUS');
+ assert.equal(messageButton(tree,'Area')?.props['aria-pressed'],true);
+ messageButton(tree,'Partial').props.onClick();tree=editor.render();
+ assert.equal(hiddenValue(tree,'status'),'PARTIAL');
+ assert.equal(messageButton(tree,'Area')?.props['aria-pressed'],true,'Partial keeps Area available and selected');
+ assert.equal(hiddenValue(tree,'availabilityGeometry'),'RADIUS');
+ messageButton(tree,'Route').props.onClick();tree=editor.render();
+ messageButton(tree,'Empty').props.onClick();tree=editor.render();
+ assert.equal(hiddenValue(tree,'availabilityGeometry'),'ROUTE','changing status must not overwrite an explicit route choice');
+});
+
+test('web saved Partial Area reopens and saves its existing towns without replacing reported location',async()=>{
+ const editor=currentEditor(areaCapacity('PARTIAL'));const tree=editor.render();
+ assert.equal(hiddenValue(tree,'availabilityGeometry'),'RADIUS');
+ assert.equal(messageButton(tree,'Area')?.props['aria-pressed'],true);
+ assert.equal(find(tree,'EthiopiaPlaceInput',node=>node.props.name==='capacityAreaCenter').props.defaultPlaceRef,'Addis Ababa');
+ assert.deepEqual(nodes(tree).filter(node=>node.type==='EthiopiaPlaceInput'&&node.props.name==='capacityAreaBoundary').map(node=>node.props.defaultPlaceRef),['Sululta','Bishoftu','Sebeta']);
+ assert.equal(hiddenValue(tree,'locationSource'),'PRESERVE_DRIVER');assert.equal(hiddenValue(tree,'approximateLat'),'');
+ assert.equal(messageButton(tree,'Save').props.disabled,false);
+ const form={existingRenderedForm:true};await find(tree,'form').props.onSubmit({preventDefault(){},currentTarget:form});assert.deepEqual(editor.submitted,[form]);
+});
+
+test('web saved Preferred Area names the area in its action and dialog while retaining pair scope',()=>{
+ const view=renderer(),component=view.compile('../src/components/capacity-form.tsx',common).CapacityForm;
+ const preferred={...corridor(),geometry:'RADIUS',route_points:[],area_boundary:[point('Sululta'),point('Bishoftu'),point('Sebeta')]};
+ const props={vehicles:[vehicle()],corridors:[preferred],allowCorridors:true,renderedAt:1};let tree=view.render(component,props);
+ const action=find(tree,'button',node=>node.props['aria-label']?.startsWith('Edit preferred area:'));assert.ok(action);action.props.onClick();tree=view.render(component,props);
+ assert.equal(find(tree,'CapacityEditDialog').props.title,'Preferred area');assert.equal(find(tree,'CapacityMarketPlanning').props.expectedDriverId,driverA);
+});
+
+test('provider map separates Partial Area towns from ordered routes without altering saved geometry or lanes',()=>{
+ const view=renderer(),component=view.compile('../src/components/capacity-location-map-leaflet.tsx',{...common,MapContainer:'MapContainer',Circle:'Circle',CircleMarker:'CircleMarker',Tooltip:'Tooltip',BaseMapTiles:'BaseMapTiles',OffsetSignalPolyline:'OffsetSignalPolyline',useMap:()=>({}),capacityStatusPresentation:{EMPTY:{color:'#155eef'},PARTIAL:{color:'#667085'}}}).CapacityLocationMapLeaflet;
+ const boundary=[point('Sululta'),point('Bishoftu'),point('Sebeta')],route=[point('Addis Ababa'),point('Adama')],regular={id:'preferred-area',geometry:'RADIUS',area_boundary:boundary,route_points:[],area_center_label:'Addis Ababa'};
+ const props={center:{lat:40.015,lng:-105.27},radiusKm:10,areaBoundary:boundary,availabilityStatus:'PARTIAL',regularSignals:[regular]};
+ let tree=view.render(component,props),area=find(tree,'OffsetSignalPolyline',node=>node.props.pathOptions.className==='capacity-setting-current-area');
+ assert.deepEqual(area.props.positions,boundary.map(city=>[city.lat,city.lng]));assert.equal(area.props.offset,-12);assert.equal(area.props.pathOptions.color,'#667085');assert.equal(find(area,'ol'),undefined);assert.equal(nodes(find(area,'ul')).filter(node=>node.type==='li').length,3);
+ const preferred=find(tree,'OffsetSignalPolyline',node=>node.props.pathOptions.className==='capacity-setting-corridor-area');assert.equal(preferred.props.offset,12);assert.equal(preferred.props.pathOptions.dashArray,'6 7');assert.ok(find(preferred,'Text',node=>node.props.message==='Preferred area'));assert.equal(find(preferred,'ol'),undefined);
+ assert.deepEqual(find(tree,'Circle').props.center,[40.015,-105.27],'valid reported point stays independent of the Ethiopian offer towns');
+ tree=view.render(component,{...props,areaBoundary:[],routePoints:route,regularSignals:[]});const path=find(tree,'OffsetSignalPolyline',node=>node.props.pathOptions.className==='capacity-setting-current-route');assert.deepEqual(path.props.positions,route.map(city=>[city.lat,city.lng]));assert.equal(path.props.offset,-6);assert.equal(nodes(find(path,'ol')).filter(node=>node.type==='li').length,2);assert.ok(find(path,'span',node=>node.props['aria-hidden']==='true'&&node.props.children.includes('↓')));
+});
+
+test('public selected Partial Area renders its saved polygon and Area details without inventing a vehicle point',()=>{
+ const view=renderer(),map={getZoom:()=>6,getBounds:()=>({pad:()=>({contains:()=>true})})};
+ const component=view.compile('../src/components/public-capacity-map-leaflet.tsx',{...common,Localized:({as,...props})=>({type:as||'div',props}),MapContainer:'MapContainer',Circle:'Circle',CircleMarker:'CircleMarker',Tooltip:'Tooltip',Marker:'Marker',Popup:'Popup',BaseMapTiles:'BaseMapTiles',OffsetPolyline:'OffsetPolyline',L:{divIcon:()=>({})},useMap:()=>map,useMapEvents(){},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,capacityStatusPresentation,localizedUpdateLabel:value=>value||'Reported earlier'}).PublicCapacityMapLeaflet;
+ const boundary=[point('Sululta'),point('Bishoftu'),point('Sebeta')],item={id:'partial-area',provider_name:'Synthetic provider',status:'PARTIAL',availability_geometry:'RADIUS',location_lat:null,location_lng:null,capacity_area_boundary:boundary,current_route_points:[],recurring_corridors:[]};
+ const props={items:[item],viewer:null,selectedId:item.id,onSelect(){},onDeselect(){}};let tree=view.render(component,props);
+ const area=find(tree,'OffsetPolyline',node=>node.props.pathOptions.className.includes('map-service-area'));assert.ok(area,'a permitted Partial Area is a visible area');assert.deepEqual(area.props.positions,boundary.map(place=>[place.lat,place.lng]));assert.equal(area.props.pathOptions.color,capacityStatusPresentation.PARTIAL.color);assert.equal(area.props.offset,-12);
+ assert.equal(find(tree,'Circle'),undefined);assert.equal(find(tree,'Marker'),undefined);assert.equal(find(tree,'button',node=>node.props['aria-label']==='Location'),undefined);
+ find(tree,'button',node=>node.props['aria-label']==='Area').props.onClick();tree=view.render(component,props);const detail=find(tree,'dialog');assert.equal(detail.props['aria-label'],'Area');assert.ok(find(detail,'ul'));assert.equal(find(detail,'ol'),undefined);assert.equal(nodes(detail).filter(node=>node.type==='li').length,3);
 });

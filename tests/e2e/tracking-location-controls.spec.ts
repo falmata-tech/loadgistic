@@ -36,7 +36,7 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     await page.goto(`/app/provider-shipments/${shipment.id}`);
     const controls=page.locator('.tracking-control-panel'),radius=controls.getByLabel('Location privacy radius');
     await expect(radius.locator('option')).toHaveText(['1 km','3 km','5 km','10 km']);
-    await expect(controls).toContainText('updates pause when the phone locks');
+    await expect(controls.getByRole('status')).toBeVisible();
     await expect.poll(async()=>checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED')).length).toBe(1);
     let events=checked(await service.from('provider_shipment_events').select('id,location_lat,location_lng,location_precision_km').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'));
     expect(events[0].location_precision_km).toBe(10);expect(events[0].location_lat).not.toBe(9.031234);expect(events[0].location_lng).not.toBe(38.741234);

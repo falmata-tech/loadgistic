@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import {hasPlatformPermission,PLATFORM_PERMISSIONS} from '../src/lib/platform-admin.js';
+import {hasPlatformPermission,PLATFORM_PERMISSIONS,saveFeaturedProviderDay} from '../src/lib/platform-admin.js';
 
 const root=path.resolve(process.cwd());
 const appAdapters=[
@@ -28,6 +28,18 @@ test('platform permission presentation stays least privilege before the database
   assert.equal(hasPlatformPermission({role:'SUPPORT',can_manage_customers:true},PLATFORM_PERMISSIONS.CUSTOMERS),true);
   assert.equal(hasPlatformPermission({role:'SUPPORT',can_manage_customers:true},PLATFORM_PERMISSIONS.OPERATIONS),false);
   assert.equal(hasPlatformPermission({role:'DRIVER',can_manage_operations:true},PLATFORM_PERMISSIONS.OPERATIONS),false);
+});
+
+test('direct Featured application writes reject evening bounds and short turns before calling persistence',async()=>{
+ const admin={id:'00000000-0000-4000-8000-000000000001',role:'ADMIN'},input={featureDate:'2198-11-20',targetCount:2,truckKeys:['one','two'],scheduleMode:'MANUAL',manualSchedule:[{providerKey:'one',startTime:'22:30',endTime:'22:39'},{providerKey:'two',startTime:'22:39',endTime:'23:59'}]};
+ const originalFetch=globalThis.fetch;let requests=0;globalThis.fetch=async()=>{requests++;throw Error('PERSISTENCE_MUST_NOT_BE_CALLED');};
+ try{
+  await assert.rejects(saveFeaturedProviderDay(admin,input),/FEATURED_MANUAL_SCHEDULE_TOO_SHORT/);
+  await assert.rejects(saveFeaturedProviderDay(admin,{...input,scheduleConfig:{dayStart:'08:30',dayEnd:'12:00'}}),/FEATURED_SCHEDULE_WINDOW_INVALID/);
+  await assert.rejects(saveFeaturedProviderDay(admin,{...input,targetCount:9}),/FEATURED_TARGET_COUNT_INVALID/);
+  await assert.rejects(saveFeaturedProviderDay({role:'DRIVER'},input),/FORBIDDEN/);
+  assert.equal(requests,0);
+ }finally{globalThis.fetch=originalFetch;}
 });
 
 test('managed admin migration grants only the service role and excludes private projection fields',()=>{

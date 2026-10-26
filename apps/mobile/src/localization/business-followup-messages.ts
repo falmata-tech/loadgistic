@@ -21,6 +21,8 @@ const rows=[
  ['Remove from business','ከድርጅቱ አስወግድ','Dhaabbata irraa haqi'],
  ['Remove viewer','ተከታታዩን አስወግድ','Nama hordofu haqi'],
  ['Share tracking','ክትትሉን ያጋሩ','Hordoffii qoodi'],
+ ['Sign in to view your invitations.','ግብዣዎችዎን ለማየት ይግቡ።','Afeerraa keessan ilaaluuf seenaa.'],
+ ['Verify your email to view your invitations.','ግብዣዎችዎን ለማየት ኢሜይልዎን ያረጋግጡ።','Afeerraa keessan ilaaluuf iimeelii keessan mirkaneessaa.'],
  ['Shipment owner','የጭነቱ ባለቤት','Abbaa feʼumsaa'],
  ['Their permitted team members will no longer see this vehicle.','ፈቃድ ያላቸው የቡድኑ አባላት ከዚህ በኋላ ይህን መኪና አያዩም።','Miseensonni garee isaanii hayyama qaban kana booda konkolaataa kana hin argan.'],
  ['This member will lose access to this business.','ይህ አባል የድርጅቱን መዳረሻ ያጣል።','Miseensi kun seensa dhaabbata kanaa ni dhaba.'],

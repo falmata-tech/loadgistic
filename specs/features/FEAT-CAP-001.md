@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive explicitly granted details through FEAT-SHR-001. An authorized owner or independent driver may also publish no more than one undated regular-service signal per current truck-and-driver pair using either geometry; it accompanies an otherwise eligible Public Market truck but never makes a Private-network truck anonymously discoverable. Exact truck and visitor coordinates remain private.
+behavior: Providers publish one latest Empty or Partial signal with public or explicitly shared account visibility. Current and Preferred routes/areas are OR availability offers within the same vehicle, permission and status filters; reported approximate location is separate. Both statuses support Area or Route. Area queries compare advertised routes and areas; older visible signals carry honest capacity/location ages for either audience. Migrations211/213 implement these corrections locally; hosted rollout is pending. No email guest Capacity or exact-coordinate disclosure is supported.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
 rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
@@ -11,7 +11,97 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## Map update and cluster stability — October25 repair in progress
+
+Given an already loaded Capacity result receives progressive pages or refreshes\
+When updates belong to the same still-authorized query scope\
+Then intermediate pages do not temporarily remove an existing selection or
+make its camera repeatedly reset\
+And the completed result replaces obsolete vehicles without reducing eligible
+coverage or adding a manual loading step\
+And changed account, audience, permissions or filters cannot reuse another
+scope's snapshot; explicit denial clears protected content.
+
+Given a cluster expansion query, map movement or initial data load is pending\
+When a newer gesture, selection, source revision or navigation supersedes it\
+Then the stale callback cannot move the camera or restore an obsolete selection\
+And initial centering does not override a user's later pan/zoom\
+And stable vehicle identities and unchanged input yield stable clustering while
+actual new locations and membership changes still reach the map.
+
+Verify real desktop/phone web, affected Expo/native maps, selection/Back and a
+larger local vehicle set. Preserve current appearance and automatic behavior;
+do not solve performance by capping results, hiding supply, extra confirmations
+or a new user-facing loading mode. Source races are identified; runtime and
+stress qualification remain pending.
+
 ## October 21 filter and posting hierarchy — presentation-only
+
+### October26 accepted availability model — locally verified, hosted rollout pending
+
+Given a vehicle advertises current and Preferred routes or areas\
+When an otherwise permitted search matches any complete one of those offers\
+Then the vehicle appears once whether one or several offers match\
+And vehicle type, load status, source, reviewed documents and other selected
+non-geographic groups still apply with their existing AND semantics\
+And no new Current-versus-Preferred search switch excludes an otherwise matching
+offer by default.
+
+Given a search specifies both pickup and delivery\
+When the advertised offers are compared\
+Then both places must match one complete ordered route or one service area\
+And a pickup from one unrelated offer and delivery from another do not create
+a false route match\
+And the existing directional rules and bounded distance tolerances remain
+authoritative.
+
+Given a provider publishes Empty or Partial capacity\
+When they choose Area or Route\
+Then either geometry is supported for either status on web, Android, API and
+database publication/matching\
+And the same terms, default choice and saved facts appear across clients\
+And Area shows service coverage, Route shows ordered stops and direction,
+Preferred coverage has a distinct dashed style, and reported vehicle location
+retains its actual source and privacy boundary.
+
+Given an older Empty/Partial signal remains On Duty and explicitly shared\
+When it is read publicly or through currently authorized private Capacity\
+Then both audiences use the same older-until-changed/Off Duty eligibility with
+honest age labels\
+And private visibility does not silently expire after24 hours while the same
+public signal remains visible\
+And revoked sharing, wrong actor/workspace, Full or Off Duty remain denied.
+
+Local verification: migration211 permits Partial areas and aligns private
+older-signal visibility; migration213 makes Area queries compare route points
+as well as area coverage. The pure geographic regression and
+`tests/sql/capacity-offer-union.sql` cover public, private-account and business
+results, hidden geometry, revoked grants and whole-offer matching. Provider
+Chrome saves/reopens cover Empty/Partial × Area/Route; installed Android Staff
+Area search finds the existing route vehicle and retains its filter on reopen.
+Hosted rollout and final release-APK qualification remain separate pending gates.
+
+The October26 filter presentation supersedes the older four-group order below:
+Vehicle first, Area or route second, Vehicle location third, then More filters.
+An Area query matches a current or Preferred route passing within its chosen
+radius, as well as a current or Preferred service area reaching that location.
+Use the same route-point distance rule as a single Route endpoint query; the
+query shape must not silently exclude the other advertised offer geometry.
+Hidden current geometry remains excluded, explicit legacy geometry constraints
+still apply, and vehicle/status/documents/authorization filters retain their
+existing AND behavior. Public, private-account and business RPC projections must
+agree; a visible route endpoint is a positive Area-query regression case.
+Area or route has the same two concise icon-led choices as provider input. Area
+search selects a catalog city plus distance and compares all advertised current
+and Preferred areas/routes; Route search selects origin/destination plus their
+existing ranges/direction and compares complete offers. This is query shape,
+not a filter that excludes the other offer geometry or Preferred availability.
+Inactive query-shape drafts may be revisited inside the dialog but are not sent
+when Show vehicles applies the other shape. No explanatory paragraph is added.
+Vehicle location explicitly retains the existing reported-point city/nearby and
+GPS/phone/manual filters; it never silently substitutes for advertised coverage.
+Existing physical-location links retain their original meaning. Both clients
+use these same fields, defaults, active-filter counts and apply/reset outcomes.
 
 Given a visitor opens the Capacity map filters on web or Expo\
 When the filter controls are presented\
@@ -27,6 +117,13 @@ And the most-used Vehicle and Location choices are immediately visible while
 Route and More can be opened without losing the draft\
 And applying or clearing still sends the same canonical values, defaults and
 multi-select groups defined below; transporter search remains independent.
+
+October26 wording consistency: the Vehicle type picker uses All vehicle types
+for its unfiltered/reset choice, the actual type name for one selection, and a
+short localized vehicle-types count for several. It does not mix Vehicle type
+with configuration terminology. Web and Android keep existing multi-selection,
+draft, reset, icons, catalogue illustrations and canonical API values; no helper
+paragraph is added.
 
 Given a provider opens the capacity editor on web or Expo\
 When availability is being created or updated\
@@ -287,8 +384,7 @@ database function or hosted setting; existing API filter validation remains.
 
 Given an authorized fleet owner or Driver publishes current capacity for one truck\
 When the current signal is saved\
-Then Empty requires exactly one availability geometry: Service area or Capacity route\
-And Partial requires one Capacity route and cannot publish a Service area\
+Then Empty and Partial each require exactly one availability geometry: Service area or Capacity route\
 And a Service area uses one selected center city plus three through five distinct surrounding cities\
 And the surrounding cities form one ordered polygon boundary while the center city remains the searchable area anchor\
 And a Capacity route uses two through five distinct ordered cities joined in sequence\
@@ -301,8 +397,9 @@ And the Driver is not asked for a capacity percentage and no percentage is displ
 Given a public current-capacity projection is selected on the map\
 When its Driver location is available\
 Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
-And when Empty uses a Service area a separate labeled cobalt hollow polygon joins the selected surrounding cities and identifies the center city\
-And when its geometry is Capacity route a labeled cobalt Empty or amber Partial polyline joins every selected city in order\
+And a Service area uses a separate labeled outline joining its surrounding cities and identifies the center city\
+And a Capacity route uses a labeled polyline joining every selected city in order\
+And both use cobalt for Empty and neutral gray for Partial\
 And color is reinforced by text and shape rather than being the only meaning\
 And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
 
@@ -381,7 +478,7 @@ Then free text, exact transporter, capacity status, geometry, configuration, loa
 And every supplied filter must match the same truck while omitted filters remain neutral\
 And one endpoint is projected against every segment of each eligible current or regular Capacity route\
 And two endpoints must fall within their independent tolerances on one route in the selected direction, based on projected progress along the complete ordered polyline\
-And an Empty Service area tests one supplied endpoint or both supplied endpoints against the complete polygon and selected tolerances\
+And an Empty or Partial Service area tests one supplied endpoint or both supplied endpoints against the complete polygon and selected tolerances\
 And no distance, freshness, verification, or provider fact produces a public rank or suitability score\
 And the managed projection returns only stable cursor order.
 

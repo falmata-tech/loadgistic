@@ -346,9 +346,9 @@ checks precede limits. This supersedes the September 21 main/detail field split.
 
 Given the capacity filter dialog, when choosing Truck configuration, then each
 available configuration displays its existing catalogue illustration and name.
-The collapsed picker shows the selected illustration/name, with Any configuration
+The collapsed picker shows the selected illustration/name, with All vehicle types
 as the neutral choice. Selection is single-valued, keyboard-operable and submits
-the unchanged vehicleCategory value; Clear restores Any configuration. Public
+the unchanged vehicleCategory value; Clear restores All vehicle types. Public
 and private maps reuse this control. Retired courier types remain absent. Keep
 phone choices readable and preserve dialog scrolling, focus and other filters.
 Plan: reuse catalogue assets → illustrated disclosure/radio choices → focused

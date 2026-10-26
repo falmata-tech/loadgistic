@@ -13,11 +13,12 @@ const errorSource=fs.readFileSync(path.join(root,'src/lib/errors.ts'),'utf8');
 const {errorMessage}=await import(`data:text/javascript,${encodeURIComponent(ts.transpileModule(errorSource,{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText)}`);
 
 test('capacity validation errors explain the required correction without exposing internal details',()=>{
-  for(const code of ['INVALID_CAPACITY_INPUT','INVALID_AVAILABILITY_GEOMETRY','PARTIAL_CAPACITY_ROUTE_REQUIRED','DRIVER_REQUIRED_FOR_CAPACITY','INVALID_APPROXIMATE_LOCATION','CAPACITY_DRIVER_LOCATION_REQUIRED','LOCALITY_REQUIRED']){
+  for(const code of ['INVALID_CAPACITY_INPUT','INVALID_AVAILABILITY_GEOMETRY','CAPACITY_ROUTE_POINTS_REQUIRED','CAPACITY_AREA_BOUNDARY_REQUIRED','DRIVER_REQUIRED_FOR_CAPACITY','INVALID_APPROXIMATE_LOCATION','CAPACITY_DRIVER_LOCATION_REQUIRED','LOCALITY_REQUIRED']){
     assert.notEqual(errorMessage(new Error(code)),'Something went wrong. Please try again.',code);
     assert.doesNotMatch(errorMessage(new Error(code)),new RegExp(code));
   }
-  assert.match(errorMessage(new Error('PARTIAL_CAPACITY_ROUTE_REQUIRED')),/at least two cities/);
+  assert.match(errorMessage(new Error('CAPACITY_ROUTE_POINTS_REQUIRED')),/two|route|cities/i);
+  assert.match(errorMessage(new Error('CAPACITY_AREA_BOUNDARY_REQUIRED')),/area|cities/i);
   assert.doesNotMatch(errorMessage(new Error('SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED')),/SUPABASE|SQL|schema/);
 });
 

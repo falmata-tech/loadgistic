@@ -9,7 +9,7 @@ export function capacityGeographicMatch(item,filters={},originPlace=null,destina
     if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Current capacity route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
     for(const signal of recurring.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Preferred corridor',directionMode:'EITHER'});
   }
-  if(item.status==='EMPTY'&&(!geometry||geometry==='RADIUS')){
+  if((item.status==='EMPTY'||item.status==='PARTIAL')&&(!geometry||geometry==='RADIUS')){
     if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Current service area'});
     for(const signal of recurring.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Preferred service area'});
   }
@@ -34,9 +34,11 @@ export function capacityGeographicMatch(item,filters={},originPlace=null,destina
     else return {matched:false,label:null};
   }
   if(areaPlace){
-    const match=areaMatches(areaPlace,filters.currentAreaRadiusKm)[0];
-    if(!match)return {matched:false,label:null};
-    labels.push(`${match.source} reaches ${areaPlace.place_label}`);
+    const routeMatch=routes.map(route=>({...route,...capacityRoutePointMatch(point(areaPlace),route.points,{radiusKm:filters.currentAreaRadiusKm})})).find(route=>route.matched);
+    const areaMatch=areaMatches(areaPlace,filters.currentAreaRadiusKm)[0];
+    if(routeMatch)labels.push(`${routeMatch.source} passes within ${Math.round(routeMatch.distance_km)} km of ${areaPlace.place_label}`);
+    else if(areaMatch)labels.push(`${areaMatch.source} reaches ${areaPlace.place_label}`);
+    else return {matched:false,label:null};
   }
   // Nearby eligibility is checked using uncertainty-aware distance by each adapter.
   // Never infer it from Number('') or use it to rescue failed endpoint/area filters.

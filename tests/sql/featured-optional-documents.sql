@@ -70,7 +70,7 @@ begin
  day_id:=public.save_managed_featured_truck_day(reviewer,jsonb_build_object('feature_date',feature_day,
   'theme_key',theme->>'key','theme_label',theme->>'label','theme_configurations',theme->'configurations',
   'target_count',1,'truck_keys',jsonb_build_array('vehicle:'||truck),'publish',true,'schedule_mode','AUTO',
-  'schedule_config',jsonb_build_object('dayStart','08:30','dayEnd','12:00','targetCount',1,'sponsorBreakCount',4,'sponsorBreakMinutes',2)));
+  'schedule_config',jsonb_build_object('dayStart','22:30','dayEnd','23:59','targetCount',1,'sponsorBreakCount',4,'sponsorBreakMinutes',2)));
  -- Model only this newly created saved AUTO day, never alter an existing roster.
  update public.featured_provider_days set selection_source='AUTO'where id=day_id;
  insert into public.featured_theme_rotation_selections(primary_theme_key,round_number,vehicle_id,driver_user_id,first_feature_date,featured_day_id)
@@ -79,7 +79,7 @@ begin
   'theme_key',public.featured_truck_theme(feature_day+1)->>'key','theme_label',public.featured_truck_theme(feature_day+1)->>'label',
   'theme_configurations',public.featured_truck_theme(feature_day+1)->'configurations','target_count',1,
   'truck_keys','[]'::jsonb,'publish',false,'schedule_mode','AUTO','schedule_config',jsonb_build_object(
-   'dayStart','08:30','dayEnd','12:00','targetCount',1,'sponsorBreakCount',4,'sponsorBreakMinutes',2)));
+   'dayStart','22:30','dayEnd','23:59','targetCount',1,'sponsorBreakCount',4,'sponsorBreakMinutes',2)));
  select jsonb_build_object('day',to_jsonb(d),'slots',(select jsonb_agg(to_jsonb(s)order by s.slot_position)
   from public.featured_provider_slots s where s.day_id=d.id))into saved_before from public.featured_provider_days d where d.id=day_id;
  select to_jsonb(d)into manual_before from public.featured_provider_days d where d.id=manual_id;

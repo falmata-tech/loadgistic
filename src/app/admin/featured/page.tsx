@@ -18,6 +18,9 @@ import {hasPlatformPermission} from '@/lib/platform-admin.js';
 import {notFound} from 'next/navigation';
 import {FeaturedControlsForm,FeaturedPrepareForm} from '@/components/platform-controls-form';
 import {featuredTikTokPresentation} from '@/lib/featured-tiktok-presentation.js';
+import {featuredClock,featuredRangeLabel} from '@/lib/featured-time-presentation.js';
+import {DEFAULT_FEATURED_SCHEDULE_CONFIG} from '@/lib/expo-broadcast.js';
+import {FEATURED_PUBLIC_HEADING} from '@/lib/featured-heading-presentation.js';
 
 export const dynamic='force-dynamic';
 
@@ -45,10 +48,10 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   const excluded=candidates.filter((item:any)=>!item.eligible);
   const rosterGaps=stored.slotEvaluations.filter((slot:any)=>!slot.eligible);
   const tiktokStatus=stored.day?.tiktok_broadcast_status||'NOT_SCHEDULED';
-  const tiktok=featuredTikTokPresentation(tiktokStatus,Boolean(stored.day?.tiktok_url));
-  const tiktokStart=stored.schedule?.config?.dayStart||'08:30';
+  const tiktokStart=stored.schedule?.config?.dayStart||DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart;
+  const tiktok=featuredTikTokPresentation(tiktokStatus,stored.day?.tiktok_url,tiktokStart);
   return <div className={"page featured-admin-page "+styles.workspace}>
-    <PageHeader title={<Text message="Daily Featured Transport Providers"/>}/>
+    <PageHeader title={<Text message={FEATURED_PUBLIC_HEADING}/>}/>
     <Flash error={query.error} success={query.success}/>
     {!editing?<FeaturedOperationOverview overview={overview} mode={controls.featured_mode}/>:null}
     {!editing?<div className={styles.recordActions}>{controls.featured_mode==='AUTO'?<FeaturedPrepareForm/>:null}<WorkspaceTaskDialog title="Selection settings" triggerLabel="Selection settings"><FeaturedControlsForm controls={controls}/></WorkspaceTaskDialog></div>:null}
@@ -69,10 +72,10 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
       <section className="panel featured-event-settings"><div className="section-heading"><div><span className="section-kicker"><Sparkles aria-hidden="true"/><Text message="Public presentation"/></span><h2><Text message="Programme message"/></h2></div></div><div className="featured-presentation-grid"><div className="form-group"><label htmlFor="feature-headline"><Text message="Headline"/></label><Localized as="input" copy={["placeholder"]} id="feature-headline" name="publicHeadline" maxLength={90} defaultValue={stored.day?.public_headline||''} placeholder="Title for today's featured Transport Providers"/></div><div className="form-group featured-introduction-field"><label htmlFor="feature-introduction"><Text message="Short introduction"/></label><Localized as="textarea" copy={["placeholder"]} id="feature-introduction" name="publicIntroduction" minLength={10} maxLength={240} defaultValue={stored.day?.public_introduction||''} placeholder="Introduce the featured transport accounts."/></div><div className="form-group"><label htmlFor="feature-tiktok"><ExternalLink aria-hidden="true"/><Text message="Live link (optional)"/></label><Localized as="input" copy={["placeholder"]} id="feature-tiktok" name="tiktokUrl" type="url" inputMode="url" defaultValue={stored.day?.tiktok_url||''} placeholder="https://www.tiktok.com/@loadgistic/live"/></div></div></section>
       {excluded.length?<details className="panel featured-exclusions"><summary><ShieldAlert aria-hidden="true"/><Text message={excluded.length===1?'One account needs review before featuring.':'{count} accounts need review before featuring.'} values={{count:excluded.length}}/></summary><div>{excluded.map((item:any)=><article key={item.provider_key}><strong>{item.name}</strong><span>{item.reasons?.join(' · ')||'Account is not ready'}</span></article>)}</div></details>:null}
       <div className="sticky-form-actions"><button className="button secondary" name="command" value="DRAFT"><Save aria-hidden="true"/><Text message="Save draft"/></button><button className="button" name="command" value="PUBLISH"><CheckCircle2 aria-hidden="true"/><Text message="Publish this day"/></button><Link className="button ghost" href="/featured"><Text message="View public programme"/></Link></div>
-    </form>:<div className={styles.featuredReadRoster}>{stored.slotEvaluations.length?<ol>{stored.slotEvaluations.map((slot:any,index:number)=><li key={slot.id||slot.vehicle_id}><span>{index+1}</span><div><strong>{slot.candidate?.name||<Text message="Account unavailable"/>}</strong><small>{slot.eligible?<Text message="Transport Provider"/>:<Text message="Needs review"/>}</small></div><time>{stored.walkthroughs?.find((entry:any)=>entry.provider_key===`vehicle:${slot.vehicle_id}`||entry.provider_key===slot.candidate?.provider_key)?.time_label||''}</time></li>)}</ol>:<p><Text message="Not prepared yet"/></p>}</div>}
+    </form>:<div className={styles.featuredReadRoster}>{stored.slotEvaluations.length?<ol>{stored.slotEvaluations.map((slot:any,index:number)=><li key={slot.id||slot.vehicle_id}><span>{index+1}</span><div><strong>{slot.candidate?.name||<Text message="Account unavailable"/>}</strong><small>{slot.eligible?<Text message="Transport Provider"/>:<Text message="Needs review"/>}</small></div><time>{featuredRangeLabel(stored.walkthroughs?.find((entry:any)=>entry.provider_key===`vehicle:${slot.vehicle_id}`||entry.provider_key===slot.candidate?.provider_key)?.time_label)}</time></li>)}</ol>:<p><Text message="Not prepared yet"/></p>}</div>}
     </section>
     {!editing&&stored.day?.status==='PUBLISHED'?<section className="panel featured-broadcast-admin" aria-labelledby="featured-broadcast-admin-title">
-      <header><Radio aria-hidden="true"/><h2 id="featured-broadcast-admin-title"><Text message="TikTok Live"/></h2><span className={`featured-broadcast-admin-state ${tiktok.state}`}><Text message={tiktok.message} values={{time:tiktokStart}}/></span></header>
+      <header><Radio aria-hidden="true"/><h2 id="featured-broadcast-admin-title"><Text message="TikTok Live"/></h2><span className={`featured-broadcast-admin-state ${tiktok.state}`}><Text message={tiktok.message} values={{time:featuredClock(tiktokStart)}}/></span></header>
       {stored.day.tiktok_url?<><p><Text message="This programme does not start TikTok. Start the broadcast in TikTok, then mark it Live here."/></p><a className="button secondary small" href={stored.day.tiktok_url} target="_blank" rel="noreferrer"><ExternalLink aria-hidden="true"/><Text message="Open TikTok link"/></a>
         {tiktokStatus==='LIVE'?<form action="/api/admin/featured" method="post"><input type="hidden" name="featureDate" value={date}/><button className="button secondary" name="command" value="TIKTOK_ENDED"><Radio aria-hidden="true"/><Text message="End TikTok Live"/></button></form>:tiktokStatus==='SCHEDULED'?<form action="/api/admin/featured" method="post"><input type="hidden" name="featureDate" value={date}/><button className="button" name="command" value="TIKTOK_LIVE"><Play aria-hidden="true"/><Text message="Mark TikTok LIVE"/></button></form>:null}
       </>:<p><Text message="No TikTok Live link saved. Add one while editing this programme."/></p>}

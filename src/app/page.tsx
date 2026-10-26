@@ -31,7 +31,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
     selections=Object.fromEntries(Object.keys(CAPACITY_FILTER_CHOICES).map(key=>[key,Array.isArray(input[key])?'INVALID_CAPACITY_FILTER':raw[key]||''])) as CapacityFilterGroups;
     if(Object.values(input).some(Array.isArray)&&!Object.keys(CAPACITY_FILTER_CHOICES).some(key=>Array.isArray(input[key])))selections.status='INVALID_CAPACITY_FILTER';
   }
-  const query={ownerDocs:raw.ownerDocs||'',driverDocs:raw.driverDocs||'',truckDocs:raw.truckDocs||'',q:raw.q||'',provider:raw.provider||'',truck:raw.truck||'',status:raw.status||'',vehicleCategory:raw.vehicleCategory||'',stopOption:raw.stopOption||'',freshness:raw.freshness||'',locationSource:raw.locationSource||'',truckCityPlaceRef:raw.truckCityPlaceRef||'',truckCity:raw.truckCity||'',truckLocationRadiusKm:raw.truckLocationRadiusKm||'',originPlaceRef:raw.originPlaceRef||'',origin:raw.origin||'',originRadiusKm:raw.originRadiusKm||'',destinationPlaceRef:raw.destinationPlaceRef||'',destination:raw.destination||'',destinationRadiusKm:raw.destinationRadiusKm||'',directionMode:raw.directionMode||'',nearLat:raw.nearLat||'',nearLng:raw.nearLng||'',nearRadiusKm:raw.nearRadiusKm||''};
+  const query={ownerDocs:raw.ownerDocs||'',driverDocs:raw.driverDocs||'',truckDocs:raw.truckDocs||'',q:raw.q||'',provider:raw.provider||'',truck:raw.truck||'',status:raw.status||'',vehicleCategory:raw.vehicleCategory||'',stopOption:raw.stopOption||'',freshness:raw.freshness||'',locationSource:raw.locationSource||'',truckCityPlaceRef:raw.truckCityPlaceRef||'',truckCity:raw.truckCity||'',truckLocationRadiusKm:raw.truckLocationRadiusKm||'',currentAreaPlaceRef:raw.currentAreaPlaceRef||'',currentArea:raw.currentArea||'',currentAreaRadiusKm:raw.currentAreaRadiusKm||'',originPlaceRef:raw.originPlaceRef||'',origin:raw.origin||'',originRadiusKm:raw.originRadiusKm||'',destinationPlaceRef:raw.destinationPlaceRef||'',destination:raw.destination||'',destinationRadiusKm:raw.destinationRadiusKm||'',directionMode:raw.directionMode||'',nearLat:raw.nearLat||'',nearLng:raw.nearLng||'',nearRadiusKm:raw.nearRadiusKm||''};
   const {loadType:_retiredSelection,...visibleSelections}=selections;
   Object.assign(query,visibleSelections);
   const mapQuery={...query,q:'',...(privateView?{view:'private'}:{})};
@@ -53,7 +53,6 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   return <><PublicHeader user={user}/><main className="public-app-page public-market-workspace public-market-introduced unified-capacity-workspace">
     <header className="market-introduction">
       <h1><Text message={capacityIntroduction.title}/></h1>
-      <p><Text message={capacityIntroduction.body}/></p>
       {canViewShared?<Localized as="nav" copy={["aria-label"]} className="capacity-view-choice" aria-label="Capacity views">
         <a href="/" aria-current={!privateView?'page':undefined}><Text message="Open to the public"/></a>
         <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Shared with you"/></a>

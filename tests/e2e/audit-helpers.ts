@@ -121,8 +121,11 @@ export async function auditFleetDriver(service:any,owner:any,vehicleId:string){
 
 // Tracking opens its floating progress panel deliberately, keeping map space free.
 export async function auditOpenTrackingProgress(page:any){
- const toggle=page.locator('.tracking-progress-toggle');
- await expect(toggle).toBeVisible();await expect(toggle).toBeEnabled();
+ const controls=page.locator('.tracking-control-panel');
+ await expect(controls).toBeVisible();
+ await expect(page.getByTestId('tracking-map-workspace').locator('.tracking-progress-toggle')).toHaveCount(0);
+ const toggle=controls.locator('button[aria-controls^="shipment-update-form-"]');
+ await expect(toggle).toBeVisible();
  if(await toggle.getAttribute('aria-expanded')==='false')await toggle.click();
- await expect(page.locator('.tracking-progress-body')).toBeVisible();
+ await expect(controls.locator('form.tracking-action-form')).toBeVisible();
 }

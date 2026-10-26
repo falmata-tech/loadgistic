@@ -79,8 +79,8 @@ begin
      expo_region_codes,broadcast_start_time,broadcast_end_time,schedule_mode,
      schedule_config_json,manual_schedule_json,target_count,status,selection_source,published_at)
   values(start_day+30,'featured:provider-accounts','Transport Providers','provider-accounts','Transport Providers',
-    '[]'::jsonb,'08:30','12:00','AUTO',
-    '{"dayStart":"08:30","dayEnd":"12:00","targetCount":1,"sponsorBreakCount":0}'::jsonb,
+    '[]'::jsonb,'22:30','23:59','AUTO',
+    '{"dayStart":"22:30","dayEnd":"23:59","targetCount":1,"sponsorBreakCount":0,"sponsorBreakMinutes":2}'::jsonb,
     '[]'::jsonb,1,'PUBLISHED','AUTO',now()) returning id into late_saved_id;
   insert into public.featured_provider_slots
     (day_id,slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id)
@@ -148,7 +148,7 @@ begin
   day_value:=start_day+28;
   saved_id:=public.save_managed_featured_provider_day(admin_id,jsonb_build_object(
     'feature_date',day_value,'target_count',1,'truck_keys',jsonb_build_array('vehicle:'||representative::text),
-    'schedule_mode','AUTO','schedule_config',jsonb_build_object('dayStart','08:30','dayEnd','12:00',
+    'schedule_mode','AUTO','schedule_config',jsonb_build_object('dayStart','22:30','dayEnd','23:59',
       'targetCount',1,'sponsorBreakCount',0,'sponsorBreakMinutes',2),
     'manual_schedule','[]'::jsonb,'publish',true
   ));
@@ -175,7 +175,7 @@ begin
     begin
       perform public.save_managed_featured_provider_day(admin_id,jsonb_build_object(
         'feature_date',day_value+1,'target_count',2,'truck_keys',to_jsonb(duplicate_vehicles),
-        'schedule_mode','AUTO','schedule_config',jsonb_build_object('dayStart','08:30','dayEnd','12:00',
+        'schedule_mode','AUTO','schedule_config',jsonb_build_object('dayStart','22:30','dayEnd','23:59',
           'targetCount',2,'sponsorBreakCount',0,'sponsorBreakMinutes',2),'publish',true));
       raise exception 'FEATURED_DUPLICATE_ACCOUNT_ACCEPTED';
     exception when raise_exception then

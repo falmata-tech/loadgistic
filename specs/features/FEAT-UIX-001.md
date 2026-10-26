@@ -27,6 +27,57 @@ owner visual approval. No release readiness is inferred from this plan.
 
 # Low-friction interface
 
+## October26 overlapping markers and shell copyright — local work pending
+
+Given multiple available vehicles occupy the same displayed map position\
+When the user activates their small overlap group\
+Then the vehicles separate into individually selectable markers within the map\
+And the map does not replace them with a narrow text-heavy selection popup\
+And stable display offsets and short connector lines preserve the genuine
+reported coordinates, privacy areas, capacity status and source badges\
+And selecting a vehicle opens its usual details; dismiss, Back, map movement
+and a changed/denied dataset clear obsolete spread markers without a stale
+camera callback or accidental second selection\
+And large clusters keep bounded zoom/expansion rather than creating an
+unbounded fan of markers or moving saved locations.
+
+Given a web page uses the unified public or authenticated shell\
+When its copyright is shown\
+Then a compact normal-flow footer identifies the current year and MarketVision
+Technology, linking the company name to https://marketvisiontech.com\
+And existing relevant office details retain Jigjiga, Somali Region, Ethiopia\
+And the shell reserves its space rather than covering maps, actions, required
+tile attribution, dialogs or fixed phone navigation\
+And full-height map pages still fit their viewport without an extra outer
+scrollbar, duplicate footer or cramped interactive controls\
+And desktop, narrow phone and authenticated role layouts are exercised before
+release. Native legal/footer placement must remain appropriate to the app's
+existing About/account structure rather than adding an obstructive overlay.
+
+## October25 launch clarity and native structure — in progress
+
+Given a visitor or member opens a task, empty list or saved record\
+When the layout already shows the purpose and available actions\
+Then the interface uses concise headings, record/status facts and obvious actions
+instead of paragraphs explaining its data model or how to operate the screen\
+And an empty Network uses “No connections” with Find accounts rather than
+describing connection/vehicle-sharing rules\
+And short success status, permission/error recovery, explicit sharing consent and
+destructive-action consequences remain understandable at the relevant action\
+And the same principle applies to public, provider, business team, Support,
+platform staff and Admin interfaces in English, Amharic and Afaan Oromo.
+
+Given a user compares phone web and installed Android\
+When related work appears in cards or sections\
+Then native surfaces have readable flat boundaries, clear heading hierarchy and
+deliberate spacing on a contrasting canvas\
+And inner rows do not add repeated nested card frames or competing decorations\
+And touch targets, focus, long translations and saved/edit/cancel states remain
+usable without shrinking text or removing capabilities.
+
+This owner direction supersedes a purely light-border presentation preference;
+it does not permit removing privacy, consent, truthful data-age or error facts.
+
 ## October20 vehicle-dialog height — locally verified and owner approved
 
 Given a normal vehicle detail includes its availability-confirmation notice\
@@ -344,7 +395,7 @@ And no account prompt blocks browsing, filtering, map view, transporter details,
 
 Given a visitor moves between public pages\
 When layout and color are rendered\
-Then the base uses warm white or off-white surfaces, generous spacing, and restrained borders\
+Then the base uses warm white or off-white surfaces, deliberate spacing, and clearly defined flat card/section boundaries\
 And public workspace titles use a compact application scale that leaves the primary tool visible rather than an oversized editorial scale\
 And the shared brand palette uses deep navy `#0B1D3A`, cobalt `#155EEF`, and restrained amber `#F2B01E` over white or `#F3F5F7` surfaces; purple identifies GPS location sources, and green is not used for UI branding or capacity status\
 And saturated Loadgistic colors are reserved for clear actions, current state, small trust accents, and navigation focus\

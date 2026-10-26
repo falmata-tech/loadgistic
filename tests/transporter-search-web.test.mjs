@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as searchContract from '../src/lib/transporter-search.js';
-import {CAPACITY_FILTER_PRESENTATION} from '../src/lib/capacity-filter-presentation.ts';
+import * as filterPresentation from '../src/lib/capacity-filter-presentation.ts';
+const {CAPACITY_FILTER_PRESENTATION}=filterPresentation;
 
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];
 const find=(tree,type,predicate=()=>true)=>nodes(tree).find(node=>node.type===type&&predicate(node));
@@ -23,7 +24,7 @@ function harness(name){
  const node=(type,props,key)=>({type,props:props||{},key}),simple=new Proxy({},{get:(_target,key)=>key});
  const imports={react:{__esModule:true,default:react},'react/jsx-runtime':{jsx:node,jsxs:node,Fragment:'Fragment'},'next/link':{__esModule:true,default:'Link'},'next/form':{__esModule:true,default:'form'},'lucide-react':simple,
   '@/components/localization':{Text:'Text',Localized:'Localized'},'./localization':{Text:'Text',Localized:'Localized'},'./content-safety':{useBlockedProviders:()=>({blocked:[]})},
-  '@/lib/transporter-search.js':searchContract,'@/lib/capacity-filter-presentation':{CAPACITY_FILTER_PRESENTATION},'./transporter-search.module.css':{__esModule:true,default:simple},
+  '@/lib/transporter-search.js':searchContract,'@/lib/capacity-filter-presentation':filterPresentation,'./transporter-search.module.css':{__esModule:true,default:simple},
   '@/lib/capacity-map-loading.js':{loadCapacityMapWindow:()=>{throw Error('Unexpected map fetch');},reconcileCapacityMapWindow:()=>{throw Error('Unexpected map reconciliation');}},
   '@/lib/location-privacy.js':{BUSINESS_SEARCH_PRIVACY_KM:20,obscureCoordinate:()=>{throw Error('Unexpected location');},isValidCoordinate:()=>true},
   './capacity-configuration-picker':{CapacityConfigurationPicker:'Configuration'},'./capacity-multi-options':{CapacityMultiOptions:'Options'},'./ethiopia-place-input':{EthiopiaPlaceInput:'Place'},
@@ -68,13 +69,13 @@ test('provider cards lead with chosen account identity without legacy category s
  }finally{view.close();}
 });
 
-test('employed-driver results retain the named driver and pair while linking the actual provider profile',async()=>{
+test('provider result links the account and all matching vehicles without a driver-only card',async()=>{
  const view=harness('capacity-search-results');try{
-  let tree=view.render({query:{q:'Dawit'},view:'open',searchPath:'/'});
-  view.requests[0].resolve({ok:true,json:async()=>({items:[{key:'driver',kind:'COMPANY_DRIVER',accountName:'Blue Road',managerName:'Meron',title:'Dawit',handle:'blue-road',capacity_id:'pair-1',matching_trucks:1}],total:1,hasMore:false})});await settle();tree=view.render();
-  assert.equal(text(find(tree,'h3')),'Dawit');assert.ok(text(tree).includes('Driver'));assert.ok(text(tree).includes('Blue Road'));assert.ok(!text(tree).includes('@Dawit'));
-  assert.equal(new URL(find(tree,'Link',node=>text(node).includes('Show on map')).props.href,'http://localhost').searchParams.get('truck'),'pair-1');
-  assert.equal(find(tree,'Link',node=>text(node)==='Transport Provider').props.href,'/@blue-road');
+  let tree=view.render({query:{q:'Blue Road'},view:'open',searchPath:'/'});
+  view.requests[0].resolve({ok:true,json:async()=>({items:[{key:'provider',kind:'COMPANY',accountName:'Blue Road',managerName:'Meron',title:'Blue Road',handle:'blue-road',capacity_id:null,matching_trucks:2}],total:1,hasMore:false})});await settle();tree=view.render();
+  assert.equal(text(find(tree,'h3')),'Blue Road');assert.ok(text(tree).includes('Transport Provider'));assert.ok(!text(tree).includes('Dawit'));
+  const map=new URL(find(tree,'Link',node=>text(node).includes('Show vehicles on map')).props.href,'http://localhost');assert.equal(map.searchParams.get('provider'),'blue-road');assert.equal(map.searchParams.has('truck'),false);
+  assert.equal(find(tree,'Link',node=>text(node)==='Profile').props.href,'/@blue-road');
  }finally{view.close();}
 });
 
@@ -202,4 +203,20 @@ test('the profile worker retains its page and result without another request whe
   tree=view.render({...props,mapQuery:{status:'PARTIAL',vehicleCategory:'Cargo van',ownerDocs:'IDENTITY'}});assert.equal(view.requests.length,2);assert.ok(text(tree).includes('Current page two'));
   const url=new URL(find(tree,'Link',node=>text(node).includes('Show vehicles on map')).props.href,'http://localhost');assert.equal(url.searchParams.get('status'),'PARTIAL');assert.equal(url.searchParams.get('vehicleCategory'),'Cargo van');assert.equal(url.searchParams.get('ownerDocs'),'IDENTITY');
  }finally{view.close();}
+});
+
+test('web availability query mode changes only successful form fields and leaves reported location independent',()=>{
+ const view=harness('public-capacity-feed');try{
+  const props={...feedProps,query:{currentAreaPlaceRef:'area-ref',currentArea:'Addis Ababa',currentAreaRadiusKm:'50',originPlaceRef:'origin-ref',origin:'Adama',destinationPlaceRef:'destination-ref',destination:'Dire Dawa',directionMode:'EITHER',truckCityPlaceRef:'point-ref',truckCity:'Sebeta',locationSource:'GPS'}};
+  let tree=view.render(props);const groups=nodes(tree).filter(node=>node.type==='details'&&node.props['data-filter-section']);assert.deepEqual(groups.map(node=>node.props['data-filter-section']),['vehicle','availability','location','more']);assert.equal(groups[1].props.open,true);assert.equal(groups[2].props.open,true,'active physical location filters stay visible');
+  const mode=value=>find(tree,'button',node=>nodes(node).some(child=>child.type==='Text'&&child.props.message===value));
+  assert.equal(mode('Route').props['aria-pressed'],true,'existing route links open their route query');
+  let area=find(tree,'fieldset',node=>node.props['data-query-shape']==='AREA'),route=find(tree,'fieldset',node=>node.props['data-query-shape']==='ROUTE');assert.equal(area.props.disabled,true);assert.equal(route.props.disabled,false);
+  mode('Area').props.onClick();tree=view.render();area=find(tree,'fieldset',node=>node.props['data-query-shape']==='AREA');route=find(tree,'fieldset',node=>node.props['data-query-shape']==='ROUTE');assert.equal(area.props.disabled,false);assert.equal(route.props.disabled,true);assert.equal(route.props.hidden,true);assert.equal(find(route,'Options',node=>node.props.name==='stopOption'),undefined);assert.ok(find(find(tree,'details',node=>node.props['data-filter-section']==='more'),'Options',node=>node.props.name==='stopOption'),'Stops stay outside the inactive route fieldset');
+  assert.equal(find(area,'Place').props.placeRefName,'currentAreaPlaceRef');assert.equal(find(area,'Place').props.defaultPlaceRef,'area-ref');assert.equal(find(area,'select').props.defaultValue,'50');assert.equal(find(route,'Place').props.defaultPlaceRef,'origin-ref','inactive route fields remain mounted with saved draft values');assert.ok(find(tree,'Place',node=>node.props.placeRefName==='truckCityPlaceRef'));
+  mode('Route').props.onClick();tree=view.render();assert.equal(find(tree,'fieldset',node=>node.props['data-query-shape']==='ROUTE').props.disabled,false);assert.equal(find(tree,'fieldset',node=>node.props['data-query-shape']==='AREA').props.disabled,true);assert.equal(nodes(tree).some(node=>node.props?.name==='availabilityGeometry'||node.props?.name==='preferredOnly'),false);
+ }finally{view.close();}
+});
+test('web starts with an Area query and collapses unused physical vehicle location',()=>{
+ const view=harness('public-capacity-feed');try{const tree=view.render({...feedProps,query:{}});assert.equal(find(tree,'button',node=>nodes(node).some(child=>child.type==='Text'&&child.props.message==='Area'))?.props['aria-pressed'],true);assert.equal(find(tree,'details',node=>node.props['data-filter-section']==='location').props.open,false);}finally{view.close();}
 });

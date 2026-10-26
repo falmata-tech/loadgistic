@@ -12,7 +12,7 @@ begin
  perform pg_temp.assert_multi(not public.capacity_payload_matches(item||'{"accepts_full_load":false,"accepts_partial_load":false}','{"load_type":"FTL,PTL"}'),'ALL_LOAD_CHOICES_BECAME_UNRESTRICTED');
  perform pg_temp.assert_multi(not public.capacity_payload_matches(item||'{"accepts_multi_pick":false,"accepts_multi_drop":false}','{"stop_option":"MULTI_PICK,MULTI_DROP"}'),'ALL_STOP_CHOICES_BECAME_UNRESTRICTED');
  perform pg_temp.assert_multi(not public.capacity_payload_matches(item,'{"vehicle_category":"Pickup truck","status":"EMPTY,PARTIAL"}'),'GROUPS_NOT_ANDED');
- perform pg_temp.assert_multi(not public.capacity_payload_matches(item||'{"status":"PARTIAL"}','{"status":"EMPTY,PARTIAL","geometry":"RADIUS"}'),'PARTIAL_AREA_MATCHED');
+ perform pg_temp.assert_multi(not public.capacity_payload_matches(item||'{"status":"PARTIAL"}','{"status":"EMPTY,PARTIAL","geometry":"RADIUS"}'),'ROUTE_ONLY_ITEM_MATCHED_AREA_FILTER');
  perform pg_temp.assert_multi(public.capacity_payload_matches(item||jsonb_build_object('updated_at',now()-interval '12 hours'),'{"freshness":"FRESH"}'),'FRESHNESS_BOUNDARY_LOST');
  perform pg_temp.assert_multi(not public.capacity_payload_matches(item||jsonb_build_object('updated_at',now()-interval '12 hours'),'{"freshness":"UPDATE_NEEDED"}'),'FRESHNESS_BOUNDARY_OVERLAPS');
  perform pg_temp.assert_multi(public.capacity_payload_matches(item||jsonb_build_object('updated_at',now()-interval '12 hours 1 second'),'{"freshness":"UPDATE_NEEDED"}'),'OLDER_FRESHNESS_LOST');
@@ -27,7 +27,7 @@ end $predicate$;
 create temporary table multi_fixture(ordinal integer,actor uuid,truck uuid,capacity uuid,status text,configuration text);
 do $projection$
 declare owner_id uuid:=gen_random_uuid();org uuid:=gen_random_uuid();actor uuid;truck uuid;cap uuid;route jsonb;city_ref text;region text;
- handle text:='multi-'||org;query jsonb;first_page jsonb[];second_page jsonb[];total integer;item jsonb;digest text:=repeat('9',64);grant_id uuid;connection_id uuid;
+ handle text:='multi-'||org;query jsonb;first_page jsonb[];second_page jsonb[];total integer;item jsonb;search_result jsonb;digest text:=repeat('9',64);grant_id uuid;connection_id uuid;
  broker_actor uuid:=gen_random_uuid();broker_workspace uuid;
  admin_id uuid;authority_source uuid;context_revision text;setup_capacity uuid;
 begin
@@ -101,7 +101,10 @@ begin
  select count(*) into total from capacity_search_public_rows(jsonb_build_object('provider',handle,'vehicle_category','Cargo van'),null,null,14);
  perform pg_temp.assert_multi(total=9,'LEGACY_SCALAR_CONFIGURATION_CHANGED');
  perform pg_temp.assert_multi((select count(*) from public_capacity_page(jsonb_build_object('provider',handle,'status','EMPTY','load_type','FTL'),null,null,100))=12,'LEGACY_SCALAR_PUBLIC_LOAD_CHANGED');
- perform pg_temp.assert_multi((capacity_search_results(query)->>'total')::integer=19,'PROFILE_MATCHING_TRUCK_COUNTS_INCOMPLETE');
+ search_result:=capacity_search_results(query);
+ perform pg_temp.assert_multi((search_result->>'total')::integer=1
+  and (search_result->'items'->0->>'matching_trucks')::integer=18,
+  'ACCOUNT_FIRST_PROFILE_MATCHING_TRUCK_COUNTS_INCOMPLETE');
  insert into verification_requests(subject_type,subject_id,verification_type,document_name,storage_path,original_name,mime_type,status,submitted_by)
   values('ORGANIZATION',org,'IDENTITY','Synthetic reviewed identity','synthetic/multi-139-owner.png','synthetic.png','image/png','APPROVED',owner_id);
  perform pg_temp.assert_multi((select count(*) from capacity_search_public_rows(query||'{"owner_docs":"IDENTITY"}',null,null,14))=18,'REVIEWED_DOCUMENT_POSITIVE_LOST');

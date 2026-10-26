@@ -49,7 +49,7 @@ test('server response contains the introduction and search metadata before JavaS
   // already exist as real HTML. Visibility is checked in the browser workflow.
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('.market-introduction h1')).toHaveText(heading);
-  await expect(page.locator('.market-introduction p')).toContainText('your transporters');
+  await expect(page.locator('.market-introduction p')).toHaveCount(0);
   await expect(page).toHaveTitle('Vehicle Capacity & Transporter Networks | Loadgistic');
   await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/Find vehicle space and routes/);
  }finally{await context.close();}

@@ -14,7 +14,7 @@ test('truck location remains in view after owner map container resizes',async({p
  await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
  const firstCapacity=page.getByRole('dialog',{name:'Capacity',exact:true});
  await firstCapacity.getByRole('button',{name:'Empty',exact:true}).click();
- await firstCapacity.getByRole('button',{name:'Capacity route',exact:true}).click();
+ await firstCapacity.getByRole('button',{name:'Route',exact:true}).click();
  for(const [label,name] of [['City 1','Addis Ababa'],['City 2','Sebeta']]){
   await firstCapacity.getByRole('combobox',{name:label,exact:true}).fill(name);
   await firstCapacity.getByRole('option',{name:new RegExp(`^${name}, Ethiopia`)}).first().click();

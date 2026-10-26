@@ -4,6 +4,14 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {workspaceCapabilities} from '../src/navigation/destinations.ts';
 import {currentDrivingTruck} from '../src/navigation/current-driving-pair.ts';
+import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../src/lib/map-initial-camera.js';
+import {markerLocation,signalBounds,signalPaths} from '../src/map/capacity-geometry.ts';
+import {focusedMarkers} from '../src/map/focused-markers.ts';
+import {capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,capacityMarkerOffsets} from '../src/map/capacity-clusters.ts';
+import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
+import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
+import {capacityLoadExplanation} from '../../../src/lib/capacity-load-preferences.js';
+import {translateMessage} from '../../../src/lib/i18n/core.js';
 
 // Real screen state/handlers with native views and transport substituted. This
 // proves caller scope, not SQL authorization or native pixels.
@@ -124,4 +132,67 @@ test('saved capacity geometry stays on the owner map and sharing opens only its 
  const screen=view.compile('../src/screens/manage-capacity.tsx',{...common,RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true,profilePublished:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:''}),capacitySharingMode:()=> 'PRIVATE',CAPACITY_SHARING_CHOICES:[['PRIVATE','Private']],CAPACITY_LOAD_CHOICES:[],privacyRadii:[20]}).default;
  let tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});let map=find(tree,'TrackingMap');assert.deepEqual(map.props.coverage.places,route);assert.equal(map.props.coverage.partial,false);assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update sharing settings').props.disabled===false);
  find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update sharing settings').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'Button',node=>node.props.message==='Save sharing settings'));assert.equal(find(tree,'Text',node=>node.props.children==='Availability'||(Array.isArray(node.props.children)&&node.props.children.includes('Availability'))),undefined,'the Sharing task does not repeat Capacity controls');assert.ok(find(tree,'TrackingMap'),'saved geometry stays mounted beneath the focused task');
+});
+
+const currentArea=status=>({status,visibility:'PRIVATE',sharingMode:'PRIVATE',updatedAt:'2026-10-26',acceptedLoads:'BOTH',availabilityGeometry:'RADIUS',route:[place('Addis Ababa'),place('Adama')],boundary:[place('Sululta'),place('Bishoftu'),place('Sebeta')],areaCenter:place('Addis Ababa'),acceptsMultiPick:true,acceptsMultiDrop:false});
+function capacityEditor(current,locale='en'){
+ const view=renderer(),requests=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',canLocate:false,location:{coordinate:[38.7,9],radius:10,area:'Saved reported point',updatedAt:'2026-10-26'},current};
+ const catalog=locale==='en'?{}:JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
+ const component=view.compile('../src/screens/manage-capacity.tsx',{...common,capacityLoadExplanation,useLanguage:()=>({t:(message,values)=>translateMessage(catalog,message,values)}),RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({request:async(path,body)=>{requests.push({path,body});return{};}}),capacitySharingMode:()=> 'PRIVATE',CAPACITY_SHARING_CHOICES:[['PRIVATE','Private']],CAPACITY_LOAD_CHOICES:[],privacyRadii:[1,3,5,10,20]}).CapacityEditor;
+ const props={truck,canPublish:true,section:'CAPACITY',onSaved(){},onCancel(){}};
+ return{render:()=>view.render(component,props),requests};
+}
+const currentChoice=(tree,label)=>find(tree,'Pressable',node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityLabel===label);
+
+test('native new current capacity uses the same Area default as web',()=>{
+ const editor=capacityEditor(null),tree=editor.render();assert.equal(currentChoice(tree,'Area')?.props.accessibilityState.checked,true);assert.equal(currentChoice(tree,'Route')?.props.accessibilityState.checked,false);
+});
+
+test('native Empty to Partial keeps Area and submits the saved area without changing reported position',async()=>{
+ const editor=capacityEditor(currentArea('EMPTY'));let tree=editor.render();currentChoice(tree,'Partial').props.onPress();tree=editor.render();
+ assert.equal(currentChoice(tree,'Area')?.props.accessibilityState.checked,true);assert.ok(find(tree,'PlacePicker',node=>node.props.label==='Area center'));
+ find(tree,'Button',node=>node.props.message==='Save capacity').props.onPress();await settle();
+ assert.equal(editor.requests.length,1);const {path,body}=editor.requests[0];assert.equal(path,'/api/mobile/capacity');assert.equal(body.status,'PARTIAL');assert.equal(body.availabilityGeometry,'RADIUS');assert.equal(body.capacityAreaCenterPlaceRef,'Addis Ababa');assert.deepEqual(body.capacityAreaBoundaryPlaces,[{placeRef:'Sululta'},{placeRef:'Bishoftu'},{placeRef:'Sebeta'}]);assert.equal(body.acceptsMultiPick,true);assert.equal(body.acceptedLoads,'PTL');assert.equal(Object.hasOwn(body,'approximateLat'),false);
+});
+
+test('native saved Partial Area reopens and status changes do not replace an explicit Route',()=>{
+ const editor=capacityEditor(currentArea('PARTIAL'));let tree=editor.render();assert.equal(currentChoice(tree,'Area')?.props.accessibilityState.checked,true);currentChoice(tree,'Route').props.onPress();tree=editor.render();currentChoice(tree,'Empty').props.onPress();tree=editor.render();assert.equal(currentChoice(tree,'Route')?.props.accessibilityState.checked,true);
+});
+
+test('native saved Preferred Area uses area actions and submits unnumbered town facts',async()=>{
+ const view=regular(),area={...service(),geometry:'RADIUS',route:[],boundary:[place('Sululta'),place('Bishoftu'),place('Sebeta')]};view.data({services:[area]});const tree=view.render();
+ assert.ok(find(tree,'Title',node=>node.props.message==='Preferred area'));assert.ok(find(tree,'Button',node=>node.props.message==='Edit preferred area'));assert.ok(find(tree,'Copy',node=>node.props.message==='Preferred area'));
+ assert.equal(find(tree,'Text',node=>node.props.children?.includes?.('↔')),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Sululta')),'area towns are separate facts');
+ find(tree,'Button',node=>node.props.message==='Edit preferred area').props.onPress();const draft=view.render();assert.equal(find(draft,'Choices').props.value,'RADIUS');find(draft,'Button',node=>node.props.message==='Save preferred area').props.onPress();await settle();assert.equal(view.requests[0].body.geometry,'RADIUS');assert.equal(view.requests[0].body.areaCenterPlaceRef,area.center.placeRef);assert.deepEqual(view.requests[0].body.areaBoundaryPlaces,area.boundary.map(place=>({placeRef:place.placeRef})));
+});
+
+test('native Preferred corridor shows saved stop order and both-way direction',()=>{
+ const view=regular(),tree=view.render();const facts=nodes(tree).filter(node=>node.type==='Copy'||node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string'||typeof value==='number');
+ assert.deepEqual(facts.filter(value=>[1,2,'Adama','Addis Ababa','↔'].includes(value)),[1,'Adama','↔',2,'Addis Ababa']);
+});
+
+function publicMap(){
+ const view=renderer();
+ const component=view.compile('../src/components/CapacityMap.tsx',{...common,memo:value=>value,useLayoutEffect(){},useWindowDimensions:()=>({width:390,height:844}),GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',CapacityTruckContact:'CapacityTruckContact',CapacityTruckDetails:'CapacityTruckDetails',DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,markerLocation,signalBounds,signalPaths,focusedMarkers,capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,capacityMarkerOffsets,capacityDetailFrame,capacityStatusPresentation,apiOrigin:'https://local.invalid',vehicleConfigurationImage:()=>'/truck.png'}).default;
+ const item={id:'partial-area',status:'PARTIAL',geometry:'RADIUS',currentVisible:true,latitude:null,longitude:null,precisionKm:10,currentPoints:[{latitude:9.2,longitude:38.7,label:'Sululta'},{latitude:8.8,longitude:39,label:'Bishoftu'},{latitude:8.9,longitude:38.6,label:'Sebeta'}],regular:[],capacityAge:'Capacity updated earlier',locationAge:'Not reported yet',configuration:'Pickup truck'};
+ return{item,render:selected=>view.render(component,{items:[item],selected,onSelect(){},onDeselect(){}})};
+}
+test('native selected Partial Area retains the saved outline, slate color and town facts without a fabricated location',()=>{
+ const h=publicMap();let tree=h.render(h.item);const source=find(tree,'GeoJSONSource',node=>node.props.id==='selected-signals');assert.equal(source.props.data.features.length,1);const feature=source.props.data.features[0];assert.equal(feature.properties.kind,'current');assert.deepEqual(feature.geometry.coordinates[0],feature.geometry.coordinates.at(-1));assert.equal(find(tree,'Layer',node=>node.props.id==='current-route').props.paint['line-color'],capacityStatusPresentation.PARTIAL.color);assert.equal(find(tree,'Marker'),undefined);
+ const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Area');assert.ok(action);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Approximate location'),undefined);action.props.onPress();tree=h.render(h.item);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Sululta')));assert.equal(find(tree,'Text',node=>node.props.children?.includes?.('↓')),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Partial capacity')));
+});
+test('native overview exposes a compact expandable map key for the same status and geometry vocabulary',()=>{
+ const h=publicMap();let tree=h.render(null);const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key');assert.ok(action);assert.equal(action.props.accessibilityState.expanded,false);action.props.onPress();tree=h.render(null);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key').props.accessibilityState.expanded,true);
+ const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]);for(const label of ['Empty','Partial','Area','Route','Preferred area','Preferred corridor','Approximate location'])assert.ok(text.includes(label),label);
+ tree=h.render(h.item);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key'),undefined,'selected signal controls take over without duplicating the overview key');
+});
+
+
+test('actual CapacityEditor dynamic load explanations translate every accepted load choice',()=>{
+ for(const locale of ['am','om'])for(const acceptedLoads of ['FTL','PTL','BOTH']){
+  const catalog=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),message=capacityLoadExplanation(acceptedLoads),translated=translateMessage(catalog,message);
+  assert.notEqual(translated,message,`${locale}: runtime ${acceptedLoads} explanation must not fall back to English`);
+  const tree=capacityEditor({...currentArea('EMPTY'),acceptedLoads},locale).render();
+  assert.ok(find(tree,'Copy',node=>node.props.children?.includes?.(translated)),`${locale}: actual editor renders the translated ${acceptedLoads} explanation`);
+ }
 });

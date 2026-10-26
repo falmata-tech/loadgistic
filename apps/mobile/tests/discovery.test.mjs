@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {discoveryParams,filterCount,changeSpace,changeAvailability,parseDiscovery,peopleSearchFilters,profileTruckFilters,initialCapacityIdentity} from '../src/api/discovery.ts';
 import { parseCapacityPage,loadCapacity,loadSharedCapacity } from '../src/api/public-capacity.ts';
+import {loadAccountCapacity,loadBusinessCapacity} from '../src/api/business-workspaces.ts';
 import { markerLocation,project,signalPaths,separateMarkers } from '../src/map/capacity-geometry.ts';
 const raw={id:'truck1',status:'EMPTY',assigned_driver_first_name:'Driver',location_lat:null,location_lng:null,availability_geometry:'ROUTE',current_route_points:[{lat:9,lng:38,label:'A'},{lat:10,lng:39,label:'B'}],recurring_corridors:[{geometry:'ROUTE',route_points:[{lat:8,lng:39,label:'C'},{lat:10,lng:39,label:'B'},{lat:9,lng:38,label:'A'}]}]};
 const parse=row=>parseCapacityPage({items:[row],hasMore:false}).items[0];
@@ -23,6 +24,22 @@ test('native truck filters encode identically across public/private map paginati
  await loadSharedCapacity('A&B',new AbortController().signal,()=>{},async path=>{urls.push('https://loadgistic.com'+path);return {items:[],hasMore:false};},filters);
  assert.equal(new URL(urls[0]).search,new URL(urls[1]).search);assert.equal(new URL(urls[0]).searchParams.get('vehicleCategory'),filters.vehicleCategory);assert.equal(new URL(urls[0]).searchParams.has('truckCityLabel'),false);
  assert.equal(filterCount(filters),3);assert.equal(discoveryParams('',{}).toString(),'');
+});
+test('area place and radius reach public, shared, account and business maps without serializing display text',async()=>{
+ const filters={currentAreaPlaceRef:'ethiopia-adama',currentAreaLabel:'Private display text',currentAreaRadiusKm:'50',status:'PARTIAL'};
+ const paths=[],signal=new AbortController().signal,page={items:[],hasMore:false,nextCursor:null};
+ await loadCapacity('https://loadgistic.com','',signal,()=>{},async url=>{paths.push(String(url));return Response.json(page);},filters);
+ await loadSharedCapacity('',signal,()=>{},async path=>{paths.push(path);return page;},filters);
+ await loadAccountCapacity(signal,()=>{},async path=>{paths.push(path);return page;},filters);
+ await loadBusinessCapacity('synthetic-workspace',signal,()=>{},async path=>{paths.push(path);return page;},filters);
+ assert.equal(paths.length,4);
+ for(const path of paths){const query=new URL(path,'https://loadgistic.com').searchParams;
+  assert.equal(query.get('currentAreaPlaceRef'),'ethiopia-adama');assert.equal(query.get('currentAreaRadiusKm'),'50');
+  assert.equal(query.getAll('currentAreaPlaceRef').length,1);assert.equal(query.has('currentAreaLabel'),false);
+  assert.equal(query.get('status'),'PARTIAL');
+ }
+ assert.equal(filterCount(filters),2);
+ assert.equal(discoveryParams('',{}).has('currentAreaPlaceRef'),false);
 });
 test('mutually exclusive load filters cannot accidentally hide all trucks',()=>{
  assert.equal(changeSpace({status:'PARTIAL'},'FTL').status,'');assert.equal(changeAvailability({loadType:'FTL'},'PARTIAL').loadType,'');assert.equal(changeSpace({status:'EMPTY'},'PTL').status,'EMPTY');
@@ -60,8 +77,8 @@ test('explicit profile-to-map selection combines identity with existing truck fi
  const filters={status:'PARTIAL',loadType:'PTL',truckDocs:'VEHICLE_OWNERSHIP',provider:'old',truck:'old-truck'};
  const provider=profileTruckFilters(filters,{kind:'COMPANY',handle:'new-company',capacityId:''});
  assert.deepEqual(provider,{...filters,provider:'new-company',truck:''});
- const driver=profileTruckFilters(filters,{kind:'COMPANY_DRIVER',handle:'new-company',capacityId:'assigned-truck'});
- assert.deepEqual(driver,{...filters,provider:'new-company',truck:'assigned-truck'});
+ const another=profileTruckFilters(filters,{handle:'another-provider'});
+ assert.deepEqual(another,{...filters,provider:'another-provider',truck:''});
  assert.equal(filters.provider,'old');
 });
 test('capacity deep links apply only bounded explicit identity and keep text as a draft',()=>{
@@ -122,4 +139,5 @@ test('all coincident truck markers receive stable individually reachable display
 test('profile parsing excludes extra contacts and rejects unconnected truck result shells',()=>{
  const result=parseDiscovery({items:[{key:'a',kind:'COMPANY',title:'Company',description:'',handle:'public',city:'Adama',capacityId:'',matchingTrucks:2,privateEmail:'hidden'}],total:1,page:1,hasMore:false,configurations:[]});assert.equal('privateEmail' in result.items[0],false);
  assert.throws(()=>parseDiscovery({items:[{kind:'TRUCK'}],total:1,page:1,hasMore:false,configurations:[]}));
+ assert.throws(()=>parseDiscovery({items:[{key:'employee',kind:'COMPANY_DRIVER',title:'Employee',description:'',handle:'provider',city:'',capacityId:'private-pair',matchingTrucks:1}],total:1,page:1,hasMore:false,configurations:[]}));
 });

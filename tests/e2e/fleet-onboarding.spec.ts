@@ -235,7 +235,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await expect(capacity).toBeVisible();
     await expect(capacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await capacity.getByRole('button',{name:'Empty',exact:true}).click();
-    await capacity.getByRole('button',{name:'Capacity route',exact:true}).click();
+    await capacity.getByRole('button',{name:'Route',exact:true}).click();
     await selectPlace(driverPage,'City 1','Addis Ababa');
     await selectPlace(driverPage,'City 2','Sebeta');
     await capacity.getByRole('button',{name:'Use my location',exact:true}).click();
@@ -320,7 +320,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByRole('button',{name:/^Edit current capacity:/}).click();
     await expect(ownerCapacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await ownerCapacity.getByRole('button',{name:'Empty',exact:true}).click();
-    await ownerCapacity.getByRole('button',{name:'Capacity route',exact:true}).click();
+    await ownerCapacity.getByRole('button',{name:'Route',exact:true}).click();
     await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
     await ownerCapacity.getByRole('button',{name:'Save',exact:true}).click();
     await expect(ownerCapacity).toHaveCount(0);
@@ -472,7 +472,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    const dialog=page.getByRole('dialog',{name:'Capacity',exact:true});
    await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
-   await dialog.getByRole('button',{name:'Capacity route',exact:true}).click();
+   await dialog.getByRole('button',{name:'Route',exact:true}).click();
    await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
    // A denied sensor is a recoverable draft error; it must never publish.
    await context.clearPermissions();

@@ -178,7 +178,7 @@
     },
     {
       "file": "mobile-tracking-map.spec.ts",
-      "title": "Expo phone Tracking uses a route-first map, existing progress and public contact modal that closes before profile navigation",
+      "title": "Expo provider Tracking separates current status, route map, update, and vehicle details",
       "project": "desktop-chromium"
     },
     {

@@ -9,6 +9,44 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- FEAT-CAP/GEO/MOB-001 availability matching: migrations211/213 are applied
+  only to the backed-up local preview. The pure cross-shape regression in
+  [`audit-geographic-matching.test.mjs`](../tests/audit-geographic-matching.test.mjs)
+  and [`capacity-offer-union.sql`](../tests/sql/capacity-offer-union.sql) preserve
+  whole-offer/visibility/permission denials while requiring Area queries to find
+  matching Route offers. Rehearsal, rollback and local installation receipts are
+  under `.local/capacity-area-213/`. Installed Android Staff searches the exact
+  offered city, opens the matching vehicle and retains the filter after reopening;
+  `.local/launch-experience-20261026/native-installed-review/` records the actual
+  task and its limits. Root quality passes1274 tests with one reviewed skip;
+  native types/lint,376 tests,783 fixed-copy translations and Android export pass.
+  These are local source gates, not CI, hosted rollout or final APK evidence.
+
+- FEAT-UIX-001 company footer: the local candidate renders one compact
+  MarketVision Technology link and office row in the shared web layout. Actual
+  Chrome review covers Capacity, Featured, Track, About and provider navigation;
+  phone attribution and fixed-navigation clearance are asserted in
+  [`public-app-shell-review.spec.ts`](../tests/e2e/public-app-shell-review.spec.ts)
+  and [`unified-shell-auth.spec.ts`](../tests/e2e/unified-shell-auth.spec.ts).
+  Source hashes, captures and measured geometry are in
+  `.local/play-code10-upload-20261025/footer-review/final-review.json`.
+  Native About is unchanged; release status remains in current progress.
+
+- FEAT-LUX/UIX/MOB-001 compact Capacity entry: the redundant welcome paragraph
+  is removed, with the shared heading, map choices and44px native tabs retained.
+  [`platform-narrative.test.mjs`](../tests/platform-narrative.test.mjs) and
+  [`marketplace-map-background.test.mjs`](../apps/mobile/tests/marketplace-map-background.test.mjs)
+  cover the changed presentation; actual phone web/Expo en/am/om filter/search
+  and private sign-in reviews, settled public markers and final source hashes
+  are in `.local/play-code10-upload-20261025/welcome-map-review/final-review.json`.
+  The source-matched footer Chrome regression passes1/1; the installed APK and
+  hosted release are separate pending qualification.
+
+## Earlier evidence — retain its source and date
+
+The records below explain previous repairs. Their gates do not qualify the
+current candidate; current rollout and unfinished work remain in PROGRESS.
+
 - BASE-DEP-001: provider accessibility scans now await exact canonical route
   completion. The fleet-owner Home fixture streams a redirect to its vehicle
   view; prefix matching allowed Axe to run in the document being replaced.

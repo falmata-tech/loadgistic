@@ -49,8 +49,8 @@ test('public map and Featured keep useful controls without decorative or false-l
  test.setTimeout(60000);await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible({timeout:30000});await expect(page.getByText('Ethiopia capacity · East Africa view',{exact:true})).toHaveCount(0);
  await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({timeout:30000});
  await page.screenshot({path:info.outputPath('map-copy.png'),fullPage:true});
- await page.goto('/featured');await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers'}).first()).toBeAttached();
- await expect(page.locator('.featured-rotation-note')).not.toHaveAttribute('open','');await page.getByText('How Featured works',{exact:true}).click();await expect(page.getByText(/A rotating showcase, not a ranking/)).toBeVisible();
+ await page.goto('/featured');await expect(page.getByRole('heading',{name:'Daily Featured on TikTok LIVE'}).first()).toBeAttached();
+ await expect(page.locator('.featured-rotation-note')).toHaveCount(0);await expect(page.getByText('How Featured works',{exact:true})).toHaveCount(0);await expect(page.getByText(/A rotating showcase, not a ranking/)).toHaveCount(0);
  await expect(page.locator('.featured-card-feature').filter({hasText:/^View$|^Live$/})).toHaveCount(0);
  await expect(page.getByText(/roster is being prepared/)).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('featured-public.png'),fullPage:true});

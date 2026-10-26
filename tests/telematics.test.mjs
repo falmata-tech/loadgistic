@@ -7,10 +7,16 @@ import {adminDeviceProvisionCommand} from '../src/lib/telematics-admin-provision
 import {normalizePosition,signedHeaders,syntheticCommand,correlatedSyntheticResult} from '../infra/telematics/bridge-contract.mjs';
 import {crc16X25,gt06Packet,loginPacket,gpsPacket,syntheticReply} from '../scripts/telematics/simulator.mjs';
 import {DEMO_DEVICES,assertDemoDevice,assertLoopback,assertDemoIdentity} from '../scripts/telematics/demo-manifest.mjs';
+import {commandStateLabel} from '../src/lib/telematics-copy.js';
 const now=new Date('2026-10-15T12:00:00Z');
 const gateway={id:randomUUID(),secret:'a'.repeat(64),apiUrl:'http://127.0.0.1:18082/api/',apiToken:'b'.repeat(64)};
 const fix={eventKey:'position:1',gatewayDeviceId:1,protocol:'gt06',protocolDeviceId:'990000000000001',observedAt:now.toISOString(),receivedAt:now.toISOString(),
  valid:true,latitude:9.031,longitude:38.748,speedKph:0,course:0,attributes:{ignition:false,battery:80,alarm:'vibration'}};
+test('command progress never labels sending as sent, device confirmation or unknown delivery',()=>{
+ const expected={REQUESTED:'Waiting to send',DISPATCHING:'Sending…',DISPATCHED:'Sent · waiting for device',ACKNOWLEDGED:'Device confirmed',FAILED:'Failed',EXPIRED:'Expired',UNKNOWN:'Delivery not confirmed'};
+ for(const [state,label] of Object.entries(expected))assert.equal(commandStateLabel(state),label,state);
+ assert.equal(commandStateLabel('UNRECOGNIZED'),'Delivery not confirmed');
+});
 test('demo identities require exact source and fixture key plus an authorized mailbox',()=>{
  const owner={email:'falmatad97+transporter@gmail.com',app_metadata:{fixture_source:'loadgistic'},user_metadata:{fixture_key:'user-transporter'}};
  assert.equal(assertDemoIdentity(owner,'user-transporter'),owner);

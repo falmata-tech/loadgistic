@@ -79,7 +79,9 @@ begin
  perform accept_content_policy(employee,'2026-10-09');
  company_capacity:=publish_provider_capacity(employee,jsonb_build_object('vehicle_id',company_truck,'status','EMPTY','accepted_loads','BOTH','availability_geometry','ROUTE','location_source','DEVICE_OBSCURED','approximate_lat',(places->0->>'lat')::float8,'approximate_lng',(places->0->>'lng')::float8,'location_precision_km',10,'current_route_places',places,'sharing_mode','PUBLIC'));
  result:=capacity_search_results(jsonb_build_object('q','Beka','provider','highland-'||replace(org::text,'-','')));
- perform pg_temp.account_assert(exists(select 1 from jsonb_array_elements(result->'items') r where r->>'kind'='COMPANY_DRIVER' and r->>'title'='Beka' and r->>'capacity_id'=company_capacity::text and r->>'account_name'='Highland Dispatch' and r->>'manager_name'='Company Manager'),'EMPLOYED_DRIVER_SEARCH_LOST_OR_HANDLE_INVENTED');
+ perform pg_temp.account_assert((result->>'total')::int=0,'EMPLOYED_DRIVER_NAME_NOT_STANDALONE_SEARCH');
+ result:=capacity_search_results(jsonb_build_object('q','Highland Dispatch','provider','highland-'||replace(org::text,'-','')));
+ perform pg_temp.account_assert((result->>'total')::int=1 and result->'items'->0->>'kind'='COMPANY' and result->'items'->0->>'account_name'='Highland Dispatch' and result->'items'->0->>'manager_name'='Company Manager' and (result->'items'->0->>'matching_trucks')::int=1,'EMPLOYED_VEHICLE_REMAINS_IN_PROVIDER_ACCOUNT');
  foreach signature in array array['publicAbout167','PublicCity167'] loop
   result:=capacity_search_results(jsonb_build_object('q',signature,'provider','highland-'||replace(org::text,'-','')));
   perform pg_temp.account_assert(jsonb_array_length(result->'items')>0,'PUBLIC_SECONDARY_SEARCH_LOST');

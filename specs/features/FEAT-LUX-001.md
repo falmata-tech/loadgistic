@@ -1,7 +1,7 @@
 ---
 id: FEAT-LUX-001
 title: Clear launch journeys and contextual language
-related_ids: [BASE-FE-001, BASE-BE-001, FEAT-LNG-001, FEAT-LST-001, FEAT-IAM-001, FEAT-TRK-001, FEAT-TRQ-001, FEAT-SUP-001]
+related_ids: [BASE-FE-001, BASE-BE-001, FEAT-LNG-001, FEAT-LST-001, FEAT-IAM-001, FEAT-TRK-001, FEAT-TRQ-001, FEAT-SUP-001, FEAT-CAP-001, FEAT-MOB-001, FEAT-UIX-001]
 problem: First-time visitors and operators cannot reliably identify the next action, distinguish access codes or recover from a stalled request.
 behavior: Public discovery exposes finding and requesting transport and sharing availability. Location is requested only by an explicit action. Fleet and access guidance reflects current permissions; administrators see outstanding callback work. Priority interface language is written for its task in each locale.
 contracts: [LaunchEntryActions, ExplicitVisitorLocation, BoundedAccessRequest, UncertainTrackingCreation, CallbackQueueSummary, ContextualInterfaceCopy]
@@ -87,13 +87,19 @@ When the public page labels it
 Then it says Featured now rather than claiming a live video broadcast
 And an optional TikTok link is labeled as a destination, not verified live status.
 
-## Platform introduction above the map — 2026-09-25
+## Compact map entry — updated 2026-10-26
+
+The owner's October26 request supersedes the paragraph introduction below:
+make the map the primary mobile surface, with one brief shared heading and the
+existing public/private choices. Keep the fuller product story in About and
+signup, rather than repeating it above the working map.
 
 Given a visitor opens Open capacity
 When the page renders
-Then a visible single H1 and short introduction explain truck capacity discovery, network/open-market sharing and private shipment tracking
-And the heading and description exist as real elements in the server HTML before JavaScript runs
-And the description appears above the map, not over its controls
+Then one brief visible heading identifies the capacity task without a welcome paragraph
+And the web heading exists as a real H1 in the server HTML before JavaScript runs
+And the heading and view choices stay above the map, not over its controls
+And native view choices retain touch targets of at least44 pixels
 And the previous public header slogan is removed
 And all three supported languages have contextual interface copy
 And the page title and description accurately describe the platform without unsupported claims
@@ -101,8 +107,9 @@ And no new action buttons or promotional counters are added.
 
 Given a short or narrow viewport or longer translated copy
 When the introduction and map cannot both fit
-Then the content area can scroll, preserving a usable map height and access to the filter footer
-And the introduction remains fully readable without truncation
+Then the phone layout gives remaining screen space to the map without outer page overflow
+And the brief heading and view choices remain fully readable without truncation
+And short landscape may use the existing content scroll to retain usable map controls
 And map filtering, panning, zooming and navigation retain their existing behavior.
 
 SEO basis: Google Search Central's SEO Starter Guide (descriptive title/headings,
@@ -113,7 +120,7 @@ Local screenshots and owner visual approval precede release gates.
 
 Given the visitor opens Capacity
 When Open to the public or Privately shared with you is chosen above the map
-Then one shared introduction describes capacity, routes and availability sharing
+Then one shared heading and the selected map choice identify the current task
 And both views render a map; the locked private map contains no signals
 And the email form and map controls remain usable at desktop and phone sizes
 And translations cover the changed introduction, view choice and single Capacity menu entry.

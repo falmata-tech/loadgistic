@@ -417,6 +417,40 @@ physical-device limitations are recorded in `docs/BUILD_VERIFICATION.md`.
 
 ## Governed recovery (F10/F04, implementation)
 
+### October26 provider detail clarity — implementation pending
+
+This provider-detail presentation supersedes the floating progress-editor
+requirement above for provider-owned web and Android shipment views. Public
+Track authorization and its existing layout are not changed by this work.
+
+Given a provider or assigned driver opens an authorized shipment detail\
+When the detail renders on desktop, phone web or Android\
+Then one current-status summary and its next permitted action lead the record\
+And the saved route map, focused status update form, shipment facts and dated
+history each have a distinct place without a long form scrolling over the map\
+And dated history and authorized proofs remain available without duplicating an
+undated current-status summary in every section\
+And status, required proof, owner approval, location consent, recovery reason,
+revision and permission checks remain unchanged.
+
+The owner's US phone location is intentional and valid. This UI work changes
+neither location data nor map camera/fitting behavior; an unusual record is not
+evidence of a data defect or authorization to correct it.
+
+Given the provider opens shipment management\
+When no eligible different vehicle is available\
+Then Change vehicle does not open a form prefilled with the current vehicle\
+And available correction controls honor the current server's editable fields,
+including its post-Loading expected-date lock\
+And an eligible alternative vehicle still uses the existing atomic reassignment
+command, preserving history and resetting current location authority\
+And direct invalid or unauthorized commands remain denied by the server.
+
+Qualification: focused presentation/recovery regressions, existing
+permission and lifecycle checks, actual Chrome desktop/phone and Expo tasks,
+followed by installed Android review. No schema or live data correction is part
+of this presentation change. Rollback restores the previous client layout.
+
 ### Scenario: recovery controls offer only currently permitted actions
 
 Given the server returns a Tracking recovery context with its allowed actions\

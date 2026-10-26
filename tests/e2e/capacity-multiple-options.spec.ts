@@ -12,7 +12,7 @@ test('five current multi-option filter groups remain draft until apply and clear
  await chooseTruckConfiguration(dialog,configurations);
  await expect(selection(page,'loadType')).toHaveCount(0);
  await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);await chooseCapacityOptions(dialog,'locationSource',['GPS','MOBILE']);
- await dialog.locator('[data-filter-section="route"] > summary').click();
+ await dialog.getByRole('button',{name:'Route',exact:true}).click();
  await chooseCapacityOptions(dialog,'stopOption',['MULTI_PICK','MULTI_DROP']);
  await dialog.locator('[data-filter-section="more"] > summary').click();
  await chooseCapacityOptions(dialog,'freshness',['FRESH','UPDATE_NEEDED']);

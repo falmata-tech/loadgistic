@@ -35,10 +35,13 @@ test('public mobile providers expose chosen identity without private legal field
  assert.equal(profile.name,'Rift Road');assert.equal(profile.accountName,'Rift Road');assert.equal(profile.managerName,'Aster Hana');assert.equal(profile.handle,'rift-road');
  assert.equal(JSON.stringify(profile).includes('Private'),false);
 });
-test('search preserves separate employed driver identity and owning account metadata',()=>{
- const result=discoveryProfiles({items:[{key:'PROVIDER:rift-road',kind:'COMPANY',title:'Rift Road',accountName:'Rift Road',managerName:'Aster',handle:'rift-road',matching_trucks:2},{key:'DRIVER:employee',kind:'COMPANY_DRIVER',title:'Beka',accountName:'Rift Road',managerName:'Aster',owner:'Rift Road',handle:'rift-road',capacity_id:'pair',matching_trucks:1}],total:2,page:1,pageSize:15,hasMore:false});
+test('account search keeps chosen provider identities and excludes employed driver rows',()=>{
+ const result=discoveryProfiles({items:[{key:'PROVIDER:rift-road',kind:'COMPANY',title:'Rift Road',accountName:'Rift Road',managerName:'Aster',handle:'rift-road',matching_trucks:2},{key:'DRIVER:employee',kind:'COMPANY_DRIVER',title:'Beka',accountName:'Rift Road',managerName:'Aster',owner:'Rift Road',handle:'rift-road',capacity_id:'pair',matching_trucks:1},{key:'PROVIDER:beka-transport',kind:'SELF_MANAGED_DRIVER',title:'Beka Transport',accountName:'Beka Transport',managerName:'Beka',handle:'beka-transport',matching_trucks:1,capacity_id:'self-pair'}],total:2,page:1,pageSize:15,hasMore:false});
+ assert.equal(result.items.length,2);
  assert.equal(result.items[0].title,'Rift Road');assert.equal(result.items[0].managerName,'Aster');
- assert.equal(result.items[1].title,'Beka');assert.equal(result.items[1].kind,'COMPANY_DRIVER');assert.equal(result.items[1].accountName,'Rift Road');assert.equal(result.items[1].handle,'rift-road');assert.equal(result.items[1].capacityId,'pair');
+ assert.equal(result.items.some(row=>row.key==='DRIVER:employee'),false);
+ assert.equal(result.items[1].title,'Beka Transport');assert.equal(result.items[1].kind,'SELF_MANAGED_DRIVER');assert.equal(result.items[1].accountName,'Beka Transport');assert.equal(result.items[1].managerName,'Beka');assert.equal(result.items[1].handle,'beka-transport');
+ assert.ok(result.items.every(row=>row.capacityId===''),'account search does not grant a direct employee/vehicle selection');
 });
 test('private session display keeps chosen account identity separate from legal anchors and permissions',async()=>{
  const user=mobileIdentity({id:'owner',name:'Aster PrivateFather',email:'synthetic@example.test',role:'DRIVER',provider_account_name:'Rift Road',provider_business_name:'LegacyLegal167',can_manage_fleet:true,secret:'discard'});

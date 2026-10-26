@@ -28,6 +28,6 @@ export function AboutAudiences(){
       <ul className={styles.facts}>{audience.facts.map(([title,body])=><li key={title}><Check aria-hidden="true"/><div><h3><Text message={title}/></h3><p><Text message={body}/></p></div></li>)}</ul>
       <Link className="button" href={audience.href}><Text message={audience.action}/><ArrowRight aria-hidden="true"/></Link>
     </section>)}
-    <footer className={styles.legal}><Link href="/privacy"><Text message="Privacy"/></Link><Link href="/terms"><Text message="Terms"/></Link><Link href="/delete-account"><Text message="Account and data deletion"/></Link><div className={styles.office}><Text message="Jigjiga, Somali Region, Ethiopia"/><span>© {new Date().getFullYear()} <a href="https://marketvisiontech.com/" target="_blank" rel="noopener noreferrer"><Text message="MarketVision Technology"/></a></span></div></footer>
+    <footer className={styles.legal}><Link href="/privacy"><Text message="Privacy"/></Link><Link href="/terms"><Text message="Terms"/></Link><Link href="/delete-account"><Text message="Account and data deletion"/></Link></footer>
   </div>;
 }

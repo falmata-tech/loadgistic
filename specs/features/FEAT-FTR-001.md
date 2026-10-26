@@ -1,9 +1,9 @@
 ---
 id: FEAT-FTR-001
-title: Daily Featured Trucks programme
+title: Daily Featured Transport Provider programme
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001, FEAT-IAM-001, FEAT-SUP-001]
 problem: Capacity seekers need a concise daily introduction to useful truck types and the Drivers operating them, while Loadgistic needs a manageable live programme that does not consume the entire day or turn provider eligibility into an endorsement.
-behavior: Each Ethiopia calendar day has one truck-type theme and an ordered roster of exact active trucks with distinct assigned Drivers. Automatic selection prepares the next seven days with independent persisted no-repeat rounds for each theme, consuming remaining pairs before starting that theme's next round. It fills the configured daily count (default eight, one through eight) when enough eligible distinct Drivers exist, including rollover within a day; scarcity alone may produce fewer entries. Manual-only mode and individual curated days remain available; routine automation never changes a saved day. The deterministic 08:30–12:00 Ethiopia-time schedule divides airtime equally between selected trucks with four two-minute mentions by default (including a closing mention), or fewer for a sparse roster, naming an active sponsor when available. Public cards lead with the Driver's name, role, and portrait while retaining the exact truck and provider. Sponsors stay separate.
+behavior: Hosted account rotation introduces up to eight eligible Transport Provider accounts per scheduled day under FEAT-CON-001, preserving saved/manual selections and completed-round fairness. The accepted October26 follow-up confines every provider and sponsor interval to22:30–23:59 Africa/Addis_Ababa, with at least ten minutes per provider, and names the public programme Daily Featured on TikTok LIVE. This new timing/header is pending implementation and rollout; historical contracts below do not override the current acceptance.
 contracts: [FeaturedTruckTypeRotation, FeaturedTruckCandidate, FeaturedTruckDay, FeaturedTruckSlot, FeaturedTruckAdminCommand, PublicFeaturedTruckProjection, FeaturedTruckBoardLayout, FeaturedDaySchedule, FeaturedScheduleEntry, FeaturedScheduleConfig, DailyTikTokBroadcast]
 observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, FEATURED_DAY_AUTO_PUBLISHED audit, PLATFORM_CONTROLS_UPDATED audit, bounded worker counts, administrator roster-gap state]
 rollout: Add exact truck-and-Driver slot references additively, migrate the disposable demonstration roster to current truck candidates, retain historical provider-slot identifiers only for rollback integrity, and publish the new projection only after local Supabase, authorization, schedule, and responsive board checks pass.
@@ -11,13 +11,94 @@ rollout: Add exact truck-and-Driver slot references additively, migrate the disp
 
 # Daily Featured Trucks programme
 
-The deployed truck-and-driver programme below remains the historical contract
-until the next release. The approved local successor is [FEAT-CON-001](FEAT-CON-001.md):
-Featured introduces distinct Transport Provider accounts on any day, rotates
-accounts through complete rounds, and keeps saved/manual days. Its local-only
-migration 205 and web/Expo changes must pass their own release gates before
-this file's current-behavior summary is replaced. Do not treat a local preview
-as the hosted programme.
+Hosted ledger208 implements [FEAT-CON-001](FEAT-CON-001.md)'s distinct Transport
+Provider account rounds. Earlier truck-theme and morning-window sections below
+are historical where they conflict with that account contract or the October26
+acceptance. The new evening window and programme heading remain pending a
+source-matched local qualification and reviewed rollout.
+
+## October26 accepted programme window and identity — implementation pending
+
+Given a current Featured programme is prepared for an Ethiopia calendar date\
+When automatic or manual timing is saved or published\
+Then every provider spotlight and sponsor mention is inside22:30–23:59 in
+Africa/Addis_Ababa (10:30PM–11:59PM EAT) on that same date\
+And the programme never reaches midnight or borrows time from the next day\
+And automatic intervals are contiguous, ordered and end at23:59\
+And the configured daily provider target is at most eight, default eight\
+And every chosen provider receives at least ten whole minutes excluding sponsors\
+And at most four sponsor mentions of at most two minutes each fit inside the
+same window; they cannot extend it or reduce a provider below ten minutes\
+And eight providers with four two-minute mentions share81 provider minutes,
+with one eleven-minute turn and seven ten-minute turns\
+And a larger candidate pool does not increase the daily cap or bypass the
+existing account round/eligibility/selection rules.
+
+Given an authorized manager adjusts the programme\
+When manual timings, provider count, sponsor durations or order are submitted\
+Then overlaps, intervals outside22:30–23:59, a turn shorter than ten minutes,
+an oversized roster or total duration beyond the window are rejected before save\
+And UI previews, direct application/API writes and PostgreSQL enforce the same
+rule; HTML time controls retain ordinary same-day24-hour canonical values\
+And timezone/device settings cannot move the programme to another feature date.
+
+Given web or Android opens Featured, including its loading/error states\
+Then the page heading identifies Daily Featured on TikTok LIVE in the selected
+language and the programme time appears beside its date\
+And saved day headlines never replace that primary programme identity\
+And any distinct curated day headline is retained as secondary programme content,
+without repeating a generic heading or adding explanatory paragraphs\
+And actual on-now/Watch live language still requires a confirmed Live broadcast;
+merely showing the evening programme never claims an active stream\
+And no Morning programme label or obsolete morning-window help appears for a
+new evening schedule.
+
+Given pre-change saved days exist\
+When the timing update is rehearsed or rolled out\
+Then past schedules, their selected accounts, sponsor records and fairness history
+remain unchanged and readable with their genuine recorded times\
+And current/future automatic timing may be rebuilt inside the evening window
+without changing selected accounts/order, sponsor identities or rotation history\
+And incompatible current/future manual timing stops rollout for exact review,
+rather than silently replacing curated durations or leaving an invalid programme\
+And no hosted write occurs before the exact SQL, affected counts, backup and
+rollback evidence are reviewed under the existing release contract.
+
+Qualification: deterministic automatic/manual schedule and midnight/date-boundary
+regressions, direct API/SQL authority/limit tests, saved-history/rotation parity,
+actual desktop/phone Chrome and Expo evening schedules in en/am/om, followed by
+normal full gates. This does not create or start a TikTok stream.
+
+### Bounded administrator-save diagnostics — local repair pending
+
+Given an authorized Featured save fails in its database command or subsequent
+administrator readback\
+When the server handles the failure\
+Then internal diagnostics distinguish the fixed SAVE_RPC and READBACK stages
+with only an allowlisted business enum or bounded database error category\
+And diagnostics never include raw exception messages/stacks, record identifiers,
+selected providers, form values, contact details, tokens or credentials\
+And the public response remains a bounded friendly error with the existing
+permission, validation, audit and save boundaries unchanged\
+And focused tests prove both stage attribution and exclusion of sensitive values
+before a single controlled local replay; unresolved causes remain unqualified.
+
+The controlled local replay confirmed SAVE_RPC / SQLSTATE57014 under the
+existing REST8-second statement limit. A direct eight-account draft took about
+seven seconds; the installed writer repeatedly evaluates the complete eligible
+account set inside its selected-vehicle loop. This is a confirmed performance
+repair, not permission to raise the timeout or skip eligibility checks.
+
+Given an authorized eight-provider draft or publish command\
+When eligibility is evaluated during the save\
+Then the authoritative eligible-account set may be reused within that command\
+And every selected vehicle retains its existing policy, active assignment,
+account ownership and eligibility rechecks\
+And invalid or revoked selections still reject atomically without partial days,
+slots, rotation turns or audit success\
+And timing, account order, sponsor records and permissions remain unchanged\
+And the actual REST save and administrator readback complete within the existing
+timeout with measured margin on the qualified fixture; no timeout is widened.
 
 ## October18 courier configurations — planned local restoration
 
@@ -483,7 +564,7 @@ Identity and team projections expose it, with permission-change audit evidence.
 No public/browser SQL grants are broadened. App rollback retains the default-off
 column and guarded commands; never promote staff to ADMIN as a workaround.
 
-### Official broadcast hours — owner change, 2026-09-24
+### Historical morning broadcast hours — superseded October26
 
 The official programme is 08:30–12:00 Africa/Addis_Ababa (EAT). Use a maximum
 of eight showcases by default, with four two-minute sponsor mentions. This is
@@ -537,7 +618,7 @@ Given a featured truck has a public available signal\
 When a visitor chooses Find this truck\
 Then the map searches its transporter handle and selects the matching capacity ID, without searching a truck number through profile-only text search.
 
-Given the phone programme includes its How Featured works disclosure and a sponsor\
+Given the phone programme includes its schedule and a sponsor\
 When the board renders\
 Then compact heading spacing keeps the first truck row within the existing 281px board-offset budget, retaining readable text and 44px controls.
 
@@ -568,15 +649,27 @@ Protected applied/readback receipts and fresh restore/rollback evidence live in
 
 ### Scenario: distinguish an actual TikTok Live broadcast from the featured timetable
 
+Given Featured displays a card time, programme range, scheduled TikTok start or
+read-only administrator schedule\
+When the saved East Africa Time values are presented\
+Then each displayed time identifies AM or PM and places EAT beside the time or
+range, for example “10:30PM–11:59PM EAT”\
+And canonical ISO values, 24-hour editing/storage, sorting, dates and programme
+phase calculations remain unchanged\
+And midnight, noon and range endpoints are unambiguous without duplicate EAT
+suffixes, including when the device is in another timezone\
+And public web and Android omit the How Featured works control and its
+explanatory paragraph; the lineup and its short factual labels carry the view.
+
 Given a published Featured day has a validated TikTok link and scheduled start
 time in East Africa Time\
-When no authorized staff member has confirmed the broadcast is live\
+When an authorized manager has scheduled it but has not confirmed it Live\
 Then the public header explicitly says “TikTok LIVE broadcast planned” and shows
 its start time\
 
-Given a published Featured day has no TikTok link\
+Given a published Featured day has no TikTok link or its broadcast is not scheduled or has ended\
 When a visitor opens Featured\
-Then the public header says no TikTok LIVE broadcast is planned\
+Then the daily Featured lineup remains visible without a negative or empty TikTok status strip\
 And a featured vehicle slot being in progress never implies a TikTok broadcast.
 
 Given an authorized Featured manager opens a published day with a TikTok link\
@@ -586,7 +679,7 @@ And the status action is denied to members without the Featured permission,
 unauthenticated visitors, unpublished days, or days without a TikTok link\
 And marking Live records the server time; marking Ended stops the Live label.
 
-Given a day is explicitly Live, scheduled, ended or has no TikTok link\
+Given a day has a validated TikTok link and an explicitly Live or scheduled broadcast\
 When a visitor opens Featured in web or mobile\
 Then both clients explicitly identify the broadcast as TikTok LIVE and keep it
 separate from the vehicle timetable\
@@ -594,3 +687,9 @@ And only the confirmed Live state says the TikTok LIVE broadcast is on now and
 offers the “Watch live on TikTok” action\
 And the full broadcast message stays visible without horizontal overflow on a
 narrow phone, alongside reachable weekly and schedule controls.
+
+Given an administrator inspects an unscheduled or ended broadcast\
+When the manager opens that day's controls\
+Then the actual short administrative state remains visible\
+And NOT_SCHEDULED with a saved link is never mislabeled Ended\
+And a timed account spotlight is called Featured now rather than an unqualified Live stream.

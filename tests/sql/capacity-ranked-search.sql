@@ -23,8 +23,8 @@ begin
  perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows(jsonb_build_object('q',item->>'provider_handle'),null,null,14) r where r.payload->>'provider_handle'<>item->>'provider_handle'),'COMPANY_SEARCH_MAP_SCOPE');
  perform pg_temp.assert_search((select count(*) from capacity_search_public_rows(jsonb_build_object('q',item->>'provider_handle'),null,null,14))=(select count(*) from capacity_search_public_rows('{}',null,null,14) r where r.payload->>'provider_handle'=item->>'provider_handle'),'COMPANY_SEARCH_ALL_MATCHING_PAIRS');
  update profiles set full_name='Zqxdriverprofile Person' where id=active_driver;
- perform pg_temp.assert_search(exists(select 1 from capacity_search_public_rows('{"q":"Zqxdriverprofile"}',null,null,14)),'DRIVER_SEARCH_MATCH');
- perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows('{"q":"Zqxdriverprofile"}',null,null,14) r where capacity_active_driver_id((r.payload->>'vehicle_id')::uuid)<>active_driver),'DRIVER_SEARCH_MAP_SCOPE');
+ perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows('{"q":"Zqxdriverprofile"}',null,null,14)),'EMPLOYEE_NAME_NOT_MAP_SEARCH');
+ perform pg_temp.assert_search((capacity_search_results('{"q":"Zqxdriverprofile"}')->>'total')::int=0,'EMPLOYEE_NAME_NOT_PROFILE_SEARCH');
 
  update company_pages set about='Zebravan special freight service',contact_email='hidden-search-unique@example.invalid',show_contact_email=false where organization_id=org;
  result:=capacity_search_results('{"q":"zebravan"}');
@@ -50,7 +50,7 @@ begin
  perform pg_temp.assert_search(result=capacity_search_results('{}'),'STABLE_RANKING');
  perform pg_temp.assert_search((capacity_search_results('{}','EMAIL',repeat('e',64))->>'total')::int=0,'UNKNOWN_PRIVATE_RECIPIENT');
  result:=capacity_search_results('{}');
- perform pg_temp.assert_search(not exists(select 1 from jsonb_array_elements(result->'items') r where r->>'kind' not in ('COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER','COMPANY_DRIVER')),'PROFILES_ONLY');
+ perform pg_temp.assert_search(not exists(select 1 from jsonb_array_elements(result->'items') r where r->>'kind' not in ('COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER')),'PROVIDER_ACCOUNTS_ONLY');
  perform pg_temp.assert_search(result=capacity_search_results('{"result_kind":"TRUCK"}'),'RETIRED_TYPE_IGNORED');
  perform pg_temp.assert_search(not exists(select 1 from jsonb_array_elements(result->'items') r where (r->>'matching_trucks')::int<1),'AVAILABLE_TRUCK_REQUIRED');
  foreach signature in array array['public.capacity_search_metadata(jsonb)','public.capacity_search_matches(jsonb,jsonb)','public.capacity_search_results(jsonb,text,text,uuid,integer)','public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)','public.capacity_search_private_rows(text,text,uuid,timestamptz,uuid,integer,jsonb)'] loop

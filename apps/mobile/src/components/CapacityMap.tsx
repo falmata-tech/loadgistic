@@ -7,13 +7,15 @@ import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../../src/lib
 import { mapStyle } from './map-style';
 import {AppIcon} from './app-icon';
 import {locationSourceKind,locationSourceLabel,locationSourceColor} from '../../../../src/lib/location-source.js';
-import { memo,useCallback,useEffect,useMemo,useRef,useState } from 'react';
-import { Modal,useWindowDimensions,Image,Pressable,ScrollView,StyleSheet,Text,View } from 'react-native';
+import { memo,useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react';
+import { BackHandler,Modal,useWindowDimensions,Image,Pressable,ScrollView,StyleSheet,Text,View } from 'react-native';
 import { Map,Camera,GeoJSONSource,Layer,Marker,type CameraRef,type GeoJSONSourceRef,type MapRef,type ViewState } from './map-platform';
 import type { FeatureCollection,LineString } from 'geojson';
 import type { CapacitySignal } from '../api/public-capacity';
 import { markerLocation,signalBounds,signalPaths } from '../map/capacity-geometry';
 import {createVisibleQuery} from '../map/visible-query';
+import {createCapacityCameraIntent,expandCapacityCluster,type CapacityCameraIntent} from '../map/capacity-camera-intent';
+import {capacityMarkerFanLayout} from '../../../../src/lib/capacity-marker-fan.js';
 import { vehicleConfigurationImage } from '../../../../src/lib/vehicle-configurations';
 import { apiOrigin } from '../api/http';
 import {palette} from './ui';
@@ -25,13 +27,19 @@ const NO_OWN_SIGNALS:string[]=[];
 const ownSourceId=(status:'EMPTY'|'PARTIAL')=>`${capacitySourceIds[status]}-own`;
 const ownLayerIds=(status:'EMPTY'|'PARTIAL')=>[`${ownSourceId(status)}-clusters`,`${ownSourceId(status)}-trucks`];
 type InfoKind=keyof typeof colors;
+type FanMember=VisiblePoint&{offset:[number,number];display:[number,number]};
+type MarkerFan={clusterKey:string;members:FanMember[]};
 function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,selected=null,loading=false,topInset=68,bottomInset=8}:{items:CapacitySignal[];ownSignalIds?:string[];onSelect:(item:CapacitySignal)=>void;onDeselect:()=>void;selected?:CapacitySignal|null;loading?:boolean;topInset?:number;bottomInset?:number}) {
  const {t}=useLanguage();
  const host=useRef<View>(null),windowSize=useWindowDimensions();
  const [modalFrame,setModalFrame]=useState({left:0,top:0,width:windowSize.width,height:windowSize.height});
  const latestView=useRef<Pick<ViewState,'center'|'zoom'|'bearing'|'pitch'>>({center:[39.5,9],zoom:5,bearing:0,pitch:0});
+ const cameraIntent=useRef<CapacityCameraIntent|null>(null);
+ useLayoutEffect(()=>{const intent=createCapacityCameraIntent();cameraIntent.current=intent;return()=>{intent.close();cameraIntent.current=null;};},[]);
  const previousView=useRef<typeof latestView.current|null>(null);
  const [info,setInfo]=useState<{id:string;kind:InfoKind;index:number}|null>(null);
+ const [fan,setFan]=useState<MarkerFan|null>(null);
+ const [legendOpen,setLegendOpen]=useState(false);
  const camera=useRef<CameraRef>(null),emptySource=useRef<GeoJSONSourceRef>(null),partialSource=useRef<GeoJSONSourceRef>(null),ownEmptySource=useRef<GeoJSONSourceRef>(null),ownPartialSource=useRef<GeoJSONSourceRef>(null),map=useRef<MapRef>(null);
  const [error,setError]=useState(''),[ready,setReady]=useState(false),[zoom,setZoom]=useState(5),[visible,setVisible]=useState<VisiblePoint[]>([]);
  const fitted=useRef(false),signature=useRef('');
@@ -49,14 +57,22 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  const ownIds=useMemo(()=>new Set(ownSignalIds),[ownSignalIds]);
  const data=useMemo(()=>capacityMapData(items.filter(item=>!ownIds.has(item.id))),[items,ownIds]);
  const ownData=useMemo(()=>capacityMapData(items.filter(item=>ownIds.has(item.id))),[items,ownIds]);
+ const selectedId=selected?.id;
+ const [fanScope,setFanScope]=useState({data,ownData,selectedId});
+ if(fanScope.data!==data||fanScope.ownData!==ownData||fanScope.selectedId!==selectedId){
+  setFanScope({data,ownData,selectedId});
+  setFan(null);
+ }
+ useLayoutEffect(()=>{cameraIntent.current?.invalidate();},[data,ownData,selectedId]);
+ useEffect(()=>{if(!fan||selected)return;const back=BackHandler.addEventListener('hardwareBackPress',()=>{setFan(null);return true;});return()=>back.remove();},[fan,selected]);
  const initialCamera=useMemo(()=>initialCapacityCamera(items.map(item=>{const point=markerLocation(item);return point?{latitude:point[1],longitude:point[0]}:null;}),{zoom:EXPO_CAPACITY_CAMERA.zoom,fallback:EXPO_CAPACITY_CAMERA}),[items]);
  useEffect(()=>{visibleQuery.current?.invalidate();},[data,ownData]);
  const refreshVisible=useCallback(async()=>{
   if(ready)await visibleQuery.current?.refresh();
  },[ready]);
- useEffect(()=>{if(ready&&!loading&&!selected&&!fitted.current){camera.current?.jumpTo({center:[initialCamera.longitude,initialCamera.latitude],zoom:initialCamera.zoom});fitted.current=true;}},[initialCamera,loading,ready,selected]);
+ useEffect(()=>{if(ready&&!loading&&!selected&&!fitted.current&&cameraIntent.current?.canCenterInitially()){camera.current?.jumpTo({center:[initialCamera.longitude,initialCamera.latitude],zoom:initialCamera.zoom});fitted.current=true;}},[initialCamera,loading,ready,selected]);
  if(info&&info.id!==selected?.id)setInfo(null);
- const selectedId=selected?.id,lastSelected=useRef<string|undefined>(undefined);
+ const lastSelected=useRef<string|undefined>(undefined);
  useEffect(()=>{
   if(!selected){
    lastSelected.current=undefined;
@@ -74,32 +90,73 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  const pathData=useMemo<FeatureCollection<LineString>>(()=>({type:'FeatureCollection',features:paths.map(path=>({type:'Feature',properties:{kind:path.kind,index:paths.indexOf(path)},geometry:{type:'LineString',coordinates:path.points}}))}),[paths]);
  const displayPoints=focusedMarkers(visible,selected?.id,selected?markerLocation(selected):null);
  const offsets=useMemo(()=>capacityMarkerOffsets(visible,zoom),[visible,zoom]);
+ const fanOffsets=fan?Object.fromEntries(fan.members.map(member=>[member.key,member.offset])):{};
+ const visiblePoints=fan&&!selected?[...displayPoints.filter(point=>point.key!==fan.clusterKey),...fan.members]:displayPoints;
+ const fanData:FeatureCollection<LineString>={type:'FeatureCollection',features:fan&&!selected?fan.members.map(member=>({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[member.coordinate,member.display]}})):[]};
  const showPoint=async(point:VisiblePoint)=>{
+  cameraIntent.current?.gesture();
   if(selected){setInfo({id:selected.id,kind:'truck',index:-1});return;}
-  if(point.cluster===null){const item=items.find(item=>item.id===point.itemId);if(item){setInfo(null);onSelect(item);}return;}
+  if(point.cluster===null){const item=items.find(item=>item.id===point.itemId);if(item){setFan(null);setInfo(null);onSelect(item);}return;}
   if(!point.status)return;
-  try{const source=point.mine?(point.status==='EMPTY'?ownEmptySource:ownPartialSource):(point.status==='EMPTY'?emptySource:partialSource);const expansion=await source.current?.getClusterExpansionZoom(point.cluster);camera.current?.easeTo({center:point.coordinate,zoom:Math.min(20,Math.max(zoom+1,expansion??zoom+2)),duration:350});}catch{setError('Could not open these vehicles. Try zooming in.');}
+  const intent=cameraIntent.current;if(!intent)return;
+  const source=(point.mine?(point.status==='EMPTY'?ownEmptySource:ownPartialSource):(point.status==='EMPTY'?emptySource:partialSource)).current,cluster=point.cluster;
+  if(point.count<=4){
+   await expandCapacityCluster(intent,async()=>{
+    const leaves=await source?.getClusterLeaves(cluster,point.count,0),view=map.current;
+    if(!view||!leaves||leaves.length!==point.count)throw Error('Cluster changed');
+    const anchor=await view.project(point.coordinate);
+    const ids=leaves.map(leaf=>leaf.properties?.id).filter((id):id is string=>typeof id==='string');
+    const leafById=new globalThis.Map(leaves.map(leaf=>[leaf.properties?.id,leaf]));
+    const membersWithPoints=await Promise.all(ids.map(async id=>{
+     const item=items.find(candidate=>candidate.id===id),coordinate=item&&markerLocation(item);
+     if(!item||!coordinate||item.status!==point.status||ownIds.has(id)!==Boolean(point.mine))throw Error('Cluster changed');
+     const leaf=leafById.get(id),sourcePoint=leaf?.geometry?.type==='Point'?leaf.geometry.coordinates:null;
+     if(!sourcePoint||sourcePoint.length!==2||Math.abs(Number(sourcePoint[0])-coordinate[0])>1e-6||Math.abs(Number(sourcePoint[1])-coordinate[1])>1e-6)throw Error('Cluster changed');
+     return {id,item,coordinate,actual:await view.project(coordinate)};
+    }));
+    if(latestView.current.zoom<15&&!membersWithPoints.every(member=>Math.hypot(member.actual[0]-anchor[0],member.actual[1]-anchor[1])<=3))return {kind:'zoom' as const,expansion:await source?.getClusterExpansionZoom(cluster)};
+    const layout=capacityMarkerFanLayout(ids,{x:anchor[0],y:anchor[1]},{width:modalFrame.width,height:modalFrame.height,top:topInset,bottom:bottomInset+80},{width:96,height:70,anchorY:.5});
+    if(!layout)throw Error('Group cannot fit');
+    const members=await Promise.all(layout.map(async({id,offset}:{id:string;offset:[number,number]})=>{
+     const member=membersWithPoints.find(row=>row.id===id);if(!member)throw Error('Cluster changed');
+     const display=await view.unproject([anchor[0]+offset[0],anchor[1]+offset[1]]);
+     return {key:`fan:${id}`,coordinate:member.coordinate,cluster:null,count:1,itemId:id,status:member.item.status,mine:Boolean(point.mine),offset:[anchor[0]+offset[0]-member.actual[0],anchor[1]+offset[1]-member.actual[1]] as [number,number],display} as FanMember;
+    }));
+    return {kind:'fan' as const,clusterKey:point.key,members};
+   },value=>{setError('');if(value.kind==='fan')setFan({clusterKey:value.clusterKey,members:value.members});else{const currentZoom=latestView.current.zoom;camera.current?.easeTo({center:point.coordinate,zoom:Math.min(20,Math.max(currentZoom+1,value.expansion??currentZoom+2)),duration:350});}},()=>setError('Could not open these vehicles. Try zooming in.'));
+   return;
+  }
+  await expandCapacityCluster(intent,async()=>source?.getClusterExpansionZoom(cluster),expansion=>{const currentZoom=latestView.current.zoom;camera.current?.easeTo({center:point.coordinate,zoom:Math.min(20,Math.max(currentZoom+1,expansion??currentZoom+2)),duration:350});},()=>setError('Could not open these vehicles. Try zooming in.'));
+ };
+ const observeView=(view:Pick<ViewState,'center'|'zoom'|'bearing'|'pitch'>,userInteraction:boolean)=>{
+  const previous=latestView.current;
+  if(view.zoom!==previous.zoom||view.bearing!==previous.bearing||view.pitch!==previous.pitch||view.center[0]!==previous.center[0]||view.center[1]!==previous.center[1]){
+   setFan(null);
+   if(userInteraction)cameraIntent.current?.gesture();else cameraIntent.current?.invalidate();
+  }
+  latestView.current=view;
  };
  const active=info?.id===selected?.id?info:null;
  const detailFrame=active?.kind==='truck'?capacityDetailFrame(modalFrame,windowSize):modalFrame;
  const measureModal=useCallback(()=>host.current?.measureInWindow((left,top,width,height)=>{if(width&&height)setModalFrame({left,top,width,height});}),[]);
  useEffect(()=>{if(active)measureModal();},[active,measureModal,windowSize.width,windowSize.height]);
  const color=(kind:InfoKind)=>kind==='current'&&selected?.status==='PARTIAL'?capacityStatusPresentation.PARTIAL.color:colors[kind];
- const label=(kind:InfoKind)=>kind==='truck'?'Vehicle details':kind==='location'?'Approximate location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred service area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Service area':'Capacity route';
+ const label=(kind:InfoKind)=>kind==='truck'?'Vehicle details':kind==='location'?'Approximate location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Area':'Route';
  const choices: {kind:InfoKind;index:number}[]=selected?[{kind:'truck',index:-1},...paths.map((path,index)=>({kind:path.kind,index}))]:[];
- const shortLabel=(kind:InfoKind)=>kind==='truck'?'Vehicle':kind==='location'?'Location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):'Capacity';
+ const shortLabel=(kind:InfoKind)=>kind==='truck'?'Vehicle':kind==='location'?'Location':kind==='regular'?(selected?.regular[0]?.geometry==='RADIUS'?'Preferred area':'Preferred corridor'):selected?.geometry==='RADIUS'?'Area':'Route';
  const regular=active?.kind==='regular';
  const regularSignal=regular?selected?.regular[0]:null;
  const area=regular?regularSignal?.geometry==='RADIUS':selected?.geometry==='RADIUS';
  const routeNames=regular?regularSignal?.points:selected?.currentPoints;
- return <View ref={host} collapsable={false} onLayout={measureModal} style={styles.map}>
- <Map ref={map} style={styles.map} mapStyle={mapStyle} attribution onDidFailLoadingMap={()=>setError('The map could not load. Check your connection.')} onDidFinishLoadingMap={()=>{setReady(true);setError('');}} onDidFinishRenderingFrame={()=>void refreshVisible()} onRegionIsChanging={event=>{latestView.current=event.nativeEvent;visibleQuery.current?.moving();}} onRegionDidChange={event=>{latestView.current=event.nativeEvent;setZoom(event.nativeEvent.zoom);visibleQuery.current?.settled();}}>
+ return <View ref={host} collapsable={false} onLayout={measureModal} onTouchStart={()=>cameraIntent.current?.gesture()} onPointerDown={()=>cameraIntent.current?.gesture()} style={styles.map}>
+ <Map ref={map} style={styles.map} mapStyle={mapStyle} attribution onPress={()=>setFan(null)} onDidFailLoadingMap={()=>setError('The map could not load. Check your connection.')} onDidFinishLoadingMap={()=>{setReady(true);setError('');}} onDidFinishRenderingFrame={()=>void refreshVisible()} onRegionIsChanging={event=>{observeView(event.nativeEvent,event.nativeEvent.userInteraction);visibleQuery.current?.moving();}} onRegionDidChange={event=>{observeView(event.nativeEvent,event.nativeEvent.userInteraction);setZoom(event.nativeEvent.zoom);visibleQuery.current?.settled();}}>
  <Camera ref={camera} initialViewState={{center:[initialCamera.longitude,initialCamera.latitude],zoom:initialCamera.zoom}} maxZoom={20}/>
  <GeoJSONSource id="selected-signals" data={pathData} onPress={event=>{event.stopPropagation();const feature=event.nativeEvent.features[0];const kind=feature?.properties?.kind as InfoKind;if(selected&&kind in colors)setInfo({id:selected.id,kind,index:Number(feature?.properties?.index)||0});}}>
  <Layer id="location-outline" type="line" filter={['==',['get','kind'],'location']} paint={{'line-color':colors.location,'line-width':4,'line-dasharray':[2,2]}}/>
  <Layer id="current-route" type="line" filter={['==',['get','kind'],'current']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':color('current'),'line-width':5}}/>
  <Layer id="regular-route" type="line" filter={['==',['get','kind'],'regular']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':'#c06620','line-width':4,'line-dasharray':[1,2]}}/>
  </GeoJSONSource>
+ <GeoJSONSource id="capacity-fan-connectors" data={fanData}><Layer id="capacity-fan-lines" type="line" paint={{'line-color':'#526875','line-width':2,'line-dasharray':[2,2],'line-opacity':.8}}/></GeoJSONSource>
  {capacityStatuses.map(status=><GeoJSONSource key={status} ref={status==='EMPTY'?emptySource:partialSource} id={capacitySourceIds[status]} data={data[status]} cluster clusterRadius={64} clusterMaxZoom={19}>
  <Layer id={capacityLayerIds(status)[0]} type="circle" layout={{visibility:selected?'none':'visible'}} filter={['has','point_count']} paint={{'circle-radius':29,'circle-opacity':0}}/>
  <Layer id={capacityLayerIds(status)[1]} type="circle" layout={{visibility:selected?'none':'visible'}} filter={['!',['has','point_count']]} paint={{'circle-radius':27,'circle-opacity':0}}/>
@@ -108,7 +165,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  <Layer id={ownLayerIds(status)[0]} type="circle" layout={{visibility:selected?'none':'visible'}} filter={['has','point_count']} paint={{'circle-radius':29,'circle-opacity':0}}/>
  <Layer id={ownLayerIds(status)[1]} type="circle" layout={{visibility:selected?'none':'visible'}} filter={['!',['has','point_count']]} paint={{'circle-radius':27,'circle-opacity':0}}/>
  </GeoJSONSource>)}
-   {displayPoints.map(point=>{
+   {visiblePoints.map(point=>{
     const item=selected||items.find(candidate=>candidate.id===point.itemId);
     if(point.cluster===null&&!item)return null;
     const status=point.status||item!.status;
@@ -116,7 +173,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
     const pointLabel=point.cluster!==null
       ? `${isOwn?t('Your vehicles')+'. ':''}${t('{count} {status} vehicles. Zoom in.',{count:point.count,status:t(status==='EMPTY'?'Empty':'Partial')})}`
       : `${isOwn?t('Your vehicle')+', ':''}${item!.truck}, ${item!.driver}, ${t(item!.status==='EMPTY'?'Empty':'Partial')}${locationSourceLabel(item!.locationSource)?', '+t(locationSourceLabel(item!.locationSource)):''}${item!.locationIsDemo?', '+t('Demo location'):''}`;
-    return <Marker key={point.key} id={point.key} lngLat={point.coordinate} offset={!selected?(offsets[point.key]||[0,0]):[0,0]} onPress={()=>void showPoint(point)}>
+    return <Marker key={point.key} id={point.key} lngLat={point.coordinate} offset={!selected?(fanOffsets[point.key]||offsets[point.key]||[0,0]):[0,0]} onPress={()=>void showPoint(point)}>
      <View accessible accessibilityRole="button" accessibilityLabel={pointLabel} style={point.cluster!==null?[styles.cluster,{backgroundColor:capacityColors[status]},isOwn&&styles.ownCluster]:styles.markerContents}>
       {point.cluster!==null?<>
        <Text style={[styles.count,{color:'#fff'}]}>{point.count}</Text>
@@ -135,6 +192,19 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
     </Marker>;
    })}
  </Map>
+ {!selected&&<View style={[styles.mapKey,{bottom:bottomInset+4,maxHeight:Math.max(80,windowSize.height-topInset-bottomInset-80)}]}>
+  <Pressable accessibilityRole="button" accessibilityLabel={t('Map key')} accessibilityState={{expanded:legendOpen}} onPress={()=>setLegendOpen(open=>!open)} style={styles.mapKeyToggle}><Text style={styles.mapKeyTitle}>{t('Map key')}</Text><AppIcon name={legendOpen?'chevronDown':'chevronUp'} size={14} color={palette.ink}/></Pressable>
+  {legendOpen&&<ScrollView style={{flexShrink:1}} contentContainerStyle={styles.mapKeyItems}>
+   {ownSignalIds.length>0&&<View style={styles.mapKeyItem}><Text style={{width:16,textAlign:'center',color:palette.ink}}>★</Text><Text style={styles.mapKeyText}>{t('Your vehicle')}</Text></View>}
+   <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.EMPTY.color}]}/><Text style={styles.mapKeyText}>{t('Empty')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.PARTIAL.color}]}/><Text style={styles.mapKeyText}>{t('Partial')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyLocation}/><Text style={styles.mapKeyText}>{t('Approximate location')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyArea}/><Text style={styles.mapKeyText}>{t('Area')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyRoute}/><Text style={styles.mapKeyText}>{t('Route')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred area')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred corridor')}</Text></View>
+  </ScrollView>}
+ </View>}
  {!!selected&&<ScrollView style={[styles.infoControls,{top:topInset,bottom:bottomInset}]} contentContainerStyle={{gap:6}} showsVerticalScrollIndicator={false}>{choices.map(choice=><Pressable key={`${choice.kind}:${choice.index}`} accessibilityRole="button" accessibilityLabel={t(label(choice.kind))} accessibilityState={{selected:active?.kind===choice.kind}} onPress={()=>setInfo({id:selected.id,...choice})} style={[styles.infoControl,{borderLeftColor:color(choice.kind)},active?.kind===choice.kind&&{backgroundColor:palette.blueSoft,borderColor:color(choice.kind)}]}><Text style={styles.controlLabel}>{t(shortLabel(choice.kind))}</Text><Text style={{fontSize:18,fontWeight:'700',color:color(choice.kind)}}>…</Text></Pressable>)}</ScrollView>}
  {/* Android resolves overlapping native marker rectangles before React handlers. */}
  {!!selected&&<Pressable accessibilityRole="button" accessibilityLabel={t('Back to map')} onPress={()=>{setInfo(null);onDeselect();}} style={[styles.selectionExit,{position:'absolute',left:12,top:topInset}]}><Text style={{fontSize:28,color:'#155eef'}}>×</Text></Pressable>}
@@ -151,6 +221,11 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  </View>;
 }
 const styles=StyleSheet.create({
+ mapKey:{position:'absolute',left:12,maxWidth:230,borderWidth:1,borderColor:palette.borderSoft,borderRadius:10,backgroundColor:'#fff',overflow:'hidden'},
+ mapKeyToggle:{minHeight:44,paddingHorizontal:10,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},mapKeyTitle:{fontSize:12,fontWeight:'700',color:palette.ink},
+ mapKeyItems:{gap:8,paddingHorizontal:10,paddingBottom:10},mapKeyItem:{flexDirection:'row',alignItems:'center',gap:8},mapKeyText:{fontSize:11,lineHeight:16,color:palette.ink,flexShrink:1},
+ mapKeyDot:{width:13,height:13,borderRadius:7},mapKeyLocation:{width:16,height:16,borderRadius:8,borderWidth:2,borderStyle:'dashed',borderColor:'#7846a7'},
+ mapKeyArea:{width:16,height:13,borderWidth:2,borderColor:palette.muted},mapKeyRoute:{width:18,height:0,borderTopWidth:3,borderColor:capacityStatusPresentation.EMPTY.color},mapKeyPreferred:{width:18,height:0,borderTopWidth:3,borderStyle:'dashed',borderColor:'#c06620'},
  truckWrap:{position:'relative'},ownTruckWrap:{borderWidth:3,borderColor:'#0b1d3a',borderRadius:38,padding:2,backgroundColor:'#fff'},ownBadge:{position:'absolute',top:-8,right:-8,width:22,height:22,borderRadius:11,borderWidth:2,borderColor:'#fff',backgroundColor:'#0b1d3a',alignItems:'center',justifyContent:'center'},ownBadgeText:{color:'#fff',fontSize:12,lineHeight:16},sourceBadge:{position:'absolute',top:-4,left:-4,width:22,height:22,borderRadius:11,borderWidth:1.5,backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},
  markerContents:{alignItems:'center',width:96},clusterStatus:{fontSize:10,lineHeight:14,fontWeight:'700'},
  truckStatusLine:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},truckLoadPreference:{fontSize:11,lineHeight:16,fontWeight:'700',color:'#243b63',backgroundColor:'#edf3ff',borderRadius:6,paddingHorizontal:7,paddingVertical:4},truckFacts:{flexDirection:'row',flexWrap:'wrap',gap:6},truckFact:{fontSize:12,lineHeight:18,color:palette.muted,backgroundColor:palette.canvas,borderRadius:6,paddingHorizontal:8,paddingVertical:5},

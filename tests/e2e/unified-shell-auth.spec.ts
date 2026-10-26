@@ -35,9 +35,21 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  await expect(page.getByRole('navigation',{name:'Capacity views'})).toHaveCount(0);
  await page.goto('/?view=private');
  await expect(page).toHaveURL(url=>url.pathname==='/'&&!url.search);
+ await page.goto('/app/home');
+ await expect(page.locator('.unified-app-main [data-view="vehicles"]')).toBeVisible();
+ await expect(page.locator('body>.site-copyright')).toBeVisible();
+ expect(await page.evaluate(()=>{
+  const footer=document.querySelector('.site-copyright')?.getBoundingClientRect();
+  const navigation=document.querySelector('.public-mobile-nav')?.getBoundingClientRect();
+  return Boolean(footer&&document.documentElement.scrollWidth<=innerWidth+2&&document.documentElement.scrollHeight<=innerHeight+2&&(!navigation||getComputedStyle(document.querySelector('.public-mobile-nav')!).display==='none'||footer.bottom<=navigation.top+1));
+ })).toBe(true);
  await page.goto('/app/network');
  await expect(page.locator('header.unified-site-header')).toBeVisible();
  await expect(page.locator('.app-topbar')).toHaveCount(0);
+ const footer=page.locator('body>.site-copyright');
+ await expect(footer).toHaveCount(1);
+ await expect(footer.getByRole('link',{name:'MarketVision Technology',exact:true})).toHaveAttribute('href','https://marketvisiontech.com/');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
  await header.locator('summary[aria-label="Account"]').click();
  await header.getByRole('button',{name:'Log out'}).click();
  await expect(page).toHaveURL(url=>url.pathname==='/',{timeout:30_000});

@@ -1,4 +1,4 @@
-import {verificationBadgesFromApproved,truckDocumentBadges} from '../verification-summary.js';
+import {verificationBadgesFromApproved,truckDocumentBadges,publicVehicleAuthorityBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
 import {loadPublicProviderFleet,publicFleetVehicleIds} from '../public-provider-paging.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
@@ -160,7 +160,7 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
       driver_kind:driverKind,driver_kind_label:'Driver',
       owner_verification_badges:ownerBadges.get(row.provider_organization_id||row.provider_profile_id)||[],
       driver_verification_badges:verificationBadges('DRIVER',row.driver_documents),
-      truck_verification_badges:truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number),
+      truck_verification_badges:publicVehicleAuthorityBadges(row.authority,truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number)),
       possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
       near_center_distance_km:undefined,updated_label:publicBoardTime(row.updated_at),
       capacity_update_stage:capacityAge.stage,capacity_updated_label:capacityAge.label,
@@ -229,7 +229,7 @@ function projectPrivateCapacityRow(row,hasNear,nearLat,nearLng){
     capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
     driver_kind:driverKind,driver_kind_label:'Driver',
     driver_verification_badges:verificationBadges('DRIVER',row.driver_documents),
-    truck_verification_badges:truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number),
+    truck_verification_badges:publicVehicleAuthorityBadges(row.authority,truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number)),
     possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
     updated_label:publicBoardTime(row.updated_at),capacity_update_stage:capacityAge.stage,
     capacity_updated_label:capacityAge.label,capacity_confirmation_needed:capacityAge.confirmAvailability,
@@ -444,7 +444,7 @@ export async function getSupabasePublicProvider(handle,options={}){
       assigned_driver_phone:driverPhoneById.get(driverId)||null,
       driver_kind:driverKind,driver_kind_label:'Driver',
       driver_verification_badges:verificationBadges('DRIVER',subjectId?documentsFor(subjectType,subjectId):[]),
-      truck_verification_badges:truckDocumentBadges(documentsFor('VEHICLE',vehicle.id),documentsFor(subjectType,subjectId),vehicle.id,vehicle.platform_number),capacity:null};
+      truck_verification_badges:publicVehicleAuthorityBadges(vehicle.authority,truckDocumentBadges(documentsFor('VEHICLE',vehicle.id),documentsFor(subjectType,subjectId),vehicle.id,vehicle.platform_number)),capacity:null};
   });
   const reviews=reviewResult.data||[];
   const reviewSummary=reviewSummaryResult.data||{};
@@ -592,7 +592,7 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   const providerByKey=new Map(providers.map(provider=>[provider.provider_organization_id?`organization:${provider.provider_organization_id}`:`profile:${provider.provider_profile_id}`,provider]));
   const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:[],theme,
     headline:'Daily Featured Transport Providers',introduction:'Meet the transport accounts in today’s showcase.',tiktok_url:null,
-    broadcast_start_time:'08:30',broadcast_end_time:'12:00',tiktok_broadcast_status:'NOT_SCHEDULED',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
+    broadcast_start_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart,broadcast_end_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd,tiktok_broadcast_status:'NOT_SCHEDULED',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
   const day=dayResult.data;if(!day)return empty();
   const {data:slots,error:slotError}=await client.from('featured_provider_slots').select('slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id').eq('day_id',day.id).order('slot_position');
   if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});

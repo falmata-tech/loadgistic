@@ -118,7 +118,7 @@ test('Expo confirmations cancel safely and persist fleet, sharing and Tracking c
   const contact=page.getByText('Synthetic broker desk',{exact:true}).last();await expect(contact).toBeVisible();
   await decide(()=>contact.locator('..').getByRole('button',{name:'Remove',exact:true}).click(),'Remove capacity access?','Keep access','Remove access',async()=>!!checked(await db.from('account_capacity_grants').select('revoked_at').eq('id',owned.grantId).single()).revoked_at,'REVOKE');
   await expect(contact).toHaveCount(0);
-  stage='TRACKING_RECIPIENT';evidence();await openWorkspacePage(page,'/shipment-detail?id='+owned.shipmentId,'/api/mobile/shipments/'+owned.shipmentId);await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
+  stage='TRACKING_RECIPIENT';evidence();await openWorkspacePage(page,'/shipment-detail?id='+owned.shipmentId,'/api/mobile/shipments/'+owned.shipmentId);await expect(page.getByTestId('tracking-provider-workspace')).toBeVisible();
   await expect(page.getByRole('button',{name:/^Remove access for /})).toHaveCount(0);
   const recipients=checked(await db.from('provider_tracking_recipients').select('recipient_role,revoked_at').eq('shipment_id',owned.shipmentId));expect(recipients).toEqual([{recipient_role:'OWNER',revoked_at:null}]);checks.PROVIDER_RECIPIENT_REMOVAL_ABSENT=true;
   expect(checked(await db.from('provider_tracking_recipients').select('id').eq('shipment_id',owned.shipmentId).eq('recipient_role','OWNER').is('revoked_at',null))).toHaveLength(1);

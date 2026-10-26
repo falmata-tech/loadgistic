@@ -140,6 +140,7 @@ test('US visitor location can become an obscured native truck-near filter',async
   await context.grantPermissions(['geolocation'],{origin:'http://127.0.0.1:8084'});await context.setGeolocation(fix);
   page.on('request',(request:any)=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')requests.push(url.search);});
   await page.goto('http://127.0.0.1:8084/');await page.getByRole('button',{name:/Vehicle filters/}).click();
+  await page.getByRole('button',{name:'Vehicle location',exact:true}).click();
   await page.getByRole('button',{name:'Use my approximate area',exact:true}).click();
   await expect(page.getByRole('button',{name:'Update my approximate area',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Show vehicles',exact:true}).click();

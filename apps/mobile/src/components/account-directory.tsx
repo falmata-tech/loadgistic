@@ -37,7 +37,7 @@ export function AccountDirectoryNative({view,onShareVehicles}:{view:ViewKind;onS
  async function save(body:Record<string,string>){
   if(actionLock.current)return;actionLock.current=true;setSaving(true);setError('');setNotice('');
   try{await request('/api/account-connections',body);
-   setNotice(t(body.action==='DECIDE'?body.decision==='ACCEPT'?'Connection accepted. Vehicle access is shared separately.':body.decision==='REVOKE'?'Connection removed. Its Network vehicle shares are no longer visible.':'Request updated.':'Request sent. Vehicle access begins only after it is shared.'));
+   setNotice(t(body.action==='DECIDE'?body.decision==='ACCEPT'?'Connected':body.decision==='REVOKE'?'Disconnected':'Request updated.':'Request sent'));
    setVersion(value=>value+1);
   }catch(problem){setError(errorMessage(problem));}
   finally{actionLock.current=false;setSaving(false);}
@@ -54,8 +54,7 @@ export function AccountDirectoryNative({view,onShareVehicles}:{view:ViewKind;onS
    {result?.items.map(item=><Card key={`${item.kind}:${item.id}`}><View style={styles.head}><AppIcon name={item.kind==='BUSINESS'?'users':item.kind==='DRIVER'?'user':'truck'} size={23} color={palette.blue}/><View style={styles.identity}><Text style={styles.kind}>{t(kindLabels[item.kind])}</Text><Text style={styles.name}>{item.name}</Text>{!!item.handle&&<Text style={styles.handle}>@{item.handle}</Text>}</View></View>{item.statusBadge&&item.statusBadge!=='TRANSPORT_PROVIDER'&&item.statusBadge!=='FLEET_DRIVER'?<View style={styles.badge}><Text style={styles.badgeText}>{t(statusLabels[item.statusBadge])}</Text></View>:null}{!!item.managerName&&<Copy>{t('Account manager')} · {item.managerName}</Copy>}{!!item.city&&<Copy>{item.city}</Copy>}{item.networkSize!==null&&<Copy>{t('Vehicles in network')} · {item.networkSize}</Copy>}{item.connectionStatus?<Copy message={item.connectionStatus==='ACCEPTED'?'Connected':'Request pending'}/>:<Button message="Request connection" disabled={saving} onPress={()=>{void save({kind:item.kind,targetId:item.id});}}/>}</Card>)}
    {!!result&&result.pageCount>1&&<View style={styles.pager}><Button secondary message="Previous" disabled={busy||page===1} onPress={()=>setPage(page-1)}/><Text>{result.page} / {result.pageCount}</Text><Button secondary message="Next" disabled={busy||page>=result.pageCount} onPress={()=>setPage(page+1)}/></View>}
   </>:<>
-   <Copy message="A connection does not share vehicles. The provider chooses which vehicles each account can see."/>
-   {busy&&<LoadingSpinner/>}{!busy&&!active.length&&<Copy message="No connections yet. Find an account to send a request."/>}
+   {busy&&<LoadingSpinner/>}{!busy&&!active.length&&<Copy message="No connections"/>}
    {active.map(item=><Card key={item.id}><View style={styles.head}><AppIcon name={item.account.kind==='BUSINESS'?'users':'truck'} size={23} color={palette.blue}/><View style={styles.identity}><Text style={styles.kind}>{t(item.status==='ACCEPTED'?'Connected':item.direction==='INCOMING'?'Incoming request':'Request sent')}</Text><Text style={styles.name}>{item.account.name}</Text>{!!item.account.handle&&<Text style={styles.handle}>@{item.account.handle}</Text>}</View></View>
     {item.canManage&&item.status==='PENDING'&&item.direction==='INCOMING'&&<><Button message="Accept" disabled={saving} onPress={()=>{void save({action:'DECIDE',id:item.id,decision:'ACCEPT'});}}/><Button secondary message="Decline" disabled={saving} onPress={()=>{void save({action:'DECIDE',id:item.id,decision:'DECLINE'});}}/></>}
     {item.canManage&&item.status==='PENDING'&&item.direction==='OUTGOING'&&<Button secondary message="Cancel request" disabled={saving} onPress={()=>{void save({action:'DECIDE',id:item.id,decision:'CANCEL'});}}/>}

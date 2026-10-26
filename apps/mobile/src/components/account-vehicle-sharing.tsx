@@ -22,7 +22,7 @@ export function AccountVehicleSharing({vehicleId,exclusive,connections,grants,re
   <Button secondary message={open?'Close connection sharing':'Share with connection'} onPress={()=>setOpen(!open)} disabled={busy}/>
   {!open&&grants.map(grant=><Copy key={grant.id}>{grant.name}</Copy>)}
   {open&&<View style={{gap:9}}>
-   {!exclusive&&available.length>0&&<Copy message="Choose a connected shipper or broker. Only this vehicle will be shared."/>}
+
    {exclusive?<Copy message="This vehicle uses an older sharing setting. In Capacity, choose Private network before sharing with an account."/>:available.length?<>
     {available.map(item=><Pressable key={item.id} accessibilityRole="radio" accessibilityState={{selected:selected===item.id,disabled:busy}} accessibilityLabel={item.account.name} onPress={()=>setSelected(item.id)} disabled={busy} style={{minHeight:44,borderRadius:10,borderWidth:1,borderColor:selected===item.id?palette.blue:palette.border,paddingHorizontal:12,paddingVertical:10,flexDirection:'row',alignItems:'center',gap:9}}><Text style={{flex:1,color:palette.ink,fontWeight:selected===item.id?'700':'500'}}>{item.account.name}</Text>{selected===item.id?<Text style={{color:palette.blue,fontWeight:'700'}}>✓</Text>:null}</Pressable>)}
     <Button message="Share vehicle" disabled={!selected||busy} busy={busy} onPress={()=>{void save({action:'GRANT',connectionId:selected,vehicleId});}}/>

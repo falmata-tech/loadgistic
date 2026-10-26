@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { hasPlatformPermission,disableProviderSponsorship,saveFeaturedProviderDay,saveProviderSponsorship,setFeaturedTikTokBroadcast } from '@/lib/platform-admin.js';
 import { redirectWith,text } from '@/lib/redirects';
 import { errorMessage } from '@/lib/errors';
+import {featuredSaveDiagnosticLine} from '@/lib/featured-save-diagnostic.js';
 
 export async function POST(request:NextRequest) {
   const user=await getCurrentUser();
@@ -55,6 +56,8 @@ export async function POST(request:NextRequest) {
     });
     return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success',command==='PUBLISH'?'Daily feature published.':'Draft saved.');
   }catch(error){
+    const diagnostic=featuredSaveDiagnosticLine(error);
+    if(diagnostic)console.error(diagnostic);
     return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'error',errorMessage(error));
   }
 }

@@ -33,6 +33,16 @@ test('public SSR canonicalizes valid groups before its one map request',async()=
  const current=page(),feed=find(await current.render({status:'PARTIAL,EMPTY',locationSource:'MOBILE,GPS'}));
  assert.equal(current.calls.length,1);assert.equal(current.calls[0].status,'EMPTY,PARTIAL');assert.equal(feed.props.query.locationSource,'GPS,MOBILE');
 });
+test('public and signed-in business Capacity preserve canonical area location and radius',async()=>{
+ const area={currentAreaPlaceRef:'ethiopia-adama',currentArea:'Adama',currentAreaRadiusKm:'50',status:'PARTIAL'};
+ const publicPage=page(),publicFeed=find(await publicPage.render(area));
+ assert.equal(publicPage.calls.length,1);for(const key of ['currentAreaPlaceRef','currentArea','currentAreaRadiusKm'])assert.equal(publicPage.calls[0][key],area[key]);
+ assert.equal(publicFeed.props.query.currentAreaPlaceRef,area.currentAreaPlaceRef);
+ const actor={id:'synthetic-owner',role:'CUSTOMER',active:true,selected_business_workspace:{id:'synthetic-business',membershipRevision:1,permissions:{capacity:true}}};
+ const business=page({actor}),businessFeed=find(await business.render({...area,view:'private'}));
+ assert.equal(business.calls.length,1);for(const key of ['currentAreaPlaceRef','currentArea','currentAreaRadiusKm'])assert.equal(business.calls[0][key],area[key]);
+ assert.equal(businessFeed.props.query.currentAreaPlaceRef,area.currentAreaPlaceRef);
+});
 test('old Space needed links cannot leave an invisible map filter active',async()=>{
  const current=page(),feed=find(await current.render({status:'PARTIAL',loadType:'FTL'}));
  assert.equal(current.calls.length,1);

@@ -8,7 +8,7 @@ import {LoadingIndicator} from './loading-state';
 import type {CapacitySearchKind,CapacitySearchResult,CapacitySearchItem} from '@/lib/capacity-search';
 import {TRANSPORTER_SEARCH_TIMEOUT_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
 import {CAPACITY_FILTER_PRESENTATION as filterPresentation} from '@/lib/capacity-filter-presentation';
-export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport Provider',OWNER_OPERATOR:'Transport Provider',SELF_MANAGED_DRIVER:'Transport Provider',COMPANY_DRIVER:'Driver'};
+export const SEARCH_KIND_LABELS:Record<CapacitySearchKind,string>={COMPANY:'Transport Provider',OWNER_OPERATOR:'Transport Provider',SELF_MANAGED_DRIVER:'Transport Provider'};
 export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiPath='/api/capacity-search',active=true,requestVersion=0,render,onProfileSelect}:{query:Record<string,string>;mapQuery?:Record<string,string>;view:'open'|'private'|'account'|'loadgistic';searchPath:string;apiPath?:string;active?:boolean;requestVersion?:number;render?:(content:React.ReactNode)=>React.ReactNode;onProfileSelect?:()=>void}){
  const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
  const key=JSON.stringify({...query,...(blocked.length?{blocked:blockKey}:{})});
@@ -43,19 +43,18 @@ export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiP
    if(mounted.current&&!controller.signal.aborted&&wanted.current?.identity===desired.identity)setResponse({identity:desired.identity,data});
   }).catch(()=>{if(mounted.current&&!controller.signal.aborted&&wanted.current?.identity===desired.identity)setFailure(desired.identity);}).finally(finish);
  },[identity,completed,response?.identity,failure]);
- function target(handle:string,id:string|null){const params=new URLSearchParams(mapQuery);params.delete('q');params.delete('truck');params.delete('resultKind');params.set('provider',handle);if(id)params.set('truck',id);return `${searchPath}?${params}`;}
+ function target(handle:string){const params=new URLSearchParams(mapQuery);params.delete('q');params.delete('truck');params.delete('resultKind');params.set('provider',handle);return `${searchPath}?${params}`;}
  if(!identity)return render?render(null):null;
  const content=<section className="capacity-result-panel" aria-live="polite" aria-busy={loading}>
   {loading?<LoadingIndicator label="Finding transporters"/>:failed?<div role="alert" className="capacity-result-empty"><Text message="Search is temporarily unavailable. Please try again."/><button type="button" className="button secondary" onClick={()=>setRetry((v:number)=>v+1)}><RefreshCw/><Text message="Try again"/></button></div>:result?.filterError?<p role="alert"><FeedbackText message={result.filterError} fallback="Search is temporarily unavailable. Please try again."/></p>:<>
    <p className="capacity-result-count"><Text message="{count} results" values={{count:result?.total||0}}/></p>
-   {!result?.items.length?<p className="capacity-result-empty"><Text message="No transporters match this search. Try an account name, manager name, handle or city."/></p>:<div className="capacity-result-list">{result.items.map((item:CapacitySearchItem)=>{return <article className={`capacity-result-card${item.kind==='COMPANY_DRIVER'?' kind-company_driver':''}`} key={item.key} data-result-kind={item.kind}>
-    <header><span className="capacity-result-icon"><UserRound aria-hidden="true"/></span><div><small><Text message={SEARCH_KIND_LABELS[item.kind]}/></small><h3>{item.kind==='COMPANY_DRIVER'?item.title:item.accountName||item.title}</h3>{item.kind!=='COMPANY_DRIVER'&&item.handle?<span className="capacity-result-identifier">@{item.handle}</span>:null}</div></header>
-    {item.kind!=='COMPANY_DRIVER'&&item.managerName?<p><Text message="Account manager"/> · {item.managerName}</p>:null}
-    {item.kind==='COMPANY_DRIVER'?<p><Text message="Transport Provider"/> · {item.accountName||item.subtitle||`@${item.handle}`}</p>:null}
+   {!result?.items.length?<p className="capacity-result-empty"><Text message="No transporters match this search. Try an account name, manager name, handle or city."/></p>:<div className="capacity-result-list">{result.items.map((item:CapacitySearchItem)=>{return <article className="capacity-result-card" key={item.key} data-result-kind={item.kind}>
+    <header><span className="capacity-result-icon"><UserRound aria-hidden="true"/></span><div><small><Text message={SEARCH_KIND_LABELS[item.kind]}/></small><h3>{item.accountName||item.title}</h3>{item.handle?<span className="capacity-result-identifier">@{item.handle}</span>:null}</div></header>
+    {item.managerName?<p><Text message="Account manager"/> · {item.managerName}</p>:null}
     {item.city?<p className="capacity-result-city"><MapPin aria-hidden="true"/>{item.city}</p>:null}
     {item.description?<p className="capacity-result-description">{item.description}</p>:null}
     <small><Text message="{count} matching vehicles" values={{count:item.matching_trucks}}/></small>
-    <footer><Link href={target(item.handle,item.kind==='COMPANY_DRIVER'?item.capacity_id:null)} onClick={onProfileSelect}><Text message={item.kind==='COMPANY_DRIVER'?'Show on map':'Show vehicles on map'}/><ArrowRight aria-hidden="true"/></Link><Link href={`/@${item.handle}`}><Text message={item.kind==='COMPANY_DRIVER'?'Transport Provider':'Profile'}/></Link></footer>
+    <footer><Link href={target(item.handle)} onClick={onProfileSelect}><Text message="Show vehicles on map"/><ArrowRight aria-hidden="true"/></Link><Link href={`/@${item.handle}`}><Text message="Profile"/></Link></footer>
    </article>;})}</div>}
    {(result?.total||0)>15?<Localized as="nav" copy={["aria-label"]} className="capacity-result-pagination" aria-label="Search result pages"><button type="button" className="button secondary" disabled={page===1} onClick={()=>setPagination({key:searchKey,page:page-1})}><Text message="Previous"/></button><span>{page} / {Math.ceil((result?.total||0)/15)}</span><button type="button" className="button secondary" disabled={!result?.hasMore} onClick={()=>setPagination({key:searchKey,page:page+1})}><Text message="Next"/></button></Localized>:null}
   </>}

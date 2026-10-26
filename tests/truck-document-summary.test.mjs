@@ -1,5 +1,35 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {verificationBadgesFromApproved,projectVerificationSubject,truckDocumentBadges} from '../src/lib/verification-summary.js';
+import {verificationBadgesFromApproved,projectVerificationSubject,truckDocumentBadges,publicVehicleAuthorityBadges} from '../src/lib/verification-summary.js';
+
+test('public vehicle badges use current authority, not an old approved request',()=>{
+ const oldApproval=[{type:'VEHICLE_OWNERSHIP',verified:true,reviewedAt:'2026-09-23'}];
+ const badges=publicVehicleAuthorityBadges({},oldApproval);
+ assert.deepEqual(badges.map(({type,verified})=>[type,verified]),[
+  ['VEHICLE_OWNERSHIP',false],['VEHICLE_AUTHORIZATION',false],['VEHICLE_OPERATING_LICENSE',false]
+ ]);
+ assert.equal(JSON.stringify(badges).includes('2026-09-23'),false);
+});
+
+test('public authority badges distinguish current ownership, permission and licence',()=>{
+ const authority={ownership:{verified:true,reviewedAt:'2026-10-01'},permission:{verified:false},operatingLicence:{verified:true,reviewedAt:'2026-10-02',holderBasis:'FINANCED'}};
+ const badges=publicVehicleAuthorityBadges(authority,[]);
+ assert.deepEqual(badges.map(({verified})=>verified),[true,false,true]);
+ assert.equal(badges[0].reviewedAt,'2026-10-01');
+ assert.equal(badges[2].reviewedAt,'2026-10-02');
+ assert.equal(badges[1].reviewedAt,null);
+});
+
+test('expired, revoked and wrong-assignment approvals cannot produce a current public badge',()=>{
+ const expired=[{type:'VEHICLE_AUTHORIZATION',verified:false,expired:true,expiresOn:'2026-01-01'}];
+ const revoked=[{type:'VEHICLE_OPERATING_LICENSE',verified:true,reviewedAt:'2026-02-01'}];
+ const badges=publicVehicleAuthorityBadges({permission:{verified:false},operatingLicence:{verified:false}},[...expired,...revoked]);
+ assert.equal(badges[1].verified,false);assert.equal(badges[1].expired,true);
+ assert.equal(badges[1].expiresOn,'2026-01-01','Approved expired evidence retains its public expiry detail');
+ assert.equal(badges[2].verified,false);assert.equal(badges[2].expired,false);
+ assert.equal(JSON.stringify(badges).includes('2026-02-01'),false);
+ const staleFact=publicVehicleAuthorityBadges({ownership:{verified:true,reviewedAt:'2026-01-01',expiresOn:'2000-01-01'}},[])[0];
+ assert.equal(staleFact.verified,false);assert.equal(staleFact.expired,true);
+});
 
 test('ownership and permission name only the document actually reviewed',()=>{
  const ownership={verification_type:'VEHICLE_OWNERSHIP',reviewed_at:'2026-09-23',expires_on:null};

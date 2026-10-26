@@ -38,7 +38,7 @@ export async function listBusinessCapacity(actorId:string,workspaceId:string,fil
  catch(error){throw new BusinessWorkspaceError(error instanceof Error&&/FORBIDDEN/.test(error.message)?'BUSINESS_FORBIDDEN':'BUSINESS_UNAVAILABLE');}
 }
 
-const searchItem=z.object({key:z.string(),kind:z.enum(['COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER','COMPANY_DRIVER']),title:z.string(),subtitle:z.string().nullable(),description:z.string().nullable(),identifier:z.string().nullable(),handle:z.string(),capacity_id:z.string().nullable(),city:z.string().nullable(),status:z.string().nullable(),owner:z.string(),driver:z.string().nullable(),documents:z.array(z.unknown()),matching_trucks:z.number().int().positive()}).strict();
+const searchItem=z.object({key:z.string(),kind:z.enum(['COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER']),title:z.string(),subtitle:z.string().nullable(),description:z.string().nullable(),identifier:z.string().nullable(),handle:z.string(),capacity_id:z.string().nullable(),city:z.string().nullable(),status:z.string().nullable(),owner:z.string(),driver:z.string().nullable(),account_name:z.string().nullable(),manager_name:z.string().nullable(),documents:z.array(z.unknown()),matching_trucks:z.number().int().positive()}).strict();
 const searchResult=z.object({items:z.array(searchItem),total:z.number().int().nonnegative(),page:z.number().int().positive(),pageSize:z.literal(15),hasMore:z.boolean()}).strict();
 export function businessCapacitySearchPort(client:BusinessRpcPort=createSupabaseAdminClient()){
  return {async search(actorId:string,workspaceId:string,text:string,page=1){
@@ -47,6 +47,6 @@ export function businessCapacitySearchPort(client:BusinessRpcPort=createSupabase
   const {data,error}=await client.rpc('business_capacity_search',{actor_user_id:actorId,target_workspace_id:workspaceId,search_text:text.trim(),requested_page:page});
   if(error)throw new BusinessWorkspaceError(error.message.includes('BUSINESS_FORBIDDEN')?'BUSINESS_FORBIDDEN':'BUSINESS_UNAVAILABLE');
   const result=searchResult.safeParse(data);if(!result.success)throw new BusinessWorkspaceError('BUSINESS_UNAVAILABLE');
-  return {...result.data,items:result.data.items.map(item=>({...item,kind:item.kind==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER' as const:item.kind}))};
+  return {...result.data,items:result.data.items.map(item=>({...item,accountName:item.account_name||item.owner,managerName:item.manager_name||'',kind:item.kind==='OWNER_OPERATOR'?'SELF_MANAGED_DRIVER' as const:item.kind}))};
  }};
 }

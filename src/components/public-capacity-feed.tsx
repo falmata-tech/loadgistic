@@ -5,6 +5,7 @@ import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import Form from 'next/form';
 import {
+  CircleDotDashed,
   PanelLeftClose,
   Clock3,
   ChevronDown,
@@ -21,7 +22,7 @@ import React from 'react';
 import {useBlockedProviders} from './content-safety';
 import {loadCapacityMapWindow,reconcileCapacityMapWindow} from '@/lib/capacity-map-loading.js';
 import {BUSINESS_SEARCH_PRIVACY_KM,obscureCoordinate,isValidCoordinate} from '@/lib/location-privacy.js';
-import {CAPACITY_FILTER_PRESENTATION as filterPresentation} from '@/lib/capacity-filter-presentation';
+import {CAPACITY_FILTER_PRESENTATION as filterPresentation,initialCapacityQueryShape} from '@/lib/capacity-filter-presentation';
 import {CapacityConfigurationPicker} from './capacity-configuration-picker';
 import {CapacityMultiOptions} from './capacity-multi-options';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
@@ -91,6 +92,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const [near,setNear]:[{lat:number;lng:number;radius:number}|null,(value:{lat:number;lng:number;radius:number}|null)=>void]=React.useState(initialNear);
   const [nearFilterEnabled,setNearFilterEnabled]=React.useState(Boolean(initialNear)&&!query.truckCityPlaceRef&&!query.truckCity);
   const [truckCityName,setTruckCityName]=React.useState(query.truckCity||'');
+  const [queryShape,setQueryShape]=React.useState(initialCapacityQueryShape(query));
+  const [areaCityName,setAreaCityName]=React.useState(query.currentArea||'');
   const [locationState,setLocationState]:[VisitorLocationState,(value:VisitorLocationState)=>void]=React.useState('idle');
   const [locationFeedback,setLocationFeedback]=React.useState('');
   const [filterOpen,setFilterOpen]=React.useState(false);
@@ -239,7 +242,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
         ?'Retry location permission'
         :'Use my location';
   const activeFilterCount=[query.ownerDocs,query.driverDocs,query.truckDocs,query.status,query.vehicleCategory,query.locationSource,query.stopOption,query.freshness,
-    query.originPlaceRef||query.origin,query.destinationPlaceRef||query.destination,
+    query.currentAreaPlaceRef||query.currentArea,query.originPlaceRef||query.origin,query.destinationPlaceRef||query.destination,
     query.truckCityPlaceRef||query.truckCity||(query.nearLat&&query.nearLng)].filter(Boolean).length;
   const clearSearchParams=new URLSearchParams(query);
   ['q','provider','truck','cursor'].forEach(key=>clearSearchParams.delete(key));
@@ -283,14 +286,34 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
               <CapacityConfigurationPicker multiple value={vehicleFilter} onChange={setVehicleFilter}/>
               <CapacityMultiOptions name="status" label="Load status" anyLabel="Any available vehicle" options={[["EMPTY","Empty vehicle"],["PARTIAL","Partly loaded"]]} value={statusFilter} onChange={setStatusFilter}/>
             </div>
-            <p className="meta"><Text message="Choose any that fit."/></p>
           </div>
         </details>
-        <details className="capacity-filter-section" data-filter-section="location" open>
+        <details className="capacity-filter-section" data-filter-section="availability" open>
+          <summary><Route aria-hidden="true"/><strong><Text message={filterPresentation.groups.availability.label}/></strong><ChevronDown aria-hidden="true"/></summary>
+          <div className="capacity-filter-section-body">
+            <div className="segmented-control geometry-choice"><button type="button" aria-pressed={queryShape==='AREA'} onClick={()=>setQueryShape('AREA')}><CircleDotDashed aria-hidden="true"/><Text message="Area"/></button><button type="button" aria-pressed={queryShape==='ROUTE'} onClick={()=>setQueryShape('ROUTE')}><Route aria-hidden="true"/><Text message="Route"/></button></div>
+            <fieldset className="capacity-route-filter" data-query-shape="AREA" disabled={queryShape!=='AREA'} hidden={queryShape!=='AREA'} style={queryShape!=='AREA'?{display:'none'}:undefined}>
+              <div className="capacity-geography-filter"><div className="form-group"><label htmlFor="capacity-area-city"><Text message="Area"/></label><EthiopiaPlaceInput id="capacity-area-city" name="currentArea" placeRefName="currentAreaPlaceRef" defaultPlaceRef={query.currentAreaPlaceRef||''} defaultValue={query.currentArea||''} onChange={event=>setAreaCityName(event.target.value)} placeholder="Choose a city or town"/></div>
+              <div className="form-group"><label htmlFor="capacity-area-radius"><Text message="Distance from city"/></label><select id="capacity-area-radius" name="currentAreaRadiusKm" disabled={!areaCityName.trim()&&!query.currentAreaPlaceRef} defaultValue={query.currentAreaRadiusKm||String(filterPresentation.cityDistance.defaultKm)}>{filterPresentation.cityDistance.choices.map(([value])=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></div></div>
+            </fieldset>
+            <fieldset className="capacity-route-filter" data-query-shape="ROUTE" disabled={queryShape!=='ROUTE'} hidden={queryShape!=='ROUTE'} style={queryShape!=='ROUTE'?{display:'none'}:undefined}>
+            <fieldset className="capacity-route-filter"><legend><Text message="Shipment route"/></legend><div className="capacity-main-route">
+              <div className="form-group"><label htmlFor="capacity-route-origin"><Text message="Origin "/><small><Text message="(optional)"/></small></label><EthiopiaPlaceInput id="capacity-route-origin" name="origin" placeRefName="originPlaceRef" defaultPlaceRef={query.originPlaceRef||''} defaultValue={query.origin||''} placeholder="City or town"/></div>
+              <div className="form-group"><label htmlFor="capacity-route-destination"><Text message="Destination "/><small><Text message="(optional)"/></small></label><EthiopiaPlaceInput id="capacity-route-destination" name="destination" placeRefName="destinationPlaceRef" defaultPlaceRef={query.destinationPlaceRef||''} defaultValue={query.destination||''} placeholder="City or town"/></div>
+            </div></fieldset>
+            <div className="capacity-geography-filter route">
+              <label htmlFor="capacity-origin-radius"><span><Text message="Origin range"/></span><select id="capacity-origin-radius" name="originRadiusKm" defaultValue={query.originRadiusKm||String(filterPresentation.routeDistance.defaultKm)}>{filterPresentation.routeDistance.choices.map(([value])=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></label>
+              <label htmlFor="capacity-destination-radius"><span><Text message="Destination range"/></span><select id="capacity-destination-radius" name="destinationRadiusKm" defaultValue={query.destinationRadiusKm||String(filterPresentation.routeDistance.defaultKm)}>{filterPresentation.routeDistance.choices.map(([value])=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></label>
+              <label htmlFor="capacity-route-direction"><span><Text message={filterPresentation.routeDirection.label}/></span><select id="capacity-route-direction" name="directionMode" defaultValue={query.directionMode||'DIRECT'}>{filterPresentation.routeDirection.options.map(([value,label])=><option value={value} key={value}><Text message={label}/></option>)}</select></label>
+            </div>
+            </fieldset>
+          </div>
+        </details>
+        <details className="capacity-filter-section" data-filter-section="location" open={Boolean(query.truckCityPlaceRef||query.truckCity||query.nearLat||query.locationSource)}>
           <summary><MapPinned aria-hidden="true"/><strong><Text message={filterPresentation.groups.location.label}/></strong><ChevronDown aria-hidden="true"/></summary>
           <div className="capacity-filter-section-body">
             <fieldset className="capacity-truck-location-filter">
-              <legend className="sr-only"><Text message="Location"/></legend>
+              <legend className="sr-only"><Text message="Vehicle location"/></legend>
               <div className="capacity-geography-filter">
                 <div className="form-group"><label htmlFor="capacity-truck-city"><Text message="In or near a city"/></label><EthiopiaPlaceInput id="capacity-truck-city" name="truckCity" placeRefName="truckCityPlaceRef" defaultPlaceRef={query.truckCityPlaceRef||''} defaultValue={query.truckCity||''} onChange={event=>{setTruckCityName(event.target.value);setNearFilterEnabled(false);}} placeholder="Choose a city or town"/></div>
                 <div className="form-group"><label htmlFor="capacity-truck-location-radius"><Text message="Distance from city"/></label><select id="capacity-truck-location-radius" name="truckLocationRadiusKm" disabled={!truckCityName.trim()&&!query.truckCityPlaceRef} defaultValue={query.truckLocationRadiusKm||String(filterPresentation.cityDistance.defaultKm)}>{filterPresentation.cityDistance.choices.map(([value])=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></div>
@@ -302,25 +325,11 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
             </fieldset>
           </div>
         </details>
-        <details className="capacity-filter-section" data-filter-section="route">
-          <summary><Route aria-hidden="true"/><strong><Text message={filterPresentation.groups.route.label}/></strong><ChevronDown aria-hidden="true"/></summary>
-          <div className="capacity-filter-section-body">
-            <fieldset className="capacity-route-filter"><legend><Text message="Shipment route"/></legend><div className="capacity-main-route">
-              <div className="form-group"><label htmlFor="capacity-route-origin"><Text message="Origin "/><small><Text message="(optional)"/></small></label><EthiopiaPlaceInput id="capacity-route-origin" name="origin" placeRefName="originPlaceRef" defaultPlaceRef={query.originPlaceRef||''} defaultValue={query.origin||''} placeholder="City or town"/></div>
-              <div className="form-group"><label htmlFor="capacity-route-destination"><Text message="Destination "/><small><Text message="(optional)"/></small></label><EthiopiaPlaceInput id="capacity-route-destination" name="destination" placeRefName="destinationPlaceRef" defaultPlaceRef={query.destinationPlaceRef||''} defaultValue={query.destination||''} placeholder="City or town"/></div>
-            </div></fieldset>
-            <div className="capacity-geography-filter route">
-              <label htmlFor="capacity-origin-radius"><span><Text message="Origin range"/></span><select id="capacity-origin-radius" name="originRadiusKm" defaultValue={query.originRadiusKm||String(filterPresentation.routeDistance.defaultKm)}>{filterPresentation.routeDistance.choices.map(([value])=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></label>
-              <label htmlFor="capacity-destination-radius"><span><Text message="Destination range"/></span><select id="capacity-destination-radius" name="destinationRadiusKm" defaultValue={query.destinationRadiusKm||String(filterPresentation.routeDistance.defaultKm)}>{filterPresentation.routeDistance.choices.map(([value])=><option value={value} key={value}><Text message="Within {distance} km" values={{distance:value}}/></option>)}</select></label>
-              <label htmlFor="capacity-route-direction"><span><Text message={filterPresentation.routeDirection.label}/></span><select id="capacity-route-direction" name="directionMode" defaultValue={query.directionMode||'DIRECT'}>{filterPresentation.routeDirection.options.map(([value,label])=><option value={value} key={value}><Text message={label}/></option>)}</select></label>
-            </div>
-            <CapacityMultiOptions name="stopOption" label={filterPresentation.stops.label} anyLabel={filterPresentation.stops.anyLabel} options={filterPresentation.stops.options} value={stopFilter} onChange={setStopFilter} icon={<MapPinned aria-hidden="true"/>}/>
-          </div>
-        </details>
         <details className="capacity-filter-section" data-filter-section="more">
           <summary><SlidersHorizontal aria-hidden="true"/><strong><Text message={filterPresentation.groups.more.label}/></strong><ChevronDown aria-hidden="true"/></summary>
           <div className="capacity-filter-section-body">
             <CapacityMultiOptions name="freshness" label={filterPresentation.freshness.label} anyLabel={filterPresentation.freshness.anyLabel} options={filterPresentation.freshness.options} value={freshnessFilter} onChange={setFreshnessFilter} icon={<Clock3 aria-hidden="true"/>}/>
+            <CapacityMultiOptions name="stopOption" label={filterPresentation.stops.label} anyLabel={filterPresentation.stops.anyLabel} options={filterPresentation.stops.options} value={stopFilter} onChange={setStopFilter} icon={<MapPinned aria-hidden="true"/>}/>
             <CapacityDocumentFilters query={query}/>
           </div>
         </details>

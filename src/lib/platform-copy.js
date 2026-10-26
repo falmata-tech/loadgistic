@@ -1,7 +1,6 @@
 // Shared app-owned copy. Do not translate transporter records or recipient names.
 export const capacityIntroduction = Object.freeze({
   title: 'Find space for your next load',
-  body: 'Keep your transporters close. See the space and routes they report, or find new options in the public market.',
 });
 
 export const signupBenefits = Object.freeze({

@@ -1,6 +1,6 @@
 export const DEFAULT_FEATURED_SCHEDULE_CONFIG=Object.freeze({
-  dayStart:'08:30',
-  dayEnd:'12:00',
+  dayStart:'22:30',
+  dayEnd:'23:59',
   targetCount:8,
   sponsorBreakCount:4,
   sponsorBreakMinutes:2
@@ -24,6 +24,7 @@ function boundedInteger(value,fallback,min,max,errorCode){
 
 export function validateFeaturedScheduleConfig(input={},options={}){
   const legacy=Boolean(options.allowLegacyWindow&&input.dayStart==='07:30'&&input.dayEnd==='09:00');
+  const historical=Boolean(options.allowLegacyWindow&&input.dayStart==='08:30'&&input.dayEnd==='12:00');
   const config={
     dayStart:String(input.dayStart||DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart),
     dayEnd:String(input.dayEnd||DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd),
@@ -33,8 +34,8 @@ export function validateFeaturedScheduleConfig(input={},options={}){
     sponsorBreakMinutes:boundedInteger(input.sponsorBreakMinutes,2,1,2,'FEATURED_SPONSOR_BREAK_DURATION_INVALID')
   };
   const dayStartMinutes=timeToMinutes(config.dayStart),dayEndMinutes=timeToMinutes(config.dayEnd);
-  if(!legacy&&(config.dayStart!=='08:30'||config.dayEnd!=='12:00'))throw new Error('FEATURED_SCHEDULE_WINDOW_INVALID');
-  return {...config,dayStartMinutes,dayEndMinutes,legacy};
+  if(!legacy&&!historical&&(config.dayStart!=='22:30'||config.dayEnd!=='23:59'))throw new Error('FEATURED_SCHEDULE_WINDOW_INVALID');
+  return {...config,dayStartMinutes,dayEndMinutes,legacy,historical};
 }
 
 function validateDate(dateIso){
@@ -72,23 +73,24 @@ function featuredKeys(value){
 
 function buildAutomatic(date,keys,config){
   const label=`${config.dayStart}–${config.dayEnd}`;
-  if(!keys.length)return {entries:[],walkthroughs:[],sessions:[{key:'MORNING',label:'Morning programme',provider_count:0,starts_at:null,ends_at:null,time_label:label}]};
+  const sessionLabel=config.legacy||config.historical?'Morning programme':'Evening programme';
+  if(!keys.length)return {entries:[],walkthroughs:[],sessions:[{key:'MORNING',label:sessionLabel,provider_count:0,starts_at:null,ends_at:null,time_label:label}]};
   const breakCount=config.legacy?Math.min(4,Math.floor((keys.length-1)/config.sponsorBreakEvery)):Math.min(config.sponsorBreakCount,keys.length);
   const breakPositions=new Set(config.legacy
     ?Array.from({length:breakCount},(_,index)=>(index+1)*config.sponsorBreakEvery-1)
     :Array.from({length:breakCount},(_,index)=>Math.ceil((index+1)*keys.length/breakCount)-1));
   const presentationMinutes=config.dayEndMinutes-config.dayStartMinutes-breakCount*config.sponsorBreakMinutes;
-  if(presentationMinutes<keys.length*3)throw new Error('FEATURED_SCHEDULE_CAPACITY_EXCEEDED');
+  if(presentationMinutes<keys.length*(config.legacy||config.historical?3:10))throw new Error('FEATURED_SCHEDULE_CAPACITY_EXCEEDED');
   const baseMinutes=Math.floor(presentationMinutes/keys.length);let remainder=presentationMinutes%keys.length;
   let cursor=dateEpoch(date,config.dayStart);const entries=[],walkthroughs=[];
   keys.forEach((key,index)=>{
     const duration=baseMinutes+(remainder>0?1:0);if(remainder>0)remainder-=1;
     const end=cursor+duration*MINUTE;
-    const item=interval('PROVIDER','Featured account',cursor,end,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
+    const item=interval('PROVIDER','Featured account',cursor,end,{session:'MORNING',session_label:sessionLabel,provider_key:key,slot:index+1});
     entries.push(item);walkthroughs.push(item);cursor=end;
-    if(breakPositions.has(index)){const end=cursor+config.sponsorBreakMinutes*MINUTE;entries.push(interval('PROGRAMME_BREAK','Programme pause',cursor,end,{session:'MORNING',session_label:'Morning programme'}));cursor=end;}
+    if(breakPositions.has(index)){const end=cursor+config.sponsorBreakMinutes*MINUTE;entries.push(interval('PROGRAMME_BREAK','Programme pause',cursor,end,{session:'MORNING',session_label:sessionLabel}));cursor=end;}
   });
-  return {entries,walkthroughs,sessions:[{key:'MORNING',label:'Morning programme',provider_count:keys.length,starts_at:new Date(dateEpoch(date,config.dayStart)).toISOString(),ends_at:new Date(cursor).toISOString(),time_label:label}]};
+  return {entries,walkthroughs,sessions:[{key:'MORNING',label:sessionLabel,provider_count:keys.length,starts_at:new Date(dateEpoch(date,config.dayStart)).toISOString(),ends_at:new Date(cursor).toISOString(),time_label:label}]};
 }
 
 function normalizeManualSchedule(value){
@@ -98,6 +100,7 @@ function normalizeManualSchedule(value){
 }
 
 function buildManual(date,keys,config,manualValue){
+  const sessionLabel=config.legacy||config.historical?'Morning programme':'Evening programme';
   const manual=normalizeManualSchedule(manualValue);
   if(manual.length!==keys.length)throw new Error('FEATURED_MANUAL_SCHEDULE_INCOMPLETE');
   const byKey=new Map(manual.map(item=>[String(item?.providerKey||''),item]));
@@ -107,13 +110,14 @@ function buildManual(date,keys,config,manualValue){
     const item=byKey.get(key);const start=timeToMinutes(item.startTime,'FEATURED_MANUAL_SCHEDULE_INVALID');const end=timeToMinutes(item.endTime,'FEATURED_MANUAL_SCHEDULE_INVALID');
     if(end<=start)throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');
     if(start<config.dayStartMinutes||end>config.dayEndMinutes)throw new Error('FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION');
-    return interval('PROVIDER','Featured account',midnight+start*MINUTE,midnight+end*MINUTE,{session:'MORNING',session_label:'Morning programme',provider_key:key,slot:index+1});
+    if(!config.legacy&&!config.historical&&end-start<10)throw new Error('FEATURED_MANUAL_SCHEDULE_TOO_SHORT');
+    return interval('PROVIDER','Featured account',midnight+start*MINUTE,midnight+end*MINUTE,{session:'MORNING',session_label:sessionLabel,provider_key:key,slot:index+1});
   });
   const entries=[];let breakCount=0;
   function pause(start,end){
     if(end<=start)return;
     breakCount+=1;if(breakCount>4||end-start>2*MINUTE)throw new Error('FEATURED_MANUAL_BREAK_INVALID');
-    entries.push(interval('PROGRAMME_BREAK','Programme pause',start,end,{session:'MORNING',session_label:'Morning programme'}));
+    entries.push(interval('PROGRAMME_BREAK','Programme pause',start,end,{session:'MORNING',session_label:sessionLabel}));
   }
   walkthroughs.forEach((item,index)=>{
     if(index&&Date.parse(item.starts_at)<Date.parse(walkthroughs[index-1].ends_at))throw new Error('FEATURED_MANUAL_SCHEDULE_OVERLAP');
@@ -122,7 +126,7 @@ function buildManual(date,keys,config,manualValue){
     entries.push(item);
   });
   if(!config.legacy&&walkthroughs.length)pause(Date.parse(walkthroughs.at(-1).ends_at),dateEpoch(date,config.dayEnd));
-  return {entries,walkthroughs,sessions:[{key:'MORNING',label:'Morning programme',provider_count:keys.length,starts_at:entries[0]?.starts_at||null,ends_at:entries.at(-1)?.ends_at||null,time_label:`${config.dayStart}–${config.dayEnd}`}]};
+  return {entries,walkthroughs,sessions:[{key:'MORNING',label:sessionLabel,provider_count:keys.length,starts_at:entries[0]?.starts_at||null,ends_at:entries.at(-1)?.ends_at||null,time_label:`${config.dayStart}–${config.dayEnd}`}]};
 }
 
 export function buildFeaturedDaySchedule(dateIso,providers,options={},now=Date.now()){

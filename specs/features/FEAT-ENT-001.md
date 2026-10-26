@@ -11,6 +11,16 @@ rollout: Confirm the interface and open commercial decisions, implement additive
 
 # October18 business workspace plan
 
+### October26 concise team permissions — presentation pending
+
+Given an owner or workspace admin invites or edits a teammate\
+When Tracking access is offered\
+Then its short control label identifies status and route access\
+And exact per-shipment vehicle-location access remains a separate explicit
+grant with the existing server checks\
+And removing general explanatory prose does not imply that the team toggle
+automatically shares a moving vehicle's location.
+
 ## Play-review business isolation — planned local follow-up
 
 A registered synthetic Play reviewer may use an ordinary business workspace

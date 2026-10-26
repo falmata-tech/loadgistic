@@ -9,6 +9,33 @@ observability: [public_workspace_navigation, public_capacity_query, public_track
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
 ---
 
+## Account-centered provider discovery — October 25 change in progress
+
+Given a public or authorized private Transport Provider search\
+When eligible provider accounts and their assigned fleet drivers are indexed\
+Then each provider account has one searchable profile using its chosen account
+name, handle and manager's published first name\
+And a self-managed driver remains a searchable Transport Provider account\
+And an employed fleet driver is not a separate profile result or an independent
+profile-name match; the driver's permitted details appear within the provider's
+vehicle/account view\
+And eligible vehicle/driver capacity pairs remain discoverable on the Capacity
+map with the same visibility, filter and permission boundaries.
+
+Given a visitor opens a provider profile\
+When they inspect its fleet and trust information on web or Android\
+Then account identity and account document status lead into the provider's
+vehicles, each assigned driver and the relevant vehicle/driver document groups\
+And reviews/About remain reachable below the fleet\
+And selecting an available vehicle retains the exact Capacity map target and
+return path; legacy provider URLs still resolve to the same account\
+And public output retains first-name-only identity and safe review summaries,
+never private proof files, document identifiers, login emails or reviewer notes.
+
+This is pending implementation and actual Chrome/Expo/installed qualification;
+the ledger208 index still supports separate company-driver entries. FEAT-VER-001
+controls truthful authority facts and badge presentation.
+
 # Public marketplace
 
 ### October 13 transporter search refinement — locally verified; review pending

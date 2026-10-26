@@ -13,6 +13,7 @@ test('mobile Featured recovers from unavailable and malformed responses without 
  page.on('console',message=>{if(message.type()==='error'&&/Unexpected text node|Text strings must be rendered/.test(message.text()))errors.push('INVALID_NATIVE_TEXT');});
  await page.route('**/api/mobile/public/featured',route=>route.fulfill({status:failure==='healthy'||failure==='malformed'?200:503,contentType:'application/json',body:failure==='healthy'?JSON.stringify(healthy):failure==='malformed'?'{}':failure==='unavailable'?JSON.stringify({message:'Please try again.'}):JSON.stringify({error:{code:'UNAVAILABLE',message:failure==='empty'?'':' \t\n '}})}));
  await page.goto(preview+'/about');await page.getByRole('tab',{name:'Featured',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Daily Featured on TikTok LIVE',exact:true})).toBeVisible();
  await expect(page.getByRole('alert')).toHaveText('Please try again.');
  await expect(page.getByRole('button',{name:'Try again',exact:true})).toBeVisible();
  const retry=async()=>{const response=page.waitForResponse(result=>result.url().endsWith('/api/mobile/public/featured'),{timeout:15000});await page.getByRole('button',{name:'Try again',exact:true}).click();await response;};

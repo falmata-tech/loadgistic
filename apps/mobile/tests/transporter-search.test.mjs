@@ -5,6 +5,7 @@ import ts from 'typescript';
 import * as discovery from '../src/api/discovery.ts';
 import * as searchContract from '../../../src/lib/transporter-search.js';
 import {capacityIntroduction} from '../../../src/lib/platform-copy.js';
+import * as capacityRefresh from '../src/map/capacity-refresh.ts';
 
 // Execute the actual Capacity screen, effects and handlers with native hosts and
 // the transport boundary substituted. Browser evidence is collected separately.
@@ -14,9 +15,9 @@ const text=tree=>tree==null||typeof tree==='boolean'?'':typeof tree==='string'||
 const settle=async()=>{for(let index=0;index<10;index++)await Promise.resolve();};
 const payload=(title,page=1)=>({items:[{key:title,kind:'COMPANY',title,handle:'matching-company',description:'Public freight service',city:'Adama',capacityId:'',matchingTrucks:2}],total:24,page,hasMore:page===1,configurations:[]});
 
-function harness({mode='open',verified=true,initialQuery='',blocked=[]}={}){
+function harness({mode='open',verified=true,initialQuery='',blocked=[],business=false,account=false,emptyMap=false,initialFilters}={}){
  const hooks=[],effects=[];let cursor=0,effectIndex=0,dirty=false,now=0,nextTimer=0,tree,focusCallback,focusCleanup;
- const timers=new Map(),requests=[],mapLoads=[],backHandlers=new Set();
+ const timers=new Map(),requests=[],mapLoads=[],navigations=[],backHandlers=new Set();
  const clock={setTimeout(callback,delay){const id=++nextTimer;timers.set(id,{callback,at:now+delay});return id;},clearTimeout:id=>timers.delete(id),advance(delta){const end=now+delta;for(;;){const next=[...timers].filter(([,timer])=>timer.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!next)break;now=next[1].at;timers.delete(next[0]);next[1].callback();}now=end;}};
  const same=(left,right)=>left&&right&&left.length===right.length&&left.every((value,index)=>Object.is(value,right[index]));
  const memo=(factory,deps)=>{const index=cursor++,previous=hooks[index];if(!previous||!same(previous.deps,deps))hooks[index]={value:factory(),deps};return hooks[index].value;};
@@ -27,19 +28,22 @@ function harness({mode='open',verified=true,initialQuery='',blocked=[]}={}){
  const request=(path,signal,scope)=>new Promise((resolve,reject)=>{requests.push({path,signal,scope,resolve,reject});signal.addEventListener('abort',()=>reject(new Error('Aborted')),{once:true});});
  const visitor={ready:true,snapshot:{foreground:true,capacity:verified?{startedAt:1}:null},controller:{request:(scope,path,_options,signal)=>request(path,signal,scope),touch:async()=>{},clear:async()=>{}}};
  const truck={id:'11111111-1111-4111-8111-111111111111',provider_handle:'chosen-company'};
- const load=(...args)=>{mapLoads.push(args);args[mode==='private'?2:3]([truck]);return Promise.resolve();};
- const imports={react,'react/jsx-runtime':{jsx:node,jsxs:node},'react-native':native,'expo-router':{Link:'Link',useLocalSearchParams:()=>({}),useFocusEffect:callback=>react.useEffect(()=>{focusCallback=callback;focusCleanup=callback();return()=>focusCleanup?.();},[callback])},
+ const load=(...args)=>{mapLoads.push(args);args[mode==='private'?2:3](emptyMap?[]:[truck]);return Promise.resolve();};
+ const loadBusiness=(...args)=>{mapLoads.push(args);args[2](emptyMap?[]:[truck]);return Promise.resolve();};
+ const loadAccount=(...args)=>{mapLoads.push(args);args[1](emptyMap?[]:[truck]);return Promise.resolve();};
+ const imports={react,'react/jsx-runtime':{jsx:node,jsxs:node},'react-native':native,'expo-router':{Link:'Link',router:{navigate:href=>navigations.push(href)},useLocalSearchParams:()=>({}),useFocusEffect:callback=>react.useEffect(()=>{focusCallback=callback;focusCleanup=callback();return()=>focusCleanup?.();},[callback])},
   '../session/chat-alert-provider':{useChatUpdates:()=>({transportUnreadCount:0})},'../hooks/content-blocks':{useBlockedProviders:()=>({blocked})},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../session/visitor-provider':{useVisitor:()=>visitor},'../session/provider':{useAccount:()=>({session:null,busy:false})},
   '../components/visitor-access':{VisitorAccess:'VisitorAccess'},'../components/app-icon':{AppIcon:'AppIcon'},'../components/CapacityMap':{__esModule:true,default:'CapacityMap'},'../api/http':{apiOrigin:'http://local.test',apiRequest:(path,{signal})=>request(path,signal)},'../api/discovery':discovery,
-  '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by visitor Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},'../hooks/account-query':{useAccountQuery:()=>({data:null})},
+  '../api/business-workspaces':{loadBusinessCapacity:business?loadBusiness:()=>{throw Error('business-only loader used by visitor Capacity');},loadAccountCapacity:account?loadAccount:()=>{throw Error('account-only loader used by visitor Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},'../hooks/account-query':{useAccountQuery:()=>({data:null})},
   '../components/discovery-filters':{DiscoveryFilters:'DiscoveryFilters'},'../components/results-drawer':{ResultsDrawer:'ResultsDrawer'},'../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},'../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},'../../../../src/lib/transporter-search.js':searchContract,'../api/public-capacity':{loadCapacity:load,loadSharedCapacity:load}
  };
  imports['../components/ui']={palette:{blue:'#155eef',border:'#d7dfeb',borderSoft:'#e5eaf1',muted:'#526375'}};
+ imports['../map/capacity-refresh']=capacityRefresh;
  const source=ts.transpileModule(readFileSync(new URL('../src/screens/capacity.tsx',import.meta.url),'utf8')+'\nexports.TestCapacity=Capacity;',{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const exports={};new Function('require','exports','setTimeout','clearTimeout',source)(name=>{assert.ok(name in imports,'Unexpected dependency '+name);return imports[name];},exports,clock.setTimeout,clock.clearTimeout);
- const props={initialQuery,initialMode:mode,initialFilters:{provider:'chosen-company',truck:truck.id,status:'EMPTY'}};
+ const props={initialQuery,initialMode:mode,initialFilters:initialFilters??{provider:'chosen-company',truck:truck.id,status:'EMPTY'},...(business?{business:{workspaceId:'synthetic-workspace',scopeKey:'synthetic-actor:synthetic-workspace',request:async()=>{}}}:{}),...(account?{account:{scopeKey:'synthetic-actor',request:async()=>{},networkHref:'/network'}}:{})};
  const render=()=>{for(let pass=0;pass<10;pass++){dirty=false;cursor=effectIndex=0;tree=exports.TestCapacity(props);for(const effect of effects)if(effect.pending){effect.pending=false;effect.cleanup?.();effect.cleanup=effect.create();}if(!dirty)return tree;}throw Error('Unsettled screen');};
- return{render,clock,requests,mapLoads,visitor,backHandlerCount:()=>backHandlers.size,pressBack:()=>[...backHandlers].at(-1)?.()??false,blur:()=>focusCleanup?.(),focus:()=>{focusCleanup=focusCallback?.();},close(){for(const effect of effects)effect.cleanup?.();}};
+ return{render,clock,requests,mapLoads,navigations,visitor,backHandlerCount:()=>backHandlers.size,pressBack:()=>[...backHandlers].at(-1)?.()??false,blur:()=>focusCleanup?.(),focus:()=>{focusCleanup=focusCallback?.();},close(){for(const effect of effects)effect.cleanup?.();}};
 }
 const input=tree=>find(tree,node=>node.type==='TextInput');
 const results=tree=>find(tree,node=>node.type==='DiscoveryResults');
@@ -47,6 +51,27 @@ const map=tree=>find(tree,node=>node.type==='CapacityMap');
 const open=tree=>find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Search transporters').props.onPress();
 const edit=(tree,value)=>input(tree).props.onChangeText(value);
 const submit=tree=>find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Search').props.onPress();
+
+test('empty private Capacity shows an actionable Network path for the current business, not a public no-match',async()=>{
+ const view=harness({mode:'private',business:true,emptyMap:true,initialFilters:{}});try{
+  view.render();await settle();const tree=view.render();
+  assert.ok(text(tree).includes('No vehicles are shared with this account yet.'));
+  const action=find(tree,node=>node.type==='Pressable'&&text(node)==='Find connections');assert.ok(action);
+  action.props.onPress();assert.deepEqual(view.navigations,['/directory']);assert.equal(view.mapLoads.length,1);
+ }finally{view.close();}
+});
+test('private filtered, provider-account and public empty maps keep their separate outcomes',async()=>{
+ for(const options of [
+  {mode:'private',business:true,emptyMap:true,initialFilters:{status:'EMPTY'},message:'No matching available vehicles.',action:null},
+  {mode:'private',account:true,emptyMap:true,initialFilters:{},message:'No vehicles are shared with this account yet.',action:'Open Network'},
+  {mode:'open',emptyMap:true,initialFilters:{},message:'No matching available vehicles.',action:null}
+ ]){
+  const view=harness(options);try{view.render();await settle();const tree=view.render();assert.ok(text(tree).includes(options.message));
+   const action=find(tree,node=>node.type==='Pressable'&&['Find connections','Open Network'].includes(text(node)));
+   assert.equal(action?text(action):null,options.action);if(options.action){action.props.onPress();assert.deepEqual(view.navigations,['/network']);}
+  }finally{view.close();}
+ }
+});
 
 for(const mode of ['open','private'])test(`${mode} profile search ignores truck filters and Show trucks retains the current map filters`,async()=>{
  const blocked=['hidden-company'],view=harness({mode,blocked});try{

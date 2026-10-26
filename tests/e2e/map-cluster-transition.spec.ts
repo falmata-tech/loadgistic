@@ -1,6 +1,7 @@
 import {test,expect} from './browser-test';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
+import {randomUUID} from 'node:crypto';
 
 async function settled(page:any){
   await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker').first()).toBeVisible({timeout:30000});
@@ -16,6 +17,22 @@ async function reachableCluster(page:any){
 
 test('map automatically loads all viewport pages and a cluster zoom needs one activation',async({page}: {page:any},info:any)=>{
   test.setTimeout(90000);
+  const seedResponse=await page.request.get('/api/public/capacity');
+  expect(seedResponse.status()).toBe(200);
+  const seed=await seedResponse.json();
+  const located=seed.items?.find((item:{location_lat:number|null;location_lng:number|null;current_signal_geometry_visible?:boolean})=>item.location_lat!=null&&item.location_lng!=null&&item.current_signal_geometry_visible!==false);
+  expect(located,'The local demo must contain one visible located vehicle').toBeTruthy();
+  // These different positions project 6.9px apart at the initial zoom: one
+  // cluster, but outside the <=3px exact-coincidence fan threshold.
+  const positions=[[9.1,40.2],[9.25,40.2]];
+  const vehicles=positions.map(([location_lat,location_lng])=>({...located,id:randomUUID(),location_lat,location_lng}));
+  await page.route('**/api/public/capacity?**',async(route:any)=>{
+    const original=await route.fetch();
+    if(!original.ok())return route.fulfill({response:original});
+    const result=await original.json();
+    const cursor=new URL(route.request().url()).searchParams.has('cursor');
+    return route.fulfill({response:original,json:{...result,items:cursor?[]:vehicles}});
+  });
   const requests:URL[]=[];
   const responses:{viewport:string|null;hasMore:boolean}[]=[];
   page.on('request',(request:any)=>{const u=new URL(request.url());if(u.pathname==='/api/public/capacity')requests.push(u);});
@@ -23,7 +40,7 @@ test('map automatically loads all viewport pages and a cluster zoom needs one ac
     try{const data=await response.json();responses.push({viewport:u.searchParams.get('viewport'),hasMore:data.hasMore});}catch{}
   }});
   await page.goto('/');
-  await expect.poll(()=>responses.length).toBeGreaterThan(0);
+  await expect.poll(()=>responses.length,{timeout:30000}).toBeGreaterThan(0);
   await settled(page);
   await expect.poll(()=>responses.at(-1)?.hasMore).toBe(false);
   expect(requests.every(u=>!u.searchParams.has('overview'))).toBe(true);

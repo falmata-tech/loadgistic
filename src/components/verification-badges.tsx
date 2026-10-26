@@ -1,6 +1,6 @@
 
 import {Text} from '@/components/localization';
-import { BadgeCheck, Building2, CalendarClock, IdCard, KeyRound, MapPinned, Shield, Star } from 'lucide-react';
+import { BadgeCheck, Building2, CalendarClock, Check, FileCheck2, IdCard, KeyRound, MapPinned, Minus, Shield, ShieldCheck, Star } from 'lucide-react';
 
 const labels: Record<string,string> = {
   IDENTITY: 'National ID',
@@ -20,25 +20,26 @@ const icons:Record<string,typeof Shield>={
   BUSINESS_ADDRESS:MapPinned,
   DRIVER_IDENTITY:BadgeCheck,
   VEHICLE_OWNERSHIP:KeyRound,
-  VEHICLE_AUTHORIZATION:KeyRound,
-  VEHICLE_OPERATING_LICENSE:BadgeCheck,
+  VEHICLE_AUTHORIZATION:ShieldCheck,
+  VEHICLE_OPERATING_LICENSE:FileCheck2,
   VEHICLE_AUTHORITY:KeyRound,
-  TRUCK_AUTHORIZATION:KeyRound
+  TRUCK_AUTHORIZATION:ShieldCheck
 };
+const compactLabels:Record<string,string>={VEHICLE_OWNERSHIP:'Ownership',VEHICLE_AUTHORIZATION:'Permission',VEHICLE_OPERATING_LICENSE:'Operating licence'};
 
 export type VerificationBadge={type:string;verified:boolean;expired?:boolean;reviewedAt?:string|null;expiresOn?:string|null;vehicleLabel?:string|null};
 
-export function VerificationBadges({badges,compact=false,label,reviewCount=0,averageRating=null}:{badges?:VerificationBadge[];compact?:boolean;label?:string;reviewCount?:number;averageRating?:number|null}) {
+export function VerificationBadges({badges,compact=false,rows=false,label,reviewCount=0,averageRating=null}:{badges?:VerificationBadge[];compact?:boolean;rows?:boolean;label?:string;reviewCount?:number;averageRating?:number|null}) {
   if (!badges?.length&&!reviewCount) return null;
-  return <div className="verification-group">
+  return <div className={`verification-group${rows?' rows':''}`}>
     {label?<strong className="verification-group-label"><Text message={label}/></strong>:null}
     <div className={`verification-badges ${compact?'compact':''}`}>
     {(badges||[]).map((badge)=>{
       const Icon=icons[badge.type]||Shield;
       const state=badge.verified?'verified':badge.expired?'expired':'unverified';
-      const stateLabel=badge.verified?'Loadgistic reviewed':badge.expired?'Expired':'Not verified';
+      const stateLabel=badge.verified?(rows?'Verified':'Loadgistic reviewed'):badge.expired?'Expired':'Not verified';
       return <details className={`verification-badge ${state} badge-${badge.type.toLowerCase().replaceAll('_','-')}`} key={`${badge.type}:${badge.vehicleLabel||''}`}>
-        <summary><Icon aria-hidden="true"/><span><Text message={labels[badge.type]||badge.type.replaceAll('_',' ')}/></span><small><Text message={stateLabel}/></small></summary>
+        <summary><Icon aria-hidden="true"/><span><Text message={rows&&compact?compactLabels[badge.type]||labels[badge.type]||badge.type.replaceAll('_',' '):labels[badge.type]||badge.type.replaceAll('_',' ')}/></span><small>{badge.verified?<Check aria-hidden="true"/>:rows?<Minus aria-hidden="true"/>:null}<Text message={stateLabel}/></small></summary>
         <div className="verification-badge-details"><strong><Text message={stateLabel}/></strong>{badge.vehicleLabel?<span>{badge.vehicleLabel}</span>:null}{badge.reviewedAt?<span><Text message="Reviewed "/>{new Date(badge.reviewedAt).toLocaleDateString()}</span>:null}{badge.expiresOn?<span><CalendarClock aria-hidden="true"/><Text message="Expires "/>{badge.expiresOn}</span>:null}<span>{badge.verified?<Text message="Review applies to this document category only."/>:<Text message="No current reviewed evidence on Loadgistic. Ask the provider for documents."/>}</span></div>
       </details>;
     })}

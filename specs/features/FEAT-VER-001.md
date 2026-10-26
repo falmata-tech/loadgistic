@@ -265,7 +265,20 @@ When they attempt to review any verification request\
 Then the command is denied\
 And the request and badge state remain unchanged.
 
-### Scenario: badge derives from approval
+### Scenario: badge derives from current category evidence
+
+For vehicle Ownership, Operating licence and Permission to drive/manage, the
+public badge and matching document filter use the same current provider/vehicle/
+assignment-bound authority fact. An old generic approved request without that
+fact does not establish current vehicle authority or a blue Verified state.
+Provider and driver identity/document categories retain their own current,
+approved, unexpired evidence. Public summaries do not expose private pending
+requests or uploaded files. Neutral public states must not reveal those details.
+
+Given a generic vehicle ownership request is approved but current authority is absent\
+When a visitor views that vehicle or applies its ownership verification filter\
+Then the vehicle is not presented as currently ownership-verified in either view\
+And no missing authority is fabricated to make a demo filter return a result.
 
 Given an entity has a required verification category\
 When no approved request exists\
@@ -273,8 +286,8 @@ Then the category badge is neutral gray and states Not verified.
 
 Given an administrator approves the category\
 When a visitor opens the public Capacity Board, provider microsite, or public truck detail\
-Then that category badge uses a vivid, high-contrast category treatment designed to draw attention and states Verified\
-And identity, license, address, Driver, vehicle, and reputation categories use distinct cobalt, amber, violet, orange, and neutral treatments\
+Then its current verified state uses a flat high-contrast blue treatment, visible check icon and concise category/state label\
+And identity, licence, address, driver and vehicle categories remain distinct through their labels and icons rather than different hues or gradients\
 And color is paired with an icon and visible text rather than carrying meaning alone\
 And its details explain the reviewed category, subject, status, review date, and expiry when applicable\
 And no member-facing badge opens the submitted private document.

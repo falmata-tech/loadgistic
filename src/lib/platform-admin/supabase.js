@@ -4,6 +4,7 @@ import {PROVIDER_REGIONS,providerRegionLabel,regionalExpoGroupForDate} from '../
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {FEATURED_PROVIDER_DAY} from '../featured-trucks.js';
 import {loadFeaturedTruckCandidates} from '../featured-truck-candidates.js';
+import {withFeaturedSaveStage} from '../featured-save-diagnostic.js';
 
 export const PLATFORM_PERMISSIONS=Object.freeze({
   CUSTOMERS:'CUSTOMERS',OPERATIONS:'OPERATIONS',TRUST:'TRUST',BILLING:'BILLING',SUPPORT:'SUPPORT',FEATURED:'FEATURED'
@@ -19,6 +20,7 @@ const MANAGED_ERRORS=[
   'ADMIN_SELF_SUSPENSION_DENIED','SPONSORED_ACCESS_BUSINESS_ONLY','FEATURED_DATE_INVALID','FEATURED_TIKTOK_URL_INVALID',
   'FEATURED_PROVIDER_REQUIRED','FEATURED_PROVIDER_DUPLICATE','FEATURED_PROVIDER_INVALID','FEATURED_PROVIDER_INELIGIBLE',
   'FEATURED_HEADLINE_INVALID','FEATURED_INTRODUCTION_INVALID','FEATURED_SCHEDULE_MODE_INVALID',
+  'FEATURED_MANUAL_SCHEDULE_TOO_SHORT',
   'FEATURED_TARGET_COUNT_INVALID','FEATURED_TARGET_COUNT_MISMATCH','FEATURED_TRUCK_THEME_INVALID',
   'FEATURED_TRUCK_INVALID','FEATURED_TRUCK_DUPLICATE','FEATURED_TRUCK_INELIGIBLE','FEATURED_DRIVER_REQUIRED','FEATURED_DRIVER_DUPLICATE',
   'FEATURED_DAY_NOT_FOUND','FEATURED_DAY_NOT_PUBLISHED','FEATURED_TIKTOK_REQUIRED','FEATURED_BROADCAST_STATE_INVALID','FEATURED_BROADCAST_ALREADY_ENDED','FEATURED_BROADCAST_NOT_SCHEDULED','FEATURED_BROADCAST_NOT_LIVE',
@@ -226,15 +228,19 @@ export async function saveFeaturedProviderDay(user,input={}){
   if(typeof manualSchedule==='string'){try{manualSchedule=JSON.parse(manualSchedule||'[]');}catch{throw new Error('FEATURED_MANUAL_SCHEDULE_INVALID');}}
   if(!Array.isArray(manualSchedule))manualSchedule=[];
   const schedule=buildFeaturedDaySchedule(featureDate,truckKeys,{mode:scheduleMode,config:scheduleConfig,manualSchedule});
-  const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_featured_provider_day',{actor_user_id:user.id,command:{
+  const client=createSupabaseAdminClient();
+  const command={
     feature_date:featureDate,theme_key:theme.key,theme_label:theme.label,theme_configurations:theme.configurations,target_count:scheduleConfig.targetCount,
     public_headline:validateText(input.publicHeadline,3,90,'FEATURED_HEADLINE_INVALID'),
     public_introduction:validateText(input.publicIntroduction,10,240,'FEATURED_INTRODUCTION_INVALID'),
     tiktok_url:validateTikTokUrl(input.tiktokUrl),schedule_mode:scheduleMode,schedule_config:schedule.config,
     manual_schedule:scheduleMode==='MANUAL'?manualSchedule:[],truck_keys:truckKeys,publish:Boolean(input.publish)
-  }});
-  if(error)throw managedError('SUPABASE_FEATURED_SAVE_FAILED',error);
-  return getAdminFeaturedProviderDay(user,featureDate);
+  };
+  await withFeaturedSaveStage('SAVE_RPC',async()=>{
+    const {error}=await client.rpc('save_managed_featured_provider_day',{actor_user_id:user.id,command});
+    if(error)throw managedError('SUPABASE_FEATURED_SAVE_FAILED',error);
+  });
+  return withFeaturedSaveStage('READBACK',()=>getAdminFeaturedProviderDay(user,featureDate));
 }
 
 export async function setFeaturedTikTokBroadcast(user,featureDate,state){
