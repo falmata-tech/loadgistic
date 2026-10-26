@@ -346,7 +346,7 @@ qualifier with multiple Live choices withholds capacity until the owner moves
 all but one to Draft or supplies current qualification, without deleting saved
 signals or stopping ongoing Tracking. Adapter/schema drift fails visibly and closed; it cannot fall back to
 an older unqualified projection. Driver assignment remains concurrency-safe.
-World coordinates, load preferences, independent profile search, multi-filters,
+World coordinates, load preferences, provider-account search, multi-filters,
 obscured locations and freshness labels retain their existing contracts.
 The backed-up local installation passes the v3 SQL/strict-catalog and publication
 concurrency checks recorded in `specs/TRACEABILITY.md`. Actual owner/publication
@@ -686,9 +686,9 @@ And that signal is either a structured Service area with one center plus three t
 And another addition is rejected without changing the saved signal\
 And a preferred corridor asks for no date and never claims that a truck is currently available\
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
-And a Preferred corridor joins its cities with ↔ while a Preferred service area names its center and boundary cities\
+And a Preferred corridor joins its cities with ↔ while a Preferred area names its center and boundary cities\
 And both state Confirm availability\
-And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred service area, distinct from violet approximate location and status-colored current capacity.
+And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred area, distinct from violet approximate location and status-colored Planned capacity.
 
 ### Scenario: regular routes cannot leak across trucks or assignments
 

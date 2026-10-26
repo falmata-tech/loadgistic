@@ -21,7 +21,7 @@ are historical, not the status of today's source or hosted release.
   without inventing a reported position; actual actors had reported locations.
   Admin labels have source/test evidence only.
 
-  Current R6 root quality1300/1300 passes69.710s:
+  R6 root JS/type quality1300/1300 passes69.710s:
   `.local/launch-experience-20261026/gates/work-first-planned-r6-root-gates.json`.
   Required CI validation now executes the three new discovery parity SQL suites;
   `ci-browser-gate.test.mjs` proves registration and rollback, red before/green
@@ -47,8 +47,28 @@ are historical, not the status of today's source or hosted release.
   The red/green regression and all1..8 ten-minute-minimum evening schedules pass
   with41 focused tests. `ci-featured-fixture-repair-plan.json` in the same release
   folder records scope and limits; no importer was run against hosted services.
-  Fresh complete setup and next-head remote CI remain required. Earlier R4/R5
-  receipts are preserved; native/build application inputs are unchanged.
+  CI40412255361 passed complete fresh setup and mobile before the SQL batch
+  reached a retired employee-name expectation. Earlier R4/R5 receipts are
+  preserved; native/build application inputs remain unchanged.
+
+- BASE-DEP/CAP/MKT-001 current-contract SQL regression audit:
+  `.local/ci-sql-audit-20261026/batch-results.json` records all97 required suites
+  against a clone prepared with exact212–217 sources:94 pass, two stale search
+  assertions and one clone-only PostGIS service-role read-permission difference.
+  All97 full row/function/ACL/relation rollback checks are exact. The repaired
+  metadata test passes1.374s; the current-reference profile test passes74.974s
+  after deduplicating repeated caller-producer scans. Its first caller-fixture
+  revision timed out at the unchanged120s bound; that failed result is preserved.
+  Current references retain account-only/whole-offer semantics, full JSON/count/
+  order/pages/docs and actual producer-generated internal inputs. Independent
+  account-name/handle/manager-first-name positives and unique employee-name
+  negatives retain authorized vehicle-driver details. No application function,
+  permission, dataset or performance gate changed. Clone data is older than CI;
+  the PostGIS check remains required there. Only two SQL files differ from R6's
+  source inventory, so its unchanged JS/type/build evidence is reused alongside
+  current static/spec checks and these real SQL reruns; new exact-head CI remains
+  required. Backup/source/authority and individual failures stay protected in
+  the same audit directory.
   Current web build passes87.644s with unchanged inputs/metadata restored:
   `.local/provider-home-entry-20261026/work-first-planned-web-build-r2.json`.
   The compiled preview is pinned by `work-first-planned-web-r2-installed.json`

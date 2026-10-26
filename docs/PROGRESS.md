@@ -41,7 +41,8 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    Privately shared with you. Guest entry/Back, attribution and Oromo marker-fit
    evidence stays scoped to the unchanged surfaces.
 
-   Current R6 root quality passes1300/1300 in69.710s. The required CI SQL loop
+   R6 root JS/type quality passes1300/1300 in69.710s; its executable inputs remain
+   unchanged by the later two SQL-test repairs. The required CI SQL loop
    now executes all three new discovery parity suites; its missing-registration
    regression failed before the repair and passes with32 existing workflow tests.
    Workflow lint passes for108 operational scripts and actionlint; ShellCheck is
@@ -66,7 +67,23 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    eight provider schedules retain ten-minute turns;41 focused tests pass after
    the new regression failed on the former hours. The prospective pilot importer
    was edited but not executed. No app, SQL, authority or Android input changed;
-   the next exact-head CI must still verify the complete fresh setup chain.
+   CI40412255361 passed the complete fresh setup chain and mobile job, then
+   stopped on a retired employed-driver search expectation in the SQL batch.
+
+   Before another push, all97 required rollback suites ran on an isolated clone
+   prepared with exact212–217 function sources.94 passed; two stale search
+   oracles failed and are repaired. Their current-source checks pass1.374s and
+   74.974s, preserving account identity positives, employee-only search denial,
+   authorized driver details, full JSON/pages/document parity and real caller
+   inputs. The first caller-fixture revision timed out at120s; deduplicating
+   repeated producer scans fixed that harness cost without increasing its bound.
+   One clone-only PostGIS service-role reference-read denial remains visible;
+   no privilege or test was weakened, and fresh CI must still pass that check.
+   Every suite and focused rerun preserved exact row/function/ACL/relationship
+   fingerprints after rollback. Clone data is older than fresh CI. No application,
+   migration or native input changed; R6 JS/type/build evidence is reused with
+   explicit SQL-only deltas and current static/spec checks. Next-head CI remains
+   required. Evidence: `.local/ci-sql-audit-20261026/`.
 
    Native public freshness is locally qualified through the existing bounded
    localization helper:50 focused tests pass. Actual Chrome web am/om320/390

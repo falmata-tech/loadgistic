@@ -506,6 +506,17 @@ And historical morning schedules remain read-only compatibility cases, not new f
 Regression: `tests/supabase-fixtures.test.mjs`. Updating the prospective pilot
 importer's prepared data does not authorize running it against a hosted project.
 
+Given account-only discovery or offer matching supersedes an older search contract\
+When database regressions compare optimized and full projections\
+Then their reference retains the accepted current account and offer semantics, rather than requiring retired employee-profile or historical geography results\
+And independent account-name, handle and manager-first-name positives and unique employed-driver negatives remain explicit\
+And authorized driver details, complete JSON/count/order/pages, document filtering and caller-produced internal inputs remain covered\
+And temporary reference functions and fixture changes roll back without changing application functions, permissions or performance limits.
+
+Regression: `tests/sql/capacity-search-metadata-cost.sql` and
+`tests/sql/profile-search-page-cost.sql`. A restored clone's security/fixture
+differences remain reported and do not waive fresh CI checks.
+
 Evidence: `tests/e2e/fixture-contract-preflight.spec.ts`,
 `scripts/ci-fixture-preflight.mjs`, `tests/ci-browser-gate.test.mjs`,
 `.github/workflows/ci.yml`, and NR-21 in
