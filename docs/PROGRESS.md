@@ -41,7 +41,7 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    Privately shared with you. Guest entry/Back, attribution and Oromo marker-fit
    evidence stays scoped to the unchanged surfaces.
 
-   Current R5 root quality passes1298/1298 in73.501s. The required CI SQL loop
+   Current R6 root quality passes1300/1300 in69.710s. The required CI SQL loop
    now executes all three new discovery parity suites; its missing-registration
    regression failed before the repair and passes with32 existing workflow tests.
    Workflow lint passes for108 operational scripts and actionlint; ShellCheck is
@@ -59,8 +59,14 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    has three red/green regressions,33 focused passes and a read-only14-row API
    reproduction: the exact former guard rejects those rows and the corrected
    guard accepts them. Duplicate/unknown categories and expired or undated
-   verified claims still fail. No app, SQL, authority or Android input changed;
-   the next exact-head CI must still verify a fresh fixture import.
+   verified claims still fail. CI40410314142 then passed the preceding11 setup
+   verifiers and reached the final platform-admin Featured save, where its old
+   morning schedule was rejected. All three current fixture producers now use
+   one helper with the actual22:30–23:59 EAT schedule and validator. One-through-
+   eight provider schedules retain ten-minute turns;41 focused tests pass after
+   the new regression failed on the former hours. The prospective pilot importer
+   was edited but not executed. No app, SQL, authority or Android input changed;
+   the next exact-head CI must still verify the complete fresh setup chain.
 
    Native public freshness is locally qualified through the existing bounded
    localization helper:50 focused tests pass. Actual Chrome web am/om320/390

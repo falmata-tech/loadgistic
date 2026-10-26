@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {createClient} from '@supabase/supabase-js';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
-import {applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments} from './fixture-market-policy.mjs';
+import {applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,managedFixtureFeaturedSchedule} from './fixture-market-policy.mjs';
 import {
   PRODUCTION_PILOT_SOURCE,assertPilotRouteBindingReady,pilotEmail,pilotUuid,validateProductionPilotTarget
 } from './production-pilot-policy.mjs';
@@ -74,8 +74,7 @@ function buildFeaturedFixtureTables(){
     id:dayId,feature_date:today,base_place_ref:`featured:${theme.key}`,base_place_label:theme.label,
     expo_group_key:theme.key,expo_group_label:theme.label,expo_region_codes:[],public_headline:'Daily Featured Transport Providers',
     public_introduction:'Meet the transport accounts in today’s showcase and explore the vehicles they publish.',tiktok_url:null,
-    broadcast_start_time:'07:30',broadcast_end_time:'09:00',schedule_mode:'AUTO',
-    schedule_config_json:{dayStart:'07:30',dayEnd:'09:00',targetCount:featured.length,sponsorBreakEvery:2,sponsorBreakMinutes:2},
+    ...managedFixtureFeaturedSchedule(featured.length),
     manual_schedule_json:[],target_count:featured.length,status:'PUBLISHED',created_by:'user-admin',published_by:'user-admin',
     created_at:iso,updated_at:iso,published_at:iso
   };

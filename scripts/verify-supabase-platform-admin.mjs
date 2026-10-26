@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import {createClient} from '@supabase/supabase-js';
 import {regionalExpoGroupForDate} from '../src/lib/provider-regions.js';
 import {getAdminFeaturedProviderDay,saveFeaturedProviderDay} from '../src/lib/platform-admin/supabase.js';
+import {managedFixtureFeaturedSchedule} from './fixture-market-policy.mjs';
 
 const url=String(process.env.SUPABASE_SEED_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
@@ -105,8 +106,8 @@ try{
   const savedFeatured=await saveFeaturedProviderDay(adminUser,{
     featureDate:featuredDate.date,targetCount:1,truckKeys:[featuredDate.candidate.truck_key],
     publicHeadline:'Managed truck feature',publicIntroduction:'Meet a featured truck and the Driver operating it.',
-    tiktokUrl:null,scheduleMode:'AUTO',scheduleConfig:{dayStart:'08:30',dayEnd:'12:00',targetCount:1,
-      sponsorBreakCount:4,sponsorBreakMinutes:2},manualSchedule:[],publish:true
+    tiktokUrl:null,scheduleMode:'AUTO',scheduleConfig:managedFixtureFeaturedSchedule(1).schedule_config_json,
+    manualSchedule:[],publish:true
   });
   if(!savedFeatured?.day?.id)throw new Error('PLATFORM_ADMIN_FEATURED_SAVE_FAILED:EMPTY');featuredDayId=savedFeatured.day.id;
   const {data:savedPlacement,error:placementError}=await service.rpc('save_managed_sponsorship',{actor_user_id:admin.id,command:{

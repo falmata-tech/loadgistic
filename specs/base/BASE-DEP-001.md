@@ -497,6 +497,15 @@ Regression: `tests/fixture-provider-authority.test.mjs`, using the actual public
 authority projector and the fixture verifier's shared assertion. This check
 changes verification only; it grants no authority and changes no customer data.
 
+Given fresh demo imports and the platform-admin verifier create a Featured day\
+When they prepare its schedule before persistence\
+Then they share the current 22:30–23:59 EAT configuration and validate one through eight ten-minute-minimum provider turns\
+And offline regression tests exercise that schedule builder and every active fixture producer\
+And historical morning schedules remain read-only compatibility cases, not new fixture defaults.
+
+Regression: `tests/supabase-fixtures.test.mjs`. Updating the prospective pilot
+importer's prepared data does not authorize running it against a hosted project.
+
 Evidence: `tests/e2e/fixture-contract-preflight.spec.ts`,
 `scripts/ci-fixture-preflight.mjs`, `tests/ci-browser-gate.test.mjs`,
 `.github/workflows/ci.yml`, and NR-21 in

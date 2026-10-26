@@ -21,8 +21,8 @@ are historical, not the status of today's source or hosted release.
   without inventing a reported position; actual actors had reported locations.
   Admin labels have source/test evidence only.
 
-  Current R5 root quality1298/1298 passes73.501s:
-  `.local/launch-experience-20261026/gates/work-first-planned-r5-root-gates.json`.
+  Current R6 root quality1300/1300 passes69.710s:
+  `.local/launch-experience-20261026/gates/work-first-planned-r6-root-gates.json`.
   Required CI validation now executes the three new discovery parity SQL suites;
   `ci-browser-gate.test.mjs` proves registration and rollback, red before/green
   after, with33 focused tests passing. Workflow lint passes108 scripts/actionlint;
@@ -40,8 +40,15 @@ are historical, not the status of today's source or hosted release.
   is `.local/launch-experience-20261026/ci-fixture-authority-repair-api.json`;
   the exact old guard fails and the current assertion passes without writes.
   `ci-fixture-authority-repair-plan.json` there preserves diagnosis and limits.
-  A fresh full import and next-head remote CI remain required. Earlier R4/root
-  receipts remain preserved; native/build application inputs are unchanged.
+  CI40410314142 then passed the preceding11 setup verifiers before the last
+  platform-admin Featured save rejected its obsolete morning configuration.
+  Current local/pilot fixture preparation and that verifier share the actual
+  schedule defaults/validator through `managedFixtureFeaturedSchedule`.
+  The red/green regression and all1..8 ten-minute-minimum evening schedules pass
+  with41 focused tests. `ci-featured-fixture-repair-plan.json` in the same release
+  folder records scope and limits; no importer was run against hosted services.
+  Fresh complete setup and next-head remote CI remain required. Earlier R4/R5
+  receipts are preserved; native/build application inputs are unchanged.
   Current web build passes87.644s with unchanged inputs/metadata restored:
   `.local/provider-home-entry-20261026/work-first-planned-web-build-r2.json`.
   The compiled preview is pinned by `work-first-planned-web-r2-installed.json`

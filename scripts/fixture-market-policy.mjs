@@ -1,4 +1,12 @@
 import crypto from 'node:crypto';
+import {DEFAULT_FEATURED_SCHEDULE_CONFIG,validateFeaturedScheduleConfig} from '../src/lib/expo-broadcast.js';
+
+export function managedFixtureFeaturedSchedule(targetCount){
+  const config={...DEFAULT_FEATURED_SCHEDULE_CONFIG,targetCount};
+  validateFeaturedScheduleConfig(config);
+  return {broadcast_start_time:config.dayStart,broadcast_end_time:config.dayEnd,
+    schedule_mode:'AUTO',schedule_config_json:config};
+}
 
 export const SMALL_LOCAL_VEHICLE_CONFIGURATIONS=new Set([
   'Courier car','Courier motorcycle','Cargo van','Pickup truck','Pickup stake body',
