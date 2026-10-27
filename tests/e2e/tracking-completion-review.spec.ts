@@ -63,8 +63,14 @@ test('completed delivery emails its customer and accepts exactly one visible cus
     const requested=Date.now();await customer.getByRole('button',{name:'Email me a code'}).click();
     await customer.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requested,'Your Loadgistic tracking sign-in code'));
     await customer.getByRole('button',{name:'Open tracking'}).click();
+    const approval=customer.waitForResponse((response:any)=>{
+      const url=new URL(response.url());
+      return response.request().method()==='POST'&&url.pathname===`/api/tracking/${shipmentId}/approve`;
+    });
     await customer.getByRole('button',{name:'Approve unloading',exact:true}).click();
-    expect(checked(await service.from('provider_shipments').select('operational_status,handover_approved_at').eq('id',shipmentId).single())).toMatchObject({operational_status:'COMPLETED'});
+    const approved=await approval;expect(approved.status()).toBe(303);await approved.finished();
+    const handover=checked(await service.from('provider_shipments').select('operational_status,handover_approved_at').eq('id',shipmentId).single());
+    expect(handover.operational_status).toBe('COMPLETED');expect(handover.handover_approved_at).toBeTruthy();
     await completionCode(email,completedAfter);
     await expect(customer.getByLabel('Review code',{exact:true})).toHaveCount(0);
     await expect(customer.getByRole('heading',{name:'Review the provider'})).toBeVisible({timeout:15000});

@@ -450,8 +450,12 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    permission present and forbidden media/audio permissions absent; SHA-256
    `20a6d6b17029fda17750d67656c3adaf5d3b6bc55535862201039bc4233f48f1`.
    It uses the development signing certificate and remains a local test build.
-   A new exact-head CI run remains required. No hosted database or web change
-   has been deployed from this PR.
+   PR CI run40524318756 on `8ba87d0` passed validation, mobile boundaries,
+   container, Featured and six browser shards; three shards failed on a stale
+   empty-state assertion, an approval-response race and a short-screen Tracking
+   fit check. The focused local repairs pass desktop/phone Chromium and the
+   Tracking approval workflow; another exact-head CI run remains required. No
+   hosted database or web change has been deployed from this PR.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.

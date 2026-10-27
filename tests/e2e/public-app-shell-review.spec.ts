@@ -46,13 +46,11 @@ test('one company footer reserves map space and stays above phone navigation',as
     },width<=360)).toBe(true);
     await page.goto('/track',{waitUntil:'domcontentloaded'});
     await page.locator('.leaflet-control-attribution').waitFor();
-    const trackingFit=await page.evaluate(()=>{
+    await expect.poll(()=>page.evaluate(()=>{
       const box=(selector:string)=>document.querySelector(selector)?.getBoundingClientRect();
       const action=box('.tracking-unlock-panel .auth-primary-action'),panel=box('.tracking-unlock-panel'),stage=box('.tracking-entry-stage'),footer=box('.site-copyright'),attribution=box('.leaflet-control-attribution');
-      return {present:Boolean(action&&panel&&stage&&footer&&attribution),actionHeight:action?.height??0,actionFitsPanel:Boolean(action&&panel&&action.bottom<=panel.bottom+1),stageFitsFooter:Boolean(stage&&footer&&stage.bottom<=footer.top+1),attributionFitsStage:Boolean(attribution&&stage&&attribution.bottom<=stage.bottom+1),verticalFit:document.documentElement.scrollHeight<=innerHeight+2,horizontalFit:document.documentElement.scrollWidth<=innerWidth+2};
-    });
-    expect(trackingFit).toMatchObject({present:true,actionFitsPanel:true,stageFitsFooter:true,attributionFitsStage:true,verticalFit:true,horizontalFit:true});
-    expect(trackingFit.actionHeight).toBeGreaterThanOrEqual(44);
+      return {present:Boolean(action&&panel&&stage&&footer&&attribution),touchTarget:Boolean(action&&action.height>=44),actionFitsPanel:Boolean(action&&panel&&action.bottom<=panel.bottom+1),stageFitsFooter:Boolean(stage&&footer&&stage.bottom<=footer.top+1),attributionFitsStage:Boolean(attribution&&stage&&attribution.bottom<=stage.bottom+1),verticalFit:document.documentElement.scrollHeight<=innerHeight+2,horizontalFit:document.documentElement.scrollWidth<=innerWidth+2};
+    }),{timeout:15_000}).toMatchObject({present:true,touchTarget:true,actionFitsPanel:true,stageFitsFooter:true,attributionFitsStage:true,verticalFit:true,horizontalFit:true});
   }
 });
 
