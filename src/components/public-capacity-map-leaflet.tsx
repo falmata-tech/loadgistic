@@ -213,8 +213,12 @@ function CapacityMarkers({items,ownSignalIds,selectedId,onSelect,onDeselect}:{it
   const map=useMap();
   const [revision,setRevision]=React.useState(0);
   const [fan,setFan]=React.useState(null as string|null);
-  useMapEvents({zoomstart:()=>setFan(null),movestart:()=>setFan(null),click:()=>setFan(null),zoomend:()=>setRevision((value:number)=>value+1),moveend:()=>setRevision((value:number)=>value+1)});
-  React.useEffect(()=>{setFan(null);},[items,selectedId]);
+  useMapEvents({zoomstart:()=>setFan(null),movestart:()=>setFan(null),click:event=>{
+    const target=event.originalEvent?.target;
+    if(target instanceof Element&&target.closest('.capacity-map-cluster,.capacity-truck-map-marker'))return;
+    setFan(null);
+  },zoomend:()=>setRevision((value:number)=>value+1),moveend:()=>setRevision((value:number)=>value+1)});
+  React.useEffect(()=>setFan(null),[selectedId]);
   React.useEffect(()=>{if(!fan)return;const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setFan(null);};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close);},[fan]);
   const selected=items.find(item=>item.id===selectedId);
   const zoom=map.getZoom();
@@ -229,6 +233,9 @@ function CapacityMarkers({items,ownSignalIds,selectedId,onSelect,onDeselect}:{it
     });
     return [...buildCapacityMarkerGroups(entries.filter(entry=>!ownSignalIds.has(entry.id)),zoom),...buildCapacityMarkerGroups(entries.filter(entry=>ownSignalIds.has(entry.id)),zoom)] as MarkerGroup[];
   },[items,map,ownSignalIds,selected,zoom]) as MarkerGroup[];
+  React.useEffect(()=>{
+    if(fan&&!clusteredGroups.some(group=>group.key===fan))setFan(null);
+  },[clusteredGroups,fan]);
   const groups:MarkerGroup[]=React.useMemo(()=>{
     const renderBounds=map.getBounds().pad(.35);
     return clusteredGroups.filter(group=>renderBounds.contains([group.anchor.lat,group.anchor.lng]));

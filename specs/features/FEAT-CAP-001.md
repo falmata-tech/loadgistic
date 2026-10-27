@@ -718,6 +718,15 @@ And a Preferred corridor joins its cities with ↔ while a Preferred area names 
 And both state Confirm availability\
 And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred area, distinct from violet approximate location and status-colored Planned capacity.
 
+### Scenario: preferred corridor removal updates the selected vehicle
+
+Given a vehicle has a saved preferred corridor or area\
+When its authorized manager removes that signal successfully\
+Then its saved summary and map stop showing the signal immediately\
+And other vehicles' preferred signals remain unchanged.\
+When removal fails\
+Then the saved signal remains visible.
+
 ### Scenario: regular routes cannot leak across trucks or assignments
 
 Given a fleet has two assigned trucks with distinct usual routes\

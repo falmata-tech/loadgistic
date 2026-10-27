@@ -35,6 +35,7 @@ const common={...hosts,PublicIdentityImage:'PublicIdentityImage',WorkspaceTaskDi
 test('web selected truck regular map and editor ignore provider-wide and other-pair routes',()=>{
  const view=renderer(),component=view.compile('../src/components/capacity-form.tsx',common).CapacityForm,props={vehicles:[vehicle(),vehicle(vehicleB,driverB)],corridors:[{...corridor(),vehicle_id:undefined,driver_user_id:undefined,id:'legacy'},corridor(vehicleA,driverB),corridor(),corridor(vehicleB,driverB)],allowCorridors:true,renderedAt:1};
  let tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[corridor()]);find(tree,'button',node=>node.props['aria-label']?.startsWith('Edit preferred corridor:')).props.onClick();tree=view.render(component,props);let editor=find(tree,'CapacityMarketPlanning');assert.equal(editor.props.vehicleId,vehicleA);assert.equal(editor.props.expectedDriverId,driverA);assert.deepEqual(editor.props.corridors,[corridor()]);
+ editor.props.onRemoved(vehicleA);tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[],'confirmed removal immediately clears this vehicle map');assert.deepEqual(find(tree,'CapacityMarketPlanning').props.corridors,[],'the reopened editor cannot reuse the removed record');
  find(tree,'select',node=>node.props.id==='capacity-vehicle').props.onChange({target:{value:vehicleB}});tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[corridor(vehicleB,driverB)]);editor=find(tree,'CapacityMarketPlanning');assert.equal(editor.props.vehicleId,vehicleB);assert.equal(editor.props.expectedDriverId,driverB);assert.deepEqual(editor.props.corridors,[corridor(vehicleB,driverB)]);
  const unassigned=view.render(component,{...props,vehicles:[vehicle(vehicleA,'')]});assert.equal(find(unassigned,'CapacityMarketPlanning'),undefined);assert.deepEqual(find(unassigned,'CapacityLocationMap').props.regularSignals,[]);
 });
@@ -44,6 +45,22 @@ test('web regular save and remove forms bind the same truck and driver and never
  const props={vehicleId:vehicleA,expectedDriverId:driverA,corridors:[{...corridor(),vehicle_id:undefined,driver_user_id:undefined,id:'legacy'},corridor(vehicleB,driverB),corridor()],returnTo:'/app/home',onBusyChange(){},onSaved(){},onRemoved(){},onCancel(){}};
  const tree=view.render(component,props),forms=nodes(tree).filter(node=>node.type==='form');assert.equal(forms.length,2);
  for(const form of forms){const values=Object.fromEntries(nodes(form).filter(node=>node.type==='input'&&node.props.type==='hidden').map(node=>[node.props.name,node.props.value]));assert.equal(values.vehicleId,vehicleA);assert.equal(values.expectedDriverId,driverA);assert.equal(values.id,vehicleA);assert.equal(values.returnTo,'/app/home');}
+});
+
+test('failed preferred corridor removal leaves the saved signal visible',async()=>{
+ let removed=false;
+ const view=renderer(),component=view.compile('../src/components/capacity-market-planning.tsx',{
+  ...common,FormData:class{get(name){return name==='action'?'REMOVE':null;}},
+  submitCapacityForm:async()=>{throw Error('Local test failure');}
+ }).CapacityMarketPlanning;
+ const props={vehicleId:vehicleA,expectedDriverId:driverA,corridors:[corridor()],returnTo:'/app/home',onBusyChange(){},onSaved(){},onRemoved(){removed=true;},onCancel(){}};
+ let tree=view.render(component,props);
+ const removal=nodes(tree).filter(node=>node.type==='form').find(form=>nodes(form).some(node=>node.props?.name==='action'&&node.props.value==='REMOVE'));
+ assert.ok(removal);
+ await removal.props.onSubmit({preventDefault(){},currentTarget:{}});
+ tree=view.render(component,props);
+ assert.equal(removed,false);
+ assert.ok(nodes(tree).filter(node=>node.type==='form').some(form=>nodes(form).some(node=>node.props?.name==='action'&&node.props.value==='REMOVE')));
 });
 
 test('web profile editor omits retired Services while retaining authored About and contact controls',async()=>{

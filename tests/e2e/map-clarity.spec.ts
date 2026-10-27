@@ -20,7 +20,7 @@ test('city and distance filter matches reported truck locations without GPS perm
   await expect(suggestion).toBeVisible();await suggestion.click();
   const cityRef=await page.locator('input[name="truckCityPlaceRef"]').inputValue();
   expect(cityRef).toBeTruthy();
-  await page.getByLabel('Distance from city',{exact:true}).selectOption('25');
+  await page.getByRole('group',{name:'Vehicle location'}).getByLabel('Distance from city',{exact:true}).selectOption('25');
   await page.locator('.capacity-truck-location-filter').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(captures,`${info.project.name}-city-filter.png`),scale:'css'});
   await page.getByRole('button',{name:'Show vehicles'}).click();
@@ -47,7 +47,7 @@ test('city and distance filter matches reported truck locations without GPS perm
   expect((await page.request.get(`/api/shared-capacity?truckCityPlaceRef=${encodeURIComponent(cityRef)}`)).status()).toBe(410);
   await openCapacityFilterDialog(page);
   await expect(page.getByLabel('In or near a city',{exact:true})).not.toHaveValue('');
-  await expect(page.getByLabel('Distance from city',{exact:true})).toHaveValue('25');
+  await expect(page.getByRole('group',{name:'Vehicle location'}).getByLabel('Distance from city',{exact:true})).toHaveValue('25');
 });
 
 test('blue location feedback stays by controls and the small map key opens within the screen',async({page,context}: {page:any;context:any},info:any)=>{

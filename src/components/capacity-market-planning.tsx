@@ -19,7 +19,7 @@ function PlaceRows({keys,setKeys,prefix,label,min,name,refName,points=[]}:{keys:
   </div>;
 }
 
-export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,returnTo,onBusyChange,onSaved,onRemoved,onCancel}:{corridors:RegularSignal[];vehicleId:string;expectedDriverId:string;returnTo:string;onBusyChange:(busy:boolean)=>void;onSaved:(geometry:RegularSignal['geometry'])=>void;onRemoved:()=>void;onCancel:()=>void}){
+export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,returnTo,onBusyChange,onSaved,onRemoved,onCancel}:{corridors:RegularSignal[];vehicleId:string;expectedDriverId:string;returnTo:string;onBusyChange:(busy:boolean)=>void;onSaved:(geometry:RegularSignal['geometry'])=>void;onRemoved:(id:string)=>void;onCancel:()=>void}){
   const [removed,setRemoved]=React.useState(false);
   const published=removed?null:corridors.find(signal=>signal.vehicle_id===vehicleId&&signal.driver_user_id===expectedDriverId)||null;
   const [busy,setBusy]=React.useState(false);
@@ -33,7 +33,7 @@ export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,ret
     const form=event.currentTarget;
     const removing=new FormData(form).get('action')==='REMOVE';
     active.current=true;setBusy(true);onBusyChange(true);setError('');
-    try{await submitCapacityForm(form);if(removing){setRemoved(true);onRemoved();}else onSaved(geometry);}
+    try{await submitCapacityForm(form);if(removing){setRemoved(true);onRemoved(published!.id);}else onSaved(geometry);}
     catch(reason){setError(reason instanceof Error?reason.message:geometry==='RADIUS'?'Preferred area could not be saved. Please try again.':'Preferred corridor could not be saved. Please try again.');}
     finally{active.current=false;setBusy(false);onBusyChange(false);}
   }

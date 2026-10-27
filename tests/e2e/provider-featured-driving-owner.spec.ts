@@ -28,9 +28,8 @@ test('an organization owner who drives qualifies without an employee row and app
   await page.goto(`/transporter?handle=${encodeURIComponent(candidate.handle)}`,{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
   await expect(page.getByText('Aster · Driver',{exact:true})).toBeVisible();
-  const vehicleDocuments=page.locator('.public-truck-verification .verification-group').filter({has:page.getByText('Vehicle documents',{exact:true})});
-  await expect(vehicleDocuments.locator('.verification-badge.unverified')).toHaveCount(3);
-  await expect(vehicleDocuments.locator('.badge-vehicle-ownership.unverified')).toBeVisible();
+  await expect(page.getByText('Vehicle documents',{exact:true})).toBeVisible();
+  for(const name of ['Ownership','Permission','Operating licence'])await expect(page.getByRole('button',{name:`${name} · Not verified`,exact:true})).toBeVisible();
   await page.getByText('Aster · Driver',{exact:true}).scrollIntoViewIfNeeded();
   await page.screenshot({path:info.outputPath('native-public-featured-owner-driver.png')});completed=true;checkpoint('COMPLETE');
  }catch(error){workflowFailed=true;evidence();throw error;

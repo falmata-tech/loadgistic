@@ -1,6 +1,7 @@
 import {test,expect} from './browser-test';
 import {closeCapacityFilters} from './capacity-drawer-helper';
 import {randomUUID} from 'node:crypto';
+import type {Response} from 'playwright-core';
 
 test('two colocated vehicles separate on the map and each opens its ordinary details',async({page}:{page:any},info:any)=>{
  test.setTimeout(90_000);
@@ -10,12 +11,32 @@ test('two colocated vehicles separate on the map and each opens its ordinary det
  const original=result.items?.find((item:{location_lat:number|null;location_lng:number|null})=>item.location_lat!=null&&item.location_lng!=null);
  expect(original,'The local demo must contain one located vehicle').toBeTruthy();
  const names=['Synthetic overlap one','Synthetic overlap two'];
- const vehicles=names.map(provider_name=>({...original,id:randomUUID(),provider_name}));
- await page.route('**/api/public/capacity?**',(route:any)=>route.fulfill({json:{items:vehicles,hasMore:false,nextCursor:null}}));
+ const ids=names.map(()=>randomUUID());
+ let anchor:{lat:number;lng:number}|null=null;
+ let releaseSynthetic:()=>void=()=>{};
+ const syntheticGate=new Promise<void>(resolve=>{releaseSynthetic=resolve;});
+ await page.route('**/api/public/capacity?**',(route:any)=>{
+  if(!anchor){
+   const bounds=new URL(route.request().url()).searchParams.get('viewport')?.split(',').map(Number);
+   if(!bounds||bounds.length!==4||bounds.some(value=>!Number.isFinite(value)))throw Error('VISIBLE_VIEWPORT_REQUIRED');
+   anchor={lat:(bounds[1]+bounds[3])/2,lng:(bounds[0]+bounds[2])/2};
+  }
+  const vehicles=names.map((provider_name,index)=>({...original,id:ids[index],provider_name,location_lat:anchor!.lat,location_lng:anchor!.lng,current_signal_geometry_visible:true}));
+  return syntheticGate.then(()=>route.fulfill({json:{items:vehicles,hasMore:false,nextCursor:null}}));
+ });
  await page.goto('/',{waitUntil:'domcontentloaded'});
  await closeCapacityFilters(page);
- await expect(page.locator('.capacity-map-cluster:visible').first()).toBeVisible();
- await page.locator('.capacity-map-cluster:visible').first().click();
+ // The server initially renders real demo vehicles. Wait until the synthetic
+ // viewport response replaces that marker before exercising the fan.
+ const cluster=page.locator('.capacity-map-cluster:visible').first();
+ await expect(cluster).toBeVisible();
+ const initialCluster=await cluster.elementHandle();
+ const syntheticResponse=page.waitForResponse((response:Response)=>new URL(response.url()).pathname==='/api/public/capacity'&&response.ok());
+ releaseSynthetic();
+ await syntheticResponse;
+ await expect.poll(()=>initialCluster!.evaluate((element:Element)=>element.isConnected)).toBe(false);
+ await expect(cluster).toBeVisible();
+ await cluster.click();
  const spread=page.locator('.capacity-truck-map-marker.spread');
  await expect(spread).toHaveCount(2);
  await expect(page.locator('.capacity-fan-connector')).toHaveCount(2);

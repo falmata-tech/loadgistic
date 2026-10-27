@@ -42,6 +42,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   const expectedDriverId=selectedVehicle?.driver?.id||'';
   const current=selectedVehicle?.current;
   const [editSection,setEditSection]=React.useState(null as EditSection|null);
+  const [removedCorridorIds,setRemovedCorridorIds]=React.useState(()=>new Set<string>());
   const [busy,setBusy]=React.useState(false);
   const [refreshing,setRefreshing]=React.useState(false);
   const [notice,setNotice]=React.useState(null as {text:string;error?:boolean}|null);
@@ -56,7 +57,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     published:snapshotLocation(current),phone:selectedVehicle?.driverLocation,
     captured:localLocation?.vehicleId===selectedId?localLocation.value:null}),
     [current,localLocation,selectedId,selectedVehicle?.driverLocation,selectedVehicle?.locationSelection]);
-  const scopedCorridors:RegularSignal[]=React.useMemo(()=>selectedId&&expectedDriverId?corridors.filter(signal=>signal.vehicle_id===selectedId&&signal.driver_user_id===expectedDriverId).slice(0,1):[],[corridors,selectedId,expectedDriverId]);
+  const scopedCorridors:RegularSignal[]=React.useMemo(()=>selectedId&&expectedDriverId?corridors.filter(signal=>signal.vehicle_id===selectedId&&signal.driver_user_id===expectedDriverId&&!removedCorridorIds.has(signal.id)).slice(0,1):[],[corridors,selectedId,expectedDriverId,removedCorridorIds]);
   const regularSignals=React.useMemo(()=>scopedCorridors.filter(signal=>signal.geometry==='RADIUS'?signal.area_boundary?.length>=3:signal.route_points?.length>=2),[scopedCorridors]);
   // Opening or typing in a dialog must not refit the saved map's bounds.
   const hasCoverage=Boolean(current?.availability_geometry==='ROUTE'&&(current.current_route_points?.length||0)>=2||current?.availability_geometry==='RADIUS'&&(current.capacity_area_boundary?.length||0)>=3||regularSignals.length);
@@ -124,7 +125,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     </section>
     {expectedDriverId?<ProviderCargoSpacePhoto key={selectedId} vehicleId={selectedId} canUpload={allowDeviceLocation} canRemove={canRemovePhoto}/>:null}
     {editSection&&(editSection!=='RECURRING'||expectedDriverId)?<CapacityEditDialog title={editSection==='RECURRING'?regularTitle:editorTitles[editSection as EditSection]} truck={editSection==='RECURRING'?`${truckLabel} · ${selectedVehicle.driver?.name}`:truckLabel} busy={busy} onClose={close}>
-      {editSection==='RECURRING'?<CapacityMarketPlanning key={`${selectedId}:${expectedDriverId}`} vehicleId={selectedId} expectedDriverId={expectedDriverId} corridors={scopedCorridors} returnTo={returnTo} onBusyChange={setBusy} onSaved={geometry=>saved(geometry==='RADIUS'?'Preferred area saved.':'Preferred corridor saved.')} onRemoved={()=>router.refresh()} onCancel={close}/>:editSection==='LOCATION'?<>
+      {editSection==='RECURRING'?<CapacityMarketPlanning key={`${selectedId}:${expectedDriverId}`} vehicleId={selectedId} expectedDriverId={expectedDriverId} corridors={scopedCorridors} returnTo={returnTo} onBusyChange={setBusy} onSaved={geometry=>saved(geometry==='RADIUS'?'Preferred area saved.':'Preferred corridor saved.')} onRemoved={id=>{setRemovedCorridorIds((previous:Set<string>)=>new Set([...previous,id]));startSync(()=>router.refresh());}} onCancel={close}/>:editSection==='LOCATION'?<>
 <DriverCapacityLocationEditor key={selectedId} vehicleId={selectedId} location={location} publishedSource={current?.location_source} onDuty={onDuty} onBusyChange={setBusy} onCancel={close} onSaved={(mode,value)=>{if(value)setLocalLocation({vehicleId:selectedId,value});else setLocalLocation(null);saved(mode==='MANUAL'?'Manual capacity location saved.':'Phone location selected.');}}/></>:<CapacitySignalEditor section={editSection} hasAssignedDriver={Boolean(selectedVehicle.driver)} vehicleId={selectedId} current={current} location={location} allowDeviceLocation={canReadPhone} savedManualSource={capacityLocationSource(selectedVehicle.locationSelection)==='MANUAL'} onBusyChange={setBusy} onSaved={()=>saved()} onCancel={close}/>}
     </CapacityEditDialog>:null}
   </div>;

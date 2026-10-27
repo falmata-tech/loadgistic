@@ -420,13 +420,16 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
 
 for(const useBasis of ['OWNED','PERMISSION']){
  test(`driving Transport Provider ${useBasis} signs up, explicitly assigns a truck and publishes after location permission`,async({page,context}:{page:any;context:any},info:any)=>{
-  test.setTimeout(150000);
+  // Fresh CI starts both the auth service and the full browser workspace; keep
+  // a bounded allowance for those real operations without dropping assertions.
+  test.setTimeout(240000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=new URL(process.env.NEXT_PUBLIC_SUPABASE_URL||'');
   if(!['localhost','127.0.0.1'].includes(endpoint.hostname)||endpoint.port!=='55321')throw new Error('LOCAL_LOADGISTIC_REQUIRED');
   const service=createClient(endpoint.href,process.env.SUPABASE_SERVICE_ROLE_KEY||'',{auth:{persistSession:false,autoRefreshToken:false}});
   const suffix=randomUUID().slice(0,8),email=`independent-${suffix}@loadgistic.local`;
-  let userId='',providerId='',vehicleId='',cleanupStage='NOT_STARTED';
+  let userId='',providerId='',vehicleId='',cleanupStage='NOT_STARTED',workflowStage='VERIFY_EMAIL';
+  const workflowStarted=Date.now();
   let primaryFailure:unknown=null;
   const cleanupEvidence=(status:'complete'|'failed',error?:unknown)=>{
    const details=error&&typeof error==='object'?error as {code?:unknown;status?:unknown;name?:unknown}:null;
@@ -437,6 +440,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
   };
   try{
    await verifyNewEmail(page,email);
+   workflowStage='CREATE_WORKSPACE';
    await expect(page.getByRole('heading',{name:'Choose your account',exact:true})).toBeVisible();
    await page.getByRole('link',{name:'Continue as Transport Provider',exact:true}).click();
    await acceptContentRules(page);
@@ -450,6 +454,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.locator('label.rich-toggle').click();await expect(page.getByRole('checkbox',{name:/^I drive a vehicle/})).toBeChecked();
    await page.getByLabel('Account phone',{exact:true}).fill('+251900000044');
    await page.getByRole('button',{name:'Create transporter workspace'}).click();
+   workflowStage='ADD_VEHICLE';
    await expect(page).toHaveURL(/\/app\/home$/);
    await expect(page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'My capacity',exact:true})).toHaveAttribute('aria-current','page');
    await expect(page.getByText('Choose the vehicle you drive under Manage vehicles.',{exact:true})).toBeVisible();
@@ -469,9 +474,11 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await expect(page.getByRole('region',{name:'Vehicle driver'})).toContainText('No driver assigned');vehicleId=new URL(page.url()).pathname.split('/').at(-1)!;
    expect((await service.from('vehicles').select('use_basis').eq('id',vehicleId).single()).data?.use_basis).toBe(useBasis);
    const truckPath=new URL(page.url()).pathname;await clickFleetLink(page,page.getByRole('region',{name:'Vehicle driver'}).getByRole('link',{name:'Assign driver',exact:true}));
+   workflowStage='ASSIGN_AND_PUBLISH';
    const self=await openFleetDriver(page,{id:userId},true);await self.getByRole('combobox',{name:'Vehicle',exact:true}).selectOption(vehicleId);await self.getByRole('button',{name:'Save driver',exact:true}).click();await expect(page).toHaveURL(new RegExp(truckPath));
    expect((await service.from('driver_vehicle_assignments').select('driver_user_id').eq('vehicle_id',vehicleId).eq('active',true).single()).data?.driver_user_id).toBe(userId);await showVehicleDetails(page);await page.getByRole('button',{name:'Go live',exact:true}).click();
    await page.goto('/app/home');await page.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true}).click();
+   workflowStage='PUBLISH_CAPACITY';
    const dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
    await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
@@ -492,7 +499,9 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.screenshot({path:info.outputPath(`${useBasis.toLowerCase()}-first-capacity.png`),fullPage:true});
+   workflowStage='COMPLETE';
   }catch(error){primaryFailure=error;throw error;}finally{
+   console.log(`DRIVING_PROVIDER_STAGE basis=${useBasis} stage=${workflowStage} elapsed_ms=${Date.now()-workflowStarted}`);
    try{
     // Exact synthetic identities only, including a partially completed signup.
     cleanupStage='FIND_IDENTITY';

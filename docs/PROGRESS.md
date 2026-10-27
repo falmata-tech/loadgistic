@@ -431,8 +431,27 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    and retain their cursor, result, permission and rollback checks. Each of the
    four corrected suites passes locally; the following discovery-input suite
    and all remaining ordered SQL suites passed through
-   `featured-save-eligibility-once`. This is local evidence, not a green
-   exact-head CI run. A follow-up commit and CI run are still required.
+   `featured-save-eligibility-once`. Follow-up commit `fef26f0` passed those
+   SQL boundaries in CI run40498537467; validation, mobile boundaries,
+   containers and three Featured jobs also passed. All eight browser shards
+   failed on a mix of stale UI assertions and local interaction defects, so
+   that run does not qualify release. The October27 local repair updates the
+   new Partial field and market navigation assertions, restores native private
+   document names, waits for synthetic map records before fan tests, stabilizes
+   paginated map refresh checks, and clears a phone photo-panel overlap. A
+   separate saved-corridor defect is now covered: removal updates the selected
+   map and summary after successful persistence, while failure retains the
+   saved signal. Focused Chrome/Expo and unit checks pass for those changes;
+   `npm run quality` passes on pinned Node22 (1,329 passed, one existing skip),
+   the mobile typecheck/lint/tests and translation audit pass (423 tests,
+   802 explicit strings), and the optimized web build passes. The focused
+   desktop, phone-web and Expo browser repairs pass locally. The offline
+   1.2.0/code10 local APK built for arm64-v8a and x86_64, with compiled camera
+   permission present and forbidden media/audio permissions absent; SHA-256
+   `20a6d6b17029fda17750d67656c3adaf5d3b6bc55535862201039bc4233f48f1`.
+   It uses the development signing certificate and remains a local test build.
+   A new exact-head CI run remains required. No hosted database or web change
+   has been deployed from this PR.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.

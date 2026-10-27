@@ -59,19 +59,45 @@ async function openWeb(page:Page,pair:Pair,hasRoute:boolean){
  if(new URL(page.url()).pathname!==`/app/fleet/${pair.vehicleId}`)await page.goto(`/app/fleet/${pair.vehicleId}`,{waitUntil:'domcontentloaded',timeout:60000});const action=page.getByRole('button',{name:`Edit preferred corridor: ${hasRoute?'Route':'None'}`,exact:true});await expect(action).toBeEnabled({timeout:30_000});await action.click();
  const dialog=page.getByRole('dialog',{name:'Preferred corridor',exact:true});await expect(dialog).toBeVisible();await expect(dialog.locator('#regular-service-form input[name="vehicleId"]')).toHaveValue(pair.vehicleId);await expect(dialog.locator('#regular-service-form input[name="expectedDriverId"]')).toHaveValue(pair.driverId);if(hasRoute){const removal=dialog.locator('form:has(input[name="action"][value="REMOVE"])');await expect(removal.locator('input[name="vehicleId"]')).toHaveValue(pair.vehicleId);await expect(removal.locator('input[name="expectedDriverId"]')).toHaveValue(pair.driverId);}return dialog;
 }
-test('web scoped regular routes save update remove and discard drafts across two assigned trucks',async({page},info)=>{
- test.setTimeout(150_000);const data=await fixture(`web-regular-${info.project.name.includes('mobile')?'phone':'desktop'}`),errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
+test('preferred corridor removal updates the saved summary at phone width',async({page},info)=>{
+ test.setTimeout(120_000);
+ const data=await fixture('phone-regular-remove');
  try{
+  await auditLogin(page,data.owner.email,`/app/fleet/${data.b.vehicleId}`);
+  let dialog=await openWeb(page,data.b,true);
+  await webChoose(dialog,2,'Dire Dawa');
+  await page.setViewportSize({width:320,height:640});
+  await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeInViewport();
+  await webSave(page,dialog);
+  await expect(dialog).toHaveCount(0);
+  dialog=await openWeb(page,data.b,true);
+  await webSave(page,dialog,true);
+  await expect(dialog.getByRole('button',{name:'Remove preferred corridor',exact:true})).toHaveCount(0);
+  await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Edit preferred corridor: None',exact:true})).toBeVisible();
+ }finally{await data.cleanup();}
+});
+test('web scoped regular routes save update remove and discard drafts across two assigned trucks',async({page},info)=>{
+ test.setTimeout(150_000);const started=Date.now();let stage='SETUP';const data=await fixture(`web-regular-${info.project.name.includes('mobile')?'phone':'desktop'}`),errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
+ try{
+  stage='FIRST_SAVE';
   await auditLogin(page,data.owner.email,`/app/fleet/${data.a.vehicleId}`);let dialog=await openWeb(page,data.a,false);await expect(dialog.getByRole('combobox').first()).toHaveValue('');await expect(dialog.getByRole('button',{name:'Remove preferred corridor',exact:true})).toHaveCount(0);
   await webChoose(dialog,1,'Addis Ababa');await webChoose(dialog,2,'Dire Dawa');await webSave(page,dialog);await expect(dialog).toHaveCount(0);let own=await data.ownRoute();expect(own.assigned_vehicle_id).toBe(data.a.vehicleId);expect(own.assigned_driver_user_id).toBe(data.a.driverId);expect(own.route_points_json.map((row:{label:string})=>row.label.split(',')[0])).toEqual(['Addis Ababa','Dire Dawa']);await data.preserved();
+  stage='CANCEL_AND_PAIR_ISOLATION';
   dialog=await openWeb(page,data.a,true);await webChoose(dialog,2,'Adama');await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
   dialog=await openWeb(page,data.b,true);await expect(dialog.getByRole('combobox',{name:'Route city 1',exact:true})).toHaveValue(/Adama/);await expect(dialog.getByRole('combobox',{name:'Route city 2',exact:true})).toHaveValue(/Addis Ababa/);await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
   dialog=await openWeb(page,data.a,true);await expect(dialog.getByRole('combobox',{name:'Route city 2',exact:true})).toHaveValue(/Dire Dawa/);await webChoose(dialog,2,'Adama');
+  stage='SECOND_SAVE';
   if(info.project.name.includes('mobile'))await page.setViewportSize({width:320,height:640});await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeInViewport();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);const box=await dialog.boundingBox();expect(box!.height).toBeLessThan(page.viewportSize()!.height);await page.screenshot({path:info.outputPath('web-selected-truck-regular-editor.png'),scale:'css'});
   await webSave(page,dialog);await expect(dialog).toHaveCount(0);own=await data.ownRoute();expect(own.route_points_json.map((row:{label:string})=>row.label.split(',')[0])).toEqual(['Addis Ababa','Adama']);await data.preserved();
+  stage='REMOVE';
+  // This longer two-vehicle case also proves the edited route survives a fresh
+  // page read. Immediate update-then-remove is covered by the focused phone case.
+  await page.reload({waitUntil:'domcontentloaded'});
   dialog=await openWeb(page,data.a,true);await webSave(page,dialog,true);await expect(dialog.getByRole('button',{name:'Remove preferred corridor',exact:true})).toHaveCount(0);expect(await data.ownRoute()).toBeNull();await data.preserved();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
   await expect(page.getByRole('button',{name:'Edit preferred corridor: None',exact:true})).toBeVisible();await page.screenshot({path:info.outputPath('web-removed-truck-regular-map.png'),scale:'css'});expect(errors).toEqual([]);
- }finally{await data.cleanup();}
+  stage='COMPLETE';
+ }finally{console.log(`REGULAR_WORKFLOW stage=${stage} elapsed_ms=${Date.now()-started}`);await data.cleanup();}
 });
 async function nativeChoose(page:Page,index:number,name:string){
  await page.getByText(`Route city ${index}`,{exact:true}).locator('..').getByRole('button').click();await page.getByLabel('Search cities',{exact:true}).fill(name);await page.getByRole('button',{name:new RegExp(`^${name},`)}).first().click();await expect(page.getByLabel('Search cities',{exact:true})).toHaveCount(0);

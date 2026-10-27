@@ -40,6 +40,7 @@ const rows = [
  ['Could not open this file. Please choose it again.','ፋይሉን መክፈት አልተቻለም። እንደገና ይምረጡት።','Faayilii kana banuun hin dandaʼamne. Irra deebiʼaa filadhaa.'],
  ['Remove selected file','የተመረጠውን ፋይል አስወግድ','Faayilii filatame keessaa baasi'],
  ['Private document','የግል ሰነድ','Sanada dhuunfaa'],
+ ['Submitted document','የቀረበ ሰነድ','Ragaa dhiyaate'],
  ['Close document','ሰነዱን ዝጋ','Sanada cufi'],
  ['Open or share PDF','PDF ክፈት ወይም አጋራ','PDF bani ykn qoodi'],
  ['Open, save or share a copy using an app on your phone. Only share it with people you trust.','በስልክዎ ባለ መተግበሪያ ቅጂ ይክፈቱ፣ ያስቀምጡ ወይም ያጋሩ። ለሚያምኗቸው ሰዎች ብቻ ያጋሩ።','Appii bilbila keessanii fayyadamuun garagalcha banaa, kuusaa ykn qoodaa. Namoota amantan qofatti qoodaa.'],

@@ -98,7 +98,7 @@ test('assigned driver chooses a manual Capacity point, sees its source, and can 
   await restrictedDialog.getByRole('button',{name:'Save location'}).click();expect((await phoneSource).status()).toBe(200);expect((await phoneReport).status()).toBe(200);await expect(restrictedDialog).toHaveCount(0);
   selected=checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km').eq('vehicle_id',vehicles[0]).single());expect(selected.source).toBe('MOBILE');
   await expect(page.getByRole('button',{name:'Available',exact:true})).toBeEnabled();
-  await Promise.all([page.waitForURL(url=>url.pathname==='/app/home'&&(url.searchParams.has('success')||url.searchParams.has('error')),{waitUntil:'domcontentloaded',timeout:30_000}),page.getByRole('button',{name:'Available',exact:true}).click()]);
+  await Promise.all([page.waitForURL(url=>url.pathname==='/app/home'&&url.searchParams.get('success')==='Vehicle is On Duty.',{waitUntil:'domcontentloaded',timeout:30_000}),page.getByRole('button',{name:'Available',exact:true}).click()]);
   expect(new URL(page.url()).searchParams.get('success')).toBe('Vehicle is On Duty.');
   await expect(page.getByRole('button',{name:'Off Duty',exact:true})).toBeVisible({timeout:15_000});
   const capacity=checked(await db.from('capacities').select('location_source,location_updated_at').eq('vehicle_id',vehicles[0]).order('updated_at',{ascending:false}).limit(1).single());expect(capacity.location_source).toBe('DEVICE_OBSCURED');expect(Number.isFinite(Date.parse(capacity.location_updated_at))).toBe(true);
