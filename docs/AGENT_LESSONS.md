@@ -253,6 +253,19 @@ daily uniqueness and exact round completion in the regression. Compare the
 installed function, fixture size and owner's rule before changing production SQL
 or retrying a stochastic assertion.
 
+October27 release: a browser shard stalled for 1,798 seconds while installing
+Supabase CLI, before database startup or browser tests. Preserve the failed
+attempt, distinguish setup from product failure, and retry only the stalled
+shard plus dependent aggregators after the other jobs finish. All16 checks then
+passed on the same merged source; the exact external setup cause remains unknown.
+For a data-only backup restored beside a reconstructed schema, replay archived
+ACLs and compare effective public ownership/access against the hosted ledger
+before migration rehearsal. Six extra service-role grants in the local source
+required a guarded correction in the isolated clone; no hosted privilege was
+changed. Schema object counts or a passing SQL replay alone do not prove a
+recovery copy has the live permission boundary. Renew backup and parity receipts
+when their release freshness window expires; never relabel an old snapshot.
+
 For new rollback SQL fixtures, reuse a passing creator and check the installed
 enums, column checks/foreign keys and command preconditions together before the
 first run. The214 fixture needed three local corrections because those contracts
