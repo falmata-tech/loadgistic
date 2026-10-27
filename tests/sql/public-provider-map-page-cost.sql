@@ -51,6 +51,13 @@ begin
   where profile.handle like 'map-cost-178-%' order by profile.handle limit 1;
  select payload into strict first_row from public.public_capacity_page(
   jsonb_build_object('vehicle_ids',all_ids),null,null,14) limit 1;
+ -- Migration 218 adds the driver's reported-space projection to public map
+ -- rows; both synthetic Empty vehicles must report 100% with no report time.
+ if exists(select 1 from public.public_capacity_page(jsonb_build_object('vehicle_ids',all_ids))
+   where not (payload ? 'available_percent' and payload ? 'available_percent_reported_at')
+    or payload->>'available_percent' is distinct from '100'
+    or payload->>'available_percent_reported_at' is not null)
+  then raise exception 'PUBLIC_MAP_REPORTED_SPACE_DRIFT';end if;
  cursor_time:=(first_row->>'updated_at')::timestamptz;
  cursor_id:=(first_row->>'id')::uuid;
 
@@ -67,14 +74,16 @@ begin
  ] loop
   select jsonb_agg(payload order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
    into old_rows from public.public_capacity_page_pre_perf178(query,null,null,14);
-  select jsonb_agg(payload order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
+  select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at'
+   order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
    into new_rows from public.public_capacity_page(query,null,null,14);
   if old_rows is distinct from new_rows then raise exception 'PUBLIC_MAP_RESULT_DRIFT: %',query;end if;
  end loop;
  query:=jsonb_build_object('vehicle_ids',all_ids);
  select jsonb_agg(payload order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
   into old_rows from public.public_capacity_page_pre_perf178(query,cursor_time,cursor_id,14);
- select jsonb_agg(payload order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
+ select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at'
+  order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
   into new_rows from public.public_capacity_page(query,cursor_time,cursor_id,14);
  if old_rows is distinct from new_rows then raise exception 'PUBLIC_MAP_CURSOR_DRIFT';end if;
  if has_function_privilege('anon','public.public_capacity_page(jsonb,timestamptz,uuid,integer)','EXECUTE')

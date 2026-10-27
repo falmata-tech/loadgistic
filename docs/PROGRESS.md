@@ -420,6 +420,19 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    63-second-old API position. The bridge is healthy, but the simulator is
    stopped and no recurring hosted movement is claimed. The repeat-prevention
    procedure is recorded in `docs/AGENT_LESSONS.md`.
+   PR26 head `60fd0d0` started CI run40462458298. Setup, fixtures, security,
+   GPS and mobile-boundary checks passed; the rollback SQL step stopped in
+   `capacity-discovery-noop-guards` before browser jobs. The first stale
+   comparison required byte-for-byte equality with a pre-218 public payload.
+   Local continuation found the same two-field mismatch in the profile-search,
+   public-map and assigned-driver map historical parity suites. Those tests now
+   compare every previous field and order after excluding only the two new
+   reported-space fields, assert the new fields or current function definitions,
+   and retain their cursor, result, permission and rollback checks. Each of the
+   four corrected suites passes locally; the following discovery-input suite
+   and all remaining ordered SQL suites passed through
+   `featured-save-eligibility-once`. This is local evidence, not a green
+   exact-head CI run. A follow-up commit and CI run are still required.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.

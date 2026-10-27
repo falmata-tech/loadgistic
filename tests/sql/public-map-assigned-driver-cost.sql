@@ -78,7 +78,7 @@ end $fixture$;
 
 do $parity$
 declare fixture_ids jsonb;query jsonb;old_rows jsonb;new_rows jsonb;first_rows jsonb[];later_rows jsonb[];
- selected_handle text;selected_vehicle uuid;selected_capacity uuid;selected_payload jsonb;meta jsonb;
+ selected_handle text;selected_vehicle uuid;selected_capacity uuid;selected_payload jsonb;partial_payload jsonb;meta jsonb;
  cursor_time timestamptz;cursor_id uuid;doc_kind text;doc_value text;entry_definition text;
 begin
  select jsonb_agg(vehicle) into fixture_ids from map179_fixture;
@@ -86,6 +86,17 @@ begin
   from map179_fixture where ordinal=1;
  select payload into strict selected_payload from public.public_capacity_page(
   jsonb_build_object('capacity_id',selected_capacity),null,null,14);
+ select payload into strict partial_payload from public.public_capacity_page(
+  jsonb_build_object('capacity_id',(select capacity from map179_fixture where ordinal=3)),null,null,14);
+ perform pg_temp.assert_map179(selected_payload ? 'available_percent'
+  and selected_payload ? 'available_percent_reported_at'
+  and selected_payload->>'available_percent'='100'
+  and selected_payload->>'available_percent_reported_at' is null
+  and partial_payload ? 'available_percent'
+  and partial_payload ? 'available_percent_reported_at'
+  and partial_payload->>'available_percent' is null
+  and partial_payload->>'available_percent_reported_at' is null,
+  'MAP179_REPORTED_SPACE_PROJECTION_DRIFT');
  meta:=public.capacity_search_metadata(selected_payload);
  foreach query in array array[
   '{}'::jsonb,
@@ -103,7 +114,7 @@ begin
  ] loop
   select jsonb_agg(payload order by ordinal)
    into old_rows from public.public_capacity_page_pre_perf179(query,null,null,14) with ordinality as page(payload,ordinal);
-  select jsonb_agg(payload order by ordinal)
+  select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at' order by ordinal)
    into new_rows from public.public_capacity_page(query,null,null,14) with ordinality as page(payload,ordinal);
   perform pg_temp.assert_map179(old_rows is not distinct from new_rows,'MAP179_EXACT_JSON_OR_ORDER_DRIFT');
   perform pg_temp.assert_map179(not exists(select 1 from jsonb_array_elements(coalesce(new_rows,'[]')) item
@@ -115,7 +126,7 @@ begin
   query:=jsonb_build_object('vehicle_ids',fixture_ids,doc_kind||'_docs',doc_value);
   select jsonb_agg(payload order by ordinal)
    into old_rows from public.public_capacity_page_pre_perf179(query,null,null,14) with ordinality as page(payload,ordinal);
-  select jsonb_agg(payload order by ordinal)
+  select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at' order by ordinal)
    into new_rows from public.public_capacity_page(query,null,null,14) with ordinality as page(payload,ordinal);
   perform pg_temp.assert_map179(old_rows is not distinct from new_rows and jsonb_array_length(new_rows)>0,
    'MAP179_REVIEWED_DOCUMENT_PARITY_LOST');
@@ -129,7 +140,10 @@ begin
   into old_rows from public.public_capacity_page_pre_perf179(query,cursor_time,cursor_id,14) with ordinality as page(payload,ordinal);
  select array_agg(payload order by ordinal)
   into later_rows from public.public_capacity_page(query,cursor_time,cursor_id,14) with ordinality as page(payload,ordinal);
- perform pg_temp.assert_map179(old_rows is not distinct from to_jsonb(later_rows),'MAP179_LATER_CURSOR_JSON_DRIFT');
+ perform pg_temp.assert_map179(old_rows is not distinct from (
+  select jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal)
+  from unnest(later_rows) with ordinality current_row(item,ordinal)
+ ),'MAP179_LATER_CURSOR_JSON_DRIFT');
  perform pg_temp.assert_map179(cardinality(later_rows)=4,'MAP179_LATER_PAGE_INCOMPLETE');
  perform pg_temp.assert_map179(not exists(select 1 from unnest(first_rows[1:14]) a
   join unnest(later_rows) b on a->>'id'=b->>'id'),'MAP179_CURSOR_DUPLICATES');

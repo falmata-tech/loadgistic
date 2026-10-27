@@ -136,7 +136,20 @@ begin
      from public.public_capacity_page(query,case when mode=1 then cursor_stamp end,
       case when mode=1 then cursor_id end,14) with ordinality result(payload,ordinal);
    exception when others then get stacked diagnostics new_state=returned_sqlstate,new_error=message_text;end;
-   if old_rows is distinct from new_rows or old_state is distinct from new_state or old_error is distinct from new_error
+   -- 218 adds two public projection fields to the current function. Compare
+   -- every pre-existing field and row order while exercising the new fields
+   -- against this fixture's Empty and unreported Partial signals.
+   if old_state is null and exists(
+    select 1 from jsonb_array_elements(new_rows) item
+    where not (item ? 'available_percent' and item ? 'available_percent_reported_at')
+      or item->>'available_percent_reported_at' is not null
+      or item->>'status'='EMPTY' and item->>'available_percent' is distinct from '100'
+      or item->>'status'='PARTIAL' and item->>'available_percent' is not null
+   ) then raise exception 'DISCOVERY215_REPORTED_SPACE_PROJECTION_DRIFT: % / %',entry.name,mode;end if;
+   if old_rows is distinct from (case when new_rows is null then null else (
+     select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal),'[]')
+     from jsonb_array_elements(new_rows) with ordinality current_row(item,ordinal)
+   ) end) or old_state is distinct from new_state or old_error is distinct from new_error
     then raise exception 'DISCOVERY215_COMPLETE_PAYLOAD_ORDER_OR_FAILURE_DRIFT: % / %',entry.name,mode;end if;
    if entry.expected_error and old_state is null or not entry.expected_error and entry.expected_count is not null
     and (old_state is not null or mode=0 and jsonb_array_length(new_rows) is distinct from entry.expected_count)
@@ -152,7 +165,10 @@ begin
    select coalesce(jsonb_agg(payload order by ordinal),'[]') into new_rows
     from public.public_capacity_page(query,case when mode=1 then cursor_stamp end,
      case when mode=1 then cursor_id end,page_size) with ordinality result(payload,ordinal);
-   if old_rows is distinct from new_rows or jsonb_array_length(new_rows) is distinct from (case when mode=0 then 4 else 3 end)
+   if old_rows is distinct from (
+     select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal),'[]')
+     from jsonb_array_elements(new_rows) with ordinality current_row(item,ordinal)
+   ) or jsonb_array_length(new_rows) is distinct from (case when mode=0 then 4 else 3 end)
     then raise exception 'DISCOVERY215_CURSOR_OR_PAGE_BOUND_DRIFT';end if;
   end loop;
  end loop;

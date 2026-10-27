@@ -8,8 +8,10 @@ declare definition text;anchor text;start_at integer;end_at integer;
 begin
  if (select md5(prosrc) from pg_proc where oid='public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure)<>'ae6155282f29ad40f599798657b4477a'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_matches(jsonb,jsonb)'::regprocedure)<>'7a4ca944e31f1989d522e11d4f1d8f52'
-  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'0e1c6af41131e3bede8c38e99fcf9f35'
-  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_profile_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'ecbffcec23895388f73ad3955c3408fc'
+  -- 218 adds the reported-space projection and minimum filter to these two
+  -- current producers. Keep this guard pinned to their installed definitions.
+  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'11f75def78dd8e922112be96f17bdc42'
+  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_profile_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'dc244f78d7035c55debec8f242664e0b'
   then raise exception 'CURRENT_ACCOUNT_REFERENCE_SOURCE_DRIFT';end if;
  definition:=pg_get_functiondef('public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure);
  anchor:='public.capacity_search_public_profile_rows(';
@@ -209,8 +211,14 @@ begin
  old_result:=pg_temp.search177_full_results('{}',2);
  new_result:=public.capacity_search_results('{}','PUBLIC',null,null,2);
  if old_result is distinct from new_result then raise exception 'PROFILE_SEARCH_SECOND_PAGE_DRIFT';end if;
- -- The normal map projection must retain all rich keys and identical rows.
- if (select jsonb_agg(payload order by payload->>'id') from public.capacity_search_public_rows('{}'))
+ -- The normal map projection retains its historical rich keys and exact row
+ -- order. Migration 218 intentionally adds two reported-space keys; their
+ -- semantics are checked in capacity-reported-space.sql.
+ if exists(select 1 from public.capacity_search_public_rows('{}')
+   where not (payload ? 'available_percent' and payload ? 'available_percent_reported_at'))
+  then raise exception 'PROFILE_SEARCH_REPORTED_SPACE_KEYS_MISSING';end if;
+ if (select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at' order by payload->>'id')
+    from public.capacity_search_public_rows('{}'))
   is distinct from
   (select jsonb_agg(payload order by payload->>'id') from public.capacity_search_public_rows_pre_perf177('{}'))
   then raise exception 'PROFILE_SEARCH_MAP_PROJECTION_DRIFT';end if;
