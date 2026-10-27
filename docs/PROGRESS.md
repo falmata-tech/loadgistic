@@ -454,8 +454,11 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    container, Featured and six browser shards; three shards failed on a stale
    empty-state assertion, an approval-response race and a short-screen Tracking
    fit check. The focused local repairs pass desktop/phone Chromium and the
-   Tracking approval workflow; another exact-head CI run remains required. No
-   hosted database or web change has been deployed from this PR.
+   Tracking approval workflow. Run40533181740 on `f908cde` then passed all
+   non-browser gates and seven browser shards; the remaining shard repeated
+   the approval-response race in the mobile Tracking progress test. That test
+   passes locally with the response wait. Another exact-head CI run remains
+   required. No hosted database or web change has been deployed from this PR.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.

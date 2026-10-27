@@ -78,7 +78,11 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     }
     await expect(panel.locator('input[name=nextStatus][value=COMPLETED]')).toHaveCount(0);
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const owner=await guest.newPage();await auditTrackingOwnerLogin(owner,`progress-${actor.suffix}@example.test`);
-    await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();await page.reload();
+    const approval=owner.waitForResponse((response:any)=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/tracking/${shipmentId}/approve`);
+    await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();
+    const approved=await approval;expect(approved.status()).toBe(303);await approved.finished();
+    expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe('COMPLETED');
+    await page.reload();
     await expect(page.getByRole('region',{name:'Shipment progress'})).toContainText('Complete');await expect(panel).toHaveCount(0);await expect(page.locator('.tracking-journey li')).toHaveCount(0);await expect(page.getByRole('heading',{name:'Status timeline'})).toBeVisible();expect(await page.locator('time').count()).toBeGreaterThan(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath('tracking-complete.png')});
