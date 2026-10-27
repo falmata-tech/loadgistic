@@ -59,7 +59,7 @@ export function CapacityTruckDetails({truck}:{truck:CapacitySignal}){
  const {t}=useLanguage();
  return <>
   <View style={styles.hero}><View style={styles.illustration}><Image source={{uri:apiOrigin+vehicleConfigurationImage(truck.configuration)}} resizeMode="contain" style={{width:'100%',height:58}}/></View><View style={{flex:1,gap:4}}>
-   <View style={styles.statusLine}><Text style={[styles.status,{backgroundColor:truck.status==='EMPTY'?palette.successSoft:'#fff7d6',color:truck.status==='EMPTY'?palette.success:capacityStatusPresentation.PARTIAL.text}]}>{t(truck.status==='EMPTY'?'Empty vehicle':'Partial capacity')}</Text>{truck.acceptedLoads&&<Text style={styles.loads}>{t(capacityLoadLabel(truck.acceptedLoads))}</Text>}</View>
+   <View style={styles.statusLine}><Text style={[styles.status,{backgroundColor:truck.status==='EMPTY'?palette.successSoft:'#fff7d6',color:truck.status==='EMPTY'?palette.success:capacityStatusPresentation.PARTIAL.text}]}>{t(truck.status==='EMPTY'?'Empty vehicle':'Partial capacity')}</Text>{!!truck.acceptedLoads&&<Text style={styles.loads}>{t(capacityLoadLabel(truck.acceptedLoads))}</Text>}{truck.status==='PARTIAL'&&!!truck.availablePercentReportedAt&&truck.availablePercent!=null&&<Text style={styles.loads}>{t('Available space: {percent}%',{percent:truck.availablePercent})}</Text>}</View>
    <Text style={styles.name}>{truck.truck}</Text><Text style={styles.meta}>{t(truck.configuration)}</Text>
   </View></View>
   {!!truck.sharingMode&&<Text style={styles.tag}>{t(capacitySharingLabel(truck.sharingMode))}</Text>}

@@ -163,7 +163,8 @@ test('Area and Route query drafts stay editable but only the applied shape reach
  const originRef=await dialog.locator('input[name="originPlaceRef"]').inputValue();expect(originRef).toBeTruthy();
  await dialog.getByRole('button',{name:'Area',exact:true}).click();
  await expect(dialog.getByRole('combobox',{name:'Area',exact:true})).toHaveValue(/Addis Ababa/);
- await expect(dialog.locator('[data-query-shape="ROUTE"]')).toBeDisabled();
+ await expect(dialog.locator('[data-query-shape="ROUTE"]')).toHaveAttribute('disabled','');
+ await expect(dialog.locator('[data-query-shape="ROUTE"]')).toBeHidden();
  await dialog.getByRole('button',{name:'Route',exact:true}).click();
  await expect(dialog.getByRole('combobox',{name:'Origin (optional)',exact:true})).toHaveValue(/Adama/);
  await dialog.getByRole('button',{name:'Area',exact:true}).click();

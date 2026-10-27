@@ -91,6 +91,52 @@ test('provider Capacity workspace projection keeps only canonical current geomet
   assert.equal(workspace.corridors[0].area_boundary.length,3);
   assert.deepEqual(workspace.access,{kind:'SELF_MANAGED',can_manage_capacity:true});
 });
+test('space estimates hide legacy Partial50 and expose only a reported value',()=>{
+  const partial=available_percent_reported_at=>projectSupabaseProviderCapacityWorkspace({
+    capacities:[{id:'signal',vehicle_id:'vehicle',status:'PARTIAL',available_percent:50,available_percent_reported_at}]
+  }).capacities[0];
+  assert.equal(partial(null).available_percent,null);
+  assert.equal(partial(null).available_percent_reported_at,null);
+  const reported=partial('2026-10-26T12:00:00Z');
+  assert.equal(reported.available_percent,50);
+  assert.equal(reported.available_percent_reported_at,'2026-10-26T12:00:00Z');
+  const empty=projectSupabaseProviderCapacityWorkspace({
+    capacities:[{id:'empty',vehicle_id:'vehicle',status:'EMPTY',available_percent:50}]
+  }).capacities[0];
+  assert.equal(empty.available_percent,100);
+  assert.equal(empty.available_percent_reported_at,null);
+});
+test('publish command keeps omission distinct from clear and never trusts client provenance',async()=>{
+  const previous={fetch:globalThis.fetch,url:process.env.NEXT_PUBLIC_SUPABASE_URL,key:process.env.SUPABASE_SERVICE_ROLE_KEY};
+  const commands=[];
+  process.env.NEXT_PUBLIC_SUPABASE_URL='https://capacity-test.invalid';
+  process.env.SUPABASE_SERVICE_ROLE_KEY='test-key';
+  globalThis.fetch=async(_url,init)=>{
+    commands.push(JSON.parse(String(init.body)).command);
+    return new Response(JSON.stringify('capacity-id'),{status:200,headers:{'Content-Type':'application/json'}});
+  };
+  try{
+    const base={vehicleId:'vehicle',status:'PARTIAL'};
+    await publishSupabaseProviderCapacity({id:'actor'},base);
+    await publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent:null});
+    await publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent:40,availablePercentReportedAt:'2000-01-01T00:00:00Z',availablePercentReportedBy:'other-user'});
+    assert.equal(Object.hasOwn(commands[0],'available_percent'),false);
+    assert.equal(commands[1].available_percent,null);
+    assert.equal(commands[2].available_percent,40);
+    assert.equal(Object.hasOwn(commands[2],'available_percent_reported_at'),false);
+    assert.equal(Object.hasOwn(commands[2],'available_percent_reported_by'),false);
+    for(const availablePercent of [0,100,40.5,'40.0','040','40x']){
+      await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent}),/INVALID_AVAILABLE_PERCENT/);
+    }
+    await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,status:'EMPTY',availablePercent:40}),/INVALID_AVAILABLE_PERCENT/);
+    assert.equal(commands.length,3);
+  }finally{
+    globalThis.fetch=previous.fetch;
+    for(const [key,value] of [['NEXT_PUBLIC_SUPABASE_URL',previous.url],['SUPABASE_SERVICE_ROLE_KEY',previous.key]]) {
+      if(value===undefined)delete process.env[key];else process.env[key]=value;
+    }
+  }
+});
 test('provider workspace returns each authorized current pair without inheriting legacy or stale routes',()=>{
  const route=(id,vehicle_id,driver_user_id)=>({id,vehicle_id,driver_user_id,geometry:'ROUTE'});
  const workspace=projectSupabaseProviderCapacityWorkspace({vehicles:[{id:'one',assigned_driver:{id:'driver-one'}},{id:'two',assigned_driver:{id:'driver-two'}}],corridors:[route('legacy'),route('first','one','driver-one'),route('old','one','driver-two'),route('second','two','driver-two'),route('foreign','other','driver-one')]});

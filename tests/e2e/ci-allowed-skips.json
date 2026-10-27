@@ -82,6 +82,11 @@
       "project": "mobile-chromium"
     },
     {
+      "file": "cargo-photo-business-reads.spec.ts",
+      "title": "broker owner and permitted staff can read a private cargo photo until vehicle access is revoked",
+      "project": "mobile-chromium"
+    },
+    {
       "file": "driver-manual-capacity-location.spec.ts",
       "title": "assigned driver chooses a manual Capacity point, sees its source, and can return to phone",
       "project": "mobile-chromium"

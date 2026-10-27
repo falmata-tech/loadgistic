@@ -107,7 +107,9 @@ When the filter is expanded\
 Then the visitor may combine transporter or truck search, Empty or Partial, current Service area or Capacity route, cargo configuration, Full or Partial load acceptance, multi-pick or multi-drop capability, update freshness, and geographic matching\
 And familiar section icons, categorical status and geometry choices, and matching cargo-configuration artwork make those inputs visually distinguishable\
 And the complete illustrated configuration set stays collapsed until the visitor opens its keyboard-operable chooser\
-And no remaining-space percentage is accepted as a filter because Empty and Partial are categorical market signals\
+And an optional minimum reported space-free percentage filters Empty trucks as 100% and Partial trucks only when they have an explicit report meeting that threshold\
+And a Partial legacy default without report provenance never satisfies that filter\
+And no percentage is treated as weight, physical dimensions, a cargo-fit guarantee or a ranking\
 And independently optional structured shipment origin and destination inputs are visible without first choosing a signal type\
 And each shipment endpoint has an adjustable tolerance while direction applies only when both exist\
 And the separate signal-type filter may still constrain results to Service area or Capacity route evidence\

@@ -18,6 +18,31 @@ test('location source is one canonical multi-filter group on public and private 
  for(const invalid of ['GPS_DEVICE','GPS,OTHER','GPS,',Array(34).fill('MOBILE').join(',')])assert.throws(()=>discoveryParams('',{locationSource:invalid}),/INVALID_CAPACITY_FILTER/);
  assert.equal(filters.locationSource,'MOBILE,GPS,MOBILE','Encoding never mutates the draft');
 });
+test('reported free-space threshold reaches public and private Capacity queries',async()=>{
+ const filters={status:'PARTIAL',minAvailablePercent:'50'};
+ const urls=[],signal=new AbortController().signal,page={items:[],hasMore:false,nextCursor:null};
+ await loadCapacity('https://loadgistic.com','',signal,()=>{},async url=>{urls.push(String(url));return Response.json(page);},filters);
+ await loadSharedCapacity('',signal,()=>{},async path=>{urls.push(path);return page;},filters);
+ await loadAccountCapacity(signal,()=>{},async path=>{urls.push(path);return page;},filters);
+ await loadBusinessCapacity('synthetic-workspace',signal,()=>{},async path=>{urls.push(path);return page;},filters);
+ assert.equal(urls.length,4);
+ for(const url of urls){const params=new URL(url,'https://loadgistic.com').searchParams;assert.equal(params.get('minAvailablePercent'),'50');assert.equal(params.get('status'),'PARTIAL');}
+ assert.equal(filterCount(filters),2);
+ assert.equal(discoveryParams('',{minAvailablePercent:''}).has('minAvailablePercent'),false);
+});
+test('cargo photos are filterable only inside a shared business workspace',async()=>{
+ const filters={photoPresent:'true',photoMaxAgeHours:'24'};
+ const urls=[],signal=new AbortController().signal,page={items:[],hasMore:false,nextCursor:null};
+ await loadCapacity('https://loadgistic.com','',signal,()=>{},async url=>{urls.push(String(url));return Response.json(page);},filters);
+ await loadSharedCapacity('',signal,()=>{},async path=>{urls.push(path);return page;},filters);
+ await loadAccountCapacity(signal,()=>{},async path=>{urls.push(path);return page;},filters);
+ await loadBusinessCapacity('synthetic-workspace',signal,()=>{},async path=>{urls.push(path);return page;},filters);
+ assert.equal(urls.length,4);
+ for(const url of urls.slice(0,3)){const params=new URL(url,'https://loadgistic.com').searchParams;assert.equal(params.has('photoPresent'),false);assert.equal(params.has('photoMaxAgeHours'),false);}
+ const privateParams=new URL(urls[3],'https://loadgistic.com').searchParams;
+ assert.equal(privateParams.get('photoPresent'),'true');assert.equal(privateParams.get('photoMaxAgeHours'),'24');
+ assert.equal(filterCount(filters),1);
+});
 test('native truck filters encode identically across public/private map pagination',async()=>{
  const filters={vehicleCategory:'Tractor + Container Trailer',truckCityPlaceRef:'city',truckCityLabel:'Private local display label',truckLocationRadiusKm:'50',ownerDocs:'IDENTITY,BUSINESS_LICENSE'};
  const urls=[];await loadCapacity('https://loadgistic.com','A&B',new AbortController().signal,()=>{},async url=>{urls.push(url);return Response.json({items:[],hasMore:false});},filters);

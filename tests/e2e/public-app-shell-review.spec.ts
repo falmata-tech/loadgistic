@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 test('one company footer reserves map space and stays above phone navigation',async({page}:{page:any})=>{
-  await page.goto('/');
+  // This layout case visits several map routes and viewports; latency has a
+  // separate gate, so allow tile loading without masking geometry failures.
+  test.setTimeout(90_000);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
   const footer=page.locator('body>.site-copyright');
   await expect(footer).toHaveCount(1);
   await expect(footer).toContainText(`© ${new Date().getFullYear()} MarketVision Technology`);
@@ -17,10 +20,10 @@ test('one company footer reserves map space and stays above phone navigation',as
     return Boolean(footer&&map&&attribution&&map.bottom<=footer.top+1&&attribution.bottom<=map.bottom+1&&(!navigation||getComputedStyle(document.querySelector('.public-mobile-nav')!).display==='none'||footer.bottom<=navigation.top+1)&&document.documentElement.scrollWidth<=innerWidth+2&&document.documentElement.scrollHeight<=innerHeight+2);
   });
   expect(fits).toBe(true);
-  await page.goto('/about');
+  await page.goto('/about',{waitUntil:'domcontentloaded'});
   await expect(page.locator('body>.site-copyright')).toHaveCount(1);
   await expect(page.getByRole('link',{name:'MarketVision Technology',exact:true})).toHaveCount(1);
-  await page.goto('/track');
+  await page.goto('/track',{waitUntil:'domcontentloaded'});
   const action=page.getByRole('button',{name:'Email me a code',exact:true});
   await expect(action).toBeVisible();
   expect(await page.evaluate(()=>{
@@ -32,7 +35,7 @@ test('one company footer reserves map space and stays above phone navigation',as
   })).toBe(true);
   for(const [width,height] of [[320,568],[844,390]]){
     await page.setViewportSize({width,height});
-    await page.goto('/');
+    await page.goto('/',{waitUntil:'domcontentloaded'});
     await page.locator('.leaflet-control-attribution').waitFor();
     await page.locator('main').evaluate((element:HTMLElement)=>{element.scrollTop=element.scrollHeight;});
     expect(await page.evaluate((shortPortrait:boolean)=>{
@@ -41,7 +44,7 @@ test('one company footer reserves map space and stays above phone navigation',as
       const main=document.querySelector('main');
       return Boolean(map&&footer&&attribution&&controls&&map.bottom<=footer.top+1&&attribution.bottom<=map.bottom+1&&controls.height>=44&&map.height>=controls.height+attribution.height+50&&document.documentElement.scrollHeight<=innerHeight+2&&document.documentElement.scrollWidth<=innerWidth+2&&(!shortPortrait||main&&main.scrollHeight<=main.clientHeight+2));
     },width<=360)).toBe(true);
-    await page.goto('/track');
+    await page.goto('/track',{waitUntil:'domcontentloaded'});
     await page.locator('.leaflet-control-attribution').waitFor();
     expect(await page.evaluate(()=>{
       const box=(selector:string)=>document.querySelector(selector)?.getBoundingClientRect();

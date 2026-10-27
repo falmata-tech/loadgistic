@@ -23,6 +23,17 @@ test('native transport and local proxy share bounded authenticated business path
  for(const path of ['https://foreign.test/api/business-workspaces','//foreign.test/api/business-workspaces','/api/admin/accounts','/api/business-workspaces/not-a-uuid','/api/business-workspaces/../../admin','/api/business-workspaces/%2e%2e/admin','/api/business-workspaces#tracking','/api/business-workspaces\\admin'])assert.equal(businessApiPathAllowed(path),false,path);
  assert.equal(businessApiArrayResponse('/api/business-workspaces/search?q=x'),true);assert.equal(businessApiArrayResponse(`/api/business-workspaces/${workspace}/capacity`),false);
 });
+test('native broker photo paths stay within one authenticated workspace and bounded query',()=>{
+ const collection=`/api/business-workspaces/${workspace}/capacity/photos`;
+ const file=`${collection}/${foreign}`;
+ const request=`/api/business-workspaces/${workspace}/capacity/photo-requests`;
+ for(const path of [`${collection}?vehicleId=${foreign}`,file,`${file}?format=base64`,request]){
+  assert.equal(businessApiPathAllowed(path),true,path);assert.equal(allowedPath(path),true,path);
+ }
+ for(const path of [collection,`${collection}?vehicleId=${foreign}&vehicleId=${actor}`,`${collection}?vehicleId=not-an-id`,`${file}?format=raw`,`${file}?format=base64&x=1`,`${request}?x=1`,`${request}/extra`,`${collection}/%2e%2e/${foreign}`]){
+  assert.equal(businessApiPathAllowed(path),false,path);assert.equal(allowedPath(path),false,path);
+ }
+});
 test('native context and directory reject foreign identities, invalid selected context and private colleague email leaks',()=>{
  const context={actorId:actor,selectedWorkspaceId:workspace,workspaces:[summary],invitations:[]};assert.equal(parseBusinessContext(context,actor).selectedWorkspaceId,workspace);
  for(const value of [{...context,actorId:foreign},{...context,selectedWorkspaceId:foreign},{...context,workspaces:[{...summary,actorId:foreign}]},{...context,workspaces:[summary,summary]}])assert.throws(()=>parseBusinessContext(value,actor));

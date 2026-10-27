@@ -19,6 +19,7 @@ import {TrackingMap} from '../components/tracking-map';
 import {Map,Camera} from '../components/map-platform';
 import {mapStyle} from '../components/map-style';
 import {CapacityEditor} from './manage-capacity';
+import {CargoSpacePhoto} from '../components/cargo-space-photo';
 import {DriverLocationEditor} from '../components/driver-location-editor';
 import RegularService from './regular-service';
 import type {MapCoverage} from '../components/tracking-map';
@@ -44,7 +45,7 @@ type HomeTruckProps={truck:CapacityTruck;canPublish:boolean;canRegular:boolean;r
 function HomeTruck(props:HomeTruckProps){return <DriverTruck {...props}/>;}
 
 function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckProps){
- const {t,locale}=useLanguage(),[section,setSection]=useState<'CAPACITY'|'REGULAR'|'LOCATION'|null>(null),[saving,setSaving]=useState(false),savingRef=useRef(false);
+ const {t,locale}=useLanguage(),[section,setSection]=useState<'CAPACITY'|'REGULAR'|'LOCATION'|'PHOTO'|null>(null),[saving,setSaving]=useState(false),savingRef=useRef(false);
  const regular:MapCoverage[]=useMemo(()=>(truck.regularServices||[]).filter(item=>item.vehicleId===truck.id&&item.driverId===truck.driverId).map(item=>({kind:item.geometry,places:item.geometry==='ROUTE'?item.route:item.boundary,partial:false})),[truck.id,truck.driverId,truck.regularServices]);
  const editing=section!==null;
  const location=useCapacityLocation(truck,editing,refresh),current=truck.current;
@@ -53,7 +54,7 @@ function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckPr
  const reportedLocation=truck.location?.coordinate?{latitude:truck.location.coordinate[1],longitude:truck.location.coordinate[0],radius:truck.location.radius,area:truck.location.area,updatedAt:truck.location.updatedAt,source:truck.publishedLocationSource,...(truck.locationIsDemo?{demo:true as const}:{})}:null;
  const coverage=current&&current.status!=='OFF_DUTY'?{kind:current.availabilityGeometry,places:current.availabilityGeometry==='ROUTE'?current.route:current.boundary,partial:current.status==='PARTIAL'}:undefined;
  const color=current?.status==='PARTIAL'?capacityStatusPresentation.PARTIAL.text:current?.status==='EMPTY'?palette.success:palette.muted;
- const close=()=>{if(savingRef.current)return;setSection(null);void refresh();};
+ const close=()=>{if(savingRef.current)return;const previous=section;setSection(null);if(previous!=='PHOTO')void refresh();};
  return <>
   <View style={styles.truckBar} aria-hidden={editing} importantForAccessibility={editing?'no-hide-descendants':'auto'} accessibilityElementsHidden={editing}>
    <View style={styles.truckIcon}><AppIcon name="truck" color={palette.blue}/></View>
@@ -66,6 +67,7 @@ function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckPr
     {truck.canLocate&&<Pressable accessibilityRole="button" accessibilityLabel={t(reportedLocation?'Refresh vehicle location':'Share vehicle location')} accessibilityState={{busy:location.busy,disabled:location.busy}} disabled={location.busy} onPress={()=>{void location.shareLocation();}} style={styles.locate}>{location.busy?<LoadingSpinner color={palette.blue}/>:<AppIcon name="location" color={palette.blue}/>}</Pressable>}
     <View style={styles.actions} pointerEvents="box-none"><ScrollView style={styles.rail} contentContainerStyle={styles.railContent} showsVerticalScrollIndicator>
       <GroupButton label={canPublish?'Planned capacity':'Duty status'} hint={canPublish?'Update planned capacity':'Update duty status'} icon="truck" color={color} onPress={()=>setSection('CAPACITY')}/>
+      <GroupButton label="Photo" hint="Cargo space photo" icon="camera" onPress={()=>setSection('PHOTO')}/>
       {canRegular&&!!truck.driverId&&<GroupButton label={regularTitle} hint="Manage preferred corridor or service area" icon="repeat" onPress={()=>setSection('REGULAR')}/>}
       {(truck.canLocate||truck.canSetManualLocation)&&<GroupButton label="Location" hint="Set vehicle location" icon="pin" onPress={()=>setSection('LOCATION')}/>}
      </ScrollView></View>
@@ -73,7 +75,7 @@ function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckPr
    </View>
   </View>
   <Modal visible={editing} transparent animationType="slide" onRequestClose={close}>
-   <SafeAreaView style={styles.backdrop}><View style={styles.sheet} accessibilityViewIsModal><View style={styles.sheetHeader}><View style={{flex:1}}><Text style={styles.truckName}>{t(section==='REGULAR'?regularTitle:section==='LOCATION'?'Vehicle location':canPublish?'Update planned capacity':'Location and availability')}</Text><Text numberOfLines={1} style={styles.small}>{truck.label} · {truck.plate}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Close')} accessibilityState={{disabled:saving}} disabled={saving} onPress={close} style={styles.iconButton}><AppIcon name="close" color={palette.blue}/></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.editor}>{section==='REGULAR'?<RegularService embedded vehicleId={truck.id} expectedDriverId={truck.driverId} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section==='LOCATION'?<DriverLocationEditor truck={truck} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section&&<CapacityEditor section="HOME" truck={truck} canPublish={canPublish} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}} onCancel={close}/>}</ScrollView></View></SafeAreaView>
+   <SafeAreaView style={styles.backdrop}><View style={styles.sheet} accessibilityViewIsModal><View style={styles.sheetHeader}><View style={{flex:1}}><Text style={styles.truckName}>{section==='PHOTO'?truck.label:t(section==='REGULAR'?regularTitle:section==='LOCATION'?'Vehicle location':canPublish?'Update planned capacity':'Location and availability')}</Text><Text numberOfLines={1} style={styles.small}>{section==='PHOTO'?truck.plate:`${truck.label} · ${truck.plate}`}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Close')} accessibilityState={{disabled:saving}} disabled={saving} onPress={close} style={styles.iconButton}><AppIcon name="close" color={palette.blue}/></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.editor}>{section==='PHOTO'?<CargoSpacePhoto vehicleId={truck.id} assignedDriverId={truck.driverId} initiallyOpen/>:section==='REGULAR'?<RegularService embedded vehicleId={truck.id} expectedDriverId={truck.driverId} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section==='LOCATION'?<DriverLocationEditor truck={truck} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section&&<CapacityEditor section="HOME" truck={truck} canPublish={canPublish} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}} onCancel={close}/>}</ScrollView></View></SafeAreaView>
   </Modal>
  </>;
 }

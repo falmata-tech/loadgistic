@@ -85,12 +85,17 @@ test('native Capacity facts remain readable while details close and selected exi
   await page.getByRole('button',{name:/^Vehicle filters/}).click();await expect(page.getByRole('button',{name:signal.cargo_configuration,exact:true})).toBeVisible();await page.getByRole('button',{name:'Close filters',exact:true}).click();
   await page.goto(`${preview}/transporter?handle=${encodeURIComponent(signal.provider_handle)}`);await expect(page.getByRole('heading',{name:signal.provider_name,exact:true})).toBeVisible({timeout:30_000});
   const fleet=page.getByRole('button',{name:/^Vehicles and drivers \(/});if(await fleet.count())await expect(fleet).toHaveAttribute('aria-expanded','true');
-  const mapAction=page.getByRole('link',{name:'View capacity on map',exact:true}).first();const mapHref=await mapAction.getAttribute('href');expect(mapHref).not.toBeNull();
+  const mapAction=page.getByRole('link',{name:'View planned capacity on map',exact:true}).first();const mapHref=await mapAction.getAttribute('href');expect(mapHref).not.toBeNull();
   const mapUrl=new URL(mapHref!,'http://localhost');expect(mapUrl.pathname).toBe('/');expect(mapUrl.searchParams.get('provider')).toBe(signal.provider_handle);
   const selectedTruck=mapUrl.searchParams.get('truck');expect(selectedTruck).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   const matching=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('provider')===signal.provider_handle;});
-  await mapAction.click();const matched=await matching;expect(matched.ok()).toBe(true);const result=await matched.json();expect(result.items.length).toBeGreaterThan(0);expect(result.items.every((item:{provider_handle:string})=>item.provider_handle===signal.provider_handle)).toBe(true);expect(result.items.some((item:{id:string})=>item.id===selectedTruck)).toBe(true);
+  await mapAction.click();const matched=await matching;expect(matched.ok()).toBe(true);const result=await matched.json();expect(result.items.length).toBeGreaterThan(0);expect(result.items.every((item:{provider_handle:string})=>item.provider_handle===signal.provider_handle)).toBe(true);const selectedSignal=result.items.find((item:{id:string})=>item.id===selectedTruck);expect(selectedSignal).toBeTruthy();
   await expect(page).toHaveURL(url=>url.searchParams.get('provider')===signal.provider_handle&&url.searchParams.get('truck')===selectedTruck&&!url.searchParams.has('q'));await expect(page.locator('.maplibregl-canvas:visible')).toHaveCount(1);await expect(page.locator('.maplibregl-canvas:visible')).toBeVisible();
+  await expect(page.getByRole('button',{name:'Vehicle details',exact:true})).toBeVisible();
+  const incompatible=selectedSignal.cargo_configuration==='Courier motorcycle'?'Cargo van':'Courier motorcycle';
+  await page.getByRole('button',{name:/^Vehicle filters/}).click();await page.getByRole('button',{name:'All vehicle types',exact:true}).click();await page.getByRole('checkbox',{name:incompatible,exact:true}).check();await page.getByRole('button',{name:'Close',exact:true}).click();
+  const excluded=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('vehicleCategory')===incompatible;});await page.getByRole('button',{name:'Show vehicles',exact:true}).click();const excludedResult=await excluded;expect(excludedResult.ok()).toBe(true);expect((await excludedResult.json()).items.some((item:{id:string})=>item.id===selectedTruck)).toBe(false);
+  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});await expect(page.getByRole('button',{name:'Vehicle details',exact:true})).toHaveCount(0);
  }
  expect(errors).toEqual([]);
 });

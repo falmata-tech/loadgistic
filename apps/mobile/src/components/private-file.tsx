@@ -46,7 +46,7 @@ export function FilePicker({ file, onChange, imagesOnly = false, disabled = fals
  return <View style={{ gap: 8 }}><Copy>{imagesOnly ? t('JPG, PNG or WebP photo') : t('JPG, PNG, WebP or PDF')} · {t('Up to 4 MB')}</Copy>{file && <Copy>{file.name}</Copy>}<Button secondary label={file ? t('Choose another file') : t('Choose file')} onPress={() => { void choose(); }} busy={busy} disabled={disabled} />{file && <Button secondary message="Remove selected file" disabled={disabled || busy} onPress={() => onChange(null)} />}<ErrorText message={error} /></View>;
 }
 type FileData = { base64: string; mimeType: string };
-export function PrivateFile({ load, label }: { load: () => Promise<unknown>; label?: string }) {
+export function PrivateFile({ load, label, title, imageLabel, closeLabel }: { load: () => Promise<unknown>; label?: string; title?: string; imageLabel?: string; closeLabel?: string }) {
  const {t}=useLanguage();
  const [data, setData] = useState<FileData | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
  const overlay=useRef({});useEffect(()=>{const source=overlay.current;blockChatReading(source,!!data);return()=>blockChatReading(source,false);},[data]);
@@ -75,6 +75,6 @@ export function PrivateFile({ load, label }: { load: () => Promise<unknown>; lab
   finally { cleanup?.(); lock.current = false; setBusy(false); setData(null); }
  }
  return <><Button secondary label={label ?? t('Open document')} onPress={() => { void open(); }} busy={busy} /><ErrorText message={error} />
-  <Modal visible={!!data} onRequestClose={() => setData(null)} animationType="slide"><SafeAreaView style={{ flex: 1 }}><Page><Title message={"Private document"}/><Button message="Close document" onPress={() => setData(null)} />{data?.mimeType.startsWith('image/') && <Image accessibilityLabel="Submitted document" source={{ uri: `data:${data.mimeType};base64,${data.base64}` }} resizeMode="contain" style={{ width: '100%', height: 520 }} />}{data?.mimeType === 'application/pdf' && <><Copy message={"Open, save or share a copy using an app on your phone. Only share it with people you trust."}/><Button message="Open or share PDF" busy={busy} onPress={() => { void exportPdf(); }} /></>}<ErrorText message={error} /></Page></SafeAreaView></Modal>
+  <Modal visible={!!data} onRequestClose={() => setData(null)} animationType="slide"><SafeAreaView style={{ flex: 1 }}><Page><Title>{title ?? t('Document')}</Title><Button label={closeLabel ?? t('Close')} onPress={() => setData(null)} />{data?.mimeType.startsWith('image/') && <Image accessibilityLabel={imageLabel ?? t('Document')} source={{ uri: `data:${data.mimeType};base64,${data.base64}` }} resizeMode="contain" style={{ width: '100%', height: 520 }} />}{data?.mimeType === 'application/pdf' && <><Copy message={"Open, save or share a copy using an app on your phone. Only share it with people you trust."}/><Button message="Open or share PDF" busy={busy} onPress={() => { void exportPdf(); }} /></>}<ErrorText message={error} /></Page></SafeAreaView></Modal>
  </>;
 }

@@ -35,7 +35,8 @@ export function businessCapacitySharingPort(client:BusinessRpcPort=createSupabas
 export async function listBusinessCapacity(actorId:string,workspaceId:string,filters:Record<string,string>={}):Promise<BusinessCapacityPage>{
  businessId(actorId);businessId(workspaceId);
  try{return await listSupabaseBusinessCapacity(actorId,workspaceId,filters,{pageSize:100,cursor:filters.cursor});}
- catch(error){throw new BusinessWorkspaceError(error instanceof Error&&/FORBIDDEN/.test(error.message)?'BUSINESS_FORBIDDEN':'BUSINESS_UNAVAILABLE');}
+ catch(error){throw new BusinessWorkspaceError(error instanceof Error&&/INVALID_PRIVATE_PHOTO_FILTER/.test(error.message)?'INVALID_BUSINESS_INPUT':
+  error instanceof Error&&/FORBIDDEN/.test(error.message)?'BUSINESS_FORBIDDEN':'BUSINESS_UNAVAILABLE');}
 }
 
 const searchItem=z.object({key:z.string(),kind:z.enum(['COMPANY','OWNER_OPERATOR','SELF_MANAGED_DRIVER']),title:z.string(),subtitle:z.string().nullable(),description:z.string().nullable(),identifier:z.string().nullable(),handle:z.string(),capacity_id:z.string().nullable(),city:z.string().nullable(),status:z.string().nullable(),owner:z.string(),driver:z.string().nullable(),account_name:z.string().nullable(),manager_name:z.string().nullable(),documents:z.array(z.unknown()),matching_trucks:z.number().int().positive()}).strict();

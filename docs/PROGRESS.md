@@ -1,6 +1,6 @@
 # Current work and release status
 
-Updated 2026-10-26. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
+Updated 2026-10-27. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
 [traceability](../specs/TRACEABILITY.md) for contracts. Git and the October20/23
 history files preserve previous checkpoints; this page records current work.
 
@@ -373,13 +373,53 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    per project without skips. This change is not on hosted web or a Play build.
    Existing CI run40418097113 failed browser shards; no release pass is claimed.
 
-   After closing this audit, research a small cargo-fit extension: an unambiguous
-   loaded/available percentage, driver-taken cargo-space photo with recorded
-   capture and receipt times, scoped broker photo requests, and optional
-   presence/freshness filters. Check existing fields and media/permission flows
-   first; do not make a photo a verified space guarantee or add clutter to the
-   core publishing steps. Demo-only freshness, GPS, Preferred-area and Partial
-   Planned Area gaps still need a reviewed update and hosted readback.
+   The local cargo-fit candidate now records optional free-space percentage for
+   Partial vehicles and adds private cargo-space photos, broker photo requests,
+   and private presence/receipt-age filters (FEAT-CAP/CSP-001). Migrations
+   218–220 are installed only in the local preview; their SQL suites and the
+   photo service/route/worker tests pass. A security review caught saved-photo
+   access after in-place driver reassignment and terminal photo cleanup blocked
+   by fulfilled-request history. The source migration and rollback-only SQL
+   regression now cover reassignment and terminal tombstones. The same repair
+   passed a transaction-only rehearsal, was applied only to the labeled local
+   preview from its protected backup, and passed the post-apply SQL suite.
+   The scheduled object cleanup worker is disabled unless its
+   production-only target and separate secret are configured. The local
+   owner/staff browser regression now passes in Chrome and CI's Chromium:
+   a synthetic Driver uploads, both permitted business members open the image,
+   an anonymous visitor is denied, both lose access after exact vehicle-grant
+   revocation, and protected cleanup readback finds zero leftover records or
+   object. The web photo panel passes actual 320/390px Chrome interaction checks
+   for zoom, location, vehicle controls and photo actions without hiding the map.
+   Root quality passed 1,328 tests, zero failed, one existing skip on unchanged
+   web/backend source; final spec/source/workflow checks also pass after the
+   native-only edit. All three cargo SQL rollback suites and the web production
+   build pass. Final mobile source passes 423 tests, types, lint, strict
+   fixed-string translation coverage (800/800) and Android JavaScript export.
+   The native Home photo action/proxy correction passed a 320/390px Expo Chrome
+   review: assigned Driver Home
+   opens Take/Choose in one step, gallery preview/Cancel saves nothing, and
+   the signed-in photo metadata GET returns JSON through the local proxy.
+   A local universal 1.2.0/code10 debug-key APK rebuilt successfully in 4m20s at
+   `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` (SHA-256
+   `3b96a8f6e2d5e55aa6cc8f9f68477785acd62c8b033404b128c675df35090521`).
+   Its compiled permission check passes with CAMERA required and no forbidden
+   broad-media, audio or overlay permissions. This local artifact is not
+   upload-key-signed or Play-ready and points at the older hosted API.
+   Installed Android camera/upload behavior, Expo broker/staff image viewing,
+   exact-source CI, and hosted migration/configuration
+   review remain pending. A photo is a
+   reported observation, not verified cargo fit. Demo-only freshness, GPS,
+   Preferred-area and Partial Planned Area gaps still need a reviewed update
+   and hosted readback.
+   The protected local web launcher restored the demo GPS receiver after a
+   plain preview had returned repeated gateway 401s. A bounded 60-second
+   GPS/phone motion run stopped cleanly. Its read-only pipeline check saw one
+   decoded fix, one delivered fix, one matched reservation and one saved app
+   position; public Capacity returned the demo TELEMATICS source with a
+   63-second-old API position. The bridge is healthy, but the simulator is
+   stopped and no recurring hosted movement is claimed. The repeat-prevention
+   procedure is recorded in `docs/AGENT_LESSONS.md`.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.

@@ -332,9 +332,9 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
     await expect(dialog.locator('input[name="availabilityGeometry"]')).toHaveValue('RADIUS');
     await dialog.getByRole('button',{name:'Partial',exact:true}).click();
     await save(page,dialog);
-    const partialArea=checked(await service.from('capacities').select('market_status,availability_geometry,capacity_area_center_label,capacity_area_boundary').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1))[0];
+    const partialArea=checked(await service.from('capacities').select('market_status,availability_geometry,capacity_area_center_label,capacity_area_boundary_json').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1))[0];
     expect(partialArea).toMatchObject({market_status:'PARTIAL',availability_geometry:'RADIUS',capacity_area_center_label:expect.stringMatching(/Sebeta/)});
-    expect(partialArea.capacity_area_boundary.map((point:{label:string})=>point.label)).toEqual([expect.stringMatching(/Alem Gena/),expect.stringMatching(/Teji/),expect.stringMatching(/Boneya/)]);
+    expect(partialArea.capacity_area_boundary_json.map((point:{label:string})=>point.label)).toEqual([expect.stringMatching(/Alem Gena/),expect.stringMatching(/Teji/),expect.stringMatching(/Boneya/)]);
     await page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');

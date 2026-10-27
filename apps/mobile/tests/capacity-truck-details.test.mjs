@@ -41,6 +41,19 @@ test('phone details keep separate public identities, portrait, profile destinati
  assert.deepEqual(all.find(node=>node.type==='Link').props.href,{pathname:'/transporter',params:{handle:'public-provider'}});assert.ok(text(tree).includes('Confirm availability directly.'));
  assert.ok(text(c.CapacityTruckDetails({truck:fixture({assigned_driver_phone:''})})).includes('Phone not published'));
 });
+test('partial space estimate appears only with report provenance and translates on the phone',()=>{
+ const legacy=fixture({available_percent:50,available_percent_reported_at:null});
+ assert.equal(legacy.availablePercent,null);
+ assert.ok(!text(components().CapacityTruckDetails({truck:legacy})).includes('50%'));
+ const reported=fixture({available_percent:40,available_percent_reported_at:'2026-10-26T10:00:00Z'});
+ assert.equal(reported.availablePercent,40);
+ assert.ok(text(components().CapacityTruckDetails({truck:reported})).includes('Available space: 40%'));
+ for(const locale of ['am','om']){
+  const c=components({locale}),translated=c.t('Available space: {percent}%',{percent:40});
+  assert.notEqual(translated,'Available space: 40%');
+  assert.ok(text(c.CapacityTruckDetails({truck:reported})).includes(translated));
+ }
+});
 test('document groups count only current reviews, expand public dates and disclose no source files',()=>{
  const c=components({expanded:'owner'}),truck=fixture({owner_verification_badges:[{type:'IDENTITY',verified:true,reviewedAt:'2026-10-22',storage_path:'private-file'},{type:'DRIVER_IDENTITY',verified:true,expired:true,expiresOn:'2020-01-01'}]}),tree=c.CapacityDocumentGroups({truck}),all=nodes(tree),buttons=all.filter(node=>node.type==='Pressable');
  assert.equal(buttons.length,3);for(const button of buttons)assert.ok(style(button).minHeight>=44);

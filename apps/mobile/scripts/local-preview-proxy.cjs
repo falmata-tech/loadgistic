@@ -2,11 +2,28 @@ const http = require('node:http');
 const {createReadStream}=require('node:fs');
 const path=require('node:path');
 const {businessApiPathAllowed}=require('../../../src/lib/mobile/business-api-path.js');
+const photoCollection='/api/capacity/cargo-space-photos';
+const uuid='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+const photoRead=new RegExp(`^${photoCollection}/${uuid}$`);
+const exactId=new RegExp(`^${uuid}$`);
+function providerPhotoPathAllowed(value){
+ if(typeof value!=='string'||/[\u0000-\u001f\u007f\\#]/.test(value))return false;
+ const [pathname,query,extra]=value.split('?');
+ if(extra!==undefined)return false;
+ if(pathname===photoCollection){
+  if(query===undefined)return true;
+  const params=new URLSearchParams(query);
+  return params.size===1&&exactId.test(params.get('vehicleId')||'');
+ }
+ if(!photoRead.test(pathname)||query===undefined)return false;
+ const params=new URLSearchParams(query);
+ return params.size===1&&params.get('format')==='base64';
+}
 const allowedPath = value => {
  try {
   const pathname=decodeURIComponent(value.split('?')[0]);
   if (pathname.includes('\\') || pathname.split('/').some(part=>part==='.'||part==='..')) return false;
-  return /^\/(?:api\/(?:mobile|public)\/|vehicle-configurations\/|marketing\/)/.test(pathname)||businessApiPathAllowed(value);
+  return /^\/(?:api\/(?:mobile|public)\/|vehicle-configurations\/|marketing\/)/.test(pathname)||businessApiPathAllowed(value)||providerPhotoPathAllowed(value);
  } catch { return false; }
 };
 function localPreviewProxy(middleware) {
@@ -33,4 +50,4 @@ function localPreviewProxy(middleware) {
   request.pipe(upstream);
  };
 }
-module.exports={localPreviewProxy,allowedPath};
+module.exports={localPreviewProxy,allowedPath,providerPhotoPathAllowed};

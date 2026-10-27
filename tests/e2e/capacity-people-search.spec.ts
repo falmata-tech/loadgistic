@@ -127,6 +127,7 @@ test('US visitor location can become an obscured web truck-near filter',async({p
   await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');
   await page.getByRole('button',{name:/Vehicle filters/}).click();const filters=page.getByRole('dialog',{name:'Vehicle filters',exact:true});
+ await filters.locator('[data-filter-section="location"] > summary').click();
   await filters.getByLabel('Show vehicles near my area',{exact:true}).check();
   await filters.getByRole('button',{name:'Show vehicles',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.has('nearLat')&&Number(url.searchParams.get('nearLng'))<0);

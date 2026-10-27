@@ -65,6 +65,7 @@ test('native option groups combine in a draft, preserve all document requirement
  assert.equal(nodes(render()).some(node=>node.props?.label==='Space needed'),false,'Retired space filter is absent');
  expand('availability');expand('location');expand('more');
  for(const [group,a,b]of [['Load status','Empty vehicle','Partly loaded'],['Location source','GPS device','Driver’s phone'],['Stops','Multiple pickups','Multiple drop-offs'],['Updated','Within 12 hours','More than 12 hours ago']]){choose(group,a);choose(group,b);}
+ choose('Available space','50% or more');
  find(render(),node=>node.type==='MultipleConfigurationPicker').props.onChange('Cargo van,Pickup truck');
  const documents=find(render(),node=>typeof node.type==='function'&&node.props.label==='Vehicle documents');
  find(documents.type(documents.props),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Permission to use vehicle').props.onPress();
@@ -72,11 +73,24 @@ test('native option groups combine in a draft, preserve all document requirement
  assert.equal(applied.length,0,'editing draft must not query/change the map');
  find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Show vehicles').props.onPress();
  const {loadType:_removed,...preserved}=initial;
- assert.deepEqual(applied[0],{...preserved,truckDocs:'VEHICLE_OWNERSHIP,VEHICLE_AUTHORIZATION,VEHICLE_OPERATING_LICENSE',vehicleCategory:'Cargo van,Pickup truck',locationSource:'GPS,MOBILE',status:'EMPTY,PARTIAL',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'});
+ assert.deepEqual(applied[0],{...preserved,truckDocs:'VEHICLE_OWNERSHIP,VEHICLE_AUTHORIZATION,VEHICLE_OPERATING_LICENSE',vehicleCategory:'Cargo van,Pickup truck',minAvailablePercent:'50',locationSource:'GPS,MOBILE',status:'EMPTY,PARTIAL',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED'});
  choose('Location source','Any location source');assert.equal(applied.length,1);
  find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Reset vehicle filters').props.onPress();
  find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Show vehicles').props.onPress();assert.deepEqual(applied[1],{});
  assert.equal(initial.truckDocs,'VEHICLE_OWNERSHIP');
+});
+test('native photo age filter appears only in a business private Capacity map',()=>{
+ const screen=component('../src/components/discovery-filters.tsx',{...common,'../location/capture':{captureNearbyLocation:async()=>{throw new Error('unused GPS');}},'./place-picker':{PlacePicker:'PlacePicker'},'./multiple-configuration-picker':{MultipleConfigurationPicker:'MultipleConfigurationPicker'}});
+ const applied=[];
+ const render=(privateBusiness)=>screen.render('DiscoveryFilters',{initial:{},configurations:[],privateBusiness,onApply:value=>applied.push(value),onClose(){}});
+ const expand=()=>find(render(true),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='More filters').props.onPress();
+ expand();
+ assert.equal(nodes(render(false)).some(node=>node.props.label==='Cargo space photo'),false);
+ const group=find(render(true),node=>typeof node.type==='function'&&node.props.label==='Cargo space photo');
+ assert.ok(group);
+ find(group.type(group.props),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Within 24 hours').props.onPress();
+ find(render(true),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Show vehicles').props.onPress();
+ assert.equal(applied[0].photoPresent,'true');assert.equal(applied[0].photoMaxAgeHours,'24');
 });
 
 test('native filter groups are ordered, icon-led, accessible and keep hidden drafts when collapsed',()=>{
@@ -88,7 +102,8 @@ test('native filter groups are ordered, icon-led, accessible and keep hidden dra
  const vehicle=nodes(find(render(),node=>node.props?.testID==='capacity-filter-vehicle'));
  const vehicleTypeIndex=vehicle.findIndex(node=>node.type==='MultipleConfigurationPicker');
  const loadStatusIndex=vehicle.findIndex(node=>node.type?.name==='Options'&&node.props.label==='Load status');
- assert.ok(vehicleTypeIndex>=0&&vehicleTypeIndex<loadStatusIndex,'vehicle type appears before current load status');
+ const availableSpaceIndex=vehicle.findIndex(node=>node.type?.name==='Options'&&node.props.label==='Available space');
+ assert.ok(vehicleTypeIndex>=0&&vehicleTypeIndex<loadStatusIndex&&loadStatusIndex<availableSpaceIndex,'vehicle type, load status and available space follow the matching decision');
  const chevrons=()=>headings().map(header=>nodes(header).filter(node=>node.type==='AppIcon').at(-1)?.props.name);
  assert.deepEqual(chevrons(),['chevronUp','chevronUp','chevronDown','chevronDown']);
  assert.equal(nodes(render()).some(node=>node.type==='PlacePicker'&&node.props.label==='Vehicle in or near a city'),false);

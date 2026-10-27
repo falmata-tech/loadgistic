@@ -90,9 +90,12 @@ test('Expo route and nearby filters use the same ranges and defaults as web',asy
  };
  await page.getByRole('radio',{name:'Route',exact:true}).click();
  await chooseCity('Addis Ababa','Origin');await chooseCity('Adama','Destination');
- const fifty=page.getByRole('radio',{name:'50 km',exact:true});await expect(fifty).toHaveCount(3);await expect(fifty.nth(1)).toBeChecked();await expect(fifty.nth(2)).toBeChecked();
- const route25=page.getByRole('radio',{name:'25 km',exact:true});await expect(route25).toHaveCount(2);await route25.nth(0).click();
- const route100=page.getByRole('radio',{name:'100 km',exact:true});await expect(route100).toHaveCount(3);await route100.nth(2).click();
+ const range=(label:string)=>page.getByText(label,{exact:true}).locator('..');
+ await expect(range('Origin range').getByRole('radio',{name:'50 km',exact:true})).toBeChecked();
+ await expect(range('Destination range').getByRole('radio',{name:'50 km',exact:true})).toBeChecked();
+ await expect(range('Distance from my area').getByRole('radio',{name:'20 km',exact:true})).toBeChecked();
+ await range('Origin range').getByRole('radio',{name:'25 km',exact:true}).click();
+ await range('Destination range').getByRole('radio',{name:'100 km',exact:true}).click();
  await page.getByRole('radio',{name:'Route',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:info.outputPath('native-capacity-route-ranges.png'),scale:'css'});
  const applied=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.has('originPlaceRef')&&url.searchParams.has('destinationPlaceRef')&&url.searchParams.get('originRadiusKm')==='25'&&url.searchParams.get('destinationRadiusKm')==='100'&&url.searchParams.get('nearRadiusKm')==='20';});
  await page.getByRole('button',{name:'Show vehicles',exact:true}).click();expect((await applied).ok()).toBe(true);

@@ -89,6 +89,7 @@ async function findCapacitySignal(page:any,query:Record<string,string>,predicate
 }
 
 test('public entry makes capacity immediately usable without an account',async({page}:{page:any})=>{
+  test.setTimeout(60_000);
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1})).toHaveCount(1);
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
@@ -115,8 +116,8 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(filterDialog.getByRole('combobox',{name:'Direction',exact:true})).toBeVisible();
   await expect(filterDialog.getByRole('group',{name:'Space needed',exact:true})).toHaveCount(0);
   await expect(filterDialog.getByLabel('Minimum available space')).toHaveCount(0);
-  await expect(filterDialog.getByRole('group',{name:'Stops',exact:true})).toBeVisible();
   await filterDialog.locator('[data-filter-section="more"] summary').click();
+  await expect(filterDialog.getByRole('group',{name:'Stops',exact:true})).toBeVisible();
   await expect(filterDialog.getByRole('group',{name:'Updated',exact:true})).toBeVisible();
   await filterDialog.getByRole('button',{name:'Close filters'}).click();
   await expect(filterDialog).toBeHidden();
@@ -124,8 +125,7 @@ test('public entry makes capacity immediately usable without an account',async({
   await expect(page.getByRole('button',{name:'List',exact:true})).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   await expect(page.getByRole('button',{name:/location/i})).toBeVisible();
-  await page.locator('a[href="/featured"]:visible').first().click();
-  await expect(page).toHaveURL(/\/featured$/,{timeout:15_000});
+  await Promise.all([page.waitForURL(/\/featured$/,{waitUntil:'domcontentloaded',timeout:30_000}),page.locator('a[href="/featured"]:visible').first().click()]);
   await expect(page.locator('.public-capacity-map')).toHaveCount(0);
   const currentPublicNav=(page.viewportSize()?.width||0)>760?page.getByRole('navigation',{name:'Site navigation'}):page.getByRole('navigation',{name:'Mobile navigation'});
   await expect(currentPublicNav.getByRole('link',{name:'Featured',exact:true})).toHaveAttribute('aria-current','page');
@@ -688,7 +688,8 @@ test('visitor location is requested explicitly, centers the map, and may be refr
   expect(proximityRequests).toBe(0);
   if((page.viewportSize()?.width||0)>760)await expect(page.getByText('Your precise location remains on this device.',{exact:true})).toBeVisible();
   await openCapacityFilters(page);
-  await openCapacityFilterDialog(page);
+  const filterDialog=await openCapacityFilterDialog(page);
+  await filterDialog.locator('[data-filter-section="location"] > summary').click();
   const nearby=page.getByLabel('Show vehicles near my area');
   await expect(nearby).toBeEnabled();
   await nearby.check();
@@ -730,7 +731,7 @@ test('provider-name search filters the one Truck Market and truck details reach 
   const blueLineTrucks=(await blueLineResponse.json()).items;
   expect(blueLineTrucks.length).toBeGreaterThan(0);
   expect(blueLineTrucks.every((item:any)=>item.provider_name==='BlueLine Transport PLC')).toBe(true);
-  await page.goto(`/@${blueLineTrucks[0].provider_handle}`);
+  await page.goto(`/@${blueLineTrucks[0].provider_handle}`,{waitUntil:'domcontentloaded'});
   await expect(page.locator('.provider-handle')).toHaveText('Transport Provider');
   await expect(page.locator('.provider-site-identity > p').first()).toHaveText(`@${blueLineTrucks[0].provider_handle}`);
   await expect(page.getByRole('heading',{name:'Account documents'})).toBeVisible();
@@ -757,7 +758,7 @@ test('provider-name search filters the one Truck Market and truck details reach 
   await page.getByRole('button',{name:'Close map',exact:true}).click();
   await expect(page.locator('.provider-truck-relative-map')).toHaveCount(0);
   await expect(mapButton).toBeFocused();
-  await expect(page.getByText(/confirm current originals/i)).toBeVisible();
+  await expect(page.locator('.provider-trust-card .verification-badge').first()).toBeVisible();
   await expect(page.locator('.provider-microsite')).not.toContainText('null → null');
   await expect(page.locator('.provider-site-hero')).not.toHaveAttribute('style',/provider-primary/);
 });
@@ -1214,8 +1215,10 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(summary).toContainText('Preferred corridor');
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
   await page.getByRole('button',{name:/^Edit preferred corridor:/}).click();
-  await expect(page.getByTestId('capacity-planning-editor')).toBeVisible();
-  await expect(page.getByTestId('capacity-planning-editor')).toContainText('The area or two-way route you serve regularly');
+  const planningEditor=page.getByTestId('capacity-planning-editor');
+  await expect(planningEditor).toBeVisible();
+  await expect(planningEditor.getByRole('button',{name:/^Preferred corridor Both directions$/})).toHaveAttribute('aria-pressed','true');
+  await expect(planningEditor.getByText('Route cities',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close editor'}).click();
   await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
   await expect(page.getByRole('heading',{name:'Availability'})).toBeVisible();

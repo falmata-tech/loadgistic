@@ -13,7 +13,7 @@ import { EthiopiaPlaceInput } from './ethiopia-place-input';
 
 export type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
 type EditablePlace={key:string;place_ref:string;label:string};
-export type CapacitySnapshot={status?:string;visibility?:string;sharing_mode?:string;exclusive_email?:string;exclusive_name?:string;accepts_full_load?:number;accepts_partial_load?:number;availability_geometry?:string;location_area?:string;location_lat?:number;location_lng?:number;location_precision_km?:number;location_updated_at?:string;location_source?:string;current_route_points?:PlacePoint[];capacity_area_center_place_ref?:string;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];accepts_multi_pick?:number;accepts_multi_drop?:number};
+export type CapacitySnapshot={status?:string;visibility?:string;sharing_mode?:string;exclusive_email?:string;exclusive_name?:string;accepts_full_load?:number;accepts_partial_load?:number;available_percent?:number|null;available_percent_reported_at?:string|null;availability_geometry?:string;location_area?:string;location_lat?:number;location_lng?:number;location_precision_km?:number;location_updated_at?:string;location_source?:string;current_route_points?:PlacePoint[];capacity_area_center_place_ref?:string;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];accepts_multi_pick?:number;accepts_multi_drop?:number};
 export type RegularSignal={id:string;vehicle_id:string;driver_user_id:string;geometry:'ROUTE'|'RADIUS';route_points:PlacePoint[];area_boundary:PlacePoint[];area_center_lat?:number;area_center_lng?:number;area_center_label?:string;area_center_place_ref?:string};
 
 function editable(points:PlacePoint[]|undefined,prefix:string,min:number):EditablePlace[]{
@@ -28,11 +28,13 @@ function PlaceSequenceEditor({items,setItems,name,refName,min,label}:{items:Edit
 }
 
 export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,savedManualSource=false,onBusyChange,onSaved,onCancel}:{section:'CAPACITY'|'SHARING';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;savedManualSource?:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
+  const {t}=useTranslation();
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
   const [sharingMode,setSharingMode]=React.useState(capacitySharingMode(current?.sharing_mode,current?.visibility));
   const visibility=sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE';
   const [geometry,setGeometry]=React.useState(current?.availability_geometry||'RADIUS');
   const [acceptedLoads,setAcceptedLoads]=React.useState(current?.accepts_partial_load?(current.accepts_full_load?'BOTH':'PTL'):'FTL');
+  const [availablePercent,setAvailablePercent]=React.useState(current?.status==='PARTIAL'&&current.available_percent_reported_at&&current.available_percent!=null?String(current.available_percent):'');
   const [multiPick,setMultiPick]=React.useState(Boolean(current?.accepts_multi_pick));
   const [multiDrop,setMultiDrop]=React.useState(Boolean(current?.accepts_multi_drop));
   const [routePoints,setRoutePoints]=React.useState(editable(current?.current_route_points,'current-route',2));
@@ -84,11 +86,10 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
             <div className="capacity-status-choice-column">
               <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
               {!current&&onDuty?<p className="meta"><Text message="Private until you choose Open in Sharing."/></p>:null}
-              {status==='PARTIAL'?<p className="meta"><Text message="Some space available. Confirm the actual fit directly."/></p>:null}
               {!onDuty?<p className="meta"><Text message="Off Duty hides this vehicle from capacity maps. Your preferred corridor stays saved."/></p>:null}
             </div>
             {onDuty?<div className="capacity-load-choice-column">
-              {status==='EMPTY'?<><fieldset className="capacity-load-choices"><legend><Boxes aria-hidden="true"/><Text message="Load type"/></legend>{CAPACITY_LOAD_CHOICES.map(([value,label])=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message={capacityLoadExplanation(acceptedLoads)}/></p></>:<p className="meta"><Text message="Remaining space is for shared loads."/></p>}
+              {status==='EMPTY'?<><fieldset className="capacity-load-choices"><legend><Boxes aria-hidden="true"/><Text message="Load type"/></legend>{CAPACITY_LOAD_CHOICES.map(([value,label])=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message={capacityLoadExplanation(acceptedLoads)}/></p></>:<div className="form-group capacity-available-percent"><label htmlFor="capacity-available-percent"><Boxes aria-hidden="true"/><Text message="Available space"/></label><div className="capacity-percent-field"><input id="capacity-available-percent" name="availablePercent" type="number" min="1" max="99" step="1" inputMode="numeric" placeholder={t('Optional')} value={availablePercent} onChange={event=>setAvailablePercent(event.target.value)}/><span aria-hidden="true">%</span></div></div>}
             </div>:null}
           </div>
         </section>:null}

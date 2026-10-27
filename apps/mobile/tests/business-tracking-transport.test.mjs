@@ -6,6 +6,7 @@ import http from 'node:http';
 import {Readable,Writable,PassThrough} from 'node:stream';
 import ts from 'typescript';
 import {ApiError,readApiResponse} from '../src/api/response.ts';
+import {cargoPhotoApiPathAllowed} from '../src/api/cargo-space-photo-path.ts';
 import {businessApiPathAllowed,businessApiArrayResponse} from '../../../src/lib/mobile/business-api-path.js';
 
 const require=createRequire(import.meta.url),proxy=require('../scripts/local-preview-proxy.cjs');
@@ -39,6 +40,7 @@ function nativeHttp(fetch){
  const source=ts.transpileModule(readFileSync(new URL('../src/api/http.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const ports={'./response':{ApiError,readApiResponse},'react-native':{Platform:{OS:'web'}},
   './public-capacity':{capacityUrl:base=>new URL('/api/public/capacity',base).href},
+  './cargo-space-photo-path':{cargoPhotoApiPathAllowed},
   '../../../../src/lib/mobile/business-api-path.js':{businessApiPathAllowed,businessApiArrayResponse}};
  const exports={};new Function('require','exports','__DEV__','window','fetch',source)(name=>{assert.ok(name in ports,'Unexpected dependency '+name);return ports[name];},exports,true,{location:{origin:'http://local.test'}},fetch);
  return exports;

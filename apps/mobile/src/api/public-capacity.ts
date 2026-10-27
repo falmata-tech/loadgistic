@@ -7,11 +7,12 @@ import {locationSourceKind} from '../../../../src/lib/location-source.js';
 export type SignalPoint = {latitude:number;longitude:number;label:string};
 export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};
 export type CapacitySignal = {
-  authority?:TruckAuthority; id: string; provider: string; handle: string; driver: string;portrait:string;
+  authority?:TruckAuthority; id: string; vehicleId:string; provider: string; handle: string; driver: string;portrait:string;
   truck: string; status: 'EMPTY' | 'PARTIAL';
   driverPhone:string;providerPhone:string;driverKind:string;ownerDocumentsLabel:'Owner documents'|'Transport Provider documents';
   ownerBadges:PublicBadge[];driverBadges:PublicBadge[];truckBadges:PublicBadge[];
   acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
+  availablePercent:number|null;availablePercentReportedAt:string;
   latitude: number | null; longitude: number | null;
   capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|'MANUAL'|null;locationIsDemo?:boolean;
   geometry:'ROUTE'|'RADIUS'|null; currentVisible:boolean; currentPoints:SignalPoint[];
@@ -62,12 +63,14 @@ export function parseCapacityPage(value: unknown): CapacityPage {
     if (!id || !driver) continue;
     const latitude=coordinate(row.location_lat,90),longitude=coordinate(row.location_lng,180);
     const currentVisible=row.current_signal_geometry_visible!==false;
-    items.push({ ...(row.authority?{authority:publicTruckAuthority(row.authority)}:{}),id, driver,portrait:publicAsset(row.assigned_driver_portrait_url), provider: text(row.provider_name), handle: text(row.provider_handle),
+    items.push({ ...(row.authority?{authority:publicTruckAuthority(row.authority)}:{}),id,vehicleId:/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text(row.vehicle_id))?text(row.vehicle_id):'', driver,portrait:publicAsset(row.assigned_driver_portrait_url), provider: text(row.provider_name), handle: text(row.provider_handle),
       driverPhone:publicPhone(row.assigned_driver_phone),providerPhone:publicPhone(row.contact_phone),driverKind:text(row.driver_kind_label)||'Driver',
       ownerDocumentsLabel:row.provider_organization_id?'Transport Provider documents':'Owner documents',
       ownerBadges:documentBadges(row.owner_verification_badges),driverBadges:documentBadges(row.driver_verification_badges),truckBadges:documentBadges(row.truck_verification_badges),
       truck: [text(row.vehicle_make), text(row.vehicle_model)].filter(Boolean).join(' '),
       status: row.status, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
+      availablePercent:row.available_percent_reported_at&&typeof row.available_percent==='number'&&Number.isInteger(row.available_percent)&&row.available_percent>=1&&row.available_percent<=99?row.available_percent:null,
+      availablePercentReportedAt:publicDate(row.available_percent_reported_at),
       latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,
       capacityAge: text(row.capacity_updated_label), locationAge: text(row.location_updated_label),locationSource:locationSourceKind(row.location_source),
       configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':row.availability_geometry==='RADIUS'?'RADIUS':null,

@@ -50,6 +50,14 @@ And only Show trucks on map applies that profile's identity to the truck map\
 And that explicit action retains the map's existing truck-filter choices\
 And changing map filters does not restart, clear or restrict an otherwise unchanged profile search.
 
+Given a visitor or authorized private-capacity team member optionally filters by a minimum estimated space-free percentage\
+When a current Empty or explicitly reported Partial signal is eligible in that same audience\
+Then the percentage condition combines with the other vehicle filters before pagination and map clustering\
+And an omitted minimum remains neutral\
+And the public map never reveals or matches a percentage from a Private current signal merely because a separate Preferred offer makes the vehicle publicly discoverable\
+And an authorized private map may use the reported percentage only after its existing vehicle grant and team-permission checks\
+And profile search remains independent of the vehicle-map filter.
+
 Given an older Capacity link contains a transporter `q` query
 When the page opens
 Then that query initializes the independent profile search and its results,
@@ -372,7 +380,7 @@ Given an existing API caller supplies a full-truck or shared-space requirement a
 When filtering public or authorized private capacity (the current visitor UI offers current load but no separate Space needed control)\
 Then the system checks accepted load types and both current and regular routes/service areas without asking the visitor to choose a signal geometry\
 And route matching evaluates every ordered segment and the selected direction/tolerances\
-And service-area matching evaluates the complete polygon for eligible Empty trucks\
+And service-area matching evaluates the complete polygon for eligible Empty or Partial vehicles\
 And one supplied endpoint may match independently, while two endpoints must both fit the same eligible route or area\
 And truck configuration, stops, document requirements, freshness and reported-location proximity may further narrow the same eligible pairs\
 And each map item remains one latest available truck/driver signal while the drawer lists connected profiles.
@@ -382,8 +390,8 @@ And each map item remains one latest available truck/driver signal while the dra
 Given a visitor supplies any combination of free text, exact transporter, Empty or Partial status, signal geometry, truck configuration, load type, stop option, signal age, shipment endpoint, Service-area place, or explicit nearby radius\
 When the public capacity query is evaluated\
 Then each supplied criterion must match and each omitted criterion remains neutral\
-And Partial prevents Service area because Partial capacity is route-only\
-And one shipment endpoint matches its selected tolerance against every segment of each eligible current or regular Capacity route or against an eligible complete Empty Service-area polygon\
+And Empty and Partial capacity can each offer a Route or Area\
+And one shipment endpoint matches its selected tolerance against every segment of each eligible current or preferred Capacity route or against an eligible complete Area polygon\
 And two shipment endpoints must both match the same eligible route or Service area\
 And a directional Capacity-route match compares the projected position of both endpoints along the complete ordered polyline, including routes with intermediate points\
 And Either direction permits the reverse projected order without changing the stored route\
@@ -419,7 +427,7 @@ And clearing Transporter search removes its text/results while preserving the ma
 And Show all transporters removes an exact profile/truck restriction while preserving other applied truck filters\
 And Clear filters removes all filter values and closes the dialog\
 And applying filters closes the dialog before navigation\
-And selecting Partial availability prevents a Service-area geometry choice because Partial capacity is route-only.
+And selecting Partial availability preserves both Route and Area geometry choices.
 
 ### Scenario: filters close when results are applied
 

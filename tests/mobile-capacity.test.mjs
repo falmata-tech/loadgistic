@@ -72,7 +72,24 @@ test('saved approximate map coordinates validate presence, bounds and privacy ra
 test('capacity publication defaults private and never accepts direct device coordinates or actor fields', () => {
  const value = { action: 'PUBLISH', vehicleId: id, status: 'EMPTY', acceptedLoads: 'FTL', availabilityGeometry: 'ROUTE', currentRoutePlaces: [{ placeRef: 'place-a' }, { placeRef: 'place-b' }], capacityAreaCenterPlaceRef: '', capacityAreaBoundaryPlaces: [], acceptsMultiPick: false, acceptsMultiDrop: false };
  assert.equal(capacityCommand.parse(value).visibility, 'PRIVATE');
+ assert.equal(capacityCommand.parse({...value,status:'PARTIAL',availablePercent:40}).availablePercent,40);
+ assert.equal(capacityCommand.parse({...value,status:'PARTIAL',availablePercent:null}).availablePercent,null);
+ assert.equal(capacityCommand.parse({...value,status:'PARTIAL'}).availablePercent,undefined);
+ for(const availablePercent of [0,100,40.5,'40']) assert.equal(
+  capacityCommand.safeParse({...value,status:'PARTIAL',availablePercent}).success,false
+ );
+ assert.equal(capacityCommand.safeParse({...value,status:'PARTIAL',availablePercent:0}).error.issues[0].path[0],
+  'availablePercent');
+ assert.equal(capacityCommand.safeParse({...value,availablePercent:40}).success,false);
  for (const extra of [{ locationSource: 'DEVICE_OBSCURED' }, { approximateLat: 9 }, { actorId: id }, { visibility: 'UNKNOWN' }]) assert.equal(capacityCommand.safeParse({ ...value, ...extra }).success, false);
+});
+test('native current capacity never presents historical Partial50 as a report',()=>{
+ const vehicle={id},partial={vehicle_id:id,status:'PARTIAL',available_percent:50};
+ const current=capacity=>projectMobileCapacity({vehicles:[vehicle],capacities:[capacity]},'driver','DRIVER').vehicles[0].current;
+ assert.equal(current(partial).availablePercent,null);
+ assert.equal(current(partial).availablePercentReportedAt,'');
+ assert.equal(current({...partial,available_percent_reported_at:'2026-10-26T12:00:00Z'}).availablePercent,50);
+ assert.equal(current({...partial,status:'EMPTY',available_percent_reported_at:null}).availablePercent,100);
 });
 test('truck regular editor data stays with the selected current-driver pair',()=>{
  const drivers=['00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000003'];

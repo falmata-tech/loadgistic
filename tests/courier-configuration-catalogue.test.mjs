@@ -17,7 +17,7 @@ test('restored courier configurations have their own existing map/picker artwork
  assert.deepEqual(new Set(CAPACITY_FILTER_CHOICES.vehicleCategory),new Set(catalogue.VEHICLE_CONFIGURATIONS.map(item=>item.name)));
 });
 test('courier multi-filters compose with source, status and legacy API load choices without accepting aliases',()=>{
- assert.deepEqual(canonicalCapacityFilters({vehicleCategory:['Courier motorcycle','Courier car','Courier car'],status:['EMPTY','PARTIAL'],loadType:'PTL',locationSource:'MOBILE,GPS'}),{vehicleCategory:'Courier car,Courier motorcycle',status:'EMPTY,PARTIAL',loadType:'PTL',stopOption:'',freshness:'',locationSource:'GPS,MOBILE'});
+ assert.deepEqual(canonicalCapacityFilters({vehicleCategory:['Courier motorcycle','Courier car','Courier car'],status:['EMPTY','PARTIAL'],loadType:'PTL',locationSource:'MOBILE,GPS'}),{vehicleCategory:'Courier car,Courier motorcycle',status:'EMPTY,PARTIAL',loadType:'PTL',stopOption:'',freshness:'',locationSource:'GPS,MOBILE',minAvailablePercent:''});
  for(const name of ['Motorcycle','Courier Car','Courier bicycle','Courier car,Unknown'])assert.throws(()=>canonicalCapacityFilters({vehicleCategory:name}),/INVALID_CAPACITY_FILTER/);
 });
 test('every restored courier label is localized while theme keys and seven-day order stay stable',()=>{

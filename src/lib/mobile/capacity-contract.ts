@@ -24,6 +24,7 @@ export const capacityCommand = z.discriminatedUnion('action', [
   }).strict(),
   z.object({ action: z.literal('PUBLISH'), vehicleId,
     status: z.enum(['EMPTY', 'PARTIAL', 'OFF_DUTY']),
+    availablePercent: z.number().int().min(1).max(99).nullable().optional(),
     acceptedLoads: z.enum(['FTL', 'PTL', 'BOTH']), availabilityGeometry: z.enum(['ROUTE', 'RADIUS']),
     visibility: z.enum(['PRIVATE', 'OPEN']).default('PRIVATE'),
     sharingMode: z.enum(['PUBLIC','PRIVATE','BOTH']).optional(),
@@ -31,7 +32,11 @@ export const capacityCommand = z.discriminatedUnion('action', [
     capacityAreaBoundaryPlaces: z.array(place).max(5),
     acceptsMultiPick: z.boolean(), acceptsMultiDrop: z.boolean(),
   }).strict(),
-]);
+]).superRefine((command,context)=>{
+  if(command.action==='PUBLISH'&&command.availablePercent!=null&&command.status!=='PARTIAL'){
+    context.addIssue({code:z.ZodIssueCode.custom,path:['availablePercent'],message:'Available space is only reported for Partial capacity.'});
+  }
+});
 
 const object = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 const list = (value: unknown): unknown[] => Array.isArray(value) ? value : [];
@@ -51,6 +56,11 @@ export function projectMobileCapacity(workspace: unknown, actorId: string, role:
     vehicles: list(data.vehicles).map(value => {
       const row = object(value), driver = object(row.assigned_driver), location = object(row.driver_location);
       const current = capacities.find(item => item.vehicle_id === row.id);
+      const currentStatus=text(current?.status),reportedAt=text(current?.available_percent_reported_at);
+      const storedPercent=Number(current?.available_percent);
+      const availablePercent=currentStatus==='EMPTY'?100:currentStatus==='PARTIAL'&&reportedAt
+        &&Number.isFinite(Date.parse(reportedAt))&&Number.isInteger(storedPercent)
+        &&storedPercent>=1&&storedPercent<=99?storedPercent:null;
       const selection=object(row.location_selection),published=current?.location_updated_at?approximateLocation(current,true):null;
       const phone=location.updatedAt?approximateLocation(location):null;
       const chosen=selectedCapacityLocation({selection,published,phone});
@@ -68,6 +78,7 @@ export function projectMobileCapacity(workspace: unknown, actorId: string, role:
         location:chosen,
         current: current ? {
           id:text(current.id), status: text(current.status), visibility: text(current.visibility), sharingMode: text(current.sharing_mode), exclusiveEmail: text(current.exclusive_email), exclusiveName: text(current.exclusive_name), updatedAt: text(current.updated_at),
+          availablePercent,availablePercentReportedAt:availablePercent!==null&&currentStatus==='PARTIAL'?reportedAt:'',
           acceptedLoads: capacityLoadPreference(current.status, current.accepts_full_load, current.accepts_partial_load),
           availabilityGeometry: current.availability_geometry === 'ROUTE' ? 'ROUTE' : 'RADIUS',
           route: points(current.current_route_points), areaCenter: mobileCatalogPlace({place_ref:current.capacity_area_center_place_ref,label:current.capacity_area_center_label,lat:current.capacity_area_center_lat,lng:current.capacity_area_center_lng}),

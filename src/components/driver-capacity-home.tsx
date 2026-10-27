@@ -7,6 +7,7 @@ import React from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import { CapacityForm } from './capacity-form';
+import {ProviderCargoSpacePhoto} from './cargo-space-photo-panel';
 import {CapacityEditDialog} from './capacity-edit-dialog';
 import {DriverCapacityLocationEditor} from './driver-capacity-location-editor';
 import { StatusPill } from './status-pill';
@@ -47,6 +48,7 @@ function RestrictedAvailability({vehicles,latestByVehicle,corridors,renderedAt}:
     </Localized>
     {editing?<CapacityEditDialog title="Capacity map location" truck={`${truck.make} · ${truck.model}`} busy={busy} onClose={()=>setEditing(false)}><DriverCapacityLocationEditor vehicleId={truck.id} location={location} publishedSource={latest?.location_source} onDuty={available} onBusyChange={setBusy} onCancel={()=>setEditing(false)} onSaved={(_mode,value)=>{setCaptured(value);setEditing(false);router.refresh();}}/></CapacityEditDialog>:null}
    </section>
+   <ProviderCargoSpacePhoto key={truck.id} vehicleId={truck.id} canUpload canRemove={false}/>
   </section>;
 }
 
@@ -60,7 +62,7 @@ export function DriverCapacityHome({ vehicles, capacities, corridors, access, ow
     <h1 className="sr-only"><Text message="Capacity management"/></h1>
     {query.error?<div className="alert error capacity-home-error" role="alert"><FeedbackText message={query.error} fallback="Could not load this page. Please try again."/></div>:null}
     <Localized as="section" copy={["aria-label"]} className="driver-home-section driver-capacity-workspace" aria-label="Capacity management">
-    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle} corridors={corridors} renderedAt={renderedAt}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection corridors={corridors} returnTo="/app/home" allowCorridors={ownsFleet||access?.kind==='SELF_MANAGED'} renderedAt={renderedAt}/>}
+    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle} corridors={corridors} renderedAt={renderedAt}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection corridors={corridors} returnTo="/app/home" allowCorridors={ownsFleet||access?.kind==='SELF_MANAGED'} canRemovePhoto={ownsFleet||access?.kind==='SELF_MANAGED'} renderedAt={renderedAt}/>}
     </Localized>
   </div>;
 }

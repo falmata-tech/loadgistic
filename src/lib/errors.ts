@@ -138,6 +138,7 @@ const messages: Record<string,string> = {
   CAPACITY_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must allow device location before this vehicle can be published.',
   CAPACITY_LOCATION_ACTIVE_REQUIRED: 'Set this vehicle to Empty or Partial before refreshing its public location.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
+  INVALID_AVAILABLE_PERCENT: 'Enter 1% to 99% of space still free.',
   INVALID_CAPACITY_INPUT: 'Some capacity details are invalid. Check the selected route or area and try again.',
   INVALID_AVAILABILITY_GEOMETRY: 'Choose an availability route or service area.',
   DRIVER_REQUIRED_FOR_CAPACITY: 'Assign a driver to this vehicle before publishing capacity.',

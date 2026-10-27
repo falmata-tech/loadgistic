@@ -9,11 +9,11 @@ const reviewedSkips=JSON.parse(readFileSync('tests/e2e/ci-allowed-skips.json','u
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 const preflightRunner=readFileSync('scripts/ci-fixture-preflight.mjs','utf8');
 const featuredRunner=readFileSync('scripts/ci-featured-prepare.mjs','utf8');
-test('required database validation executes every new discovery parity suite',()=>{
+test('required database validation executes every current capacity parity and private-photo suite',()=>{
  const validation=workflow.slice(workflow.indexOf('  validate:\n'),workflow.indexOf('  e2e-shards:\n'));
  const registered=new Set([...validation.matchAll(/for suite in ([\s\S]*?); do/g)]
   .flatMap(match=>match[1].replace(/\\/g,' ').split(/\s+/).filter(Boolean)));
- for(const name of ['capacity-discovery-reuse','capacity-discovery-noop-guards','capacity-discovery-input-projection']){
+ for(const name of ['capacity-discovery-reuse','capacity-discovery-noop-guards','capacity-discovery-input-projection','capacity-reported-space','cargo-space-photos','cargo-space-photo-filter']){
   assert.ok(registered.has(name),`${name} must execute in the required validation job`);
   assert.ok(readFileSync(`tests/sql/${name}.sql`,'utf8').includes('rollback;'));
  }

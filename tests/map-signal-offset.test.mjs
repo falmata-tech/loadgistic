@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {offsetSignalPath,signalLaneZoom,signalLaneLimit} from '../src/lib/map-signal-offset.js';
+import {offsetSignalPath,signalLaneZoom,signalLaneLimit,signalLaneDisplay} from '../src/lib/map-signal-offset.js';
 
 test('MapLibre and Leaflet lanes stay geographically bounded at world zoom without limiting the camera',()=>{
  for(const tileSize of [256,512])for(const zoom of [0,1,3,5,8,12,13,20]){
@@ -21,6 +21,16 @@ test('actual join bounds preserve ordinary paired-route spacing at street zoom',
   const current=offsetSignalPath(source,-6,false,[],limit),regular=offsetSignalPath(source,6,false,[current],limit);
   assert.ok(Math.abs(current[0].y-regular[0].y)>=11.9,'an unrelated worst-case corner must not compress this shared leg');
  }
+});
+
+test('fitted phone routes separate while street routes and area outlines keep their original bound',()=>{
+ const tileSize=256,phone=signalLaneDisplay(8,6,false,tileSize),street=signalLaneDisplay(10,6,false,tileSize),area=signalLaneDisplay(8,12,true,tileSize);
+ assert.equal(phone.zoom,10);assert.equal(phone.offset,12);
+ assert.ok(phone.limit*40075016.6856/(tileSize*2**phone.zoom)<1800);
+ const source=[{x:0,y:0},{x:2000,y:0}],current=offsetSignalPath(source,-phone.offset,false,[],phone.limit),regular=offsetSignalPath(source,phone.offset,false,[current],phone.limit);
+ assert.ok(Math.abs(current[0].y-regular[0].y)/4>4.5,'fitted phone pair must clear both visible strokes');
+ assert.equal(street.zoom,10);assert.equal(street.offset,6);assert.equal(street.limit,signalLaneLimit(10,tileSize));
+ assert.equal(area.offset,12);assert.equal(area.limit,signalLaneLimit(10,tileSize));
 });
 
 const square=[{x:0,y:0},{x:200,y:0},{x:200,y:200},{x:0,y:200}];

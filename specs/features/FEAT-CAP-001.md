@@ -661,8 +661,36 @@ And a Service area uses one selected center city plus three through five distinc
 And the surrounding cities form one ordered polygon boundary while the center city remains the searchable area anchor\
 And a Capacity route uses two through five distinct ordered cities joined in sequence\
 And neither current geometry asks for or stores a travel date\
-And Empty and Partial are categorical market signals rather than remaining-space estimates\
-And the Driver is not asked for a capacity percentage and no percentage is displayed, filtered, or published to visitors.
+And Empty and Partial remain distinct categorical load-status signals\
+And the separately reported space percentage is an estimate of cargo space still available, not a measurement of weight, dimensions or guaranteed cargo fit.
+
+### Scenario: a reported space estimate never inherits the old Partial default
+
+Given a provider or authorized Driver publishes Planned capacity\
+When the load status is Empty or Off Duty\
+Then the service derives 100% available for Empty and 0% for Off Duty without accepting a submitted percentage\
+And Off Duty is never offered as available space.
+
+Given the load status is Partial\
+When the actor optionally submits an integer percentage from 1 through 99\
+Then the service saves that percentage and its own report time against the same authorized vehicle and current signal\
+And the caller cannot set, backdate or forge the report time or other provenance\
+And the result describes the value as a provider-reported estimate.
+
+Given a Partial signal was published by an older client without a percentage or already contains the historical default of 50\
+Then its numeric storage value is legacy and its report time is absent\
+And no public or private result displays or filters that value as an estimate\
+And republishing an estimate for that vehicle does not rewrite historical signal or audit rows.
+
+Given a current Partial estimate was already reported and a provider edits unrelated capacity facts\
+When the percentage is omitted by an older client or repeated unchanged by a new client\
+Then the same estimate, original reporter and original report time carry into the new Partial signal without becoming newly fresh\
+And an explicitly cleared percentage removes the estimate from the new signal without rewriting history.
+
+Given a reported Partial estimate is followed by a new duty state, another assigned Driver, or an independent load-status or percentage change\
+Then the old report does not appear or match a space filter for the new Driver or state\
+And a later Partial save cannot inherit the former report's time or value\
+And assignment invalidation retains the prior value and report time in an internal audit event.
 
 ### Scenario: current signals use distinct map treatments
 
@@ -826,7 +854,7 @@ And each unclustered truck marker is a sufficiently large pointed map-pin shape 
 And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
 And a tractor marker and detail use only its currently attached trailer configuration rather than combining every compatible trailer into one public signal\
 And the marker uses a complete cobalt ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
-And no percentage or percentage-progress ring appears in a public truck marker\
+And no percentage-progress ring appears in a public truck marker\
 And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
 And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
 And a truck or visitor-location summary appears only on hover or keyboard focus, sits above its marker, and retains a pointer to that marker rather than permanently covering the map\

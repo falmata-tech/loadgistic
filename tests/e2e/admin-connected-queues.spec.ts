@@ -53,7 +53,7 @@ test('retired staff capacity feed cannot expose records and the public map remai
   const invalid=await page.request.get('/api/public/capacity?status=EMPTY&status=PARTIAL');expect(invalid.status()).toBe(400);
   await page.screenshot({path:info.outputPath('retired-admin-feed-public-map.png'),scale:'css'});
   expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw Error('RETIRED_CAPACITY_ROUTE_WORKFLOW_FAILED: '+stage);}
+ }catch(error){await failureEvidence(page,info,stage,error);throw new Error('RETIRED_CAPACITY_ROUTE_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{await logout?.();await cleanIdentities(db,ids);}
 });
 
@@ -75,7 +75,7 @@ test('Driver Open owner reaches its exact fleet and retains delegated workspace 
   await expect(details).toBeVisible();await details.getByRole('link',{name:'Open owner',exact:true}).click();
   stage='WORKSPACE_DENIED';await expect(page).toHaveURL(/\/admin\/operations$/);await expect(page.getByRole('heading',{name:'Platform Records',exact:true})).toBeVisible();await expect(details).toHaveCount(0);
   expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw Error('ADMIN_DRIVER_OWNER_WORKFLOW_FAILED: '+stage);}
+ }catch(error){await failureEvidence(page,info,stage,error);throw new Error('ADMIN_DRIVER_OWNER_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{
   for(const logout of logouts)await logout();await cleanIdentities(db,ids);
   if(owner){checked(await db.from('audit_logs').delete().eq('actor_user_id',owner.id));checked(await db.from('audit_logs').delete().eq('entity_id',owner.organization_id));checked(await db.auth.admin.deleteUser(owner.id));checked(await db.from('organizations').delete().eq('id',owner.organization_id));}
@@ -102,7 +102,7 @@ test('Content and deletion overflow pages recover saved synthetic cases with unc
   await page.goto('/admin/privacy?page=99999');await expect(page).not.toHaveURL(/\/admin\/privacy/);await expect(page.locator(`section[data-request-id="${requestId}"]`)).toHaveCount(0);
   const operations=await identity(db,ids,'SUPPORT',{can_manage_operations:true});stage='CONTENT_DENIED';logouts.push(await localSupportLogin(page,operations));await page.goto('/admin/reviews/content?page=99999');await expect(page).not.toHaveURL(/\/admin\/reviews\/content/);await expect(page.locator(`form[action="/api/admin/content/${reportId}"]`)).toHaveCount(0);
   expect(checked(await db.from('content_reports').select('status').eq('id',reportId).single()).status).toBe('PENDING');expect(checked(await db.from('account_deletion_requests').select('status').eq('id',requestId).single()).status).toBe('REQUESTED');expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw Error('ADMIN_QUEUE_PAGING_WORKFLOW_FAILED: '+stage);}
+ }catch(error){await failureEvidence(page,info,stage,error);throw new Error('ADMIN_QUEUE_PAGING_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{
   for(const logout of logouts)await logout();checked(await db.from('content_reports').delete().eq('id',reportId));checked(await db.from('account_deletion_requests').delete().eq('id',requestId));await cleanIdentities(db,ids);
   if(owner){checked(await db.from('audit_logs').delete().eq('actor_user_id',owner.id));checked(await db.auth.admin.deleteUser(owner.id));checked(await db.from('organizations').delete().eq('id',owner.organization_id));}

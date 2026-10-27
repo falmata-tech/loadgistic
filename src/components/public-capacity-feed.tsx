@@ -140,6 +140,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const [locationSourceFilter,setLocationSourceFilter]=React.useState(query.locationSource||'');
   const [stopFilter,setStopFilter]=React.useState(query.stopOption||'');
   const [freshnessFilter,setFreshnessFilter]=React.useState(query.freshness||'');
+  const [photoFilter,setPhotoFilter]=React.useState(query.photoMaxAgeHours||query.photoPresent==='true'&&'present'||'');
   const filterDialog=React.useRef(null as HTMLDialogElement|null);
   const viewport=React.useRef('');
   const selectedRef=React.useRef(selectedId);selectedRef.current=selectedId;
@@ -234,6 +235,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   }
 
   const selected=items.find((item:any)=>item.id===selectedId)||null;
+  const businessWorkspaceId=/^\/api\/business-workspaces\/([0-9a-f-]{36})\/capacity$/.exec(apiPath)?.[1]||'';
   const locationActionLabel=locationState==='locating'
     ?'Finding your location…'
     :locationState==='ready'
@@ -241,7 +243,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       :['denied','timeout','unavailable','outside','error'].includes(locationState)
         ?'Retry location permission'
         :'Use my location';
-  const activeFilterCount=[query.ownerDocs,query.driverDocs,query.truckDocs,query.status,query.vehicleCategory,query.locationSource,query.stopOption,query.freshness,
+  const activeFilterCount=[query.ownerDocs,query.driverDocs,query.truckDocs,query.status,query.vehicleCategory,query.minAvailablePercent,query.locationSource,query.stopOption,query.freshness,query.photoPresent,
     query.currentAreaPlaceRef||query.currentArea,query.originPlaceRef||query.origin,query.destinationPlaceRef||query.destination,
     query.truckCityPlaceRef||query.truckCity||(query.nearLat&&query.nearLng)].filter(Boolean).length;
   const clearSearchParams=new URLSearchParams(query);
@@ -285,6 +287,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
             <div className="capacity-primary-selects">
               <CapacityConfigurationPicker multiple value={vehicleFilter} onChange={setVehicleFilter}/>
               <CapacityMultiOptions name="status" label="Load status" anyLabel="Any available vehicle" options={[["EMPTY","Empty vehicle"],["PARTIAL","Partly loaded"]]} value={statusFilter} onChange={setStatusFilter}/>
+              <label htmlFor="capacity-min-available-percent"><Text message={filterPresentation.availableSpace.label}/><select id="capacity-min-available-percent" name="minAvailablePercent" defaultValue={query.minAvailablePercent||''}>{filterPresentation.availableSpace.options.map(([value,label])=><option value={value} key={value}><Text message={label}/></option>)}</select></label>
             </div>
           </div>
         </details>
@@ -329,6 +332,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
           <summary><SlidersHorizontal aria-hidden="true"/><strong><Text message={filterPresentation.groups.more.label}/></strong><ChevronDown aria-hidden="true"/></summary>
           <div className="capacity-filter-section-body">
             <CapacityMultiOptions name="freshness" label={filterPresentation.freshness.label} anyLabel={filterPresentation.freshness.anyLabel} options={filterPresentation.freshness.options} value={freshnessFilter} onChange={setFreshnessFilter} icon={<Clock3 aria-hidden="true"/>}/>
+            {businessWorkspaceId?<label htmlFor="capacity-photo-filter"><Text message={filterPresentation.privatePhoto.label}/><select id="capacity-photo-filter" value={photoFilter} onChange={event=>setPhotoFilter(event.target.value)}>{filterPresentation.privatePhoto.options.map(([value,label])=><option value={value} key={value}><Text message={label}/></option>)}</select>{photoFilter?<><input type="hidden" name="photoPresent" value="true"/>{photoFilter!=='present'?<input type="hidden" name="photoMaxAgeHours" value={photoFilter}/>:null}</>:null}</label>:null}
             <CapacityMultiOptions name="stopOption" label={filterPresentation.stops.label} anyLabel={filterPresentation.stops.anyLabel} options={filterPresentation.stops.options} value={stopFilter} onChange={setStopFilter} icon={<MapPinned aria-hidden="true"/>}/>
             <CapacityDocumentFilters query={query}/>
           </div>
@@ -359,7 +363,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       <Localized as="button" copy={["aria-label","title"]} type="button" className="capacity-filter-trigger" disabled={!controlsReady} aria-haspopup="dialog" aria-label="Vehicle filters" title="Vehicle filters" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Filter"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</Localized>
     </div>
       <section id="capacity-map-view" className="public-map-shell">
-        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} ownSignalIds={ownSignalIds} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected}/>:null}/></div>
+        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} ownSignalIds={ownSignalIds} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected} privatePhoto={businessWorkspaceId&&selected.vehicle_id?{workspaceId:businessWorkspaceId,vehicleId:selected.vehicle_id}:undefined}/>:null}/></div>
         {feedback}
       </section>
     </div>;

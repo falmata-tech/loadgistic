@@ -133,6 +133,8 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const selectionRef=useRef(selection);
   useEffect(()=>{selectionRef.current=selection;},[selection]);
   const [initialSelectionActive,setInitialSelectionActive]=useState(Boolean(initialFilters.truck));
+  const initialSelectionActiveRef=useRef(initialSelectionActive);
+  useEffect(()=>{initialSelectionActiveRef.current=initialSelectionActive;},[initialSelectionActive]);
   const clearSelection=useCallback(()=>{setInitialSelectionActive(false);setSelection(null);},[]);
   const searchScopeKey=`${business?.scopeKey||account?.scopeKey||''}:${mode}:${JSON.stringify(profileFilters)}:${business||account?'':sharedIdentity||''}:${sharedReady}`;
   const loadProfiles=useCallback((query:string,page:number,signal:AbortSignal)=>{
@@ -154,7 +156,11 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const profileResult=profileState?.result||null;
   const current = result?.key === requestKey ? result : null;
   const items = current?.items || emptySignals, loading = canLoad && (current?.loading ?? true), error = current?.error || '';
-  const selected=selection?.key===requestKey?items.find(item=>item.id===selection.signal.id)||null:initialSelectionActive?items.find(item=>item.id===initialFilters.truck)||null:null;
+  // Reconcile the selected vehicle against each refreshed result. Applying a
+  // filter should keep its details when it still matches, and remove them when
+  // it no longer appears in the returned vehicles.
+  const selectedId=selection?.signal.id||(initialSelectionActive?initialFilters.truck:undefined);
+  const selected=selectedId?items.find(item=>item.id===selectedId)||null:null;
   const selectMapSignal=useCallback((signal:CapacitySignal)=>{cancelSearch();setInitialSelectionActive(false);setSelection({key:requestKey,signal});setDrawer(false);},[requestKey,cancelSearch]);
   const setSelected=(signal:CapacitySignal|null)=>{if(signal)selectMapSignal(signal);else clearSelection();};
   useEffect(() => {
@@ -168,7 +174,8 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
     loading.then(()=>{
       if(!active||controller.signal.aborted)return;
       setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:'complete',items:finalItems}));
-      if(selectionRef.current?.key===requestKey&&!finalItems.some(item=>item.id===selectionRef.current?.signal.id))clearSelection();
+      const selectedId=selectionRef.current?.signal.id||(initialSelectionActiveRef.current?initialFilters.truck:undefined);
+      if(selectedId&&!finalItems.some(item=>item.id===selectedId))clearSelection();
     }).catch(error => {
       if(!active||controller.signal.aborted&&controller.signal.reason!=='timeout')return;
       const denied=Boolean((business||account||mode==='private')&&error instanceof ApiError&&[401,403,404].includes(error.status));
@@ -176,7 +183,7 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
       setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:denied?'denied':'failed',error:'Could not finish loading vehicles. Please try again.'}));
     }).finally(() => { clearTimeout(timeout); if (active&&(!controller.signal.aborted || controller.signal.reason === 'timeout')) setResult(previous => previous?.key === requestKey ? { ...previous, loading: false } : { key: requestKey, items: [], loading: false, error: '' }); });
     return () => { active=false;controller.abort(); clearTimeout(timeout); };
-  }, [query, requestKey, canLoad, mode, visitorController, effectiveFilters,business,account,refreshTick,clearSelection]);
+  }, [query, requestKey, canLoad, mode, visitorController, effectiveFilters,business,account,refreshTick,clearSelection,initialFilters.truck]);
   const resetResults=()=>{setResult(null);clearSelection();};
   const submitSearch=()=>{Keyboard.dismiss();search.submit();};
   const closeSearch=()=>{search.cancel();setDrawer(false);};
@@ -186,7 +193,7 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   return <View style={styles.screen}>
     {showModeSwitch&&<><View style={styles.intro}><Text accessibilityRole="header" style={styles.title}>{t(capacityIntroduction.title)}</Text></View>
     <View style={{ flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, padding: 3, gap: 4, borderWidth: 1, borderColor: palette.border, borderRadius: 9, backgroundColor: '#f3f5f8' }}>{([['open', 'Openly shared'], ['private', 'Privately shared with you']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="tab" aria-selected={mode === value} accessibilityState={{ selected: mode === value }} onPress={() => changeMode(value)} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: mode === value ? '#cbd5e1' : 'transparent', borderRadius: 7, padding: 6, justifyContent: 'center', backgroundColor: mode === value ? '#eaf1ff' : 'transparent' }}><Text style={{ color: mode === value ? palette.blue : palette.muted,fontSize:11, fontWeight: mode === value ? '700' : '600', textAlign: 'center' }}>{t(label)}</Text></Pressable>)}</View></>}
-    <View testID="capacity-map-workspace" style={styles.map}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} ownSignalIds={ownSignalIds} selected={selected} loading={loading} topInset={controlsHeight+20} bottomInset={bottomInset} onSelect={selectMapSignal} onDeselect={clearSelection} />
+    <View testID="capacity-map-workspace" style={styles.map}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} ownSignalIds={ownSignalIds} selected={selected} loading={loading} topInset={controlsHeight+20} bottomInset={bottomInset} privatePhotoWorkspaceId={mode==='private'?business?.workspaceId:undefined} onSelect={selectMapSignal} onDeselect={clearSelection} />
       {canLoad&&<View onLayout={event=>setControlsHeight(event.nativeEvent.layout.height)} style={{position:'absolute',top:12,left:12,right:12,flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel={t('Search transporters')} accessibilityState={{expanded:drawer}} onPress={()=>{if(selected)setSelected(null);if(drawer)closeSearch();else setDrawer(true);}} style={styles.mapButton}><AppIcon name="search" size={19} color={palette.blue}/><Text style={styles.link}>{t('Search')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Vehicle filters')} onPress={()=>setFiltersOpen(true)} style={styles.mapButton}><AppIcon name="filters" size={19} color={palette.blue}/><Text style={styles.link}>{t('Filter')}{filterCount(peopleSearchFilters(filters))?` (${filterCount(peopleSearchFilters(filters))})`:''}</Text></Pressable></View>}
       {drawer&&canLoad&&<ResultsDrawer top={controlsHeight+20} bottom={bottomInset} onClosing={search.cancel} onClose={closeSearch}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:14,gap:14}}><View style={styles.search}><View style={styles.inputFrame}><TextInput accessibilityLabel={t('Search transporters')} placeholder={t('Account name, manager or @handle')} placeholderTextColor="#526875" value={input} maxLength={120} onChangeText={search.changeInput} onSubmitEditing={submitSearch} returnKeyType="search" style={styles.input}/><Pressable accessibilityRole="button" accessibilityLabel={t('Clear search')} onPress={search.clear} style={styles.inputClear}><AppIcon name="close" color="#155eef" size={19}/></Pressable></View><Pressable accessibilityRole="button" accessibilityLabel={t('Search')} accessibilityState={{disabled:!validSearch}} disabled={!validSearch} onPress={submitSearch} style={[styles.button,!validSearch&&{opacity:0.55}]}><AppIcon name="search" color="#fff"/></Pressable></View>{!validSearch?<Text style={styles.copy}>{t(input.trim()?'Enter at least two characters.':'Search by account name, manager, @handle or city.')}</Text>:profileState?<DiscoveryResults result={profileResult} loading={profileState.loading} error={profileState.error} onPage={search.onPage} onRetry={search.retry} onMap={showProfile}/>:<LoadingBar label="Finding transporters"/>}</ScrollView></ResultsDrawer>}
       {loading && <View style={styles.loading}><LoadingBar label="Loading vehicle availability"/></View>}
@@ -194,7 +201,7 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
       {!drawer && !loading && !error && items.length === 0 && (mode === 'open' || sharedReady) && <View style={[styles.notice,{top:controlsHeight+20}]}><Text>{t(privateEmpty?'No vehicles are shared with this account yet.':'No matching available vehicles.')}</Text>{networkHref?<Pressable accessibilityRole="button" onPress={()=>router.navigate(networkHref)} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.link}>{t(business?'Find connections':'Open Network')}</Text></Pressable>:filterCount(peopleSearchFilters(filters))>0?<Pressable accessibilityRole="button" onPress={()=>setFiltersOpen(true)} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.link}>{t('Review filters')}</Text></Pressable>:null}</View>}
     </View>
 
-    {filtersOpen&&canLoad&&<DiscoveryFilters initial={peopleSearchFilters(filters)} configurations={profileResult?.configurations||[...VEHICLE_CONFIGURATIONS]} onClose={()=>setFiltersOpen(false)} onClearProfile={filters.provider||filters.truck||query?()=>{resetResults();setFilters(peopleSearchFilters(filters));setQuery('');}:undefined} onApply={next=>{resetResults();setFilters({...next,provider:filters.provider,truck:filters.truck});setFiltersOpen(false);setRevision(v=>v+1);}}/>}
+    {filtersOpen&&canLoad&&<DiscoveryFilters initial={peopleSearchFilters(filters)} configurations={profileResult?.configurations||[...VEHICLE_CONFIGURATIONS]} privateBusiness={Boolean(business)} onClose={()=>setFiltersOpen(false)} onClearProfile={filters.provider||filters.truck||query?()=>{resetResults();setFilters(peopleSearchFilters(filters));setQuery('');}:undefined} onApply={next=>{setResult(null);setFilters({...next,provider:filters.provider,truck:filters.truck});setFiltersOpen(false);setRevision(v=>v+1);}}/>}
   </View>;
 }
 const styles = StyleSheet.create({

@@ -13,7 +13,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await mobileActor(request), parsed = capacityCommand.safeParse(await mobileBody(request));
-    if (!parsed.success) throw new MobileError(400, 'INVALID_INPUT', 'Check the capacity details and choose cities from the suggestions.');
+    if (!parsed.success) {
+      if (parsed.error.issues.some(issue => issue.path[0] === 'availablePercent'))
+        throw new MobileError(400, 'INVALID_AVAILABLE_PERCENT', errorMessage(new Error('INVALID_AVAILABLE_PERCENT')));
+      throw new MobileError(400, 'INVALID_INPUT', 'Check the capacity details and choose cities from the suggestions.');
+    }
     const input = parsed.data;
     try {
       if (input.action === 'LOCATION') await refreshProviderCapacityLocation(user, input);
@@ -23,6 +27,7 @@ export async function POST(request: Request) {
     } catch (error) {
       const code = error instanceof Error ? error.message : '';
       if (['TRUCK_NOT_LIVE','PROVIDER_VERIFICATION_REQUIRED','LOCATION_SOURCE_PENDING'].includes(code)) throw new MobileError(409, code, errorMessage(error));
+      if (code === 'INVALID_AVAILABLE_PERCENT') throw new MobileError(400, code, errorMessage(error));
       if (['FORBIDDEN', 'SUBSCRIPTION_ACCESS_REQUIRED', 'INVALID_VEHICLE', 'NOT_FOUND', 'DEVICE_LOCATION_DRIVER_ONLY'].includes(code)) throw new MobileError(403, 'FORBIDDEN', 'This action is not available for this vehicle and account.');
       if (/^(INVALID_|DRIVER_REQUIRED_|CAPACITY_|PARTIAL_CAPACITY_|ACCEPTED_LOADS_|LOCALITY_|CONTACT_NAME_)/.test(code)) throw new MobileError(400, 'INVALID_INPUT', errorMessage(error));
       throw error;

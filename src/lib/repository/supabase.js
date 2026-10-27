@@ -1,5 +1,6 @@
 import {verificationBadgesFromApproved,truckDocumentBadges,publicVehicleAuthorityBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
+import {privatePhotoDatabaseFilters} from '../business-capacity/photo-filter.js';
 import {loadPublicProviderFleet,publicFleetVehicleIds} from '../public-provider-paging.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
 import {BUSINESS_SEARCH_PRIVACY_KM,possibleDistanceRange} from '../location-privacy.js';
@@ -261,6 +262,7 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   let query;
   try{query=capacityDatabaseFilters(filters,resolved.places);}
   catch{return {items:[],hasMore:false,nextCursor:null,pageSize,filterError:'Map bounds are invalid. Move the map and try again.'};}
+  if(businessWorkspaceId)Object.assign(query,privatePhotoDatabaseFilters(filters));
   const hasNear=query.near_lat!==null&&query.near_lng!==null;
   const cursor=decodePublicCursor(options.cursor);
   const rpcName=businessWorkspaceId?'business_capacity_filtered_page':audience==='ACCOUNT'?'account_capacity_filtered_page':'private_capacity_filtered_page';

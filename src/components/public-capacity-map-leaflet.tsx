@@ -255,7 +255,7 @@ function CapacityMarkers({items,ownSignalIds,selectedId,onSelect,onDeselect}:{it
         const item=itemById.get(id),point=item&&markerPoint(item);if(!item||!point)return null;
         const actual=map.latLngToContainerPoint(point),display=L.point(anchor.x+offset[0],anchor.y+offset[1]);
         const shifted:[number,number]=[display.x-actual.x,display.y-actual.y];
-        return <React.Fragment key={id}><Polyline positions={[point,map.containerPointToLatLng(display)]} pathOptions={{className:'capacity-fan-connector',color:'#526875',weight:2,dashArray:'3 4',opacity:.8,interactive:false}}/>{singleMarker(item,`fan:${id}`,point,shifted,true)}</React.Fragment>;
+        return <React.Fragment key={id}><Polyline positions={[point,map.containerPointToLatLng(display)]} className="capacity-fan-connector" pathOptions={{color:'#526875',weight:2,dashArray:'3 4',opacity:.8,interactive:false}}/>{singleMarker(item,`fan:${id}`,point,shifted,true)}</React.Fragment>;
       })}</React.Fragment>;
     }
     const statusLabel=group.status==='PARTIAL'?'Partial':'Empty';
