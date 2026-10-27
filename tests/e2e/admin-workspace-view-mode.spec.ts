@@ -13,7 +13,7 @@ test('Featured and GPS administration start in view mode and explicit tasks canc
  async function capture(name:string){const file=info.outputPath(name);await page.screenshot({path:file,fullPage:true,animations:'disabled'});chmodSync(file,0o600);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  try{
   for(const width of[1440,390]){
-   await page.setViewportSize({width,height:900});await page.goto('/admin/featured');await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers',exact:true})).toBeVisible();
+   await page.setViewportSize({width,height:900});await page.goto('/admin/featured');await expect(page.getByRole('heading',{name:'Daily Featured on TikTok LIVE',exact:true})).toBeVisible();
    await expect(page.getByRole('button',{name:'Save draft',exact:true})).toHaveCount(0);await expect(page.locator('.featured-roster-editor')).toHaveCount(0);await expect(page.locator('.featured-sponsor-form')).toHaveCount(0);await capture(`featured-view-${width}.png`);
    await page.getByRole('button',{name:'Selection settings',exact:true}).click();const settings=page.getByRole('dialog',{name:'Selection settings',exact:true});await expect(settings.getByLabel('Selection',{exact:true})).toBeVisible();await settings.getByRole('button',{name:'Cancel',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
    await page.getByRole('link',{name:'Edit programme',exact:true}).click();await expect(page.locator('.featured-roster-editor')).toBeVisible();await expect(page.getByRole('button',{name:'Save draft',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Publish this day',exact:true})).toBeVisible();await capture(`featured-edit-${width}.png`);

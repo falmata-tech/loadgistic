@@ -11,17 +11,17 @@ test('truck location remains in view after owner map container resizes',async({p
  await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicleId);
  checked(await service.rpc('refresh_provider_capacity_location',{actor_user_id:actor.id,command:{vehicle_id:vehicleId,approximate_lat:9.03,approximate_lng:38.76,location_precision_km:20}}));
  await auditLogin(page,actor.email);await page.goto(`/app/fleet/${vehicleId}`);
- await page.getByRole('button',{name:'Edit current capacity: Off Duty',exact:true}).click();
- const firstCapacity=page.getByRole('dialog',{name:'Capacity',exact:true});
+ await page.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true}).click();
+ const firstCapacity=page.getByRole('dialog',{name:'Planned capacity',exact:true});
  await firstCapacity.getByRole('button',{name:'Empty',exact:true}).click();
- await firstCapacity.getByRole('button',{name:'Capacity route',exact:true}).click();
+ await firstCapacity.getByRole('button',{name:'Route',exact:true}).click();
  for(const [label,name] of [['City 1','Addis Ababa'],['City 2','Sebeta']]){
   await firstCapacity.getByRole('combobox',{name:label,exact:true}).fill(name);
   await firstCapacity.getByRole('option',{name:new RegExp(`^${name}, Ethiopia`)}).first().click();
  }
  const saved=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity')&&response.request().method()==='POST');
  await firstCapacity.getByRole('button',{name:'Save',exact:true}).click();expect(await (await saved).json()).toMatchObject({ok:true});
- await expect(firstCapacity).toHaveCount(0);await expect(page.getByRole('button',{name:'Edit current capacity: Empty',exact:true})).toBeEnabled({timeout:15000});
+ await expect(firstCapacity).toHaveCount(0);await expect(page.getByRole('button',{name:'Edit planned capacity: Empty',exact:true})).toBeEnabled({timeout:15000});
  const map=page.getByTestId('capacity-summary').locator('.leaflet-container');await expect(map).toBeVisible();
  const marker=map.locator('.capacity-setting-truck-marker');await expect(marker).toBeVisible();
  async function inView(){
@@ -42,8 +42,8 @@ test('truck location remains in view after owner map container resizes',async({p
  // Opening a dialog must preserve the existing view, including the chosen zoom.
  const relative=async()=>{const point=(await marker.boundingBox())!,host=(await map.boundingBox())!;return {x:point.x-host.x,y:point.y-host.y};};
  const before=await relative();
- await page.getByRole('button',{name:/^Edit current capacity:/}).click();
- const dialog=page.getByRole('dialog',{name:'Capacity',exact:true});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(dialog).toHaveCount(0);
+ await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
+ const dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});await expect(dialog).toBeVisible();await dialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(dialog).toHaveCount(0);
  await inView();const after=await relative();expect(Math.abs(after!.x-before!.x)).toBeLessThan(2);expect(Math.abs(after!.y-before!.y)).toBeLessThan(2);
  }finally{
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));

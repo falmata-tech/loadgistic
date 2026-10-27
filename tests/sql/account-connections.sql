@@ -43,9 +43,7 @@ begin
  select payload into business_page from account_directory_page(provider_owner,'Synthetic cargo',0,12) limit 1;
  perform pg_temp.assert_connection(business_page->>'id'=workspace_fixture_id::text and business_page->>'kind'='BUSINESS'
   and business_page->>'managerName'='Hana' and business_page::text not like '%@example.invalid%','BUSINESS_DIRECTORY_IDENTITY');
- select payload into driver_page from account_directory_page(business_owner,'Tarek',0,12) limit 1;
- perform pg_temp.assert_connection(driver_page->>'id'=driver_id::text and driver_page->>'kind'='DRIVER'
-  and driver_page->>'handle' is null and driver_page::text not like '%@example.invalid%','DRIVER_DIRECTORY_PRIVACY');
+ perform pg_temp.assert_connection((select count(*)=0 from account_directory_page(business_owner,'Tarek',0,12)),'EMPLOYED_DRIVER_NOT_STANDALONE_FIND');
  perform pg_temp.assert_connection((select count(*)=0 from account_directory_page(provider_owner,'directory-provider-',0,12)),'SELF_DIRECTORY_VISIBLE');
  perform pg_temp.connection_denied(format('select * from public.account_directory_page(%L)',outsider));
  perform pg_temp.connection_denied(format('select public.request_account_connection(%L,%L,%L)',staff_id,'PROVIDER_PROFILE',provider_id));

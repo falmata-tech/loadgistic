@@ -1,2 +1,2 @@
-export function commandStateLabel(state){return ({REQUESTED:'Waiting to send',DISPATCHED:'Sent · waiting for device',ACKNOWLEDGED:'Device confirmed',FAILED:'Failed',EXPIRED:'Expired',UNKNOWN:'Delivery not confirmed'})[state]||'Delivery not confirmed';}
+export function commandStateLabel(state){return ({REQUESTED:'Waiting to send',DISPATCHING:'Sending…',DISPATCHED:'Sent · waiting for device',ACKNOWLEDGED:'Device confirmed',FAILED:'Failed',EXPIRED:'Expired',UNKNOWN:'Delivery not confirmed'})[state]||'Delivery not confirmed';}
 export function telematicsAlarmLabel(value){return ({sos:'SOS alert',powerCut:'External power disconnected',overspeed:'Speed alert',vibration:'Vibration alert',lowBattery:'Low battery',tampering:'Tampering alert'})[value]||'';}

@@ -6,8 +6,8 @@ import {createRequire} from 'node:module';
 import {resolve,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-export const forbiddenPermissions=['SYSTEM_ALERT_WINDOW','READ_MEDIA_IMAGES','READ_MEDIA_VIDEO','RECORD_AUDIO','CAMERA','READ_EXTERNAL_STORAGE','WRITE_EXTERNAL_STORAGE'].map(name=>'android.permission.'+name);
-export const requiredPermissions=['INTERNET','ACCESS_COARSE_LOCATION','ACCESS_FINE_LOCATION','ACCESS_BACKGROUND_LOCATION','FOREGROUND_SERVICE','FOREGROUND_SERVICE_LOCATION','POST_NOTIFICATIONS'].map(name=>'android.permission.'+name);
+export const forbiddenPermissions=['SYSTEM_ALERT_WINDOW','READ_MEDIA_IMAGES','READ_MEDIA_VIDEO','RECORD_AUDIO','READ_EXTERNAL_STORAGE','WRITE_EXTERNAL_STORAGE'].map(name=>'android.permission.'+name);
+export const requiredPermissions=['INTERNET','ACCESS_COARSE_LOCATION','ACCESS_FINE_LOCATION','ACCESS_BACKGROUND_LOCATION','FOREGROUND_SERVICE','FOREGROUND_SERVICE_LOCATION','POST_NOTIFICATIONS','CAMERA'].map(name=>'android.permission.'+name);
 
 /** @param {{packageName:string,debuggable:boolean,permissions:string[]}} manifest */
 export function verifyReleasePermissions(manifest){

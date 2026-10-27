@@ -26,6 +26,14 @@ worldwide place catalog or reverse-geocoding integration is installed.
 
 # Public capacity geography
 
+October26 owner decision supersedes the Partial-only-route restriction below:
+Empty and Partial may each advertise Area or Route. Current and Preferred
+coverage are all availability; a match to any complete offer returns the vehicle
+once. Keep reported location independent and preserve same-offer endpoint,
+direction and privacy rules. Implementation and cross-platform qualification are
+pending under FEAT-CAP-001's October26 acceptance; no source-priority switch or
+new geography engine is required.
+
 ### Scenario: current availability chooses one geography
 
 Given an authorized Driver publishes current capacity\

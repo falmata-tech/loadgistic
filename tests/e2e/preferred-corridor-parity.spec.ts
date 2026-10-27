@@ -24,7 +24,7 @@ async function preferredSignals(page:import('playwright-core').Page){
  return {route:route!,area};
 }
 
-test('preferred corridor keeps current capacity distinct on phone web and Expo',async({page},info)=>{
+test('preferred corridor keeps planned capacity distinct on phone web and Expo',async({page},info)=>{
  test.skip(info.project.name!=='mobile-chromium','The terminology review targets phone layouts.');
  test.setTimeout(150_000);await page.setViewportSize({width:390,height:844});
  const {route:signal,area}=await preferredSignals(page);
@@ -34,15 +34,15 @@ test('preferred corridor keeps current capacity distinct on phone web and Expo',
  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:45_000});
  const legend=page.locator('.public-map-legend');await expect(legend).toBeVisible();
  if(await legend.getAttribute('open')===null)await legend.locator('summary').click();
- await expect(legend.locator('.corridor')).toHaveText('Preferred corridor');
- await expect(legend).toContainText('Empty capacity route');
+ await expect(legend.locator('.corridor')).toHaveText(['Preferred area','Preferred corridor']);
+ await expect(legend.locator('.empty-route')).toHaveText('Planned route');
  await expect.poll(()=>page.locator('.leaflet-tile-loaded').count(),{timeout:30_000}).toBeGreaterThan(5);
  await page.screenshot({path:info.outputPath('web-preferred-corridor-phone.png'),scale:'css'});
 
  if(area){await page.goto(`/?truck=${encodeURIComponent(area.id)}`);
   await expect(page.getByRole('button',{name:'Vehicle details',exact:true})).toBeVisible({timeout:45_000});
   const areaLegend=page.locator('.public-map-legend');if(await areaLegend.getAttribute('open')===null)await areaLegend.locator('summary').click();
-  await expect(areaLegend.locator('.corridor')).toHaveText('Preferred service area');}
+  await expect(areaLegend.locator('.corridor')).toHaveText(['Preferred area','Preferred corridor']);}
 
  await page.goto(`${preview}/?truck=${encodeURIComponent(signal.id)}`);
  const corridor=page.getByRole('button',{name:'Preferred corridor',exact:true});

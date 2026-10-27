@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-import {workspaceCapabilities} from '../src/navigation/destinations.ts';
+import {hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../src/navigation/destinations.ts';
+import {parseBusinessContext} from '../src/api/business-workspaces.ts';
 
 // Execute the actual screens/handlers with native hosts and HTTP substituted.
 // SQL privacy/Storage authorization and device pixels are separate evidence.
@@ -19,7 +20,7 @@ const find=(tree,type,match=()=>true)=>nodes(tree).find(node=>node.type===type&&
 const settle=async()=>{for(let index=0;index<8;index++)await Promise.resolve();};
 const native=Object.fromEntries(['ActivityIndicator','LoadingSpinner','Redirect','Page','Title','Copy','Card','Button','ErrorText','View','Text','Pressable','Image','Field','Security','Profile','WorkspaceSection','WorkspaceFact','WorkspaceTaskHeader','WorkspaceTaskPane','WorkspaceAction','AppIcon','PublicImage','PublicCardImage','FilePicker','Switch'].map(name=>[name,name]));
 class ApiError extends Error{constructor(status){super('Synthetic access response');this.status=status;}}
-const common={...native,useLocalSearchParams:()=>({setup:'provider'}),ApiError,workspaceCapabilities,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',useLanguage:()=>({t:message=>message}),StyleSheet:{create:value=>value},apiOrigin:'https://local.test',palette:{ink:'#0b1d3a'}};
+const common={...native,useLocalSearchParams:()=>({setup:'provider'}),ApiError,hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome,ProviderTruckSummary:'ProviderTruckSummary',TruckAuthorityBadges:'TruckAuthorityBadges',useLanguage:()=>({t:message=>message}),StyleSheet:{create:value=>value},apiOrigin:'https://local.test',palette:{ink:'#0b1d3a'}};
 
 test('native onboarding submits structured private identity and one Transport Provider category',async()=>{
  const view=renderer(),requests=[],account={session:{state:'ONBOARDING',user:{id:'new-provider'}},request:async(path,body)=>{requests.push({path,body});},reload:async()=>account.session};
@@ -143,14 +144,14 @@ test('an authoritative account read denial removes cached private identity and i
  denied=false;find(tree,'Button',node=>node.props.message==='Try again').props.onPress();await settle();tree=view.render(screen);find(tree,'Button',node=>node.props.message==='Edit account details').props.onPress();tree=view.render(screen);assert.equal(find(tree,'Field',node=>node.props.message==='First name').props.value,'Saved First');
 });
 
-test('provider discovery shows chosen identity and first-name manager while employed drivers retain their actual pair',()=>{
- const view=renderer(),selected=[],provider={key:'provider',kind:'OWNER_OPERATOR',accountName:'Blue Road',managerName:'Meron',title:'Legacy public name',handle:'blue-road',city:'Adama',description:'',matchingTrucks:1,capacityId:'',privateLastName:'DO-NOT-PUBLISH'},driver={...provider,key:'driver',kind:'COMPANY_DRIVER',title:'Dawit',capacityId:'pair-1'};
+test('provider discovery shows one account identity and first-name manager',()=>{
+ const view=renderer(),selected=[],provider={key:'provider',kind:'OWNER_OPERATOR',accountName:'Blue Road',managerName:'Meron',title:'Legacy public name',handle:'blue-road',city:'Adama',description:'',matchingTrucks:1,capacityId:'',privateLastName:'DO-NOT-PUBLISH'};
  const screen=view.compile('../src/components/discovery-results.tsx',{...common,AppLink:'AppLink',LoadingBar:'LoadingBar'}).DiscoveryResults;
- const tree=view.render(screen,{result:{items:[provider,driver],total:2,page:1,hasMore:false,configurations:[]},loading:false,error:'',onPage(){},onRetry(){},onMap:item=>selected.push(item)}),serialized=JSON.stringify(tree);
- assert.ok(serialized.includes('Blue Road'));assert.ok(serialized.includes('Meron'));assert.ok(serialized.includes('Account manager'));assert.ok(serialized.includes('Dawit'));assert.ok(!serialized.includes('DO-NOT-PUBLISH'));assert.ok(!serialized.includes('Owner-operator'));assert.ok(!serialized.includes('Independent driver'));
- const labels=nodes(tree).filter(node=>node.type==='Text').map(node=>node.props.children.flat(Infinity).join(''));assert.ok(labels.includes('Driver'));assert.ok(!labels.includes('Company driver'));
-  const buttons=nodes(tree).filter(node=>node.type==='Button'&&node.props.message==='Show vehicles on map');buttons[0].props.onPress();buttons[1].props.onPress();assert.equal(selected[0].key,'provider');assert.equal(selected[1].capacityId,'pair-1');
- assert.ok(nodes(tree).some(node=>node.type==='AppLink'&&node.props.message==='Transport Provider'&&node.props.href.params.handle==='blue-road'));
+ const tree=view.render(screen,{result:{items:[provider],total:1,page:1,hasMore:false,configurations:[]},loading:false,error:'',onPage(){},onRetry(){},onMap:item=>selected.push(item)}),serialized=JSON.stringify(tree);
+ assert.ok(serialized.includes('Blue Road'));assert.ok(serialized.includes('Meron'));assert.ok(serialized.includes('Account manager'));assert.ok(!serialized.includes('DO-NOT-PUBLISH'));assert.ok(!serialized.includes('Owner-operator'));assert.ok(!serialized.includes('Independent driver'));
+ assert.ok(serialized.includes('{count} vehicles'));assert.ok(!serialized.includes('{count} matching vehicles'));
+ const buttons=nodes(tree).filter(node=>node.type==='Button'&&node.props.message==='Show vehicles on map');assert.equal(buttons.length,1);buttons[0].props.onPress();assert.equal(selected[0].key,'provider');
+ assert.ok(nodes(tree).some(node=>node.type==='AppLink'&&node.props.message==='View profile'&&node.props.href.params.handle==='blue-road'));
 });
 
 test('a committed native public-identity save retries authoritative reading without submitting the claim twice',async()=>{
@@ -183,4 +184,49 @@ test('private Capacity code verification returns brokers to their map and does n
   const view=authEntry({params:{from:'capacity'},session:{state:'ACTIVE',user:{role}}});let tree=view.render();find(tree,'Field',node=>node.props.message==='Email').props.onChangeText('broker@example.test');tree=view.render();await find(tree,'Button',node=>node.props.label==='Send code').props.onPress();tree=view.render();find(tree,'Field',node=>node.props.message==='Sign-in code').props.onChangeText('123456');tree=view.render();await find(tree,'Button',node=>node.props.label==='Sign in').props.onPress();
   assert.deepEqual(view.requests,['broker@example.test']);assert.deepEqual(view.destinations,role==='CUSTOMER'?['/?view=private']:[]);
  }
+});
+test('business invitation sign-in and sign-up keep the workspace destination through code verification',async()=>{
+ for(const mode of ['LOGIN','SIGNUP']){
+  const view=authEntry({mode,params:{from:'workspaces',setup:'business'},session:{state:'ACTIVE',user:{role:'CUSTOMER'}}});let tree=view.render();
+  assert.ok(find(tree,'Copy',node=>node.props.message===(mode==='LOGIN'?'Sign in to view your invitations.':'Verify your email to view your invitations.')));
+  assert.equal(find(tree,'AppLink',node=>node.props.message==='Review access').props.href,'/review-access?from=workspaces');
+  assert.equal(find(tree,'AppLink',node=>node.props.message===(mode==='LOGIN'?'Sign up':'Sign in')).props.href,mode==='LOGIN'?'/signup?from=workspaces&setup=business':'/account?from=workspaces');
+  find(tree,'Field',node=>node.props.message==='Email').props.onChangeText('invited@example.test');tree=view.render();await find(tree,'Button',node=>node.props.label==='Send code').props.onPress();
+  tree=view.render();find(tree,'Field',node=>node.props.message==='Sign-in code').props.onChangeText('123456');tree=view.render();await find(tree,'Button',node=>node.props.label==='Sign in').props.onPress();
+  assert.deepEqual(view.destinations,['/workspaces']);
+ }
+ for(const mode of ['LOGIN','SIGNUP']){
+  const view=authEntry({mode,params:{from:'workspaces',setup:'business'},session:{state:'ONBOARDING',user:{role:'CUSTOMER'}}});let tree=view.render();
+  find(tree,'Field',node=>node.props.message==='Email').props.onChangeText('new-invitee@example.test');tree=view.render();await find(tree,'Button',node=>node.props.label==='Send code').props.onPress();
+  tree=view.render();find(tree,'Field',node=>node.props.message==='Sign-in code').props.onChangeText('123456');tree=view.render();await find(tree,'Button',node=>node.props.label==='Sign in').props.onPress();
+  assert.deepEqual(view.destinations,['/workspaces']);
+ }
+});
+test('business invitation redirects a signed-out user into contextual sign-in and dedicated review sign-in returns to Join',async()=>{
+ const view=renderer(),destinations=[];
+ const screen=view.compile('../src/screens/business-workspaces.tsx',{...common,useAccount:()=>({busy:false,session:null})}).default;
+ const tree=view.render(screen);assert.equal(find(tree,'Redirect').props.href,'/account?from=workspaces');
+ let account={session:null,signInReview:async()=>{account.session={state:'ACTIVE',user:{role:'CUSTOMER'}};}};
+ const review=view.compile('../src/screens/review-access.tsx',{...common,useAccount:()=>account,useLocalSearchParams:()=>({from:'workspaces'}),useFocusEffect:callback=>callback(),router:{replace:href=>destinations.push(href)},workspaceHome:()=>'/business-capacity'}).default;
+ let reviewTree=view.render(review);find(reviewTree,'Field',node=>node.props.message==='Review account email').props.onChangeText('reviewer@example.test');reviewTree=view.render(review);find(reviewTree,'Field',node=>node.props.message==='Review account password').props.onChangeText('synthetic-password');reviewTree=view.render(review);
+ await find(reviewTree,'Button',node=>node.props.message==='Sign in').props.onPress();await settle();view.render(review);
+ assert.deepEqual(destinations,['/workspaces']);
+ const normalView=renderer(),normalDestinations=[];
+ const normal=normalView.compile('../src/screens/review-access.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{role:'CUSTOMER'}}}),useLocalSearchParams:()=>({}),useFocusEffect:callback=>callback(),router:{replace:href=>normalDestinations.push(href)},workspaceHome:()=>'/business-capacity'}).default;
+ normalView.render(normal);assert.deepEqual(normalDestinations,['/business-capacity']);
+});
+test('business invitation Join uses only the authenticated account pending row',async()=>{
+ const actor='16000000-0000-4000-8000-000000000001',invite='16000000-0000-4000-8000-000000000002';
+ const pending={id:invite,workspaceId:'16000000-0000-4000-8000-000000000003',businessName:'Synthetic broker',handle:'synthetic-broker',expiresAt:'2026-10-30T00:00:00Z',role:'STAFF',capacity:true,tracking:true};
+ const data={actorId:actor,selectedWorkspaceId:null,workspaces:[],invitations:[pending]};
+ const view=renderer(),requests=[],destinations=[];
+ const account={busy:false,session:{state:'ACTIVE',user:{id:actor,role:'CUSTOMER',providerWorkspaceAvailable:false}},request:async(path,body)=>{requests.push({path,body});},reload:async()=>({state:'ACTIVE',user:{id:actor,role:'CUSTOMER',selectedBusinessWorkspace:{permissions:{capacity:true,tracking:true}}}})};
+ let response=data;
+ const screen=view.compile('../src/screens/business-workspaces.tsx',{...common,useAccount:()=>account,useAccountQuery:path=>path==='/api/business-workspaces'?{data:response,loading:false,error:'',reload:async()=>{}}:{data:{canCreateProvider:false},loading:false,error:'',reload:async()=>{}},parseBusinessContext,router:{replace:href=>destinations.push(href)}}).default;
+ let tree=view.render(screen);assert.equal(find(tree,'Button',node=>node.props.message==='Join')?.props.message,'Join');
+ find(tree,'Button',node=>node.props.message==='Join').props.onPress();await settle();
+ assert.deepEqual(requests,[{path:`/api/business-workspaces/invitations/${invite}/accept`,body:{}}]);assert.deepEqual(destinations,['/business-capacity']);
+ const foreignView=renderer();response={...data,actorId:'16000000-0000-4000-8000-000000000004'};
+ const foreign=foreignView.compile('../src/screens/business-workspaces.tsx',{...common,useAccount:()=>account,useAccountQuery:path=>path==='/api/business-workspaces'?{data:response,loading:false,error:'',reload:async()=>{}}:{data:{canCreateProvider:false},loading:false,error:'',reload:async()=>{}},parseBusinessContext,router:{replace:href=>destinations.push(href)}}).default;
+ tree=foreignView.render(foreign);assert.equal(find(tree,'Button',node=>node.props.message==='Join'),undefined);
 });

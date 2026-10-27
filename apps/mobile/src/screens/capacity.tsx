@@ -12,6 +12,7 @@ import { DiscoveryFilters } from '../components/discovery-filters';
 import { ResultsDrawer } from '../components/results-drawer';
 import {Copy,LoadingSpinner,Page,palette} from '../components/ui';
 import {useAccount} from '../session/provider';
+import {hasProviderHome,providerHomeHref,providerMarketContext} from '../navigation/destinations';
 import { VEHICLE_CONFIGURATIONS } from '../../../../src/lib/vehicle-configurations';
 import { DiscoveryResults } from '../components/discovery-results';
 import { LoadingBar } from '../components/loading-bar';
@@ -23,6 +24,7 @@ import {transporterSearchQuery,TRANSPORTER_SEARCH_DELAY_MS,TRANSPORTER_SEARCH_TI
 import {loadAccountCapacity,loadBusinessCapacity} from '../api/business-workspaces';
 import {ApiError} from '../api/response';
 import {useForegroundRefresh} from '../hooks/foreground-refresh';
+import {capacityRefreshResult,type CapacityRefreshResult} from '../map/capacity-refresh';
 export type BusinessCapacityContext={workspaceId:string;scopeKey:string;request:(path:string)=>Promise<unknown>};
 export type AccountCapacityContext={scopeKey:string;request:(path:string)=>Promise<unknown>;networkHref?:'/network'|'/directory'};
 
@@ -84,7 +86,8 @@ export default function App() {
   const business=useMemo<BusinessCapacityContext|undefined>(()=>privateView&&workspace?.permissions.capacity&&session?{
     workspaceId:workspace.id,scopeKey:`${session.user.id}:${workspace.id}:${workspace.membershipRevision||''}`,request:auth.request
   }:undefined,[privateView,workspace,session,auth.request]);
-  if(privateView&&auth.busy)return <Page><LoadingSpinner/></Page>;
+  if(auth.busy)return <Page><LoadingSpinner accessibilityLabel="Restoring your account"/></Page>;
+  if(hasProviderHome(session))return <Redirect href={providerHomeHref(session,params)}/>;
   if(privateView&&!session)return <Redirect href="/account?from=capacity"/>;
   if(privateView&&['TRANSPORTER','DRIVER'].includes(session?.user.role||''))return <Redirect href="/"/>;
   if(privateView&&!business)return <Page><Copy message="Vehicles shared with you are not available for this account."/></Page>;
@@ -95,9 +98,13 @@ export default function App() {
 }
 export function BusinessCapacityMap({context}:{context:BusinessCapacityContext}){return <Capacity key={context.scopeKey} initialQuery="" initialMode="private" initialFilters={{}} business={context}/>;}
 export function AccountCapacityMap({context}:{context:AccountCapacityContext}){return <Capacity key={context.scopeKey} initialQuery="" initialMode="private" initialFilters={{}} account={context}/>;}
-export function PublicCapacityHome({active}:{active:boolean}){const {data}=useAccountQuery<CapacityWorkspace>('/api/mobile/capacity');return <Capacity initialQuery="" initialMode="open" initialFilters={{}} ownSignalIds={data?.vehicles.map(vehicle=>vehicle.current?.id).filter((id):id is string=>Boolean(id))} active={active}/>;}
+export function PublicCapacityHome({active,initialQuery='',initialFilters={}}:{active:boolean;initialQuery?:string;initialFilters?:TruckFilters}){
+ const {data}=useAccountQuery<CapacityWorkspace>('/api/mobile/capacity'),context=providerMarketContext({q:initialQuery,...initialFilters});
+ return <Capacity {...context} initialMode="open" ownSignalIds={data?.vehicles.map(vehicle=>vehicle.current?.id).filter((id):id is string=>Boolean(id))} active={active}/>;
+}
 function Capacity({initialQuery,initialMode,initialFilters,business,account,ownSignalIds,showModeSwitch=false,active=true}:{initialQuery:string;initialMode:'open'|'private';initialFilters:TruckFilters;business?:BusinessCapacityContext;account?:AccountCapacityContext;ownSignalIds?:string[];showModeSwitch?:boolean;active?:boolean}) {
   const {t}=useLanguage();
+  const {session}=useAccount();
   const [focused,setFocused]=useState(false);
   useFocusEffect(useCallback(()=>{setFocused(active);return()=>setFocused(false);},[active]));
   const visitor = useVisitor(), visitorController = visitor.controller;
@@ -108,6 +115,11 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const [controlsHeight,setControlsHeight]=useState(48);
   const bottomInset=20;
   const mode=initialMode;
+  const changeMode=(next:'open'|'private')=>{
+    if(next===mode)return;
+    if(next==='private'&&!session){router.push('/account?from=capacity');return;}
+    router.replace(next==='private'?'/?view=private':'/');
+  };
   const sharedIdentity = visitor.snapshot.capacity?.startedAt, sharedReady = Boolean(business||account||visitor.ready && visitor.snapshot.foreground && sharedIdentity);
   const [query, setQuery] = useState(''), [revision, setRevision] = useState(0);
   const [refreshTick,setRefreshTick]=useState(0);
@@ -116,11 +128,13 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const requestKey = `${business?.scopeKey||account?.scopeKey||''}:${mode}:${query}:${filterKey}:${revision}:${business||account?'':sharedIdentity || ''}:${sharedReady}`;
   const canLoad = mode === 'open' || sharedReady;
   useForegroundRefresh(refreshCapacity,focused&&canLoad,60000);
-  const [result, setResult] = useState<{ key: string; items: CapacitySignal[]; loading: boolean; error: string } | null>(null);
+  const [result, setResult] = useState<CapacityRefreshResult<CapacitySignal> | null>(null);
   const [selection, setSelection] = useState<{ key: string; signal: CapacitySignal } | null>(null);
   const selectionRef=useRef(selection);
   useEffect(()=>{selectionRef.current=selection;},[selection]);
   const [initialSelectionActive,setInitialSelectionActive]=useState(Boolean(initialFilters.truck));
+  const initialSelectionActiveRef=useRef(initialSelectionActive);
+  useEffect(()=>{initialSelectionActiveRef.current=initialSelectionActive;},[initialSelectionActive]);
   const clearSelection=useCallback(()=>{setInitialSelectionActive(false);setSelection(null);},[]);
   const searchScopeKey=`${business?.scopeKey||account?.scopeKey||''}:${mode}:${JSON.stringify(profileFilters)}:${business||account?'':sharedIdentity||''}:${sharedReady}`;
   const loadProfiles=useCallback((query:string,page:number,signal:AbortSignal)=>{
@@ -142,39 +156,52 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const profileResult=profileState?.result||null;
   const current = result?.key === requestKey ? result : null;
   const items = current?.items || emptySignals, loading = canLoad && (current?.loading ?? true), error = current?.error || '';
-  const selected=selection?.key===requestKey?items.find(item=>item.id===selection.signal.id)||null:initialSelectionActive?items.find(item=>item.id===initialFilters.truck)||null:null;
+  // Reconcile the selected vehicle against each refreshed result. Applying a
+  // filter should keep its details when it still matches, and remove them when
+  // it no longer appears in the returned vehicles.
+  const selectedId=selection?.signal.id||(initialSelectionActive?initialFilters.truck:undefined);
+  const selected=selectedId?items.find(item=>item.id===selectedId)||null:null;
   const selectMapSignal=useCallback((signal:CapacitySignal)=>{cancelSearch();setInitialSelectionActive(false);setSelection({key:requestKey,signal});setDrawer(false);},[requestKey,cancelSearch]);
   const setSelected=(signal:CapacitySignal|null)=>{if(signal)selectMapSignal(signal);else clearSelection();};
   useEffect(() => {
     if (!canLoad) return;
     const controller = new AbortController();
+    let active=true;
     let timeout = setTimeout(() => controller.abort('timeout'), 30000);
     let finalItems:CapacitySignal[]=[];
-    const onPage = (items: CapacitySignal[]) => { if (!controller.signal.aborted) {finalItems=items;clearTimeout(timeout);timeout=setTimeout(()=>controller.abort('timeout'),30000);setResult({ key: requestKey, items, loading: true, error: '' });} };
+    const onPage = (items: CapacitySignal[]) => { if (active&&!controller.signal.aborted) {finalItems=items;clearTimeout(timeout);timeout=setTimeout(()=>controller.abort('timeout'),30000);setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:'page',items}));} };
     const loading = business?loadBusinessCapacity(business.workspaceId,controller.signal,onPage,business.request,effectiveFilters):account?loadAccountCapacity(controller.signal,onPage,account.request,effectiveFilters):mode === 'private' ? loadSharedCapacity(query, controller.signal, onPage, (path, signal) => visitorController.request('capacity', path, undefined, signal), effectiveFilters) : loadCapacity(apiOrigin, query, controller.signal, onPage, fetch, effectiveFilters);
-    loading.then(()=>{if((business||account)&&!controller.signal.aborted&&selectionRef.current?.key===requestKey&&!finalItems.some(item=>item.id===selectionRef.current?.signal.id))clearSelection();}).catch(error => {
-      const denied=Boolean((business||account)&&error instanceof ApiError&&[401,403,404].includes(error.status));
+    loading.then(()=>{
+      if(!active||controller.signal.aborted)return;
+      setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:'complete',items:finalItems}));
+      const selectedId=selectionRef.current?.signal.id||(initialSelectionActiveRef.current?initialFilters.truck:undefined);
+      if(selectedId&&!finalItems.some(item=>item.id===selectedId))clearSelection();
+    }).catch(error => {
+      if(!active||controller.signal.aborted&&controller.signal.reason!=='timeout')return;
+      const denied=Boolean((business||account||mode==='private')&&error instanceof ApiError&&[401,403,404].includes(error.status));
       if(denied)clearSelection();
-      if (!controller.signal.aborted || controller.signal.reason === 'timeout') setResult(previous => ({ key: requestKey, items: !denied&&previous?.key === requestKey ? previous.items : [], loading: false, error: 'Could not finish loading vehicles. Please try again.' }));
-    }).finally(() => { clearTimeout(timeout); if (!controller.signal.aborted || controller.signal.reason === 'timeout') setResult(previous => previous?.key === requestKey ? { ...previous, loading: false } : { key: requestKey, items: [], loading: false, error: '' }); });
-    return () => { controller.abort(); clearTimeout(timeout); };
-  }, [query, requestKey, canLoad, mode, visitorController, effectiveFilters,business,account,refreshTick,clearSelection]);
+      setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:denied?'denied':'failed',error:'Could not finish loading vehicles. Please try again.'}));
+    }).finally(() => { clearTimeout(timeout); if (active&&(!controller.signal.aborted || controller.signal.reason === 'timeout')) setResult(previous => previous?.key === requestKey ? { ...previous, loading: false } : { key: requestKey, items: [], loading: false, error: '' }); });
+    return () => { active=false;controller.abort(); clearTimeout(timeout); };
+  }, [query, requestKey, canLoad, mode, visitorController, effectiveFilters,business,account,refreshTick,clearSelection,initialFilters.truck]);
   const resetResults=()=>{setResult(null);clearSelection();};
   const submitSearch=()=>{Keyboard.dismiss();search.submit();};
   const closeSearch=()=>{search.cancel();setDrawer(false);};
   const showProfile=(profile:ProfileResult)=>{if(!search.isCurrent())return;resetResults();setQuery('');setFilters(profileTruckFilters(filters,profile));closeSearch();};
+  const privateEmpty=Boolean(business||account)&&!query&&filterCount(filters)===0;
+  const networkHref=privateEmpty?(business?'/directory':account?.networkHref):undefined;
   return <View style={styles.screen}>
-    {showModeSwitch&&<><View style={styles.intro}><Text style={styles.title}>{t(capacityIntroduction.title)}</Text><Text style={styles.copy}>{t(capacityIntroduction.body)}</Text></View>
-    <View style={{ flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, padding: 3, gap: 4, borderWidth: 1, borderColor: palette.border, borderRadius: 9, backgroundColor: '#f3f5f8' }}>{([['open', 'Open to the public'], ['private', 'Shared with you']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="tab" aria-selected={mode === value} accessibilityState={{ selected: mode === value }} onPress={() => { if(value===mode)return;router.replace(value==='private'?'/?view=private':'/'); }} style={{ flex: 1, minHeight: 36, borderWidth: 1, borderColor: mode === value ? '#cbd5e1' : 'transparent', borderRadius: 7, padding: 6, justifyContent: 'center', backgroundColor: mode === value ? '#eaf1ff' : 'transparent' }}><Text style={{ color: mode === value ? palette.blue : palette.muted,fontSize:11, fontWeight: mode === value ? '700' : '600', textAlign: 'center' }}>{t(label)}</Text></Pressable>)}</View></>}
-    <View testID="capacity-map-workspace" style={styles.map}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} ownSignalIds={ownSignalIds} selected={selected} loading={loading} topInset={controlsHeight+20} bottomInset={bottomInset} onSelect={selectMapSignal} onDeselect={clearSelection} />
+    {showModeSwitch&&<><View style={styles.intro}><Text accessibilityRole="header" style={styles.title}>{t(capacityIntroduction.title)}</Text></View>
+    <View style={{ flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, padding: 3, gap: 4, borderWidth: 1, borderColor: palette.border, borderRadius: 9, backgroundColor: '#f3f5f8' }}>{([['open', 'Openly shared'], ['private', 'Privately shared with you']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="tab" aria-selected={mode === value} accessibilityState={{ selected: mode === value }} onPress={() => changeMode(value)} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: mode === value ? '#cbd5e1' : 'transparent', borderRadius: 7, padding: 6, justifyContent: 'center', backgroundColor: mode === value ? '#eaf1ff' : 'transparent' }}><Text style={{ color: mode === value ? palette.blue : palette.muted,fontSize:11, fontWeight: mode === value ? '700' : '600', textAlign: 'center' }}>{t(label)}</Text></Pressable>)}</View></>}
+    <View testID="capacity-map-workspace" style={styles.map}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} ownSignalIds={ownSignalIds} selected={selected} loading={loading} topInset={controlsHeight+20} bottomInset={bottomInset} privatePhotoWorkspaceId={mode==='private'?business?.workspaceId:undefined} onSelect={selectMapSignal} onDeselect={clearSelection} />
       {canLoad&&<View onLayout={event=>setControlsHeight(event.nativeEvent.layout.height)} style={{position:'absolute',top:12,left:12,right:12,flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel={t('Search transporters')} accessibilityState={{expanded:drawer}} onPress={()=>{if(selected)setSelected(null);if(drawer)closeSearch();else setDrawer(true);}} style={styles.mapButton}><AppIcon name="search" size={19} color={palette.blue}/><Text style={styles.link}>{t('Search')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Vehicle filters')} onPress={()=>setFiltersOpen(true)} style={styles.mapButton}><AppIcon name="filters" size={19} color={palette.blue}/><Text style={styles.link}>{t('Filter')}{filterCount(peopleSearchFilters(filters))?` (${filterCount(peopleSearchFilters(filters))})`:''}</Text></Pressable></View>}
       {drawer&&canLoad&&<ResultsDrawer top={controlsHeight+20} bottom={bottomInset} onClosing={search.cancel} onClose={closeSearch}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:14,gap:14}}><View style={styles.search}><View style={styles.inputFrame}><TextInput accessibilityLabel={t('Search transporters')} placeholder={t('Account name, manager or @handle')} placeholderTextColor="#526875" value={input} maxLength={120} onChangeText={search.changeInput} onSubmitEditing={submitSearch} returnKeyType="search" style={styles.input}/><Pressable accessibilityRole="button" accessibilityLabel={t('Clear search')} onPress={search.clear} style={styles.inputClear}><AppIcon name="close" color="#155eef" size={19}/></Pressable></View><Pressable accessibilityRole="button" accessibilityLabel={t('Search')} accessibilityState={{disabled:!validSearch}} disabled={!validSearch} onPress={submitSearch} style={[styles.button,!validSearch&&{opacity:0.55}]}><AppIcon name="search" color="#fff"/></Pressable></View>{!validSearch?<Text style={styles.copy}>{t(input.trim()?'Enter at least two characters.':'Search by account name, manager, @handle or city.')}</Text>:profileState?<DiscoveryResults result={profileResult} loading={profileState.loading} error={profileState.error} onPage={search.onPage} onRetry={search.retry} onMap={showProfile}/>:<LoadingBar label="Finding transporters"/>}</ScrollView></ResultsDrawer>}
       {loading && <View style={styles.loading}><LoadingBar label="Loading vehicle availability"/></View>}
       {!!error && !drawer && <View style={[styles.notice,{top:controlsHeight+20}]}><Text accessibilityRole="alert">{error}</Text><Pressable accessibilityRole="button" onPress={() => { resetResults(); setRevision(value => value + 1); }} style={styles.clear}><Text style={styles.link}>{t('Try again')}</Text></Pressable></View>}
-      {!drawer && !loading && !error && items.length === 0 && (mode === 'open' || sharedReady) && <View style={[styles.notice,{top:controlsHeight+20}]}><Text>{t(account?'No vehicles are shared with this account yet.':'No matching available vehicles.')}</Text>{account?.networkHref?<Pressable accessibilityRole="button" onPress={()=>router.navigate(account.networkHref!)} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.link}>{t('Open Network')}</Text></Pressable>:null}</View>}
+      {!drawer && !loading && !error && items.length === 0 && (mode === 'open' || sharedReady) && <View style={[styles.notice,{top:controlsHeight+20}]}><Text>{t(privateEmpty?'No vehicles are shared with this account yet.':'No matching available vehicles.')}</Text>{networkHref?<Pressable accessibilityRole="button" onPress={()=>router.navigate(networkHref)} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.link}>{t(business?'Find connections':'Open Network')}</Text></Pressable>:filterCount(peopleSearchFilters(filters))>0?<Pressable accessibilityRole="button" onPress={()=>setFiltersOpen(true)} style={{minHeight:44,justifyContent:'center'}}><Text style={styles.link}>{t('Review filters')}</Text></Pressable>:null}</View>}
     </View>
 
-    {filtersOpen&&canLoad&&<DiscoveryFilters initial={peopleSearchFilters(filters)} configurations={profileResult?.configurations||[...VEHICLE_CONFIGURATIONS]} onClose={()=>setFiltersOpen(false)} onClearProfile={filters.provider||filters.truck||query?()=>{resetResults();setFilters(peopleSearchFilters(filters));setQuery('');}:undefined} onApply={next=>{resetResults();setFilters({...next,provider:filters.provider,truck:filters.truck});setFiltersOpen(false);setRevision(v=>v+1);}}/>}
+    {filtersOpen&&canLoad&&<DiscoveryFilters initial={peopleSearchFilters(filters)} configurations={profileResult?.configurations||[...VEHICLE_CONFIGURATIONS]} privateBusiness={Boolean(business)} onClose={()=>setFiltersOpen(false)} onClearProfile={filters.provider||filters.truck||query?()=>{resetResults();setFilters(peopleSearchFilters(filters));setQuery('');}:undefined} onApply={next=>{setResult(null);setFilters({...next,provider:filters.provider,truck:filters.truck});setFiltersOpen(false);setRevision(v=>v+1);}}/>}
   </View>;
 }
 const styles = StyleSheet.create({

@@ -33,14 +33,14 @@ test('Featured staff save and publish an isolated manual day and manage its spon
   await expect(editor.locator('.featured-roster-list>li')).toHaveCount(2);
   await editor.getByRole('combobox',{name:'Featured accounts',exact:true}).selectOption('2');
   await page.getByLabel('Headline',{exact:true}).fill(marker);
-  await page.getByLabel('Short introduction',{exact:true}).fill('Meet the trucks and drivers on this morning programme.');
+  await page.getByLabel('Short introduction',{exact:true}).fill('Meet the Transport Providers in this evening programme.');
   phase('DRAFT');await Promise.all([page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST'),page.getByRole('button',{name:'Save draft',exact:true}).click()]);
   await expect(page.getByText('Draft saved.',{exact:true})).toBeVisible();
   let day=checked(await db.from('featured_provider_days').select('id,status,selection_source,target_count').eq('feature_date',date).single());
   expect(day).toMatchObject({status:'DRAFT',selection_source:'MANUAL',target_count:2});expect((await getDailyFeaturedProviders(date)).providers).toHaveLength(0);
   phase('MANUAL_TIMES');await page.getByRole('link',{name:'Edit programme',exact:true}).click();await editor.getByRole('button',{name:'Manual',exact:true}).click();
   const rows=editor.locator('.featured-roster-list>li');
-  for(const [index,start,end] of [[0,'08:30','10:00'],[1,'10:02','11:58']] as const){
+  for(const [index,start,end] of [[0,'22:30','23:10'],[1,'23:12','23:57']] as const){
    await rows.nth(index).getByLabel('Starts',{exact:true}).fill(start);await rows.nth(index).getByLabel('Ends',{exact:true}).fill(end);
   }
   phase('PUBLISH');await Promise.all([page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST'),page.getByRole('button',{name:'Publish this day',exact:true}).click()]);
@@ -48,7 +48,7 @@ test('Featured staff save and publish an isolated manual day and manage its spon
   day=checked(await db.from('featured_provider_days').select('id,status,selection_source,target_count').eq('feature_date',date).single());expect(day.status).toBe('PUBLISHED');
   const feature=await getDailyFeaturedProviders(date);expect(feature.providers).toHaveLength(2);expect(feature.headline).toBe(marker);
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();await expect(editor.getByRole('button',{name:'Manual',exact:true})).toHaveClass('active');
-  await expect(rows.nth(0).getByLabel('Starts',{exact:true})).toHaveValue('08:30');await expect(rows.nth(1).getByLabel('Ends',{exact:true})).toHaveValue('11:58');
+  await expect(rows.nth(0).getByLabel('Starts',{exact:true})).toHaveValue('22:30');await expect(rows.nth(1).getByLabel('Ends',{exact:true})).toHaveValue('23:57');
   await editor.screenshot({path:info.outputPath('featured-saved-manual.png')});
   phase('SPONSOR_SAVE');await page.getByRole('link',{name:'Cancel editing',exact:true}).click();await page.getByRole('button',{name:'Schedule sponsor',exact:true}).click();
   const sponsorForm=page.locator('.featured-sponsor-form');await sponsorForm.getByLabel('Sponsor type',{exact:true}).selectOption('ADVERTISER');

@@ -36,10 +36,10 @@ test('low-end phone automatically loads viewport pages and settles after panning
   const settledState=page.getByTestId('capacity-feed-state');
   if(await settledState.count()){
     await expect(settledState).toHaveClass(/\bempty\b/);
-    await expect(settledState).toContainText('No vehicle signals match these filters.');
+    await expect(settledState).toContainText('No matching available vehicles.');
     await expect(page.locator('.capacity-map-cluster,.capacity-truck-map-marker')).toHaveCount(0);
   }
   const settled=viewports.length;await page.waitForTimeout(1000);expect(viewports.length).toBe(settled);
   const heap=await client.send('Runtime.getHeapUsage');expect(heap.usedSize).toBeLessThan(96*1024*1024);
-  }finally{await client.send('Emulation.setCPUThrottlingRate',{rate:1}).catch(()=>undefined);await client.detach();}
+  }finally{await client.send('Emulation.setCPUThrottlingRate',{rate:1}).catch(()=>undefined);await client.detach().catch(()=>undefined);}
 });

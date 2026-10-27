@@ -14,10 +14,11 @@ test('capacity networks lead About and both map choices in all three supported l
     const picker=page.locator('.language-picker select:visible');
     await expect(picker).toBeEnabled();await picker.selectOption(locale);
     await expect(page.locator('.market-introduction h1')).toHaveText(translated(capacityIntroduction.title));
-    await expect(page.locator('.market-introduction p')).toHaveText(translated(capacityIntroduction.body));
+    await expect(page.locator('.market-introduction p')).toHaveCount(1);
+    await expect(page.locator('.market-introduction p')).toHaveText(translated(capacityIntroduction.webDescription));
     const choices=page.locator('.capacity-view-choice');
-    await expect(choices.getByRole('link',{name:translated('Open to the public'),exact:true})).toHaveAttribute('aria-current','page');
-    await choices.getByRole('link',{name:translated('Shared with you'),exact:true}).click();
+    await expect(choices.getByRole('link',{name:translated('Openly shared'),exact:true})).toHaveAttribute('aria-current','page');
+    await choices.getByRole('link',{name:translated('Privately shared with you'),exact:true}).click();
     await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
     await expect(page.getByRole('heading',{name:translated('Sign in'),exact:true})).toBeVisible();
     await expect(page.getByText(translated('Sign in to see vehicles shared with your account.'),{exact:true})).toBeVisible();
@@ -33,7 +34,7 @@ test('capacity networks lead About and both map choices in all three supported l
     }
     await page.getByRole('tab',{name:translated(platformAbout.audiences[0].label),exact:true}).click();
     await expect(page.getByRole('link',{name:translated('Account and data deletion'),exact:true})).toHaveAttribute('href','/delete-account');
-    const footer=page.locator('main footer');
+    const footer=page.locator('body>.site-copyright');
     await expect(footer).toContainText(translated('Jigjiga, Somali Region, Ethiopia'));
     await expect(footer).toContainText(`© ${new Date().getFullYear()} MarketVision Technology`);
     await expect(footer.getByRole('link',{name:'MarketVision Technology'})).toHaveAttribute('href','https://marketvisiontech.com/');

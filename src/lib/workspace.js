@@ -34,7 +34,7 @@ function dashboardActions(user){
   ];
   return [
     {href:'/app/provider-shipments/new',label:'Start Tracking',description:'Create a transporter-managed Tracking session after agreeing transport work offline.'},
-    {href:user.role==='TRANSPORTER'?'/app/fleet':'/app/home',label:'Update capacity',description:'Publish Empty or Partial vehicle availability.'},
+    {href:user.role==='TRANSPORTER'?'/app/fleet':'/app/home',label:'Update planned capacity',description:'Publish Empty or Partial vehicle availability.'},
     {href:'/app/company-page',label:'Update public page',description:'Keep your services, business information, and public contact choices current.'}
   ];
 }

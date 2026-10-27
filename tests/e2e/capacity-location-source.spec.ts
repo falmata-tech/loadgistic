@@ -8,6 +8,7 @@ test('capacity map combines location sources with load status and clears them on
   await expect(trigger).toBeEnabled();
   await trigger.click();
   const dialog=page.getByRole('dialog',{name:'Vehicle filters'});
+  await dialog.locator('[data-filter-section="location"] > summary').click();
   await expect(dialog.getByRole('group',{name:'Location source'})).toBeVisible();
   await expect(dialog.locator('[data-filter-group="loadType"]')).toHaveCount(0);
   await dialog.locator('[data-filter-group="locationSource"] input[value="GPS"]').check();

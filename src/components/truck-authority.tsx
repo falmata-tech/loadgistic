@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {BadgeCheck,KeyRound,ShieldCheck,Truck} from 'lucide-react';
+import {BadgeCheck,Check,KeyRound,ShieldCheck,Truck} from 'lucide-react';
 import {Text,Localized} from './localization';
 import styles from './truck-authority.module.css';
 
@@ -16,7 +16,7 @@ export function TruckAuthorityBadges({authority}:{authority?:TruckAuthority|null
   {key:'permission',message:'Permission verified',icon:ShieldCheck,evidence:authority?.permission},
   {key:'licence',message:authority?.operatingLicence?.holderBasis==='FINANCED'?'Financed · licence reviewed':'Operating licence reviewed',icon:BadgeCheck,evidence:authority?.operatingLicence}
  ].filter(badge=>badge.evidence?.verified===true);
- return <Localized as="div" copy={["aria-label"]} className={styles.badges} aria-label="Vehicle verification">{badges.length?badges.map(({key,message,icon:Icon,evidence})=><details key={key} className={`${styles.badge} ${styles[key]}`}><summary><Icon aria-hidden="true"/><Text message={message}/></summary><div className={styles.details}>{evidence?.reviewedAt?<span><Text message="Reviewed "/>{evidence.reviewedAt.slice(0,10)}</span>:null}{evidence?.expiresOn?<span><Text message="Expires "/>{evidence.expiresOn}</span>:null}<span><Text message="Reviewed for this provider and vehicle."/></span></div></details>):<span className={`${styles.badge} ${styles.pending}`}><ShieldCheck aria-hidden="true"/><Text message="Not yet verified. Confirm details directly."/></span>}</Localized>;
+ return <Localized as="div" copy={["aria-label"]} className={styles.badges} aria-label="Vehicle verification">{badges.length?badges.map(({key,message,icon:Icon,evidence})=><details key={key} className={`${styles.badge} ${styles[key]}`}><summary><Icon aria-hidden="true"/><Check aria-hidden="true"/><Text message={message}/></summary><div className={styles.details}>{evidence?.reviewedAt?<span><Text message="Reviewed "/>{evidence.reviewedAt.slice(0,10)}</span>:null}{evidence?.expiresOn?<span><Text message="Expires "/>{evidence.expiresOn}</span>:null}</div></details>):<span className={`${styles.badge} ${styles.pending}`}><ShieldCheck aria-hidden="true"/><Text message="Not yet verified"/></span>}</Localized>;
 }
 export function ProviderPublicationNotice({publication}:{publication:ProviderPublication}){
  if(publication.canPublish)return null;

@@ -31,6 +31,20 @@ test('explicit correction keeps the original revision and route and ignores a re
 test('reassignment starts from no chosen replacement and cannot silently choose the current truck',async()=>{
  const writes=[],view=runtime({...fixture,actions:['REASSIGN']},async(path,body)=>writes.push(body));let tree=view.render();find(tree,'WorkspaceAction').props.onPress();tree=view.render();assert.deepEqual(find(tree,'Choices').props.options,[{id:'replacement',label:'Other assigned truck'}]);find(tree,'Field',node=>node.props.message==='Reason for this change').props.onChangeText('Truck changed');tree=view.render();find(tree,'Button',node=>node.props.message==='Save change').props.onPress();await settle();assert.equal(writes.length,0);find(tree,'Choices').props.onChange('replacement');tree=view.render();find(tree,'Button',node=>node.props.message==='Save change').props.onPress();await settle();assert.deepEqual(writes,[{action:'REASSIGN',revision:'saved-r1',reason:'Truck changed',vehicle_id:'replacement'}]);
 });
+test('a shipment with only its current vehicle does not offer an unusable change-vehicle task',()=>{
+ const view=runtime({...fixture,actions:['CORRECT','REASSIGN'],vehicles:[fixture.vehicles[0]]});
+ const tree=view.render();
+ assert.deepEqual(nodes(tree).filter(node=>node.type==='WorkspaceAction').map(node=>node.props.message),['Correct details']);
+});
+test('later provider correction preserves the locked delivery date while retaining editable cargo and pickup',()=>{
+ const view=runtime({...fixture,status:'LOADING',actions:['CORRECT']});
+ let tree=view.render();find(tree,'WorkspaceAction').props.onPress();tree=view.render();
+ assert.equal(find(tree,'DatePicker',node=>node.props.message==='Expected delivery'),undefined);
+ assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Expected delivery')?.props.value,fixture.deliveryDate);
+ assert.ok(find(tree,'WorkspaceFact',node=>node.props.message==='Route'));
+ assert.equal(find(tree,'DatePicker',node=>node.props.message==='Expected pickup')?.props.disabled,false);
+ assert.ok(find(tree,'Field',node=>node.props.message==='Cargo'));
+});
 test('Back to shipment actions abandons the editor without a product mutation',()=>{
  const writes=[],view=runtime({...fixture,actions:['CORRECT','REASSIGN']},async(path,body)=>writes.push(body));let tree=view.render();find(tree,'WorkspaceAction',node=>node.props.message==='Correct details').props.onPress();tree=view.render();find(tree,'Field',node=>node.props.message==='Cargo').props.onChangeText('Unsaved edit');find(tree,'WorkspaceTaskHeader').props.onBack();tree=view.render();assert.equal(find(tree,'Field'),undefined);assert.equal(nodes(tree).filter(node=>node.type==='WorkspaceAction').length,2);assert.deepEqual(writes,[]);
 });

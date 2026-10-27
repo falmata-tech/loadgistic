@@ -7,7 +7,7 @@ test('public entry stays clear of retired transport chat and GPS needs an explic
  test.setTimeout(60000);
  await page.addInitScript(()=>{(window as Window&{geoCalls?:number}).geoCalls=0;Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(_success:unknown,fail:(e:object)=>void)=>{const w=window as Window&{geoCalls?:number};w.geoCalls=(w.geoCalls||0)+1;fail({code:1,PERMISSION_DENIED:1});}}});});
  await page.goto('/',{waitUntil:'domcontentloaded'});await expect(page.locator('.leaflet-container')).toBeVisible();
- await expect(page.getByRole('heading',{name:'Find space for your next load',exact:true})).toBeVisible();const accountEntry=page.getByTestId('public-session-action').getByRole('link',{name:'Sign in',exact:true});await expect(accountEntry).toBeVisible();await expect(accountEntry).toHaveAttribute('href','/login');
+ await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',exact:true})).toBeVisible();const accountEntry=page.getByTestId('public-session-action').getByRole('link',{name:'Sign in',exact:true});await expect(accountEntry).toBeVisible();await expect(accountEntry).toHaveAttribute('href','/login');
  expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(0);
  await expect(page.locator('.public-assistance-dock,.transport-request-form')).toHaveCount(0);
  await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
@@ -21,7 +21,7 @@ test('priority language explains public capacity and Tracking without retired tr
  for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await page.goto('/',{waitUntil:'domcontentloaded'});const picker=page.locator('.public-header-language select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled({timeout:15000});await picker.selectOption(locale);
-  await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['Find space for your next load']);
+  await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['The visibility you need to serve your customers reliably']);
   await expect(page.locator('.public-assistance-dock,.transport-request-form')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath(`${locale}-public-capacity.png`)});
   await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('label[for=tracking-email]')).toHaveText(messages['Email']);

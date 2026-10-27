@@ -14,6 +14,12 @@ test('HTTP group parsing rejects repeated keys and only the sole incompatible fu
  assert.equal(capacityFilterParams(new URLSearchParams('loadType=PTL,FTL&status=PARTIAL')).loadType,'FTL,PTL');
  assert.equal(capacityFilterParams(new URLSearchParams('loadType=FTL&status=PARTIAL,EMPTY')).status,'EMPTY,PARTIAL');
  assert.equal(capacityFilterParams(new URLSearchParams('locationSource=MOBILE,GPS,MOBILE')).locationSource,'GPS,MOBILE');
+ assert.equal(capacityFilterParams(new URLSearchParams('minAvailablePercent=40')).minAvailablePercent,'40');
+ assert.equal(capacityFilterParams(new URLSearchParams('minAvailablePercent=')).minAvailablePercent,'');
+ for(const value of ['0','101','040','40.5','forty','-1'])assert.throws(
+  ()=>capacityFilterParams(new URLSearchParams('minAvailablePercent='+value)),/INVALID_CAPACITY_FILTER/
+ );
+ assert.throws(()=>capacityFilterParams(new URLSearchParams('minAvailablePercent=40&minAvailablePercent=50')),/INVALID_CAPACITY_FILTER/);
  for(const value of ['status=EMPTY&status=PARTIAL','status=PARTIAL&loadType=FTL','vehicleCategory=Cargo+van&vehicleCategory=Pickup+truck','locationSource=GPS&locationSource=MANUAL'])assert.throws(()=>capacityFilterParams(new URLSearchParams(value)),/INVALID_CAPACITY_FILTER/);
 });
 test('bounded configuration allowlist exactly matches the established catalog',()=>{

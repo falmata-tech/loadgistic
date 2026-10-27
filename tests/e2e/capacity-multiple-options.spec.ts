@@ -12,7 +12,7 @@ test('five current multi-option filter groups remain draft until apply and clear
  await chooseTruckConfiguration(dialog,configurations);
  await expect(selection(page,'loadType')).toHaveCount(0);
  await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);await chooseCapacityOptions(dialog,'locationSource',['GPS','MOBILE']);
- await dialog.locator('[data-filter-section="route"] > summary').click();
+ await dialog.getByRole('button',{name:'Route',exact:true}).click();
  await chooseCapacityOptions(dialog,'stopOption',['MULTI_PICK','MULTI_DROP']);
  await dialog.locator('[data-filter-section="more"] > summary').click();
  await chooseCapacityOptions(dialog,'freshness',['FRESH','UPDATE_NEEDED']);
@@ -74,11 +74,10 @@ test('invalid multi-option deep links stay denied until an explicit filter corre
  await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');await page.getByRole('button',{name:'Review filters',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
  const invalidBeforeApply=page.url();
- const previousDialog=await dialog.elementHandle();expect(previousDialog).toBeTruthy();
  await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
- // Next Form changes the URL before its new query-keyed client tree commits.
- // Reopen the returned error state, rather than editing the outgoing form.
- await expect.poll(()=>previousDialog!.evaluate(element=>element.isConnected)).toBe(false);
+ // The invalid query closes the drawer and displays its error state. Reopen
+ // that state rather than depending on whether React reused the dialog node.
+ await expect(dialog).toBeHidden();
  await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
  await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await expect(selection(page,'vehicleCategory')).toHaveValue('Mini Box Truck');
  const correctedAt=Date.now();

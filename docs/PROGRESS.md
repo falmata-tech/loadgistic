@@ -1,176 +1,523 @@
 # Current work and release status
 
-Updated 2026-10-25. Read the controlling [traceability map](../specs/TRACEABILITY.md)
-and [product brief](PRODUCT_MASTER_PROMPT.md) for product contracts. Earlier
-checkpoints remain in Git and the [October 23](PROGRESS_HISTORY_20261023.md)
-and [October 20](PROGRESS_HISTORY_20261020.md) histories; this page records the
-current delivery state.
+Updated 2026-10-27. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
+[traceability](../specs/TRACEABILITY.md) for contracts. Git and the October20/23
+history files preserve previous checkpoints; this page records current work.
 
-## Current task — Android parity and matching web release
+## Current task — cross-platform launch experience before Play
 
-The owner prioritizes a fixed local Android build and the matching live web
-changes. Closed Alpha upload is permitted only after qualification; an unfinished
-Play setup may remain separate. No public Play launch. Platform staff/Admin stay
-web-only. The agent reviews changed screens without another visual-approval
-question. Use only Loadgistic; preserve `next-env.d.ts` and mobile `.claude` edits.
+Owner order: qualify broker/shipper owner, workspace-admin and staff in installed
+Android, clean provider account/profile/document discovery, strengthen native
+section boundaries, remove explanatory UI prose and stabilize map updates before
+the Closed Alpha upload. Audit demo-filter coverage, then complete hosted GPS
+and simulator rollout. No public Play launch.
+Use only Loadgistic and preserve the user's `next-env.d.ts` and mobile `.claude`.
+The agent performs actual Chrome/Expo visual review without routine owner approval.
 
-Ordered checkpoint:
+Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
 
-1. Implemented/tested: web-like native Featured board/detail, private-Capacity
-   sign-in explanation and retained shipper/broker signup/return context,
-   Preferred corridor wording, public vehicle map links, Android Back and
-   translated loading/action names. Related specs: FEAT-MOB/CAP/GEO/LST/UIX-001.
-2. Applied/verified: finite demo-only correction restored20 public corridor
-   assignments. Only vehicle/driver assignment columns changed; ledger208 and
-   all30 other columns stayed unchanged. Backup, rehearsal, rollback and exact
-   DB/API readback: `.local/corridor-demo-20261025/`.
-3. Built/installed/tested: Android1.2.0/code10, ARM64/x86-64 (not32-bit ARM),
-   debug-signed, built fromebc6df9 and input-equivalent to1bea439. Exact files and
-   source-preserving receipts: `.local/play-code10-20261025/final-parity/`.
-   Native driver Capacity save matches database visibility/load/route values;
-   sign-out revokes the synthetic server session1→0. Manual Location draft/
-   cancel, private signup choice, Featured detail and Android Back pass. Earlier
-   unchanged-screen receipts separately cover corridor/Partial, fleet GPS/Support
-   and Account edit/cancel; they retain their original source and hash.
-4. Implemented: the web-only keyboard-loading repair and bounded authenticated
-   Axe diagnostics, then quality, exact-source web packaging and PR24 CI. Both
-   map-action rails now receive visible keyboard focus even when their buttons
-   are disabled. The real server-rendered regression passes desktop1280 and
-   phones390/320; all14 provider role/route Chrome Axe cases pass after the fix
-   in6.1m. Focus screenshots were reviewed at all three widths. The first broad
-   gate on pinned Node22.16 hit15 TypeScript-loader failures before those tests
-   ran (1115 pass/one skip). A10-case probe with its supported type-stripping
-   flag passed; the root test command now enables that mode explicitly while
-   preserving two workers and every test. The complete corrected gate passes
-   1197/1198 tests (one existing intentional skip), source/spec/workflow checks
-   and typecheck in213s. Exact52477bb PR CI40235307637 passed all16 jobs; PR24
-   merged as5892cc7 with an identical tree. Its isolated Linux web build and eight
-   function archives pass inspection. Unpublished draft6ade7acca3ae982b016fad3f
-   serves matching static/image bytes; production is unchanged.
-   New immutable web package: `.local/release-20261025-focus/`. Review native
-   input equivalence to the resulting head before reusing the tested APK/AAB.
-5. Current: repair the reproduced accessibility harness race before new CI.
-   Main CI40237550136's fleet Home scan lost its execution context during the
-   expected streamed `/app/home`→`/app/home/vehicles` redirect. Desktop and phone
-   reproduce the failure; a diagnostic awaiting the exact final route passes
-   both Axe scans. The repaired existing case passes desktop and phone, and all14
-   provider route scans pass on phone. The same run also failed a desktop
-   portrait replacement readback; its actual HTTP statuses were absent from
-   sanitized output. Both strict404/200 requirements remain, now in a named
-   readback step with fixed numeric diagnostics. Two local portrait attempts
-   failed earlier during dev-page/image loading, so they do not explain the CI
-   readback failure; outputs and cleanup evidence remain protected separately.
-   Reporter32/32, workflow checks and the complete pinned-Node22 quality gate
-   pass (1199 tests, zero failures, one existing skip;73s total). Ordered work:
-   commit the coherent test-only PR and run exact-source CI;
-   require its PR and merged-main gates, then refresh release prerequisites,
-   publish once and verify production UI/API/private-file flows. Preserve the
-   failed run. Application, native and immutable524 web inputs stay unchanged;
-   prove equivalence rather than rebuild or relabel artifacts.
-   Follow-up qualification is in `.local/release-20261025-settled/`; the original
-   `.local/release-20261025-focus/` build, draft and failed-main receipts remain.
-6. Pending/separate: installed broker/staff journeys, fleet saves and physical
-   phone/background location are unqualified. Ask before a new owner-phone
-   session. Play signing/upload remains unqualified; local build delivery is not
-   blocked on Console work.
+0. Locally qualified: work-first provider Home and Planned/Preferred presentation
+   are implemented and reviewed in current-source Chrome/Expo. My capacity is
+   first when driving, Manage vehicles follows when authorized, and Analyze the
+   Market is last. Ordinary sign-in/root and Home from another task open the
+   appropriate work view; explicit public search/identity keeps Market intent,
+   and Home within a selected tab preserves its state. Desktop1280, phone
+   web320/390 and Expo's driving-owner three-tab en/am/om320/390 layout pass.
+   The Fleet phone location/action overlap is corrected and verified after
+   actual translated labels settle.
 
-Verification and failure boundaries:
+   Planned capacity names the current/next-work Empty/Partial Area/Route offer;
+   Preferred corridor/area remains separate regular coverage. Chrome/Expo
+   read/open/Cancel and selected-map/profile facts pass with saved facts
+   unchanged for that review. Either-offer OR, other-filter AND, whole-offer
+   endpoints and existing wire/storage fields remain. Reported GPS/phone/manual
+   location is separate; source regressions cover fitted coverage without a
+   reported point. The actual actors had reported locations, so no position was
+   removed to stage that case. No business, role or permission write was used.
 
-- Complete focus-source root gate:1197 pass/one existing intentional skip,
-  source/spec/workflow and typecheck pass. All342 unchanged native tests, native types,
-  lint,791-message translations and Android export pass. The native runtime,
-  dependencies and assets are unchanged by the current web-only repair.
-- Actual Chrome/Expo en/am/om reviews cover Featured, Preferred corridor and
-  private entry/signup/return. Final Capacity/Location labels open and close at
-  390/320. No fluent-speaker review or physical background test is claimed.
-- CI40229087647 on1bea439 completed13 jobs successfully, with one underlying
-  mobile role-route Axe analysis rejection; e2e/release-ready aggregates failed.
-  CI did not expose a violation. Independent local review passed12/14, finding
-  a genuine disabled-rail keyboard defect and a transient Verification RPC
-  overlay before Axe. The latter RPC subsequently returned200; neither local
-  observation is a proven explanation for CI's analysis rejection.
-- Earlier failed runs remain evidence:40213634873 (stale labels/signup/locator/
-  fixture assumptions),40217827876 (Support role expectation and unconfirmed
-  API/cleanup failures),40221972550 (overstrict Featured cross-cycle assertion),
-  and40224817354 (Tracking smoke timeout, local replay54s, CI cause unknown).
-  Their accepted repairs preserve privacy, permissions, persistence, full-round
-  rotation and original timeouts. No failed run is relabeled green.
-- Native review preserved the original ARM64-only mislabel, an emulator graphics
-  boot failure/System UI ANR, and bulk-typing harness failures. The current APK
-  hash was verified after installation and cold-started in6015ms on owned API35
-  x86-64. This does not establish real-device performance. The emulator is signed
-  out and stopped; owned local Next3100 remains running for focused review.
-- The20:29UTC hosted API security read succeeded after Keychain unlock: zero
-  errors, exactly the same two accepted warnings, no retained credential or
-  hosted write. Refresh its real freshness window when ready to publish.
-- Old source0d9's unpublished draft6ade3c5478ea2d92b4f31c8e and protected
-  `.local/release-20261025-parity/` receipts remain immutable historical evidence.
-  The production site below is unchanged by this candidate.
-- Play Internal/Alpha still serve code7. The English listing has unsubmitted draft
-  changes; review declarations are not fully verified. No code10 upload. Current
-  evidence and limits: `.local/play-code10-20261025/` and PR24.
+   The owner-locked headline and partnership/network support line live in the
+   product brief and FEAT-MKT-001. Native and short phone web retain the heading
+   alone; roomier web adds the support line. Map choices are Openly shared and
+   Privately shared with you. Guest entry/Back, attribution and Oromo marker-fit
+   evidence stays scoped to the unchanged surfaces.
 
-## Live delivery
+   R6 root JS/type quality passes1300/1300 in69.710s; its executable inputs remain
+   unchanged by the later two SQL-test repairs. The required CI SQL loop
+   now executes all three new discovery parity suites; its missing-registration
+   regression failed before the repair and passes with32 existing workflow tests.
+   Workflow lint passes for108 operational scripts and actionlint; ShellCheck is
+   unavailable. Native R3 types9.441s, lint7.177s, tests412/412, strict translations
+   784/784 and Android JavaScript export53.898s pass without native input changes.
+   All1,856 R3 input hashes matched the compiled web build at its freeze,
+   which passed in87.644s. The earlier483.747s build timeout during types remains
+   preserved. [Traceability](../specs/TRACEABILITY.md#current-audit-evidence) owns
+   the source-bound receipts, focused tests and review evidence.
 
-- The web app is live at https://loadgistic.com on Netlify production deploy
-  `6addfeebd797c1ac88d89123`. It uses the immutable web build from `a692892`
-  whose executable inputs were proved equivalent to source `ae03d98`; PR22
-  merged that source to `main` as `5c973c5`. Main CI run `40190784277`, attempt
-  2, passed all 16 required jobs, including `release-ready`. Attempt 1 had one
-  Featured Play-policy browser failure; its exact redirect cause was not
-  diagnosed, and the targeted retry passed. The failed attempt remains evidence.
-- Supabase project `tpwyyzoqijjmbvsmmvcm` is at migration ledger 208. The
-  owner-approved 199–208 apply completed once and the linked ledger was verified.
-  Migration 207 removed five legacy email-only private Capacity grants; it did
-  not remove email-based Tracking. Hosted security advisors report zero errors
-  and the same two separately accepted warnings. The SQL hashes, protected
-  backup/rehearsal and apply readback are in `.local/release-20261025-ae03/`.
-- The original Android 1.2.0/code10 **ARM64-only, debug-signed test APK** is
-  preserved at `.local/play-code10-20261025/loadgistic-code10-arm64-original.apk`, SHA-256
-  `1195fbbc9d72c300d5b7df522ede9664d5ee9dbbcfc1d82dadde5c19d1cdde66`.
-  It is not the current test build or a Play upload artifact. Use the final
-  ARM64/x86-64 local test APK recorded above; installed review and source
-  qualification remain required before the authorized Closed Alpha upload.
+   PR26 head a577819's CI40408008712 passed the mobile boundary job but stopped
+   before browser jobs: its fixture verifier still allowed the retired maximum
+   of two vehicle badges. The current public projection has three independent
+   ownership/permission/operating-licence categories. The verifier-only repair
+   has three red/green regressions,33 focused passes and a read-only14-row API
+   reproduction: the exact former guard rejects those rows and the corrected
+   guard accepts them. Duplicate/unknown categories and expired or undated
+   verified claims still fail. CI40410314142 then passed the preceding11 setup
+   verifiers and reached the final platform-admin Featured save, where its old
+   morning schedule was rejected. All three current fixture producers now use
+   one helper with the actual22:30–23:59 EAT schedule and validator. One-through-
+   eight provider schedules retain ten-minute turns;41 focused tests pass after
+   the new regression failed on the former hours. The prospective pilot importer
+   was edited but not executed. No app, SQL, authority or Android input changed;
+   CI40412255361 passed the complete fresh setup chain and mobile job, then
+   stopped on a retired employed-driver search expectation in the SQL batch.
 
-## Production verification and limits
+   Before another push, all97 required rollback suites ran on an isolated clone
+   prepared with exact212–217 function sources.94 passed; two stale search
+   oracles failed and are repaired. Their current-source checks pass1.374s and
+   74.974s, preserving account identity positives, employee-only search denial,
+   authorized driver details, full JSON/pages/document parity and real caller
+   inputs. The first caller-fixture revision timed out at120s; deduplicating
+   repeated producer scans fixed that harness cost without increasing its bound.
+   One clone-only PostGIS service-role reference-read denial remains visible;
+   no privilege or test was weakened, and fresh CI must still pass that check.
+   Every suite and focused rerun preserved exact row/function/ACL/relationship
+   fingerprints after rollback. Clone data is older than fresh CI. No application,
+   migration or native input changed; R6 JS/type/build evidence is reused with
+   explicit SQL-only deltas and current static/spec checks. Next-head CI remains
+   required. Evidence: `.local/ci-sql-audit-20261026/`.
 
-- The production deploy ID and `production` context were independently read
-  back. Health, public Capacity and Featured APIs returned 200; public Capacity
-  returned 48 eligible vehicles and Featured returned eight providers. Real
-  Google Chrome at desktop and phone widths rendered Capacity and Featured
-  without horizontal overflow. A later settled desktop map showed 24 map tiles
-  and 20 visible markers. The initial desktop capture still showed its loading
-  skeleton after two seconds, so immediate map paint is not claimed.
-- Two optimized vehicle-image widths decoded, while anonymous access to a
-  private synthetic document and its image proxy was denied. Three dedicated
-  synthetic review accounts passed 43 signed-in API checks across sessions,
-  account/workspace, Capacity, Network, Support, authorized private-document
-  access and sign-out. These sampled production checks do not prove every
-  nested role workflow or a fresh installed Android acceptance.
-- The unpublished Netlify draft `6addf1480d5c1915b0ae86ab` used
-  `deploy-preview` context and lacked production-only runtime configuration;
-  it was **not** promoted. The same verified build was uploaded once using
-  production context and then verified. Do not broaden preview secrets merely
-  to make a draft health check pass.
-- The recovery package is a fresh hosted data-only archive plus a reconstructed
-  ledger-198 schema snapshot. A disposable restore and exact 199–208 rehearsal
-  passed, including public owner/grant parity. It is not a byte-for-byte current
-  hosted schema backup: managed Auth/Storage differences remain, the provider
-  reports no backups or PITR, and post-snapshot writes cannot be restored by it.
-  Never apply that composite archive over a live project automatically; an
-  incident needs a scoped, separately reviewed recovery plan.
-- Local demo-world simulator slices have passed GPS intake, Capacity, Tracking,
-  provider-profile and broker-staff checks, but controls are off. Do not claim
-  always-on hosted simulation or real-device GT06 ingress. See the
-  [local supervisor](operations/DEMO-WORLD-LOCAL-SUPERVISOR.md).
+   Native public freshness is locally qualified through the existing bounded
+   localization helper:50 focused tests pass. Actual Chrome web am/om320/390
+   passes4/4 states; Expo Map/Location/Vehicle passes the same4/4. Direct Expo
+   profile proof is only Oromo320 against its own returned DTO; earlier profile
+   captures were withdrawn because they selected a retained map row. Missing
+   labels and neighboring profile locales/sizes retain renderer/source evidence.
+   The hidden Preferred Area web caption has11 renderer regressions, with no
+   matching real hidden row available for browser proof. Final freshness reviews
+   used no Auth/business writes or phone actions.
 
-## Next authorized work
+   Local214/215/216 and producer-only217 correctness, installation and recovery
+   checks pass. The217 postcheck-only run passed36.716s, followed by the complete
+   unchanged5,000-record/five-second gate in51.498s. All count/order/filter/
+   lookahead/payload limits passed, with zero synthetic vehicles/drivers left and
+   exact source/data/authority/ledger fingerprints. The first operator
+   verification failure remains UNKNOWN; no migration reapply or automatic
+   recovery occurred. FEAT-CAP-001 owns the detailed performance and217 evidence.
+   This is one isolated local pass, not hosted or repeated-run reliability proof.
 
-1. Keep the current web/SQL release monitored; investigate any concrete live
-   failure before another write. Protected receipts and screenshots are under
-   `.local/release-20261025-ae03/`.
-2. Treat hosted simulator activation and GPS ingress as separate reviewed
-   infrastructure work.
-3. Finish candidate CI and the matching web rollout, then qualify the final
-   installed Android artifact. Play testing preparation is authorized separately;
-   upload remains conditional on qualification, with no public launch.
+   The compiled-preview broker walkthrough now passes four representative Owner
+   cases: private Empty Area at the original Route endpoint, private Partial
+   Route, public Partial Area and existing Preferred coverage. Staff repeats the
+   original private Area case. Actual result/detail/Back/reopen/reload and normal
+   global logout303/private401 pass, with exact membership/permissions unchanged.
+   Public217 profile search includes the matching account; account and vehicle
+   counts are not equated. Preferred coverage overlaps Planned Area and returns
+   a Planned reason, so independent Preferred-only OR is not claimed. The first
+   cluster-selection harness limit is retained; one Preferred-only continuation
+   passed without replaying the completed cases. The complete filter matrix,
+   including all vehicle/load/source/document combinations, remains unfinished.
+
+   The retained driver's single compiled-production sign-in replay passes normal
+   OTP, exact identity200, work Home/three tabs and logout303/private401, with no
+   runtime error recurring. Earlier unclassified Error, Connection closed and
+   Suspense fallback receipts remain preserved; this is not a diagnosis of those
+   earlier errors or a claim that every browser run was error-free. All broker/
+   driver contexts are closed and actors signed out; business writes are zero.
+
+   The compiled preview completed its review and is preserved; the current same-
+   source development preview runs3100/TLS3443 for the deliberately local-only
+   movement endpoint. Expo8084 is restored and its protected business Sharing
+   proxy returns JSON401; physical Metro8285 remains stopped. Only generated
+   Next type metadata differs from the qualified Git baseline and is excluded
+   from the task commit, along with the user's mobile settings.
+
+   Existing local workers were qualified on bounded one-hour leases. Ten managed motion
+   targets report each60s; independent snapshots prove accepted GPS positions
+   and GPS/phone timestamps advance, with9fresh GPS capacities and1fresh phone
+   capacity. The marketplace supervisor reached8healthy30s ticks with all six
+   lanes enabled. No Capacity/sharing job was due in this sample; next natural
+   Capacity is October27 08:00UTC, beyond this finite run. Do not claim that later
+   execution or always-on hosting. Its restarted activation passed protected
+   backup, rollback rehearsal and exact five-control readback. The original
+   owner-assumption refusal and long-gap pause are preserved; actual existing
+   privileges were pinned, all22 reviewed historical jobs remained DONE/unchanged,
+   and only the previous activation's five dispatcher checkpoints were cleared
+   after review. No role, ownership, grant, clock, schedule or job history changed.
+   Evidence: `.local/provider-home-entry-20261026/local-demo-runtime-qualified.json`
+   and the protected `.local/demo-world-startup-20261026/` receipts. Query the
+   documented normal status commands for current liveness/expiry. No real-user
+   target, phone session, hosted worker or paid resource was added.
+
+   Prior provider save/reopen/Cancel evidence covers Empty/Partial × Area/Route
+   on its recorded source without changing GPS position/source/time. The clipped
+   city-suggestion repair also passed anonymous390/320 selection, Apply, result
+   and reopen; the compiled broker case now resumes that original blocked task.
+   Marker fan/Back, compact footer and short-phone attribution evidence remains
+   scoped to its unchanged surfaces. No coverage, cursor, eligibility, permission
+   or gate threshold was weakened.
+
+   The current local Android APK/AAB build passed153.803s, version1.2.0/code10,
+   arm64/x86_64, with565 runtime inputs unchanged. It targets the production API
+   but uses only the existing development/debug certificate; no upload key or
+   provider write was used. Static permissions, signature, two-ABI/16KB structure,
+   matching Hermes bundle and known-secret-marker checks pass in
+   `.local/launch-experience-20261026/android-final/archive-qualification.json`.
+   The exact APK installs and renders the populated anonymous Capacity map in
+   the emulator. Repeated Android System UI ANRs block the first Filter tap;
+   one Wait recovery was used, then the owned emulator was stopped. Filters,
+   details, Featured, hardware Back and authenticated production-backend
+   acceptance remain unqualified; this does not establish an application crash.
+   Receipt: `.local/launch-experience-20261026/android-final/standalone-smoke-a577819e/result.json`.
+   The build
+   receipt pins its original worktree hashes; commit equivalence and exact-source
+   CI are separate evidence. It is not upload-key-signed or Play-ready.
+
+   Next dependencies: complete Android installed qualification,
+   workspace-admin and later physical-device qualification, remaining broker
+   filter combinations, exact-source CI and hosted recurring simulator rollout. Earlier
+   Market-first Provider02/Driver018 development-client and installed broker
+   Owner/Staff receipts qualify only their recorded bundles, not the later layout
+   or final standalone APK. The owner phone session is closed. Final APK/signing,
+   testing-track delivery, hosted SQL/web rollout and deployment remain pending.
+
+1. Verified: existing web release and native source/input receipts below. Reuse
+   source-matched passing gates; do not restart the completed web release.
+2. Verified fixture setup: one isolated review Broker workspace through actual
+   Chrome, one existing restricted reviewer owner, one pending STAFF invitation
+   to another existing reviewer. No new identities, customer data or SQL writes.
+   One synthetic invitation delivery was accepted by the email provider; inbox
+   receipt is unverified. The teammate has not joined. Evidence:
+   `.local/play-code10-upload-20261025/broker-fixture/setup-receipt.json`.
+3. Current defect: installed code10 rejects `loadgistic://workspaces` and the
+   canonical HTTPS invitation destination. The real app shows “This link cannot
+   be opened”; the pending invitation remains for an installed Join test. Repair
+   the strict destination allowlist and retain invitation context through normal
+   and review sign-in without accepting role/identity/credentials from links.
+   Source fix and62 focused tests/types/translations pass. Actual Expo en/am/om
+   invitation entry, signup context and visible pending Join pass; Join remains
+   unconsumed for installed testing. Earlier preview harness blocked refresh;
+   exact reviewer2 global logout/readback subsequently confirmed sessions1→0.
+   Spec: FEAT-MOB-001 business invitation entry. Branch:
+   `fix/launch-experience`. Regression tests precede production edits.
+4. Account-only search is implemented/rehearsed locally across public,
+   private account, business and Network Find. Self-managed provider accounts are
+   searchable; employed drivers appear only under their provider's vehicle.
+   Current vehicle, driver and reviewed-document facts stay scoped to that
+   account; generic approval never implies ownership. Existing connections and
+   per-vehicle sharing remain. Correctness/denial evidence is retained, while
+   the source-matched local optimizer and canonical scale qualification are
+   recorded above. No hosted209+ rollout or current exact-source CI is claimed.
+   FEAT-MKT/VER/CAP-001.
+
+5. Source implemented/review in progress: provider profile hierarchy, flat
+   document rows, stronger native cards/sections and concise Network/team UI.
+   Provider Chrome/Expo en/am/om tasks and focused tests pass; installed parity
+   remains pending. Featured removes the How Featured works disclosure and
+   negative unscheduled TikTok strip, adds AM/PM+EAT display times, and preserves
+   canonical scheduling. Agent Chrome/Expo review and final focused checks are
+   in progress. FEAT-UIX/MOB/PRV/VER/FTR-001.
+   The Vehicle type picker now consistently says All vehicle types, one type
+   name or a short multiple-type count on web/Android; canonical filter values
+   are unchanged. Existing5 native picker/draft/reset checks pass; focused actual
+   Chrome/Expo review and changed E2E selectors are included before release.
+   Latest owner rule: Featured becomes22:30–23:59 EAT on its feature date,
+   max8 providers with minimum10 minutes each and all sponsor mentions inside
+   that window. Header: Daily Featured on TikTok LIVE. FEAT-FTR-001 now records
+   the rule and history/manual-timing safeguards. Canonical scheduler/SQL,
+   admin UI, web/native rendering, focused boundary tests and revised evening
+   captures must pass before building; earlier morning screenshots are not
+   final qualification of this new rule. No hosted schedule has been changed.
+   Local210 is now installed after backup/rehearsal: pinned Node22 core30/30,
+   nine SQL suites, slot/sponsor/history parity and real API readback pass.
+   Public evening Chrome passes1280/390/320 and Expo en/am/om390/320; focused
+   frontend Node22 tests31/31 pass. Initial failed browser draft receipts and
+   exact fixture cleanup are retained. Safe diagnostics proved
+   SAVE_RPC / SQLSTATE57014 at the existing
+   REST8-second limit. Performance-only212 reuses the authoritative eligible
+   account set while keeping per-vehicle rechecks; isolated rehearsal, guarded
+   local backup/apply and three SQL suites pass without data/grant changes.
+   Actual browser draft and two manual publications then succeeded with
+   authoritative readback. Sponsor Save returned303 but its redirected admin
+   page failed in `getFeaturedOverview` / `managed_featured_overview`; streamed
+   HTTP200 did not mean the page worked. The underlying SQLSTATE was absent
+   from the captured error, so a read-only production-preview replay must
+   classify it without repeating the Save. This is not a whole-workflow pass.
+   The limit was not raised. Evidence:
+   `.local/play-code10-upload-20261025/featured-profile-review/evening-final-review.md`
+   and `.local/play-code10-upload-20261025/featured-night-window/handoff.md`.
+6. Source implemented: native progressive-refresh and stale cluster-camera
+   callback guards pass30 focused tests/types; old timeout/denial callbacks are
+   scope-bound. Real web1280/390 zoom/selection/60s refresh baseline stayed
+   stable; no unsupported web jitter claim. Updated Expo/installed-native
+   gesture/snapshot/stress qualification remains pending. FEAT-CAP/GEO/MOB-001.
+7. Installed development-client review: Staff normal sign-in, populated private
+   Capacity, Area filter/detail/reopen/Clear, Network, Account/Team denial,
+   app-restart session restoration and UI sign-out pass. Owner normal sign-in,
+   Team controls and unsaved permission-edit Cancel pass with authoritative
+   unchanged role/permissions. Normal visitor Tracking OTP opens the sole new
+   delivered Demo, Status-only shipment and its route/status without live location.
+   The owner subsequently approved the exact local attachment and cleanup after
+   automatic approval review had blocked it; no indirect workaround was used.
+   Ordinary Chrome Attach succeeded once, HTTP200, for the exact synthetic
+   broker190 workspace. CREATED/STATUS_ONLY, roles and zero location grants are
+   preserved. Owner/Staff desktop/phone list/detail/reload/Back and authoritative
+   location/action denials pass. Expo Staff Back, reload, Team absence and normal
+   sign-out now pass, including actual Sharing HTTP403 JSON through the proxy.
+   Installed Owner/Staff populated Tracking, route/status, refresh/Back and
+   role-specific Account/Team controls pass. Owner Sharing loaded its real
+   attached-workspace snapshot; no location grant, permission, approval or proof
+   was changed. Both actors signed out normally. Distinct Admin and saved role
+   changes remain unqualified. The exact approved Demo was cancelled through
+   normal provider UI with HTTP303 and authoritative CANCELLED readback. History
+   remains, capacity/location/source/assignment hashes are unchanged, and normal
+   logout leaves private APIs denied. No other records or roles were changed.
+   Evidence:
+   `.local/launch-experience-20261026/native-installed-review/`.
+   Current team handoff:
+   `.local/play-code10-upload-20261025/broker-supply/local-tracking-ui/team-handoff.json`.
+   FEAT-ENT-001 transport repair: audit existing authenticated Bearer handlers →
+   red exact sharing/actions/proof path and denial tests → extend only the shared
+   native/Metro allowlist → focused API/role/proof regressions → coordinated
+   preview restart and actual Owner sharing/Staff denial review. No new endpoint,
+   authority or database migration is intended. Do not mistake Metro's HTML200
+   for a JSON API success, or remove existing unknown-path/private-file guards.
+   This narrow repair passes focused transport/API/role/proof regressions and
+   actual installed Owner Sharing/Expo Staff denial. Proof and approval commands
+   retain automated authority tests because they are unavailable on this CREATED
+   fixture. Evidence is linked in traceability, pinned to bundlec6d31d87 and the
+   recorded inputs; later provider navigation changes require their own review.
+   One private supplier grant is saved and Chrome/API verified. The hosted
+   review-owner alias still differs from its login email, so local broker190
+   success does not qualify hosted reviewer attachment. Keep release HTTPS and
+   reviewer isolation unchanged; no identity rewrite or production secret read.
+   The final production-targeted APK requires its separate installed checks.
+   Exact production provider shipment review found repeated status,
+   no alternative in Change vehicle, and a web date
+   field inconsistent with the server lock. FEAT-TRK-001 records the pending
+   provider-only web/native presentation repair. The owner confirmed the US
+   phone location is intentional; location data and map-camera behavior are
+   explicitly outside this UI repair. No production edits were made.
+8. Local replacement APK/AAB built successfully in521.6s offline from565 frozen
+   inputs; no input changed during build. Version1.2.0/code10 targets production
+   HTTPS and arm64/x86_64, using only the existing debug certificate. Both archives
+   pass actual manifests/permission/signature/16KB/Hermes checks. APK SHA256
+   `28edf23217360f51cc40c64398c2de2addffda738b1a5672155dc8bb0c077dfc`;
+   AAB `cf63bff93251d40bb544a149a6208db240594e7d8edc2af923c1fa6fe8d4e532`.
+   Receipts and artifacts: `.local/launch-experience-20261026/android-candidate/`.
+   Root/native source gates and Android export pass as recorded above;
+   actual standalone retest and exact-source CI remain pending. Preserve
+   old bytes and source labels. Expo Free Android quota is15/15; local signing
+   needs a new exact-artifact one-use approval after final inputs are qualified.
+   The existing code10 signing question/review covers only its pinned old bytes.
+   Standalone visitor testing found Android Back from the private-Capacity
+   sign-in entry exits the app; the toolbar Back returns correctly. FEAT-MOB-001
+   records the expected retained public history. Ordered correction: reproduce
+   in actual-handler regression → preserve history for guest sign-in entry while
+   retaining authenticated map-switch behavior → focused/native review → one
+   incremental APK/AAB build after all current visitor findings are consolidated.
+   The earlier APK remains immutable; do not relabel it as the corrected build.
+   The same installed pass found clipped Amharic/Oromo Partial cluster labels.
+   The shared catalogs now use short status labels while retaining full detail
+   descriptions. Both new regressions failed before their fixes; the combined
+   focused batch passes28/28. Actual installed development-client Back retains
+   the filtered map, and both short cluster labels fit. Current web fit and one
+   final build follow the consolidated provider navigation review. Startup initially failed
+   then recovered automatically; its cause is unconfirmed. The actual current
+   public loader/parser separately read48 hosted vehicles over four HTTP200
+   pages in3.265s, which does not independently capture Android HTTP traffic.
+   Source0f1789f is committed and pushed to `fix/launch-experience`; only the
+   current small corrections remain uncommitted. PR/CI is deliberately deferred
+   until this local finding batch is finished, avoiding superseded full matrices.
+9. Pending: accurate current Play policy/reviewer/background-location evidence,
+   one Closed Alpha upload and independent bundle/track/review readback. Preserve
+   Internal, tester lists, country eligibility and empty public Production.
+10. Seven frozen, realistic broker loads now pass exact-result checks in current
+   local Chrome and Expo previews: small Mekelle shared cargo, private Dubti van,
+   Awash–Mieso shared stock and reverse Preferred corridor, Shashamane–Batu
+   heavy trailer, Addis–Dessie full load with document/freshness variants,
+   Adama–Melka Hida direction choice, and Dawo through a Preferred area. The
+   broker-team Staff member also retrieves the exact private van in both
+   previews and signs out with prior private access denied. The Expo public
+   Adama/Dawo cases ran signed out after repeated synthetic Owner sign-ins hit
+   the local OTP rate limit. Earlier Expo Owner runs independently passed the
+   other five base cases and their variants; the complete mobile evidence is a
+   union of those receipts, not one uninterrupted session. No business record
+   was written. The initial vehicle-picker audit check counted the underlying
+   load-status control; its repair now verifies all17 vehicle choices and the
+   exact selected set, rather than dropping that assertion. Read-only Auth
+   reconciliation after global sign-out found zero Owner test sessions.
+
+   This is a bounded load-matching audit, not proof of every filter combination
+   or actual cargo fit. Of101 locally public vehicles, the seven searches narrow
+   results to0–2; J7's two geographically valid vans include one that accepts
+   full loads only, so the broker must still inspect load preference. The
+   immediate Expo private-map screenshot preceded marker settlement, while a
+   subsequent marker/detail interaction succeeded; capture settled state in any
+   visual comparison. The local public demo has17/17 vehicle types, GPS9,
+   Preferred-area4 and Partial40, but no within12-hour capacity example and no
+   Partial Planned Area. The currently hosted48-vehicle public snapshot has
+   GPS0, Preferred-area0, Fresh0 and16/17 types. A separate read-only hosted
+   Mekelle search missed a Route-endpoint Area match that the local SQL repair
+   returns. Do not call hosted data or schema equivalent to the local candidate.
+   Evidence and exact replay: `.local/broker-tough-load-20261026/` and
+   `.local/live-public-filter-audit-20261026/`.
+
+   Broker UX finding closed locally: independent account search used to label
+   its count “matching vehicles” even though the active map filters could then
+   yield none. Web and Expo now show the account vehicle count as “vehicles”;
+   an empty filtered map offers Review filters while retaining the account and
+   filter draft. The focused web/native tests pass (65 total); local desktop
+   Chrome and Expo each pass the empty-to-filter task. Final `npm run quality`
+   passes (1,299 tests passed, zero failed, one intentional skip), including
+   source/spec/workflow checks and TypeScript. The first quality attempt caught
+   unreviewed per-project skips in the new browser test; the test now runs once
+   per project without skips. This change is not on hosted web or a Play build.
+   Existing CI run40418097113 failed browser shards; no release pass is claimed.
+
+   The local cargo-fit candidate now records optional free-space percentage for
+   Partial vehicles and adds private cargo-space photos, broker photo requests,
+   and private presence/receipt-age filters (FEAT-CAP/CSP-001). Migrations
+   218–220 are installed only in the local preview; their SQL suites and the
+   photo service/route/worker tests pass. A security review caught saved-photo
+   access after in-place driver reassignment and terminal photo cleanup blocked
+   by fulfilled-request history. The source migration and rollback-only SQL
+   regression now cover reassignment and terminal tombstones. The same repair
+   passed a transaction-only rehearsal, was applied only to the labeled local
+   preview from its protected backup, and passed the post-apply SQL suite.
+   The scheduled object cleanup worker is disabled unless its
+   production-only target and separate secret are configured. The local
+   owner/staff browser regression now passes in Chrome and CI's Chromium:
+   a synthetic Driver uploads, both permitted business members open the image,
+   an anonymous visitor is denied, both lose access after exact vehicle-grant
+   revocation, and protected cleanup readback finds zero leftover records or
+   object. The web photo panel passes actual 320/390px Chrome interaction checks
+   for zoom, location, vehicle controls and photo actions without hiding the map.
+   Root quality passed 1,328 tests, zero failed, one existing skip on unchanged
+   web/backend source; final spec/source/workflow checks also pass after the
+   native-only edit. All three cargo SQL rollback suites and the web production
+   build pass. Final mobile source passes 423 tests, types, lint, strict
+   fixed-string translation coverage (800/800) and Android JavaScript export.
+   The native Home photo action/proxy correction passed a 320/390px Expo Chrome
+   review: assigned Driver Home
+   opens Take/Choose in one step, gallery preview/Cancel saves nothing, and
+   the signed-in photo metadata GET returns JSON through the local proxy.
+   A local universal 1.2.0/code10 debug-key APK rebuilt successfully in 4m20s at
+   `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` (SHA-256
+   `3b96a8f6e2d5e55aa6cc8f9f68477785acd62c8b033404b128c675df35090521`).
+   Its compiled permission check passes with CAMERA required and no forbidden
+   broad-media, audio or overlay permissions. This local artifact is not
+   upload-key-signed or Play-ready and points at the older hosted API.
+   Installed Android camera/upload behavior, Expo broker/staff image viewing,
+   exact-source CI, and hosted migration/configuration
+   review remain pending. A photo is a
+   reported observation, not verified cargo fit. Demo-only freshness, GPS,
+   Preferred-area and Partial Planned Area gaps still need a reviewed update
+   and hosted readback.
+   The protected local web launcher restored the demo GPS receiver after a
+   plain preview had returned repeated gateway 401s. A bounded 60-second
+   GPS/phone motion run stopped cleanly. Its read-only pipeline check saw one
+   decoded fix, one delivered fix, one matched reservation and one saved app
+   position; public Capacity returned the demo TELEMATICS source with a
+   63-second-old API position. The bridge is healthy, but the simulator is
+   stopped and no recurring hosted movement is claimed. The repeat-prevention
+   procedure is recorded in `docs/AGENT_LESSONS.md`.
+   PR26 head `60fd0d0` started CI run40462458298. Setup, fixtures, security,
+   GPS and mobile-boundary checks passed; the rollback SQL step stopped in
+   `capacity-discovery-noop-guards` before browser jobs. The first stale
+   comparison required byte-for-byte equality with a pre-218 public payload.
+   Local continuation found the same two-field mismatch in the profile-search,
+   public-map and assigned-driver map historical parity suites. Those tests now
+   compare every previous field and order after excluding only the two new
+   reported-space fields, assert the new fields or current function definitions,
+   and retain their cursor, result, permission and rollback checks. Each of the
+   four corrected suites passes locally; the following discovery-input suite
+   and all remaining ordered SQL suites passed through
+   `featured-save-eligibility-once`. Follow-up commit `fef26f0` passed those
+   SQL boundaries in CI run40498537467; validation, mobile boundaries,
+   containers and three Featured jobs also passed. All eight browser shards
+   failed on a mix of stale UI assertions and local interaction defects, so
+   that run does not qualify release. The October27 local repair updates the
+   new Partial field and market navigation assertions, restores native private
+   document names, waits for synthetic map records before fan tests, stabilizes
+   paginated map refresh checks, and clears a phone photo-panel overlap. A
+   separate saved-corridor defect is now covered: removal updates the selected
+   map and summary after successful persistence, while failure retains the
+   saved signal. Focused Chrome/Expo and unit checks pass for those changes;
+   `npm run quality` passes on pinned Node22 (1,329 passed, one existing skip),
+   the mobile typecheck/lint/tests and translation audit pass (423 tests,
+   802 explicit strings), and the optimized web build passes. The focused
+   desktop, phone-web and Expo browser repairs pass locally. The offline
+   1.2.0/code10 local APK built for arm64-v8a and x86_64, with compiled camera
+   permission present and forbidden media/audio permissions absent; SHA-256
+   `20a6d6b17029fda17750d67656c3adaf5d3b6bc55535862201039bc4233f48f1`.
+   It uses the development signing certificate and remains a local test build.
+   PR CI run40524318756 on `8ba87d0` passed validation, mobile boundaries,
+   container, Featured and six browser shards; three shards failed on a stale
+   empty-state assertion, an approval-response race and a short-screen Tracking
+   fit check. The focused local repairs pass desktop/phone Chromium and the
+   Tracking approval workflow. Run40533181740 on `f908cde` then passed all
+   non-browser gates and seven browser shards; the remaining shard repeated
+   the approval-response race in the mobile Tracking progress test. That test
+   passes locally with the response wait. Another exact-head CI run remains
+   required. No hosted database or web change has been deployed from this PR.
+11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
+   deployment with provider selection, safe demo allowlists, real-device takeover,
+   recovery and monitored rollout. Do not claim an always-on service before it runs.
+   GPS private UI wiring now covers Heading, observed/received times, alarm age,
+   truthful report freshness and Sending/Sent command states;48 focused checks
+   and types pass, actual Chrome/Expo review is in progress. Physical commands
+   remain receive-only until exact model/bench qualification. Hosted templates
+   still need a secure Netlify-to-Traccar provisioning control path.
+
+## Verified live web and original Android candidate
+
+- Web https://loadgistic.com: production deploy `6ade9c1e03bf260ac498d5f9`.
+  Integrated main `c262da6e74620d978870212193bc3b42db7dc0fe`; PR25 candidate
+  `63705dd`; immutable web built `52477bb`. Executable equivalence is recorded.
+- PR25 CI40241567374 passed16/16 on attempt1. Main CI40244099050 passed16/16 on
+  attempt2. Main attempt1 had two requests fail before status assertions; one
+  failed-only retry passed. Their causes remain unconfirmed and failed receipts
+  remain preserved. No test was weakened or failed attempt relabeled.
+- Live checks:17 public checks,48 eligible vehicles,8 Featured accounts, ready
+  health, private anonymous denial and actual desktop/phone Chrome;43 synthetic
+  API checks and6 actual Chrome account/private-PDF/logout tasks. Fresh database
+  readback after UI logout confirmed zero test sessions.
+- Original Android1.2.0/code10 ARM64/x86-64 debug candidate, not32-bit ARM:
+  `.local/play-code10-20261025/final-parity/`. APK SHA256
+  `f7fcd195b0883951f3d96aa24c91e15eb4522ed5edce4e067ce57f8bb3243689`, AAB SHA256
+  `84beff0ca9ae47a6f9e185655adb07379dc9177e91d7b6353504be6f329fa823`, built from
+  `ebc6df9` with runtime equivalence through mainc262. Guest/profile/selected-map/
+  details/Back smoke passed12 checks. Existing driver Capacity save, Manual
+  Cancel, private-signup explanation, Featured and logout checks passed separately.
+  The newly reproduced invitation defect prevents calling all role tasks passed.
+- Root quality1199 pass/one existing intentional skip, source/spec/workflow/types,
+  unchanged native342 tests, types/lint/791-message translations/Android export
+  passed on their recorded inputs. New runtime edits require new relevant gates.
+- Release/readback, failures, artifact equivalence and screenshots:
+  `.local/release-20261025-settled/`. Earlier immutable build/failed-run evidence
+  stays in `.local/release-20261025-focus/` and prior release directories. PR24/25
+  bodies were independently read back; only their two merged task branches were
+  deleted. No history rewrite or user-edit staging occurred.
+
+## Hosted state and remaining limits
+
+Supabase `tpwyyzoqijjmbvsmmvcm` remains ledger208 after the approved199–208 apply.
+It removed five legacy email-only Capacity grants, not email-based Tracking.
+The actual web release used fresh advisor checks:0ERROR/the same2 acceptedWARN;
+that receipt is historical evidence, not a permanently fresh security clearance.
+No new SQL or hosted configuration change is part of the invitation fix.
+
+The recovery archive is hosted data plus a reconstructed ledger198 schema;
+restore/exact199–208 rehearsal passed. It is not a byte-for-byte current hosted
+schema backup, managed backups/PITR were unavailable, and later writes are not
+recoverable from it. Never automatically restore it over a live project.
+
+Play inspection at2026-10-26T01:59UTC found code7 on Internal/Alpha, code10 unused,
+Production empty; only a temporary inspection edit was created/deleted. Tester
+eligibility does not prove opt-in or the continuous14-day clock. Play declaration,
+physical background/location/notification and fluent-speaker qualification remain
+separate. Ask before a new session on the owner's physical phone; owned emulator
+review needs no phone session.
+
+Local demo-world slices previously passed intake/Capacity/Tracking/profile/team
+checks but controls were off. No always-on hosted simulation or real GT06 device
+intake is claimed. See [the local supervisor](operations/DEMO-WORLD-LOCAL-SUPERVISOR.md).

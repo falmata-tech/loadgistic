@@ -7,6 +7,7 @@ import React from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import { CapacityForm } from './capacity-form';
+import {ProviderCargoSpacePhoto} from './cargo-space-photo-panel';
 import {CapacityEditDialog} from './capacity-edit-dialog';
 import {DriverCapacityLocationEditor} from './driver-capacity-location-editor';
 import { StatusPill } from './status-pill';
@@ -35,7 +36,7 @@ function RestrictedAvailability({vehicles,latestByVehicle,corridors,renderedAt}:
   const reportedSource=captured?'Driver’s phone':locationSourceLabel(latest?.location_source)||(!latest&&manualSaved?'Manually entered':!latest&&truck.driver_location?'Driver’s phone':'');
   return <section className="capacity-console capacity-summary-console restricted-duty-panel" data-testid="capacity-summary">
    <section className="capacity-saved-summary driver-map-summary" data-testid="restricted-driver-map">
-    <div className="capacity-summary-layout">{location?<CapacityLocationMap center={location} radiusKm={location.radius} availabilityStatus={available?latest.status:'OFF_DUTY'} areaCenter={available&&latest.availability_geometry==='RADIUS'&&latest.capacity_area_center_lat!=null?{lat:Number(latest.capacity_area_center_lat),lng:Number(latest.capacity_area_center_lng)}:null} areaBoundary={available&&latest.availability_geometry==='RADIUS'?latest.capacity_area_boundary||[]:[]} routePoints={available&&latest.availability_geometry==='ROUTE'?latest.current_route_points||[]:[]} regularSignals={regular}/>:<PublicCapacityMap items={[]} viewer={null} selectedId={null} onSelect={()=>{}} onDeselect={()=>{}}/>}</div>
+    <div className="capacity-summary-layout">{location||regular.length||available&&(latest.availability_geometry==='ROUTE'?latest.current_route_points?.length>=2:latest.capacity_area_boundary?.length>=3)?<CapacityLocationMap center={location} radiusKm={location?.radius||0} availabilityStatus={available?latest.status:'OFF_DUTY'} areaCenter={available&&latest.availability_geometry==='RADIUS'&&latest.capacity_area_center_lat!=null?{lat:Number(latest.capacity_area_center_lat),lng:Number(latest.capacity_area_center_lng)}:null} areaBoundary={available&&latest.availability_geometry==='RADIUS'?latest.capacity_area_boundary||[]:[]} routePoints={available&&latest.availability_geometry==='ROUTE'?latest.current_route_points||[]:[]} regularSignals={regular}/>:<PublicCapacityMap items={[]} viewer={null} selectedId={null} onSelect={()=>{}} onDeselect={()=>{}}/>}</div>
     <header className="capacity-summary-map-header"><div className="card" style={{padding:12,margin:0}}><strong>{truck.make} · {truck.model}</strong><div className="meta">{truck.platform_number} · {truck.cargo_configuration||truck.category}</div><StatusPill status={available?latest.status:'OFF_DUTY'}/><small className="meta"><Text message="Fleet-managed capacity"/></small>
       {location?<div className="meta" role="status">{location.area} · {location.radius}<Text message=" km"/>{reportedSource?<> · <Text message={reportedSource}/></>:null}{location.updatedAt?<> · {relativeTime(location.updatedAt,renderedAt)}</>:null}</div>:<p className="meta"><Text message={manualSaved?'Manual location saved. Your fleet owner can now publish capacity.':'Share this vehicle’s approximate location so your owner can set up capacity.'}/></p>}
       {!configured?<p className="meta"><Text message="Ask your fleet owner to set up capacity before marking this vehicle Available."/></p>:!available&&phoneSelected&&!captured?<p className="meta"><Text message="Refresh your vehicle location before marking it Available."/></p>:null}
@@ -47,6 +48,7 @@ function RestrictedAvailability({vehicles,latestByVehicle,corridors,renderedAt}:
     </Localized>
     {editing?<CapacityEditDialog title="Capacity map location" truck={`${truck.make} · ${truck.model}`} busy={busy} onClose={()=>setEditing(false)}><DriverCapacityLocationEditor vehicleId={truck.id} location={location} publishedSource={latest?.location_source} onDuty={available} onBusyChange={setBusy} onCancel={()=>setEditing(false)} onSaved={(_mode,value)=>{setCaptured(value);setEditing(false);router.refresh();}}/></CapacityEditDialog>:null}
    </section>
+   <ProviderCargoSpacePhoto key={truck.id} vehicleId={truck.id} canUpload canRemove={false}/>
   </section>;
 }
 
@@ -60,7 +62,7 @@ export function DriverCapacityHome({ vehicles, capacities, corridors, access, ow
     <h1 className="sr-only"><Text message="Capacity management"/></h1>
     {query.error?<div className="alert error capacity-home-error" role="alert"><FeedbackText message={query.error} fallback="Could not load this page. Please try again."/></div>:null}
     <Localized as="section" copy={["aria-label"]} className="driver-home-section driver-capacity-workspace" aria-label="Capacity management">
-    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle} corridors={corridors} renderedAt={renderedAt}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection corridors={corridors} returnTo="/app/home" allowCorridors={ownsFleet||access?.kind==='SELF_MANAGED'} renderedAt={renderedAt}/>}
+    {restricted?<RestrictedAvailability vehicles={vehicles} latestByVehicle={latestByVehicle} corridors={corridors} renderedAt={renderedAt}/>:<CapacityForm vehicles={vehicleOptions} lockVehicleSelection corridors={corridors} returnTo="/app/home" allowCorridors={ownsFleet||access?.kind==='SELF_MANAGED'} canRemovePhoto={ownsFleet||access?.kind==='SELF_MANAGED'} renderedAt={renderedAt}/>}
     </Localized>
   </div>;
 }

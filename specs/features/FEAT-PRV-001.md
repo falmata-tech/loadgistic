@@ -234,12 +234,13 @@ And each claim is based on owner input or current records rather than invented m
 And a low rating that is awaiting review remains visible and included in the public count and average\
 And the page remains usable on mobile and without playing media.
 
-### Scenario: owner details precede the truck list
+### Scenario: account identity leads into vehicles and assigned drivers
 
 Given a visitor opens a transporter microsite on a wide or narrow screen\
 When the profile renders\
 Then a compact identity header presents the operating model, public base, fleet count, review summary, and provider-controlled contact actions without a marketing-sized hero\
-And About, reviewed company/owner documents, introduction media and shipment reviews appear next, before the truck list\
+And reviewed account documents appear next, followed by vehicles and their assigned drivers\
+And shipment reviews and About/introduction media remain reachable after the fleet rather than separating account identity from its vehicles\
 And provider details stay the same when the truck page changes\
 And each later section has one descriptive heading and a visually distinct purpose rather than repeating the provider name or page title\
 And desktop uses the available width without compressing truck details into small tiles\
@@ -250,22 +251,21 @@ And phone layouts use one readable column with no horizontal overflow, clipped a
 Given a published provider owns one or more active trucks\
 When a visitor views the truck list\
 Then every active truck can be reached through the existing bounded pagination and receives its own detailed card with platform truck number, make, model, cargo configuration, latest Empty or Partial state when published, reported Service area or Capacity route, pair-scoped regular service, separate capacity and approximate-location age, assigned Driver first name, Driver operating model, public callback phone, and separate Driver and truck verification status from authoritative records\
-And a Company driver names the employing fleet transporter while an Owner-operator or Self-managed driver remains clearly independent\
+And a Fleet driver names the employing Transport Provider while an Owner-operator or Self-managed driver remains clearly independent\
 And plate, Driver surname, private account details, exact coordinates, proof files, and inactive trucks remain absent\
 And trucks with no published Empty or Partial signal remain visible as part of the provider's fleet but show Ask about this truck instead of an old location or availability claim.
 
-### Scenario: a single truck appears directly while fleets expand on request
+### Scenario: vehicles are initially visible with bounded fleet pagination
 
 Given a published transporter profile has one active truck\
 When the visitor opens its profile\
-Then that truck and its assigned Driver appear below all owner details without an expand button or a one-result pagination footer.
+Then that vehicle and its assigned driver appear after account documents without an expand button or a one-result pagination footer.
 
 Given a published transporter profile has more than one active truck\
 When the visitor opens the profile without a truck-page request\
-Then a keyboard-accessible View trucks and drivers control appears after owner details\
-And the truck list and pagination are initially collapsed\
-When the visitor opens it\
-Then the existing cards show at most twelve active trucks and their Driver details\
+Then the fleet section is initially open after account documents\
+And its keyboard-accessible summary may close or reopen the section\
+And the existing cards show at most twelve active vehicles and their driver details\
 And the visitor can collapse the list again\
 And page links, reloads and bookmarked truck pages keep the list expanded and preserve the provider scope\
 And page links move to the list, without requiring another click or scrolling past owner details\

@@ -1,7 +1,28 @@
+import {publicTruckAuthority} from './public-truck-authority.js';
+
 function ethiopiaDate(){
   return new Intl.DateTimeFormat('en-CA',{
     timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'
   }).format(new Date());
+}
+
+// Public vehicle review claims must use the same current, provider-bound facts
+// as document filters. Approved requests alone may be historical or revoked.
+export function publicVehicleAuthorityBadges(authority,historicalBadges=[]){
+  const facts=publicTruckAuthority(authority);
+  const historical=new Map((historicalBadges||[]).map(badge=>[badge.type,badge]));
+  return [
+    ['VEHICLE_OWNERSHIP',facts.ownership],
+    ['VEHICLE_AUTHORIZATION',facts.permission],
+    ['VEHICLE_OPERATING_LICENSE',facts.operatingLicence]
+  ].map(([type,fact])=>{
+    const prior=historical.get(type);
+    const expiredCurrent=Boolean(fact.expiresOn&&fact.expiresOn<ethiopiaDate());
+    const verified=fact.verified===true&&!expiredCurrent;
+    const expired=!verified&&(expiredCurrent||prior?.expired===true);
+    return {type,verified,expired,reviewedAt:verified||expiredCurrent?fact.reviewedAt:expired?prior?.reviewedAt||null:null,
+      expiresOn:verified||expiredCurrent?fact.expiresOn:expired?prior?.expiresOn||null:null};
+  });
 }
 
 export function documentReviewSummary(badges=[]){

@@ -5,6 +5,7 @@ node_modules/
 .next-e2e/
 .next-mobile-preview/
 .next-upload-audit/
+.next-launch-*/
 out/
 coverage/
 playwright-report/

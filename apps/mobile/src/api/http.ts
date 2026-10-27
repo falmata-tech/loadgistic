@@ -2,6 +2,7 @@ import { ApiError, readApiResponse } from './response';
 import { Platform } from 'react-native';
 import { capacityUrl } from './public-capacity';
 import {businessApiPathAllowed,businessApiArrayResponse} from '../../../../src/lib/mobile/business-api-path.js';
+import {cargoPhotoApiPathAllowed} from './cargo-space-photo-path';
 export { ApiError } from './response';
 const configured = Platform.OS === 'web' && __DEV__ && typeof window !== 'undefined'
  ? window.location.origin
@@ -9,7 +10,7 @@ const configured = Platform.OS === 'web' && __DEV__ && typeof window !== 'undefi
 export const apiOrigin = new URL(capacityUrl(configured, '')).origin;
 if (!__DEV__ && !apiOrigin.startsWith('https://')) throw new Error('HTTPS is required for installed releases');
 export async function apiRequest(path: string, options: { token?: string; body?: unknown; signal?: AbortSignal } = {}): Promise<unknown> {
-  if ((!path.startsWith('/api/mobile/')&&!businessApiPathAllowed(path)) || path.includes('..')||/[\u0000-\u001f\u007f\\#]/.test(path)) throw new Error('Invalid API path');
+  if ((!path.startsWith('/api/mobile/')&&!businessApiPathAllowed(path)&&!cargoPhotoApiPathAllowed(path)) || path.includes('..')||/[\u0000-\u001f\u007f\\#]/.test(path)) throw new Error('Invalid API path');
   const multipart = options.body instanceof FormData;
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), multipart ? 60000 : 20000);
   const abort = () => controller.abort(); options.signal?.addEventListener('abort', abort, { once: true });

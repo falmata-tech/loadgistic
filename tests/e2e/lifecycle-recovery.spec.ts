@@ -6,7 +6,7 @@ const expect=baseExpect.configure({timeout:20000});
 import {mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {localAuditService,checked,auditLogin,auditProvider,auditFleetProvider,auditFleetDriver,auditOpenTrackingProgress} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditProvider,auditFleetProvider,auditFleetDriver} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 import {localMailpitNumericCode} from './mailpit-helper';
@@ -77,10 +77,11 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   phase('INVESTIGATED_CANCEL');await auditLogin(page,'admin@loadgistic.local',`/admin/operations/tracking/${shipment.id}`);await page.getByRole('button',{name:'Cancel Tracking',exact:true}).click();
   await cancel.getByLabel('Reason',{exact:true}).fill('Investigated and confirmed the customer cancellation');await cancel.getByRole('checkbox').check();await cancel.getByRole('button',{name:'Cancel Tracking',exact:true}).click();
   await expect(page.getByText('Tracking cancelled. Guest access has ended.',{exact:true})).toBeVisible({timeout:20000});
-  await auditLogin(page,actor.email,`/app/provider-shipments/${shipment.id}`);await expect(page.locator('.provider-shipment-summary')).toContainText('Cancelled');
+  await auditLogin(page,actor.email,`/app/provider-shipments/${shipment.id}`);await expect(page.getByRole('region',{name:'Shipment progress'}).getByText('Cancelled',{exact:true})).toBeVisible();
   await expect(page.getByRole('region',{name:'Tracking recovery'})).toHaveCount(0);
-  await auditOpenTrackingProgress(page);
-  await expect(page.getByRole('heading',{name:'Tracking cancelled',exact:true})).toBeVisible();
+  // Terminal Tracking keeps its history visible and removes update controls.
+  await expect(page.getByRole('region',{name:'Tracking update'}).locator('.tracking-control-panel')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Tracking update',exact:true})).toHaveCount(0);
   await expect(page.getByText('Tracking complete',{exact:true})).toHaveCount(0);
   await expect(page.getByLabel('Location privacy radius',{exact:true})).toHaveCount(0);await expect(page.getByText('Tracking truck or Driver reassigned',{exact:true})).toBeVisible();
   await page.screenshot({path:path.join(snapshots,`${info.project.name}-cancelled-history.png`),fullPage:true,scale:'css'});
@@ -88,7 +89,7 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   phase('GUEST_REVOCATION');await guestPage.goto(guestUrl);await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toHaveCount(0);
   expect(checked(await service.from('provider_tracking_recoveries').select('id').eq('shipment_id',shipment.id))).toHaveLength(3);
   phase('COMPLETE');
- }catch(error){const name=error instanceof Error?error.name:'';diagnostics.errorClass=['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';phase(diagnostics.stage);throw Error('TRACKING_LIFECYCLE_FAILED '+diagnostics.stage);}
+ }catch(error){const name=error instanceof Error?error.name:'';diagnostics.errorClass=['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';phase(diagnostics.stage);throw new Error('TRACKING_LIFECYCLE_FAILED '+diagnostics.stage,{cause:error});}
  finally{
   if(guest)await guest.close();
   if(challengeId)checked(await service.from('access_email_deliveries').delete().eq('entity_id',challengeId).eq('delivery_kind','TRACKING_OTP'));

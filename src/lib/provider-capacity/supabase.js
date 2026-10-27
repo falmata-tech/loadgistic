@@ -8,8 +8,8 @@ const MANAGED_ERRORS=[
   'FORBIDDEN','SUBSCRIPTION_ACCESS_REQUIRED','INVALID_VEHICLE','DRIVER_REQUIRED_FOR_CAPACITY',
   'DEVICE_LOCATION_DRIVER_ONLY','CAPACITY_DRIVER_LOCATION_REQUIRED','CAPACITY_LOCATION_ACTIVE_REQUIRED',
   'CAPACITY_CONFIGURATION_REQUIRED','INVALID_APPROXIMATE_LOCATION','INVALID_CAPACITY_INPUT',
-  'INVALID_CAPACITY_STATUS','ACCEPTED_LOADS_REQUIRED','INVALID_AVAILABILITY_GEOMETRY',
-  'PARTIAL_CAPACITY_ROUTE_REQUIRED','CAPACITY_ROUTE_POINTS_REQUIRED','CAPACITY_AREA_BOUNDARY_REQUIRED','CAPACITY_AREA_BOUNDARY_INVALID',
+  'INVALID_CAPACITY_STATUS','INVALID_AVAILABLE_PERCENT','ACCEPTED_LOADS_REQUIRED','INVALID_AVAILABILITY_GEOMETRY',
+  'CAPACITY_ROUTE_POINTS_REQUIRED','CAPACITY_AREA_BOUNDARY_REQUIRED','CAPACITY_AREA_BOUNDARY_INVALID',
   'CAPACITY_PLACE_DUPLICATE','LOCALITY_REQUIRED','REGULAR_CAPACITY_LIMIT','REGULAR_TRUCK_DRIVER_REQUIRED','TRUCK_DRIVER_CHANGED','NOT_FOUND','INVALID_SHARING_MODE','EXCLUSIVE_EMAIL_REQUIRED','EXCLUSIVE_RECIPIENT_ONLY','CONTACT_NAME_REQUIRED'
 ];
 
@@ -41,8 +41,14 @@ export function projectSupabaseProviderCapacityWorkspace(payload){
   const capacities=(Array.isArray(value.capacities)?value.capacities:[]).map(capacity=>{
     const status=String(capacity.market_status||capacity.status||'OFF_DUTY');
     const geometry=capacity.availability_geometry==='RADIUS'?'RADIUS':capacity.availability_geometry==='ROUTE'?'ROUTE':null;
+    const reportedAt=status==='PARTIAL'&&typeof capacity.available_percent_reported_at==='string'
+      &&Number.isFinite(Date.parse(capacity.available_percent_reported_at))?capacity.available_percent_reported_at:null;
+    const reportedPercent=Number(capacity.available_percent);
+    const availablePercent=status==='EMPTY'?100:reportedAt&&Number.isInteger(reportedPercent)
+      &&reportedPercent>=1&&reportedPercent<=99?reportedPercent:null;
     return {
-      ...capacity,status,availability_geometry:geometry,
+      ...capacity,status,availability_geometry:geometry,available_percent:availablePercent,
+      available_percent_reported_at:availablePercent!==null&&status==='PARTIAL'?reportedAt:null,
       current_route_points:geometry==='ROUTE'?points(capacity.current_route_points,2):[],
       capacity_area_boundary:geometry==='RADIUS'?points(capacity.capacity_area_boundary,3):[],
       proof_available:Boolean(capacity.proof_available||capacity.photo_storage_path),
@@ -113,6 +119,13 @@ function placeCommands(values){
 
 export async function publishSupabaseProviderCapacity(user,input,photo=/** @type {any} */(null)){
   if(input.sharingMode==='EXCLUSIVE'||input.exclusiveEmail||input.exclusiveName)throw new Error('EMAIL_CAPACITY_RETIRED');
+  const hasPercent=Object.hasOwn(input,'availablePercent')&&input.availablePercent!==undefined;
+  const suppliedPercent=hasPercent&&input.availablePercent!==null&&input.availablePercent!=='';
+  const availablePercent=suppliedPercent?Number(input.availablePercent):null;
+  if(suppliedPercent&&(input.status!=='PARTIAL'||!Number.isInteger(availablePercent)
+    ||availablePercent<1||availablePercent>99||!/^(?:[1-9]|[1-9][0-9])$/.test(String(input.availablePercent)))){
+    throw new Error('INVALID_AVAILABLE_PERCENT');
+  }
   const command={
     vehicle_id:String(input.vehicleId||''),status:String(input.status||''),
     accepted_loads:String(input.acceptedLoads||''),availability_geometry:String(input.availabilityGeometry||''),
@@ -124,7 +137,8 @@ export async function publishSupabaseProviderCapacity(user,input,photo=/** @type
     capacity_area_boundary_places:placeCommands(input.capacityAreaBoundaryPlaces),
     accepts_multi_pick:Boolean(input.acceptsMultiPick||input.acceptsMultiStop),
     accepts_multi_drop:Boolean(input.acceptsMultiDrop||input.acceptsMultiStop),
-    photo_storage_path:photo?.path||null
+    photo_storage_path:photo?.path||null,
+    ...(hasPercent?{available_percent:suppliedPercent?availablePercent:null}:{})
   };
   if(input.sharingMode){
     command.sharing_mode=String(input.sharingMode);

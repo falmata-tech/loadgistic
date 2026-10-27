@@ -29,8 +29,8 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     await page.getByRole('button',{name:'Continue',exact:true}).click();await page.waitForURL(/\/app\/home/);
     await expect(page.locator('.app-main')).toBeVisible();await page.goto(`/app/provider-shipments/${shipmentId}`);
     await auditOpenTrackingProgress(page);const panel=page.locator('.tracking-control-panel');const steps=panel.locator('.tracking-journey li');
-    await expect(steps).toHaveCount(5);await expect(steps.nth(0)).toContainText('Next');await expect(steps.nth(1)).toContainText('Or start here');
-    await expect(steps.nth(2)).toContainText('Remaining');await expect(steps.nth(2).locator('input')).toHaveCount(0);
+    await expect(steps).toHaveCount(2);await expect(steps.nth(0)).toContainText('Next');await expect(steps.nth(1)).toContainText('Or start here');
+    await expect(panel.locator('input[name=nextStatus][value=IN_TRANSIT]')).toHaveCount(0);
     await expect(page.getByRole('radio',{name:/Going to pickup/})).toBeEnabled();
     await page.getByRole('radio',{name:/Going to pickup/}).focus();await expect(page.getByRole('radio',{name:/Going to pickup/})).toBeFocused();
     // Language changes translate whole controls without changing pending state or user notes.
@@ -69,19 +69,23 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
       await expect(page.locator('.alert.success')).toBeVisible();await auditOpenTrackingProgress(page);
       expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe(status);
     }
-    await save('Loading','LOADING');await expect(steps.nth(0)).toContainText('Not recorded');await expect(steps.nth(1)).toHaveAttribute('aria-current','step');await expect(steps.nth(2)).toContainText('Next');
+    await save('Loading','LOADING');await expect(steps).toHaveCount(1);await expect(steps.nth(0)).toContainText('En route');await expect(steps.nth(0)).toContainText('Next');
     await panel.screenshot({path:info.outputPath('tracking-loading.png')});
     await page.getByRole('radio',{name:/Report a problem/}).check();await page.getByLabel('What happened?').fill('Synthetic delay for progress verification.');await save('Problem','ISSUE');
-    await expect(panel).toContainText('Choose where the shipment resumes.');await expect(steps.nth(1)).toContainText('previously recorded');await panel.screenshot({path:info.outputPath('tracking-problem.png')});
+    await expect(page.getByRole('region',{name:'Shipment progress'})).toContainText('Choose where the shipment resumes.');await expect(steps.nth(1)).toContainText('previously recorded');await panel.screenshot({path:info.outputPath('tracking-problem.png')});
     for(const [status,label] of [['LOADING','Loading'],['IN_TRANSIT','En route'],['UNLOADING','Unloading']]){
       await page.locator(`input[name=nextStatus][value=${status}]`).check();await save(label,status);
     }
     await expect(panel.locator('input[name=nextStatus][value=COMPLETED]')).toHaveCount(0);
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const owner=await guest.newPage();await auditTrackingOwnerLogin(owner,`progress-${actor.suffix}@example.test`);
-    await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();await page.reload();await auditOpenTrackingProgress(page);
-    await expect(panel.getByRole('heading',{name:'Tracking complete'})).toBeVisible();await expect(panel.locator('input')).toHaveCount(0);await expect(steps.nth(0)).toContainText('Not recorded');await expect(steps.nth(1)).toContainText('Completed');
+    const approval=owner.waitForResponse((response:any)=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/tracking/${shipmentId}/approve`);
+    await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();
+    const approved=await approval;expect(approved.status()).toBe(303);await approved.finished();
+    expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe('COMPLETED');
+    await page.reload();
+    await expect(page.getByRole('region',{name:'Shipment progress'})).toContainText('Complete');await expect(panel).toHaveCount(0);await expect(page.locator('.tracking-journey li')).toHaveCount(0);await expect(page.getByRole('heading',{name:'Status timeline'})).toBeVisible();expect(await page.locator('time').count()).toBeGreaterThan(0);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-    await panel.screenshot({path:info.outputPath('tracking-complete.png')});
+    await page.screenshot({path:info.outputPath('tracking-complete.png')});
   }finally{
     await guest?.close();
     if(shipmentId){await cleanupFixtureProofs(service,{actor,vehicleId,shipmentId});checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipmentId));checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));checked(await service.from('provider_shipments').delete().eq('id',shipmentId));}

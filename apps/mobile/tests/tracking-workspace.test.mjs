@@ -5,7 +5,7 @@ import ts from 'typescript';
 import {TRACKING_JOURNEY,trackingNextStatuses,trackingProgress} from '../../../src/lib/tracking-progress.js';
 
 // Exercise the screen's navigation/event contract without a map SDK or backend.
-function workspace(status='CREATED'){
+function workspace(status='CREATED',presentation){
  const source=readFileSync(new URL('../src/components/tracking-workspace.tsx',import.meta.url),'utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const states=[];let cursor=0,blur=()=>{},background=()=>{};
@@ -17,7 +17,7 @@ function workspace(status='CREATED'){
  dependencies['../../../../src/lib/demo-tracking-identity.js']={isDemoTrackingShipment:()=>false};
  dependencies['./tracking-demo-label']={TrackingDemoLabel:'TrackingDemoLabel'};
  const exports={};new Function('require','exports',compiled)(name=>{assert.ok(name in dependencies,`unexpected dependency ${name}`);return dependencies[name];},exports);
- const props={code:'Synthetic',status,route:[],location:null,truck:{platformNumber:'LG-1',make:'Truck',model:'Test',configuration:'Pickup truck',providerName:'Synthetic provider',providerHandle:'synthetic',driverName:'First',driverPhone:'',contactPhone:''}};
+ const props={code:'Synthetic',status,route:[],location:null,truck:{platformNumber:'LG-1',make:'Truck',model:'Test',configuration:'Pickup truck',providerName:'Synthetic provider',providerHandle:'synthetic',driverName:'First',driverPhone:'',contactPhone:''},presentation,children:node('Card',{children:node('Title',{message:'Tracking update'})})};
  return{render(){cursor=0;return exports.TrackingWorkspace(props);},blur(){blur();},background(){background('background');}};
 }
 function find(tree,predicate){if(!tree||typeof tree!=='object')return null;if(predicate(tree))return tree;const children=tree.props?.children;for(const child of Array.isArray(children)?children:[children]){const result=find(child,predicate);if(result)return result;}return null;}
@@ -41,4 +41,16 @@ test('Problem does not claim that one of several allowed resume states is mandat
  const tree=workspace('ISSUE').render();
  const next=find(tree,item=>item.type==='Text'&&Array.isArray(item.props.children)&&item.props.children[0]==='Next');
  assert.ok(next);assert.equal(next.props.children.join(''),'Next · Choose an available step.');
+});
+test('provider detail keeps one current/next strip and its update below the map instead of a scrolling map overlay',()=>{
+ const tree=workspace('LOADING','provider').render();
+ assert.equal(button(tree,'Open shipment progress'),null);
+ const scroll=find(tree,item=>item.type==='ScrollView'&&find(item,child=>child.type==='TrackingMap'));
+ assert.ok(scroll);
+ const items=scroll.props.children;
+ const flattened=Array.isArray(items)?items:[items];
+ const mapIndex=flattened.findIndex(item=>item?.type==='TrackingMap');
+ const updateIndex=flattened.findIndex(item=>find(item,child=>child.type==='Title'&&child.props.message==='Tracking update'));
+ assert.ok(mapIndex>=0&&updateIndex>mapIndex);
+ assert.equal(flattened.filter(item=>find(item,child=>child.type==='Text'&&Array.isArray(child.props.children)&&child.props.children[0]==='Current')).length,1);
 });

@@ -120,20 +120,21 @@ declare
   expected_fixture_ids uuid[]; actual_fixture_ids uuid[]; fixture_page_counts integer[]:=array[]::integer[];
   page_number integer;
   overview_ms numeric; overview_rows integer; overview_trucks bigint; overview_bytes bigint;
-  profile_result jsonb; profile_total integer; profile_rows integer; profile_bytes bigint;
+  profile_result jsonb; profile_total integer; profile_rows integer; profile_bytes bigint; profile_match_count integer;
   map_rows integer; map_bytes bigint; map_provider_match boolean; map_fixture_match boolean;
   route_rows integer; route_provider_match boolean; route_fixture_match boolean;
 begin
   -- This is the same profile-search RPC used by Transporter search, not the
-  -- legacy text predicate on the vehicle map. All synthetic Drivers match,
-  -- plus their shared provider profile.
+  -- legacy text predicate on the vehicle map. All synthetic vehicles count
+  -- inside one provider account; employees are not separate search results.
   started_at:=clock_timestamp();
-  select public.capacity_search_results('{"q":"scaleaudit"}'::jsonb)
+  select public.capacity_search_results(jsonb_build_object('q',(select provider_handle from scale_owner)))
     into profile_result;
   profile_ms:=extract(epoch from clock_timestamp()-started_at)*1000;
   profile_total:=(profile_result->>'total')::integer;
   profile_rows:=jsonb_array_length(profile_result->'items');
   profile_bytes:=octet_length(profile_result::text);
+  profile_match_count:=(profile_result->'items'->0->>'matching_trucks')::integer;
 
   -- Show trucks for the selected provider uses the ordinary vehicle page
   -- without a transporter text query. Scope to the fixture provider so
@@ -244,7 +245,11 @@ begin
   raise notice 'LOADGISTIC_UNSCOPED_SCALE_RESULT rows=15 filtered_rows=15 continuation_rows=15 bytes=% filtered_bytes=% continuation_bytes=% initial_ms=% filtered_ms=% continuation_ms=% fixture_rows=%',
     unscoped_bytes,filtered_bytes,continuation_bytes,round(unscoped_ms,3),round(filtered_ms,3),round(continuation_ms,3),fixture_page_counts;
 
-  if profile_total is distinct from (${requested}+1) or profile_rows is distinct from 15
+  if profile_total is distinct from 1 or profile_rows is distinct from 1
+    or coalesce(profile_match_count,0)<${requested}
+    or profile_result->'items'->0->>'handle' is distinct from (select provider_handle from scale_owner)
+    or profile_result->'items'->0->>'kind' is distinct from 'COMPANY'
+    or profile_result->'items'->0->>'capacity_id' is not null
     or map_rows is distinct from 15 or route_rows is distinct from 15
     or map_provider_match is distinct from true or route_provider_match is distinct from true
     or map_fixture_match is distinct from true or route_fixture_match is distinct from true then

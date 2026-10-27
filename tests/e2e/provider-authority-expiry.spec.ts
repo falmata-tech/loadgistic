@@ -22,7 +22,7 @@ function safeFailure(value:unknown):SafeFailure{
  return {code:identifier(error.code),status:typeof error.status==='number'&&Number.isInteger(error.status)&&error.status>=100&&error.status<=599?error.status:null,name:identifier(error.name),constraint:identifier(error.constraint)};
 }
 
-async function webLogin(page:Page,email:string,expectedLanding:'/app/home'|'/admin/reviews'='/app/home'){
+async function webLogin(page:Page,email:string,expectedLanding:'/app/home/vehicles'|'/admin/reviews'='/app/home/vehicles'){
  await page.goto('/login');await page.getByTestId('email-code-request-form').getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Email me a code',exact:true}).click();await expect(page.getByTestId('email-code-form')).toBeVisible();
  await page.getByLabel('Six-digit code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));
  // Trust-only Support finishes its /support redirect at the Review Center.
@@ -49,6 +49,8 @@ async function openVehicleDocumentsAfterLogin(page:Page,truck:string){
 async function nativeLogin(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible();
  await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));await page.getByRole('button',{name:'Sign in',exact:true}).last().click();await expect(page.getByLabel('Sign-in code',{exact:true})).toHaveCount(0);
+ await expect(page).toHaveURL(preview+'/account?tab=vehicles');
+ await expect(page.getByRole('tab',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-selected','true');
 }
 async function chooseNativeDate(page:Page,label:string,date:string){
  await page.getByRole('button',{name:new RegExp('^'+escape(label)+':')}).click();const choice=page.getByRole('button',{name:new RegExp('^'+escape(calendarDay(date,'en').label)+'(?:,|$)')});

@@ -14,7 +14,7 @@ export function businessHome(workspace:{permissions:{capacity:boolean;tracking:b
 export default function BusinessWorkspaces({startBusiness=false}:{startBusiness?:boolean}={}){
  const account=useAccount();
  if(account.busy)return <Page><LoadingSpinner/></Page>;
- if(!account.session)return <Redirect href="/account"/>;
+ if(!account.session)return <Redirect href="/account?from=workspaces"/>;
  return <WorkspaceChoice key={account.session.user.id} startBusiness={startBusiness}/>;
 }
 function WorkspaceChoice({startBusiness}:{startBusiness:boolean}){

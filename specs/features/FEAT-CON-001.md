@@ -135,6 +135,9 @@ And retrying a saved week preserves its days, slots and account-turn history;
 a failed slot write leaves no partial day, turn or publication audit
 And TikTok LIVE status continues to describe only an actual/scheduled broadcast.
 
+The October26 FEAT-FTR-001 programme-window and minimum-airtime rule applies
+without changing these account rounds or silently replacing a saved selection.
+
 Given the public or signed-in shell is rendered on web or Expo
 Then it carries one Loadgistic header and navigation model: signed-out visitors
 keep Capacity, Track, Featured and About in their existing order; their

@@ -9,6 +9,33 @@ observability: [public_workspace_navigation, public_capacity_query, public_track
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
 ---
 
+## Account-centered provider discovery — October 25 change in progress
+
+Given a public or authorized private Transport Provider search\
+When eligible provider accounts and their assigned fleet drivers are indexed\
+Then each provider account has one searchable profile using its chosen account
+name, handle and manager's published first name\
+And a self-managed driver remains a searchable Transport Provider account\
+And an employed fleet driver is not a separate profile result or an independent
+profile-name match; the driver's permitted details appear within the provider's
+vehicle/account view\
+And eligible vehicle/driver capacity pairs remain discoverable on the Capacity
+map with the same visibility, filter and permission boundaries.
+
+Given a visitor opens a provider profile\
+When they inspect its fleet and trust information on web or Android\
+Then account identity and account document status lead into the provider's
+vehicles, each assigned driver and the relevant vehicle/driver document groups\
+And reviews/About remain reachable below the fleet\
+And selecting an available vehicle retains the exact Capacity map target and
+return path; legacy provider URLs still resolve to the same account\
+And public output retains first-name-only identity and safe review summaries,
+never private proof files, document identifiers, login emails or reviewer notes.
+
+This is pending implementation and actual Chrome/Expo/installed qualification;
+the ledger208 index still supports separate company-driver entries. FEAT-VER-001
+controls truthful authority facts and badge presentation.
+
 # Public marketplace
 
 ### October 13 transporter search refinement — locally verified; review pending
@@ -22,6 +49,14 @@ And a profile still requires at least one eligible available assigned truck in t
 And only Show trucks on map applies that profile's identity to the truck map\
 And that explicit action retains the map's existing truck-filter choices\
 And changing map filters does not restart, clear or restrict an otherwise unchanged profile search.
+
+Given a visitor or authorized private-capacity team member optionally filters by a minimum estimated space-free percentage\
+When a current Empty or explicitly reported Partial signal is eligible in that same audience\
+Then the percentage condition combines with the other vehicle filters before pagination and map clustering\
+And an omitted minimum remains neutral\
+And the public map never reveals or matches a percentage from a Private current signal merely because a separate Preferred offer makes the vehicle publicly discoverable\
+And an authorized private map may use the reported percentage only after its existing vehicle grant and team-permission checks\
+And profile search remains independent of the vehicle-map filter.
 
 Given an older Capacity link contains a transporter `q` query
 When the page opens
@@ -37,6 +72,12 @@ This newest owner clarification supersedes older coupling of profile eligibility
 to the map's selected truck facts or route/document filters. Preserve privacy,
 assignment/availability eligibility and blocked-profile exclusions; do not add
 unavailable/unassigned profiles, expose extra driver data or broaden private access.
+
+Given transporter search finds an account while vehicle-map filters are active\
+When its account card shows the vehicle count and the person opens its vehicles on the map\
+Then the count identifies the account's eligible vehicles in this audience, independently of the map filters\
+And the map still applies the selected vehicle filters to that account\
+And an empty filtered map offers a direct way to review those filters without clearing them or changing the selected account.
 
 Given a visitor opens the profile-search drawer on web, phone web or mobile\
 Then its title and entry control say Transporter search in the chosen language\
@@ -273,7 +314,10 @@ native interfaces already use cursor results; this correction adds no UI mode.
 Given a visitor opens Loadgistic\
 When the public application shell and default Market workspace render\
 Then the selected Capacity navigation identifies the workspace and a shared introduction explains the platform\
-And one visible Find space for your next load heading names the page\
+And one visible “The visibility you need to serve your customers reliably” heading names the page\
+And web shows “Build trusted partnerships and coordinate your transport network together.” beneath it when vertical space permits; short phone views keep the headline and map choices while preserving usable map space\
+And native keeps the heading alone, with natural Amharic and Afaan Oromo wording rather than literal English sentence structure\
+And the two map choices are “Openly shared” and “Privately shared with you”, with natural translations that describe access without implying an exclusive vehicle booking\
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\
@@ -336,7 +380,7 @@ Given an existing API caller supplies a full-truck or shared-space requirement a
 When filtering public or authorized private capacity (the current visitor UI offers current load but no separate Space needed control)\
 Then the system checks accepted load types and both current and regular routes/service areas without asking the visitor to choose a signal geometry\
 And route matching evaluates every ordered segment and the selected direction/tolerances\
-And service-area matching evaluates the complete polygon for eligible Empty trucks\
+And service-area matching evaluates the complete polygon for eligible Empty or Partial vehicles\
 And one supplied endpoint may match independently, while two endpoints must both fit the same eligible route or area\
 And truck configuration, stops, document requirements, freshness and reported-location proximity may further narrow the same eligible pairs\
 And each map item remains one latest available truck/driver signal while the drawer lists connected profiles.
@@ -346,8 +390,8 @@ And each map item remains one latest available truck/driver signal while the dra
 Given a visitor supplies any combination of free text, exact transporter, Empty or Partial status, signal geometry, truck configuration, load type, stop option, signal age, shipment endpoint, Service-area place, or explicit nearby radius\
 When the public capacity query is evaluated\
 Then each supplied criterion must match and each omitted criterion remains neutral\
-And Partial prevents Service area because Partial capacity is route-only\
-And one shipment endpoint matches its selected tolerance against every segment of each eligible current or regular Capacity route or against an eligible complete Empty Service-area polygon\
+And Empty and Partial capacity can each offer a Route or Area\
+And one shipment endpoint matches its selected tolerance against every segment of each eligible current or preferred Capacity route or against an eligible complete Area polygon\
 And two shipment endpoints must both match the same eligible route or Service area\
 And a directional Capacity-route match compares the projected position of both endpoints along the complete ordered polyline, including routes with intermediate points\
 And Either direction permits the reverse projected order without changing the stored route\
@@ -383,7 +427,7 @@ And clearing Transporter search removes its text/results while preserving the ma
 And Show all transporters removes an exact profile/truck restriction while preserving other applied truck filters\
 And Clear filters removes all filter values and closes the dialog\
 And applying filters closes the dialog before navigation\
-And selecting Partial availability prevents a Service-area geometry choice because Partial capacity is route-only.
+And selecting Partial availability preserves both Route and Area geometry choices.
 
 ### Scenario: filters close when results are applied
 

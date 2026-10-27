@@ -19,11 +19,11 @@ export function providerHomeTabs({drivesTruck,canManageFleet}) {
   return [
     ...(drivesTruck ? [{id:'capacity',label:'My capacity'}] : []),
     ...(canManageFleet ? [{id:'vehicles',label:'Manage vehicles'}] : []),
-    {id:'market',label:'Public capacity'}
+    {id:'market',label:'Analyze the Market'}
   ];
 }
 
 export function providerHomeTab(capabilities,requested) {
   const tabs=providerHomeTabs(capabilities);
-  return tabs.find(tab=>tab.id===requested)?.id||tabs[0].id;
+  return tabs.find(tab=>tab.id===requested)?.id||(capabilities.drivesTruck?'capacity':capabilities.canManageFleet?'vehicles':'market');
 }

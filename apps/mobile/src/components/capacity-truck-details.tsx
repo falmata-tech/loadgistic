@@ -14,6 +14,7 @@ import {AppIcon} from './app-icon';
 import {PublicCardImage} from './public-card';
 import {TruckAuthorityBadges} from './truck-authority';
 import {ErrorText,palette} from './ui';
+import {localizedUpdateLabel} from '../../../../src/lib/i18n/update-label.js';
 
 const documentLabels:Record<string,string>={IDENTITY:'National ID',BUSINESS_LICENSE:'Business License',BUSINESS_ADDRESS:'Business Address',DRIVER_IDENTITY:'Driver license',VEHICLE_OWNERSHIP:'Vehicle ownership',VEHICLE_OPERATING_LICENSE:'Vehicle operating licence',VEHICLE_AUTHORIZATION:'Permission to use vehicle',VEHICLE_AUTHORITY:'Vehicle document',TRUCK_AUTHORIZATION:'Permission to use vehicle'};
 export function CapacityDocumentGroups({truck}:{truck:CapacitySignal}){
@@ -58,7 +59,7 @@ export function CapacityTruckDetails({truck}:{truck:CapacitySignal}){
  const {t}=useLanguage();
  return <>
   <View style={styles.hero}><View style={styles.illustration}><Image source={{uri:apiOrigin+vehicleConfigurationImage(truck.configuration)}} resizeMode="contain" style={{width:'100%',height:58}}/></View><View style={{flex:1,gap:4}}>
-   <View style={styles.statusLine}><Text style={[styles.status,{backgroundColor:truck.status==='EMPTY'?palette.successSoft:'#fff7d6',color:truck.status==='EMPTY'?palette.success:capacityStatusPresentation.PARTIAL.text}]}>{t(truck.status==='EMPTY'?'Empty vehicle':'Partial capacity')}</Text>{truck.acceptedLoads&&<Text style={styles.loads}>{t(capacityLoadLabel(truck.acceptedLoads))}</Text>}</View>
+   <View style={styles.statusLine}><Text style={[styles.status,{backgroundColor:truck.status==='EMPTY'?palette.successSoft:'#fff7d6',color:truck.status==='EMPTY'?palette.success:capacityStatusPresentation.PARTIAL.text}]}>{t(truck.status==='EMPTY'?'Empty vehicle':'Partial capacity')}</Text>{!!truck.acceptedLoads&&<Text style={styles.loads}>{t(capacityLoadLabel(truck.acceptedLoads))}</Text>}{truck.status==='PARTIAL'&&!!truck.availablePercentReportedAt&&truck.availablePercent!=null&&<Text style={styles.loads}>{t('Available space: {percent}%',{percent:truck.availablePercent})}</Text>}</View>
    <Text style={styles.name}>{truck.truck}</Text><Text style={styles.meta}>{t(truck.configuration)}</Text>
   </View></View>
   {!!truck.sharingMode&&<Text style={styles.tag}>{t(capacitySharingLabel(truck.sharingMode))}</Text>}
@@ -67,7 +68,7 @@ export function CapacityTruckDetails({truck}:{truck:CapacitySignal}){
    <View style={styles.person}><View style={styles.identity}><AppIcon name="profile" size={19} color={palette.blue}/><View style={{flex:1,gap:3}}><Text style={styles.personLabel}>{t('Transport Provider')}</Text><Text style={styles.personName}>{truck.provider}</Text></View></View>{!!truck.handle&&<Link href={{pathname:'/transporter',params:{handle:truck.handle}}} asChild><Pressable accessibilityRole="link" style={styles.profile}><Text style={styles.actionText}>{t('Profile')}</Text><AppIcon name="external" size={16} color={palette.blue}/></Pressable></Link>}</View>
    <View style={styles.person}><PublicCardImage path={truck.portrait} label={truck.driver} portrait identity="person"/><View style={[styles.identity,{flexDirection:'column',gap:3}]}><Text style={styles.personLabel}>{t(truck.driverKind)}</Text><Text style={styles.personName}>{truck.driver}</Text>{!truck.driverPhone&&<Text style={styles.meta}>{t('Phone not published')}</Text>}</View></View>
   </View>
-  <View style={styles.updates}><View style={styles.update}><AppIcon name="truck" size={16}/><Text style={[styles.meta,{flex:1}]}>{truck.capacityAge}</Text></View>{truck.currentVisible&&<View style={styles.update}><AppIcon name="location" size={16} color="#1a73e8"/><Text style={[styles.meta,{flex:1}]}>{truck.locationAge}</Text></View>}<Text style={styles.meta}>{t('Confirm availability directly.')}</Text></View>
+  <View style={styles.updates}><View style={styles.update}><AppIcon name="truck" size={16}/><Text style={[styles.meta,{flex:1}]}>{localizedUpdateLabel(truck.capacityAge,t)}</Text></View>{truck.currentVisible&&<View style={styles.update}><AppIcon name="location" size={16} color="#1a73e8"/><Text style={[styles.meta,{flex:1}]}>{localizedUpdateLabel(truck.locationAge,t,'location')}</Text></View>}<Text style={styles.meta}>{t('Confirm availability directly.')}</Text></View>
   <CapacityDocumentGroups truck={truck}/>
  </>;
 }

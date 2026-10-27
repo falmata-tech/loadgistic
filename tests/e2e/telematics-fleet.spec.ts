@@ -38,13 +38,18 @@ async function mobileLogin(page:Page,email:string,checkpoint:(stage:string)=>voi
  checkpoint('EXPO_SEND_CODE');await page.getByRole('button',{name:'Send code',exact:true}).click();checkpoint('EXPO_CODE_FIELD');await expect(page.getByLabel('Sign-in code',{exact:true})).toBeVisible();
  checkpoint('EXPO_INBOX_CODE');await page.getByLabel('Sign-in code',{exact:true}).fill(await localMailpitNumericCode(email,since,['Your Loadgistic signup code','Your Loadgistic sign-in code']));
  checkpoint('EXPO_VERIFY_CODE');const verified=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
- await page.getByRole('button',{name:'Sign in',exact:true}).last().click();requireValue((await verified).status()===200,'MOBILE_OTP_VERIFY_FAILED');
+ await page.getByRole('button',{name:'Sign in',exact:true}).last().click();const verification=await verified;requireValue(verification.status()===200,'MOBILE_OTP_VERIFY_FAILED');
+ const identity=await verification.json() as {user:{drivesTruck:boolean;canManageFleet:boolean}};
+ requireValue(typeof identity.user?.drivesTruck==='boolean'&&typeof identity.user?.canManageFleet==='boolean','MOBILE_CAPABILITIES_REQUIRED');
+ const home=identity.user.drivesTruck?{tab:'capacity',label:'My capacity'}:identity.user.canManageFleet?{tab:'vehicles',label:'Manage vehicles'}:{tab:'market',label:'Analyze the Market'};
+ await expect(page).toHaveURL('http://localhost:8084/account?tab='+home.tab);
+ await expect(page.getByRole('tab',{name:home.label,exact:true})).toHaveAttribute('aria-selected','true');
 }
 async function openNativeFleet(page:Page){
  // Provider Home contains vehicle management for both driving and non-driving owners.
  await expect(page.getByRole('tab',{name:'Home',exact:true}).filter({visible:true})).toBeVisible();
  await page.getByRole('tab',{name:'Manage vehicles',exact:true}).click();
- await expect(page).toHaveURL(/\/account$/);
+ await expect(page).toHaveURL('http://localhost:8084/account?tab=vehicles');
 }
 
 test('fictional GPS fleet source saves worldwide manual coordinates, restores GPS and preserves owner/employee controls on web and Expo',async({browser},info)=>{

@@ -8,4 +8,4 @@
 .content :global(.capacity-home-page){height:100%;min-height:0}
 .content .market{height:100%;min-height:0}
 .content .market :global(.home-market-shell){height:100%;min-height:0}
-@media(max-width:768px){.home[data-view='capacity'],.home[data-view='market']{height:calc(100dvh - 128px)}.tabs{padding-inline:6px}.tabs a{padding-inline:11px;font-size:.73rem}}
+@media(max-width:768px){.home[data-view='capacity'],.home[data-view='market']{height:calc(100dvh - 128px)}.tabs{padding-inline:6px;justify-content:center;overflow-x:visible}.tabs a{flex:1 1 0;min-width:0;padding-inline:7px;font-size:.73rem;white-space:normal;text-align:center;overflow-wrap:anywhere}}

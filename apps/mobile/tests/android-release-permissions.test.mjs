@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {apkManifest,bundleManifest,forbiddenPermissions,requiredPermissions,verifyReleasePermissions} from '../scripts/verify-android-permissions.mjs';
 
 const valid={packageName:'com.loadgistic.app',debuggable:false,permissions:requiredPermissions};
-test('standalone release preserves actual shipment and alert permissions',()=>{
+test('standalone release preserves shipment, alert and cargo-photo camera permissions',()=>{
  assert.equal(verifyReleasePermissions(valid).requiredPermissionCount,requiredPermissions.length);
  for(const permission of requiredPermissions)assert.throws(()=>verifyReleasePermissions({...valid,permissions:requiredPermissions.filter(name=>name!==permission)}),/MISSING_RELEASE_PERMISSIONS/);
 });
@@ -36,4 +36,5 @@ test('standalone configuration blocks unused permissions without removing tracki
  const blocked=new Set(config.android.blockedPermissions.map(name=>name.includes('.')?name:'android.permission.'+name));
  for(const name of forbiddenPermissions)assert.ok(blocked.has(name),'Missing release block: '+name);
  for(const name of requiredPermissions)assert.ok(!blocked.has(name),'Required permission blocked: '+name);
+ assert.ok(config.android.permissions.includes('CAMERA'),'Cargo-photo camera permission missing from Expo config');
 });

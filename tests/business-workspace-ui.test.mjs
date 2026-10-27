@@ -77,10 +77,19 @@ test('erased teammates remain visible as former members without management actio
  finally{h.restore();}
 });
 
-test('shipper/broker document tasks explain optional review and offline fees on web and Expo',()=>{
- const guidance='Review is optional. Transport Providers can find and share Capacity with your account without documents. Approved documents add trust badges. Fees are paid offline.';
- for(const path of ['src/components/business-documents.tsx','apps/mobile/src/components/business-documents.tsx'])
-  assert.ok(readFileSync(path,'utf8').includes(guidance),`${path} must explain optional review and offline fees`);
+test('shipper/broker document tasks keep optional private review and submissions on web and Expo',()=>{
+ const web=readFileSync('src/components/business-documents.tsx','utf8'),native=readFileSync('apps/mobile/src/components/business-documents.tsx','utf8');
+ for(const [path,source] of [['web',web],['Expo',native]]){
+  for(const label of ['Optional verification','Documents are private and reviewed by Loadgistic administrators.','Submit a document','Request history','Open private document'])
+   assert.ok(source.includes(label),`${path} must retain ${label}`);
+  assert.ok(!source.includes('Fees are paid offline.'),`${path} must not restore the removed fee paragraph`);
+ }
+ assert.match(web,/open&&canManage/);
+ assert.match(web,/data\?\.canManage/);
+ assert.match(web,/\/api\/business-workspaces\/\$\{workspaceId\}\/documents/);
+ assert.match(native,/!summary&&data&&canManage/);
+ assert.match(native,/data\.subjects\[0\]\?\.allowedTypes/);
+ assert.match(native,/<PrivateFile /);
 });
 
 test('demand-side labels distinguish Shippers/brokers from receivers across navigation and admin records',()=>{

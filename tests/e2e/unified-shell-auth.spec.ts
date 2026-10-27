@@ -1,6 +1,7 @@
 import {test,expect} from './browser-test';
 import {auditProvider,checked,localAuditService} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
+import {expectBalancedProviderHomeTabs} from './provider-home-tabs-helper';
 
 test('one shell gains account navigation after sign-in and returns to Capacity after sign-out',async({page},info)=>{
  test.setTimeout(120_000);
@@ -24,26 +25,45 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  try{
  await localSupportLogin(page,actor.id);
  await page.goto('/');
+ await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search);
+ const homeTabs=page.getByRole('navigation',{name:'Home views'});
+ await expect(homeTabs.getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
+ await expectBalancedProviderHomeTabs(page,homeTabs,'link',['Manage vehicles','Analyze the Market']);
  await expect(header.locator('summary[aria-label="Account"]')).toBeVisible();
  const accountNavigation=page.getByRole('navigation',{name:info.project.name==='mobile-chromium'?'Mobile navigation':'Site navigation'});
  await expect(accountNavigation.getByRole('link',{name:'Home'})).toHaveCount(1);
  await expect(accountNavigation.getByRole('link',{name:'Capacity'})).toHaveCount(0);
  await expect(accountNavigation.getByRole('link',{name:'Network'})).toHaveCount(1);
- await expect(accountNavigation.getByRole('link',{name:'Shared with you'})).toHaveCount(0);
+ for(const name of ['Shared with you','Privately shared with you'])await expect(accountNavigation.getByRole('link',{name,exact:true})).toHaveCount(0);
  await page.screenshot({path:info.outputPath('unified-shell-signed-in.png')});
  await expect(page.getByRole('navigation',{name:'Switch view'})).toHaveCount(0);
  await expect(page.getByRole('navigation',{name:'Capacity views'})).toHaveCount(0);
  await page.goto('/?view=private');
- await expect(page).toHaveURL(url=>url.pathname==='/'&&!url.search);
+ await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search);
+ await page.goto('/app/home');
+ await expect(page).toHaveURL(/\/app\/home\/vehicles$/);
+ await expect(page.locator('.unified-app-main [data-view="vehicles"]')).toBeVisible();
+ await accountNavigation.getByRole('link',{name:'Home',exact:true}).click();
+ await expect(page).toHaveURL(/\/app\/home\/vehicles$/);
+ await expect(page.locator('body>.site-copyright')).toBeVisible();
+ expect(await page.evaluate(()=>{
+  const footer=document.querySelector('.site-copyright')?.getBoundingClientRect();
+  const navigation=document.querySelector('.public-mobile-nav')?.getBoundingClientRect();
+  return Boolean(footer&&document.documentElement.scrollWidth<=innerWidth+2&&document.documentElement.scrollHeight<=innerHeight+2&&(!navigation||getComputedStyle(document.querySelector('.public-mobile-nav')!).display==='none'||footer.bottom<=navigation.top+1));
+ })).toBe(true);
  await page.goto('/app/network');
  await expect(page.locator('header.unified-site-header')).toBeVisible();
  await expect(page.locator('.app-topbar')).toHaveCount(0);
+ const footer=page.locator('body>.site-copyright');
+ await expect(footer).toHaveCount(1);
+ await expect(footer.getByRole('link',{name:'MarketVision Technology',exact:true})).toHaveAttribute('href','https://marketvisiontech.com/');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
  await header.locator('summary[aria-label="Account"]').click();
  await header.getByRole('button',{name:'Log out'}).click();
  await expect(page).toHaveURL(url=>url.pathname==='/',{timeout:30_000});
  await expect(header.getByRole('link',{name:'Sign in'})).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Site navigation'}).getByRole('link',{name:'Network'})).toHaveCount(0);
- await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Shared with you'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'})).toBeVisible();
  await expect(visitorNavigation.getByRole('link',{name:'Track',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('unified-shell-signed-out.png')});
  }finally{

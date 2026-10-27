@@ -4,8 +4,41 @@ import fs from 'node:fs';
 import test from 'node:test';
 import {
   assertLocalAuthorityFixtureTarget,authorityFixtureStoragePath,prepareProviderAuthorityFixtures,
-  fictionalOwnershipPdf,uploadAuthorityFixtureDocuments,confirmAuthorityFixtureReviews
+  fictionalOwnershipPdf,uploadAuthorityFixtureDocuments,confirmAuthorityFixtureReviews,
+  assertPublicFixtureVehicleDocumentBadges
 } from '../scripts/fixture-provider-authority.mjs';
+import {publicVehicleAuthorityBadges} from '../src/lib/verification-summary.js';
+
+test('fresh fixture verification accepts the current three independent public authority categories',()=>{
+  const review={verified:true,reviewedAt:'2026-01-01T00:00:00Z',expiresOn:'2099-01-01'};
+  for(const authority of [{},{ownership:review},{permission:review},
+    {operatingLicence:{...review,holderBasis:'FINANCED'}},
+    {ownership:review,permission:review,operatingLicence:{...review,holderBasis:'OWNED'}}]){
+    const badges=publicVehicleAuthorityBadges(authority);
+    assert.doesNotThrow(()=>assertPublicFixtureVehicleDocumentBadges(badges));
+  }
+});
+
+test('fixture verification rejects retired, missing, duplicated and unsupported public document categories',()=>{
+  const badges=publicVehicleAuthorityBadges({});
+  for(const invalid of [null,[],[null,...badges.slice(1)],badges.slice(0,2),[badges[0]],
+    [{type:'VEHICLE_AUTHORITY',verified:false,expired:false,reviewedAt:null}],
+    [badges[0],badges[0],badges[2]],
+    [...badges.slice(0,2),{...badges[2],type:'UNKNOWN'}],
+    [...badges.slice(0,2),{...badges[2],verified:1}],
+    [...badges.slice(0,2),{...badges[2],verified:true,reviewedAt:null}],
+    [...badges.slice(0,2),{...badges[2],verified:true,expired:true,reviewedAt:'2026-01-01'}]]){
+    assert.throws(()=>assertPublicFixtureVehicleDocumentBadges(invalid),/SUPABASE_FIXTURE_VERIFY_TRUCK_DOCUMENT_CATEGORIES_FAILED/);
+  }
+});
+
+test('unverified and expired public authority categories remain valid without becoming reviewed claims',()=>{
+  const badges=publicVehicleAuthorityBadges({ownership:{verified:true,reviewedAt:'2000-01-01',expiresOn:'2000-02-01'}});
+  assert.equal(badges[0].verified,false);assert.equal(badges[0].expired,true);
+  assert.doesNotThrow(()=>assertPublicFixtureVehicleDocumentBadges(badges));
+  const verifier=fs.readFileSync(new URL('../scripts/verify-supabase-fixtures.mjs',import.meta.url),'utf8');
+  assert.match(verifier,/assertPublicFixtureVehicleDocumentBadges\(item\.truck_verification_badges\)/);
+});
 
 const url='http://127.0.0.1:55321';
 const now='2026-10-14T12:00:00.000Z';

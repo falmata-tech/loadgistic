@@ -1,6 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { nativePublicProvider,nativeFeatured,publicAsset,publicWebsite } from '../src/lib/mobile/public-contract.js';
+test('native public profile keeps planned and preferred coverage distinct using public place labels only',()=>{
+ const route=[{label:'City A',lat:9,lng:38},{label:'City B',lat:10,lng:39}];
+ const boundary=[...route,{label:'City C',lat:11,lng:38}];
+ const profile=nativePublicProvider({trucks:[
+  {capacity:{status:'EMPTY',availability_geometry:'ROUTE',current_route_points:route,recurring_corridors:[{geometry:'ROUTE',route_points:[{label:'City D'},{label:'City E'}]}]}},
+  {capacity:{status:'PARTIAL',availability_geometry:'RADIUS',capacity_area_center_label:'Center',capacity_area_boundary:boundary}}
+ ]});
+ assert.deepEqual(profile.trucks[0].capacity.coverage,{kind:'ROUTE',places:['City A','City B']});
+ assert.deepEqual(profile.trucks[0].regular,{kind:'ROUTE',places:['City D','City E']});
+ assert.deepEqual(profile.trucks[1].capacity.coverage,{kind:'AREA',places:['Center','City A','City B','City C']});
+ assert.equal(JSON.stringify(profile).includes('"lat"'),false);
+ assert.equal(JSON.stringify(profile).includes('"lng"'),false);
+});
+test('hidden planned geometry cannot reappear as profile labels or legacy endpoint fallback',()=>{
+ const profile=nativePublicProvider({trucks:[{capacity:{status:'EMPTY',current_signal_geometry_visible:false,
+  availability_geometry:'ROUTE',origin:'Hidden A',destination:'Hidden B',current_route_points:[{label:'Hidden A'},{label:'Hidden B'}],
+  recurring_corridors:[{geometry:'ROUTE',route_points:[{label:'Preferred A'},{label:'Preferred B'}]}]}}]});
+ assert.equal(profile.trucks[0].capacity.coverage,null);
+ assert.equal(profile.trucks[0].capacity.origin,'');assert.equal(profile.trucks[0].capacity.destination,'');
+ assert.deepEqual(profile.trucks[0].regular,{kind:'ROUTE',places:['Preferred A','Preferred B']});
+ assert.equal(JSON.stringify(profile).includes('Hidden'),false);
+});
 test('native public profile exposes only explicitly public entity fields and preserves review scope',()=>{
  const secret={file_path:'private/proof',actor_id:'private-user',contact_private:'private-contact',lat:9.001,notes:'private-note'};
  const projected=nativePublicProvider({...secret,name:'Fleet',handle:'fleet',contact_phone:null,verification_badges:[{...secret,type:'IDENTITY',verified:true,expired:true,reviewedAt:'2026-01-01'}],trucks:[{...secret,platform_number:'LG-TRK-TEST',assigned_driver_first_name:'Driver',truck_verification_badges:[{...secret,type:'VEHICLE_AUTHORIZATION',verified:true}],capacity:{...secret,status:'PARTIAL',capacity_updated_label:'Updated today'}}],reviews:[{...secret,rating:4,note:'Good service',dispute_status:'OPEN'}],fleet_page:{page:2,pageCount:3,total:28}});

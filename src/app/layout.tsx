@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import {PUBLIC_SITE_ORIGIN,searchRobots} from '@/lib/seo.js';
 import {NativeFormFeedback} from '@/components/native-form-feedback';
+import {SiteCopyright} from '@/components/site-copyright';
 
 export const runtime = 'nodejs';
 
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         <LanguageProvider locale={locale} messages={messages}>
           {children}
+          <SiteCopyright/>
           <NativeFormFeedback/>
         </LanguageProvider>
         <script src="/register-sw.js" defer />

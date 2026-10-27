@@ -11,6 +11,24 @@ test('local preview proxy only handles native API and public asset paths',()=>{
  assert.equal(status,403);assert.equal(ended,true);
 });
 
+test('local preview forwards only exact provider and business cargo-photo paths',()=>{
+ const id='11111111-1111-4111-8111-111111111111',workspace='22222222-2222-4222-8222-222222222222';
+ const provider='/api/capacity/cargo-space-photos',business=`/api/business-workspaces/${workspace}/capacity`;
+ for(const path of [
+  provider,`${provider}?vehicleId=${id}`,`${provider}/${id}?format=base64`,
+  `${business}/photos?vehicleId=${id}`,`${business}/photos/${id}`,`${business}/photos/${id}?format=base64`,`${business}/photo-requests`
+ ])assert.equal(proxy.allowedPath(path),true,`should forward ${path}`);
+ for(const path of [
+  `${provider}?vehicleId=not-an-id`,`${provider}?vehicleId=${id}&vehicleId=${id}`,`${provider}?format=base64`,
+  `${provider}/${id}`,`${provider}/${id}?format=raw`,`${provider}/${id}?format=base64&other=1`,
+  `${provider}/%2e%2e/admin`,`${provider}/../admin`,`${provider}/${id}/extra?format=base64`,
+  `${business}/photos?vehicleId=not-an-id`,`${business}/photos?vehicleId=${id}&other=1`,
+  `${business}/photos/${id}?format=raw`,`${business}/photo-requests?vehicleId=${id}`,
+  `/api/business-workspaces/not-an-id/capacity/photos?vehicleId=${id}`,
+  `https://evil.example${provider}`,`//evil.example${provider}`
+ ])assert.equal(proxy.allowedPath(path),false,`should reject ${path}`);
+});
+
 test('web preview uses tab storage and rejects hosted or production session persistence',async()=>{
  const originalWindow=globalThis.window,originalDev=globalThis.__DEV__;
  const values=new Map();

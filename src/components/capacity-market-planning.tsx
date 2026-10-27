@@ -19,7 +19,7 @@ function PlaceRows({keys,setKeys,prefix,label,min,name,refName,points=[]}:{keys:
   </div>;
 }
 
-export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,returnTo,onBusyChange,onSaved,onRemoved,onCancel}:{corridors:RegularSignal[];vehicleId:string;expectedDriverId:string;returnTo:string;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onRemoved:()=>void;onCancel:()=>void}){
+export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,returnTo,onBusyChange,onSaved,onRemoved,onCancel}:{corridors:RegularSignal[];vehicleId:string;expectedDriverId:string;returnTo:string;onBusyChange:(busy:boolean)=>void;onSaved:(geometry:RegularSignal['geometry'])=>void;onRemoved:(id:string)=>void;onCancel:()=>void}){
   const [removed,setRemoved]=React.useState(false);
   const published=removed?null:corridors.find(signal=>signal.vehicle_id===vehicleId&&signal.driver_user_id===expectedDriverId)||null;
   const [busy,setBusy]=React.useState(false);
@@ -33,20 +33,19 @@ export function CapacityMarketPlanning({corridors,vehicleId,expectedDriverId,ret
     const form=event.currentTarget;
     const removing=new FormData(form).get('action')==='REMOVE';
     active.current=true;setBusy(true);onBusyChange(true);setError('');
-    try{await submitCapacityForm(form);if(removing){setRemoved(true);onRemoved();}else onSaved();}
-    catch(reason){setError(reason instanceof Error?reason.message:'Preferred corridor could not be saved. Please try again.');}
+    try{await submitCapacityForm(form);if(removing){setRemoved(true);onRemoved(published!.id);}else onSaved(geometry);}
+    catch(reason){setError(reason instanceof Error?reason.message:geometry==='RADIUS'?'Preferred area could not be saved. Please try again.':'Preferred corridor could not be saved. Please try again.');}
     finally{active.current=false;setBusy(false);onBusyChange(false);}
   }
   return <section className="capacity-signal-form" data-testid="capacity-planning-editor">
     <div className="capacity-signal-dialog-body">
-    <p className="meta"><Text message="The area or two-way route you serve regularly. Customers still confirm current availability with you."/></p>
     {error?<p className="alert error" role="alert">{error}</p>:null}
     <form id="regular-service-form" action="/api/capacity/corridors" method="post" onSubmit={submit} className="planning-editor-form recurring-signal-form"><fieldset className="capacity-signal-fields" disabled={busy}><input type="hidden" name="returnTo" value={returnTo}/><input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="expectedDriverId" value={expectedDriverId}/><input type="hidden" name="action" value={published?'UPDATE':'ADD'}/><input type="hidden" name="id" value={published?.id||''}/><input type="hidden" name="geometry" value={geometry}/>
-      <div className="segmented-control geometry-choice"><button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong><Text message="Preferred service area"/></strong><small><Text message="Nearby towns"/></small></button><button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong><Text message="Preferred corridor"/></strong><small><Text message="Both directions"/></small></button></div>
+      <div className="segmented-control geometry-choice"><button type="button" aria-pressed={geometry==='RADIUS'} onClick={()=>setGeometry('RADIUS')}><CircleDotDashed aria-hidden="true"/><strong><Text message="Preferred area"/></strong><small><Text message="Nearby towns"/></small></button><button type="button" aria-pressed={geometry==='ROUTE'} onClick={()=>setGeometry('ROUTE')}><Route aria-hidden="true"/><strong><Text message="Preferred corridor"/></strong><small><Text message="Both directions"/></small></button></div>
       {geometry==='ROUTE'?<PlaceRows keys={routeKeys} setKeys={setRouteKeys} prefix="regular-route" label="Route city" min={MIN_ROUTE_POINTS} name="routePlace" refName="routePlaceRef" points={published?.route_points}/>:<><div className="form-group"><label htmlFor="regular-area-center"><MapPin aria-hidden="true"/><Text message="Area center"/></label><EthiopiaPlaceInput id="regular-area-center" name="areaCenter" placeRefName="areaCenterPlaceRef" defaultValue={published?.area_center_label} defaultPlaceRef={published?.area_center_place_ref} required/></div><PlaceRows keys={areaKeys} setKeys={setAreaKeys} prefix="regular-area" label="Surrounding city" min={MIN_AREA_POINTS} name="areaBoundaryPlace" refName="areaBoundaryPlaceRef" points={published?.area_boundary}/></>}
       </fieldset>
     </form>
-    {published?<form action="/api/capacity/corridors" method="post" onSubmit={submit}><input type="hidden" name="returnTo" value={returnTo}/><input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="expectedDriverId" value={expectedDriverId}/><input type="hidden" name="action" value="REMOVE"/><input type="hidden" name="id" value={published.id}/><Localized as="button" copy={["aria-label"]} className="button secondary small" aria-label="Remove preferred corridor" disabled={busy}><Trash2 aria-hidden="true"/><Text message="Remove preferred corridor"/></Localized></form>:null}
+    {published?<form action="/api/capacity/corridors" method="post" onSubmit={submit}><input type="hidden" name="returnTo" value={returnTo}/><input type="hidden" name="vehicleId" value={vehicleId}/><input type="hidden" name="expectedDriverId" value={expectedDriverId}/><input type="hidden" name="action" value="REMOVE"/><input type="hidden" name="id" value={published.id}/><Localized as="button" copy={["aria-label"]} className="button secondary small" aria-label={published.geometry==='RADIUS'?'Remove preferred area':'Remove preferred corridor'} disabled={busy}><Trash2 aria-hidden="true"/><Text message={published.geometry==='RADIUS'?'Remove preferred area':'Remove preferred corridor'}/></Localized></form>:null}
     </div>
     <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message="Cancel"/></button><button className="button" form="regular-service-form" disabled={busy}><Save aria-hidden="true"/>{busy?<Text message="Saving…"/>:<Text message="Save"/>}</button></footer>
   </section>;

@@ -39,7 +39,9 @@ test('public account access stays unified and follows session state',async({page
 test('company Driver identity names the role and employing fleet',async({page}:{page:any})=>{
   const service=localAuditService(),actor=await auditIdentity(service,'company-driver@loadgistic.local');
   const saved=checked(await service.from('profiles').select('first_name,last_name,full_name,email,phone').eq('id',actor.id).single());
-  await login(page,'company-driver@loadgistic.local');
+  // This identity is not currently assigned a vehicle, so Home may open its
+  // Market view. Start at Account, the subject of this identity check.
+  await login(page,'company-driver@loadgistic.local','/app/more');
   await page.getByTestId('public-session-action').locator('summary').click();
   await expect(page.getByTestId('public-session-action')).toContainText('BlueLine Transport PLC');
   await page.goto('/app/more',{waitUntil:'domcontentloaded'});

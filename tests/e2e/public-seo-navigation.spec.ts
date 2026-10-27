@@ -2,7 +2,7 @@ import {test,expect} from './browser-test';
 // Read-only local browser coverage; no fixtures, authentication, email or writes.
 test('public search metadata and the unified shell preserve useful server HTML',async({page,request})=>{
  const documentResponse=await request.get('/');expect(documentResponse.status()).toBe(200);
- const html=await documentResponse.text();expect(html).toContain('Find space for your next load');expect(html).toContain('href="/about"');expect(html).toContain('https://loadgistic.com');
+ const html=await documentResponse.text();expect(html).toContain('The visibility you need to serve your customers reliably');expect(html).toContain('href="/about"');expect(html).toContain('https://loadgistic.com');
  expect(documentResponse.headers()['x-robots-tag']).toContain('noindex');
  await page.goto('/');const areas=page.getByRole('navigation',{name:(page.viewportSize()?.width||0)>760?'Site navigation':'Mobile navigation'});
  await expect(areas.getByRole('link',{name:'Capacity',exact:true})).toHaveAttribute('aria-current','page');

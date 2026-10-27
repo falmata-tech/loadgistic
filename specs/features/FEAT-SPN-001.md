@@ -83,6 +83,11 @@ And the public schedule may use the same safe sponsor name without exposing admi
 And no sponsor assignment changes provider presentation duration or order\
 And a day without active sponsors retains a generic Programme pause.
 
+October26 timing follow-up: sponsor mentions share FEAT-FTR-001's accepted
+evening programme window and budget. They never extend the programme or reduce
+a chosen provider below its minimum airtime. Sponsor identity/eligibility and
+safe projection remain unchanged; timing qualification belongs to FEAT-FTR-001.
+
 ## Contract ownership
 
 - Public page: Sponsors panel beside the Daily Featured Trucks board on wide screens and above it on narrow screens

@@ -16,6 +16,24 @@ export function signalLaneZoom(zoom,tileSize=512){
 /** Projected pixel limit, with 1m rounding headroom under the 1km ground bound. */
 export function signalLaneLimit(zoom,tileSize=512){return 999*tileSize*2**zoom/40075016.6856;}
 
+/** Keep paired routes legible on a fitted phone map. Their display-only lanes
+ * may move at most 1.8km at low zoom; street zoom and area outlines keep the
+ * existing 1km bound. Stored route points and location privacy are unchanged.
+ * @param {number} mapZoom
+ * @param {number} offset
+ * @param {boolean} closed
+ * @param {number} tileSize
+ */
+export function signalLaneDisplay(mapZoom,offset,closed=false,tileSize=512){
+  const zoom=signalLaneZoom(mapZoom,tileSize);
+  const fittedRoute=!closed&&Number.isFinite(mapZoom)&&mapZoom<zoom;
+  return {
+    zoom,
+    offset:fittedRoute?offset*Math.min(2,2**(zoom-mapZoom)):offset,
+    limit:signalLaneLimit(zoom,tileSize)*(fittedRoute?1.8:1)
+  };
+}
+
 /** Choose a bounded lane against parallel portions of already-rendered signals. */
 function clearLane(a,b,normal,preferred,references){
   const delta=difference(b,a),length=Math.hypot(delta.x,delta.y);

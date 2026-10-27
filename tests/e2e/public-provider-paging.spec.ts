@@ -108,7 +108,8 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
     await expect(page.locator('.provider-hero-facts')).toContainText(`${count} active ${count===1?'vehicle':'vehicles'}`);
     const seen=new Set<string>();const cards=page.locator('.provider-truck-card');const nav=page.getByRole('navigation',{name:'Results pages',exact:true});
     const details=page.locator('.provider-fleet-disclosure');
-    const information=page.locator('.provider-site-overview-grid');
+    const information=page.locator('.provider-trust-card');
+    await expect(information.locator('.verification-group.rows')).toHaveCount(1);
     const regular=page.locator('.provider-corridor-list');
     await expect(regular).toHaveCount(0);
     await expect(page.locator('.provider-services,.provider-microsite-safety')).toHaveCount(0);
@@ -117,7 +118,13 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
     await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
     await expect(information).toBeVisible();
     if(count>1){
-      await expect(details).not.toHaveAttribute('open','');await expect(cards.first()).not.toBeVisible();await expect(nav).not.toBeVisible();
+      await expect(details).toHaveAttribute('open','');await expect(cards.first()).toBeVisible();
+      await expect(cards.first().locator('.public-truck-verification .verification-group.rows')).toHaveCount(2);
+      const firstDocument=cards.first().locator('.public-truck-verification .verification-badge').first();
+      expect(await firstDocument.evaluate((node:Element)=>getComputedStyle(node).borderLeftWidth)).toBe('0px');
+      const badgeTarget=cards.first().locator('.public-truck-verification .verification-badge summary').first();
+      expect((await badgeTarget.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      await details.locator(':scope > summary').click();await expect(cards.first()).not.toBeVisible();await expect(nav).not.toBeVisible();
       await page.screenshot({path:info.outputPath(`${kind}-profile-collapsed.png`),fullPage:true});
       await details.locator(':scope > summary').click();await expect(cards.first()).toBeVisible();
       await details.locator(':scope > summary').click();await expect(cards.first()).not.toBeVisible();
@@ -125,9 +132,11 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
     }else{
       await expect(details).toHaveCount(0);await expect(cards).toHaveCount(1);await expect(cards.first()).toBeVisible();await expect(nav).toHaveCount(0);
     }
-    const ownerSections=await page.locator('.provider-site-overview-grid,.provider-site-lower-grid').evaluateAll((nodes:Element[])=>nodes.map(node=>node.getBoundingClientRect().bottom+scrollY));
+    const accountDocumentsBottom=await page.locator('.provider-trust-card').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
     const fleetTop=await page.locator('#provider-trucks').evaluate((node:Element)=>node.getBoundingClientRect().top+scrollY);
-    expect(ownerSections.every((bottom:number)=>bottom<=fleetTop)).toBe(true);
+    const fleetBottom=await page.locator('#provider-trucks').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
+    const reviewsTop=await page.locator('.provider-site-reviews').evaluate((node:Element)=>node.getBoundingClientRect().top+scrollY);
+    expect(accountDocumentsBottom).toBeLessThanOrEqual(fleetTop);expect(fleetBottom).toBeLessThanOrEqual(reviewsTop);
     expect(await mapAction.evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY)).toBeLessThanOrEqual(fleetTop);
     const preservedLegacy=checked(await service.from('profile_routes').select('origin').eq(org?'organization_id':'provider_profile_id',org||provider));
     expect(preservedLegacy).toEqual([{origin:'Regular origin'}]);

@@ -6,6 +6,9 @@ import {z} from 'zod';
 import {statusLabel} from '../src/lib/domain.js';
 import * as featuredStatus from '../src/lib/featured-status.js';
 import * as featuredTikTok from '../src/lib/featured-tiktok-presentation.js';
+import * as featuredTime from '../src/lib/featured-time-presentation.js';
+import {DEFAULT_FEATURED_SCHEDULE_CONFIG} from '../src/lib/expo-broadcast.js';
+import * as featuredHeading from '../src/lib/featured-heading-presentation.js';
 import * as demoTrackingIdentity from '../src/lib/demo-tracking-identity.js';
 import {readWindowedPage} from '../src/lib/pagination.js';
 import * as accountNavigation from '../src/lib/admin-account-navigation.js';
@@ -36,6 +39,9 @@ function load(file,overrides={}){
   '@/lib/review-navigation.js':{reviewQueueStatus:()=> 'PENDING',reviewQueuePath:()=> '/admin/reviews?tab=documents'},
   '@/lib/featured-status.js':featuredStatus,
   '@/lib/featured-tiktok-presentation.js':featuredTikTok,
+  '@/lib/featured-time-presentation.js':featuredTime,
+  '@/lib/expo-broadcast.js':{DEFAULT_FEATURED_SCHEDULE_CONFIG},
+  '@/lib/featured-heading-presentation.js':featuredHeading,
   '@/lib/pagination.js':{readWindowedPage},'@/lib/team-navigation.js':teamNavigation,'@/lib/support-polling.js':{supportRevisionTag},'@/components/support-refresh':{SupportRefresh:'Refresh'},
   '@/app/admin/admin-presentation.module.css':{__esModule:true,default:simple},...overrides
  };
@@ -184,7 +190,8 @@ test('Featured overview retains seven day links, account rotation and manual dis
  assert.equal(all(tree,'Link').length,7);for(const day of days)assert.ok(all(tree,'Link').some(link=>link.props.href===`/admin/featured?date=${day.date}#featured-day-editor`));
  assert.ok(text(tree).includes('Every 15 minutes'));assert.ok(text(tree).includes('Saved days stay unchanged.'));assert.ok(text(tree).includes('Manual drafts stay private until published.'));
  assert.ok(text(tree).includes('Transport Providers who have not appeared in this round go first.'));assert.ok(text(tree).includes('A new round starts after every eligible account has had a turn.'));
- assert.ok(text(tree).includes('08:30 to 12:00 Ethiopia time'));assert.ok(text(tree).includes('Prepare upcoming days to retry.'));assert.ok(all(tree,'details').length===1);
+ const window=all(tree,'Text').find(node=>node.props.message?.startsWith('Up to eight different Transport Providers appear during {time}.'));
+ assert.equal(window?.props.values.time,'10:30PM–11:59PM EAT');assert.ok(text(tree).includes('Prepare upcoming days to retry.'));assert.ok(all(tree,'details').length===1);
 });
 test('retired platform Brokerage queue denies access without reading requests',async()=>{
  let reads=0;

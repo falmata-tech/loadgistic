@@ -26,7 +26,7 @@ async function clearTouchTargets(page:Page,selectors:string){
   },selectors)).toEqual([]);
 }
 
-test('Capacity basemap extends to application navigation without retired transport chat',async({page},info)=>{
+test('Capacity basemap fills its space above the footer without retired transport chat',async({page},info)=>{
   test.setTimeout(90_000);
   const phone=info.project.name.includes('mobile');
   for(const width of phone?[390,320]:[1440,1024]){
@@ -35,9 +35,10 @@ test('Capacity basemap extends to application navigation without retired transpo
     await page.locator('main.public-market-workspace').evaluate(element=>{element.scrollTop=element.scrollHeight;});
     await expect.poll(()=>page.evaluate(()=>{
       const map=document.querySelector('.public-map-shell')!.getBoundingClientRect();
+      const footer=document.querySelector('.site-copyright')!.getBoundingClientRect();
       const nav=document.querySelector('.public-mobile-nav')!.getBoundingClientRect();
-      return {fillsBottom:Math.abs(map.bottom-(innerWidth<=760?nav.top:innerHeight))<=10,noRetiredChat:document.querySelector('.public-assistance-dock')===null,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
-    })).toEqual({fillsBottom:true,noRetiredChat:true,noOverflow:true});
+      return {fillsAvailableSpace:Math.abs(map.bottom-footer.top)<=10,footerClear:innerWidth>760?footer.bottom<=innerHeight+1:footer.bottom<=nav.top+1,noRetiredChat:document.querySelector('.public-assistance-dock')===null,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
+    })).toEqual({fillsAvailableSpace:true,footerClear:true,noRetiredChat:true,noOverflow:true});
     await clearTouchTargets(page,'.capacity-map-controls button,.leaflet-control-zoom a,.public-map-legend summary,.leaflet-control-attribution a,.public-mobile-nav a');
     await page.getByRole('button',{name:'Search transporters',exact:true}).click();
     await expect(page.locator('#capacity-market-search')).toBeVisible();
@@ -63,9 +64,10 @@ test('unverified Tracking entry keeps an empty basemap behind its working email 
     await expect(page.getByLabel('6-digit email code')).toHaveCount(0);
     await expect.poll(()=>page.evaluate(()=>{
       const map=document.querySelector('.tracking-entry-map')!.getBoundingClientRect(),form=document.querySelector('.tracking-unlock-panel')!.getBoundingClientRect();
+      const footer=document.querySelector('.site-copyright')!.getBoundingClientRect();
       const nav=document.querySelector('.public-mobile-nav')!.getBoundingClientRect();
-      return {mapBehindForm:map.left<=form.left&&map.right>=form.right&&map.top<=form.top&&map.bottom>=form.bottom,fillsWorkspace:Math.abs(map.bottom-(innerWidth<=760?nav.top:innerHeight))<=10,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
-    })).toEqual({mapBehindForm:true,fillsWorkspace:true,noOverflow:true});
+      return {mapBehindForm:map.left<=form.left&&map.right>=form.right&&map.top<=form.top&&map.bottom>=form.bottom,fillsAvailableSpace:map.bottom<=footer.top+1&&footer.top-map.bottom<=10,footerClear:innerWidth>760?footer.bottom<=innerHeight+1:footer.bottom<=nav.top+1,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
+    })).toEqual({mapBehindForm:true,fillsAvailableSpace:true,footerClear:true,noOverflow:true});
     await page.getByLabel('Email',{exact:true}).fill(`entry-layout-${info.project.name}@example.test`);
     await clearTouchTargets(page,'.tracking-entry-map .leaflet-control-zoom a,.tracking-entry-map .leaflet-control-attribution a,.public-mobile-nav a');
     await page.getByRole('button',{name:'Email me a code',exact:true}).click({trial:true});

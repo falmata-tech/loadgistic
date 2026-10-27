@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {nextCapacityPrivacyRadius} from '../src/lib/location-privacy.js';
-import {isDemoAdminSpare} from '../src/lib/demo-admin-spare.js';
+import {isDemoAdminSpare,gpsDeviceDisplayLabel} from '../src/lib/demo-admin-spare.js';
+import {commandStateLabel,telematicsAlarmLabel} from '../src/lib/telematics-copy.js';
 class ApiError extends Error{constructor(status){super('Synthetic read response');this.status=status;}}
 const sharedExports={};new Function('exports',ts.transpileModule(readFileSync('src/lib/telematics-workspace.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(sharedExports);
 
@@ -17,10 +18,10 @@ function harness(request){
  const changed=(a,b)=>!a||a.length!==b.length||a.some((value,index)=>value!==b[index]);
  const hooks={useRef:initial=>{const index=cursor++;return slots[index]||(slots[index]={current:initial});},useState:initial=>{const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];},useCallback:(fn,deps)=>{const index=cursor++;if(!slots[index]||changed(slots[index].deps,deps))slots[index]={deps,value:fn};return slots[index].value;},useEffect:(fn,deps)=>{const index=cursor++;if(!slots[index]||changed(slots[index].deps,deps)){const previous=slots[index];slots[index]={deps,cleanup:null};pending.push(()=>{previous?.cleanup?.();slots[index].cleanup=fn();});}}};
  const AppState={currentState:'active',addEventListener:(_kind,fn)=>{appListeners.add(fn);return{remove:()=>appListeners.delete(fn)};}},Platform={OS:'android'};
- const ports={React,...hooks,ApiError,document,AppState,Platform,View:'View',Text:'Text',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',Field:'Field',Pressable:'Pressable',ActivityIndicator:'ActivityIndicator',WorkspaceSection:'WorkspaceSection',WorkspaceTabs:'WorkspaceTabs',WorkspaceTaskHeader:'WorkspaceTaskHeader',WorkspaceFact:'WorkspaceFact',WorkspaceTaskPane:'WorkspaceTaskPane',AppIcon:'AppIcon',ConfirmationButton:'ConfirmationButton',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},palette:{blue:'#155eef',ink:'#0b1d3a',border:'#cbd5e1',muted:'#526375'},randomUUID:()=> 'synthetic-command-key',commandStateLabel:value=>value,telematicsAlarmLabel:()=>null,isDemoAdminSpare,useWindowDimensions:()=>({width:390,height:844}),useLanguage:()=>({t:value=>value,locale:'en'}),useAccount:()=>({session:{user:{id:'owner'}},request}),readFleetDeviceWorkspace:value=>value,fleetManualPoint:sharedExports.fleetManualPoint,sameFleetManualPoint:sharedExports.sameFleetManualPoint,nextCapacityPrivacyRadius,useFocusEffect:fn=>{if(fn!==focusEffect){focusEffect=fn;pendingFocus=fn;}},Date:class extends Date{static now(){return clock;}},setInterval:(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key;},clearInterval:key=>timers.delete(key),setTimeout:()=>({}),clearTimeout:()=>{}};
+ const ports={React,...hooks,ApiError,document,AppState,Platform,View:'View',Text:'Text',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',Field:'Field',Pressable:'Pressable',ActivityIndicator:'ActivityIndicator',LoadingSpinner:'LoadingSpinner',WorkspaceSection:'WorkspaceSection',WorkspaceTabs:'WorkspaceTabs',WorkspaceTaskHeader:'WorkspaceTaskHeader',WorkspaceFact:'WorkspaceFact',WorkspaceTaskPane:'WorkspaceTaskPane',AppIcon:'AppIcon',ConfirmationButton:'ConfirmationButton',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},palette:{blue:'#155eef',ink:'#0b1d3a',border:'#cbd5e1',muted:'#526375'},randomUUID:()=> 'synthetic-command-key',commandStateLabel,telematicsAlarmLabel,isDemoAdminSpare,gpsDeviceDisplayLabel,useWindowDimensions:()=>({width:390,height:844}),useLanguage:()=>({t:value=>value,locale:'en'}),useAccount:()=>({session:{user:{id:'owner'}},request}),readFleetDeviceWorkspace:value=>value,fleetManualPoint:sharedExports.fleetManualPoint,sameFleetManualPoint:sharedExports.sameFleetManualPoint,nextCapacityPrivacyRadius,useFocusEffect:fn=>{if(fn!==focusEffect){focusEffect=fn;pendingFocus=fn;}},Date:class extends Date{static now(){return clock;}},setInterval:(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key;},clearInterval:key=>timers.delete(key),setTimeout:()=>({}),clearTimeout:()=>{}};
  const path='apps/mobile/src/components/fleet-devices.tsx',file=readFileSync(path,'utf8'),parsed=ts.createSourceFile(path,file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))))+'\nexport {useDevices,SourceForm,SourceSummary,DeviceDetails,Choice};',code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText,exports={};
  new Function(...Object.keys(ports),'exports',code)(...Object.values(ports),exports);
- function render(name,props){cursor=0;const value=exports[name](name==='useDevices'?host:props);while(pending.length)pending.shift()();if(pendingFocus){if(focused){cleanupFocus?.();cleanupFocus=pendingFocus();}pendingFocus=null;}return value;}
+ function render(name,props){cursor=0;const value=exports[name](name==='useDevices'?host:props);if(value?.props?.ref)value.props.ref.current=host.current;while(pending.length)pending.shift()();if(pendingFocus){if(focused){cleanupFocus?.();cleanupFocus=pendingFocus();}pendingFocus=null;}return value;}
  return{render,box,document,Platform,AppState,focus(){focused=true;cleanupFocus=focusEffect();},blur(){focused=false;cleanupFocus?.();cleanupFocus=null;},tick(ms){clock+=ms;for(const timer of [...timers.values()])timer.fn();},app(state){AppState.currentState=state;for(const fn of appListeners)fn(state);},unmount(){focused=false;cleanupFocus?.();for(const slot of slots)slot?.cleanup?.();},timers};
 }
 const settle=async()=>{for(let index=0;index<15;index++)await Promise.resolve();};
@@ -133,5 +134,60 @@ test('provider cannot edit a manual Capacity location chosen by the assigned dri
 test('authoritative read denials remove private devices and drafts while transient/conflict responses preserve them',async()=>{
  for(const status of [401,403,404,409,500,0]){
   let reads=0,rejectRead;const h=harness(async()=>{if(++reads===1)return{...workspace(1),devices:[{id:'private-device'}]};return await new Promise((_resolve,reject)=>{rejectRead=reject;});});let state=h.render('useDevices');h.focus();await settle();state=h.render('useDevices');assert.equal(state.data.devices.length,1);const refresh=state.reload();await settle();state.onEditing('source:draft',true);rejectRead(new ApiError(status));await refresh;await settle();state=h.render('useDevices');if([401,403,404].includes(status)){assert.equal(state.data,null,'revoked authority cannot retain private telemetry');assert.equal(state.editing,false,'an unauthorized editor must unmount');}else{assert.equal(state.data.devices.length,1);assert.equal(state.editing,true,'a temporary failure cannot discard the user draft');}h.unmount();
+ }
+});
+
+const reportDevice=overrides=>({id:'test-gps',label:'Test GPS',imei:'990000000000001',protocol:'gt06',modelProfile:'UNVERIFIED',synthetic:false,vehicleId:null,revision:'2026-10-25T10:00:00Z',lastSeenAt:'2026-10-25T10:06:00Z',connection:'ONLINE',capabilities:[],position:{latitude:9,longitude:38,speedKph:0,course:0,ignition:null,battery:0,observedAt:'2026-10-25T10:00:00Z',receivedAt:'2026-10-25T10:05:00Z'},...overrides});
+const reportProps=(device,commands=[],save=async()=>false)=>({device,data:{...workspace(1),devices:[device],commands},busy:false,onEditing:()=>{},save});
+const textContent=tree=>Array.isArray(tree)?tree.map(textContent).join(''):tree&&typeof tree==='object'?String(tree.props?.message||'')+textContent(tree.props?.children):typeof tree==='string'||typeof tree==='number'?String(tree):'';
+const reportFact=(tree,label)=>{const row=nodes(tree).find(node=>node.type==='View'&&node.props.children?.some(child=>child?.type==='Text'&&textContent(child)===label));return row?.props.children.filter(child=>child?.type==='Text').map(textContent)[1];};
+
+test('native GPS report shows zero heading/speed/battery and separate location/receipt times without inventing ignition',()=>{
+ const h=harness(async()=>workspace(1)),device=reportDevice(),tree=h.render('DeviceDetails',reportProps(device));
+ assert.equal(reportFact(tree,'Heading'),'0°');assert.equal(reportFact(tree,'Speed'),'0 km/h');assert.equal(reportFact(tree,'Battery'),'0%');
+ assert.equal(reportFact(tree,'Location time'),new Date(device.position.observedAt).toLocaleString('en'));
+ assert.equal(reportFact(tree,'Received at'),new Date(device.position.receivedAt).toLocaleString('en'));
+ assert.equal(reportFact(tree,'Last report'),new Date(device.lastSeenAt).toLocaleString('en'));
+ assert.equal(reportFact(tree,'Ignition'),undefined);h.unmount();
+});
+
+test('native GPS report keeps missing telemetry unavailable and a reported false ignition remains Off',()=>{
+ const h=harness(async()=>workspace(1)),device=reportDevice({position:null}),props=reportProps(device);let tree=h.render('DeviceDetails',props);
+ for(const label of ['Heading','Speed','Battery','Location time','Received at'])assert.equal(reportFact(tree,label),'—',label);
+ props.device={...device,position:{...reportDevice().position,course:null,battery:null,ignition:false}};tree=h.render('DeviceDetails',props);
+ assert.equal(reportFact(tree,'Heading'),'—');assert.equal(reportFact(tree,'Battery'),'—');assert.equal(reportFact(tree,'Ignition'),'Off');h.unmount();
+});
+
+test('native device list and selected header describe report age without claiming a socket is connected',async()=>{
+ for(const [connection,label] of [['ONLINE','Recent report'],['STALE','Older report'],['UNKNOWN','Not reported yet']]){
+  const device=reportDevice({connection}),data={...workspace(1),devices:[device]},h=harness(async()=>data);let tree=h.render('FleetDevices');h.focus();await settle();tree=h.render('FleetDevices');
+  assert.ok(textContent(tree).includes(label),`list ${connection}`);find(tree,'Pressable').props.onPress();tree=h.render('FleetDevices');assert.equal(find(tree,'WorkspaceTaskHeader').props.subtitle,label);
+  for(const old of ['Connected','Not reporting','Not connected yet'])assert.equal(textContent(tree).includes(old),false);
+  h.unmount();
+ }
+});
+
+test('native latest vibration alarm retains its observed timestamp',()=>{
+ const h=harness(async()=>workspace(1)),device=reportDevice({lastAlarm:'vibration',alarmAt:'2026-10-25T09:59:00Z'}),tree=h.render('DeviceDetails',reportProps(device));
+ const alarm=find(tree,'Copy',node=>textContent(node).includes('Vibration alert'));assert.ok(alarm);assert.ok(textContent(alarm).includes(new Date(device.alarmAt).toLocaleString('en')));h.unmount();
+});
+
+test('native receive-only commands omit engine help and actions; synthetic locate retains exact device scope',async()=>{
+ const writes=[],h=harness(async()=>workspace(1));let device=reportDevice(),props=reportProps(device,[],async(...args)=>{writes.push(args);return true;}),tree=h.render('DeviceDetails',props);
+ find(tree,'WorkspaceTabs').props.onChange('COMMANDS');tree=h.render('DeviceDetails',props);let pane=find(tree,'WorkspaceTaskPane',node=>node.props.active);
+ assert.equal(textContent(pane).includes('Engine control requires a separately checked safety installation.'),false);
+ for(const label of ['Request location','Restart GPS device','Save interval'])assert.equal(find(pane,'Button',node=>node.props.message===label),undefined);
+ assert.equal(find(pane,'ConfirmationButton'),undefined);assert.deepEqual(writes,[]);
+ props={...props,device:{...device,synthetic:true,modelProfile:'SYNTHETIC_GT06',capabilities:['LOCATE','ENGINE_CUT']}};tree=h.render('DeviceDetails',props);pane=find(tree,'WorkspaceTaskPane',node=>node.props.active);
+ assert.ok(textContent(pane).includes('Engine control requires a separately checked safety installation.'));
+ find(pane,'Button',node=>node.props.message==='Request location').props.onPress();await settle();assert.deepEqual(writes,[['COMMAND',{deviceId:device.id,command:'LOCATE',idempotencyKey:'synthetic-command-key'}]]);h.unmount();
+});
+
+test('native simulated command activity keeps dispatch, sent, acknowledgement and expiry distinct',()=>{
+ const device=reportDevice({synthetic:true}),states=['REQUESTED','DISPATCHING','DISPATCHED','ACKNOWLEDGED','FAILED','EXPIRED','UNKNOWN'];
+ for(const [index,state] of states.entries()){
+  const h=harness(async()=>workspace(1)),props=reportProps(device,[{id:`command-${index}`,deviceId:device.id,command:'LOCATE',state}]);let tree=h.render('DeviceDetails',props);find(tree,'WorkspaceTabs').props.onChange('COMMANDS');tree=h.render('DeviceDetails',props);
+  const expected={REQUESTED:'Waiting to send',DISPATCHING:'Sending…',DISPATCHED:'Sent · waiting for device',ACKNOWLEDGED:'Device confirmed',FAILED:'Failed',EXPIRED:'Expired',UNKNOWN:'Delivery not confirmed'}[state];
+  assert.ok(textContent(find(tree,'WorkspaceTaskPane',node=>node.props.active)).includes(expected),state);h.unmount();
  }
 });

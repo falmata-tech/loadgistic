@@ -14,7 +14,7 @@ async function withResponses(reply,run){
 
 test('public and private capacity label the actual assigned person Driver without inheriting employer identity evidence',async()=>{
  for(const kind of ['FLEET_TRANSPORTER','SELF_MANAGED_DRIVER','OWNER_OPERATOR'])for(const audience of ['public','private']){
-  const row={id:'capacity',vehicle_id:vehicleId,provider_kind:kind,provider_organization_id:kind==='FLEET_TRANSPORTER'?providerId:null,provider_profile_id:kind==='FLEET_TRANSPORTER'?null:providerId,assigned_driver_first_name:'Assigned',updated_at:'2026-10-14T00:00:00Z',location_updated_at:'2026-10-14T00:00:00Z',status:'EMPTY',driver_documents:[reviewed('DRIVER_IDENTITY')],vehicle_documents:[],authorization_documents:[]};
+  const row={id:'capacity',vehicle_id:vehicleId,provider_kind:kind,provider_organization_id:kind==='FLEET_TRANSPORTER'?providerId:null,provider_profile_id:kind==='FLEET_TRANSPORTER'?null:providerId,assigned_driver_first_name:'Assigned',updated_at:'2026-10-14T00:00:00Z',location_updated_at:'2026-10-14T00:00:00Z',status:'EMPTY',driver_documents:[reviewed('DRIVER_IDENTITY')],vehicle_documents:[reviewed('VEHICLE_OWNERSHIP')],authorization_documents:[],authority:emptyTruckAuthority()};
   await withResponses(call=>{
    if(call.path==='/rest/v1/rpc/public_capacity_page'||call.path==='/rest/v1/rpc/account_capacity_filtered_page')return [{payload:row}];
    if(call.path==='/rest/v1/rpc/capacity_owner_documents')return [{subject_id:providerId,subject_type:kind==='FLEET_TRANSPORTER'?'ORGANIZATION':'PROVIDER_PROFILE',documents:[reviewed('IDENTITY')]}];
@@ -23,6 +23,7 @@ test('public and private capacity label the actual assigned person Driver withou
    const page=audience==='public'?await listSupabasePublicCapacityCursor():await listSupabaseAccountCapacity(ownerId,'a'.repeat(64));assert.equal(page.items.length,1);const item=page.items[0];
    assert.equal(item.driver_kind_label,'Driver');assert.equal(item.driver_kind,kind==='FLEET_TRANSPORTER'?'COMPANY_DRIVER':kind,'Existing machine enums remain compatible');assert.equal(item.assigned_driver_first_name,'Assigned');
    assert.equal(item.driver_verification_badges.find(badge=>badge.type==='DRIVER_IDENTITY').verified,true);assert.equal(item.driver_verification_badges.find(badge=>badge.type==='IDENTITY').verified,false,'Employer identity must not become driver identity');assert.equal(item.owner_verification_badges.find(badge=>badge.type==='IDENTITY').verified,true);
+   assert.equal(item.truck_verification_badges.find(badge=>badge.type==='VEHICLE_OWNERSHIP').verified,false,'Historical approval without current authority cannot appear verified');
    assert.equal(calls.length,2,'Neutral presentation adds no identity lookup per row');assert.equal(row.driver_documents.length,1);
   });
  }
@@ -30,7 +31,7 @@ test('public and private capacity label the actual assigned person Driver withou
 
 test('public profile trucks without current capacity use actual employee/owner document subjects and the same neutral label',async()=>{
  for(const kind of ['ORGANIZATION','PROVIDER_PROFILE']){
-  const company=kind==='ORGANIZATION',assigned=company?ownerId:driverId,documents=[{...reviewed('IDENTITY'),subject_type:kind,subject_id:providerId},{...reviewed('DRIVER_IDENTITY'),subject_type:'DRIVER',subject_id:assigned}];
+  const company=kind==='ORGANIZATION',assigned=company?ownerId:driverId,documents=[{...reviewed('IDENTITY'),subject_type:kind,subject_id:providerId},{...reviewed('DRIVER_IDENTITY'),subject_type:'DRIVER',subject_id:assigned},{...reviewed('VEHICLE_OWNERSHIP'),subject_type:'VEHICLE',subject_id:vehicleId}];
   await withResponses(call=>{
    if(call.path==='/rest/v1/organizations')return company?[{id:providerId,name:'Business',handle:'provider',type:'TRANSPORT_COMPANY'}]:[];
    if(call.path==='/rest/v1/provider_profiles')return company?[]:[{id:providerId,user_id:ownerId,handle:'provider'}];
@@ -44,6 +45,7 @@ test('public profile trucks without current capacity use actual employee/owner d
    assert.fail('Unexpected profile query');
   },async calls=>{
    const provider=await getSupabasePublicProvider('provider');assert.equal(provider.provider_kind_label,'Transport Provider');assert.equal(provider.trucks[0].driver_kind_label,'Driver');assert.equal(provider.trucks[0].assigned_driver_first_name,'Assigned');assert.equal(provider.trucks[0].driver_verification_badges.find(badge=>badge.type==='DRIVER_IDENTITY').verified,true);assert.equal(provider.trucks[0].driver_verification_badges.find(badge=>badge.type==='IDENTITY').verified,false);
+   assert.equal(provider.trucks[0].truck_verification_badges.find(badge=>badge.type==='VEHICLE_OWNERSHIP').verified,false,'Profile badges use current authority');
    assert.equal(calls.filter(call=>call.path==='/rest/v1/rpc/public_person_identities').length,1,'Existing bounded identity batch remains the only identity read');assert.equal(calls.some(call=>call.path==='/rest/v1/profiles'||call.path==='/rest/v1/drivers'),false);
   });
  }

@@ -28,21 +28,23 @@ export async function auditIdentity(service:any,email:string){
  if(original){
   // A retired alias can retain the fixture's old email. Select the active,
   // verified fixture account by its managed identity instead of that alias.
-  const identity=checked(await service.from('profiles').select('id,role').eq('full_name',original.name).eq('role',original.role).eq('active',true).single());
+  const identity=checked(await service.from('profiles').select('id,role,drives_truck').eq('full_name',original.name).eq('role',original.role).eq('active',true).single());
   const auth=checked(await service.auth.admin.getUserById(identity.id)).user;
   if(auth.app_metadata?.fixture_source!=='loadgistic'||!auth.email_confirmed_at)throw new Error('LOCAL_FIXTURE_IDENTITY_NOT_ACTIVE');
   return identity;
  }
- const identity=checked(await service.from('profiles').select('id,role').eq('email',email).eq('active',true).maybeSingle());
+ const identity=checked(await service.from('profiles').select('id,role,drives_truck').eq('email',email).eq('active',true).maybeSingle());
  if(!identity)throw new Error('LOCAL_AUDIT_IDENTITY_MISSING');
  return identity;
 }
 export async function auditLogin(page:any,email:string,requestedDestination?:string){
  const identity=await auditIdentity(localAuditService(),email);
  const {localSupportLogin}=await import('./provider-support-helper');
+ const provider=['TRANSPORTER','DRIVER'].includes(identity.role);
+ const workHome=identity.drives_truck===true?'/app/home':'/app/home/vehicles';
  const destination=requestedDestination||(identity.role==='ADMIN'?'/admin':identity.role==='SUPPORT'?'/support':'/app/home');
  await localSupportLogin(page,identity.id);await page.goto(destination,{waitUntil:'domcontentloaded',timeout:60000});
- if(!requestedDestination)await expect(page).toHaveURL(identity.role==='ADMIN'?/\/admin$/:identity.role==='SUPPORT'?/\/support$/:/\/app\/home(?:\?.*)?$/,{timeout:30000});
+ if(!requestedDestination)await expect(page).toHaveURL((url:URL)=>url.pathname===(provider?workHome:destination),{timeout:30000});
  await expect(page.locator('.app-main')).toBeVisible({timeout:30000});
 }
 export async function auditProvider(service:any,prefix:string,{contentPolicyAccepted=true}={}){
@@ -121,8 +123,11 @@ export async function auditFleetDriver(service:any,owner:any,vehicleId:string){
 
 // Tracking opens its floating progress panel deliberately, keeping map space free.
 export async function auditOpenTrackingProgress(page:any){
- const toggle=page.locator('.tracking-progress-toggle');
- await expect(toggle).toBeVisible();await expect(toggle).toBeEnabled();
+ const controls=page.locator('.tracking-control-panel');
+ await expect(controls).toBeVisible();
+ await expect(page.getByTestId('tracking-map-workspace').locator('.tracking-progress-toggle')).toHaveCount(0);
+ const toggle=controls.locator('button[aria-controls^="shipment-update-form-"]');
+ await expect(toggle).toBeVisible();
  if(await toggle.getAttribute('aria-expanded')==='false')await toggle.click();
- await expect(page.locator('.tracking-progress-body')).toBeVisible();
+ await expect(controls.locator('form.tracking-action-form')).toBeVisible();
 }

@@ -62,6 +62,13 @@ function find(tree,predicate){
  if(!tree||typeof tree!=='object')return null;if(predicate(tree))return tree;return find(tree.props?.children,predicate);
 }
 const route=[{placeRef:'origin',label:'Origin',coordinate:[39,8]},{placeRef:'via',label:'Passing city',coordinate:[40,9]},{placeRef:'destination',label:'Destination',coordinate:[41,10]}];
+
+test('saved Planned and Preferred routes fit without a reported marker, circle or source',()=>{
+ const props={location:null,coverage:{kind:'ROUTE',places:route},regular:[{kind:'ROUTE',places:[...route].reverse()}],vehicleConfiguration:'Box truck',fill:true},view=trackingMap(props);
+ let tree=view.render();assert.ok(find(tree,node=>node.props.id==='saved-capacity'));assert.ok(find(tree,node=>node.props.id==='home-regular-0'));assert.equal(find(tree,node=>node.props.id==='tracking-area'),null);assert.equal(find(tree,node=>node.props.id==='tracking-reported-truck'),null);assert.equal(find(tree,node=>node.props.testID==='tracking-location-source'),null);assert.equal(find(tree,node=>node.type==='Marker'),null);
+ const bounds=find(tree,node=>node.type==='Camera').props.initialViewState.bounds;for(const point of route)assert.ok(point.coordinate[0]>=bounds[0]&&point.coordinate[0]<=bounds[2]&&point.coordinate[1]>=bounds[1]&&point.coordinate[1]<=bounds[3]);
+ find(tree,node=>node.type==='Map').props.onDidFailLoadingMap();tree=view.render();assert.equal(find(tree,node=>node.type==='ErrorText').props.message,'Map tiles unavailable.');
+});
 const area=(longitude,latitude=8)=>({longitude,latitude,radius:3,area:'Reported area',updatedAt:'2026-10-13T00:00:00Z'});
 function contains(bounds,coordinate){assert.ok(coordinate[0]>=bounds[0]&&coordinate[0]<=bounds[2]&&coordinate[1]>=bounds[1]&&coordinate[1]<=bounds[3],`frame ${bounds} must contain ${coordinate}`);}
 

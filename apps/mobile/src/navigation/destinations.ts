@@ -1,4 +1,7 @@
 import type {AccountSession} from '../session/contract';
+import {initialCapacityIdentity} from '../api/discovery.ts';
+import {transporterSearchQuery} from '../../../../src/lib/transporter-search.js';
+import {providerHomeTab} from '../../../../src/lib/provider-workspace.js';
 
 export type Destination={href:string;label:string;icon:'map'|'route'|'users'|'info'|'home'|'truck'|'network'|'help'|'more'|'user'|'documents'|'tracking'|'featured'|'billing'|'profile'|'location'|'shield'};
 // Mirrors the web's PublicMobileNav and AppShell. This is display policy only.
@@ -15,7 +18,21 @@ const network:Destination={href:'/network',label:'Network',icon:'network'};
 const support:Destination={href:'/support',label:'Support',icon:'help'};
 const workspacePaths=new Set(['/account','/account-settings','/account-details','/account-security','/driver-photo','/fleet','/manage-capacity','/regular-service','/shipments','/shipment-detail','/shipment-manage','/network','/directory','/shared-capacity','/support','/support-chat','/billing','/documents','/profile','/workspaces','/business-capacity','/business-tracking','/business-account','/business-shipment']);
 export function hasWorkspace(session:AccountSession|null){return session?.state==='ACTIVE'&&(['TRANSPORTER','DRIVER'].includes(session.user.role)||session.user.role==='CUSTOMER'&&Boolean(session.user.selectedBusinessWorkspace));}
-export function workspaceHome(session:AccountSession|null){const workspace=session?.user.role==='CUSTOMER'?session.user.selectedBusinessWorkspace:null;return workspace?(workspace.permissions.capacity?'/business-capacity':workspace.permissions.tracking?'/business-tracking':'/business-account'):'/account';}
+export function hasProviderHome(session:AccountSession|null){return session?.state==='ACTIVE'&&session.access?.granted===true&&['TRANSPORTER','DRIVER'].includes(session.user.role);}
+export function providerMarketContext(params:Record<string,unknown>={}){return {initialQuery:transporterSearchQuery(params.q)||'',initialFilters:initialCapacityIdentity(params)};}
+export function providerHomeHref(session:AccountSession|null,params:Record<string,unknown>={}){
+ const {initialQuery,initialFilters}=providerMarketContext(params);
+ const tab=initialQuery||initialFilters.provider||initialFilters.truck?'market':providerHomeTab(workspaceCapabilities(session),undefined);
+ const query=new URLSearchParams({tab});
+ if(initialQuery)query.set('q',initialQuery);
+ for(const key of ['provider','truck'] as const)if(initialFilters[key])query.set(key,initialFilters[key]!);
+ return `/account?${query}`;
+}
+export function workspaceHome(session:AccountSession|null){const workspace=session?.user.role==='CUSTOMER'?session.user.selectedBusinessWorkspace:null;return workspace?(workspace.permissions.capacity?'/business-capacity':workspace.permissions.tracking?'/business-tracking':'/business-account'):hasProviderHome(session)?providerHomeHref(session):'/account';}
+export function navigationTarget(path:string,href:string,session:AccountSession|null){
+ if(href==='/account'&&hasProviderHome(session))return path==='/account'?null:providerHomeHref(session);
+ return path===href?null:href;
+}
 export function workspaceCapabilities(session:AccountSession|null){
  const user=session?.user,active=hasWorkspace(session);
  const legacyOwner=user?.role==='TRANSPORTER'||['OWNER_OPERATOR','SELF_MANAGED_DRIVER'].includes(user?.operatingModel||'');

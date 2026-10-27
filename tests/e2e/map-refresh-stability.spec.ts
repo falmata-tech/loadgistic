@@ -14,10 +14,14 @@ test('visible Capacity map reloads saved signals after a minute without losing i
  await expect(map).toBeVisible();
 });
 
-test('viewport pagination preserves markers and camera until the replacement finishes',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('paginated refresh preserves markers and camera until the replacement finishes',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);
- const initialWindow=page.waitForResponse(async response=>new URL(response.url()).pathname==='/api/public/capacity'&&response.ok()&&!(await response.json()).hasMore,{timeout:30000});
- await page.goto('/');await initialWindow;
+ const initialViewport=page.waitForResponse(response=>{
+  const url=new URL(response.url());
+  return url.pathname==='/api/public/capacity'&&url.searchParams.has('viewport')&&response.ok();
+ },{timeout:30000});
+ await page.goto('/');
+ await initialViewport;
  const markers=page.locator('.capacity-map-cluster,.capacity-truck-map-marker');
  await expect(markers.first()).toBeVisible({timeout:30000});
  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
@@ -41,7 +45,7 @@ test('viewport pagination preserves markers and camera until the replacement fin
   }
  });
  try{
-  await page.locator('.leaflet-control-zoom-in').click();
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
   await expect.poll(()=>started).toBe(true);
   await expect(markers.first()).toBeVisible();
   const count=await markers.count();expect(count).toBeGreaterThan(0);
@@ -54,7 +58,7 @@ test('viewport pagination preserves markers and camera until the replacement fin
   await page.screenshot({path:info.outputPath('map-refresh-retains-trucks.png')});
   releaseLast();
   await expect(markers).toHaveCount(0); // Successful authoritative empty result.
-  await expect(page.getByTestId('capacity-feed-state')).toContainText('No vehicle signals');
+  await expect(page.getByTestId('capacity-feed-state')).toContainText('No matching available vehicles.');
   // Observe beyond the 350ms viewport debounce: rendering must not start a loop.
   await page.waitForTimeout(900);
   expect(requests,JSON.stringify(windows)).toBe(2);

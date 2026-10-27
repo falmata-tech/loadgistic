@@ -49,8 +49,8 @@ test('public map and Featured keep useful controls without decorative or false-l
  test.setTimeout(60000);await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible({timeout:30000});await expect(page.getByText('Ethiopia capacity · East Africa view',{exact:true})).toHaveCount(0);
  await expect(page.locator('.leaflet-tile-loaded').first()).toBeVisible({timeout:30000});
  await page.screenshot({path:info.outputPath('map-copy.png'),fullPage:true});
- await page.goto('/featured');await expect(page.getByRole('heading',{name:'Daily Featured Transport Providers'}).first()).toBeAttached();
- await expect(page.locator('.featured-rotation-note')).not.toHaveAttribute('open','');await page.getByText('How Featured works',{exact:true}).click();await expect(page.getByText(/A rotating showcase, not a ranking/)).toBeVisible();
+ await page.goto('/featured');await expect(page.getByRole('heading',{name:'Daily Featured on TikTok LIVE'}).first()).toBeAttached();
+ await expect(page.locator('.featured-rotation-note')).toHaveCount(0);await expect(page.getByText('How Featured works',{exact:true})).toHaveCount(0);await expect(page.getByText(/A rotating showcase, not a ranking/)).toHaveCount(0);
  await expect(page.locator('.featured-card-feature').filter({hasText:/^View$|^Live$/})).toHaveCount(0);
  await expect(page.getByText(/roster is being prepared/)).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('featured-public.png'),fullPage:true});
@@ -74,7 +74,7 @@ test('copy polish keeps admin, member and transporter profile controls usable',a
   // Use the managed seed, not an arbitrary published synthetic profile left by a manual preview.
   const org=checked(await service.from('organizations').select('id,handle').eq('handle','blueline-transport').single());
   expect(checked(await service.from('company_pages').select('published').eq('organization_id',org.id).single()).published).toBe(true);
-  await page.goto(`/@${org.handle}`);const toggle=page.locator('.provider-fleet-toggle');if(await toggle.count())await toggle.click();await expect(page.locator('.provider-fleet-showcase')).toBeVisible();await expect(page.getByText('Active fleet',{exact:true})).toHaveCount(0);
+  await page.goto(`/@${org.handle}`);const disclosure=page.locator('#provider-trucks.provider-fleet-disclosure');if(await disclosure.count()){if(!await disclosure.evaluate((element:HTMLElement)=>(element as HTMLDetailsElement).open))await disclosure.locator('summary').click();await expect(disclosure).toHaveJSProperty('open',true);}await expect(page.locator('.provider-fleet-showcase')).toBeVisible();await expect(page.getByText('Active fleet',{exact:true})).toHaveCount(0);
   await page.getByRole('button',{name:'View capacity on map',exact:true}).first().click();await expect(page.getByText('Blue outlines show the driver’s approximate location. Confirm availability directly with the transporter.',{exact:true})).toBeVisible();await expect(page.locator('.ethiopia-map-label')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('provider-map.png'),fullPage:true});
  }finally{for(const session of sessions)await session.auth.signOut({scope:'local'});}

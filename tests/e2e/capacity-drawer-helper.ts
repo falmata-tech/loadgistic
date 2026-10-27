@@ -37,12 +37,14 @@ export async function openCapacityFilterDialog(page:any){
 export async function chooseTruckConfiguration(dialog:any,name:string|string[]){
  const picker=dialog.locator('.capacity-configuration-picker');
  if(!await picker.locator('details').evaluate((el:HTMLDetailsElement)=>el.open))await picker.locator('summary').click();
- await picker.getByRole('button',{name:'Any configuration',exact:true}).click();
- for(const option of Array.isArray(name)?name:name==='Any configuration'?[]:[name])await picker.getByRole('checkbox',{name:option,exact:true}).check();
+ await picker.getByRole('button',{name:'All vehicle types',exact:true}).click();
+ for(const option of Array.isArray(name)?name:name==='All vehicle types'?[]:[name])await picker.getByRole('checkbox',{name:option,exact:true}).check();
 }
 
 export async function chooseCapacityOptions(dialog:any,key:string,values:string[]){
  const group=dialog.locator(`[data-filter-group="${key}"]`);
+ const section=group.locator('xpath=ancestor::details[1]');
+ if(await section.count()&&!await section.evaluate((element:HTMLDetailsElement)=>element.open))await section.locator(':scope > summary').click();
  await group.locator('[data-clear-options]').click();
  for(const value of values)await group.locator(`input[type="checkbox"][value="${value}"]`).check();
 }

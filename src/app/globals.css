@@ -1166,30 +1166,35 @@ legend { font-weight:800; padding:0 7px; }
 .rating-summary span { color:var(--muted); font-size:.85rem; }
 
 .verification-badges { display:flex; flex-wrap:wrap; gap:7px; margin-top:11px; }
-.verification-badge { position:relative; min-width:142px; border:1px solid #d6dde7; border-radius:10px; background:linear-gradient(145deg,#fff,#f1f3f6); color:#667085; box-shadow:0 3px 10px rgba(31,42,68,.08); }
+.verification-badge { position:relative; min-width:142px; border:1px solid #aab7c8; border-radius:10px; background:#fff; color:#344054; }
 .verification-badge summary { display:grid; grid-template-columns:18px auto; align-items:center; column-gap:6px; padding:8px 9px; cursor:pointer; list-style:none; }
 .verification-badge summary::-webkit-details-marker { display:none; }
 .verification-badge svg { grid-row:1/3; width:18px; height:18px; }
 .verification-badge span { font-size:.76rem; font-weight:800; }
-.verification-badge small { font-size:.66rem; }
-.verification-badge.verified { border-color:#005fff; background:linear-gradient(135deg,#075fff,#f3f5f7); color:#fff; box-shadow:0 7px 18px rgba(0,101,255,.3); }
-.verification-badge.verified.badge-identity { border-color:#006cff; background:linear-gradient(135deg,#0868ff,#f3f5f7); }
-.verification-badge.verified.badge-business-license { border-color:#e96b00; background:linear-gradient(135deg,#f47700,#ffb000); box-shadow:0 7px 18px rgba(244,119,0,.3); }
-.verification-badge.verified.badge-business-address { border-color:#d7dfeb; background:linear-gradient(135deg,#f3f5f7,#f3f5f7); box-shadow:0 7px 18px rgba(21,94,239,.2); }
-.verification-badge.verified.badge-driver-identity { border-color:#6335e5; background:linear-gradient(135deg,#6940e8,#a34fff); box-shadow:0 7px 18px rgba(105,64,232,.28); }
-.verification-badge.verified.badge-truck-authorization,.verification-badge.verified.badge-vehicle-authority,.verification-badge.verified.badge-vehicle-ownership { border-color:#d7dfeb; background:linear-gradient(135deg,#f3f5f7,#f3f5f7); box-shadow:0 7px 18px rgba(0,153,189,.28); }
-.verification-badge.verified summary small { color:rgba(255,255,255,.88); }
-.verification-badge.expired { border-color:#ef9a9a; background:#fff1f1; color:#9b1c1c; }
+.verification-badge small { display:flex; align-items:center; gap:3px; font-size:.66rem; }
+.verification-badge small svg { width:12px; height:12px; }
+.verification-badge.verified { border-color:#155eef; background:#eaf1ff; color:#174c92; }
+.verification-badge.verified summary small { color:#174c92; }
+.verification-badge.expired { border-color:#aab7c8; background:#fff; color:#344054; }
+.verification-badge summary:focus-visible { outline:2px solid #155eef; outline-offset:2px; border-radius:8px; }
 .verification-badge-details { position:absolute; z-index:40; top:calc(100% + 6px); left:0; display:grid; gap:5px; width:250px; padding:11px; border:1px solid #cfd7e4; border-radius:9px; background:#fff; color:#263247; box-shadow:0 16px 34px rgba(20,35,60,.2); }
 .verification-badge-details svg { grid-row:auto; width:14px; height:14px; vertical-align:middle; }
 .verification-badges.compact .verification-badge { min-width:0; padding:6px 7px; }
-.verification-badges.compact .verification-badge summary { min-height:24px; padding:3px 0; }
-.verification-badges.compact .verification-badge small { display:none; }
+.verification-badges.compact .verification-badge summary { min-height:44px; padding:4px 0; }
+.verification-badges.compact .verification-badge small { display:flex; }
 .verification-group { min-width:0; }
 .verification-group-label { display:block; margin-top:10px; color:var(--ink); font-size:.72rem; }
 .verification-group .verification-badges { margin-top:5px; }
-.verification-badge.reputation { border-color:#e6a100; background:linear-gradient(135deg,#f2ad00,#ffd34d); color:#543700; box-shadow:0 7px 18px rgba(11, 29, 58, .26); }
+.verification-badge.reputation { border-color:#155eef; background:#eaf1ff; color:#174c92; }
 .verification-badge.reputation svg { fill:currentColor; }
+.verification-group.rows .verification-badges{display:grid;gap:0;margin-top:8px}
+.verification-group.rows .verification-badge,.verification-group.rows .verification-badge.verified,.verification-group.rows .verification-badge.expired{min-width:0;padding:0;border:0;border-bottom:1px solid #e5eaf1;border-radius:0;background:transparent;color:#0b1d3a;box-shadow:none}
+.verification-group.rows .verification-badge summary,.verification-group.rows .verification-badges.compact .verification-badge summary{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:48px;padding:7px 0}
+.verification-group.rows .verification-badge summary>svg{grid-row:auto;width:18px;height:18px;color:#174c92}
+.verification-group.rows .verification-badge summary>span{font-size:.74rem;line-height:1.35;font-weight:750}
+.verification-group.rows .verification-badge summary>small,.verification-group.rows .verification-badge.verified summary>small{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-height:28px;margin:0;padding:4px 7px;border:1px solid #aab7c8;border-radius:999px;background:#fff;color:#344054;font-size:.62rem;font-weight:700;line-height:1.1;white-space:nowrap}
+.verification-group.rows .verification-badge.verified summary>small{border-color:#155eef;background:#155eef;color:#fff}
+.verification-group.rows .verification-badge-details{position:static;width:auto;max-width:100%;padding:8px 0 10px;border:0;border-radius:0;background:transparent;box-shadow:none;overflow-wrap:anywhere}
 .nearby-truck-search { display:grid; gap:12px; margin:16px 0; padding:18px; border:1px solid #b9d5f7; border-radius:12px; background:linear-gradient(135deg,#f8fbff,#eef6ff); }
 .nearby-truck-search-copy { display:flex; gap:12px; }
 .nearby-truck-search-copy > svg { flex:0 0 auto; color:var(--blue); }
@@ -1823,7 +1828,7 @@ body,.public-capacity-page,.home-capacity-market,.public-provider-directory,.pro
 .market-list-view>.empty-state,.market-list-view>.alert:not(.market-command-column .alert){grid-column:2;margin:20px}
 .capacity-map-cluster.empty{border-color:#fff;background:#155eef;color:#fff;box-shadow:0 0 0 4px #0b1d3a,0 6px 18px rgba(11,29,58,.34)}
 .capacity-map-cluster.partial{border-color:#fff;background:var(--capacity-partial);color:#fff;box-shadow:0 0 0 4px var(--capacity-partial-soft),0 6px 18px rgba(11,29,58,.24)}
-.capacity-map-cluster small{font-size:.53rem;font-weight:950;letter-spacing:.025em}
+.capacity-map-cluster small{font-size:.6rem;font-weight:950;letter-spacing:0;text-transform:none}
 .capacity-cluster-picker .leaflet-popup-content-wrapper{border:1px solid #d7dfeb;border-radius:14px;box-shadow:0 12px 32px rgba(5,44,55,.24)}
 .capacity-cluster-picker.empty .leaflet-popup-content-wrapper{border-left:5px solid #d7dfeb}.capacity-cluster-picker.partial .leaflet-popup-content-wrapper{border-left:5px solid var(--capacity-partial)}
 .capacity-cluster-picker .leaflet-popup-content{margin:12px;width:auto!important}.capacity-cluster-picker-content{display:grid;gap:5px;color:#102a43}.capacity-cluster-picker-content>strong{font-size:.85rem}.capacity-cluster-picker-content>span{font-size:.69rem;color:#155eef}.capacity-cluster-picker-content>div{display:grid;gap:5px;max-height:240px;overflow-y:auto}.capacity-cluster-picker-content button{display:grid;gap:1px;width:100%;min-height:44px;padding:7px 9px;border:1px solid #e5eaf1;border-radius:9px;background:#f3f5f7;color:#102a43;text-align:left}.capacity-cluster-picker-content button:hover,.capacity-cluster-picker-content button:focus-visible{border-color:#155eef;background:#eaf1ff}.capacity-cluster-picker-content button b{font-size:.72rem}.capacity-cluster-picker-content button small{overflow:hidden;text-overflow:ellipsis;color:#155eef;font-size:.65rem;white-space:nowrap}
@@ -2395,7 +2400,7 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
   .public-market-console .market-list-view{display:block}.public-market-console .market-list-view .market-command-column{position:sticky;z-index:20;top:0}.public-market-console .market-list-view>.capacity-search-controls{position:sticky;z-index:19;top:104px;background:#f3f5f7}
 
   .featured-workspace-page .regional-expo-shell{width:calc(100% - 12px);grid-template-rows:auto minmax(0,1fr) auto}
-  .featured-workspace-page .regional-expo-intro{padding:3px 9px 2px}.featured-workspace-page .regional-expo-intro h2{font-size:1.05rem}.featured-workspace-page .regional-expo-intro p{display:none}.featured-workspace-page .regional-expo-intro .section-kicker{font-size:.46rem}
+  .featured-workspace-page .regional-expo-intro{padding:3px 9px 2px}.featured-workspace-page .regional-expo-intro h2{font-size:1.05rem}.featured-workspace-page .regional-expo-intro p{display:none}.featured-workspace-page .regional-expo-intro .featured-curated-title{display:block;font-size:.75rem;line-height:1.35;color:#0b1d3a}.featured-workspace-page .regional-expo-intro .section-kicker{font-size:.46rem}
   .featured-programme-command{flex-wrap:wrap;min-height:44px;gap:3px;padding:3px}.featured-programme-current{grid-template-columns:17px minmax(0,1fr);gap:4px;padding:0 3px}.featured-programme-current>svg{width:16px}.featured-programme-current small{font-size:.46rem}.featured-programme-current strong{font-size:.58rem}.featured-programme-command details>summary,.featured-programme-action{width:44px;min-width:44px;min-height:44px;padding:0;font-size:0}.featured-programme-command details>summary>span,.featured-programme-action>span{display:none}.featured-programme-command details>summary>svg,.featured-programme-action>svg{width:18px}.featured-programme-command details>summary>svg:last-child,.featured-programme-action>svg:last-child{display:none}.featured-programme-command .regional-expo-week{display:flex;max-height:66px;padding:6px;overflow-x:auto}.featured-programme-command .regional-expo-week>span{flex:0 0 104px;min-height:50px}.featured-tiktok-status{order:1;flex:1 0 100%;min-height:44px;padding:5px 7px}.featured-tiktok-status>strong{font-size:.68rem}.featured-tiktok-link{min-height:36px;padding:4px 6px;font-size:.58rem}.expo-programme-detail{max-height:112px;overflow:auto}.expo-programme-detail .expo-programme-strip{max-height:58px}
   .featured-workspace-page .transport-expo-experience{grid-template-areas:"command" "sponsor" "board";grid-template-columns:1fr;grid-template-rows:auto auto minmax(0,1fr);gap:4px;margin:0 5px}
   .featured-workspace-page .transport-expo-experience.without-sponsors{grid-template-areas:"command" "board";grid-template-rows:auto minmax(0,1fr)}
@@ -2609,6 +2614,12 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
   .provider-truck-map-actions{grid-template-columns:1fr}
   .provider-truck-relative-map{height:430px;min-height:430px}
 }
+@media(max-width:350px){
+  .featured-workspace-page .featured-board-grid{grid-template-columns:1fr}
+  .featured-workspace-page .featured-truck-tile{grid-template-columns:104px minmax(0,1fr);grid-template-rows:1fr}
+  .featured-workspace-page .featured-truck-tile .featured-card-photo{min-height:100%}
+  .featured-workspace-page .featured-truck-tile .featured-card-details em{white-space:nowrap}
+}
 
 /* FEAT-UIX-001: narrow public/workspace headers keep every essential fact readable. */
 .capacity-home-page .capacity-summary-map-header{width:min(610px,calc(100% - 92px))}
@@ -2798,6 +2809,7 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
 .capacity-signal-dialog .place-result{min-height:48px}.capacity-signal-dialog .place-result strong{font-size:.78rem}
 .capacity-load-choices{display:flex;min-width:0;flex-wrap:wrap;gap:4px 14px;margin:0;padding:8px 12px;border-color:#e5eaf1}.capacity-load-choices legend{font-size:.78rem}
 .capacity-status-load-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:start;gap:14px}.capacity-status-choice-column,.capacity-load-choice-column{display:grid;min-width:0;gap:8px}
+.capacity-percent-field{position:relative;max-width:190px}.capacity-signal-dialog .capacity-percent-field input{padding-right:36px}.capacity-percent-field>span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#526375;font-weight:700;pointer-events:none}
 .capacity-load-choices label,.capacity-stop-choices label{display:flex;min-height:44px;align-items:center;gap:8px}
 .capacity-signal-dialog input[type="radio"],.capacity-signal-dialog input[type="checkbox"]{width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:#155eef}
 .capacity-stop-choices{display:flex;flex-wrap:wrap;gap:6px 20px}
@@ -3723,6 +3735,22 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 @media(min-width:761px) and (max-width:1180px){.unified-app-frame>.public-workspace-nav{top:66px}}
 @media(max-width:760px){.unified-app-main{padding-bottom:calc(86px + env(safe-area-inset-bottom))}.public-mobile-nav:has(>button){display:flex}.public-mobile-nav>a,.public-mobile-nav>button{flex:1 1 0}.public-mobile-nav button{display:grid;min-width:0;min-height:54px;place-items:center;align-content:center;gap:3px;padding:5px 2px;border:0;border-radius:11px;background:transparent;color:#5d6c77;font-size:.66rem;font-weight:760}.public-mobile-nav button svg{width:21px;height:21px}.public-mobile-nav button.active{background:#eaf1ff;color:#155eef}}
 
+/* FEAT-UIX-001: one normal-flow company footer, with map shells using the space above it. */
+body:has(>.site-copyright){display:flex;flex-direction:column;min-height:100dvh;box-sizing:border-box}
+.site-copyright{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:3px 18px;min-height:38px;padding:7px 20px;border-top:1px solid #d7dfeb;background:#fff;color:#526375;font-size:.73rem;line-height:1.35}
+.site-copyright a{color:#155eef;font-weight:750;text-underline-offset:2px}
+.site-copyright a:focus-visible{outline:2px solid #155eef;outline-offset:2px;border-radius:2px}
+body:has(>.site-copyright)>main.public-app-page:not(.public-market-workspace):not(.featured-workspace-page):not(.tracking-entry-workspace){flex:1;min-height:0}
+body:has(>.site-copyright)>.unified-app-frame{display:flex;flex:1;min-height:0;flex-direction:column}
+body:has(>.site-copyright)>.unified-app-frame>.unified-app-main{flex:1;min-height:0;padding-bottom:0}
+body:has(>.unified-app-frame .public-market-workspace),body:has(>.unified-app-frame .capacity-home-page){height:100dvh;overflow:hidden}
+.unified-app-main:has(.public-market-workspace),.unified-app-main:has(.capacity-home-page){display:flex;flex-direction:column}
+.unified-app-main:has(.public-market-workspace)>[data-view],.unified-app-main:has(.capacity-home-page)>[data-view]{flex:1;min-height:0;height:auto}
+.unified-app-main [data-view='capacity'] .capacity-home-page,.unified-app-main [data-view='capacity'] .capacity-summary-layout .capacity-location-map{height:100%;min-height:0}
+@media(max-width:760px){.site-copyright{min-height:42px;flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;padding:4px 12px;font-size:.68rem}}
+@media(max-width:360px){body .unified-capacity-workspace.public-market-introduced{grid-template-rows:auto minmax(300px,1fr);gap:0}body .unified-capacity-workspace .market-introduction{padding-block:7px}}
+@media(max-width:360px) and (max-height:600px){body .unified-capacity-workspace.public-market-introduced{grid-template-rows:auto minmax(0,1fr)}}
+
 .account-private-card>.workspace-related-section{margin-top:16px}
 .chat-alert-button{position:relative;min-width:42px;min-height:42px;padding:8px;flex-shrink:0}
 .chat-alert-badge{min-width:20px;min-height:20px;display:inline-flex;justify-content:center;align-items:center;border-radius:20px;background:#ffcb05;color:#0b1d3a;font-size:11px;font-weight:800;padding:2px 5px}
@@ -3798,8 +3826,8 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 .unified-capacity-workspace .market-introduction{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:20px;row-gap:4px;margin-top:6px;padding:10px 14px}
 .unified-capacity-workspace .market-introduction h1{margin:0;font-size:19px;line-height:1.2}
 .unified-capacity-workspace .market-introduction p{grid-column:1;font-size:12px;line-height:1.4}
-.unified-capacity-workspace .capacity-view-choice{grid-column:2;grid-row:1/3;gap:6px;margin:0}
-.unified-capacity-workspace .capacity-view-choice a{min-height:40px;padding:6px 10px;font-size:12px}
+.unified-capacity-workspace .capacity-view-choice{grid-column:2;grid-row:1;gap:6px;margin:0}
+.unified-capacity-workspace .capacity-view-choice a{min-height:44px;padding:6px 10px;font-size:12px}
 .public-market-console .capacity-drawer-workbench .capacity-people-drawer{top:68px;bottom:8px}
 .capacity-map-controls{display:flex;align-items:flex-start;gap:8px}
 .capacity-map-controls button{min-height:44px;font-size:.75rem}.capacity-map-controls .capacity-filter-trigger{display:flex}
@@ -3808,12 +3836,15 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 .capacity-search-instruction{margin:0;color:#526375;font-size:.8rem;line-height:1.45}
 .capacity-identity-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:10px;border:1px solid #e5eaf1;border-radius:8px;color:#526375;font-size:.8rem}.capacity-identity-filter a{font-weight:750}
 @media(max-width:760px){
- .unified-capacity-workspace.public-market-introduced{grid-template-rows:auto minmax(322px,1fr);gap:5px}.unified-capacity-workspace .market-introduction{grid-template-columns:minmax(0,1fr);gap:4px;width:calc(100% - 8px);margin-top:0;padding:8px 10px}.unified-capacity-workspace .market-introduction h1{font-size:17px}.unified-capacity-workspace .market-introduction p{font-size:11px;line-height:1.35}.unified-capacity-workspace .capacity-view-choice{grid-column:1;grid-row:auto;display:grid;grid-template-columns:1fr 1fr;margin:2px 0 0}.unified-capacity-workspace .capacity-view-choice a{display:flex;align-items:center;justify-content:center;min-height:40px;padding:6px 5px;font-size:12px;text-align:center}.capacity-map-controls{left:8px;top:8px;right:8px;gap:6px}.capacity-map-controls button{flex:1;min-width:0;padding:8px;font-size:.7rem;gap:6px}.capacity-map-controls button svg{width:19px;height:19px;flex:none}.capacity-map-controls button span{font-size:.63rem}.public-market-console .capacity-drawer-workbench .capacity-people-drawer{top:60px;left:8px;bottom:8px;width:330px;max-width:calc(100% - 16px)}.capacity-people-drawer .capacity-drawer-scroll{padding:12px}
+ .unified-capacity-workspace.public-market-introduced{grid-template-rows:auto minmax(322px,1fr);gap:5px}.unified-capacity-workspace .market-introduction{grid-template-columns:minmax(0,1fr);gap:4px;width:calc(100% - 8px);margin-top:0;padding:8px 10px}.unified-capacity-workspace .market-introduction h1{font-size:17px}.unified-capacity-workspace .market-introduction p{font-size:11px;line-height:1.35}.unified-capacity-workspace .capacity-view-choice{grid-column:1;grid-row:auto;display:grid;grid-template-columns:1fr 1fr;margin:2px 0 0}.unified-capacity-workspace .capacity-view-choice a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 5px;font-size:12px;text-align:center}.capacity-map-controls{left:8px;top:8px;right:8px;gap:6px}.capacity-map-controls button{flex:1;min-width:0;padding:8px;font-size:.7rem;gap:6px}.capacity-map-controls button svg{width:19px;height:19px;flex:none}.capacity-map-controls button span{font-size:.63rem}.public-market-console .capacity-drawer-workbench .capacity-people-drawer{top:60px;left:8px;bottom:8px;width:330px;max-width:calc(100% - 16px)}.capacity-people-drawer .capacity-drawer-scroll{padding:12px}
 }
 
 .public-market-console .market-map-view>.capacity-people-drawer .capacity-map-search button{display:flex}
 
 @media(max-width:760px){.capacity-drawer-workbench .public-map-shell .leaflet-top.leaflet-left{top:64px}.capacity-drawer-workbench .map-info-controls{top:146px;max-height:calc(100% - 158px)}.capacity-drawer-workbench .public-map-shell>.public-feed-overlay.error{right:66px;left:8px}}
+
+/* Keep the map usable when a phone has little vertical space. */
+@media(max-width:760px) and (max-height:700px){.unified-capacity-workspace .market-introduction p{display:none}}
 
 /* FEAT-MKT-001 / FEAT-TRK-001: basemaps fill the workspace behind entry actions. */
 body:has(>main.tracking-entry-workspace){display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden;box-sizing:border-box}
@@ -3822,7 +3853,7 @@ body>main.tracking-entry-workspace{position:relative;display:flex;flex:1;min-wid
 .tracking-entry-stage{position:relative;flex:1;min-width:0;min-height:0;margin:8px;border:1px solid #d7dfeb;border-radius:15px;overflow:hidden;background:#e5eaf1}
 .tracking-entry-map{position:absolute;inset:0;z-index:0}
 .tracking-entry-map>.leaflet-container{width:100%;height:100%}
-.tracking-entry-stage>.tracking-unlock-shell{position:relative;z-index:500;display:flex;align-items:center;justify-content:center;width:min(620px,calc(100% - 32px));height:100%;max-width:620px;min-height:0;margin:auto;padding:16px 0 88px;pointer-events:none}
+.tracking-entry-stage>.tracking-unlock-shell{position:relative;z-index:500;display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:min(620px,calc(100% - 32px));height:100%;max-width:620px;min-height:0;margin:auto;padding:16px 0 88px;pointer-events:none}
 .tracking-entry-workspace .tracking-unlock-panel{width:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;pointer-events:auto}
 body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>main.tracking-entry-workspace) .public-assistance-dock{bottom:30px}
 .unified-capacity-workspace .public-map-legend{bottom:80px}
@@ -3833,13 +3864,26 @@ body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>mai
  body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>main.tracking-entry-workspace) .public-assistance-dock{bottom:calc(90px + env(safe-area-inset-bottom))}
  body:has(>main.tracking-entry-workspace) .public-assistance-dock{bottom:calc(96px + env(safe-area-inset-bottom))}
  .tracking-entry-stage{margin:4px;border-radius:10px}
- .tracking-entry-stage>.tracking-unlock-shell{width:calc(100% - 20px);padding:76px 0 96px}
+ .tracking-entry-stage>.tracking-unlock-shell{width:calc(100% - 20px);padding:76px 0 72px}
  .tracking-entry-workspace .tracking-unlock-panel{padding:16px;gap:12px}
  .tracking-entry-workspace .tracking-unlock-icon{width:44px;height:44px}
  .tracking-entry-workspace .tracking-unlock-icon svg{width:24px;height:24px}
  .unified-capacity-workspace .public-map-legend{bottom:86px}
  .public-market-console .capacity-drawer-workbench .capacity-people-drawer{bottom:96px}
  .unified-capacity-workspace .map-info-controls{max-height:calc(100% - 242px)}
+}
+@media(max-width:760px) and (max-height:600px){
+ .tracking-entry-stage>.tracking-unlock-shell{padding:8px 0}
+ .tracking-entry-workspace .tracking-unlock-icon{display:none}
+ .tracking-entry-workspace .tracking-unlock-panel{padding:12px;gap:8px}
+}
+@media(min-width:761px) and (max-height:450px){
+ .tracking-entry-stage>.tracking-unlock-shell{padding:8px 0}
+ .tracking-entry-workspace .tracking-unlock-icon{display:none}
+ .tracking-entry-workspace .tracking-unlock-panel{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;align-items:center;justify-items:stretch;gap:2px 12px;padding:8px 12px;text-align:left}
+ .tracking-entry-workspace .tracking-unlock-panel>div:nth-child(2){grid-column:1;grid-row:1;min-width:0}
+ .tracking-entry-workspace .tracking-unlock-panel>.stack{grid-column:2;grid-row:1/3;min-width:0;align-self:start}
+ .tracking-entry-workspace .tracking-unlock-panel>.meta{grid-column:1;grid-row:2;margin:0}
 }
 
 /* FEAT-MKT-001: multiple matching options retain the existing filter layout. */
@@ -3863,6 +3907,7 @@ body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>mai
 .provider-site-lower-grid.provider-site-reviews{grid-template-columns:minmax(0,1fr)}
 .provider-fleet-map-action{display:flex;justify-content:flex-end}
 .provider-fleet-map-action .button{min-height:44px;white-space:normal;text-align:center}
+.provider-truck-card .verification-badge-details{position:static;width:auto;max-width:100%;border:0;border-top:1px solid #d7dfeb;border-radius:0;box-shadow:none;overflow-wrap:anywhere}
 @media(max-width:760px){.provider-fleet-map-action .button{width:100%}}
 
 /* The root boundary is shared by public and private routes. Keep it neutral. */
@@ -3907,3 +3952,30 @@ body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>mai
 .capacity-truck-map-marker .own-vehicle-mark,.capacity-map-cluster .own-vehicle-mark{position:absolute;z-index:4;right:-5px;top:-6px;display:grid;place-items:center;width:23px;height:23px;border:2px solid #fff;border-radius:50%;background:#0b1d3a;color:#fff;font-size:13px;line-height:1}
 .capacity-map-cluster.own-vehicle{border-color:#fff;box-shadow:0 0 0 4px #0b1d3a,0 5px 18px #0b1d3a70}
 .public-map-legend .own-vehicle::before{border:3px solid #0b1d3a;border-radius:50%;background:#fff}
+.public-capacity-map:has(.capacity-cluster-picker)>.public-map-legend{visibility:hidden}
+
+/* Keep catalog choices inside the current Capacity filter dialog flow. */
+.capacity-filter-dialog .place-results{position:relative;top:auto;max-height:210px;margin-top:5px}
+.cargo-photo-panel{margin-block:12px;border:1px solid #a8bad1;border-radius:14px;background:#fff;box-shadow:0 1px 5px rgba(11,29,58,.06);overflow:hidden}
+.cargo-photo-panel>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 14px;color:#0b1d3a;cursor:pointer;list-style:none}
+.cargo-photo-panel>summary::-webkit-details-marker{display:none}
+.cargo-photo-panel>summary svg{width:19px;height:19px;color:#155eef;flex:none}
+.cargo-photo-panel>summary strong{flex:1}
+.cargo-photo-panel>summary .status{font-size:12px}
+.cargo-photo-panel-body{display:grid;gap:12px;padding:14px;border-top:1px solid #d7e1ed}
+.cargo-photo-panel-body .meta{margin:0}
+.cargo-photo-preview{display:grid;gap:10px}
+.cargo-photo-preview img{display:block;width:100%;max-height:320px;object-fit:contain;border:1px solid #d7e1ed;border-radius:10px;background:#f4f7fb}
+.cargo-photo-meta,.cargo-photo-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.cargo-photo-meta span{flex:1;min-width:160px;color:#42546f;font-size:13px}
+.cargo-photo-actions .button{min-height:42px}
+.cargo-photo-actions label.button{position:relative;overflow:hidden;cursor:pointer}
+.cargo-photo-actions label.button:focus-within{outline:2px solid #155eef;outline-offset:2px}
+.cargo-photo-actions label.button input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.cargo-photo-file{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#42546f;font-size:13px}
+.capacity-home-page .capacity-console{position:relative}
+.capacity-home-page .capacity-console>.cargo-photo-panel{position:absolute;z-index:690;bottom:14px;left:14px;width:min(360px,calc(100% - 28px));max-height:calc(100% - 150px);margin:0;overflow:auto;box-shadow:0 10px 28px rgba(11,29,58,.2)}
+.capacity-home-page .capacity-console>.cargo-photo-panel:not([open]){width:max-content;max-width:calc(100% - 28px)}
+.capacity-home-page .capacity-console>.cargo-photo-panel:not([open])>summary{min-height:44px}
+@media(max-width:760px){.capacity-home-page .capacity-console>.cargo-photo-panel{bottom:10px;left:10px;width:min(320px,calc(100% - 20px));max-height:calc(100% - 110px)}.capacity-home-page .capacity-console>.cargo-photo-panel[open]{top:72px;bottom:auto;width:calc(100% - 110px);max-height:min(380px,calc(100% - 240px))}.capacity-home-page .capacity-console>.cargo-photo-panel:not([open]){top:auto;bottom:10px;max-width:calc(100% - 20px)}.capacity-home-page .capacity-console:has(>.cargo-photo-panel[open]) .capacity-location-map .leaflet-top.leaflet-left{top:auto;bottom:100px}.capacity-home-page .capacity-console:has(>.cargo-photo-panel[open]) .driver-map-summary .capacity-summary-toolrail{top:78px;right:8px;left:auto;grid-template-columns:minmax(0,1fr);width:82px}}
+@media(max-width:760px){.capacity-home-page .capacity-console:has(>.driver-map-summary.has-no-map)>.cargo-photo-panel,.capacity-home-page .capacity-console:has(>.driver-map-summary.has-no-map)>.cargo-photo-panel[open],.capacity-home-page .capacity-console:has(>.driver-map-summary.has-no-map)>.cargo-photo-panel:not([open]){top:auto;bottom:10px;max-height:min(380px,calc(100% - 190px))}}

@@ -9,6 +9,7 @@ import {listPublicCapacityCursor} from '@/lib/capacity-market.js';
 import {capacityIntroduction} from '@/lib/platform-copy.js';
 import {CAPACITY_FILTER_CHOICES,capacityFilterRecord,type CapacityFilterGroups} from '@/lib/capacity-filter-values.js';
 import {getCurrentUser} from '@/lib/auth';
+import {getWorkspaceAccess} from '@/lib/workspace.js';
 import {listBusinessCapacity} from '@/lib/business-capacity/supabase';
 
 export const dynamic='force-dynamic';
@@ -23,6 +24,14 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const raw=Object.fromEntries(Object.entries(input).map(([key,value])=>[key,Array.isArray(value)?value[0]:value])) as Record<string,string|undefined>;
   const privateView=raw.view==='private';
   const user=await getCurrentUser({allowLimited:true});
+  if(user?.active===true&&['DRIVER','TRANSPORTER'].includes(user.role)&&(await getWorkspaceAccess(user)).granted){
+    const publicQuery=new URLSearchParams();
+    for(const [key,value]of Object.entries(input))for(const item of Array.isArray(value)?value:[value]){
+      if(typeof item==='string'&&!(key==='view'&&item==='private'))publicQuery.append(key,item);
+    }
+    const search=publicQuery.toString();
+    redirect(search?`/app/home/market?${search}`:'/app/home');
+  }
   const canViewShared=!user||user.role==='CUSTOMER'&&Boolean(user.selected_business_workspace?.permissions.capacity);
   if(privateView&&user&&user.role!=='CUSTOMER')redirect('/');
   let selections:CapacityFilterGroups;let filterError:string|undefined;
@@ -31,7 +40,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
     selections=Object.fromEntries(Object.keys(CAPACITY_FILTER_CHOICES).map(key=>[key,Array.isArray(input[key])?'INVALID_CAPACITY_FILTER':raw[key]||''])) as CapacityFilterGroups;
     if(Object.values(input).some(Array.isArray)&&!Object.keys(CAPACITY_FILTER_CHOICES).some(key=>Array.isArray(input[key])))selections.status='INVALID_CAPACITY_FILTER';
   }
-  const query={ownerDocs:raw.ownerDocs||'',driverDocs:raw.driverDocs||'',truckDocs:raw.truckDocs||'',q:raw.q||'',provider:raw.provider||'',truck:raw.truck||'',status:raw.status||'',vehicleCategory:raw.vehicleCategory||'',stopOption:raw.stopOption||'',freshness:raw.freshness||'',locationSource:raw.locationSource||'',truckCityPlaceRef:raw.truckCityPlaceRef||'',truckCity:raw.truckCity||'',truckLocationRadiusKm:raw.truckLocationRadiusKm||'',originPlaceRef:raw.originPlaceRef||'',origin:raw.origin||'',originRadiusKm:raw.originRadiusKm||'',destinationPlaceRef:raw.destinationPlaceRef||'',destination:raw.destination||'',destinationRadiusKm:raw.destinationRadiusKm||'',directionMode:raw.directionMode||'',nearLat:raw.nearLat||'',nearLng:raw.nearLng||'',nearRadiusKm:raw.nearRadiusKm||''};
+  const query={ownerDocs:raw.ownerDocs||'',driverDocs:raw.driverDocs||'',truckDocs:raw.truckDocs||'',q:raw.q||'',provider:raw.provider||'',truck:raw.truck||'',status:raw.status||'',vehicleCategory:raw.vehicleCategory||'',stopOption:raw.stopOption||'',freshness:raw.freshness||'',locationSource:raw.locationSource||'',truckCityPlaceRef:raw.truckCityPlaceRef||'',truckCity:raw.truckCity||'',truckLocationRadiusKm:raw.truckLocationRadiusKm||'',currentAreaPlaceRef:raw.currentAreaPlaceRef||'',currentArea:raw.currentArea||'',currentAreaRadiusKm:raw.currentAreaRadiusKm||'',originPlaceRef:raw.originPlaceRef||'',origin:raw.origin||'',originRadiusKm:raw.originRadiusKm||'',destinationPlaceRef:raw.destinationPlaceRef||'',destination:raw.destination||'',destinationRadiusKm:raw.destinationRadiusKm||'',directionMode:raw.directionMode||'',nearLat:raw.nearLat||'',nearLng:raw.nearLng||'',nearRadiusKm:raw.nearRadiusKm||''};
   const {loadType:_retiredSelection,...visibleSelections}=selections;
   Object.assign(query,visibleSelections);
   const mapQuery={...query,q:'',...(privateView?{view:'private'}:{})};
@@ -53,10 +62,10 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   return <><PublicHeader user={user}/><main className="public-app-page public-market-workspace public-market-introduced unified-capacity-workspace">
     <header className="market-introduction">
       <h1><Text message={capacityIntroduction.title}/></h1>
-      <p><Text message={capacityIntroduction.body}/></p>
+      <p><Text message={capacityIntroduction.webDescription}/></p>
       {canViewShared?<Localized as="nav" copy={["aria-label"]} className="capacity-view-choice" aria-label="Capacity views">
-        <a href="/" aria-current={!privateView?'page':undefined}><Text message="Open to the public"/></a>
-        <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Shared with you"/></a>
+        <a href="/" aria-current={!privateView?'page':undefined}><Text message="Openly shared"/></a>
+        <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Privately shared with you"/></a>
       </Localized>:null}
     </header>
     <div className="capacity-view-body">

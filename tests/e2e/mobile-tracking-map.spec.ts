@@ -48,7 +48,7 @@ async function visitorLogin(page:Page,email:string,shipmentId:string){
  const loaded=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/mobile/visitor/tracking/shipments/${shipmentId}`&&response.request().method()==='GET');
  await page.getByRole('link',{name:'View updates',exact:true}).click();expect((await loaded).status()).toBe(200);
 }
-test('Expo phone Tracking uses a route-first map, existing progress and public contact modal that closes before profile navigation',async({page}:{page:Page},info:PreviewInfo)=>{
+test('Expo provider Tracking separates current status, route map, update, and vehicle details',async({page}:{page:Page},info:PreviewInfo)=>{
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(150000);
  const data=await fixture('native-map-provider');
  let authorization='';
@@ -64,19 +64,21 @@ test('Expo phone Tracking uses a route-first map, existing progress and public c
   expect(checked(await data.service.from('provider_shipments').select('id').eq('provider_profile_id',data.actor.provider_profile_id))).toHaveLength(1);
   const loaded=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/mobile/shipments/${data.shipment}`&&response.request().method()==='GET');
   await page.goto(`${preview}/shipment-detail?id=${data.shipment}`,{waitUntil:'domcontentloaded'});expect((await loaded).status()).toBe(200);
-  const open=page.getByRole('button',{name:'Open shipment progress',exact:true});await expect(open).toBeVisible();
+  const provider=page.getByTestId('tracking-provider-workspace');await expect(provider).toBeVisible();
+  await expect(provider.getByRole('button',{name:'Open shipment progress',exact:true})).toHaveCount(0);
   await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});
   await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toHaveCount(0);
-  const frame=await page.getByTestId('tracking-native-map-workspace').locator('.maplibregl-map').boundingBox();expect(frame?.height).toBeGreaterThan(page.viewportSize()!.height*.55);
-  await open.click();await expect(page.getByRole('radio')).toHaveCount(5);await expect(page.getByText('Synthetic native Tracking map',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Close shipment progress',exact:true}).click();
+  const frame=await provider.locator('.maplibregl-map').boundingBox();expect(frame?.height).toBeGreaterThan(250);
+  await expect(page.getByRole('radio')).toHaveCount(0);await page.getByRole('button',{name:'Tracking update',exact:true}).click();
+  await expect(page.getByRole('radio')).toHaveCount(2);await expect(page.getByText('Synthetic native Tracking map',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Close',exact:true}).click();await expect(page.getByRole('radio')).toHaveCount(0);
   await page.getByRole('button',{name:'Vehicle details',exact:true}).last().click();
   const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog).toContainText('Native map');
   await expect(dialog).not.toContainText(`NMAP-${data.actor.suffix}`);await expect(dialog).not.toContainText(`Audit Driver ${data.actor.suffix}`);
   await expect(dialog.getByRole('link',{name:/Call driver/})).toHaveAttribute('href','tel:+251900000000');
   await page.screenshot({path:info.outputPath('native-tracking-public-truck.png')});
   await dialog.getByRole('link',{name:'Profile',exact:true}).click();await expect(page).toHaveURL(/\/transporter\?/);await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page.goBack();await expect(page.getByRole('button',{name:'Open shipment progress',exact:true})).toBeVisible();await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.goBack();await expect(page.getByTestId('tracking-provider-workspace')).toBeVisible();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:info.outputPath('native-tracking-route-only.png')});
  }finally{await data.cleanup();}
 });

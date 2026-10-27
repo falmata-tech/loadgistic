@@ -27,6 +27,120 @@ owner visual approval. No release readiness is inferred from this plan.
 
 # Low-friction interface
 
+## October26 provider Home work-first correction — locally qualified
+
+The implemented work-first entry/order supersedes the earlier Market-first
+review; current local qualification is recorded below.
+
+Given an active provider or employed Driver has current workspace access\
+When they open ordinary Home, public `/` without market query intent, or complete
+ordinary sign-in with no onboarding/invitation taking precedence\
+Then the existing work Home opens My capacity when driving, otherwise Manage
+vehicles when authorized, otherwise Analyze the Market\
+And Home tabs are My capacity when driving, Manage vehicles when authorized,
+then Analyze the Market, with no duplicate standalone public Capacity menu.
+
+Given a public entry has explicit search/filter/provider/vehicle intent\
+When the authorized provider follows it\
+Then the existing Market route preserves every public query value, including
+duplicates, apart from private-view values and retired `loadType`\
+And existing filtering and duplicate-input denial remain authoritative\
+And owned highlighting decorates matching public results only; private, Draft,
+Full or Off Duty supply is never inserted into public results.
+
+Given the provider is at a Home tab root\
+When Home is normally pressed\
+Then that selected view, URL filters and work state remain intact\
+And modified/new-tab clicks retain ordinary browser behavior\
+And Home from a deeper record or other task, the brand link and legacy `/app`
+entry open the default work Home rather than trapping the user on the record.
+
+Given the provider Home is displayed on a phone\
+When it contains two or three permitted tabs\
+Then the controls share the available row evenly, remain centered and at least
+44px high, and wrap translated labels without truncation or horizontal overflow\
+And desktop keeps a conventional tab row aligned with the page content.
+
+Given Manage vehicles is the default work view on a narrow phone\
+When a vehicle row has long translated location or action text\
+Then its location occupies its own full-width row and View vehicle follows in
+its own touch-sized row, with no fixed text-width reservation or overlap\
+And wider-screen vehicle rows retain their existing layout.
+
+Visitors, brokers/shippers, platform roles, limited provider access and existing
+invitation/onboarding precedence retain their current behavior. Focused tests:
+`tests/capacity-filter-ssr.test.mjs`, `tests/web-workspace-navigation.test.mjs`,
+`tests/provider-owner-presentation.test.mjs` and actual Home browser cases.
+Current-source Chrome desktop1280 and phone320/390 qualify fleet-only two-tab
+and driving-owner three-tab entry, ordinary sign-in, Home continuity/work return,
+and en/am/om fit. The corrected Fleet row passes actual translated-action waits,
+separate location/action geometry and touch-height checks. Expo qualifies the
+same driving-owner default, three-tab layout and return tasks. Current R3 root/
+native gates, strict translations, Android JavaScript export and the compiled web
+build pass for the same1,856 source inputs;
+[traceability](../TRACEABILITY.md#current-audit-evidence) owns exact counts,
+receipts and the bounded freshness/profile qualification.
+The final compiled driver's ordinary sign-in replay passes identity200, work
+Home/three tabs and normal logout303/private401, with no recurring runtime error.
+Earlier unclassified Error, Connection closed and Suspense fallback receipts
+remain preserved. The bounded broker walkthrough also passes representative
+result/detail/Back/reopen tasks without business writes; it is not the complete
+filter matrix. Earlier physical/Market-first reviews are historical; later
+physical/workspace-admin, final standalone APK/signing, exact-source CI and
+hosted rollout remain unqualified. A local debug-signed Android candidate now
+exists; static archive/signature/16KB and installed acceptance remain pending.
+
+## October26 overlapping markers and shell copyright — local work pending
+
+Given multiple available vehicles occupy the same displayed map position\
+When the user activates their small overlap group\
+Then the vehicles separate into individually selectable markers within the map\
+And the map does not replace them with a narrow text-heavy selection popup\
+And stable display offsets and short connector lines preserve the genuine
+reported coordinates, privacy areas, capacity status and source badges\
+And selecting a vehicle opens its usual details; dismiss, Back, map movement
+and a changed/denied dataset clear obsolete spread markers without a stale
+camera callback or accidental second selection\
+And large clusters keep bounded zoom/expansion rather than creating an
+unbounded fan of markers or moving saved locations.
+
+Given a web page uses the unified public or authenticated shell\
+When its copyright is shown\
+Then a compact normal-flow footer identifies the current year and MarketVision
+Technology, linking the company name to https://marketvisiontech.com\
+And existing relevant office details retain Jigjiga, Somali Region, Ethiopia\
+And the shell reserves its space rather than covering maps, actions, required
+tile attribution, dialogs or fixed phone navigation\
+And full-height map pages still fit their viewport without an extra outer
+scrollbar, duplicate footer or cramped interactive controls\
+And desktop, narrow phone and authenticated role layouts are exercised before
+release. Native legal/footer placement must remain appropriate to the app's
+existing About/account structure rather than adding an obstructive overlay.
+
+## October25 launch clarity and native structure — in progress
+
+Given a visitor or member opens a task, empty list or saved record\
+When the layout already shows the purpose and available actions\
+Then the interface uses concise headings, record/status facts and obvious actions
+instead of paragraphs explaining its data model or how to operate the screen\
+And an empty Network uses “No connections” with Find accounts rather than
+describing connection/vehicle-sharing rules\
+And short success status, permission/error recovery, explicit sharing consent and
+destructive-action consequences remain understandable at the relevant action\
+And the same principle applies to public, provider, business team, Support,
+platform staff and Admin interfaces in English, Amharic and Afaan Oromo.
+
+Given a user compares phone web and installed Android\
+When related work appears in cards or sections\
+Then native surfaces have readable flat boundaries, clear heading hierarchy and
+deliberate spacing on a contrasting canvas\
+And inner rows do not add repeated nested card frames or competing decorations\
+And touch targets, focus, long translations and saved/edit/cancel states remain
+usable without shrinking text or removing capabilities.
+
+This owner direction supersedes a purely light-border presentation preference;
+it does not permit removing privacy, consent, truthful data-age or error facts.
+
 ## October20 vehicle-dialog height — locally verified and owner approved
 
 Given a normal vehicle detail includes its availability-confirmation notice\
@@ -344,7 +458,7 @@ And no account prompt blocks browsing, filtering, map view, transporter details,
 
 Given a visitor moves between public pages\
 When layout and color are rendered\
-Then the base uses warm white or off-white surfaces, generous spacing, and restrained borders\
+Then the base uses warm white or off-white surfaces, deliberate spacing, and clearly defined flat card/section boundaries\
 And public workspace titles use a compact application scale that leaves the primary tool visible rather than an oversized editorial scale\
 And the shared brand palette uses deep navy `#0B1D3A`, cobalt `#155EEF`, and restrained amber `#F2B01E` over white or `#F3F5F7` surfaces; purple identifies GPS location sources, and green is not used for UI branding or capacity status\
 And saturated Loadgistic colors are reserved for clear actions, current state, small trust accents, and navigation focus\

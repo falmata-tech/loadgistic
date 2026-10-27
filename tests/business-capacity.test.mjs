@@ -42,7 +42,7 @@ test('business profile search ignores map filters and takes authority only from 
  await assert.rejects(exports.businessSearchResult(new Request('http://localhost/?q=one&q=two'),workspace),/INVALID_BUSINESS_INPUT/);assert.equal(calls.filter(c=>c[0]==='search').length,1);
 });
 test('business search projection accepts only known public profile fields, never an extra hidden location payload',async()=>{
- let data={items:[{key:'PROVIDER:synthetic',kind:'COMPANY',title:'Synthetic transport',subtitle:null,description:null,identifier:'synthetic',handle:'synthetic',capacity_id:null,city:null,status:null,owner:'Synthetic transport',driver:null,documents:[],matching_trucks:1}],total:1,page:1,pageSize:15,hasMore:false};
+ let data={items:[{key:'PROVIDER:synthetic',kind:'COMPANY',title:'Synthetic transport',subtitle:null,description:null,identifier:'synthetic',handle:'synthetic',capacity_id:null,city:null,status:null,owner:'Synthetic transport',driver:null,account_name:'Synthetic transport',manager_name:'Hana',documents:[],matching_trucks:1}],total:1,page:1,pageSize:15,hasMore:false};
  const {businessCapacitySearchPort}=adapter({});const port=businessCapacitySearchPort({rpc:async()=>({data,error:null})});
  assert.equal((await port.search(actor,workspace,'Synthetic')).items.length,1);
  data={...data,items:[{...data.items[0],location_lat:12.345}]};await assert.rejects(port.search(actor,workspace,'Synthetic'),/BUSINESS_UNAVAILABLE/);

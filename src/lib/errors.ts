@@ -138,9 +138,9 @@ const messages: Record<string,string> = {
   CAPACITY_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must allow device location before this vehicle can be published.',
   CAPACITY_LOCATION_ACTIVE_REQUIRED: 'Set this vehicle to Empty or Partial before refreshing its public location.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',
+  INVALID_AVAILABLE_PERCENT: 'Enter 1% to 99% of space still free.',
   INVALID_CAPACITY_INPUT: 'Some capacity details are invalid. Check the selected route or area and try again.',
   INVALID_AVAILABILITY_GEOMETRY: 'Choose an availability route or service area.',
-  PARTIAL_CAPACITY_ROUTE_REQUIRED: 'Partial capacity needs an availability route. Choose at least two cities.',
   DRIVER_REQUIRED_FOR_CAPACITY: 'Assign a driver to this vehicle before publishing capacity.',
   SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED: 'Capacity could not be saved right now. Your changes are still here; please retry.',
   SUPABASE_PROVIDER_REGULAR_CAPACITY_ADD_FAILED: 'Preferred corridor could not be saved right now. Your changes are still here; please retry.',
@@ -260,23 +260,24 @@ const messages: Record<string,string> = {
   ,FEATURED_BROADCAST_WINDOW_INVALID: 'The livestream end time must be later than its start time.'
   ,FEATURED_SCHEDULE_MODE_INVALID: 'Choose Automatic or Manual scheduling.'
   ,FEATURED_SCHEDULE_TIME_INVALID: 'Choose valid daily schedule times.'
-  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep the programme between 08:30 and 12:00 EAT.'
+  ,FEATURED_SCHEDULE_WINDOW_INVALID: 'Keep the programme between 10:30PM and 11:59PM EAT.'
   ,FEATURED_SPONSOR_BREAK_COUNT_INVALID: 'Choose between zero and four sponsor mentions.'
-  ,FEATURED_TARGET_COUNT_INVALID: 'Choose between 1 and 8 featured vehicles.'
-  ,FEATURED_TARGET_COUNT_MISMATCH: 'Select the exact number of vehicles set for this programme.'
+  ,FEATURED_TARGET_COUNT_INVALID: 'Choose between 1 and 8 Transport Providers.'
+  ,FEATURED_TARGET_COUNT_MISMATCH: 'Select the exact number of Transport Providers set for this programme.'
   ,FEATURED_TRUCK_THEME_INVALID: 'Choose the vehicle type assigned to this date.'
   ,FEATURED_TRUCK_INVALID: 'One selected vehicle is no longer available.'
   ,FEATURED_TRUCK_DUPLICATE: 'Each vehicle can appear only once in a programme.'
   ,FEATURED_TRUCK_INELIGIBLE: 'One selected vehicle no longer has a public transporter contact.'
   ,FEATURED_DRIVER_REQUIRED: 'Assign an active Driver to every featured vehicle.'
   ,FEATURED_SPONSOR_BREAK_FREQUENCY_INVALID: 'Place an interlude after every 2, 3, or 4 vehicles.'
-  ,FEATURED_SPONSOR_BREAK_DURATION_INVALID: 'Choose a one- or two-minute interlude.'
-  ,FEATURED_SCHEDULE_CAPACITY_EXCEEDED: 'These vehicles and interludes do not fit inside the morning programme.'
-  ,FEATURED_MANUAL_SCHEDULE_INVALID: 'Give every selected vehicle a valid start and end time.'
-  ,FEATURED_MANUAL_SCHEDULE_INCOMPLETE: 'Give every selected vehicle one programme interval.'
-  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Manual intervals must stay between 08:30 and 12:00 EAT.'
-  ,FEATURED_MANUAL_SCHEDULE_OVERLAP: 'Manual presentation intervals cannot overlap or change roster order.'
-  ,FEATURED_MANUAL_BREAK_INVALID: 'Keep programme interludes to four or fewer, with no interlude longer than two minutes.'
+  ,FEATURED_SPONSOR_BREAK_DURATION_INVALID: 'Choose a one- or two-minute sponsor mention.'
+  ,FEATURED_SCHEDULE_CAPACITY_EXCEEDED: 'These Transport Providers and sponsor mentions do not fit inside 10:30PM–11:59PM EAT.'
+  ,FEATURED_MANUAL_SCHEDULE_INVALID: 'Give every selected Transport Provider a valid start and end time.'
+  ,FEATURED_MANUAL_SCHEDULE_INCOMPLETE: 'Give every selected Transport Provider one programme interval.'
+  ,FEATURED_MANUAL_SCHEDULE_OUTSIDE_SESSION: 'Keep manual times between 10:30PM and 11:59PM EAT.'
+  ,FEATURED_MANUAL_SCHEDULE_TOO_SHORT: 'Give every Transport Provider at least 10 minutes.'
+  ,FEATURED_MANUAL_SCHEDULE_OVERLAP: 'Provider times cannot overlap or change programme order.'
+  ,FEATURED_MANUAL_BREAK_INVALID: 'Use at most four sponsor mentions, each no longer than two minutes.'
   ,SPONSORSHIP_DATE_RANGE_INVALID: 'Choose an inclusive sponsored-placement period of no more than one year.'
   ,SPONSORSHIP_POSITION_INVALID: 'Choose sponsored position 1 through 5.'
   ,SPONSORSHIP_KIND_INVALID: 'Choose a Loadgistic transporter or an outside advertiser.'

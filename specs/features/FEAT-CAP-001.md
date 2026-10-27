@@ -3,7 +3,7 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Authorized providers publish one latest signal: Empty may use either a multi-city Service area or an undated two-to-five-city Capacity route, while Partial always uses an undated Capacity route. Empty and Partial remain discoverable until the provider explicitly selects Off Duty, but their capacity update and approximate-location update ages are displayed separately so an older signal is never presented as confirmed current availability. Current geometry and approximate location may be Public Market or Private network; authorized email guests receive explicitly granted details through FEAT-SHR-001. An authorized owner or independent driver may also publish no more than one undated regular-service signal per current truck-and-driver pair using either geometry; it accompanies an otherwise eligible Public Market truck but never makes a Private-network truck anonymously discoverable. Exact truck and visitor coordinates remain private.
+behavior: Providers publish one latest Empty or Partial signal with public or explicitly shared account visibility. Planned and Preferred routes/areas are OR availability offers within the same vehicle, permission and status filters; reported approximate location is separate. Both statuses support Area or Route. Area queries compare advertised routes and areas; older visible signals carry honest capacity/location ages for either audience. Migrations211/213/217 implement these corrections locally; hosted rollout is pending. No email guest Capacity or exact-coordinate disclosure is supported.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
 rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
@@ -11,7 +11,172 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## Map update and cluster stability — October25 repair in progress
+
+Given an already loaded Capacity result receives progressive pages or refreshes\
+When updates belong to the same still-authorized query scope\
+Then intermediate pages do not temporarily remove an existing selection or
+make its camera repeatedly reset\
+And the completed result replaces obsolete vehicles without reducing eligible
+coverage or adding a manual loading step\
+And changed account, audience, permissions or filters cannot reuse another
+scope's snapshot; explicit denial clears protected content.
+
+Given a cluster expansion query, map movement or initial data load is pending\
+When a newer gesture, selection, source revision or navigation supersedes it\
+Then the stale callback cannot move the camera or restore an obsolete selection\
+And initial centering does not override a user's later pan/zoom\
+And stable vehicle identities and unchanged input yield stable clustering while
+actual new locations and membership changes still reach the map.
+
+Verify real desktop/phone web, affected Expo/native maps, selection/Back and a
+larger local vehicle set. Preserve current appearance and automatic behavior;
+do not solve performance by capping results, hiding supply, extra confirmations
+or a new user-facing loading mode. Source races are identified; runtime and
+stress qualification remain pending.
+
 ## October 21 filter and posting hierarchy — presentation-only
+
+### October26 Planned Capacity and Preferred Corridor — presentation locally qualified
+
+Planned Capacity is the vehicle's current/next-work offer: its Empty/Partial
+status, accepted loads and one Area or ordered Route. Preferred Corridor is the
+separately saved regular two-way route for the current vehicle/driver pair;
+its Area variant is called Preferred area. Neither is a booking or a reported
+vehicle position. This clarification adds no date scheduler or multi-plan model.
+
+Given a provider edits or someone inspects these signals on web/native\
+When their controls, saved facts, map layers or result reasons are shown\
+Then the offer is named Planned capacity, with Planned area or Planned route
+where geometry matters, while the regular signal is Preferred corridor/area\
+And current load status and GPS/phone/manual location retain separate meanings\
+And concise headings, distinct existing styles and clear actions carry the
+explanation rather than adding paragraphs to dialogs.
+
+Given a vehicle has Planned and Preferred coverage\
+When Area or Route search matches either complete offer\
+Then existing public/private/account/business matching returns it once\
+And both endpoints must belong to one complete offer; other filters remain AND\
+And there is no new Planned-only/Preferred-only source switch by default.
+
+Given saved authorized coverage exists but no reported location is available\
+When the provider opens My capacity\
+Then its saved Planned/Preferred shapes are visible on a fitted map\
+And no vehicle position marker, GPS/phone source or uncertainty circle is
+invented at a coverage city. A genuinely empty coverage/location state retains
+its existing useful setup action.
+
+Backend compatibility: existing `capacities`, `current_*`, `availability_geometry`
+and PUBLISH describe Planned Capacity; separate regular-service commands and
+`profile_routes` describe Preferred coverage. Legacy `currentArea*` query fields
+are search geography, not a Planned-only filter. Keep these wire/storage names,
+authorization, one regular signal per current pair, source age and hidden-geometry
+rules. Backend result reasons and both client presentations must use the same
+new terms; return only already-authorized geometry facts.
+
+Verification: covered renderer/editor, geographic matcher and installed SQL
+offer-union/privacy regressions pass. Chrome/Expo read/open/Cancel qualifies
+Planned/Preferred controls and selected-map/profile facts; en/am/om phone-fit
+proof covers Home/Fleet controls. Saved capacity, location and assignment facts
+were unchanged for that review. Actual selected public coverage was Planned area
+plus Preferred area; visible profile Planned route/area facts were inspected.
+Other geometry combinations, hidden coverage and fitting without a reported
+point have source-executed regressions; actual actors had reported locations.
+No save or location-removal cycle was staged for the terminology review.
+
+Current R3 source gates, strict translations, Android JavaScript export and the
+compiled web build pass for the same1,856 inputs. Public freshness is locally
+qualified with the bounded helper; direct Expo profile proof is only Oromo320,
+with earlier captures withdrawn and a hidden Preferred Area web caption covered
+by renderer tests only. [Traceability](../TRACEABILITY.md#current-audit-evidence)
+owns the exact receipts and current browser limits.
+
+The public provider-profile parity gap is locally repaired by producer-only217.
+Its [complete-offer eligibility scenario](#scenario-public-transporter-profiles-share-complete-offer-eligibility)
+owns focused PUBLIC dispatcher/fast regressions, full JSON parity, local install/
+postcheck, exact recovery and unchanged canonical scale evidence. The first
+operator verification failure remains UNKNOWN and preserved; no reapply or
+automatic recovery occurred. Hosted installation is pending.
+
+The bounded compiled Chrome walkthrough passes Owner private Empty Area at the
+original Route endpoint, private Partial Route, public Partial Area with its
+matching provider account, and existing Preferred coverage; Staff repeats the
+original Area case. Actual Apply/result/detail/Back/reopen/reload and normal
+logout/private401 pass without business writes or membership/permission changes.
+Account and vehicle counts remain distinct. The Preferred case overlaps Planned
+Area and returns a Planned reason, so it does not independently prove Preferred-
+only OR. The complete vehicle/load/source/document/geography matrix and current
+Expo filter walkthrough remain unfinished. Earlier save/reopen receipts keep
+their source scope. Synthetic positions may advance normally; this final review
+does not assert a frozen location snapshot. Later physical/workspace-admin,
+static/installed Android candidate qualification, final APK, CI and hosted rollout
+remain separate.
+
+### October26 accepted availability model — locally verified, hosted rollout pending
+
+Given a vehicle advertises current and Preferred routes or areas\
+When an otherwise permitted search matches any complete one of those offers\
+Then the vehicle appears once whether one or several offers match\
+And vehicle type, load status, source, reviewed documents and other selected
+non-geographic groups still apply with their existing AND semantics\
+And no new Current-versus-Preferred search switch excludes an otherwise matching
+offer by default.
+
+Given a search specifies both pickup and delivery\
+When the advertised offers are compared\
+Then both places must match one complete ordered route or one service area\
+And a pickup from one unrelated offer and delivery from another do not create
+a false route match\
+And the existing directional rules and bounded distance tolerances remain
+authoritative.
+
+Given a provider publishes Empty or Partial capacity\
+When they choose Area or Route\
+Then either geometry is supported for either status on web, Android, API and
+database publication/matching\
+And the same terms, default choice and saved facts appear across clients\
+And Area shows service coverage, Route shows ordered stops and direction,
+Preferred coverage has a distinct dashed style, and reported vehicle location
+retains its actual source and privacy boundary.
+
+Given an older Empty/Partial signal remains On Duty and explicitly shared\
+When it is read publicly or through currently authorized private Capacity\
+Then both audiences use the same older-until-changed/Off Duty eligibility with
+honest age labels\
+And private visibility does not silently expire after24 hours while the same
+public signal remains visible\
+And revoked sharing, wrong actor/workspace, Full or Off Duty remain denied.
+
+Local verification: migration211 permits Partial areas and aligns private
+older-signal visibility; migration213 makes Area queries compare route points
+as well as area coverage. The pure geographic regression and
+`tests/sql/capacity-offer-union.sql` cover public, private-account and business
+results, hidden geometry, revoked grants and whole-offer matching. Provider
+Chrome saves/reopens cover Empty/Partial × Area/Route; installed Android Staff
+Area search finds the existing route vehicle and retains its filter on reopen.
+Hosted rollout and final release-APK qualification remain separate pending gates.
+
+The October26 filter presentation supersedes the older four-group order below:
+Vehicle first, Area or route second, Vehicle location third, then More filters.
+An Area query matches a current or Preferred route passing within its chosen
+radius, as well as a current or Preferred service area reaching that location.
+Use the same route-point distance rule as a single Route endpoint query; the
+query shape must not silently exclude the other advertised offer geometry.
+Hidden current geometry remains excluded, explicit legacy geometry constraints
+still apply, and vehicle/status/documents/authorization filters retain their
+existing AND behavior. Public, private-account and business RPC projections must
+agree; a visible route endpoint is a positive Area-query regression case.
+Area or route has the same two concise icon-led choices as provider input. Area
+search selects a catalog city plus distance and compares all advertised current
+and Preferred areas/routes; Route search selects origin/destination plus their
+existing ranges/direction and compares complete offers. This is query shape,
+not a filter that excludes the other offer geometry or Preferred availability.
+Inactive query-shape drafts may be revisited inside the dialog but are not sent
+when Show vehicles applies the other shape. No explanatory paragraph is added.
+Vehicle location explicitly retains the existing reported-point city/nearby and
+GPS/phone/manual filters; it never silently substitutes for advertised coverage.
+Existing physical-location links retain their original meaning. Both clients
+use these same fields, defaults, active-filter counts and apply/reset outcomes.
 
 Given a visitor opens the Capacity map filters on web or Expo\
 When the filter controls are presented\
@@ -27,6 +192,13 @@ And the most-used Vehicle and Location choices are immediately visible while
 Route and More can be opened without losing the draft\
 And applying or clearing still sends the same canonical values, defaults and
 multi-select groups defined below; transporter search remains independent.
+
+October26 wording consistency: the Vehicle type picker uses All vehicle types
+for its unfiltered/reset choice, the actual type name for one selection, and a
+short localized vehicle-types count for several. It does not mix Vehicle type
+with configuration terminology. Web and Android keep existing multi-selection,
+draft, reset, icons, catalogue illustrations and canonical API values; no helper
+paragraph is added.
 
 Given a provider opens the capacity editor on web or Expo\
 When availability is being created or updated\
@@ -174,7 +346,7 @@ qualifier with multiple Live choices withholds capacity until the owner moves
 all but one to Draft or supplies current qualification, without deleting saved
 signals or stopping ongoing Tracking. Adapter/schema drift fails visibly and closed; it cannot fall back to
 an older unqualified projection. Driver assignment remains concurrency-safe.
-World coordinates, load preferences, independent profile search, multi-filters,
+World coordinates, load preferences, provider-account search, multi-filters,
 obscured locations and freshness labels retain their existing contracts.
 The backed-up local installation passes the v3 SQL/strict-catalog and publication
 concurrency checks recorded in `specs/TRACEABILITY.md`. Actual owner/publication
@@ -197,6 +369,203 @@ And preserve Empty/Partial status colors and separate clusters
 And selecting a truck still shows its saved accepted loads in truck details
 And shipment-space filters continue matching the saved preference, including
 full-only, shared-only and either; this visual change does not alter matching.
+
+### Scenario: discovery reuses computed values without changing eligible supply
+
+Migrations214/215/216 are installed on the reviewed local preview after isolated
+transactional parity/recovery and guarded backup/postchecks. The unchanged
+5,000-record scale gate passed in 52.602 seconds: profile 3,491.001 ms;
+initial/filtered/continuation unscoped pages
+4,917.157/3,012.038/2,944.473 ms; scoped map/route
+3,218.078/4,159.049 ms; overview 4,075.387 ms. Every query retained the same
+5,000 ms limit, and all completeness, ordering, lookahead and payload checks
+passed. Independent cleanup found zero synthetic vehicles/drivers and exact
+source/authority/data fingerprints. This is one source-matched isolated local
+pass; initial unscoped margin is 82.843 ms. Hosted rollout and performance remain
+separate, with no hardware or repeated-run reliability claim.
+
+Given public overview eligibility and all requested filters have selected a vehicle\
+When its viewport anchor is needed for the grid key, average location and null check\
+Then compute that same anchor once and reuse it\
+And preserve the exact prior cell JSON, ordering, counts, viewport/privacy geometry,
+current/Preferred offer matching and existing cell bound.
+
+Given account-only Transporter search evaluates eligible vehicles\
+When it resolves current assigned Drivers and groups the provider accounts\
+Then retain the same assignment/publication/sharing/document authority\
+And avoid a second materialized copy that only appends a constant null Driver name\
+And do not construct per-vehicle Driver search metadata that account entries no
+longer consume\
+And return exactly the same complete profile JSON, counts, ranking, pagination,
+manager identity and document metadata for every existing filter.
+
+Given the canonical rollback fixture contains 5,000 additional eligible vehicles\
+When the unchanged discovery scale gate runs on source-matched installed functions\
+Then every measured search/map/overview query retains its five-second limit\
+And result completeness, lookahead/continuation, payload bounds and zero remaining
+synthetic vehicles/identities must pass without reducing coverage or adding UI work.
+
+Given public truck discovery has no location-source, blocked-handle, text, city or
+document filter keys\
+When the existing search helper would immediately accept the candidate\
+Then skip only that helper's unused candidate serialization\
+And when no viewport key is present, skip only the viewport helper's unused
+geometry serialization\
+And retain the existing helper behavior for present keys, including null, empty,
+malformed and valid values, and for a null query.
+
+Given an initial or continuation page uses either fast path\
+Then preserve complete prior payloads and strict cursor ordering\
+And preserve all publication, active-driver, visibility, sharing, qualification,
+filter and current/regular geometry predicates before the existing bound\
+And do not move the cursor or limit past eligibility, modify helper bodies, change
+function authority, cache results or relax the 5,000-record/five-second gate.
+
+Migration215 implements those two helper no-op branches in public truck pages;
+profile discovery uses the separate five-field input contract below.
+
+Given profile discovery filters every eligible vehicle before counting accounts\
+When its search helper and delegated metadata helpers consume only location
+source, provider handle, provider organization/profile IDs and vehicle ID\
+Then supply exactly those five fields instead of serializing the entire joined
+capacity row\
+And preserve every helper call, document flag, filter, complete eligible count,
+account payload, ranking and page order\
+And retain the full candidate fields for the separate unchanged geometry and
+eligibility predicates, including private visibility and sharing rules.
+
+Given any input-contract helper body differs from the verified dependency\
+Then refuse the optimization rather than assume its field needs are unchanged\
+And preserve absent/null/empty/malformed/present query behavior and exact helper
+source/authority metadata.
+
+Migration216 implements the five-field search-helper argument and the same
+absent-viewport guard inside the profile producer only. Isolated correctness,
+recovery, reviewed local installation and the unchanged scale gate are qualified.
+Driver authority, materialization, geometry matching, account grouping and public
+RPCs stay exact; hosted installation is a separate operation.
+
+Verification: `tests/sql/capacity-discovery-reuse.sql` compares complete results with
+service-inaccessible pre214 definitions and proves one anchor evaluation per
+actual executor row in the single-expression materialized producer, using the
+expanded installed SQL under the same owner/search path without changing helper
+semantics or privileged settings; `scripts/market-scale-audit.mjs` remains the
+separate performance gate owned with FEAT-MKT-001. The source-bound non-ANALYZE plans
+identify repeated anchor expressions and obsolete Driver metadata/serialization
+work. Only the unchanged canonical gate establishes measured qualification;
+existing failed timing receipts remain valid evidence. Before local
+installation, require a protected backup, ownership-faithful isolated rehearsal,
+unchanged authority metadata and a drift-refusing rollback rehearsal. Hosted apply
+and runtime qualification remain separate; no function grant or helper semantics
+may change for this optimization.
+
+Local evidence: the existing owned clone passed 19 matching/nonmatching filter
+sets, complete overview/cursor and account-page JSON/count/document parity, all
+four public anchor paths and four excluded-supply cases. Its expanded executor
+plan produced one anchor expression for four eligible rows. The recovery rehearsal
+and outer rollback restored exact function authority/source and data fingerprints,
+independently read back with zero aliases or fixture vehicles remaining. This is
+correctness evidence, not a 5,000-record performance pass; protected receipt:
+`.local/capacity-overview214/clone-correctness-recovery-receipt.json`.
+The failed canonical run and independently exact cleanup are retained in
+`.local/capacity-overview214/scale-5000-after214-clarified-receipt.json`; its
+read-only inner-plan diagnosis and candidate limits are in
+`.local/capacity-overview214/continuation-readonly-diagnosis.json`.
+`tests/sql/capacity-discovery-noop-guards.sql` reuses the same proven eight-row
+fixture and checks 35 absent/null/empty/present/invalid-key cases, exact payload
+and failure parity on initial/continuation pages, nonempty cursor results, and
+existing page-size bounds. It first failed on the old page's unused helper
+expressions; after215 the constant-input inner plans omit only the absent-key
+calls and retain the requested search/viewport calls. Helper source and all
+entry authority metadata remain unchanged. The existing214 regressions and
+drift-refusing215 recovery also passed in the same normal-owner clone
+transaction, followed by exact independent rollback readback. Protected receipt:
+`.local/capacity-noop215/clone-correctness-recovery-receipt.json`.
+Its reviewed local installation, failed canonical gate and exact independent
+cleanup are retained in
+`.local/capacity-noop215/scale-5000-after215-cleanup-receipt.json`.
+The remaining profile producer input contract and non-ANALYZE plan evidence are
+in `.local/capacity-noop215/profile-readonly-diagnosis.json`; they establish unused
+serialization, not a measured improvement.
+`tests/sql/capacity-discovery-input-projection.sql` reuses the byte-identical
+eight-row fixture and proves 51 producer/account payload/error cases, private-only
+scopes, source/document/text filters, null/empty/malformed inputs, cursor order,
+account counts/documents/ranking and pagination. The old producer first failed
+only the wide-input/no-op plan check after payload parity passed; the candidate
+passed those cases and the unchanged214/215 regressions. All seven public
+function source/authority snapshots stayed exact during tests, with only the
+planned producer definition differing during installation. Drift-refusing
+recovery, outer rollback and independent readback passed with zero214/215/216
+references or fixture vehicles remaining. Protected evidence:
+`.local/capacity-input216/clone-correctness-recovery-receipt.json`.
+The separately reviewed local installation/postchecks and full canonical timing
+pass are retained in
+`.local/capacity-input216/local-preview-apply-receipt.json` and
+`.local/capacity-input216/scale-5000-after216-cleanup-receipt.json`, with the
+unchanged gate script SHA256
+`5be12568bb417b471da245f0c165d80b2c15477fa025d34811f77bb8620b1964`.
+
+### Scenario: public transporter profiles share complete-offer eligibility
+
+Migration217 is installed on the reviewed local preview. Isolated
+correctness/recovery, focused preview postchecks and the unchanged canonical
+5,000-record scale gate are qualified; hosted installation remains separate.
+The separate public profile producer retained pre211/213 restrictions even
+though public/private truck projections already implement the accepted model.
+
+Given a permitted vehicle has Partial Planned area or Preferred area\
+When public transporter search applies matching Area or Route geography\
+Then include its account and count that vehicle once, with the same whole-offer
+eligibility as public/private truck discovery\
+And an Area query may also match a Planned or Preferred route for either Empty
+or Partial status.
+
+Given a query supplies both endpoints or an explicit legacy geometry\
+Then preserve same-offer endpoints, directional rules and that explicit geometry\
+And retain all other status/load/type/source/document/blocked-account filters as
+AND constraints, active-driver/publication/sharing authority and private denial\
+And preserve complete account payloads, document metadata, counts, ranking,
+pagination and the216 five-field helper input for all unaffected queries.
+
+Verification must exercise both actual `capacity_search_results(...,'PUBLIC',...)`
+dispatch and `capacity_search_results_public_fast`, using the unchanged published
+offer-union fixture. Intended newly matching cases compare complete account JSON
+against the already-eligible reference account; unchanged cases retain exact
+reference JSON parity. Guard source/owner/config/ACL metadata and rehearse
+drift-refusing recovery before separately reviewed local installation. Existing
+1294/400 and216 scale receipts do not qualify these previously uncovered cases.
+
+Local evidence: 22 actual PUBLIC-dispatcher/fast-RPC checks pass for newly
+matching Planned/Preferred Area/Route offers, full account JSON/documents/counts,
+same-offer endpoints/direction, explicit geometry and non-geographic AND filters,
+private/revoked/Off Duty denial. Unaffected queries retain exact old-reference
+JSON parity; the corrected four-account Area fixture equals the complete already-
+eligible reference. The unchanged216/215 suites pass. Drift-refusing recovery and
+independent outer-rollback readback restore source/authority/data exactly, with
+zero reference/fixture leftovers. Protected receipt:
+`.local/capacity-offers217/clone-correctness-recovery-receipt.json`.
+The original offer-union test bytes are recovered exactly after removing only217
+checks/helper/budget additions, preserving its proven fixture. The first expanded
+DO exceeded its old30s aggregate correctness budget; one authorized120s retry
+passed all assertions. This is a harness aggregate budget change, not a measured
+query result or a relaxation of the separate canonical5s limit.
+
+The committed217 source passed isolated preview postchecks without reapplying or
+restoring a migration: offer-union 28.583s, corrected Area regression 4.721s,
+with exact independent rollback and zero owned backends after each. An earlier
+preview postcheck failure discarded stderr; its cause remains unknown and its
+failure/state receipts are retained. The postcheck-only runner verified the
+actual server session attribution and retained protected per-phase diagnostics.
+Evidence: `.local/capacity-offers217/postcheck-only-run/receipt.json`.
+
+The complete unchanged scale gate then passed in 51.498s: profile 4,024.621ms,
+scoped map/route 2,791.511/3,528.440ms, overview 3,755.410ms, unscoped
+initial/filtered/continuation 2,850.649/3,075.145/2,935.108ms. All seven queries
+kept the5,000ms limit, with complete counts, strict ordering, filters, lookahead
+and payload bounds. Independent readback found zero synthetic vehicles/drivers
+and exact source/authority/data/ledger fingerprints. This is one isolated local
+source-matched pass, not hosted performance or repeated-run reliability evidence.
+Receipt: `.local/capacity-offers217/scale-5000-after217-cleanup-receipt.json`.
 
 ### Scenario: current space and accepted loads are different facts
 
@@ -287,22 +656,50 @@ database function or hosted setting; existing API filter validation remains.
 
 Given an authorized fleet owner or Driver publishes current capacity for one truck\
 When the current signal is saved\
-Then Empty requires exactly one availability geometry: Service area or Capacity route\
-And Partial requires one Capacity route and cannot publish a Service area\
+Then Empty and Partial each require exactly one availability geometry: Service area or Capacity route\
 And a Service area uses one selected center city plus three through five distinct surrounding cities\
 And the surrounding cities form one ordered polygon boundary while the center city remains the searchable area anchor\
 And a Capacity route uses two through five distinct ordered cities joined in sequence\
 And neither current geometry asks for or stores a travel date\
-And Empty and Partial are categorical market signals rather than remaining-space estimates\
-And the Driver is not asked for a capacity percentage and no percentage is displayed, filtered, or published to visitors.
+And Empty and Partial remain distinct categorical load-status signals\
+And the separately reported space percentage is an estimate of cargo space still available, not a measurement of weight, dimensions or guaranteed cargo fit.
+
+### Scenario: a reported space estimate never inherits the old Partial default
+
+Given a provider or authorized Driver publishes Planned capacity\
+When the load status is Empty or Off Duty\
+Then the service derives 100% available for Empty and 0% for Off Duty without accepting a submitted percentage\
+And Off Duty is never offered as available space.
+
+Given the load status is Partial\
+When the actor optionally submits an integer percentage from 1 through 99\
+Then the service saves that percentage and its own report time against the same authorized vehicle and current signal\
+And the caller cannot set, backdate or forge the report time or other provenance\
+And the result describes the value as a provider-reported estimate.
+
+Given a Partial signal was published by an older client without a percentage or already contains the historical default of 50\
+Then its numeric storage value is legacy and its report time is absent\
+And no public or private result displays or filters that value as an estimate\
+And republishing an estimate for that vehicle does not rewrite historical signal or audit rows.
+
+Given a current Partial estimate was already reported and a provider edits unrelated capacity facts\
+When the percentage is omitted by an older client or repeated unchanged by a new client\
+Then the same estimate, original reporter and original report time carry into the new Partial signal without becoming newly fresh\
+And an explicitly cleared percentage removes the estimate from the new signal without rewriting history.
+
+Given a reported Partial estimate is followed by a new duty state, another assigned Driver, or an independent load-status or percentage change\
+Then the old report does not appear or match a space filter for the new Driver or state\
+And a later Partial save cannot inherit the former report's time or value\
+And assignment invalidation retains the prior value and report time in an internal audit event.
 
 ### Scenario: current signals use distinct map treatments
 
 Given a public current-capacity projection is selected on the map\
 When its Driver location is available\
 Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
-And when Empty uses a Service area a separate labeled cobalt hollow polygon joins the selected surrounding cities and identifies the center city\
-And when its geometry is Capacity route a labeled cobalt Empty or amber Partial polyline joins every selected city in order\
+And a Service area uses a separate labeled outline joining its surrounding cities and identifies the center city\
+And a Capacity route uses a labeled polyline joining every selected city in order\
+And both use cobalt for Empty and neutral gray for Partial\
 And color is reinforced by text and shape rather than being the only meaning\
 And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
 
@@ -317,9 +714,18 @@ And that signal is either a structured Service area with one center plus three t
 And another addition is rejected without changing the saved signal\
 And a preferred corridor asks for no date and never claims that a truck is currently available\
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
-And a Preferred corridor joins its cities with ↔ while a Preferred service area names its center and boundary cities\
+And a Preferred corridor joins its cities with ↔ while a Preferred area names its center and boundary cities\
 And both state Confirm availability\
-And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred service area, distinct from violet approximate location and status-colored current capacity.
+And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred area, distinct from violet approximate location and status-colored Planned capacity.
+
+### Scenario: preferred corridor removal updates the selected vehicle
+
+Given a vehicle has a saved preferred corridor or area\
+When its authorized manager removes that signal successfully\
+Then its saved summary and map stop showing the signal immediately\
+And other vehicles' preferred signals remain unchanged.\
+When removal fails\
+Then the saved signal remains visible.
 
 ### Scenario: regular routes cannot leak across trucks or assignments
 
@@ -381,7 +787,7 @@ Then free text, exact transporter, capacity status, geometry, configuration, loa
 And every supplied filter must match the same truck while omitted filters remain neutral\
 And one endpoint is projected against every segment of each eligible current or regular Capacity route\
 And two endpoints must fall within their independent tolerances on one route in the selected direction, based on projected progress along the complete ordered polyline\
-And an Empty Service area tests one supplied endpoint or both supplied endpoints against the complete polygon and selected tolerances\
+And an Empty or Partial Service area tests one supplied endpoint or both supplied endpoints against the complete polygon and selected tolerances\
 And no distance, freshness, verification, or provider fact produces a public rank or suitability score\
 And the managed projection returns only stable cursor order.
 
@@ -457,7 +863,7 @@ And each unclustered truck marker is a sufficiently large pointed map-pin shape 
 And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
 And a tractor marker and detail use only its currently attached trailer configuration rather than combining every compatible trailer into one public signal\
 And the marker uses a complete cobalt ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
-And no percentage or percentage-progress ring appears in a public truck marker\
+And no percentage-progress ring appears in a public truck marker\
 And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
 And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
 And a truck or visitor-location summary appears only on hover or keyboard focus, sits above its marker, and retains a pointer to that marker rather than permanently covering the map\

@@ -127,6 +127,7 @@ test('US visitor location can become an obscured web truck-near filter',async({p
   await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location updated');
   await page.getByRole('button',{name:/Vehicle filters/}).click();const filters=page.getByRole('dialog',{name:'Vehicle filters',exact:true});
+ await filters.locator('[data-filter-section="location"] > summary').click();
   await filters.getByLabel('Show vehicles near my area',{exact:true}).check();
   await filters.getByRole('button',{name:'Show vehicles',exact:true}).click();
   await expect(page).toHaveURL((url:URL)=>url.searchParams.has('nearLat')&&Number(url.searchParams.get('nearLng'))<0);
@@ -140,6 +141,7 @@ test('US visitor location can become an obscured native truck-near filter',async
   await context.grantPermissions(['geolocation'],{origin:'http://127.0.0.1:8084'});await context.setGeolocation(fix);
   page.on('request',(request:any)=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')requests.push(url.search);});
   await page.goto('http://127.0.0.1:8084/');await page.getByRole('button',{name:/Vehicle filters/}).click();
+  await page.getByRole('button',{name:'Vehicle location',exact:true}).click();
   await page.getByRole('button',{name:'Use my approximate area',exact:true}).click();
   await expect(page.getByRole('button',{name:'Update my approximate area',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Show vehicles',exact:true}).click();

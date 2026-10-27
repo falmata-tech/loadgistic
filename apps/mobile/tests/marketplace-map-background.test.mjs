@@ -5,6 +5,8 @@ import ts from 'typescript';
 import * as discovery from '../src/api/discovery.ts';
 import {capacityIntroduction} from '../../../src/lib/platform-copy.js';
 import * as transporterSearch from '../../../src/lib/transporter-search.js';
+import * as capacityRefresh from '../src/map/capacity-refresh.ts';
+import * as navigation from '../src/navigation/destinations.ts';
 
 // Execute the real screens and verification handlers with native hosts substituted.
 // These are layout/auth-boundary component checks, not backend or pixel-rendering evidence.
@@ -120,6 +122,8 @@ function capacityScreen(){
   '../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},
   '../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},
   '../api/public-capacity':{loadCapacity:async()=>{},loadSharedCapacity:async()=>{}},'../../../../src/lib/transporter-search.js':transporterSearch,
+  '../map/capacity-refresh':capacityRefresh,
+  '../navigation/destinations':navigation,
   '../api/business-workspaces':{loadBusinessCapacity:()=>{throw Error('business-only loader used by public Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},'../hooks/account-query':{useAccountQuery:()=>({data:null})},
   '../components/ui':ui
  });
@@ -128,6 +132,14 @@ function capacityScreen(){
 
 test('Capacity keeps the map full height with search and vehicle filters after transport chat retirement',()=>{
  const capacity=capacityScreen();let tree=capacity.render();
+ const heading=nodes(tree).find(({node})=>node.type==='Text'&&node.props.children===capacityIntroduction.title);
+ assert.ok(heading,'one brief heading identifies the capacity task');
+ assert.equal(heading.node.props.accessibilityRole,'header');
+ const intro=heading.ancestors.at(-1);
+ assert.equal(nodes(intro).filter(({node})=>node.type==='Text').length,1,'welcome prose does not take space above the mobile map');
+ const tabs=nodes(tree).filter(({node})=>node.props.accessibilityRole==='tab');
+ assert.equal(tabs.length,2);
+ for(const {node} of tabs)assert.ok(style(node).minHeight>=44,'map choices keep a useful touch target');
  const workspace=find(tree,item=>item.props.testID==='capacity-map-workspace');
  assert.ok(workspace);assert.equal(style(workspace).flex,1);
  assert.equal(nodes(tree).some(({node})=>node.props.href==='/arrange-transport'||node.props.accessibilityLabel==='Need help with transport?'),false);

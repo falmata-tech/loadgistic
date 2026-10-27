@@ -120,7 +120,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
       document_name:'Synthetic portrait browser fixture',storage_path:'synthetic-portrait-fixture',original_name:'fixture.txt',mime_type:'text/plain',status:'APPROVED',submitted_by:actorId
     }))));
     let day=checked(await service.from('featured_provider_days').select('id,status').eq('feature_date',date).maybeSingle());
-    if(!day){day=checked(await service.from('featured_provider_days').insert({feature_date:date,status:'PUBLISHED',base_place_ref:base.city_place_ref,base_place_label:base.city,expo_group_key:theme.key,expo_group_label:theme.label,target_count:1,schedule_config_json:{dayStart:'08:30',dayEnd:'12:00',targetCount:1,sponsorBreakCount:4,sponsorBreakMinutes:2},created_by:actorId}).select('id,status').single());ownedDay=day.id;}
+    if(!day){day=checked(await service.from('featured_provider_days').insert({feature_date:date,status:'PUBLISHED',base_place_ref:base.city_place_ref,base_place_label:base.city,expo_group_key:theme.key,expo_group_label:theme.label,target_count:1,schedule_config_json:{dayStart:'22:30',dayEnd:'23:59',targetCount:1,sponsorBreakCount:4,sponsorBreakMinutes:2},created_by:actorId}).select('id,status').single());ownedDay=day.id;}
     expect(day.status).toBe('PUBLISHED');
     const slots=checked(await service.from('featured_provider_slots').select('*').eq('day_id',day.id).order('slot_position'));
     const synthetic={provider_organization_id:orgId||null,provider_profile_id:providerId||null,vehicle_id:vehicleId,driver_user_id:actorId,created_by:actorId};

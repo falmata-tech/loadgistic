@@ -19,14 +19,14 @@
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "CAMERA"
       ],
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "READ_MEDIA_IMAGES",
         "READ_MEDIA_VIDEO",
         "RECORD_AUDIO",
-        "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ]
@@ -52,6 +52,13 @@
       "expo-status-bar",
       "expo-font",
       "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Loadgistic to take a cargo-space photo when you choose Take photo.",
+          "microphonePermission": false
+        }
+      ],
       "./plugins/with-notification-consent.cjs",
       [
         "expo-notifications",

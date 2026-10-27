@@ -19,7 +19,7 @@ test('native transporter profile keeps useful detail and scopes its map action a
     for(const title of ['Transport services','Regular service','Confirm service details before booking']){
       await expect(page.getByRole('heading',{name:title,exact:true})).toHaveCount(0);
     }
-    await expect(page.getByRole('heading',{name:'Documents',exact:true})).toBeVisible();
+    await expect(page.getByRole('heading',{name:'Account documents',exact:true})).toBeVisible();
     await expect(page.getByRole('heading',{name:'Verified shipment reviews',exact:true})).toBeVisible();
     const map=page.getByRole('link',{name:'See vehicles on the map',exact:true});
     await expect(map).toHaveAttribute('href',`/?provider=${encodeURIComponent(handle)}`);
@@ -28,7 +28,7 @@ test('native transporter profile keeps useful detail and scopes its map action a
     const bounds=await map.boundingBox();
     expect(bounds).not.toBeNull();expect(bounds!.height).toBeGreaterThanOrEqual(44);
     expect(bounds!.x).toBeGreaterThanOrEqual(0);expect(bounds!.x+bounds!.width).toBeLessThanOrEqual(width+.5);
-    const next=provider.fleet.total>1?page.getByRole('button',{name:new RegExp('^View vehicles and drivers')}):page.getByRole('heading',{name:'Vehicles and published capacity',exact:true});
+    const next=provider.fleet.total>1?page.getByRole('button',{name:`Vehicles and drivers (${provider.fleet.total})`,exact:true}):page.getByRole('heading',{name:'Vehicles and drivers',exact:true});
     await expect(next).toBeVisible();
     expect(bounds!.y+bounds!.height).toBeLessThanOrEqual((await next.boundingBox())!.y+.5);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

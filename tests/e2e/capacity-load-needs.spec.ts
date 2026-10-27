@@ -9,7 +9,9 @@ test('current load filters vehicles without retaining the removed space filter',
  // Previously shared links must not silently retain a control removed by the owner.
  await page.goto('/?geometry=RADIUS&loadType=FTL');
  const dialog=await openCapacityFilterDialog(page);
- for(const name of ['geometry','currentArea','loadType'])await expect(dialog.locator(`[name="${name}"]`)).toHaveCount(0);
+ for(const name of ['geometry','loadType'])await expect(dialog.locator(`[name="${name}"]`)).toHaveCount(0);
+ // Area is a current coverage filter; it must survive removal of Space needed.
+ await expect(dialog.locator('[data-query-shape="AREA"] [name="currentArea"]')).toHaveCount(1);
  await expect(dialog.getByRole('group',{name:'Space needed',exact:true})).toHaveCount(0);
  await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);
  await expect(dialog.getByRole('checkbox',{name:'Empty vehicle',exact:true})).toBeChecked();

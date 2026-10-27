@@ -46,7 +46,8 @@ test('email-only login completes a real inbox code and rejects paused Google ent
     await page.screenshot({path:info.outputPath('login-invalid-code.png'),scale:'css'});
     await page.getByLabel('Six-digit code',{exact:true}).fill(code);
     await page.getByRole('button',{name:'Continue',exact:true}).click();
-    await expect(page).toHaveURL(/\/app\/home$/,{timeout:30000});
+    await expect(page).toHaveURL(/\/app\/home\/vehicles$/,{timeout:30000});
+    await expect(page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
     await expect(page.locator('.app-main')).toBeVisible();
   }finally{
     checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));

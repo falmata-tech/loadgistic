@@ -51,7 +51,10 @@ export function parseBusinessTrackingDetail(value:unknown,workspaceId:string,shi
 export async function loadBusinessCapacity(workspaceId:string,signal:AbortSignal,onPage:(items:CapacitySignal[])=>void,request:(path:string)=>Promise<unknown>,filters:TruckFilters={}):Promise<void>{
  let cursor='';const seen=new Set<string>(),items=new Map<string,CapacitySignal>();
  do{
-  const params=discoveryParams('',filters);if(cursor)params.set('cursor',cursor);
+  const params=discoveryParams('',filters);
+  if(filters.photoPresent==='true')params.set('photoPresent','true');
+  if(filters.photoMaxAgeHours)params.set('photoMaxAgeHours',filters.photoMaxAgeHours);
+  if(cursor)params.set('cursor',cursor);
   const page=parseCapacityPage(await request(`/api/business-workspaces/${encodeURIComponent(workspaceId)}/capacity?${params}`));
   if(signal.aborted)return;
   for(const item of page.items)items.set(item.id,item);onPage([...items.values()]);

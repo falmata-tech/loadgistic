@@ -20,6 +20,13 @@ test('the website Tracking entry opens native email verification without trustin
   assert.equal(normalize(path),'/link-unavailable');
  }
 });
+test('business invitation entry opens only the bounded workspaces route',()=>{
+ for(const path of ['/workspaces','/workspaces/','https://loadgistic.com/workspaces','https://www.loadgistic.com/workspaces','loadgistic://workspaces','loadgistic:///workspaces'])
+  assert.equal(normalize(path),'/workspaces',path);
+ for(const path of ['https://evil.example/workspaces','http://loadgistic.com/workspaces','https://user:password@loadgistic.com/workspaces',
+  '/workspaces?email=someone@example.test','/workspaces?invitationId=private','/workspaces?token=secret','/workspaces?redirect=/account',
+  '/workspaces#secret','loadgistic://workspaces?code=123456'])assert.equal(normalize(path),'/link-unavailable');
+});
 test('canonical private-capacity and public-profile aliases retain the normal privacy boundary',()=>{
  for(const prefix of ['', 'https://loadgistic.com', 'https://www.loadgistic.com']){
   assert.equal(normalize(prefix+'/shared-capacity'),'/?view=private');
@@ -68,6 +75,7 @@ test('area grouping preserves existing public and provider deep-link destination
  for(const route of ['/account','/account-settings','/fleet','/manage-capacity','/shipments','/network','/support','/documents','/profile','/billing']){
   assert.equal(normalize(route),route);assert.equal(routes.get(route),'(workspace)');
  }
+ assert.equal(normalize('/workspaces'),'/workspaces');assert.equal(routes.get('/workspaces'),'(workspace)');
  const id='e5df8dc7-76cc-4c33-a5b4-bb09b221ddbd';
  for(const route of ['/shipment-detail','/shipment-manage','/support-chat','/visitor-shipment']){
   assert.equal(normalize(`${route}?id=${id}`),`${route}?id=${id}`);assert.ok(routes.has(route));

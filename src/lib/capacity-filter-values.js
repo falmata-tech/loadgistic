@@ -6,6 +6,13 @@ export const CAPACITY_FILTER_CHOICES=Object.freeze({
  locationSource:Object.freeze(['GPS','MOBILE','MANUAL'])
 });
 const fail=()=>{throw new Error('INVALID_CAPACITY_FILTER');};
+function minimumAvailablePercent(value){
+ if(value===undefined||value===null||value==='')return'';
+ if(typeof value!=='string'&&typeof value!=='number')fail();
+ const token=String(value);
+ if(!/^(?:100|[1-9][0-9]?)$/.test(token))fail();
+ return token;
+}
 export function capacityFilterValues(key,value){
  if(!Object.hasOwn(CAPACITY_FILTER_CHOICES,key))fail();
  if(value===undefined||value===null||value==='')return[];
@@ -25,6 +32,7 @@ export function capacityFilterValue(key,values){return capacityFilterValues(key,
 export function parseCapacityFilterValues(value,key){return capacityFilterValue(key,value)||null;}
 export function canonicalCapacityFilters(filters={}){
  const result=Object.fromEntries(Object.keys(CAPACITY_FILTER_CHOICES).map(key=>[key,capacityFilterValue(key,filters[key])]));
+ result.minAvailablePercent=minimumAvailablePercent(filters.minAvailablePercent);
  if(result.loadType==='FTL'&&result.status==='PARTIAL')fail();
  return result;
 }
@@ -34,6 +42,8 @@ export function capacityFilterParams(params){
  for(const key of Object.keys(CAPACITY_FILTER_CHOICES)){
   const values=params.getAll(key);if(values.length>1)fail();input[key]=values[0]||'';
  }
+ const minimum=params.getAll('minAvailablePercent');if(minimum.length>1)fail();
+ input.minAvailablePercent=minimum[0]||'';
  return canonicalCapacityFilters(input);
 }
 export function capacityFilterRecord(record){

@@ -9,6 +9,8 @@ import {locationSourceKind,locationSourceLabel,locationSourceColor} from '../../
 import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
 import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../src/lib/map-initial-camera.js';
+import {capacityMarkerFanLayout} from '../../../src/lib/capacity-marker-fan.js';
+import {createCapacityCameraIntent,expandCapacityCluster} from '../src/map/capacity-camera-intent.ts';
 
 // Execute the real component/handlers with its native host and hooks substituted.
 // This proves the exit never enters MapLibre's first-match marker hit registry;
@@ -24,22 +26,23 @@ function fixture(currentVisible=true,topInset,bottomInset){
  const item={id:'test-truck',driver:'Public Driver',portrait:'/api/public/driver-portraits/local-driver',provider:'Test fleet',handle:'test-fleet',truck:'Test truck',status:'EMPTY',configuration:'Mini Box Truck',
   sharingMode:'',acceptedLoads:null,latitude:9,longitude:38,capacityAge:'Updated',locationAge:'Updated',precisionKm:20,
   geometry:null,currentVisible,currentPoints:[],regular:[]};
- const items=[item],slots=[],effects=[],calls={deselect:0,select:0,fit:[],jump:[]};
+ let items=[item];const slots=[],effects=[],nullStateSetters=[],calls={deselect:0,select:0,fit:[],jump:[]};
  let index=0,selected=null,tree;
  const hook=initial=>{const position=index++;if(!(position in slots))slots[position]=initial;return [slots[position],position];};
  const changed=(previous,next)=>!previous||previous.length!==next.length||next.some((value,position)=>!Object.is(value,previous[position]));
  const hooks={
   memo:component=>component,
   useRef:initial=>hook({current:initial})[0],
-  useState:initial=>{const [value,position]=hook(typeof initial==='function'?initial():initial);return [value,next=>{slots[position]=typeof next==='function'?next(slots[position]):next;}];},
+  useState:initial=>{const [value,position]=hook(typeof initial==='function'?initial():initial);const setter=next=>{slots[position]=typeof next==='function'?next(slots[position]):next;};if(initial===null&&!tree)nullStateSetters.push(setter);return [value,setter];},
   useMemo:(compute,deps)=>{const [value,position]=hook(null);if(changed(value?.deps,deps))slots[position]={deps,value:compute()};return slots[position].value;},
   useCallback:(callback,deps)=>hooks.useMemo(()=>callback,deps),
   useEffect:(effect,deps)=>{const [previous,position]=hook(null);if(changed(previous?.deps,deps)){effects.push(()=>{previous?.cleanup?.();slots[position]={deps,cleanup:effect()};});}},
  };
  const camera={fitBounds:(...args)=>calls.fit.push(args),jumpTo:value=>calls.jump.push(value),easeTo:()=>{}};
  const React={createElement:(type,props,...children)=>({type,props:props||{},children:flatten(children),text:children.flat(Infinity).filter(value=>typeof value==='string'||typeof value==='number')}),Fragment:'Fragment'};
- const parameters={...hooks,React,exports:{},capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,locationSourceKind,locationSourceLabel,locationSourceColor,focusedMarkers,
+ const parameters={...hooks,useLayoutEffect:hooks.useEffect,React,exports:{},capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,locationSourceKind,locationSourceLabel,locationSourceColor,focusedMarkers,
   capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,renderedCapacityPoints,capacityMarkerOffsets,
+  capacityMarkerFanLayout,createCapacityCameraIntent,expandCapacityCluster,BackHandler:{addEventListener:()=>({remove(){}})},
   mapStyle:{},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,palette:{success:capacityStatusPresentation.EMPTY.color},capacityStatusPresentation,capacityDetailFrame,CapacityTruckDetails:'CapacityTruckDetails',CapacityTruckContact:'CapacityTruckContact',AppIcon:'AppIcon',Modal:'Modal',useWindowDimensions:()=>({width:320,height:600}),Image:'Image',Pressable:'Pressable',ScrollView:'ScrollView',Text:'Text',View:'View',
   StyleSheet:{create:value=>value,absoluteFill:{}},Map:'NativeMap',Camera:'Camera',GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',
   markerLocation,signalBounds,signalPaths,createVisibleQuery:()=>({invalidate(){},moving(){},settled(){},refresh(){},close(){}}),
@@ -59,8 +62,19 @@ function fixture(currentVisible=true,topInset,bottomInset){
  const previous={center:[40,12],zoom:8,bearing:15,pitch:20};
  nodes(tree).find(({node})=>node.type==='NativeMap').node.props.onRegionDidChange({nativeEvent:previous});render();
  selected=item;render();
- return {calls,item,items,previous,render,get tree(){return tree;},get selected(){return selected;}};
+ return {calls,item,previous,render,setItems:value=>{items=value;},setSelected:value=>{selected=value;},seedFan:value=>{assert.equal(nullStateSetters.length,2);nullStateSetters[1](value);},get items(){return items;},get tree(){return tree;},get selected(){return selected;}};
 }
+
+test('a fanned marker never returns after a source or selection changes and later reverts',()=>{
+ const f=fixture();f.setSelected(null);f.render();f.render();
+ const member={key:'fan:test-truck',coordinate:[38,9],cluster:null,count:1,itemId:f.item.id,status:'EMPTY',mine:false,offset:[58,0],display:[38.1,9.1]};
+ const connectorCount=()=>nodes(f.tree).find(({node})=>node.props.id==='capacity-fan-connectors').node.props.data.features.length;
+ f.seedFan({clusterKey:'synthetic-cluster',members:[member]});f.render();assert.equal(connectorCount(),1);
+ const original=f.items;f.setItems([...original]);f.render();f.render();assert.equal(connectorCount(),0);
+ f.setItems(original);f.render();f.render();assert.equal(connectorCount(),0,'returning to old rows cannot resurrect a stale fan');
+ f.seedFan({clusterKey:'synthetic-cluster',members:[member]});f.render();assert.equal(connectorCount(),1);
+ f.setSelected(f.item);f.render();f.render();f.setSelected(null);f.render();f.render();assert.equal(connectorCount(),0,'selection and Back cannot resurrect a stale fan');
+});
 
 test('selected exit uses an independent native button and restores the saved camera without selecting truck details',()=>{
  const f=fixture(),exit=nodes(f.tree).find(({node})=>node.props.accessibilityLabel==='Back to map');

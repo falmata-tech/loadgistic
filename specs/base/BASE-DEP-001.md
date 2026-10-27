@@ -487,6 +487,36 @@ And its dedicated CI invocation reports exactly one passed test, zero skipped, z
 And a failing preflight stops that shard before the long desktop and phone workflows\
 And a passing preflight never substitutes for those workflows or the all-shards-pass gate.
 
+Given a fresh fixture import projects public vehicle documents through current authority facts\
+When the fixture verifier checks the public Capacity rows\
+Then it requires the separate ownership, permission and operating-licence categories, including unverified categories\
+And it rejects missing, duplicate or unknown categories and verified claims without a review date or with expired evidence\
+And it does not restore the retired one-or-two-badge or generic-authority presentation.
+
+Regression: `tests/fixture-provider-authority.test.mjs`, using the actual public
+authority projector and the fixture verifier's shared assertion. This check
+changes verification only; it grants no authority and changes no customer data.
+
+Given fresh demo imports and the platform-admin verifier create a Featured day\
+When they prepare its schedule before persistence\
+Then they share the current 22:30–23:59 EAT configuration and validate one through eight ten-minute-minimum provider turns\
+And offline regression tests exercise that schedule builder and every active fixture producer\
+And historical morning schedules remain read-only compatibility cases, not new fixture defaults.
+
+Regression: `tests/supabase-fixtures.test.mjs`. Updating the prospective pilot
+importer's prepared data does not authorize running it against a hosted project.
+
+Given account-only discovery or offer matching supersedes an older search contract\
+When database regressions compare optimized and full projections\
+Then their reference retains the accepted current account and offer semantics, rather than requiring retired employee-profile or historical geography results\
+And independent account-name, handle and manager-first-name positives and unique employed-driver negatives remain explicit\
+And authorized driver details, complete JSON/count/order/pages, document filtering and caller-produced internal inputs remain covered\
+And temporary reference functions and fixture changes roll back without changing application functions, permissions or performance limits.
+
+Regression: `tests/sql/capacity-search-metadata-cost.sql` and
+`tests/sql/profile-search-page-cost.sql`. A restored clone's security/fixture
+differences remain reported and do not waive fresh CI checks.
+
 Evidence: `tests/e2e/fixture-contract-preflight.spec.ts`,
 `scripts/ci-fixture-preflight.mjs`, `tests/ci-browser-gate.test.mjs`,
 `.github/workflows/ci.yml`, and NR-21 in

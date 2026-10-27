@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as filters from '../src/lib/capacity-filter-values.js';
-function page({admin=false,actor=null,authError=null}={}){
- const calls=[],authCalls=[];
+function page({admin=false,actor=null,authError=null,workspaceGranted=true}={}){
+ const calls=[],authCalls=[],accessCalls=[];
  const source=readFileSync(new URL(admin?'../src/app/admin/capacity-network/page.tsx':'../src/app/page.tsx',import.meta.url),'utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  const node=(type,props)=>({type,props:props||{}}),imports={
   'react/jsx-runtime':{jsx:node,jsxs:node},'@/components/localization':{Text:'Text',Localized:'Localized'},'@/components/flash':{Flash:'Flash'},
   '@/lib/auth':{getCurrentUser:async options=>{authCalls.push(options);if(authError)throw authError;return actor;},requireUser:async(roles,options)=>{authCalls.push({roles,options});if(authError)throw authError;return actor;}},
+  '@/lib/workspace.js':{getWorkspaceAccess:async user=>{accessCalls.push(user);return{granted:workspaceGranted};}},
   '@/lib/private-capacity.js':{listAccountCapacity:async(_user,query)=>{calls.push(query);return{items:[],hasMore:false,nextCursor:null,pageSize:100};}},
   '@/lib/business-capacity/supabase':{listBusinessCapacity:async(_user,_workspace,query)=>{calls.push(query);return{items:[],hasMore:false,nextCursor:null,pageSize:100};}},
   '@/lib/capacity-market.js':{listPublicCapacityCursor:async query=>{calls.push(query);return{items:[]};}},
@@ -19,7 +20,7 @@ function page({admin=false,actor=null,authError=null}={}){
   'lucide-react':{Network:'Network'},'@/components/page-header':{PageHeader:'Header'}
  };
  const exports={};new Function('require','exports',compiled)(name=>{assert.ok(name in imports);return imports[name];},exports);
- return{calls,authCalls,render:query=>exports.default({searchParams:Promise.resolve(query)})};
+ return{calls,authCalls,accessCalls,render:query=>exports.default({searchParams:Promise.resolve(query)})};
 }
 function find(tree){if(Array.isArray(tree))return tree.map(find).find(Boolean);if(!tree||typeof tree!=='object')return;if(tree.type==='Feed')return tree;return find(tree.props?.children);}
 function businessPage(){
@@ -32,6 +33,40 @@ function businessPage(){
 test('public SSR canonicalizes valid groups before its one map request',async()=>{
  const current=page(),feed=find(await current.render({status:'PARTIAL,EMPTY',locationSource:'MOBILE,GPS'}));
  assert.equal(current.calls.length,1);assert.equal(current.calls[0].status,'EMPTY,PARTIAL');assert.equal(feed.props.query.locationSource,'GPS,MOBILE');
+});
+test('ordinary authorized provider entry opens work Home while private-only and retired-filter links do not imply Market intent',async()=>{
+ for(const role of ['TRANSPORTER','DRIVER'])for(const query of [{},{view:'private'},{loadType:'FTL'},{view:'private',loadType:'PTL'}]){
+  const current=page({actor:{id:'provider',role,active:true}});
+  await assert.rejects(current.render(query),/^Error: SYNTHETIC_REDIRECT:\/app\/home$/);
+  assert.equal(current.calls.length,0,'entry does not fetch a second public board');
+ }
+});
+test('active authorized providers enter existing Home market with all public query values and duplicates preserved',async()=>{
+ const query={view:['private','public','public'],loadType:['FTL','PTL'],status:['EMPTY','PARTIAL'],q:['Addis','Adama'],ownerDocs:['APPROVED','MISSING'],extra:['first','second'],empty:'',undefinedValue:undefined};
+ for(const role of ['TRANSPORTER','DRIVER']){
+  const actor={id:'provider',role,active:true},current=page({actor});let target;
+  await assert.rejects(current.render(query),error=>{target=error.message.replace('SYNTHETIC_REDIRECT:','');return target.startsWith('/app/home/market?');});
+  const url=new URL(target,'http://local.test');
+  for(const key of ['status','q','ownerDocs','extra'])assert.deepEqual(url.searchParams.getAll(key),query[key]);
+  assert.deepEqual(url.searchParams.getAll('view'),['public','public']);assert.equal(url.searchParams.get('empty'),'');assert.equal(url.searchParams.has('loadType'),false);assert.equal(url.searchParams.has('undefinedValue'),false);
+  assert.equal(current.calls.length,0,'entry does not fetch a second public board');assert.deepEqual(current.accessCalls,[actor]);assert.deepEqual(current.authCalls,[{allowLimited:true}]);
+ }
+});
+test('limited and inactive providers retain public entry while visitors and other roles never inherit provider redirects',async()=>{
+ for(const actor of [null,{id:'customer',role:'CUSTOMER',active:true},{id:'admin',role:'ADMIN',active:true},{id:'staff',role:'SUPPORT',active:true},{id:'inactive',role:'DRIVER',active:false}]){
+  const current=page({actor}),feed=find(await current.render({status:'EMPTY'}));assert.ok(feed);assert.equal(current.calls.length,1);assert.equal(current.accessCalls.length,0);
+ }
+ for(const role of ['TRANSPORTER','DRIVER']){const actor={id:'limited',role,active:true},current=page({actor,workspaceGranted:false});assert.ok(find(await current.render({status:'EMPTY'})));assert.equal(current.calls.length,1);assert.deepEqual(current.accessCalls,[actor]);}
+});
+test('public and signed-in business Capacity preserve canonical area location and radius',async()=>{
+ const area={currentAreaPlaceRef:'ethiopia-adama',currentArea:'Adama',currentAreaRadiusKm:'50',status:'PARTIAL'};
+ const publicPage=page(),publicFeed=find(await publicPage.render(area));
+ assert.equal(publicPage.calls.length,1);for(const key of ['currentAreaPlaceRef','currentArea','currentAreaRadiusKm'])assert.equal(publicPage.calls[0][key],area[key]);
+ assert.equal(publicFeed.props.query.currentAreaPlaceRef,area.currentAreaPlaceRef);
+ const actor={id:'synthetic-owner',role:'CUSTOMER',active:true,selected_business_workspace:{id:'synthetic-business',membershipRevision:1,permissions:{capacity:true}}};
+ const business=page({actor}),businessFeed=find(await business.render({...area,view:'private'}));
+ assert.equal(business.calls.length,1);for(const key of ['currentAreaPlaceRef','currentArea','currentAreaRadiusKm'])assert.equal(business.calls[0][key],area[key]);
+ assert.equal(businessFeed.props.query.currentAreaPlaceRef,area.currentAreaPlaceRef);
 });
 test('old Space needed links cannot leave an invisible map filter active',async()=>{
  const current=page(),feed=find(await current.render({status:'PARTIAL',loadType:'FTL'}));

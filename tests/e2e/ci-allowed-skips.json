@@ -82,6 +82,11 @@
       "project": "mobile-chromium"
     },
     {
+      "file": "cargo-photo-business-reads.spec.ts",
+      "title": "broker owner and permitted staff can read a private cargo photo until vehicle access is revoked",
+      "project": "mobile-chromium"
+    },
+    {
       "file": "driver-manual-capacity-location.spec.ts",
       "title": "assigned driver chooses a manual Capacity point, sees its source, and can return to phone",
       "project": "mobile-chromium"
@@ -178,7 +183,7 @@
     },
     {
       "file": "mobile-tracking-map.spec.ts",
-      "title": "Expo phone Tracking uses a route-first map, existing progress and public contact modal that closes before profile navigation",
+      "title": "Expo provider Tracking separates current status, route map, update, and vehicle details",
       "project": "desktop-chromium"
     },
     {
@@ -233,7 +238,7 @@
     },
     {
       "file": "preferred-corridor-parity.spec.ts",
-      "title": "preferred corridor keeps current capacity distinct on phone web and Expo",
+      "title": "preferred corridor keeps planned capacity distinct on phone web and Expo",
       "project": "desktop-chromium"
     },
     {
@@ -323,7 +328,7 @@
     },
     {
       "file": "truck-regular-editors.spec.ts",
-      "title": "Expo selected fleet corridor route saves updates removes without changing another vehicle or current capacity",
+      "title": "Expo selected fleet corridor route saves updates removes without changing another vehicle or planned capacity",
       "project": "desktop-chromium"
     },
     {

@@ -14,12 +14,13 @@ test('city and distance filter matches reported truck locations without GPS perm
   await page.addInitScript(()=>{(window as any).__geoCalls=0;Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition:(_:any,fail:any)=>{(window as any).__geoCalls++;fail({code:1,PERMISSION_DENIED:1});}}});});
   await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible();
   await openCapacityFilterDialog(page);
+  await page.locator('[data-filter-section="location"] > summary').click();
   await page.getByLabel('In or near a city',{exact:true}).fill('Adama');
   const suggestion=page.locator('#capacity-truck-city-results .place-result').first();
   await expect(suggestion).toBeVisible();await suggestion.click();
   const cityRef=await page.locator('input[name="truckCityPlaceRef"]').inputValue();
   expect(cityRef).toBeTruthy();
-  await page.getByLabel('Distance from city',{exact:true}).selectOption('25');
+  await page.getByRole('group',{name:'Vehicle location'}).getByLabel('Distance from city',{exact:true}).selectOption('25');
   await page.locator('.capacity-truck-location-filter').scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(captures,`${info.project.name}-city-filter.png`),scale:'css'});
   await page.getByRole('button',{name:'Show vehicles'}).click();
@@ -44,9 +45,9 @@ test('city and distance filter matches reported truck locations without GPS perm
   const invalid=await (await page.request.get('/api/public/capacity?truckCityPlaceRef=missing-city')).json();
   expect(invalid.items).toEqual([]);expect(invalid.filterError).toContain('Choose a suggested place');
   expect((await page.request.get(`/api/shared-capacity?truckCityPlaceRef=${encodeURIComponent(cityRef)}`)).status()).toBe(410);
-  await openCapacityFilters(page);
+  await openCapacityFilterDialog(page);
   await expect(page.getByLabel('In or near a city',{exact:true})).not.toHaveValue('');
-  await expect(page.getByLabel('Distance from city',{exact:true})).toHaveValue('25');
+  await expect(page.getByRole('group',{name:'Vehicle location'}).getByLabel('Distance from city',{exact:true})).toHaveValue('25');
 });
 
 test('blue location feedback stays by controls and the small map key opens within the screen',async({page,context}: {page:any;context:any},info:any)=>{

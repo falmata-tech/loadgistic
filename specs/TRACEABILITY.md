@@ -9,6 +9,216 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- FEAT-UIX/MOB/CAP-001 work-first Home and Planned/Preferred presentation:
+  current-source Chrome covers fleet-only/driving owners, ordinary sign-in/root,
+  selected-tab continuity and work return from Network/deep vehicle records.
+  Desktop1280, phone web320/390 and Expo's driving-owner three-tab en/am/om fit
+  pass. Translated Fleet action/location geometry, focused open/Cancel, selected
+  map and visible profile facts pass with saved facts/actor flags unchanged for
+  that review. Source hashes, captures, withdrawn harness claims and limits:
+  `.local/broker-capacity-resume-20261026/terminal-browser-handoff.json`.
+  Renderer regressions cover geometry combinations, hidden coverage and fitting
+  without inventing a reported position; actual actors had reported locations.
+  Admin labels have source/test evidence only.
+
+  R6 root JS/type quality1300/1300 passes69.710s:
+  `.local/launch-experience-20261026/gates/work-first-planned-r6-root-gates.json`.
+  Required CI validation now executes the three new discovery parity SQL suites;
+  `ci-browser-gate.test.mjs` proves registration and rollback, red before/green
+  after, with33 focused tests passing. Workflow lint passes108 scripts/actionlint;
+  ShellCheck is unavailable. Native R3 types9.441s, lint7.177s, tests412/412,
+  strict translations784/784 and Android JavaScript export53.898s pass in
+  `work-first-planned-r3-native-gates.json` beside it. R3 pinned1,856 inputs and
+  digest24b0d45ea329d03bc6cf186349f3c135027ee37955478ffeaa34418ca64d035d.
+  R4 additionally inventories two existing workflow files; the only shared-input
+  differences are the CI regression and generated local Next type include.
+  Native executable inputs remain unchanged.
+  R4's exact-head CI40408008712 passed mobile but stopped at the stale fixture
+  vehicle-badge assertion before browser execution. The verifier-only repair
+  requires all three current categories; three regressions fail before/pass
+  after, and33 focused tests pass. The actual read-only14-row API reproduction
+  is `.local/launch-experience-20261026/ci-fixture-authority-repair-api.json`;
+  the exact old guard fails and the current assertion passes without writes.
+  `ci-fixture-authority-repair-plan.json` there preserves diagnosis and limits.
+  CI40410314142 then passed the preceding11 setup verifiers before the last
+  platform-admin Featured save rejected its obsolete morning configuration.
+  Current local/pilot fixture preparation and that verifier share the actual
+  schedule defaults/validator through `managedFixtureFeaturedSchedule`.
+  The red/green regression and all1..8 ten-minute-minimum evening schedules pass
+  with41 focused tests. `ci-featured-fixture-repair-plan.json` in the same release
+  folder records scope and limits; no importer was run against hosted services.
+  CI40412255361 passed complete fresh setup and mobile before the SQL batch
+  reached a retired employee-name expectation. Earlier R4/R5 receipts are
+  preserved; native/build application inputs remain unchanged.
+
+- BASE-DEP/CAP/MKT-001 current-contract SQL regression audit:
+  `.local/ci-sql-audit-20261026/batch-results.json` records all97 required suites
+  against a clone prepared with exact212–217 sources:94 pass, two stale search
+  assertions and one clone-only PostGIS service-role read-permission difference.
+  All97 full row/function/ACL/relation rollback checks are exact. The repaired
+  metadata test passes1.374s; the current-reference profile test passes74.974s
+  after deduplicating repeated caller-producer scans. Its first caller-fixture
+  revision timed out at the unchanged120s bound; that failed result is preserved.
+  Current references retain account-only/whole-offer semantics, full JSON/count/
+  order/pages/docs and actual producer-generated internal inputs. Independent
+  account-name/handle/manager-first-name positives and unique employee-name
+  negatives retain authorized vehicle-driver details. No application function,
+  permission, dataset or performance gate changed. Clone data is older than CI;
+  the PostGIS check remains required there. Only two SQL files differ from R6's
+  source inventory, so its unchanged JS/type/build evidence is reused alongside
+  current static/spec checks and these real SQL reruns; new exact-head CI remains
+  required. Backup/source/authority and individual failures stay protected in
+  the same audit directory.
+  Current web build passes87.644s with unchanged inputs/metadata restored:
+  `.local/provider-home-entry-20261026/work-first-planned-web-build-r2.json`.
+  The compiled preview is pinned by `work-first-planned-web-r2-installed.json`
+  beside it, build`qoJzaaesAJxvw5uWFzgIU`, localAPI55321/TLS3443.
+  The earlier483.747s type-phase build timeout is retained, not a passed build.
+  Local Android APK/AAB build passes153.803s: version1.2.0/code10, arm64/x86_64,
+  production API target, existing development/debug certificate only,565 runtime
+  inputs unchanged. Receipt:
+  `.local/launch-experience-20261026/android-final/build-receipt.json`.
+  Static permissions/signature, two-ABI/16KB structure, identical Hermes bundle
+  and known-secret-marker checks pass in `archive-qualification.json` beside it.
+  The build pins its original worktree input hashes. The exact-byte installed
+  emulator renders populated anonymous Capacity; repeated Android System UI ANRs
+  block the first Filter tap after one Wait recovery. The owned AVD is stopped.
+  `.local/launch-experience-20261026/android-final/standalone-smoke-a577819e/result.json`
+  preserves that partial result; filters/details/Featured/hardware Back and
+  authenticated production-backend acceptance remain unqualified. No product
+  crash diagnosis follows from the system dialog. Source-commit equivalence is
+  in `work-first-commit-artifact-equivalence.json` under the same release folder.
+  No upload key, full installed acceptance, current exact-head CI or Play
+  readiness is claimed.
+  Relevant source/UI tests include `provider-home-entry.test.mjs`,
+  `provider-home-tabs-helper.ts`, `provider-owner-fleet.spec.ts`,
+  `truck-regular-editors.test.mjs` and `provider-fleet-showcase.test.mjs` in their
+  existing native/root/E2E directories. Current Android artifact qualification,
+  exact-source CI, signing and hosted delivery remain separate.
+
+- FEAT-SIM/GPS-001 local runtime restart: existing ten-target motion runner has
+  accepted GPS fixes and advancing phone/GPS timestamps;9GPS+1phone capacities
+  are fresh. The normal marketplace supervisor reached8healthy ticks after
+  five-control activation and reviewed empty-backlog checkpoint recovery.
+  All22 reviewed historical jobs and scope/permissions stayed intact. No
+  Capacity/sharing job was due during this finite one-hour sample; next Capacity
+  is October27 08:00UTC and needs a later active worker. Hosted recurrence is
+  unqualified. Runtime proof:
+  `.local/provider-home-entry-20261026/local-demo-runtime-qualified.json`;
+  activation/rehearsal/checkpoint history: `.local/demo-world-startup-20261026/`.
+  Normal status/restart limits are in
+  [the local operator guide](../docs/operations/DEMO-WORLD-LOCAL-SUPERVISOR.md).
+
+- FEAT-MOB/CAP-001 localized freshness:50 focused actual-renderer tests pass,
+  including12 am/om days/unavailable cases. Protected source/test proof:
+  `.local/native-freshness-20261026/source-result.json`. Actual web am/om320/390
+  qualifies Planned/location dialogs, vehicle and profile ages4/4; Expo qualifies
+  Map/Location/Vehicle4/4 in `actual-web.json` and `actual-expo.json` there.
+  Expo's earlier profile captures are withdrawn. Only direct Oromo320 profile
+  proof against its own returned DTO is qualified in
+  `actual-expo-profile-terminal.json`; other profile neighbors retain renderer/
+  source evidence. All contexts closed with no Auth/business writes or runtime
+  errors in these final reviews. No real hidden Preferred Area row existed, so
+  its geometry-aware web-caption correction has11 renderer regressions only.
+
+- FEAT-CAP/GEO-001 local discovery/profile parity and performance:
+  migrations214/215/216 and producer-only217 are installed locally. The217
+  addendum in FEAT-CAP-001 owns22 PUBLIC dispatcher/fast checks, whole-offer/
+  non-geographic AND/privacy negatives, complete account-JSON parity, exact
+  recovery and the unchanged5,000-record gate. Final source-bound handoff:
+  `.local/capacity-offers217/final-local-qualification-handoff.json`.
+  `postcheck-only-run/receipt.json` there passes36.716s; the complete canonical
+  gate passes51.498s in `scale-5000-after217-cleanup-receipt.json`, preserving
+  every5s/count/order/filter/lookahead/payload limit. Independent cleanup finds
+  zero synthetic vehicles/drivers and exact source/authority/data/ledger pins.
+  The first operator RuntimeError cause remains UNKNOWN; original failures are
+  preserved, with no reapply or automatic recovery. Earlier21652.602s performance
+  evidence remains valid for its source. This is one isolated local pass, not
+  repeated reliability, hosted performance or hosted installation proof.
+
+- FEAT-CAP/UIX-001 bounded compiled-preview broker and sign-in walkthrough:
+  `.local/broker-capacity-resume-20261026/broker217-production-terminal-handoff.json`
+  pins the current compiled build and217 postcheck. Owner passes private Empty
+  Area at the exact earlier Route endpoint, private Partial Route, public Partial
+  Area and existing Preferred coverage; Staff repeats the original private Area
+  case. Each covers actual Apply/result/detail/Back/reopen/reload. Current private
+  baseline is8 vehicles (2 Empty/6 Partial); public profile comparison requires
+  the matching account and matching_trucks>=1, not equal account/vehicle counts.
+  The Preferred case overlaps Planned Area and returns a Planned reason;
+  independent Preferred-only OR is not claimed. The first one-cluster helper
+  timeout remains in `broker217-owner-receipt.json`; the Preferred-only resume
+  passes separately. Exact Owner/Staff membership revision and permissions are
+  unchanged; all normal global logouts303/private401 pass, contexts close and
+  business writes are zero. Private business profile search intentionally ignores
+  map filters, so no profile/map filter parity assertion was made. The full
+  broker matrix and current Expo filter walkthrough remain unfinished.
+
+  The same handoff includes the prior managed driver's single compiled normal
+  OTP replay: identity200, `/app/home`, three work-first tabs, Edit planned
+  capacity and logout303/private401 pass. `signin-only-receipt.json` beside it
+  retains exact response paths/timestamps and no recurring runtime error.
+  Earlier `signin-runtime-error-extract.json`, the name-only Error, Connection
+  closed and Suspense fallback remain preserved; one clean replay does not
+  retroactively classify those failures. All actors are released. Earlier
+  physical/Market-first and installed broker receipts qualify their recorded
+  bundles only; workspace-admin, later physical/current standalone APK, CI and
+  hosted qualification remain pending. Current finite local motion and marketplace
+  restart evidence is recorded in the FEAT-SIM/GPS-001 entry above; use its normal
+  status commands for expiry rather than treating that sample as always-on hosting.
+
+- FEAT-ENT/MOB-001 business Tracking transport: the shared strict path allowlist
+  now reaches existing authenticated sharing/action/proof handlers. The actual
+  adapter and Metro proxy regressions in
+  [`business-tracking-transport.test.mjs`](../apps/mobile/tests/business-tracking-transport.test.mjs)
+  retain malformed-path and HTTP403 denials. Owner/Staff Chrome and Expo task
+  receipts are under
+  `.local/play-code10-upload-20261025/broker-supply/local-tracking-ui/`;
+  installed development-client list/detail/Sharing/Team/Back/refresh/sign-out
+  evidence is pinned in
+  `.local/launch-experience-20261026/native-fix-review/team-native-review.json`.
+  Staff received no live location or privileged actions. No approval/proof
+  mutation was exercised on the CREATED Demo. This is local role evidence,
+  not qualification of the final standalone APK or hosted reviewer accounts.
+
+- FEAT-CAP/GEO/MOB-001 availability matching: migrations211/213 are applied
+  only to the backed-up local preview. The pure cross-shape regression in
+  [`audit-geographic-matching.test.mjs`](../tests/audit-geographic-matching.test.mjs)
+  and [`capacity-offer-union.sql`](../tests/sql/capacity-offer-union.sql) preserve
+  whole-offer/visibility/permission denials while requiring Area queries to find
+  matching Route offers. Rehearsal, rollback and local installation receipts are
+  under `.local/capacity-area-213/`. Installed Android Staff searches the exact
+  offered city, opens the matching vehicle and retains the filter after reopening;
+  `.local/launch-experience-20261026/native-installed-review/` records the actual
+  task and its limits. This earlier installed role evidence remains tied to
+  that bundle; current source gates are linked above. The complete broker
+  public/private Area/Route filter matrix remains unfinished. No hosted rollout,
+  final APK or exact-source CI qualification follows from these local receipts.
+
+- FEAT-UIX-001 company footer: the local candidate renders one compact
+  MarketVision Technology link and office row in the shared web layout. Actual
+  Chrome review covers Capacity, Featured, Track, About and provider navigation;
+  phone attribution and fixed-navigation clearance are asserted in
+  [`public-app-shell-review.spec.ts`](../tests/e2e/public-app-shell-review.spec.ts)
+  and [`unified-shell-auth.spec.ts`](../tests/e2e/unified-shell-auth.spec.ts).
+  Source hashes, captures and measured geometry are in
+  `.local/play-code10-upload-20261025/footer-review/final-review.json`.
+  Native About is unchanged; release status remains in current progress.
+
+- FEAT-LUX/UIX/MOB-001 compact Capacity entry: the redundant welcome paragraph
+  is removed, with the shared heading, map choices and44px native tabs retained.
+  [`platform-narrative.test.mjs`](../tests/platform-narrative.test.mjs) and
+  [`marketplace-map-background.test.mjs`](../apps/mobile/tests/marketplace-map-background.test.mjs)
+  cover the changed presentation; actual phone web/Expo en/am/om filter/search
+  and private sign-in reviews, settled public markers and final source hashes
+  are in `.local/play-code10-upload-20261025/welcome-map-review/final-review.json`.
+  The source-matched footer Chrome regression passes1/1; the installed APK and
+  hosted release are separate pending qualification.
+
+## Earlier evidence — retain its source and date
+
+The records below explain previous repairs. Their gates do not qualify the
+current candidate; current rollout and unfinished work remain in PROGRESS.
+
 - BASE-DEP-001: provider accessibility scans now await exact canonical route
   completion. The fleet-owner Home fixture streams a redirect to its vehicle
   view; prefix matching allowed Axe to run in the document being replaced.
@@ -91,7 +301,8 @@ Use the historical record only for a dated result or decision provenance.
 | [FEAT-APP-001](features/FEAT-APP-001.md) | Immediate transport-provider signup | [tests/business-workspace-ui.test.mjs](../tests/business-workspace-ui.test.mjs) |
 | [FEAT-BIL-001](features/FEAT-BIL-001.md) | Provider access without plans or platform payments | [tests/provider-access-without-plans.test.mjs](../tests/provider-access-without-plans.test.mjs); [tests/sql/provider-billing-retired.sql](../tests/sql/provider-billing-retired.sql) |
 | [FEAT-CAL-001](features/FEAT-CAL-001.md) | Week-first date selection | [tests/date-calendar.test.mjs](../tests/date-calendar.test.mjs) |
-| [FEAT-CAP-001](features/FEAT-CAP-001.md) | Public truck-capacity signals and provider publication | [tests/e2e/capacity-filter-drawer.spec.ts](../tests/e2e/capacity-filter-drawer.spec.ts); [tests/e2e/capacity-people-search.spec.ts](../tests/e2e/capacity-people-search.spec.ts); [tests/e2e/mobile-capacity-multiple-options.spec.ts](../tests/e2e/mobile-capacity-multiple-options.spec.ts); [tests/e2e/capacity-signal-dialogs.spec.ts](../tests/e2e/capacity-signal-dialogs.spec.ts); [tests/e2e/fleet-task-workspace.spec.ts](../tests/e2e/fleet-task-workspace.spec.ts); [apps/mobile/tests/multiple-truck-filters.test.mjs](../apps/mobile/tests/multiple-truck-filters.test.mjs); [apps/mobile/tests/truck-regular-editors.test.mjs](../apps/mobile/tests/truck-regular-editors.test.mjs); [tests/capacity-filter-values.test.mjs](../tests/capacity-filter-values.test.mjs); [tests/e2e/public-map-shell-layout.spec.ts](../tests/e2e/public-map-shell-layout.spec.ts); [tests/capacity-map-camera.test.mjs](../tests/capacity-map-camera.test.mjs); [tests/capacity-filter-http.test.mjs](../tests/capacity-filter-http.test.mjs) |
+| [FEAT-CAP-001](features/FEAT-CAP-001.md) | Public truck-capacity signals and provider publication | [tests/e2e/capacity-filter-drawer.spec.ts](../tests/e2e/capacity-filter-drawer.spec.ts); [tests/e2e/capacity-people-search.spec.ts](../tests/e2e/capacity-people-search.spec.ts); [tests/e2e/mobile-capacity-multiple-options.spec.ts](../tests/e2e/mobile-capacity-multiple-options.spec.ts); [tests/e2e/capacity-signal-dialogs.spec.ts](../tests/e2e/capacity-signal-dialogs.spec.ts); [tests/e2e/fleet-task-workspace.spec.ts](../tests/e2e/fleet-task-workspace.spec.ts); [tests/e2e/truck-regular-editors.spec.ts](../tests/e2e/truck-regular-editors.spec.ts); [tests/truck-regular-editors.test.mjs](../tests/truck-regular-editors.test.mjs); [apps/mobile/tests/multiple-truck-filters.test.mjs](../apps/mobile/tests/multiple-truck-filters.test.mjs); [apps/mobile/tests/truck-regular-editors.test.mjs](../apps/mobile/tests/truck-regular-editors.test.mjs); [tests/capacity-filter-values.test.mjs](../tests/capacity-filter-values.test.mjs); [tests/e2e/public-map-shell-layout.spec.ts](../tests/e2e/public-map-shell-layout.spec.ts); [tests/capacity-map-camera.test.mjs](../tests/capacity-map-camera.test.mjs); [tests/capacity-filter-http.test.mjs](../tests/capacity-filter-http.test.mjs) |
+| [FEAT-CSP-001](features/FEAT-CSP-001.md) | Local candidate: private cargo-space photos, requests and freshness filters | [tests/cargo-space-photo.test.mjs](../tests/cargo-space-photo.test.mjs); [tests/cargo-space-photo-routes.test.mjs](../tests/cargo-space-photo-routes.test.mjs); [tests/cargo-photo-worker.test.mjs](../tests/cargo-photo-worker.test.mjs); [tests/private-cargo-photo-filter.test.mjs](../tests/private-cargo-photo-filter.test.mjs); [tests/e2e/cargo-photo-business-reads.spec.ts](../tests/e2e/cargo-photo-business-reads.spec.ts); [apps/mobile/tests/cargo-space-photo-camera.test.mjs](../apps/mobile/tests/cargo-space-photo-camera.test.mjs); [tests/sql/cargo-space-photos.sql](../tests/sql/cargo-space-photos.sql); [tests/sql/cargo-space-photo-filter.sql](../tests/sql/cargo-space-photo-filter.sql) |
 | [FEAT-CON-001](features/FEAT-CON-001.md) | Local candidate: signed-in Network, Connections and Shared capacity; account-based Featured | [tests/account-directory.test.mjs](../tests/account-directory.test.mjs); [tests/account-shared-capacity.test.mjs](../tests/account-shared-capacity.test.mjs); [tests/sql/account-connections.sql](../tests/sql/account-connections.sql); [tests/sql/account-shared-capacity.sql](../tests/sql/account-shared-capacity.sql); [tests/sql/featured-provider-rounds.sql](../tests/sql/featured-provider-rounds.sql); [tests/e2e/private-capacity-network.spec.ts](../tests/e2e/private-capacity-network.spec.ts); [tests/e2e/platform-narrative.spec.ts](../tests/e2e/platform-narrative.spec.ts) proves the About footer in all three languages on web and Expo. Local checks are in progress; no hosted release is claimed. |
 | [FEAT-DAT-001](features/FEAT-DAT-001.md) | Supply-first local development dataset | [src/lib/capacity-market.js](../src/lib/capacity-market.js); [tests/capacity-market.test.mjs](../tests/capacity-market.test.mjs); [tests/demo-corridor-fixture.test.mjs](../tests/demo-corridor-fixture.test.mjs); [tests/supabase-fixtures.test.mjs](../tests/supabase-fixtures.test.mjs) |
 | [FEAT-ENT-001](features/FEAT-ENT-001.md) | Shipper/broker workspaces for shared capacity and shipment coordination | [tests/business-directory.test.mjs](../tests/business-directory.test.mjs); [tests/business-directory-client.test.mjs](../tests/business-directory-client.test.mjs); [tests/business-directory-localization.test.mjs](../tests/business-directory-localization.test.mjs); [tests/business-workspace-ui.test.mjs](../tests/business-workspace-ui.test.mjs); [tests/sql/business-directory-verification.sql](../tests/sql/business-directory-verification.sql); [tests/sql/business-capacity-sharing.sql](../tests/sql/business-capacity-sharing.sql); [apps/mobile/tests/business-workspaces.test.mjs](../apps/mobile/tests/business-workspaces.test.mjs); [tests/e2e/play-review-business.spec.ts](../tests/e2e/play-review-business.spec.ts) |
@@ -105,7 +316,7 @@ Use the historical record only for a dated result or decision provenance.
 | [FEAT-LST-001](features/FEAT-LST-001.md) | Bounded map loading and operational list navigation | [tests/sql/support-history.sql](../tests/sql/support-history.sql); [tests/support-history.test.mjs](../tests/support-history.test.mjs) |
 | [FEAT-LUX-001](features/FEAT-LUX-001.md) | Clear launch journeys and contextual language | [tests/browser-request.test.mjs](../tests/browser-request.test.mjs); [tests/provider-shipment-response.test.mjs](../tests/provider-shipment-response.test.mjs) |
 | [FEAT-MAT-001](features/FEAT-MAT-001.md) | Coordinate-authoritative marketplace matching | [tests/audit-geographic-matching.test.mjs](../tests/audit-geographic-matching.test.mjs); [tests/capacity-filter-places.test.mjs](../tests/capacity-filter-places.test.mjs) |
-| [FEAT-MKT-001](features/FEAT-MKT-001.md) | Frictionless public capacity marketplace | [tests/transporter-search.test.mjs](../tests/transporter-search.test.mjs); [tests/transporter-search-web.test.mjs](../tests/transporter-search-web.test.mjs) |
+| [FEAT-MKT-001](features/FEAT-MKT-001.md) | Frictionless public capacity marketplace | [tests/transporter-search.test.mjs](../tests/transporter-search.test.mjs); [tests/transporter-search-web.test.mjs](../tests/transporter-search-web.test.mjs); [apps/mobile/tests/transporter-search.test.mjs](../apps/mobile/tests/transporter-search.test.mjs); [tests/e2e/capacity-profile-filter-empty.spec.ts](../tests/e2e/capacity-profile-filter-empty.spec.ts) |
 | [FEAT-MOB-001](features/FEAT-MOB-001.md) | Native transporter and visitor application | [tests/e2e/mobile-private-entry.spec.ts](../tests/e2e/mobile-private-entry.spec.ts); [tests/e2e/preferred-corridor-parity.spec.ts](../tests/e2e/preferred-corridor-parity.spec.ts); [apps/mobile/tests/personal-identity-editors.test.mjs](../apps/mobile/tests/personal-identity-editors.test.mjs); [apps/mobile/tests/native-text.test.mjs](../apps/mobile/tests/native-text.test.mjs); [apps/mobile/tests/button-accessibility.test.mjs](../apps/mobile/tests/button-accessibility.test.mjs); [tests/e2e/mobile-review-navigation.spec.ts](../tests/e2e/mobile-review-navigation.spec.ts); [apps/mobile/tests/account-session.test.mjs](../apps/mobile/tests/account-session.test.mjs) |
 | [FEAT-NET-001](features/FEAT-NET-001.md) | Retired demand-side member network | See named ownership in the spec. |
 | [FEAT-NOT-001](features/FEAT-NOT-001.md) | Chat and driver handover alerts with visible-message read receipts | [tests/sql/business-native-push.sql](../tests/sql/business-native-push.sql); [tests/chat-read-alerts.test.mjs](../tests/chat-read-alerts.test.mjs) |

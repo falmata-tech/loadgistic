@@ -57,3 +57,10 @@ test('multi-option database groups are canonical, independent and strictly bound
  assert.equal(capacityDatabaseFilters({}).location_source,null);
  for(const filters of [{status:'EMPTY,FULL'},{vehicleCategory:'Cargo van,Unknown'},{stopOption:'MULTI_PICK,'},{locationSource:'GPS,UNKNOWN'},{status:'EMPTY,'.repeat(40)},{status:'PARTIAL',loadType:'FTL'}])assert.throws(()=>capacityDatabaseFilters(filters));
 });
+
+test('minimum estimated space reaches the database only when selected',()=>{
+ assert.equal(Object.hasOwn(capacityDatabaseFilters({}),'min_available_percent'),false);
+ assert.equal(capacityDatabaseFilters({minAvailablePercent:'40'}).min_available_percent,40);
+ assert.equal(capacityDatabaseFilters({minAvailablePercent:'100'}).min_available_percent,100);
+ for(const value of ['0','101','40.5','040'])assert.throws(()=>capacityDatabaseFilters({minAvailablePercent:value}),/INVALID_CAPACITY_FILTER/);
+});

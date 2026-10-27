@@ -5,13 +5,37 @@ import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,MANAGED_COURIER_FIXTURE_VEHICLES,
-  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS
+  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS,
+  managedFixtureFeaturedSchedule
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
 import {FEATURED_TRUCK_DAYS} from '../src/lib/featured-trucks.js';
+import {buildFeaturedDaySchedule,validateFeaturedScheduleConfig} from '../src/lib/expo-broadcast.js';
 
 const root=path.resolve(import.meta.dirname,'..');
 const importer=path.join(root,'scripts','import-supabase-fixtures.mjs');
+
+test('fresh Featured fixtures use the actual evening contract for every supported account count',()=>{
+  for(let count=1;count<=8;count++){
+    const fields=managedFixtureFeaturedSchedule(count),config=fields.schedule_config_json;
+    assert.equal(fields.broadcast_start_time,'22:30');assert.equal(fields.broadcast_end_time,'23:59');
+    assert.equal(fields.schedule_mode,'AUTO');assert.doesNotThrow(()=>validateFeaturedScheduleConfig(config));
+    const schedule=buildFeaturedDaySchedule('2035-01-01',count,{config});
+    assert.equal(schedule.walkthroughs.length,count);
+    assert.equal(schedule.entries[0].starts_at,'2035-01-01T19:30:00.000Z');
+    assert.equal(schedule.entries.at(-1).ends_at,'2035-01-01T20:59:00.000Z');
+    assert.ok(schedule.walkthroughs.every(turn=>Date.parse(turn.ends_at)-Date.parse(turn.starts_at)>=10*60_000));
+  }
+  for(const count of [0,9,NaN])assert.throws(()=>managedFixtureFeaturedSchedule(count),/FEATURED_TARGET_COUNT_INVALID/);
+});
+
+test('every current Featured fixture producer shares the validated schedule instead of copying retired hours',()=>{
+  for(const file of ['scripts/import-supabase-fixtures.mjs','scripts/import-production-pilot.mjs','scripts/verify-supabase-platform-admin.mjs']){
+    const source=fs.readFileSync(path.join(root,file),'utf8');
+    assert.match(source,/managedFixtureFeaturedSchedule\((?:featured\.length|1)\)/,file);
+    assert.doesNotMatch(source,/(?:dayStart|broadcast_start_time):\s*['"](?:07:30|08:30)['"]/,file);
+  }
+});
 
 test('fresh local fixtures preserve public, both and private sharing without opening absent policies',()=>{
   const capacities=[

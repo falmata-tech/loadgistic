@@ -21,6 +21,25 @@ inside Fleet. Admin/staff management stays web-only. No new billing/plans.
 
 ## Architecture and readiness
 
+### Private Fleet telemetry presentation — October25 qualification
+
+Given a provider opens one of their registered devices in web or Android Fleet\
+When its normalized report includes speed, heading and device/received timestamps\
+Then both interfaces present those supported facts with clear units and concise
+labels, retaining null as unavailable rather than inventing zero or a signal\
+And telemetry age/freshness is not presented as proof of an open TCP connection\
+And supported vibration/alarm values remain visible in the authorized device
+report, while exact coordinates/device identifiers remain private\
+And command availability comes from the exact device's enabled capabilities;
+a wireless receive-only unit does not display engine controls\
+And queued, sent, acknowledged, failed and expired command outcomes remain
+distinct; sending a command never implies the device executed it.
+
+GPS ingestion supports provisioned real devices. The separate simulators retain
+their explicit synthetic-only allowlists and real-device takeover fences; adding
+a real tracker never enrolls it in simulation. The first physical GT06 bench
+remains receive-only below; a generic GT06 name does not enable physical commands.
+
 Use the official pinned Traccar6.16.0 gateway and vendor protocol decoders,
 dedicated persistent PostgreSQL storage and a bounded durable bridge. Enable only
 configured listeners; gateway administration/API and database stay private.
