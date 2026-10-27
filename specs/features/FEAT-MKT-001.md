@@ -65,6 +65,12 @@ to the map's selected truck facts or route/document filters. Preserve privacy,
 assignment/availability eligibility and blocked-profile exclusions; do not add
 unavailable/unassigned profiles, expose extra driver data or broaden private access.
 
+Given transporter search finds an account while vehicle-map filters are active\
+When its account card shows the vehicle count and the person opens its vehicles on the map\
+Then the count identifies the account's eligible vehicles in this audience, independently of the map filters\
+And the map still applies the selected vehicle filters to that account\
+And an empty filtered map offers a direct way to review those filters without clearing them or changing the selected account.
+
 Given a visitor opens the profile-search drawer on web, phone web or mobile\
 Then its title and entry control say Transporter search in the chosen language\
 And a visible, accessible Clear search control beside the input immediately clears the text, results, queued query and result page\

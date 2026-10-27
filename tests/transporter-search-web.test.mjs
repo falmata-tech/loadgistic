@@ -66,6 +66,7 @@ test('provider cards lead with chosen account identity without legacy category s
   view.requests[0].resolve({ok:true,json:async()=>({items:[{key:'provider',kind:'OWNER_OPERATOR',accountName:'Blue Road',managerName:'Meron',title:'Legacy first name',handle:'blue-road',matching_trucks:1,owner:'PRIVATE-FATHER-NAME',city:'Adama'}],total:1,hasMore:false})});await settle();tree=view.render();
   assert.equal(text(find(tree,'h3')),'Blue Road');assert.equal(text(find(tree,'span',node=>node.props.className==='capacity-result-identifier')).replace(/\s+/g,''),'@blue-road');assert.ok(text(tree).includes('Account manager'));assert.ok(text(tree).includes('Meron'));assert.ok(!text(tree).includes('PRIVATE-FATHER-NAME'));
   const card=find(tree,'article');assert.equal(card.props.className,'capacity-result-card');assert.ok(!text(tree).includes('Owner-operator'));assert.ok(text(tree).includes('Transport Provider'));
+  assert.ok(text(card).includes('{count} vehicles'));assert.ok(!text(card).includes('{count} matching vehicles'));
  }finally{view.close();}
 });
 

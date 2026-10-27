@@ -84,6 +84,17 @@ test('empty private Capacity shows an actionable Network path for the current bu
   action.props.onPress();assert.deepEqual(view.navigations,['/directory']);assert.equal(view.mapLoads.length,1);
  }finally{view.close();}
 });
+test('a selected account with restrictive private vehicle filters offers filter review, not a missing-connection message',async()=>{
+ const view=harness({mode:'private',business:true,emptyMap:true,initialFilters:{provider:'matching-company',status:'EMPTY'}});try{
+  view.render();await settle();let tree=view.render();
+  assert.ok(text(tree).includes('No matching available vehicles.'));
+  assert.ok(!text(tree).includes('No vehicles are shared with this account yet.'));
+  const review=find(tree,node=>node.type==='Pressable'&&text(node)==='Review filters');assert.ok(review);
+  review.props.onPress();tree=view.render();
+  assert.equal(find(tree,node=>node.type==='DiscoveryFilters').props.initial.status,'EMPTY');
+  assert.equal(view.mapLoads.length,1,'reviewing filters must preserve the map request until they are applied');
+ }finally{view.close();}
+});
 test('private filtered, provider-account and public empty maps keep their separate outcomes',async()=>{
  for(const options of [
   {mode:'private',business:true,emptyMap:true,initialFilters:{status:'EMPTY'},message:'No matching available vehicles.',action:null},

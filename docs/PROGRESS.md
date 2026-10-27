@@ -330,15 +330,56 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
 9. Pending: accurate current Play policy/reviewer/background-location evidence,
    one Closed Alpha upload and independent bundle/track/review readback. Preserve
    Internal, tester lists, country eligibility and empty public Production.
-10. In progress, read-only: enumerate each real public/private filter option and
-   its matching demo count on web/native. Fill approved demo-only gaps in vehicle
-   type, capacity/load, routes, Preferred corridor, location/source and reviewed
-   document states; do not fabricate verification or promise every combination.
-   The existing hosted mainc262 public audit completed64 cases over48 vehicles;
-   eight visible options returned zero, including GPS and Fresh. Preferred routes
-   exist20 times but no Preferred area was returned. This is a live baseline,
-   not a candidate pass; exact option/count evidence is retained in
-   `.local/play-code10-upload-20261025/demo-filter-audit/coverage-matrix.json`.
+10. Seven frozen, realistic broker loads now pass exact-result checks in current
+   local Chrome and Expo previews: small Mekelle shared cargo, private Dubti van,
+   Awash–Mieso shared stock and reverse Preferred corridor, Shashamane–Batu
+   heavy trailer, Addis–Dessie full load with document/freshness variants,
+   Adama–Melka Hida direction choice, and Dawo through a Preferred area. The
+   broker-team Staff member also retrieves the exact private van in both
+   previews and signs out with prior private access denied. The Expo public
+   Adama/Dawo cases ran signed out after repeated synthetic Owner sign-ins hit
+   the local OTP rate limit. Earlier Expo Owner runs independently passed the
+   other five base cases and their variants; the complete mobile evidence is a
+   union of those receipts, not one uninterrupted session. No business record
+   was written. The initial vehicle-picker audit check counted the underlying
+   load-status control; its repair now verifies all17 vehicle choices and the
+   exact selected set, rather than dropping that assertion. Read-only Auth
+   reconciliation after global sign-out found zero Owner test sessions.
+
+   This is a bounded load-matching audit, not proof of every filter combination
+   or actual cargo fit. Of101 locally public vehicles, the seven searches narrow
+   results to0–2; J7's two geographically valid vans include one that accepts
+   full loads only, so the broker must still inspect load preference. The
+   immediate Expo private-map screenshot preceded marker settlement, while a
+   subsequent marker/detail interaction succeeded; capture settled state in any
+   visual comparison. The local public demo has17/17 vehicle types, GPS9,
+   Preferred-area4 and Partial40, but no within12-hour capacity example and no
+   Partial Planned Area. The currently hosted48-vehicle public snapshot has
+   GPS0, Preferred-area0, Fresh0 and16/17 types. A separate read-only hosted
+   Mekelle search missed a Route-endpoint Area match that the local SQL repair
+   returns. Do not call hosted data or schema equivalent to the local candidate.
+   Evidence and exact replay: `.local/broker-tough-load-20261026/` and
+   `.local/live-public-filter-audit-20261026/`.
+
+   Broker UX finding closed locally: independent account search used to label
+   its count “matching vehicles” even though the active map filters could then
+   yield none. Web and Expo now show the account vehicle count as “vehicles”;
+   an empty filtered map offers Review filters while retaining the account and
+   filter draft. The focused web/native tests pass (65 total); local desktop
+   Chrome and Expo each pass the empty-to-filter task. Final `npm run quality`
+   passes (1,299 tests passed, zero failed, one intentional skip), including
+   source/spec/workflow checks and TypeScript. The first quality attempt caught
+   unreviewed per-project skips in the new browser test; the test now runs once
+   per project without skips. This change is not on hosted web or a Play build.
+   Existing CI run40418097113 failed browser shards; no release pass is claimed.
+
+   After closing this audit, research a small cargo-fit extension: an unambiguous
+   loaded/available percentage, driver-taken cargo-space photo with recorded
+   capture and receipt times, scoped broker photo requests, and optional
+   presence/freshness filters. Check existing fields and media/permission flows
+   first; do not make a photo a verified space guarantee or add clutter to the
+   core publishing steps. Demo-only freshness, GPS, Preferred-area and Partial
+   Planned Area gaps still need a reviewed update and hosted readback.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.

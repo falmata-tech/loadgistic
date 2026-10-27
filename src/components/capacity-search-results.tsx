@@ -53,7 +53,7 @@ export function CapacitySearchResults({query,mapQuery=query,view,searchPath,apiP
     {item.managerName?<p><Text message="Account manager"/> · {item.managerName}</p>:null}
     {item.city?<p className="capacity-result-city"><MapPin aria-hidden="true"/>{item.city}</p>:null}
     {item.description?<p className="capacity-result-description">{item.description}</p>:null}
-    <small><Text message="{count} matching vehicles" values={{count:item.matching_trucks}}/></small>
+    <small><Text message="{count} vehicles" values={{count:item.matching_trucks}}/></small>
     <footer><Link href={target(item.handle)} onClick={onProfileSelect}><Text message="Show vehicles on map"/><ArrowRight aria-hidden="true"/></Link><Link href={`/@${item.handle}`}><Text message="Profile"/></Link></footer>
    </article>;})}</div>}
    {(result?.total||0)>15?<Localized as="nav" copy={["aria-label"]} className="capacity-result-pagination" aria-label="Search result pages"><button type="button" className="button secondary" disabled={page===1} onClick={()=>setPagination({key:searchKey,page:page-1})}><Text message="Previous"/></button><span>{page} / {Math.ceil((result?.total||0)/15)}</span><button type="button" className="button secondary" disabled={!result?.hasMore} onClick={()=>setPagination({key:searchKey,page:page+1})}><Text message="Next"/></button></Localized>:null}

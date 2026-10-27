@@ -149,6 +149,7 @@ test('provider discovery shows one account identity and first-name manager',()=>
  const screen=view.compile('../src/components/discovery-results.tsx',{...common,AppLink:'AppLink',LoadingBar:'LoadingBar'}).DiscoveryResults;
  const tree=view.render(screen,{result:{items:[provider],total:1,page:1,hasMore:false,configurations:[]},loading:false,error:'',onPage(){},onRetry(){},onMap:item=>selected.push(item)}),serialized=JSON.stringify(tree);
  assert.ok(serialized.includes('Blue Road'));assert.ok(serialized.includes('Meron'));assert.ok(serialized.includes('Account manager'));assert.ok(!serialized.includes('DO-NOT-PUBLISH'));assert.ok(!serialized.includes('Owner-operator'));assert.ok(!serialized.includes('Independent driver'));
+ assert.ok(serialized.includes('{count} vehicles'));assert.ok(!serialized.includes('{count} matching vehicles'));
  const buttons=nodes(tree).filter(node=>node.type==='Button'&&node.props.message==='Show vehicles on map');assert.equal(buttons.length,1);buttons[0].props.onPress();assert.equal(selected[0].key,'provider');
  assert.ok(nodes(tree).some(node=>node.type==='AppLink'&&node.props.message==='View profile'&&node.props.href.params.handle==='blue-road'));
 });
