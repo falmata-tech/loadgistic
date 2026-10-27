@@ -4,7 +4,35 @@ Updated 2026-10-27. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
 [traceability](../specs/TRACEABILITY.md) for contracts. Git and the October20/23
 history files preserve previous checkpoints; this page records current work.
 
-## Current task — cross-platform launch experience before Play
+## Production release — October 27
+
+- PR26 merged into `main` at `a0be193ed9063f0f8973a6c554b96e3bb3d77d9c`.
+  Main CI run 40571303867 passed all 16 checks on attempt 2. Attempt 1's
+  browser shard 6 stalled during Supabase CLI setup before tests; only that
+  shard and its dependent aggregators were retried, retaining 13 passing jobs.
+- Approved migrations 209–220 are live on Supabase project
+  `tpwyyzoqijjmbvsmmvcm`. A fresh data-only backup was restored with archived
+  grants into an isolated local ledger-208 database; all 12 migrations and the
+  maintained database security test passed there. Hosted ledger 220, public
+  owner/access parity, and the full security test passed after apply. Fresh
+  advisor reads before and after found zero errors and the same two previously
+  reviewed warnings. Exact receipts: `.local/release-20261027/` and
+  `.local/release-20261027-renewal3/`.
+- Web production deploy `6ae129c4d2c21b0956250e05` is published from the
+  merged main tree in Netlify production context. Home, Featured and Capacity
+  return 200; health reports ready with no blockers. The new private cargo-photo
+  route returns JSON 401 to visitors. A synthetic Driver uploaded a marked test
+  image, Driver and owner read identical private bytes, anonymous access was
+  denied, the owner removed that exact photo, and both test sessions signed out.
+  The test proves the hosted API path, not physical Android camera capture.
+- The existing local Android 1.2.0/code10 test APK remains the current mobile
+  build (SHA-256 `20a6d6b17029fda17750d67656c3adaf5d3b6bc55535862201039bc4233f48f1`).
+  Retry its cargo-photo flow against the newly published API; Google Play was
+  excluded from this release. Physical storage cleanup for removed/expired
+  photos remains disabled until its separate worker configuration is reviewed.
+  Hosted GPS ingress and the recurring demo simulator are still separate work.
+
+## Qualification history — cross-platform launch experience before Play
 
 Owner order: qualify broker/shipper owner, workspace-admin and staff in installed
 Android, clean provider account/profile/document discovery, strengthen native
@@ -205,7 +233,7 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    account; generic approval never implies ownership. Existing connections and
    per-vehicle sharing remain. Correctness/denial evidence is retained, while
    the source-matched local optimizer and canonical scale qualification are
-   recorded above. No hosted209+ rollout or current exact-source CI is claimed.
+   recorded above. This local checkpoint preceded the October 27 hosted rollout.
    FEAT-MKT/VER/CAP-001.
 
 5. Source implemented/review in progress: provider profile hierarchy, flat
@@ -458,7 +486,8 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    non-browser gates and seven browser shards; the remaining shard repeated
    the approval-response race in the mobile Tracking progress test. That test
    passes locally with the response wait. Another exact-head CI run remains
-   required. No hosted database or web change has been deployed from this PR.
+   required at that checkpoint. The October 27 production release above
+   supersedes this pre-release status.
 11. Pending after Play/demo qualification: hosted GPS ingress and demo simulator
    deployment with provider selection, safe demo allowlists, real-device takeover,
    recovery and monitored rollout. Do not claim an always-on service before it runs.
@@ -468,9 +497,10 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
    remain receive-only until exact model/bench qualification. Hosted templates
    still need a secure Netlify-to-Traccar provisioning control path.
 
-## Verified live web and original Android candidate
+## Previous live web and original Android candidate
 
-- Web https://loadgistic.com: production deploy `6ade9c1e03bf260ac498d5f9`.
+- Previous web production deploy `6ade9c1e03bf260ac498d5f9`, superseded on
+  October 27.
   Integrated main `c262da6e74620d978870212193bc3b42db7dc0fe`; PR25 candidate
   `63705dd`; immutable web built `52477bb`. Executable equivalence is recorded.
 - PR25 CI40241567374 passed16/16 on attempt1. Main CI40244099050 passed16/16 on
@@ -500,16 +530,16 @@ Ordered, checkable steps (FEAT-MOB/ENT/IAM/PLY/CAP/GPS-001, BASE-DEP-001):
 
 ## Hosted state and remaining limits
 
-Supabase `tpwyyzoqijjmbvsmmvcm` remains ledger208 after the approved199–208 apply.
-It removed five legacy email-only Capacity grants, not email-based Tracking.
-The actual web release used fresh advisor checks:0ERROR/the same2 acceptedWARN;
-that receipt is historical evidence, not a permanently fresh security clearance.
-No new SQL or hosted configuration change is part of the invitation fix.
+Supabase `tpwyyzoqijjmbvsmmvcm` is at ledger220 after the approved209–220
+apply. Migrations199–208 removed five legacy email-only Capacity grants, not
+email-based Tracking. The October27 pre/post advisor checks found0ERROR and
+the same2 acceptedWARN; those receipts are historical evidence, not a
+permanently fresh security clearance. No hosted configuration change was made.
 
-The recovery archive is hosted data plus a reconstructed ledger198 schema;
-restore/exact199–208 rehearsal passed. It is not a byte-for-byte current hosted
-schema backup, managed backups/PITR were unavailable, and later writes are not
-recoverable from it. Never automatically restore it over a live project.
+The October27 recovery material is a hosted data-only archive plus a separately
+reconstructed ledger208 schema; exact209–220 rehearsal and effective public
+privilege parity passed. It is not a byte-for-byte current hosted schema or a
+managed backup/PITR. Never automatically restore it over a live project.
 
 Play inspection at2026-10-26T01:59UTC found code7 on Internal/Alpha, code10 unused,
 Production empty; only a temporary inspection edit was created/deleted. Tester
