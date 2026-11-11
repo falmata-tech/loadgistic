@@ -19,9 +19,15 @@ gesture. The focused repair preserves background double-click zoom and replaces
 a brittle internal Leaflet pan assertion with measured route movement. It passed
 six repeated desktop/phone browser checks, an additional phone check, and the
 installed-Chrome desktop/phone workflow. Root quality passed 1,333 tests with
-one reviewed skip; the web build passed. Fresh exact-source CI, immutable
-artifact and hosted readback remain release gates. Netlify currently reports
-Functions usage exceeded, so no draft or live cost reduction is claimed.
+one reviewed skip; the web build passed. Exact-source CI 43092582392 passed
+seven browser shards; one mobile provider navigation case failed at its second
+redirect assertion. The test could start that navigation before the first
+provider-home redirect settled. A focused test repair now waits for the first
+final URL before the second visit; ten consecutive local mobile-Chromium runs
+passed. Fresh CI is pending.
+Netlify now reports an active Pro team with no exceeded-usage flags after the
+owner's upgrade. The frozen web package remains unpublished; actual paid usage
+savings require monitored live readback.
 
 ## Current task — cross-platform launch experience before Play
 

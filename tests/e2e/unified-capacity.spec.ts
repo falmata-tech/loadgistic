@@ -29,12 +29,9 @@ test('provider Capacity stays public while Network remains a separate task',asyn
   await expect(page.getByRole('tablist',{name:'Network views'})).toBeVisible();
   await expect(page.getByRole('textbox',{name:'Find transport accounts'})).toBeVisible();
   await page.goto('/');
+  await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search,{timeout:30_000});
   await expect(page.getByRole('navigation',{name:'Capacity views'})).toHaveCount(0);
-  // A client redirect may abort the source request before Playwright observes
-  // its commit. Verify the destination below even when that exact abort occurs.
-  await page.goto('/?view=private',{waitUntil:'commit'}).catch(error=>{
-    if(!String(error).includes('net::ERR_ABORTED'))throw error;
-  });
+  await page.goto('/?view=private',{waitUntil:'domcontentloaded'});
   await expect(page).toHaveURL(url=>url.pathname==='/app/home/vehicles'&&!url.search,{timeout:30_000});
   const home=page.getByRole('navigation',{name:'Home views'});
   await expect(home.getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');
