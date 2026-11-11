@@ -50,8 +50,22 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps Capacity and corridor routes
       // Keep the shared leg in the open map after fitting the complete service.
       const map=await page.locator('.public-map-canvas').boundingBox(),line=await page.locator('.map-current-route').boundingBox();
       const dx=map.x+map.width*.5-line.x-line.width/2,dy=map.y+map.height*.65-line.y-line.height/2;
-      const start={x:map.x+map.width*.2,y:map.y+map.height*.5};
-      const pane=page.locator('.leaflet-map-pane');const before=await pane.getAttribute('style');
+      const start=await page.evaluate(()=>{
+        const box=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
+        for(const fx of [.2,.3,.4])for(const fy of [.5,.6,.4]){
+          const point={x:Math.round(box.left+box.width*fx),y:Math.round(box.top+box.height*fy)};
+          const target=document.elementFromPoint(point.x,point.y);
+          if(target?.closest('.leaflet-container')&&!target.closest('.leaflet-interactive,.leaflet-control,.leaflet-marker-icon,.map-info-bubble'))return point;
+        }
+        return null;
+      });
+      expect(start,'a clear map background for the drag').toBeTruthy();
+      if(!start)throw new Error('CLEAR_MAP_DRAG_POINT_UNAVAILABLE');
+      const routePoint=()=>page.locator('.map-current-route').evaluate((path:SVGPathElement)=>{
+        const point=path.getPointAtLength(path.getTotalLength()*.4).matrixTransform(path.getScreenCTM()!);
+        return{x:point.x,y:point.y};
+      });
+      const before=await routePoint();
       if(info.project.name.includes('mobile')){
         const touch=await page.context().newCDPSession(page);
         await touch.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[start]});
@@ -63,7 +77,9 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps Capacity and corridor routes
       }else{
         await page.mouse.move(start.x,start.y);await page.mouse.down();await page.mouse.move(start.x+dx,start.y+dy,{steps:8});await page.mouse.up();
       }
-      await expect(pane).not.toHaveAttribute('style',before!);
+      await expect.poll(async()=>{
+        const after=await routePoint();return Math.hypot(after.x-before.x,after.y-before.y);
+      },{message:'the route moves on screen when the map is dragged'}).toBeGreaterThan(5);
       await expect(page.locator('.leaflet-pan-anim')).toHaveCount(0);
       await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
     }

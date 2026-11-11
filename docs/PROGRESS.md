@@ -12,9 +12,16 @@ candidate shares push's existing one-minute schedule with the two-minute
 access-email and fifteen-minute managed-operations dispatches. It preserves
 the background endpoints, queue leases and due cadences; demo-world, photo
 cleanup and GPS code are unchanged. Expected reduction at steady state is
-34 scheduler invocations per hour, about 24,480 per 30 days. Focused tests,
-build, CI, immutable artifact and hosted readback remain release gates; this
-entry does not claim a live change.
+34 scheduler invocations per hour, about 24,480 per 30 days. PR #29's current
+CI run 43084594537 passed validation, mobile, container, all Featured jobs and
+seven browser shards; one browser shard found an intermittent map-route zoom
+gesture. The focused repair preserves background double-click zoom and replaces
+a brittle internal Leaflet pan assertion with measured route movement. It passed
+six repeated desktop/phone browser checks, an additional phone check, and the
+installed-Chrome desktop/phone workflow. Root quality passed 1,333 tests with
+one reviewed skip; the web build passed. Fresh exact-source CI, immutable
+artifact and hosted readback remain release gates. Netlify currently reports
+Functions usage exceeded, so no draft or live cost reduction is claimed.
 
 ## Current task — cross-platform launch experience before Play
 
