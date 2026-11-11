@@ -1,8 +1,20 @@
 # Current work and release status
 
-Updated 2026-10-27. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
+Updated 2026-11-11. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
 [traceability](../specs/TRACEABILITY.md) for contracts. Git and the October20/23
 history files preserve previous checkpoints; this page records current work.
+
+## Netlify idle-invocation reduction — local candidate, November 11
+
+Loadgistic's legacy free-tier Function Metrics showed 3,120 of 3,570 daily
+invocations came from scheduled work and its background dispatches. The local
+candidate shares push's existing one-minute schedule with the two-minute
+access-email and fifteen-minute managed-operations dispatches. It preserves
+the background endpoints, queue leases and due cadences; demo-world, photo
+cleanup and GPS code are unchanged. Expected reduction at steady state is
+34 scheduler invocations per hour, about 24,480 per 30 days. Focused tests,
+build, CI, immutable artifact and hosted readback remain release gates; this
+entry does not claim a live change.
 
 ## Current task — cross-platform launch experience before Play
 

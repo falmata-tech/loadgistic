@@ -2,7 +2,7 @@ import {
   createManagedOperationsSignature,
   MANAGED_OPERATIONS_SIGNATURE_HEADER,
   MANAGED_OPERATIONS_TIMESTAMP_HEADER
-} from '../../src/lib/managed-operations-auth.js';
+} from '../managed-operations-auth.js';
 
 function dispatchOrigin(invocationUrl,environment){
   let url;
@@ -41,9 +41,3 @@ export async function executeAccessEmailRetryDispatch(request,{
     return new Response(null,{status:500});
   }
 }
-
-export default async function(request){
-  return executeAccessEmailRetryDispatch(request);
-}
-
-export const config={schedule:'*/2 * * * *'};

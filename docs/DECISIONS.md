@@ -6,6 +6,24 @@ record the designs accepted at their dates; their email-only Capacity and
 platform-Brokerage clauses were superseded on October 24. Public-link Tracking
 still uses its own email authorization.
 
+## ADR-082 — Share the minute scheduler without combining work authority (2026-11-11)
+
+Status: local implementation under release qualification, BASE-DEP-001 and
+FEAT-NOT-001. Netlify's published deployment previously invoked push every
+minute, access-email recovery every two minutes and managed operations every
+fifteen minutes. The latter two schedules each created another background
+invocation, consuming roughly 24,000 avoidable scheduler requests per month.
+
+One existing minute schedule now selects the same UTC due minutes and dispatches
+the existing signed background endpoints in parallel with native push. The
+background workers retain their own HMAC, queue leases, limits and independent
+failure behavior. Netlify's `next_run` identifies the intended minute if a
+scheduled invocation starts late. The old dispatcher functions are removed
+from the deployable functions directory so they cannot remain extra schedules
+or become unauthenticated HTTP triggers. Demo-world, cargo-photo cleanup and
+the separately hosted GPS listener are outside this change. Rollback is the
+previous published application artifact; no schema or environment change.
+
 ## ADR-081 — Business workspace context and explicit recipient authority (2026-10-18)
 
 Status: **design approved October18; local implementation under release review**, FEAT-ENT-001.

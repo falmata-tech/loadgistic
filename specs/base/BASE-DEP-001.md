@@ -189,10 +189,13 @@ And standard local configuration sends only to a loopback Mailpit HTTP endpoint 
 ### Scenario: scheduled operations are bounded and observable
 
 Given the Production application is published on Netlify\
-When the managed-operations schedule runs every fifteen minutes in UTC\
-Then the 30-second scheduled function only authenticates and dispatches one background invocation\
+When its one-minute scheduled function runs\
+Then native push keeps its one-minute cadence and the same invocation dispatches access-email recovery on even UTC minutes and managed operations every fifteen UTC minutes\
+And a late invocation uses its scheduled minute rather than silently missing a due dispatch\
+And one job's failure cannot cancel the other due jobs\
+And the 30-second scheduled function only dispatches the email/operations background work and never delivers their provider email itself\
 And the background worker processes bounded Tracking and access-email batches and invokes bounded expired-guest cleanup within Netlify's background execution limit\
-And the two-minute access-email recovery schedule also dispatches authenticated background work rather than performing provider delivery inside the scheduled-function limit\
+And the two-minute access-email recovery dispatch also starts authenticated background work rather than performing provider delivery inside the scheduled-function limit\
 And the dispatch uses a short-lived HMAC authorization derived from the server-only session secret rather than exposing that secret or accepting an unauthenticated public trigger\
 And the dispatcher derives the background target from the exact current invocation origin rather than a site-wide Production fallback and binds that origin into the signature\
 And its result contains counts and safe status names only\
@@ -200,7 +203,8 @@ And an unsafe documented session-secret placeholder cannot sign or authorize a d
 And a dispatch or background infrastructure failure is visible in function logs without exposing private queue rows\
 And an operation-level queue failure remains durable for a later scheduled run and does not request a replay of the aging signed invocation\
 And bounded cleanup removes terminal Shared capacity and Assisted matching email-delivery rows after their reviewed retention periods without deleting active support conversations\
-And a separate two-minute schedule dispatches one authenticated background invocation whose worker claims at most two due access-email rows so Shared capacity and Tracking OTP retries remain inside their ten-minute challenge windows\
+And the two-minute access-email dispatch invokes one authenticated background worker that claims at most two due access-email rows so Shared capacity and Tracking OTP retries remain inside their ten-minute challenge windows\
+And neither retired dispatcher is deployed as a separately scheduled or publicly callable function\
 And Preview or local execution invokes the dispatcher explicitly because Netlify runs schedules automatically only for the published deploy.
 
 ### Scenario: public abuse limits are shared and privacy preserving
