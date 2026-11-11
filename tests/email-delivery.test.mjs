@@ -452,7 +452,7 @@ test('scheduled operations expose bounded counts and safe errors only',async()=>
 });
 
 test('two-minute access-email recovery dispatches authenticated background work',async()=>{
-  const {config,dispatchAccessEmailRetry}=await import('../netlify/functions/access-email-retry.mjs');
+  const {dispatchAccessEmailRetry}=await import('../src/lib/netlify-dispatch/access-email-retry.mjs');
   const environment={SESSION_SECRET:'access-email-background-secret-for-tests',NODE_ENV:'production'};
   const now=1_788_200_000_000;
   let captured;
@@ -461,7 +461,7 @@ test('two-minute access-email recovery dispatches authenticated background work'
     fetchImpl:async(url,options)=>{captured={url,options};return {ok:true,status:202};}
   });
   assert.deepEqual(result,{ok:true,status:202});
-  assert.equal(config.schedule,'*/2 * * * *');
+  assert.equal((await import('../netlify/functions/native-push.mjs')).config.schedule,'* * * * *');
   assert.equal(captured.url.href,'https://branch--loadgistic.example/.netlify/functions/access-email-retry-background');
   assert.equal(verifyManagedOperationsSignature({
     timestamp:captured.options.headers[MANAGED_OPERATIONS_TIMESTAMP_HEADER],
@@ -515,10 +515,11 @@ test('access-email recovery background rejects unsigned work before touching the
 });
 
 test('scheduled worker and migration remain bounded and service-role-only',()=>{
-  const worker=fs.readFileSync(path.join(root,'netlify/functions/managed-operations.mjs'),'utf8');
+  const worker=fs.readFileSync(path.join(root,'src/lib/netlify-dispatch/managed-operations.mjs'),'utf8');
+  const schedule=fs.readFileSync(path.join(root,'netlify/functions/native-push.mjs'),'utf8');
   const migration=fs.readFileSync(path.join(root,'supabase/migrations/046_managed_email_operations.sql'),'utf8');
   assert.doesNotMatch(worker,/DATA_BACKEND|managed-data-backend-required/);
-  assert.match(worker,/schedule:'\*\/15 \* \* \* \*'/);
+  assert.match(schedule,/schedule:'\* \* \* \* \*'/);
   assert.match(migration,/for update skip locked/i);
   assert.match(migration,/next_attempt_at=now\(\)\+interval '10 minutes'/i);
   assert.match(migration,/revoke all on function public\.pending_provider_tracking_email_deliveries\(integer\) from public,anon,authenticated/i);

@@ -7,11 +7,11 @@ import {
   verifyManagedOperationsSignature
 } from '../src/lib/managed-operations-auth.js';
 import {
-  config as scheduleConfig,
   dispatchManagedOperations,
   executeManagedOperationsDispatch
-} from '../netlify/functions/managed-operations.mjs';
+} from '../src/lib/netlify-dispatch/managed-operations.mjs';
 import {config as backgroundConfig,executeManagedOperations} from '../netlify/functions/managed-operations-background.mjs';
+import {config as combinedScheduleConfig} from '../netlify/functions/native-push.mjs';
 
 const environment={SESSION_SECRET:'a-production-length-session-secret-for-tests',NODE_ENV:'production',URL:'https://loadgistic.example'};
 
@@ -25,7 +25,7 @@ function request(timestamp,signature,method='POST'){
 }
 
 test('managed Operations dispatch authorization is short-lived and secret-derived',()=>{
-  assert.equal(scheduleConfig.schedule,'*/15 * * * *');
+  assert.equal(combinedScheduleConfig.schedule,'* * * * *');
   assert.equal(backgroundConfig.background,true);
   const now=1_788_200_000_000;
   const authorization={timestamp:String(now),audience:'https://loadgistic.example'};

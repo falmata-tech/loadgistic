@@ -1,8 +1,33 @@
 # Current work and release status
 
-Updated 2026-10-27. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
+Updated 2026-11-11. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
 [traceability](../specs/TRACEABILITY.md) for contracts. Git and the October20/23
 history files preserve previous checkpoints; this page records current work.
+
+## Netlify idle-invocation reduction — local candidate, November 11
+
+Loadgistic's legacy free-tier Function Metrics showed 3,120 of 3,570 daily
+invocations came from scheduled work and its background dispatches. The local
+candidate shares push's existing one-minute schedule with the two-minute
+access-email and fifteen-minute managed-operations dispatches. It preserves
+the background endpoints, queue leases and due cadences; demo-world, photo
+cleanup and GPS code are unchanged. Expected reduction at steady state is
+34 scheduler invocations per hour, about 24,480 per 30 days. PR #29's current
+CI run 43084594537 passed validation, mobile, container, all Featured jobs and
+seven browser shards; one browser shard found an intermittent map-route zoom
+gesture. The focused repair preserves background double-click zoom and replaces
+a brittle internal Leaflet pan assertion with measured route movement. It passed
+six repeated desktop/phone browser checks, an additional phone check, and the
+installed-Chrome desktop/phone workflow. Root quality passed 1,333 tests with
+one reviewed skip; the web build passed. Exact-source CI 43092582392 passed
+seven browser shards; one mobile provider navigation case failed at its second
+redirect assertion. The test could start that navigation before the first
+provider-home redirect settled. A focused test repair now waits for the first
+final URL before the second visit; ten consecutive local mobile-Chromium runs
+passed. Fresh CI is pending.
+Netlify now reports an active Pro team with no exceeded-usage flags after the
+owner's upgrade. The frozen web package remains unpublished; actual paid usage
+savings require monitored live readback.
 
 ## Current task — cross-platform launch experience before Play
 

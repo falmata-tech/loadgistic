@@ -14,3 +14,18 @@ test('Expo-only Zod finding requires a patched app runtime and exact excluded to
   const input=withToolingZod();mutation(input);assert.throws(()=>reviewNativeDependencies(input));
  }
 });
+test('new Expo tooling findings require exact locked paths and remain outside the Android bundle',()=>{
+ for(const [name,url] of [
+  ['deepmerge','GHSA-gcqx-w48m-w2h4'],
+  ['glob','GHSA-3g3m-2fjr-6pw4'],
+  ['minimatch','GHSA-g3hv-75wg-m249'],
+ ]){
+  const input=fixture();input.audit.metadata.vulnerabilities.total=2;
+  input.audit.vulnerabilities[name]={nodes:[`node_modules/${name}`],via:[{name,url:`https://github.com/advisories/${url}`}]};
+  assert.equal(reviewNativeDependencies(input).eligibleForInternalBuild,true,name);
+  input.map.sources.push(`/node_modules/${name}/index.js`);
+  assert.throws(()=>reviewNativeDependencies(input),/VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME/,name);
+  input.map.sources.pop();input.lock.packages[`node_modules/${name}`].version='0.0.0';
+  assert.throws(()=>reviewNativeDependencies(input),/REVIEWED_TOOLING_VERSION_DRIFT/,name);
+ }
+});

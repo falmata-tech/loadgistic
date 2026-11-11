@@ -339,6 +339,7 @@ export function PublicCapacityMapLeaflet({items,ownSignalIds=NO_OWN_SIGNALS,view
   const [restoredView]=React.useState(()=>restoredPublicCamera(rememberPublicView));
   const selected=items.find(item=>item.id===selectedId)||null;
   const [pinnedInfo,setPinnedInfo]=React.useState(null as MapSignalInfo|null);
+  const lastSignalClick=React.useRef(null as {time:number;x:number;y:number}|null);
   const [legendOpen,setLegendOpen]=React.useState(false);
   React.useEffect(()=>{setPinnedInfo(null);},[selectedId]);
   const availabilityAccent:'empty'|'partial'=selected?.status==='PARTIAL'?'partial':'empty';
@@ -347,7 +348,12 @@ export function PublicCapacityMapLeaflet({items,ownSignalIds=NO_OWN_SIGNALS,view
   const routeInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selected.id}:route`,accent:availabilityAccent,label:'Planned route',title:'Planned route',primary:t('{route} · {update}',{route:(selected.current_route_points||[]).map(point=>point.label).join(' → '),update:localizedUpdateLabel(selected.capacity_updated_label,t)}),detail:t('This route is the vehicle’s last published capacity signal. Confirm pickup, delivery, timing and cargo fit.')}:null;
   const regularInfos:MapSignalInfo[]=(selected?.recurring_corridors||[]).slice(0,1).map(signal=>signal.geometry==='RADIUS'?{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Preferred area',title:signal.area_center_label||'Preferred area',primary:(signal.area_boundary||[]).map((point:PlacePoint)=>point.label).join(' · '),detail:'Ask about availability.'}:{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Preferred corridor',title:'Preferred corridor',primary:(signal.route_points||[]).map((point:PlacePoint)=>point.label).join(' ↔ '),detail:'Ask about availability.'});
   const signalEvents=(info:MapSignalInfo)=>({
-    click:(event:any)=>{L.DomEvent.stopPropagation(event);setPinnedInfo(info);},
+    click:(event:any)=>{
+      L.DomEvent.stopPropagation(event);
+      const pointer=event.originalEvent.changedTouches?.[0]||event.originalEvent.touches?.[0]||event.originalEvent;
+      if(Number.isFinite(pointer.clientX)&&Number.isFinite(pointer.clientY))lastSignalClick.current={time:performance.now(),x:pointer.clientX,y:pointer.clientY};
+      setPinnedInfo(info);
+    },
     // Adjacent touch inspections can be recognized as a double tap by Leaflet.
     // Consume that gesture on the signal, preserving background double-tap zoom.
     dblclick:(event:any)=>{L.DomEvent.stopPropagation(event);L.DomEvent.preventDefault(event.originalEvent);},
@@ -375,7 +381,15 @@ export function PublicCapacityMapLeaflet({items,ownSignalIds=NO_OWN_SIGNALS,view
   (selected?.recurring_corridors||[]).slice(0,1).forEach((signal,index)=>{const closed=signal.geometry==='RADIUS',points=closed?signal.area_boundary:signal.route_points;if(points?.length>=(closed?3:2))infoChoices.push(regularInfos[index]);});
   const shortLabel=(info:MapSignalInfo)=>info.accent==='truck'?'Vehicle':info.accent==='location'?'Location':info.accent==='regular'?(info.label==='Preferred corridor'?'Preferred corridor':'Preferred area'):info.label;
   const activeInfo:MapSignalInfo|null=pinnedInfo&&selected&&pinnedInfo.id.startsWith(`${selected.id}:`)?pinnedInfo:null;
-  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available vehicles" onKeyDown={(event:React.KeyboardEvent<HTMLDivElement>)=>{if(event.key==='Escape'&&activeInfo){event.stopPropagation();setPinnedInfo(null);}}}>
+  return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available vehicles" onClickCapture={(event:React.MouseEvent<HTMLDivElement>)=>{
+    const target=event.target;
+    if(target instanceof Element&&target.closest('.leaflet-container')&&!target.closest('.map-interactive-signal'))lastSignalClick.current=null;
+  }} onDoubleClickCapture={(event:React.MouseEvent<HTMLDivElement>)=>{
+    const last=lastSignalClick.current;
+    if(!last||performance.now()-last.time>600||Math.hypot(event.clientX-last.x,event.clientY-last.y)>24)return;
+    const target=event.target;
+    if(target instanceof Element&&target.closest('.leaflet-container')){event.preventDefault();event.stopPropagation();lastSignalClick.current=null;}
+  }} onKeyDown={(event:React.KeyboardEvent<HTMLDivElement>)=>{if(event.key==='Escape'&&activeInfo){event.stopPropagation();setPinnedInfo(null);}}}>
     <MapContainer center={restoredView?[restoredView.lat,restoredView.lng]:[DEFAULT_CAPACITY_CAMERA.latitude,DEFAULT_CAPACITY_CAMERA.longitude]} zoom={restoredView?.zoom||DEFAULT_CAPACITY_CAMERA.zoom} minZoom={2} maxZoom={15} scrollWheelZoom>
       <BaseMapTiles/>
       <ResizeMap/>

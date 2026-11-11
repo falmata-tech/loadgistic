@@ -9,6 +9,25 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- BASE-DEP-001 / FEAT-NOT-001 Netlify scheduler consolidation (local candidate,
+  November 11): [the due-minute and signed-dispatch tests](../tests/netlify-schedule.test.mjs)
+  cover one-minute push, two-minute access-email, fifteen-minute operations,
+  late invocation, origin-bound HMAC and independent failure. Existing email
+  and operations tests pass after moving dispatch code out of the deployable
+  function directory. Root quality: 1,333 passed and one existing skip;
+  Next production compilation passed in the local worktree. An isolated
+  release artifact, exact-head CI and hosted readback are still pending;
+  no live cost reduction is claimed.
+
+- FEAT-CAP-001 adjacent map-signal inspection: [the focused browser workflow](../tests/e2e/map-shared-segment.spec.ts)
+  now measures actual route movement while panning and checks that consecutive
+  Planned route/Preferred corridor inspections leave the camera unchanged,
+  followed by working background double-click zoom. Six repeated desktop/phone
+  browser runs and an installed-Chrome desktop/phone run passed locally on
+  November 11; desktop and phone captures are in
+  `.local/map-gesture-review/`. The changed touch-coordinate guard passed an additional phone
+  run. Full same-source CI is still required; no deployed behavior is claimed.
+
 - FEAT-UIX/MOB/CAP-001 work-first Home and Planned/Preferred presentation:
   current-source Chrome covers fleet-only/driving owners, ordinary sign-in/root,
   selected-tab continuity and work return from Network/deep vehicle records.

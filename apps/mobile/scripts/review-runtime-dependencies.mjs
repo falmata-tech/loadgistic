@@ -5,7 +5,9 @@ import {createHash} from 'node:crypto';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const reviewed=new Map([
  ['https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',{name:'braces',version:'3.0.3'}],
- ['https://github.com/advisories/GHSA-86w9-cpqp-85rv',{name:'node-forge',version:'1.4.0'}],
+ ['https://github.com/advisories/GHSA-gcqx-w48m-w2h4',{name:'deepmerge',version:'4.3.1',toolingPath:'node_modules/deepmerge'}],
+ ['https://github.com/advisories/GHSA-3g3m-2fjr-6pw4',{name:'glob',version:'13.0.6',toolingPath:'node_modules/glob'}],
+ ['https://github.com/advisories/GHSA-g3hv-75wg-m249',{name:'minimatch',version:'10.2.6',toolingPath:'node_modules/minimatch'}],
  ['https://github.com/advisories/GHSA-w5hq-g745-h8pq',{name:'uuid',version:'7.0.3'}],
  ['https://github.com/advisories/GHSA-mrhx-c7xc-m3w5',{name:'zod',version:'3.25.76',toolingPath:'node_modules/expo/node_modules/zod'}],
 ]);
@@ -28,12 +30,12 @@ export function reviewNativeDependencies({audit,lock,map}){
   if(expected.toolingPath){
    const nodes=audit.vulnerabilities[item.name]?.nodes;
    if(!Array.isArray(nodes)||nodes.length!==1||nodes[0]!==expected.toolingPath
-    ||lock.packages[expected.toolingPath]?.version!==expected.version
-    ||lock.packages['']?.dependencies?.zod!=='4.6.7'
-    ||lock.packages['node_modules/zod']?.version!=='4.6.7')throw Error('REVIEWED_TOOLING_VERSION_DRIFT');
+    ||lock.packages[expected.toolingPath]?.version!==expected.version)throw Error('REVIEWED_TOOLING_VERSION_DRIFT');
+   if(item.name==='zod'&&(lock.packages['']?.dependencies?.zod!=='4.6.7'
+    ||lock.packages['node_modules/zod']?.version!=='4.6.7'))throw Error('REVIEWED_TOOLING_VERSION_DRIFT');
    if(map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/'+expected.toolingPath+'/')))
     throw Error('VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME');
-   if(!map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/node_modules/zod/v4/')))
+   if(item.name==='zod'&&!map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/node_modules/zod/v4/')))
     throw Error('PATCHED_ZOD_NOT_IN_ANDROID_RUNTIME');
    continue;
   }
@@ -42,10 +44,11 @@ export function reviewNativeDependencies({audit,lock,map}){
   if(map.sources.some(name=>('/'+name.replaceAll('\\','/').replace(/^\/+/, '')).includes('/node_modules/'+item.name+'/')))throw Error('VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME');
  }
  if(map.sources.some(name=>/\/node_modules\/(?:braces|node-forge|uuid)\//.test(('/'+name.replaceAll('\\','/').replace(/^\/+/, '')))))throw Error('VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME');
- if(lock.packages['node_modules/decode-uri-component']?.version!=='0.5.0')throw Error('PATCHED_DECODER_REQUIRED');
+ if(lock.packages['node_modules/decode-uri-component']?.version!=='0.5.1'
+  ||lock.packages['node_modules/node-forge']?.version!=='1.4.3')throw Error('PATCHED_RUNTIME_AND_TOOLING_REQUIRED');
  const consumer=map.sources.findIndex(name=>name.replaceAll('\\','/').endsWith('/node_modules/query-string/index.js'));
  if(consumer<0||!map.sourcesContent[consumer]?.includes("require('decode-uri-component').default"))throw Error('PATCHED_CONSUMER_NOT_IN_BUNDLE');
- return {eligibleForInternalBuild:true,rawAuditCounts:audit.metadata.vulnerabilities,reviewedToolingAdvisories:[...findings.keys()],runtimeDecoder:'0.5.0',limits:'Internal build from locked reviewed sources; localhost development only. Device verification and owner review still required before broader distribution.'};
+ return {eligibleForInternalBuild:true,rawAuditCounts:audit.metadata.vulnerabilities,reviewedToolingAdvisories:[...findings.keys()],runtimeDecoder:'0.5.1',limits:'Internal build from locked reviewed sources; localhost development only. Device verification and owner review still required before broader distribution.'};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args=process.argv.slice(2),read=flag=>{const i=args.indexOf(flag);if(i<0||!args[i+1])throw Error('AUDIT_AND_COMPILED_MAP_REQUIRED');return JSON.parse(fs.readFileSync(args[i+1],'utf8'));};
