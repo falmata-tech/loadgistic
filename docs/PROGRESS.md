@@ -4,30 +4,36 @@ Updated 2026-11-11. Read the [product brief](PRODUCT_MASTER_PROMPT.md) and
 [traceability](../specs/TRACEABILITY.md) for contracts. Git and the October20/23
 history files preserve previous checkpoints; this page records current work.
 
-## Netlify idle-invocation reduction — local candidate, November 11
+## Netlify idle-invocation reduction — live, November 11
 
-Loadgistic's legacy free-tier Function Metrics showed 3,120 of 3,570 daily
-invocations came from scheduled work and its background dispatches. The local
-candidate shares push's existing one-minute schedule with the two-minute
-access-email and fifteen-minute managed-operations dispatches. It preserves
-the background endpoints, queue leases and due cadences; demo-world, photo
-cleanup and GPS code are unchanged. Expected reduction at steady state is
-34 scheduler invocations per hour, about 24,480 per 30 days. PR #29's current
-CI run 43084594537 passed validation, mobile, container, all Featured jobs and
-seven browser shards; one browser shard found an intermittent map-route zoom
-gesture. The focused repair preserves background double-click zoom and replaces
-a brittle internal Leaflet pan assertion with measured route movement. It passed
-six repeated desktop/phone browser checks, an additional phone check, and the
-installed-Chrome desktop/phone workflow. Root quality passed 1,333 tests with
-one reviewed skip; the web build passed. Exact-source CI 43092582392 passed
-seven browser shards; one mobile provider navigation case failed at its second
-redirect assertion. The test could start that navigation before the first
-provider-home redirect settled. A focused test repair now waits for the first
-final URL before the second visit; ten consecutive local mobile-Chromium runs
-passed. Fresh CI is pending.
-Netlify now reports an active Pro team with no exceeded-usage flags after the
-owner's upgrade. The frozen web package remains unpublished; actual paid usage
-savings require monitored live readback.
+PR #29 merged into `main` as `7ae9dfe8acd997410339fd79b3962a61ed0a3a43`.
+The reviewed web package is live at `loadgistic.com` as ready production deploy
+`6af4f16a16aab2cef815c573`; the previous ready deploy
+`6ae129c4d2c21b0956250e05` remains the rollback target. The owner approved
+the exact package and monitored publication. Main CI run `43107509577` passed
+on attempt 2. Its first attempt failed one mobile account-read recovery browser
+case while seven other browser shards passed; the targeted failed-jobs retry
+passed that shard and the aggregate E2E and release-ready checks. Keep that
+first-attempt failure visible when diagnosing future CI instability.
+
+The one-minute push schedule now dispatches the existing two-minute access-email
+and fifteen-minute managed-operations work. Background endpoints, queue leases
+and due cadences remain; demo-world, photo cleanup, GPS, Auth, SMTP and schema
+were not changed. The former independent schedules account for a measured
+34 invocations per hour, about 24,480 per 30 days. Netlify's Pro team was active
+with no exceeded-usage flags before publication; real paid compute savings still
+require seven days of usage readback.
+
+The production health endpoint returned 200 and ready with no blockers. Public
+Capacity returned 48 signals and Featured eight. Synthetic reviewer access to
+Dashboard, Account, Support and exact private-document bytes passed; anonymous
+document access and image-proxy routes were denied, and the review session was
+closed. Optimized images decoded at 384 and 640 pixels; invalid/nonimage image
+requests were denied. Isolated desktop and phone Chrome passed public Capacity,
+vehicle filters, private sign-in routing, Featured and Support's sign-in gate
+without page errors. Independent Netlify readback again confirmed the new
+production deploy ready. Full protected evidence and the package/recovery plan
+are in `.local/netlify-idle-schedules/.local/netlify-final-release-review.md`.
 
 ## Current task — cross-platform launch experience before Play
 
