@@ -1,5 +1,15 @@
 # Security model
 
+## Current boundary — reconciled November12
+
+Read current [FEAT-SEC-001](../specs/features/FEAT-SEC-001.md),
+[GUARDRAILS](GUARDRAILS.md) and [PROGRESS](PROGRESS.md) before applying this older
+security inventory. Email-only Capacity OTP, platform Brokerage/guest intake and
+commercial plan enforcement are retired. Public-link Tracking email authorization
+is separate from account/team-based private Capacity. Google sign-in entry is
+temporarily disabled by owner decision. Historical controls or local results below
+do not establish current hosted security clearance, publication or monitoring.
+
 ## Implemented locally
 
 - Explicitly non-Production fixture-password login authenticates isolated

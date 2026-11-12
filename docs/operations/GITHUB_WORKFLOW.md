@@ -4,7 +4,34 @@ This is Loadgistic's working convention. AGENTS and production authority control
 permissions; these instructions do not install GitHub protections or authorize
 a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR results.
 
-## Verified setup, October 23
+## Verified pipeline, November 12
+
+Main c926092 has a successful16-job [CI run43119585046](https://github.com/falmata-tech/loadgistic/actions/runs/43119585046).
+The actual branch-rule browser readback requires a PR, strict/up-to-date
+`release-ready`, conversation resolution and administrator coverage. Force push
+and deletion are disabled. Required approving reviews remain off; no independent
+second-human approval is claimed. No rule was changed by housekeeping.
+
+Netlify's linked repository and Active build settings coexist with **automatic
+publishing ON** for main. Recent production and PR-preview Git builds fail secret
+scanning; the manual scheduler deploy remains published. Initialization resolves
+the pinned Node 22.16.0 despite a Node 24 dashboard selection. The older provider
+label `manual` is insufficient to infer that a merge cannot publish.
+
+GitHub source CI contains no Netlify promotion job. No Netlify wait for the
+same-main-commit release-ready result was observed. PR protection, main CI and
+production promotion are separate boundaries. Reconcile the automatic path with
+the owner's exact-source release authority before repairing its scan blocker;
+do not disable scanning or alter publishing settings as routine branch cleanup.
+See [NR-75](../SECURITY_REGRESSION_REGISTER.md#nr-75--green-github-checks-conceal-a-blocked-automatic-publication-path)
+and [the release runbook](NETLIFY_RELEASE_VERIFICATION.md).
+
+The daily advisor monitor independently fails before obtaining findings because
+its approved scoped credential is absent; the Data API guard passes. An attached
+ChatGPT Supabase account does not supply GitHub Actions secrets. These provider
+readbacks and local tool/bootstrap limitations are in [PROGRESS](../PROGRESS.md).
+
+## Historical setup, October 23
 
 The public repository is `falmata-tech/loadgistic`; its default branch is `main`,
 not `master`. The long `feat/mobile-app` branch was integrated through PR16 with
@@ -73,7 +100,7 @@ Verify current head, base, reviews and every required check immediately before a
 authorized merge; read back the merged commit and remote branch afterward. Keep
 an unchanged short-lived branch only until its merge/result has been verified.
 
-## Long-branch integration result
+## Historical long-branch integration result
 
 PR16 integrated the long branch on October 23 after exact-head CI passed. The
 merge commit and remote main were read back independently. Netlify reported

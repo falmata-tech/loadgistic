@@ -1,5 +1,14 @@
 # Application routes
 
+## Historical route inventory — reconciled November12
+
+Some routes and permissions below describe retired email-only private Capacity,
+platform Brokerage/guest intake and special Loadgistic sharing. They are not
+current navigation or authority. Use current `src/app` routes, [the product
+brief](PRODUCT_MASTER_PROMPT.md), [feature contracts](../specs/TRACEABILITY.md) and
+[PROGRESS](PROGRESS.md). Private Capacity redirects an unauthenticated visitor to
+account sign-in; the public-link Tracking verification flow is independent.
+
 ## Public
 
 - `/` — canonical account-free Truck Market workspace with compact welcome, Map-first/List discovery, and advanced truck and geographic filters.

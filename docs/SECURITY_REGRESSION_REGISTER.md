@@ -1,5 +1,37 @@
 # Security failures we must not repeat
 
+## NR-75 — Green GitHub checks conceal a blocked automatic publication path
+
+**Observed November 12:** main c926092 passes all 16 GitHub jobs, while Netlify
+automatic publishing is enabled and its Git-triggered
+[production build](https://app.netlify.com/projects/loadgistic-473/deploys/6af4f92d516c70141eddfe3a)
+fails secret scanning after compilation. The last manual scheduler artifact stays
+published. The provider label `manual` and GitHub's release-ready check do not
+prove the state of continuous deployment. No same-main-commit CI promotion wait
+was observed in Netlify or the source workflow; the automatic route therefore
+also needs reconciliation with owner-only production authority.
+
+The scan names `LOADGISTIC_EMAIL_REPLY_TO` in historical operational documents
+and telematics manifest/tests, plus a likely secret at
+`apps/mobile/google-services.json:18`. Inspection identifies a mail-header setting
+and intended Android Firebase client configuration, not a private FCM service
+credential. Values are deliberately omitted. Google API/application restrictions
+have not been verified; classification is not an exposure assessment or waiver.
+
+**Control / next action:** the release maintainer prepares an exact reviewed
+classification, client-key restriction readback and narrow remediation, then
+proves the preview and source/CI/promotion boundary before an owner-authorized
+production change. Keep scanners enabled. Do not omit broad directories, edit
+fixture identity allowlists, weaken assertions, rotate unrelated credentials or
+allow an unqualified Git push to publish. Provider environment, permissions and
+publication controls were inspected only; no exception was installed. See
+[current progress](PROGRESS.md) and the
+[release runbook](operations/NETLIFY_RELEASE_VERIFICATION.md).
+
+Current-state note: older entries below preserve their original local/pending
+evidence. Use PROGRESS for subsequent integration, hosted-ledger and publication
+readbacks; do not replay a historical repair from its old next-action sentence.
+
 ## NR-74 — A new parser advisory stops the web and Android PR gates
 
 **Observed October 23:** catch-up PR16 CI run 40025173293 rejected a new
@@ -266,7 +298,7 @@ synthetic owner and stopped before timing; correctness probes alone are not
 scale qualification. The SET-only candidate passes nine focused SQL suites and
 14 negative gate fixtures, but5000-vehicle profile search took12.265s against5s.
 It was rejected. The equivalent private security-invoker view implementation
-preserves exact predicates and permission scope. It passed all16 required CI
+preserves exact predicates and permission scope. It passed all 16 required CI
 jobs oncad46f1 (run39528806968), the fresh backup rehearsal and nine SQL suites.
 The owner approved181; it was applied once on October21 at03:17Z. Independent
 hosted readback and security checks confirm this warning is removed. Only the

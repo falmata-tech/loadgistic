@@ -1,5 +1,16 @@
 # Architecture
 
+## Current-state reading guide — November12
+
+Runtime remains Next.js plus Supabase Postgres/Auth/Storage, with the separate
+Expo app and bounded workers. Some architecture notes below predate account-based
+private Capacity, retirement of Brokerage/guest Support and current notification
+scheduling. They preserve earlier implementation evidence, not active permission
+or rollout instructions. [The product brief](PRODUCT_MASTER_PROMPT.md), current
+feature contracts and [PROGRESS](PROGRESS.md) control those boundaries. Local
+setup requires the isolated Supabase stack; there is no SQLite fallback. Hosted
+ledger, published web and installed native evidence remain separate.
+
 Android notification extension (FEAT-NOT-001 / ADR-078, local ledger 128): private
 installation tokens bind to a verified member Auth session or an exact guest chat
 capability. Committed chat/assignment/join/handover events enqueue in the source

@@ -61,13 +61,13 @@ destination through sign-in and Join; it grants no authority from a link and
 does not restore a separate workspace navigation switch. Installed owner/admin/
 staff qualification remains required before the replacement Play candidate.
 
-The pending October25 provider-profile change keeps provider accounts, including
+The current provider-profile contract keeps provider accounts, including
 self-managed drivers, as searchable identities; employed fleet drivers sit within
 their provider's vehicle/profile view while eligible vehicles remain on Capacity.
 FEAT-MKT-001 controls that change. FEAT-VER-001 now specifies flat blue/neutral
 verification states and one current-authority basis for vehicle badges and
-document filters. Stronger shared native card/section boundaries are pending
-under FEAT-MOB-001; none of these notes certifies deployment.
+document filters. Installed native card/section qualification remains separate
+under FEAT-MOB-001; use PROGRESS for exact source, schema and artifact status.
 
 ## Discovery and identity
 
@@ -84,12 +84,13 @@ detail; the separate Space needed filter is removed. Courier cars and motorcycle
 are supported alongside vans, pickups and heavier vehicles. Use “vehicle” for
 shared UI wording rather than implying every configuration is a truck.
 
-The locally reviewed Capacity presentation names the vehicle's current/next-work
+The current Capacity presentation names the vehicle's current/next-work
 Empty/Partial offer Planned capacity, with Planned area or Planned route where
 geometry matters. Preferred corridor/area is its separate regular coverage.
 Map and private Capacity return a vehicle matching any complete offer once,
 while its other selected vehicle, status, permission and document filters still
-apply. Hosted rollout remains pending. Both Empty and Partial may use Area or
+apply. Hosted migrations 209–217 are recorded installed; complete runtime
+filter-matrix acceptance remains separate. Both Empty and Partial may use Area or
 Route. A route is ordered travel; an area is service coverage, and
 the reported GPS/phone/manual position remains independent. There is no separate
 search mode that excludes Preferred availability by default. FEAT-CAP/GEO-001
@@ -101,10 +102,11 @@ position, source or uncertainty circle at a coverage city. Current local source
 and Chrome/Expo qualification, physical-device limits and remaining rollout
 steps are recorded in PROGRESS and traceability.
 
-The local public provider-profile producer now applies the accepted Planned/
-Preferred geography and Empty/Partial eligibility rules through migration217.
+The public provider-profile producer applies the accepted Planned/
+Preferred geography and Empty/Partial eligibility rules through migration 217.
 Its focused dispatcher/profile regressions, exact recovery, local postchecks and
-canonical scale gate pass; hosted installation remains pending. The bounded
+canonical scale gate are recorded in traceability; hosted installation through 217
+is independently confirmed in PROGRESS. The bounded
 compiled-preview broker walkthrough also confirms a matching public account for
 Partial Area search, plus representative private searches and permission denial.
 It does not qualify the complete filter cross-product or independent Preferred-
@@ -189,26 +191,28 @@ qualification; the public guest Track layout is unchanged by this work.
 Featured automatically prepares up to eight eligible Transport Provider account
 showcases per scheduled day, rotates accounts through complete rounds, and keeps
 their eligible vehicles and assigned drivers within each account's presentation.
-Manual days remain protected. The currently deployed morning window is
-08:30–12:00 with four two-minute sponsor mentions. Rotation correctness must
+Manual days remain protected. The current window is 22:30–23:59 Africa/Addis_Ababa
+(10:30PM–11:59PM EAT). Rotation correctness must
 cover later dates and exhausted rounds, not only today's populated demo.
 The Featured header names the TikTok LIVE broadcast separately from the vehicle
 timetable. It says when the broadcast is planned and says “TikTok LIVE broadcast
 is on now” only after a permitted staff member confirms the stream has started.
 
-Pending October26 Featured presentation shows AM/PM with EAT beside displayed
+Featured presentation shows AM/PM with EAT beside displayed
 times, leaving canonical 24-hour schedule storage and calculations unchanged.
 It omits the How Featured works disclosure and does not show a negative TikTok
 strip when there is no scheduled/Live broadcast. The daily lineup remains
 available independently of TikTok. FEAT-FTR-001 owns the display contract.
 
-The latest accepted programme rule, pending implementation/rollout, replaces
-that morning window with22:30–23:59 Africa/Addis_Ababa on the feature date.
-At most eight accounts receive at least ten minutes each; all sponsor mentions
-fit inside that same89-minute window. The heading is Daily Featured on TikTok
+At most eight accounts receive at least ten minutes each; up to four two-minute
+sponsor mentions fit inside that same 89-minute window. The heading is Daily Featured on TikTok
 LIVE on web and Android. This identifies the programme; only a confirmed actual
 broadcast is called on now. Past snapshots remain history, and incompatible
 future manual schedules require exact review rather than silent rewriting.
+Migration 210 is installed and the November 12 live public web review confirms the
+evening window and eight-account lineup. This is not installed Android evidence
+or proof that TikTok is broadcasting. FEAT-FTR/CON-001 and PROGRESS own the
+contract and qualification respectively.
 
 ## Product boundaries and presentation
 

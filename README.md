@@ -7,9 +7,10 @@ historical records; it is not another set of current instructions.
 
 Loadgistic helps Transport Providers share vehicle capacity, routes and
 availability with brokers, shippers and receivers. Visitors can explore public
-Capacity without an account. Providers can share privately with an email address
-or a selected business workspace, whose authorized staff coordinate Capacity and
-Tracking. Provider fleets support GPS, phone and manually reported locations.
+Capacity without an account. Providers share private Capacity with registered
+shipper/broker accounts and their permitted teams. Public-link Tracking retains
+separate verified-email access; an email address alone does not grant private
+Capacity. Provider fleets support GPS, phone and manually reported locations.
 
 Transport agreements are made directly between the parties. Optional document
 review and agreed-shipment Tracking have separate permissions and privacy rules.
@@ -20,7 +21,8 @@ Implemented source capabilities and release evidence are recorded separately in
 
 - Next.js App Router on Node.js 22
 - Supabase PostgreSQL with PostGIS, RLS, and server-only transactional RPCs
-- Supabase Auth for Google, numeric email-code, and local fixture-password login
+- Supabase Auth with numeric email-code access; Google entry is currently disabled,
+  and fixture-password login is explicitly local-only
 - Supabase private Storage with quarantine-before-release scanning
 - Netlify-compatible Next.js output and scheduled managed-operations worker
 - Leaflet with bounded cursor loading and configurable attributed map tiles
@@ -38,7 +40,7 @@ data backends are not part of the application runtime.
   contact, and vehicle-capacity details
 - Daily Featured Vehicles with automatic rotation, Sponsor placements, and
   an administrator-managed broadcast schedule
-- Email-OTP Shared capacity map for trusted contacts
+- Account/team-authorized private Capacity map with vehicle-specific grants
 - Customer business workspaces with explicitly permitted staff access
 - Transporter Capacity management, fleet assignment, and Driver permissions
 - Provider-owned Tracking sessions with status or consented approximate location
@@ -57,14 +59,15 @@ data backends are not part of the application runtime.
 
 ## Run locally
 
-For a fresh disposable development setup:
+For a fresh disposable development setup with Supabase CLI 2.111.0 and Docker
+available (see [local setup](docs/LOCAL_SETUP.md) for preflight and resume rules):
 
 ```bash
 nvm use
-cp -n .env.example .env.local
 npm ci
 npm run tools:workflow:setup
 npm run supabase:start
+node scripts/prepare-local-security.mjs
 npm run supabase:local:configure
 npm run dev
 ```
@@ -153,9 +156,14 @@ fixture importer against a hosted project. Hosted rollout applies migrations,
 configures private buckets/Auth/email/scanning separately, and verifies the
 exact target and matching application before traffic is enabled.
 
-Netlify and Supabase configuration, callbacks, environment names, backup,
-rollback, and smoke steps are documented in `docs/CLOUD_HANDOFF.md` and
-`docs/SUPABASE_MIGRATION.md`. Secrets belong in the provider dashboards or
+Netlify automatic publishing is enabled, but its recent Git-triggered builds
+are blocked by secret scanning; the published manual package remains separate
+from green GitHub CI. See [current status](docs/PROGRESS.md) and the
+[deployment runbook](docs/operations/NETLIFY_RELEASE_VERIFICATION.md).
+
+Current Netlify verification, backup/rollback and smoke steps are in
+[the deployment runbook](docs/operations/NETLIFY_RELEASE_VERIFICATION.md) and
+`docs/SUPABASE_MIGRATION.md`. `docs/CLOUD_HANDOFF.md` preserves older handoff history. Secrets belong in the provider dashboards or
 ignored local environment only; never commit or paste them into documentation.
 
 The standalone Docker image packages only the Next.js application. PostgreSQL,

@@ -1,3 +1,13 @@
+# Current reading order — housekeeping November12
+
+Root AGENTS.md and the latest owner decisions control authority and workflow.
+[PROGRESS](PROGRESS.md) owns current source, hosted-ledger and publication state;
+older dated local/pending notes below preserve history. In particular, routine
+visual/workflow review is agent-led under the October22 instruction, while
+production changes retain their exact owner authorization and release gates.
+Do not replay a historical database repair because an older paragraph calls it
+pending; first verify the actual installed catalog and source.
+
 # October18 provider identity and courier restoration
 
 The latest owner restores Courier car/motorcycle. All provider owners retain the
@@ -378,12 +388,14 @@ that update acknowledges only the exact saved alert, with current driver authori
 
 ## Required gates
 
-### Owner visual review (NR-13)
+### Agent-led visual and workflow review (NR-13; owner update October22)
 
-Required sequence: running dev server and owner visual testing → explicit visual
-approval → extensive tests and release gates → deployment only on the owner's
-explicit request. Keep the preview running during review. Visual approval is not
-deployment authorization; never infer either from passing automated checks.
+AGENTS.md's October22 owner instruction supersedes the earlier routine owner
+visual-approval gate. Required sequence: focused tests, agent-led actual browser
+tasks and saved-result/permission checks, extensive tests and release gates,
+then deployment only under the owner's explicit request and production gates.
+Keep the preview running during review. Self-review is not deployment authority;
+passing automated checks alone do not establish workflow or visual acceptance.
 
 Performance work must preserve the existing appearance, action count, automatic
 loading and discoverability. Capture that baseline before implementation and
@@ -396,12 +408,12 @@ requests and payloads together with interaction and result completeness.
 
 Before deploying any visible UI/map change, keep a local Loadgistic server
 running against local services and provide its working URL, affected interaction
-and desktop/phone captures. Run focused interaction checks, then obtain explicit
-owner visual approval before expensive full release gates or publication.
-CI and automated screenshots prove checks, not acceptance of a design. An earlier
-release approval does not approve a later visual change. Record the reviewed
-version and re-review material changes. Performance fixes must preserve the
-accepted interaction unless a change is explicitly reviewed.
+and desktop/phone captures. Complete the affected task in actual Chrome and the
+affected Expo surface, verifying saved results and denial boundaries. Use an
+authorized phone session for native-only behavior; ask the owner when a product
+decision or access is unresolved. Record the reviewed version, failures and
+limits; re-review material changes. Performance fixes must preserve the accepted
+interaction unless the owner agrees to the specific tradeoff.
 
 ### Workflow regression lessons
 

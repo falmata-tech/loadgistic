@@ -1,5 +1,14 @@
 # State machines
 
+## Historical state inventory — reconciled November12
+
+The diagrams below preserve earlier implementation contracts. Email-only Shared
+capacity access, guest arrangement chat and old session lifetimes are superseded;
+do not implement or authorize them from this reference. Use current FEAT-CON,
+ENT, TRK and SHP contracts in [traceability](../specs/TRACEABILITY.md), the server's
+transition commands and [PROGRESS](PROGRESS.md). Private Capacity requires an
+account/team grant; public-link Tracking retains separate email authorization.
+
 ## Provider shipment
 
 ```text
