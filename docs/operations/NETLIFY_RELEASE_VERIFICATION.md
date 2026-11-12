@@ -10,16 +10,18 @@ Site `loadgistic-473` / `dbb0fcec-9ec9-4511-9737-db0e32849af5` is linked to
 `falmata-tech/loadgistic`. Builds are Active; main is the production branch and
 **automatic publishing is ON**. The build command is `npm run build`, publish
 `.next`, functions `netlify/functions`. The latest automatic main attempt,
-[6af4f92d516c70141eddfe3a](https://app.netlify.com/projects/loadgistic-473/deploys/6af4f92d516c70141eddfe3a),
+[6af61dc3ec2aa1b4a433776c](https://app.netlify.com/projects/loadgistic-473/deploys/6af61dc3ec2aa1b4a433776c),
 compiles with Node 22.16.0 / npm 10.9.2 but fails secret scanning. Successful manual
 deploy6af4f16a16aab2cef815c573 remains Published / Production. Neither a repository
 provider label `manual` nor green GitHub checks establishes automatic deployment
 success. These are provider UI readbacks, not an independent ZIP-byte comparison.
 
-The scanner names `LOADGISTIC_EMAIL_REPLY_TO` in dated operational documents and
-telematics manifest/tests, plus `apps/mobile/google-services.json:18`. The latter
-is Android Firebase client configuration, with no private-key/service-account
-fields. Google API/application restrictions are unverified. Do not print values.
+The scanner names `LOADGISTIC_SMTP_USER` and earlier builds name
+`LOADGISTIC_EMAIL_REPLY_TO` in dated operational documents and telematics
+manifest/tests, plus `apps/mobile/google-services.json:18`. The latter is Android
+Firebase client configuration, with no private-key/service-account fields. Later
+Chrome review verified the exact key, its25-API allowlist and absent application
+restriction. The separate hardening gap remains visible below. Do not print values.
 
 Before changing the installed pipeline, prepare a reviewable correction:
 
@@ -41,7 +43,61 @@ housekeeping. [NR-75](../SECURITY_REGRESSION_REGISTER.md#nr-75--green-github-che
 owns this discrepancy. Netlify's [secrets controller reference](https://docs.netlify.com/build/environment-variables/secrets-controller/)
 documents narrow exclusions; its existence does not approve one for this app.
 
-## Required release checks
+## Reviewed delivery correction — activation pending
+
+Current source preparation addresses NR-75 without changing application inputs.
+The actual c957a60 main run passed all16 jobs, while its automatic Netlify build
+6af61dc3ec2aa1b4a433776c failed scanning. Published deployment
+6af4f16a16aab2cef815c573 remains the rollback target. Provider activation and
+actual post-activation publication have not been performed.
+
+| Boundary | Proposed exact change / retained control |
+| --- | --- |
+| Netlify production branch | `main` → `production`; repository remains falmata-tech/loadgistic; retain production-branch-only builds and existing Deploy Preview approval/secret isolation. |
+| Automatic publishing | Remains ON. The new source prebuild rejects production from main and independently requires a complete successful current-main CI run and matching production ref. |
+| Delivery ref | After successful main push CI, the workflow creates or fast-forwards only refs/heads/production to that exact SHA. All16 jobs, latest attempt, same repository/workflow and current main are rechecked. No forced history or broad credential is used. |
+| Build command | Versioned command runs check-netlify-scan-exceptions.mjs before npm run build. Provider build/runtime settings otherwise stay unchanged. |
+| Normal scan omission | Only LOADGISTIC_SMTP_USER and LOADGISTIC_EMAIL_REPLY_TO; a changed actual value fails the prebuild digest check. Passwords, API/runtime secrets and other keys remain scanned. |
+| File scan omission | Only apps/mobile/google-services.json; its exact reviewed bytes must match the policy digest. Any edit, including a new private field, stops the build until separately reviewed. No directory is omitted. |
+| Supabase monitor | New seven-day token for tpwyyzoqijjmbvsmmvcm only, Project Settings Read + Advisors Read. Store only as LOADGISTIC_ADVISOR_READ_TOKEN in this repository's Actions secrets; no classic/admin token or local credential file. Creation requires action-time owner confirmation. |
+
+The Chrome key review matched the actual Android key to the source and found25
+allowed APIs, with no Android-app restriction. The selected list excludes
+Generative Language API. Application restriction and unused-API hardening still
+need certificate/SDK compatibility evidence; this correction changes no Google
+key, service account, native signing or Firebase rule. A client-configuration
+exception is not blanket security clearance.
+
+Activation order:
+
+1. Qualify the exact PR, including the Netlify Deploy Preview and all required CI.
+2. Review the exact provider field above and the candidate. Keep scanner and
+   source guards enabled. A premature merge remains fail-closed on main.
+3. Merge the qualified source under the owner's authorization. Verify main CI
+   and the delivery workflow's actual destination/readback. Do not label a
+   prepared workflow or dry run as an installed/working promotion.
+4. Select production as Netlify's production branch, preserving preview/secret
+   scopes. Verify the resulting exact-source build and all runtime checks below;
+   source qualification alone does not certify the generated adapter package.
+5. If deployment/runtime checks fail, retain the failure and restore the existing
+   verified application through the reviewed rollback control. Do not force the
+   production Git ref backward, replay schema or alter broad environment settings.
+6. After separately confirmed token creation/storage, run the existing strict
+   advisor workflow. Missing-token failure must become actual metadata readback;
+   the known WARN findings remain visible and the threshold stays unchanged.
+
+Read-only dry run: the new policy inspected actual main c957a60 and run43298031258
+with all16 jobs and reported DRY_RUN_CREATED. It made no reference write. Negative
+tests cover wrong/foreign/PR sources, missing/duplicate/skipped/failed jobs,
+moved main, non-fast-forward history, API denial/unavailability, modified public
+configuration and ambiguous write/readback failures. Raw values are never logged.
+
+Primary references: [Firebase API keys](https://firebase.google.com/docs/projects/api-keys),
+[Netlify scan controls](https://docs.netlify.com/build/environment-variables/secrets-controller/),
+[GitHub workflow_run](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)
+and [scoped Supabase tokens](https://supabase.com/docs/guides/platform/personal-access-tokens).
+
+## Runtime release checks
 
 Prerequisite for visible changes (NR-13; owner update October 22): keep a running
 local Loadgistic URL with local services, focused desktop/phone/Expo evidence and

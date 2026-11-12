@@ -15,9 +15,13 @@ and MIME enums. Unknown fields, raw exceptions, paths, IDs, contacts, tokens and
 payloads remain private. Preserve the first failure if cleanup also fails. Negative
 parser tests and a separate six-case focused CI run retain all image-byte/privacy
 assertions and zero-retry requirements. The full release gate is unchanged.
-Owner: workflow/test maintainer. Next: read actual focused evidence, repair the
-observed cause, and qualify the exact candidate; instrumentation alone is not a
-repaired proof workflow. See BASE-DEP-001 and PROGRESS.
+PR32 merged as c957a60 after all16 PR jobs and six independent focused tasks
+passed. Main CI43298031258 separately passed all16 jobs; its proof shard recorded
+77 passes,27 existing reviewed skips and zero failures/retries. The diagnostic
+boundary is qualified. The historical cause did not recur and remains unisolated;
+no product repair or flaky classification is inferred. Owner: workflow/test
+maintainer. Next if it recurs: use the retained checkpoint/original site to
+diagnose the cause before a controlled repair. See BASE-DEP-001 and PROGRESS.
 
 ## NR-75 — Green GitHub checks conceal a blocked automatic publication path
 
@@ -30,12 +34,25 @@ prove the state of continuous deployment. No same-main-commit CI promotion wait
 was observed in Netlify or the source workflow; the automatic route therefore
 also needs reconciliation with owner-only production authority.
 
-The scan names `LOADGISTIC_EMAIL_REPLY_TO` in historical operational documents
-and telematics manifest/tests, plus a likely secret at
-`apps/mobile/google-services.json:18`. Inspection identifies a mail-header setting
-and intended Android Firebase client configuration, not a private FCM service
-credential. Values are deliberately omitted. Google API/application restrictions
-have not been verified; classification is not an exposure assessment or waiver.
+Later main c957a60 passes all16 CI jobs too; automatic Netlify build
+6af61dc3ec2aa1b4a433776c still fails scanning. Its log names
+`LOADGISTIC_SMTP_USER` in existing mailbox identities; earlier logs name
+`LOADGISTIC_EMAIL_REPLY_TO`. It also flags `apps/mobile/google-services.json:18`.
+These are mailbox identifiers and the intended Android client configuration,
+not SMTP passwords or a private FCM service credential. Values are omitted.
+Signed-in Chrome matched the client key to source by SHA-256 and read its25-API
+allowlist and absent application restriction. Unused APIs and Android certificate
+restriction/compatibility remain separate hardening work; no key setting changed.
+
+The candidate correction locks the one excluded SDK file to its reviewed byte
+digest and the two named mailbox values to their existing digests before build.
+Any change or broader omission fails closed; all other scanning stays enabled.
+Successful current main CI alone may advance production without force, and
+Netlify independently rechecks that source before building for production.
+Fork/PR, stale/failed/skipped/partial evidence, moved main, API failure and ambiguous
+write cases have negative checks. The actual current-main dry run used public
+metadata and made no reference write. This is source preparation, not installed
+provider enforcement or publication evidence.
 
 **Control / next action:** the release maintainer prepares an exact reviewed
 classification, client-key restriction readback and narrow remediation, then

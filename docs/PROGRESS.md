@@ -7,7 +7,48 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — Operations proof CI diagnosis
+## Active follow-up — gated Netlify delivery
+
+PR32 is merged as `c957a60e6fe491c52a34f99c92037e7f06df3347`.
+Its [PR CI43292221647](https://github.com/falmata-tech/loadgistic/actions/runs/43292221647)
+and [main CI43298031258](https://github.com/falmata-tech/loadgistic/actions/runs/43298031258)
+each passed all16 jobs. The separate
+[focused proof run43292221500](https://github.com/falmata-tech/loadgistic/actions/runs/43292221500)
+passed three desktop and three phone tasks with zero skips/retries. The original
+failure did not recur; its cause remains unisolated. The diagnostic gap is repaired
+and qualified, without weakening image-byte/privacy assertions or classifying
+the historical failure as flaky.
+
+Current Netlify production remains the manual scheduler deployment below.
+Automatic [main build6af61dc3ec2aa1b4a433776c](https://app.netlify.com/projects/loadgistic-473/deploys/6af61dc3ec2aa1b4a433776c)
+for c957a60 failed scanning. Its current log names `LOADGISTIC_SMTP_USER` in
+recorded mailbox identities and the Android client file; earlier attempts also
+named `LOADGISTIC_EMAIL_REPLY_TO`. Values are omitted.
+
+Later signed-in Chrome inspection matched the Android key to source by SHA-256.
+It has a25-API allowlist, including Firebase-related APIs, and **no application
+restriction**. No Generative Language API is selected. The app-restriction gap
+and unused APIs need their own certificate/compatibility review; no key setting
+was changed. Firebase plugin installation remains declined.
+
+The current source candidate adds byte/value-locked scan exceptions and a
+delivery workflow that advances `production` only from a complete successful
+current main run. Netlify independently checks that same source through public
+read-only GitHub metadata before a production build. Missing metadata, wrong
+branch/source, failed CI, changed client bytes or mailbox values fail closed.
+The read-only dry run verified actual c957a60/all16 jobs and reported that it
+would create production; **no reference was written by that dry run**.
+
+Activation and exact provider fields are in the
+[release runbook](operations/NETLIFY_RELEASE_VERIFICATION.md#reviewed-delivery-correction--activation-pending).
+Source preparation, PR/main CI, provider activation and real publication remain
+separate evidence. The scoped Supabase token is prepared at its final review:
+project tpwyyzoqijjmbvsmmvcm only, Project Settings Read + Advisors Read, seven-day
+expiry. It has not been created or stored. Creating a credential requires the
+owner's action-time confirmation. The strict monitor's existing WARN findings
+are not waived by provisioning access. Docker remains unavailable here.
+
+## Completed Operations proof diagnostic follow-up
 
 Housekeeping PR31 merged as `c33221845fa68ada66927b4409ecc24464bc5478`
 after all16 PR checks passed. Obsolete release-record PR27 is closed as
@@ -21,23 +62,24 @@ failed. The runner kept only the wrapping helper at line100 and discarded the
 original source/checkpoint evidence. No diagnostic artifact was uploaded. The
 underlying cause is unisolated; no flaky classification or blind retry is claimed.
 
-The current follow-up retains only validated typed proof checkpoints and the
+PR32 retains only validated typed proof checkpoints and the
 original failure site, with negative tests against private/malformed output. A
 separate focused CI workflow runs the same synthetic proof task three independent
 times on desktop and phone with zero retries, local-only Supabase and ordinary
 catalog/API checks. It cannot substitute for the unchanged full release matrix.
 No application, authorization, image-content assertion or timeout is relaxed.
-Local browser replay remains blocked by unavailable Docker; CI is the isolated
-runtime qualification environment. Record actual focused and full results before
-calling the failure repaired. BASE-DEP-001 / NR-76 own this follow-up.
+Local browser replay remains blocked by unavailable Docker; the successful
+focused and full runs above supply isolated runtime evidence. The original
+cause remains open if it recurs. BASE-DEP-001 / NR-76 own this boundary.
 
 The merged Netlify automatic build
 [6af5ff9d5f8c5d65281778b4](https://app.netlify.com/projects/loadgistic-473/deploys/6af5ff9d5f8c5d65281778b4)
 failed the same reply-to and Firebase client-configuration scan; Deploying was
 skipped. Manual6af4f16a16aab2cef815c573 remains published. Post-merge live health
 and public Capacity return200; private workspace/photo endpoints return401.
-Firebase installation was declined, so its key restrictions remain unverified;
-no scan exception or hosted setting was changed. Scoped advisor credentials and
+At that checkpoint Firebase installation was declined; the later Chrome review
+above supplies its restriction readback. No hosted key setting was changed.
+Scoped advisor credentials and
 a Docker-capable development environment remain open prerequisites.
 
 ## Completed documentation housekeeping
