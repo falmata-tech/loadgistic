@@ -39,9 +39,25 @@ And Netlify's production prebuild independently requires the `production` branch
 And pending/failed CI, missing metadata, an unmatched ref, a moved main or API unavailability holds the existing published deployment.
 
 The read-only dry run performs no reference write. Existing `release-ready`
-requirements are unchanged. Activation requires the exact provider branch change
-before merging the scanner correction, a qualified preview and monitored runtime
+requirements are unchanged. Activation requires owner review of the exact provider
+branch change, a qualified preview and monitored runtime
 checks. A configured workflow is not evidence of an actual Netlify publication.
+
+### Scenario: a failed isolated startup remains diagnosable without leaking its output
+
+Given Supabase startup or its permitted local cleanup fails in isolated CI\
+When the wrapper receives the subprocess result\
+Then it emits only a fixed attempt phase, bounded duration/byte counts, exit status, reviewed process-error/signal enums and boolean indicators before the next operation\
+And raw output, exceptions, paths, identifiers, contacts, payloads and credentials are suppressed\
+And unknown or process/capture failures stop without retry, even when earlier captured text contains a registry warning\
+And only the existing two recognized terminal startup failures may authorize one cleanup and retry\
+And a failed retry or cleanup stops, preserving the earlier diagnostic\
+And ordinary startup success does not print child credentials or failure diagnostics.
+
+NR-77 owns this observability boundary. An indicator is not a confirmed cause;
+fake-process privacy tests do not establish a working Docker/Auth/Storage stack.
+Required real CI startup, guards and browser workflows remain unchanged. Rollback
+restores the prior wrapper without changing fixtures, database or publication.
 
 ### Scenario: broken delivery tooling fails before expensive setup
 

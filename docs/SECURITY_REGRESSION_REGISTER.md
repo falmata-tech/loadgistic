@@ -1,5 +1,28 @@
 # Security failures we must not repeat
 
+## NR-77 — CI startup discards the subprocess failure before it can be diagnosed
+
+Main CI43322153313 on16cfe62 failed worker7 in Start isolated Supabase, before
+the database guard, fixtures or browser tests ran. The log retained only
+CI_SUPABASE_UNRECOGNIZED_START_FAILURE. The wrapper captured but discarded the
+child stderr, exit/signal and spawn error. Its original cause is unisolated;
+neither a transient Docker failure nor an application regression is established.
+The production-source gate correctly withheld promotion. No blind rerun occurred.
+
+Control: before cleanup, emit a fixed JSON diagnostic containing only the
+attempt phase, bounded duration/byte counts, exit status, reviewed process-error
+and signal enums, and boolean startup indicators. Never emit raw stdout/stderr,
+exceptions, paths, migration bodies, IDs, addresses or credentials. Indicators
+are observations, not authority to retry. Process/capture failures stop even if
+captured text contains an earlier registry warning. The existing one-retry rule
+remains limited to the two previously observed terminal failures. CLI integration
+and negative tests prove that child credentials/errors cannot enter the output.
+No output-buffer limit, startup timeout, migration, browser assertion or release
+gate is relaxed. Owner: workflow maintainer. Next: qualify this diagnostic repair
+on exact-source CI; use any retained failure to diagnose before further recovery.
+Docker remains unavailable locally, so fake-process tests are not a real startup
+proof. See BASE-DEP-001 and current PROGRESS.
+
 ## NR-76 — A sanitized failure wrapper hides the proof boundary that failed
 
 Main CI43275978371 failed the desktop Operations single-proof case after all16
@@ -44,23 +67,28 @@ Signed-in Chrome matched the client key to source by SHA-256 and read its25-API
 allowlist and absent application restriction. Unused APIs and Android certificate
 restriction/compatibility remain separate hardening work; no key setting changed.
 
-The candidate correction locks the one excluded SDK file to its reviewed byte
+The PR33 correction, merged as16cfe62, locks the one excluded SDK file to its reviewed byte
 digest and the two named mailbox values to their existing digests before build.
 Any change or broader omission fails closed; all other scanning stays enabled.
 Successful current main CI alone may advance production without force, and
 Netlify independently rechecks that source before building for production.
 Fork/PR, stale/failed/skipped/partial evidence, moved main, API failure and ambiguous
 write cases have negative checks. The actual current-main dry run used public
-metadata and made no reference write. This is source preparation, not installed
-provider enforcement or publication evidence.
+metadata and made no reference write. Its PR CI passed all16 jobs; the separate
+main run failed an isolated startup before browser tests (NR-77). The production
+source was withheld. Netlify production-branch activation remains pending;
+merged source is not evidence of working publication.
 
 **Control / next action:** the release maintainer prepares an exact reviewed
 classification, client-key restriction readback and narrow remediation, then
 proves the preview and source/CI/promotion boundary before an owner-authorized
 production change. Keep scanners enabled. Do not omit broad directories, edit
 fixture identity allowlists, weaken assertions, rotate unrelated credentials or
-allow an unqualified Git push to publish. Provider environment, permissions and
-publication controls were inspected only; no exception was installed. See
+allow an unqualified Git push to publish. The preview passed scanning with the
+versioned exceptions. Only the existing public Supabase URL/publishable key were
+added to Deploy Previews after its public bootstrap was diagnosed; Production
+values, private credentials, permissions and publishing controls were preserved.
+No provider-UI scanner override or production activation was performed. See
 [current progress](PROGRESS.md) and the
 [release runbook](operations/NETLIFY_RELEASE_VERIFICATION.md).
 

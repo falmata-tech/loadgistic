@@ -7,7 +7,45 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — gated Netlify delivery
+## Active follow-up — isolated CI startup diagnostics
+
+[PR33](https://github.com/falmata-tech/loadgistic/pull/33) merged as
+`16cfe629ea76939a1b303eb3c0c6ee5ca890d0ea` after exact-head
+[CI43317010387](https://github.com/falmata-tech/loadgistic/actions/runs/43317010387)
+passed all16 jobs. Independent main/tree readback matches the qualified PR tree.
+The separate [main run43322153313](https://github.com/falmata-tech/loadgistic/actions/runs/43322153313)
+failed worker7 at Start isolated Supabase, before its guards, fixtures or browser
+tests. Its log contains only an unrecognized-start code; the captured child
+failure was discarded. The original cause remains unisolated. Main validation,
+Android and container checks passed; other workflows were still running at this
+checkpoint. The delivery workflow must not promote this failed main run.
+
+The follow-up adds typed subprocess diagnostics before cleanup, with negative
+and actual fake-CLI privacy tests. Process/capture failures cannot borrow an
+earlier registry warning to authorize retry. No buffer limit, timeout, migration,
+browser assertion or release gate is relaxed. This is a diagnostic repair, not
+proof of the startup cause or a working local Docker stack. NR-77 / BASE-DEP-001
+own qualification and any later observed recovery.
+Local Node22.16.0 quality passes1,357 tests with zero failures/skips, types/spec/
+source checks and actionlint/ShellCheck for111 scripts. The six focused startup
+cases include an isolated fake-CLI integration; real Docker startup is not
+available in this workspace. Exact-source remote qualification remains pending.
+
+Netlify preview6af638bee267aedbdcecff19 for PR33 passed all five build/deploy
+stages and scanning, but initially failed cold start because its public Supabase
+configuration was absent. Added only the site's existing public URL and
+publishable key to Deploy Previews; readback confirmed exact matches and
+unchanged Production values. Private credentials and other contexts were not
+changed. One diagnosed rebuild then returned root200 and signed-out workspace401.
+Health/public Capacity returned503 with production-only server configuration
+absent, so this is bootstrap evidence, not full runtime qualification. Immutable
+rebuild/UI readback remained pending after slow Chrome responses. Fresh live
+health and public Capacity return200; private workspace/photo access returns401.
+The last confirmed published deployment is6af4f16a16aab2cef815c573. No production
+branch activation, new credential creation or publication has been performed.
+Current source-bound outcomes also remain on PR33; preserve its original checks.
+
+## Gated Netlify delivery — merged, activation pending
 
 PR32 is merged as `c957a60e6fe491c52a34f99c92037e7f06df3347`.
 Its [PR CI43292221647](https://github.com/falmata-tech/loadgistic/actions/runs/43292221647)
@@ -31,7 +69,7 @@ restriction**. No Generative Language API is selected. The app-restriction gap
 and unused APIs need their own certificate/compatibility review; no key setting
 was changed. Firebase plugin installation remains declined.
 
-The current source candidate adds byte/value-locked scan exceptions and a
+The merged PR33 source adds byte/value-locked scan exceptions and a
 delivery workflow that advances `production` only from a complete successful
 current main run. Netlify independently checks that same source through public
 read-only GitHub metadata before a production build. Missing metadata, wrong
