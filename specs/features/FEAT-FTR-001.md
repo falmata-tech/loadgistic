@@ -3,21 +3,24 @@ id: FEAT-FTR-001
 title: Daily Featured Transport Provider programme
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-ADM-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-UIX-001, FEAT-VER-001, FEAT-IAM-001, FEAT-SUP-001]
 problem: Capacity seekers need a concise daily introduction to useful truck types and the Drivers operating them, while Loadgistic needs a manageable live programme that does not consume the entire day or turn provider eligibility into an endorsement.
-behavior: Hosted account rotation introduces up to eight eligible Transport Provider accounts per scheduled day under FEAT-CON-001, preserving saved/manual selections and completed-round fairness. The accepted October26 follow-up confines every provider and sponsor interval to22:30–23:59 Africa/Addis_Ababa, with at least ten minutes per provider, and names the public programme Daily Featured on TikTok LIVE. This new timing/header is pending implementation and rollout; historical contracts below do not override the current acceptance.
+behavior: Hosted account rotation introduces up to eight eligible Transport Provider accounts per scheduled day under FEAT-CON-001, preserving saved/manual selections and completed-round fairness. Every provider and sponsor interval fits within 22:30–23:59 Africa/Addis_Ababa, with at least ten minutes per provider. The public programme is Daily Featured on TikTok LIVE. The hosted ledger through 220 and November 12 public web readback confirm the evening window; installed Android acceptance remains separate. Historical contracts below do not override this account-based evening programme.
 contracts: [FeaturedTruckTypeRotation, FeaturedTruckCandidate, FeaturedTruckDay, FeaturedTruckSlot, FeaturedTruckAdminCommand, PublicFeaturedTruckProjection, FeaturedTruckBoardLayout, FeaturedDaySchedule, FeaturedScheduleEntry, FeaturedScheduleConfig, DailyTikTokBroadcast]
 observability: [FEATURED_DAY_SAVED audit, FEATURED_DAY_PUBLISHED audit, FEATURED_DAY_AUTO_PUBLISHED audit, PLATFORM_CONTROLS_UPDATED audit, bounded worker counts, administrator roster-gap state]
-rollout: Add exact truck-and-Driver slot references additively, migrate the disposable demonstration roster to current truck candidates, retain historical provider-slot identifiers only for rollback integrity, and publish the new projection only after local Supabase, authorization, schedule, and responsive board checks pass.
+rollout: Account rotation 208 and evening-window 210 are installed on the hosted ledger. Preserve saved/manual selections, past schedules and round history. Further changes require exact-source authorization, schedule/privacy tests and responsive workflow evidence under the normal release contract; ledger presence does not qualify installed Android or a confirmed TikTok broadcast.
 ---
 
-# Daily Featured Trucks programme
+# Daily Featured Transport Provider programme
 
-Hosted ledger208 implements [FEAT-CON-001](FEAT-CON-001.md)'s distinct Transport
-Provider account rounds. Earlier truck-theme and morning-window sections below
-are historical where they conflict with that account contract or the October26
-acceptance. The new evening window and programme heading remain pending a
-source-matched local qualification and reviewed rollout.
+Hosted migrations 208/210 implement [FEAT-CON-001](FEAT-CON-001.md)'s distinct
+Transport Provider account rounds and the evening window. On November 12 the
+actual public web page displays eight accounts, Daily Featured on TikTok LIVE,
+and 10:30PM–11:59PM EAT. [PROGRESS](../../docs/PROGRESS.md) distinguishes source CI,
+hosted ledger, publication and installed-phone evidence. A scheduled programme
+does not prove a running broadcast. Earlier truck-theme, morning-window and
+local/pending implementation notes below retain their dated history; they do
+not override this account-based evening contract or describe current rollout.
 
-## October26 accepted programme window and identity — implementation pending
+## Current programme window and identity — accepted October26
 
 Given a current Featured programme is prepared for an Ethiopia calendar date\
 When automatic or manual timing is saved or published\
@@ -117,7 +120,7 @@ And the configured eight-showcase limit and protected saved days remain unchange
 
 Web/native cards and filters reuse the existing car/motorcycle artwork. Verification
 maps shared catalogue/theme selection, SQL exact-pair eligibility and preserved
-manual/saved days; migration168 and demo rebalancing have separate local reviews.
+manual/saved days; migration 168 and demo rebalancing have separate local reviews.
 
 ### October 14 provider-owner compatibility — local work
 

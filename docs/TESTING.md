@@ -61,7 +61,14 @@ The standard audit captures current logged-out, fleet-provider, self-managed Dri
 
 `npm run test:a11y` is the standards-based accessibility gate. It scans serious and critical WCAG violations across public and authenticated roles, tests keyboard operation and focus restoration for dialogs, and checks narrow 320-pixel reflow. Leaflet marker positions are spatial and can overlap or cross the active viewport even though each marker is 82×96 pixels; the marker pane is therefore excluded only from the automated target-size rule, with the equivalent keyboard-operable Truck List retained. All other accessibility rules still inspect the map.
 
-Run visual inspection only when the user has approved it. During iteration inspect the changed states first; reserve the full multi-role sweep for a release boundary. Inspect at least the public homepage, public capacity list/map, a provider microsite, the collapsed provider capacity summary, and provider shipment creation when those surfaces changed.
+AGENTS.md's October22 owner instruction requires the agent to perform actual
+browser/workflow review after focused tests and before extensive release gates.
+During iteration inspect changed states first; reserve the full multi-role sweep
+for a release boundary. Exercise affected public, private and provider tasks in
+Chrome at desktop/phone sizes and the affected Expo surface; verify saved results
+and permission boundaries. Record failures and evidence limits. Native-only
+checks still need an authorized phone session, and publication retains its
+separate owner authorization.
 
 ## Production boundary
 

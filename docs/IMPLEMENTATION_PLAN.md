@@ -1,5 +1,17 @@
 # Loadgistic Implementation Plan
 
+## Historical MVP plan — current-state correction November12
+
+The SQLite, Shipment Board, transactions and manual payment workflow below are
+an earlier product design, not the running application or an implementation queue.
+Current runtime is Supabase Postgres/Auth/Storage; public discovery is account-free,
+private Capacity uses account/team grants, and commercial payment enforcement is
+not active. Use [PROGRESS](PROGRESS.md), [the product brief](PRODUCT_MASTER_PROMPT.md)
+and [traceability](../specs/TRACEABILITY.md) for current work. Do not implement or
+re-enable this historical plan without a new accepted contract.
+
+## Preserved original plan
+
 The current implementation is a local Next.js and SQLite MVP. Accepted behavior is controlled by `specs/features/` and summarized in `docs/PRODUCT_MASTER_PROMPT.md`.
 
 ## Current Workspaces

@@ -73,7 +73,10 @@ Docs: https://docs.expo.dev/eas/index.md
   Doctor success is not a security audit or proof of working user workflows.
 - Distinguish a Metro-dependent development client from a standalone phone APK.
   Record compiled, installed, device-tested, owner-approved and distributed
-  separately. Preserve owner visual review before extensive release gates.
+  separately. Follow root AGENTS.md's October22 instruction: the agent performs
+  actual visual/workflow review before extensive release gates. Native-only
+  behavior still requires an authorized phone session; self-review grants no
+  signing, distribution or production authority.
 - A browser adapter may omit a native import graph. Typecheck and Expo-web success
   do not prove Android startup. Shared native contracts must be dependency-free;
   keep server registration/validation adapters out of phone routing imports.

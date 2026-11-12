@@ -2,17 +2,18 @@
 
 ## WEB-MOB-047 — Native action names disappear while saving
 
-Status: observed in the shared native Button; deferred product accessibility
-cleanup, not a repaired or deployed feature.
+Status: source repair and automated regression verified 2026-11-12; installed
+assistive-technology acceptance remains separate. The earlier deferred label was stale.
 
-`apps/mobile/src/components/ui.tsx` replaces a busy button's text with an activity
-indicator without retaining an accessible action name. The Fleet assignment
-test exposed this while intentionally holding a saved assignment's reread.
-That test must verify the original control, saved vehicle and actual pending
-read rather than wait for text the busy state deliberately removes. A later
-UI change should preserve the action's accessible name and announce busy state,
-with focused screen-reader/control regressions. This observation does not mean
-the assignment write failed or authorize bypassing its confirmed reread.
+Current `apps/mobile/src/components/ui.tsx` gives Pressable an explicit translated
+`accessibilityLabel` and `accessibilityState` for disabled/busy, retaining its name
+when a spinner replaces the visible text. `apps/mobile/tests/button-accessibility.test.mjs`
+executes the actual component through ready/loading/completion/retry in en/am/om.
+All three cases pass within the fresh 424-test mobile gate, alongside types/lint.
+This is not a new implementation in the housekeeping task and does not claim
+physical TalkBack acceptance. The original observation remains valid history:
+a spinner without a retained action name was confusing; a saved assignment and
+its confirmed reread remain distinct from that presentation issue.
 
 ## WEB-MOB-046 — Legacy shipment examples have no active customer invitation
 
@@ -495,7 +496,7 @@ Evidence: [capacity route](../src/app/api/capacity/route.ts),
 [capacity adapter](../src/lib/provider-capacity/supabase.js),
 [current form](../src/components/capacity-form.tsx),
 [gauge](../src/components/provider-truck-market-gauge.tsx),
-[preview](../src/components/public-board-preview.tsx),
+historical `src/components/public-board-preview.tsx` (removed),
 [retired proof route](../src/app/api/files/proof/[id]/route.ts).
 Which preview/gauge paths are reachable today still needs browser confirmation.
 **Mobile:** do not add a photo-upload promise based only on this legacy endpoint.

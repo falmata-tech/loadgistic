@@ -4,6 +4,43 @@ BASE-DEP-001 / FEAT-SEC-001 / NR-08 / NR-10 / NR-11 / NR-69.
 Scope: Loadgistic only. This runbook grants no production authority; follow
 [PRODUCTION_AUTHORITY.md](../PRODUCTION_AUTHORITY.md).
 
+## Installed pipeline readback — November 12
+
+Site `loadgistic-473` / `dbb0fcec-9ec9-4511-9737-db0e32849af5` is linked to
+`falmata-tech/loadgistic`. Builds are Active; main is the production branch and
+**automatic publishing is ON**. The build command is `npm run build`, publish
+`.next`, functions `netlify/functions `. The latest automatic main attempt,
+[6af4f92d516c70141eddfe3a](https://app.netlify.com/projects/loadgistic-473/deploys/6af4f92d516c70141eddfe3a),
+compiles with Node 22.16.0 / npm 10.9.2 but fails secret scanning. Successful manual
+deploy6af4f16a16aab2cef815c573 remains Published / Production. Neither a repository
+provider label `manual` nor green GitHub checks establishes automatic deployment
+success. These are provider UI readbacks, not an independent ZIP-byte comparison.
+
+The scanner names `LOADGISTIC_EMAIL_REPLY_TO` in dated operational documents and
+telematics manifest/tests, plus `apps/mobile/google-services.json:18`. The latter
+is Android Firebase client configuration, with no private-key/service-account
+fields. Google API/application restrictions are unverified. Do not print values.
+
+Before changing the installed pipeline, prepare a reviewable correction:
+
+1. Verify each finding's purpose, distribution and restrictions. Keep actual
+   private credentials out of source and build output; follow the incident
+   procedure if that inspection establishes exposure.
+2. For a confirmed public setting/client configuration, document the narrowest
+   exact exception supported by Netlify, with its reason and verification.
+   Never disable the scanner or omit whole docs/scripts/output directories.
+3. Specify how an exact successful main CI/artifact is promoted under the owner's
+   production authority. The current source workflow has no Netlify promotion
+   job and no same-commit wait was observed in the provider's automatic route.
+   Preserve PR-preview credential isolation and rollback controls.
+4. Review that concrete configuration before applying hosted settings, then
+   qualify the resulting preview, scan and promotion with the checks below.
+
+No exception, secret, environment scope or publishing setting was changed during
+housekeeping. [NR-75](../SECURITY_REGRESSION_REGISTER.md#nr-75--green-github-checks-conceal-a-blocked-automatic-publication-path)
+owns this discrepancy. Netlify's [secrets controller reference](https://docs.netlify.com/build/environment-variables/secrets-controller/)
+documents narrow exclusions; its existence does not approve one for this app.
+
 ## Required release checks
 
 Prerequisite for visible changes (NR-13; owner update October 22): keep a running

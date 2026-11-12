@@ -1,5 +1,28 @@
 # Authorization matrix
 
+## Current authority — reconciled November12
+
+This older inventory contains retired email-only Capacity, guest Support,
+Loadgistic audience and subscription rules. Those entries are historical; they
+must not authorize current access. Current contracts are [FEAT-CON-001](../specs/features/FEAT-CON-001.md),
+[FEAT-ENT-001](../specs/features/FEAT-ENT-001.md),
+[FEAT-FLT-001](../specs/features/FEAT-FLT-001.md) and
+[FEAT-TRK-001](../specs/features/FEAT-TRK-001.md), plus current server commands.
+
+| Current action | Current boundary |
+| --- | --- |
+| Browse public discovery | Account-free; current public projection and eligibility only. |
+| Read private Capacity | Signed-in Shipper / broker account or authorized team member with a current vehicle grant; email-only Capacity OTP is retired. |
+| Read public-link shipment Tracking | Independent recipient/email authorization and short verified session; Capacity/account rules do not grant shipment access. |
+| Use software Support | Authenticated customer/provider workspace; platform Brokerage and guest intake are retired. |
+| Activate provider vehicles | Any provider owner may keep multiple Draft vehicles; one unreviewed Live vehicle, with exact qualifying ownership/financed-licence authority for additional Live vehicles. Employees act only within current assignments and explicit permissions. |
+| Subscription/payment access | No current commercial enforcement; do not revive old plan denial branches from this matrix. |
+
+Use [PROGRESS](PROGRESS.md) for observed schema/release evidence. A metadata readback
+is not a full live role/write regression.
+
+## Historical authorization inventory
+
 ## Audit boundaries (090–095 applied locally; SQL/concurrency/browser verified)
 
 Public profile metadata (095) is filtered in PostgreSQL before rendering: hidden

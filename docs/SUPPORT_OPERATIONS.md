@@ -1,5 +1,14 @@
 # Native customer support operations
 
+## Historical operations design — reconciled November12
+
+The Assisted matching, guest arrangement intake, Brokerage and SQLite design below
+is retired. It is retained as history, not an operations runbook or pending
+feature request. Current software Support serves authenticated customer/provider
+workspaces through Supabase-backed authorization. Use [the product brief](PRODUCT_MASTER_PROMPT.md),
+FEAT-SUP/ENT/CON contracts and [PROGRESS](PROGRESS.md); do not restore a guest
+launcher, guest data grant or separate platform Brokerage authority from this file.
+
 Status: local implementation. Controlling specifications: `FEAT-SUP-001` and
 `FEAT-GST-001`.
 

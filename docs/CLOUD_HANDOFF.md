@@ -1,3 +1,13 @@
+# Historical cloud handoff — current-state correction November12
+
+The October18 snapshot below is preserved history, including its dirty-worktree,
+local database and one-time authorization context. It does not describe this fresh
+checkout or grant ongoing agent/delegation/production authority. Start with
+[AGENTS](../AGENTS.md), [PROGRESS](PROGRESS.md) and [LOCAL_SETUP](LOCAL_SETUP.md).
+Hosted ledger is independently confirmed through220; old local-only migration
+labels must not trigger a replay. Private receipts referenced below are not
+present in a fresh clone.
+
 ## October18 current task — connected workspaces, demo devices and SEO
 
 Only Loadgistic. Preserve the large dirty worktree; do not reset/stage/commit or
