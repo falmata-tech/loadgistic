@@ -1,5 +1,24 @@
 # Security failures we must not repeat
 
+## NR-76 — A sanitized failure wrapper hides the proof boundary that failed
+
+Main CI43275978371 failed the desktop Operations single-proof case after all16
+PR31 checks had passed. The browser runner recorded only the helper's replacement
+throw, line100, and the case declaration206. The test's typed checkpoint and
+original source site were captured inside private reporter stdout but discarded;
+no diagnostic artifact was retained. This is a confirmed observability gap, not
+proof of a product/storage defect or permission to retry until green.
+
+Control: retain only that exact source case's validated checkpoint, fixed failure
+category, original positive source line, booleans, bounded counts, HTTP statuses
+and MIME enums. Unknown fields, raw exceptions, paths, IDs, contacts, tokens and
+payloads remain private. Preserve the first failure if cleanup also fails. Negative
+parser tests and a separate six-case focused CI run retain all image-byte/privacy
+assertions and zero-retry requirements. The full release gate is unchanged.
+Owner: workflow/test maintainer. Next: read actual focused evidence, repair the
+observed cause, and qualify the exact candidate; instrumentation alone is not a
+repaired proof workflow. See BASE-DEP-001 and PROGRESS.
+
 ## NR-75 — Green GitHub checks conceal a blocked automatic publication path
 
 **Observed November 12:** main c926092 passes all 16 GitHub jobs, while Netlify

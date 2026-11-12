@@ -9,7 +9,7 @@ Scope: Loadgistic only. This runbook grants no production authority; follow
 Site `loadgistic-473` / `dbb0fcec-9ec9-4511-9737-db0e32849af5` is linked to
 `falmata-tech/loadgistic`. Builds are Active; main is the production branch and
 **automatic publishing is ON**. The build command is `npm run build`, publish
-`.next`, functions `netlify/functions `. The latest automatic main attempt,
+`.next`, functions `netlify/functions`. The latest automatic main attempt,
 [6af4f92d516c70141eddfe3a](https://app.netlify.com/projects/loadgistic-473/deploys/6af4f92d516c70141eddfe3a),
 compiles with Node 22.16.0 / npm 10.9.2 but fails secret scanning. Successful manual
 deploy6af4f16a16aab2cef815c573 remains Published / Production. Neither a repository

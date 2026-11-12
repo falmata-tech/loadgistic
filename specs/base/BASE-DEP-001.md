@@ -432,11 +432,35 @@ And only the two existing Driver portrait identity cases may report a fixed
 account-kind enum and old/new HTTP status integers100–599 from their exact
 failed replacement-readback step; unrelated cases, nested/unfailed steps,
 malformed values, URLs, identifiers and arbitrary text remain private\
+And the named Operations single-proof case may retain only a fixed checkpoint,
+failure category, original source line and explicitly allowlisted booleans,
+bounded byte/response counts, HTTP statuses and image MIME enums from its own
+diagnostic markers; unrelated cases, raw exceptions, contacts, URLs, private
+paths, identifiers and unrecognized fields remain private\
+And the original failure is retained if later fixture cleanup also fails\
 And the existing selection, retry, skip and pass/fail requirements remain authoritative.
 
 Evidence: `scripts/ci-browser-shard.mjs` and `tests/ci-browser-gate.test.mjs`.
 This changes failure diagnosis only; rollback removes the annotations without
 relaxing the browser gate or exposing the raw report.
+
+### Scenario: focused Operations proof diagnosis uses isolated synthetic tasks
+
+Given the Operations proof boundary needs a bounded replay\
+When the focused workflow runs after a relevant PR change or manual dispatch\
+Then it starts only the isolated local Supabase stack with the ordinary
+PostGIS/catalog, fixture and Data API checks, without hosted credentials\
+And the fixed existing proof task runs three times each on desktop and phone,
+with one worker and zero retries\
+And each of the six project/repetition pairs must pass exactly once with no
+missing, duplicate, skipped, flaky or retried result\
+And failed reports remain private except the existing bounded diagnostics\
+And the original full CI matrix and release-ready requirements remain unchanged;
+this focused workflow alone does not qualify or publish a release.
+
+Evidence: `scripts/ci-operations-proof.mjs`, its negative tests and
+`.github/workflows/operations-proof.yml`. Rollback removes the focused tool and
+diagnostic fields; it does not remove the underlying proof/privacy assertions.
 
 ### Scenario: accessibility scans wait for the final workspace route
 

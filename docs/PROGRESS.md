@@ -7,12 +7,45 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Housekeeping before new product work
+## Active follow-up — Operations proof CI diagnosis
+
+Housekeeping PR31 merged as `c33221845fa68ada66927b4409ecc24464bc5478`
+after all16 PR checks passed. Obsolete release-record PR27 is closed as
+superseded, with its original history preserved. The merged Git tree is the same
+reviewed tree; no application artifact was republished.
+
+Post-merge [main CI43275978371](https://github.com/falmata-tech/loadgistic/actions/runs/43275978371)
+failed one desktop Operations single-proof case in shard4 (76 passes,27 reviewed
+skips,1 failure). The other13 substantive jobs passed; E2E/release-ready correctly
+failed. The runner kept only the wrapping helper at line100 and discarded the
+original source/checkpoint evidence. No diagnostic artifact was uploaded. The
+underlying cause is unisolated; no flaky classification or blind retry is claimed.
+
+The current follow-up retains only validated typed proof checkpoints and the
+original failure site, with negative tests against private/malformed output. A
+separate focused CI workflow runs the same synthetic proof task three independent
+times on desktop and phone with zero retries, local-only Supabase and ordinary
+catalog/API checks. It cannot substitute for the unchanged full release matrix.
+No application, authorization, image-content assertion or timeout is relaxed.
+Local browser replay remains blocked by unavailable Docker; CI is the isolated
+runtime qualification environment. Record actual focused and full results before
+calling the failure repaired. BASE-DEP-001 / NR-76 own this follow-up.
+
+The merged Netlify automatic build
+[6af5ff9d5f8c5d65281778b4](https://app.netlify.com/projects/loadgistic-473/deploys/6af5ff9d5f8c5d65281778b4)
+failed the same reply-to and Firebase client-configuration scan; Deploying was
+skipped. Manual6af4f16a16aab2cef815c573 remains published. Post-merge live health
+and public Capacity return200; private workspace/photo endpoints return401.
+Firebase installation was declined, so its key restrictions remain unverified;
+no scan exception or hosted setting was changed. Scoped advisor credentials and
+a Docker-capable development environment remain open prerequisites.
+
+## Completed documentation housekeeping
 
 The owner requested local setup, actual browser use, pipeline inspection and
-reconciliation of recorded versus implemented/released work. This task changes
-documentation only. No application behavior, dependency lock, migration,
-production setting, secret, signing key or deployment is changed.
+reconciliation of recorded versus implemented/released work. Merged PR31 changed
+documentation only. It changed no application behavior, dependency lock, migration,
+production setting, secret, signing key or published application artifact.
 
 ### Verified source and checks
 
@@ -119,8 +152,7 @@ No exception, credential rotation or production environment edit was applied.
 ## Released work versus remaining qualification
 
 The October 27 release record is in
-[open PR27](https://github.com/falmata-tech/loadgistic/pull/27), which conflicts
-with current main. Its ledger 220 statement is independently confirmed above.
+[historical PR27](https://github.com/falmata-tech/loadgistic/pull/27), closed as superseded by housekeeping PR31. Its ledger 220 statement is independently confirmed above.
 It records the approved 209–220 rollout and web deploy 6ae129c4d2c21b0956250e05,
 now the November 11 release's documented rollback target. Its private restore,
 permission-parity and synthetic photo receipts are not in this fresh clone and
@@ -139,8 +171,9 @@ were not recreated. The preserved historical checklist keeps the earlier failure
 
 ## Next ordered work
 
-1. Complete housekeeping PR review and integrate its reconciled records through
-   protected main. This does not authorize a production deployment or settings edit.
+1. Diagnose and qualify the Operations proof boundary using safe evidence and
+   isolated CI. Housekeeping PR31 is merged; publication and remaining provider
+   changes retain their own exact-source/security prerequisites.
 2. Review exact Netlify scan findings, Google client-key restrictions and the
    same-source promotion gate; prepare a narrow owner-reviewed correction and
    qualified preview before any production publication. Keep scanners enabled.
