@@ -6,6 +6,35 @@ import {setTimeout as delay} from 'node:timers/promises';
 
 const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 
+// Child output can contain local service credentials or database error bodies.
+// Preserve process facts and fixed indicators only, before cleanup discards them.
+// Indicators are observations, never permission to retry an unknown failure.
+export function startupDiagnostic(result={}, {phase,elapsedMs}={}){
+  const stderr=typeof result.stderr==='string'?result.stderr:'';
+  const stdout=typeof result.stdout==='string'?result.stdout:'';
+  const processErrors=new Set(['ENOBUFS','ETIMEDOUT','ENOENT','EACCES','EPERM','ENOMEM','ENOSPC','EPIPE']);
+  const signals=new Set(['SIGTERM','SIGKILL','SIGINT','SIGABRT','SIGSEGV','SIGBUS']);
+  return {
+    phase:['first-start','cleanup','retry-start'].includes(phase)?phase:'unknown',
+    exitStatus:Number.isInteger(result.status)&&result.status>=0&&result.status<=255?result.status:null,
+    signal:result.signal?(signals.has(result.signal)?result.signal:'UNKNOWN'):null,
+    processError:result.error?(processErrors.has(result.error.code)?result.error.code:'UNKNOWN'):null,
+    elapsedMs:Number.isFinite(elapsedMs)&&elapsedMs>=0&&elapsedMs<=7200000?Math.floor(elapsedMs):null,
+    stdoutBytes:Math.min(Buffer.byteLength(stdout),8388608),stderrBytes:Math.min(Buffer.byteLength(stderr),8388608),
+    indicators:{
+      migrationsSeen:/Applying migration\b/i.test(stderr),
+      migrationError:/\bmigration\b[^\r\n]{0,300}\b(?:error|failed|failure)\b|\b(?:error|failed|failure)\b[^\r\n]{0,300}\bmigration\b/i.test(stderr),
+      healthCheck:/health[ -]?check[^\r\n]{0,160}(?:fail|unhealthy)|container[^\r\n]{0,160}unhealthy/i.test(stderr),
+      containerStart:/failed to start (?:container|supabase)/i.test(stderr),
+      registryLimit:/toomanyrequests/i.test(stderr),
+      portConflict:/address already in use|port is already allocated/i.test(stderr),
+      network:/ECONNRESET|ECONNREFUSED|ETIMEDOUT|connection (?:reset|refused)|no such host|temporary failure in name resolution/i.test(stderr),
+      storage:/no space left|ENOSPC/i.test(stderr),
+      accessDenied:/permission denied|unauthorized|access denied|EACCES|EPERM/i.test(stderr)
+    }
+  };
+}
+
 export function knownStartupFailure(stderr=''){
   // The CLI can report pull warnings, continue through migrations, and then
   // fail for an unrelated reason. Only the final error and its immediately
@@ -27,16 +56,22 @@ export function knownStartupFailure(stderr=''){
   return previousIndex>=terminalIndex-2?classify(lines[previousIndex]):null;
 }
 
-export async function startWithBoundedRetry({start,stop,wait}){
-  const first=start();
+export async function startWithBoundedRetry({start,stop,wait,report=()=>{}}){
+  function attempt(operation,phase){
+    const began=performance.now(),result=operation();
+    if(result.status!==0||result.error||result.signal)report(startupDiagnostic(result,{phase,elapsedMs:performance.now()-began}));
+    return result;
+  }
+  const first=attempt(start,'first-start');
+  if(first.error||first.signal)return {ok:false,reason:'START_PROCESS_FAILED',retried:false};
   if(first.status===0)return {ok:true,retried:false};
   const reason=knownStartupFailure(first.stderr);
   if(!reason)return {ok:false,reason:'UNRECOGNIZED_START_FAILURE',retried:false};
-  const cleanup=stop();
-  if(cleanup.status!==0)return {ok:false,reason:'LOCAL_CLEANUP_FAILED',retried:false};
+  const cleanup=attempt(stop,'cleanup');
+  if(cleanup.status!==0||cleanup.error||cleanup.signal)return {ok:false,reason:'LOCAL_CLEANUP_FAILED',retried:false};
   await wait();
-  const second=start();
-  if(second.status===0)return {ok:true,reason,retried:true};
+  const second=attempt(start,'retry-start');
+  if(second.status===0&&!second.error&&!second.signal)return {ok:true,reason,retried:true};
   return {ok:false,reason:'RETRY_FAILED',retried:true};
 }
 
@@ -60,7 +95,8 @@ async function main(){
   const outcome=await startWithBoundedRetry({
     start:()=>command(process.execPath,[path.join(root,'scripts','start-local-supabase.mjs')]),
     stop:()=>command(cli,['stop','--no-backup']),
-    wait:()=>delay(20_000)
+    wait:()=>delay(20_000),
+    report:diagnostic=>process.stderr.write(`CI_SUPABASE_DIAGNOSTIC ${JSON.stringify(diagnostic)}\n`)
   });
   if(!outcome.ok){
     process.stderr.write(`CI_SUPABASE_${outcome.reason}\n`);
