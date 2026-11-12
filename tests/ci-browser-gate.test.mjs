@@ -201,6 +201,63 @@ function diagnosticReport({file=diagnosticFile,line=12,project='mobile-chromium'
   tests:[{projectName:project,status,results}]}]}],errors:[],stats:{expected:0,skipped:0,unexpected:1,flaky:0}};
 }
 
+function proofDiagnostic(stdout){
+ const report=diagnosticReport({file:'operations-connected-actions.spec.ts',results:[{status:'failed',stdout,
+  error:{stack:'Error: PRIVATE\n    at fail (/repo/tests/e2e/operations-connected-actions.spec.ts:100:7)'}}]});
+ report.suites[0].specs[0].title='Operations single-proof boundary preserves acknowledged bytes';
+ return report;
+}
+test('Operations proof diagnosis retains the original failure site and typed checkpoints without private data',()=>{
+ const report=proofDiagnostic([
+  {text:'PRIVATE Authorization contact@example.test'},
+  {text:'OPERATIONS_PROOF_BOUNDARY '+JSON.stringify({stage:'BROWSER_BODY',sourceLength:8192,uploadAcknowledged:true,storageBytesMatch:true,adapterBytesMatch:true,browserStatus:200,browserMime:'image/png',contact:'PRIVATE',path:'PRIVATE_PATH',token:'PRIVATE_TOKEN'})+'\n'},
+  {text:'OPERATIONS_CONTROLS_STAGE BROWSER_BODY BROWSER_BODY_UNAVAILABLE line 240\n'}
+ ]);
+ const expected={stage:'BROWSER_BODY',failureClass:'BROWSER_BODY_UNAVAILABLE',failureLine:240,sourceLength:8192,uploadAcknowledged:true,storageBytesMatch:true,adapterBytesMatch:true,browserStatus:200,browserMime:'image/png'};
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].operationsProof,expected);
+ assert.equal(failedBrowserCaseDiagnostics(report)[0].line,240);
+ const chunks=[];reportBrowserShardFailure('PLAYWRIGHT_FAILED',4,report,value=>chunks.push(value));
+ assert.match(chunks.join(''),/CI_BROWSER_OPERATIONS_PROOF/);
+ assert.doesNotMatch(chunks.join(''),/PRIVATE|Authorization|example|path|token|contact/);
+});
+test('Operations proof diagnosis rejects unknown cases, stages and failure classes',()=>{
+ for(const text of ['OPERATIONS_CONTROLS_STAGE PRIVATE Error line 240','OPERATIONS_CONTROLS_STAGE BROWSER_BODY PRIVATE line 240','OPERATIONS_CONTROLS_STAGE BROWSER_BODY Error line 240 PRIVATE']){
+  assert.equal(failedBrowserCaseDiagnostics(proofDiagnostic([{text}]))[0].operationsProof,undefined);
+ }
+ const stdout=[{text:'OPERATIONS_CONTROLS_STAGE BROWSER_BODY Error line 240'}];
+ for(const change of ['file','title']){
+  const report=proofDiagnostic(stdout);report.suites[0].specs[0][change]=change==='file'?'tests/e2e/smoke.spec.ts':'PRIVATE';
+  assert.equal(failedBrowserCaseDiagnostics(report)[0].operationsProof,undefined);
+ }
+ for(const stdoutValue of [null,{},'PRIVATE',[{text:{toString(){throw Error('NO_STRINGIFY');}}}],[{text:'x'.repeat(8193)}]]){
+  assert.equal(failedBrowserCaseDiagnostics(proofDiagnostic(stdoutValue))[0].operationsProof,undefined);
+ }
+});
+test('Operations proof diagnosis drops malformed snapshot fields and retains the first failure over cleanup',()=>{
+ const report=proofDiagnostic([
+  {text:'OPERATIONS_PROOF_BOUNDARY '+JSON.stringify({stage:'BROWSER_BODY',sourceLength:-1,storageLength:'PRIVATE',browserStatus:999,browserMime:'PRIVATE',paintedBytesMatch:'true',abortedRequests:0.5})},
+  {text:'OPERATIONS_CONTROLS_STAGE BROWSER_BODY Error line 240'},
+  {text:'OPERATIONS_CONTROLS_STAGE CLEANUP Error line 300'}
+ ]);
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].operationsProof,{stage:'BROWSER_BODY',failureClass:'Error',failureLine:240});
+ for(const snapshot of ['PRIVATE','{}','null','[]','{"stage":"PRIVATE"}']){
+  const value=proofDiagnostic([{text:'OPERATIONS_PROOF_BOUNDARY '+snapshot},{text:'OPERATIONS_CONTROLS_STAGE API_READ Error line 245'}]);
+  assert.deepEqual(failedBrowserCaseDiagnostics(value)[0].operationsProof,{stage:'API_READ',failureClass:'Error',failureLine:245});
+ }
+ for(const line of ['0','1000001']){
+  const value=proofDiagnostic([{text:`OPERATIONS_CONTROLS_STAGE BROWSER_BODY Error line ${line}`}]);
+  assert.equal(failedBrowserCaseDiagnostics(value)[0].operationsProof?.failureLine,null);
+  assert.equal(failedBrowserCaseDiagnostics(value)[0].line,100);
+ }
+});
+test('Operations proof diagnosis retains only known business denial codes',()=>{
+ const report=proofDiagnostic([{text:'OPERATIONS_CONTROLS_STAGE SETUP Error line 215 TRUCK_NOT_LIVE'}]);
+ assert.deepEqual(failedBrowserCaseDiagnostics(report)[0].operationsProof,{stage:'SETUP',failureClass:'Error',failureLine:215,knownCode:'TRUCK_NOT_LIVE'});
+ for(const code of ['PRIVATE','contact@example.test','TRUCK_NOT_LIVE PRIVATE']){
+  assert.equal(failedBrowserCaseDiagnostics(proofDiagnostic([{text:`OPERATIONS_CONTROLS_STAGE SETUP Error line 215 ${code}`}]))[0].operationsProof,undefined);
+ }
+});
+
 test('Tracking timeout diagnosis exposes only an allowlisted failed workflow stage and duration',()=>{
  const report=diagnosticReport({file:'smoke.spec.ts',results:[{status:'timedOut',steps:[
   {title:'tracking: provider email sign-in',duration:12000},

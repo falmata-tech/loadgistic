@@ -92,7 +92,7 @@ function diagnostics(info:TestInfo){
   proofBytesMatch(value:boolean){evidence.proofBytesMatch=value;},
   fail(error:unknown){
    const name=error instanceof Error?error.name:'OTHER',message=error instanceof Error?error.message:'';
-   const failureClass=message.includes('strict mode violation')?'MULTIPLE_MATCH':message.includes('toBeVisible')?'VISIBILITY_ASSERTION':message.includes('toHaveValue')?'VALUE_ASSERTION':message.includes('toEqual')?'ROW_STATE_ASSERTION':['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';
+   const failureClass=message.includes('No resource with given identifier found')?'BROWSER_BODY_UNAVAILABLE':message.includes('net::ERR_ABORTED')?'REQUEST_ABORTED':message.includes('strict mode violation')?'MULTIPLE_MATCH':message.includes('toBeVisible')?'VISIBILITY_ASSERTION':message.includes('toHaveValue')?'VALUE_ASSERTION':message.includes('toEqual')?'ROW_STATE_ASSERTION':['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';
    const failureSite=Number((error instanceof Error?error.stack:'')?.match(/operations-connected-actions\.spec\.ts:(\d+):/)?.[1]||0);
    const knownCode=['TRUCK_NOT_LIVE','PROVIDER_VERIFICATION_REQUIRED','CAPACITY_DRIVER_LOCATION_REQUIRED','TRUCK_DRIVER_CHANGED','INVALID_VEHICLE','INVALID_VEHICLE_USE_BASIS','REGULAR_TRUCK_DRIVER_REQUIRED','TRACKING_DEVICE_LOCATION_REQUIRED','DRIVER_REQUIRED_FOR_CAPACITY'].find(code=>message.includes(code))||null;
    writeFileSync(file,JSON.stringify({stage,failureClass,failureSite,knownCode,...evidence},null,2)+'\n');
@@ -207,7 +207,7 @@ test('Operations single-proof boundary preserves acknowledged bytes',async({page
  test.setTimeout(120000);const db=localAuditService(),data=fixture(db,info),diag=diagnostics(info);
  const report:Record<string,string|number|boolean>={stage:'SETUP',sourceLength:proofBytes.length,sourceIsBuffer:Buffer.isBuffer(proofBytes)};
  const file=info.outputPath('proof-boundary.json');mkdirSync(path.dirname(file),{recursive:true});
- const save=()=>writeFileSync(file,JSON.stringify(report,null,2)+'\n');
+ const save=()=>{diag.phase(report.stage as string);writeFileSync(file,JSON.stringify(report,null,2)+'\n');};
  const mime=(value:string|undefined)=>['image/png','image/jpeg','image/webp','application/json','text/html'].includes((value||'').split(';')[0])?(value||'').split(';')[0]:'OTHER';
  try{
   await data.preflight();await observeProofBlobs(page);const owner=await data.makeOwner(),pair=await data.pair('Proof'),operator=await data.staff(true),cities=await places(db);
@@ -217,13 +217,18 @@ test('Operations single-proof boundary preserves acknowledged bytes',async({page
   await updateProviderShipmentStatus(pair.driver,shipment.id,'LOADING','Synthetic single proof',proof);
   const event=checked(await db.from('provider_shipment_events').select('id,proof_storage_path,proof_mime_type').eq('shipment_id',shipment.id).eq('status','LOADING').single());report.pathOwnershipMatches=event.proof_storage_path===proof.path;report.recordMime=mime(event.proof_mime_type);report.stage='STORED_EVENT';save();
   const adapter=await readProviderTrackingProof({id:operator,role:'SUPPORT'},shipment.id,event.id);report.adapterPresent=Boolean(adapter);report.adapterLength=adapter?.bytes?.length||0;report.adapterBytesMatch=Boolean(adapter&&Buffer.from(adapter.bytes).equals(proofBytes));report.adapterMime=mime(adapter?.mimeType);report.stage='ADAPTER';save();
-  await data.login(page,operator);await page.goto(`/admin/operations/tracking/${shipment.id}`);const endpoint=`/api/provider-shipments/${shipment.id}/proofs/${event.id}`;
+  report.stage='SIGN_IN';save();await data.login(page,operator);await page.goto(`/admin/operations/tracking/${shipment.id}`);const endpoint=`/api/provider-shipments/${shipment.id}/proofs/${event.id}`;
   let browserResponses=0,abortedRequests=0,matchingBodies=0,emptyBodies=0,unavailableBodies=0;const bodyReads:Promise<void>[]=[];
   const responses=(response:import('playwright-core').Response)=>{if(new URL(response.url()).pathname!==endpoint)return;browserResponses++;bodyReads.push((async()=>{try{const body=await response.body();if(!body.length)emptyBodies++;if(Buffer.from(body).equals(proofBytes))matchingBodies++;}catch{unavailableBodies++;}})());};
   const failures=(request:import('playwright-core').Request)=>{if(new URL(request.url()).pathname===endpoint&&/abort|cancel/i.test(request.failure()?.errorText||''))abortedRequests++;};page.on('response',responses);page.on('requestfailed',failures);
-  const responsePromise=page.waitForResponse(response=>new URL(response.url()).pathname===endpoint);await page.locator('.admin-operation-timeline').getByRole('button',{name:'Open proof',exact:true}).click();const response=await responsePromise,body=await response.body();report.browserStatus=response.status();report.browserMime=mime(response.headers()['content-type']);report.browserLength=body.length;report.browserBytesMatch=Buffer.from(body).equals(proofBytes);report.stage='BROWSER';save();
+  report.stage='OPEN_PROOF';save();
+  const responsePromise=page.waitForResponse(response=>new URL(response.url()).pathname===endpoint);
+  await page.locator('.admin-operation-timeline').getByRole('button',{name:'Open proof',exact:true}).click();
+  const response=await responsePromise;report.browserStatus=response.status();report.browserMime=mime(response.headers()['content-type']);report.stage='BROWSER_BODY';save();
+  const body=await response.body();report.browserLength=body.length;report.browserBytesMatch=Buffer.from(body).equals(proofBytes);report.stage='BROWSER';save();
   const painted=await paintedProofBytes(page);report.paintedLength=painted.length;report.paintedBytesMatch=painted.equals(proofBytes);await Promise.allSettled(bodyReads);page.off('response',responses);page.off('requestfailed',failures);report.browserResponses=browserResponses;report.abortedRequests=abortedRequests;report.matchingResponseBodies=matchingBodies;report.emptyResponseBodies=emptyBodies;report.unavailableResponseBodies=unavailableBodies;report.stage='PAINTED';save();
-  const api=await page.request.get(endpoint),apiBytes=await api.body();report.apiStatus=api.status();report.apiMime=mime(api.headers()['content-type']);report.apiLength=apiBytes.length;report.apiBytesMatch=Buffer.from(apiBytes).equals(proofBytes);report.stage='API';save();
+  report.stage='API_READ';save();const api=await page.request.get(endpoint),apiBytes=await api.body();report.apiStatus=api.status();report.apiMime=mime(api.headers()['content-type']);report.apiLength=apiBytes.length;report.apiBytesMatch=Buffer.from(apiBytes).equals(proofBytes);report.stage='API';save();
+  report.stage='ASSERT';save();
   expect(report.storageBytesMatch).toBe(true);expect(report.pathOwnershipMatches).toBe(true);expect(report.adapterBytesMatch).toBe(true);expect(report.browserStatus).toBe(200);expect(report.paintedBytesMatch).toBe(true);expect(report.apiStatus).toBe(200);expect(report.apiBytesMatch).toBe(true);await page.getByRole('button',{name:'Close proof',exact:true}).click();report.stage='COMPLETE';save();diag.phase('COMPLETE');
- }catch(error){diag.fail(error);}finally{try{await data.cleanup();}catch(error){diag.phase('CLEANUP');diag.fail(error);}}
+ }catch(error){console.log('OPERATIONS_PROOF_BOUNDARY '+JSON.stringify(report));diag.fail(error);}finally{try{await data.cleanup();}catch(error){report.stage='CLEANUP';save();console.log('OPERATIONS_PROOF_BOUNDARY '+JSON.stringify(report));diag.fail(error);}}
 });

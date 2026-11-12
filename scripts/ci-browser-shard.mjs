@@ -191,6 +191,49 @@ function portraitReplacementFailure(result,file,title){
  return null;
 }
 
+const operationsProofTitle='Operations single-proof boundary preserves acknowledged bytes';
+const proofStages=new Set(['SETUP','STORAGE','STORED_EVENT','ADAPTER','SIGN_IN','OPEN_PROOF','BROWSER_BODY','BROWSER','PAINTED','API_READ','API','ASSERT','CLOSE','COMPLETE','CLEANUP']);
+const proofFailures=new Set(['MULTIPLE_MATCH','VISIBILITY_ASSERTION','VALUE_ASSERTION','ROW_STATE_ASSERTION','BROWSER_BODY_UNAVAILABLE','REQUEST_ABORTED','Error','TimeoutError','AssertionError','TypeError','OTHER']);
+const proofBusinessCodes=new Set(['TRUCK_NOT_LIVE','PROVIDER_VERIFICATION_REQUIRED','CAPACITY_DRIVER_LOCATION_REQUIRED','TRUCK_DRIVER_CHANGED','INVALID_VEHICLE','INVALID_VEHICLE_USE_BASIS','REGULAR_TRUCK_DRIVER_REQUIRED','TRACKING_DEVICE_LOCATION_REQUIRED','DRIVER_REQUIRED_FOR_CAPACITY']);
+function operationsProofFailure(result,file,title){
+ if(file!=='operations-connected-actions.spec.ts'||title!==operationsProofTitle||!Array.isArray(result?.stdout))return null;
+ let snapshot=null,failure=null;
+ for(const item of result.stdout.slice(0,64)){
+  if(typeof item?.text!=='string'||item.text.length>8192)continue;
+  for(const line of item.text.split(/\r?\n/).slice(0,16)){
+   if(!snapshot&&line.startsWith('OPERATIONS_PROOF_BOUNDARY ')){
+    try{
+     const value=JSON.parse(line.slice('OPERATIONS_PROOF_BOUNDARY '.length));
+     if(value&&typeof value==='object'&&!Array.isArray(value)&&proofStages.has(value.stage))snapshot=value;
+    }catch{/* Only typed allowlisted fields can leave this process. */}
+   }
+   const match=/^OPERATIONS_CONTROLS_STAGE ([A-Z_]+) ([A-Za-z_]+) line ([0-9]{1,7})(?: ([A-Z_]+))?$/.exec(line);
+   if(!failure&&match&&proofStages.has(match[1])&&proofFailures.has(match[2])&&(!match[4]||proofBusinessCodes.has(match[4]))){
+    failure={stage:match[1],failureClass:match[2],failureLine:sourceLine(Number(match[3]))};
+    if(match[4])failure.knownCode=match[4];
+   }
+  }
+ }
+ if(!failure)return null;
+ if(!snapshot||snapshot.stage!==failure.stage)return failure;
+ for(const key of ['sourceIsBuffer','uploadAcknowledged','storageBytesMatch','pathOwnershipMatches','adapterPresent','adapterBytesMatch','browserBytesMatch','paintedBytesMatch','apiBytesMatch']){
+  if(typeof snapshot[key]==='boolean')failure[key]=snapshot[key];
+ }
+ for(const key of ['sourceLength','storageLength','adapterLength','browserLength','paintedLength','apiLength']){
+  if(Number.isSafeInteger(snapshot[key])&&snapshot[key]>=0&&snapshot[key]<=10_000_000)failure[key]=snapshot[key];
+ }
+ for(const key of ['browserResponses','abortedRequests','matchingResponseBodies','emptyResponseBodies','unavailableResponseBodies']){
+  if(Number.isSafeInteger(snapshot[key])&&snapshot[key]>=0&&snapshot[key]<=1000)failure[key]=snapshot[key];
+ }
+ for(const key of ['browserStatus','apiStatus']){
+  if(Number.isInteger(snapshot[key])&&snapshot[key]>=100&&snapshot[key]<=599)failure[key]=snapshot[key];
+ }
+ for(const key of ['recordMime','adapterMime','browserMime','apiMime']){
+  if(['image/png','image/jpeg','image/webp','application/json','text/html','OTHER'].includes(snapshot[key]))failure[key]=snapshot[key];
+ }
+ return failure;
+}
+
 export function failedBrowserCaseDiagnostics(report){
  const diagnostics=[];
  for(const test of cases(report)){
@@ -204,10 +247,11 @@ export function failedBrowserCaseDiagnostics(report){
   const authenticatedA11y=authenticatedAccessibilityFailure(result,file,test.title);
   const workflow=failedWorkflowStage(result,file,test.title);
   const portrait=portraitReplacementFailure(result,file,test.title);
+  const operationsProof=operationsProofFailure(result,file,test.title);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
-   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{}),...(portrait?{portrait}:{})});
+   line:operationsProof?.failureLine??failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
+   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{}),...(portrait?{portrait}:{}),...(operationsProof?{operationsProof}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -216,7 +260,7 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow,portrait} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow,portrait,operationsProof} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
   if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
@@ -224,6 +268,7 @@ export function reportBrowserShardFailure(failure,shard,report,write=message=>pr
   if(authenticatedA11y)write(`::error ${location}::CI_BROWSER_AUTH_A11Y role=${authenticatedA11y.role} route=${authenticatedA11y.route} stage=${authenticatedA11y.stage} error=${authenticatedA11y.errorType} duration_ms=${authenticatedA11y.durationMs??'unknown'} step_ms=${authenticatedA11y.stepDurationMs??'unknown'} rules=${authenticatedA11y.rules.join(',')||'unknown'}\n`);
   if(workflow)write(`::error ${location}::CI_BROWSER_STAGE file=${file} project=${project} stage=${workflow.stage} duration_ms=${workflow.durationMs??'unknown'}\n`);
   if(portrait)write(`::error ${location}::CI_BROWSER_PORTRAIT kind=${portrait.kind} old_status=${portrait.oldStatus} new_status=${portrait.newStatus}\n`);
+  if(operationsProof)write(`::error ${location}::CI_BROWSER_OPERATIONS_PROOF project=${project} evidence=${JSON.stringify(operationsProof)}\n`);
  }
 }
 

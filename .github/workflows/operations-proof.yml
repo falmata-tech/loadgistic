@@ -1,0 +1,57 @@
+name: Operations proof boundary
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/operations-proof.yml'
+      - 'scripts/ci-operations-proof.mjs'
+      - 'scripts/ci-browser-shard.mjs'
+      - 'tests/e2e/operations-connected-actions.spec.ts'
+      - 'src/components/tracking-proof-link.tsx'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operations-proof-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+      SESSION_SECRET: ci-only-session-secret-not-for-production-123456
+      TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install checksum-pinned workflow linter
+        run: npm run tools:workflow:setup
+      - name: Check diagnostic source and contracts
+        run: npm run check
+      - uses: supabase/setup-cli@v2
+        with:
+          version: 2.111.0
+      - name: Start isolated Supabase
+        run: node scripts/ci-start-local-supabase.mjs
+      - name: Apply local PostGIS containment
+        run: node scripts/prepare-local-security.mjs
+      - name: Check database security
+        run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
+      - name: Prepare and verify local synthetic fixtures
+        run: npm run supabase:local:configure
+      - name: Verify independent Data API denial
+        run: node scripts/verify-data-api-guard.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Repeat the exact proof task on desktop and phone without retries
+        run: node scripts/ci-operations-proof.mjs
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --no-backup
