@@ -13,6 +13,36 @@ rollout: Promote immutable artifacts only after required checks; roll back appli
 
 ## Delivery tooling quality
 
+### Scenario: a scanned public configuration exception cannot hide new secrets
+
+Given the exact reviewed Android Firebase client file and two existing mailbox identifiers are not private credentials\
+When Netlify builds this source with the narrowly named scan exceptions\
+Then a prebuild guard requires the exact reviewed client-file SHA-256 and mailbox-value SHA-256 values\
+And a changed file, changed mailbox value, broader exception or disabled scanner fails before building\
+And production-only values may remain absent from previews without being copied into them\
+And evidence contains only fixed status codes and counts, never addresses, keys or payloads.
+
+The client key's observed 25-API allowlist and absent application restriction
+remain a separate hardening item; an exception is not blanket security clearance.
+NR-75 owns the source/restriction review and any future fingerprint revision.
+
+### Scenario: only successful current main can advance Netlify production source
+
+Given an owner has approved activation of Netlify's production branch `production`\
+When the same repository's push-to-main CI completes successfully\
+Then the delivery workflow independently verifies the exact workflow, run attempt, head SHA and all 16 required jobs\
+And it rejects forks, PR runs, failures, skips, duplicate or missing jobs, a moved main and non-fast-forward production history\
+And it creates or advances only `refs/heads/production` to that exact successful main SHA, without forcing history\
+And it reads back the destination, stops ambiguous writes without retry or rollback, and logs only operation/SHA/count evidence\
+And its only write permission is the repository's short-lived Actions contents token; no Netlify or Supabase write credential enters CI\
+And Netlify's production prebuild independently requires the `production` branch, delivered commit, matching production ref and the same complete successful main run through read-only public metadata\
+And pending/failed CI, missing metadata, an unmatched ref, a moved main or API unavailability holds the existing published deployment.
+
+The read-only dry run performs no reference write. Existing `release-ready`
+requirements are unchanged. Activation requires the exact provider branch change
+before merging the scanner correction, a qualified preview and monitored runtime
+checks. A configured workflow is not evidence of an actual Netlify publication.
+
 ### Scenario: broken delivery tooling fails before expensive setup
 
 Given the repository's pinned workflow linter has been explicitly installed\

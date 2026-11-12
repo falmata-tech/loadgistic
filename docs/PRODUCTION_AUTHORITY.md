@@ -910,8 +910,11 @@ requires provider intervention. Separate coding identity remains unselected.
 | Owner release operator | Exact reviewed change in an isolated, protected execution environment | Unreviewed changes, broad configuration replacement, unrelated projects |
 | Supabase table owner/support | Approved in-place PostGIS relocation from public to extensions, following the verified backup confirmation | Unreviewed version upgrade, ownership transfer, role expansion, extension recreation, application-data changes |
 
-Supabase recommends scoped PATs for agents. Scoped tokens are in gradual public
-alpha rollout; if unavailable, do not substitute a classic PAT for the monitor.
+Supabase recommends scoped PATs for agents. Its October6 GA announcement and
+November12 signed-in dashboard now confirm project-scoped creation is available.
+The MCP documentation still contains older public-alpha wording; the observed
+provider review controls the actual selection. If scopes are unavailable, do
+not substitute a classic PAT for the monitor.
 The dashboard Read-Only role is plan-limited and can still expose secrets; it is
 not equivalent to the two metadata-only scopes above. Use owner-run checks until
 suitable scopes exist. Token format checking is not a permissions attestation.
