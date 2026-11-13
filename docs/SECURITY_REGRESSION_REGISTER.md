@@ -1,5 +1,30 @@
 # Security failures we must not repeat
 
+## NR-80 — A formatted mailbox fixture passes tests but rejects production
+
+PR36 merged as ab899497befdcf5e699cb436de41c4bdb449fb63 after all16 exact PR jobs
+passed. Separate main CI43352081887 also passed all16; source workflow43355866914
+created production at that exact SHA and read it back. The real Git webhook then
+started production build6af67d14b459c7cc43f7212c, which failed before application
+build with NETLIFY_MAILBOX_REVIEW_REQUIRED. The previous published app stayed live.
+
+The SMTP-user policy digest was derived with an email regex that accepts a
+backtick as a local-part character. It captured Markdown's opening delimiter in
+MOBILE_IMPLEMENTATION.md:1156. The unit fixture used the same extraction and
+selected its input by the policy digest, so it repeated the defect. Removing
+that one source-formatting byte gives the already-reviewed bare Reply-To digest.
+No provider value was recovered, changed or broadened. Provider attestation of
+the corrected policy remains a separate production-build prerequisite.
+
+Control: parse enclosing Markdown/JavaScript syntax independently of the digest;
+prove the bare literals agree and run the real CLI with bare values. Reject
+backticks, quotes, whitespace, case changes and unknown configured bytes. Require
+both fields in production; only non-production may withhold their values. Keep
+the same two omitted keys and one byte-locked client file, all other scanners,
+source/CI gates, SMTP values/scopes and rollback unchanged. Negative/entry tests:
+tests/netlify-delivery.test.mjs. Owner: release maintainer. Next: exact PR/main,
+actual production mailbox_fields=2/source/ZIP markers, published ID and runtime.
+
 ## NR-79 — Disposable CI startup collides with a host port before migrations
 
 Main63cbb86/run43344733398 failed Featured team permission setup,

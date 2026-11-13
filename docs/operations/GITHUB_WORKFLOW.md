@@ -6,6 +6,20 @@ a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR result
 
 ## Current delivery checkpoint, November 13 UTC
 
+PR36 subsequently merged asab899497 after its16 exact PR jobs passed; separate
+main CI43352081887 also passed all16 on attempt1. Source workflow43355866914
+created/read back production atab899497. The real Git webhook launched production
+6af67d14b459c7cc43f7212c, which failed before application build with
+NETLIFY_MAILBOX_REVIEW_REQUIRED. NR-80 isolates a Markdown delimiter incorrectly
+included in the SMTP-user policy/test fixture. The bare identity already matches
+the reviewed Reply-To digest. A narrow source correction, stronger bare-input/
+missing-production-field tests and exact PR/main/provider qualification are next.
+No SMTP value/scope, secret, scanner or provider setting was changed during this
+diagnosis. Old6af4f16a16aab2cef815c573 stays live/rollback; automatic publication
+has not yet succeeded. Final receipts belong in the repair PR.
+
+The following preparation checkpoint records the earlier installed-state work:
+
 PR33 installed the versioned scan-exception guard and a separate workflow that
 advances production only after all16 jobs on successful current main. PR35
 merged as63cbb868 after all16 exact-head jobs passed. Its Netlify preview verified

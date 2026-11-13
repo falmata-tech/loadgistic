@@ -8,6 +8,16 @@ import {promoteNetlifyProduction,requiredDeliveryJobs,verifyNetlifyProductionSou
 
 const firebaseBytes=readFileSync('apps/mobile/google-services.json');
 const environment={NETLIFY:'true',CONTEXT:'deploy-preview',SECRETS_SCAN_OMIT_KEYS:'LOADGISTIC_SMTP_USER,LOADGISTIC_EMAIL_REPLY_TO',SECRETS_SCAN_OMIT_PATHS:'apps/mobile/google-services.json'};
+function recordedMailbox(){
+ // Parse the surrounding source syntax, independently of the policy digest.
+ // A broad email regex treated Markdown's opening backtick as a local-part byte.
+ const markdown=/Owner addition: make `([^`]+)` the main web administrator/.exec(readFileSync('docs/MOBILE_IMPLEMENTATION.md','utf8'))?.[1];
+ const javascript=/fixtureKey==='user-admin'&&email==='([^']+)'/.exec(readFileSync('scripts/telematics/demo-manifest.mjs','utf8'))?.[1];
+ assert.equal(typeof markdown,'string','documented bare identity required');
+ assert.equal(markdown===javascript,true,'independent source literals must agree');
+ assert.equal(/^[A-Za-z0-9.!#$%&*+/=?^_{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(markdown),true,'formatting-free mailbox required');
+ return markdown;
+}
 test('Netlify exceptions accept only the reviewed public client file and precise omissions',()=>{
  assert.deepEqual(inspectNetlifyScanExceptions({firebaseBytes,environment}),{reviewedClientFiles:1,reviewedMailboxFields:0});
  for(const extra of [{SECRETS_SCAN_OMIT_PATHS:'apps/**'},{SECRETS_SCAN_OMIT_KEYS:environment.SECRETS_SCAN_OMIT_KEYS+',LOADGISTIC_SMTP_PASSWORD'},
@@ -16,14 +26,34 @@ test('Netlify exceptions accept only the reviewed public client file and precise
  }
  assert.equal(scanExceptionPolicy.firebasePath,'apps/mobile/google-services.json');
 });
-test('the two actual already-recorded mailbox identities remain accepted without copying their values',()=>{
- const env={...environment};
- for(const [key,file] of [['LOADGISTIC_SMTP_USER','docs/MOBILE_IMPLEMENTATION.md'],['LOADGISTIC_EMAIL_REPLY_TO','scripts/telematics/demo-manifest.mjs']]){
-  const candidates=readFileSync(file,'utf8').match(/[A-Za-z0-9.!#$%&*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)||[];
-  env[key]=candidates.find(value=>createHash('sha256').update(value).digest('hex')===scanExceptionPolicy.mailboxSha256[key]);
-  assert.equal(typeof env[key],'string',`${key} source identity was not found`);
- }
+test('both reviewed mailbox fields accept the bare identity independently recorded in Markdown and JavaScript',()=>{
+ const bare=recordedMailbox(),env={...environment,LOADGISTIC_SMTP_USER:bare,LOADGISTIC_EMAIL_REPLY_TO:bare};
+ for(const key of ['LOADGISTIC_SMTP_USER','LOADGISTIC_EMAIL_REPLY_TO'])assert.equal(scanExceptionPolicy.mailboxSha256[key],createHash('sha256').update(bare).digest('hex'));
  assert.deepEqual(inspectNetlifyScanExceptions({firebaseBytes,environment:env}),{reviewedClientFiles:1,reviewedMailboxFields:2});
+});
+test('Markdown delimiters, quotes, whitespace and other changed mailbox bytes never become configuration values',()=>{
+ const bare=recordedMailbox();
+ for(const key of ['LOADGISTIC_SMTP_USER','LOADGISTIC_EMAIL_REPLY_TO'])for(const value of ['`'+bare,bare+'`','`'+bare+'`',"'"+bare+"'",' '+bare,bare+'\n',bare.toUpperCase()]){
+  assert.throws(()=>inspectNetlifyScanExceptions({firebaseBytes,environment:{...environment,[key]:value}}),/^Error: NETLIFY_MAILBOX_REVIEW_REQUIRED$/);
+ }
+});
+test('production requires both reviewed mailbox fields while non-production can withhold their values',()=>{
+ const bare=recordedMailbox(),production={...environment,CONTEXT:'production',BRANCH:'production',COMMIT_REF:'a'.repeat(40)};
+ for(const extra of [{},{LOADGISTIC_SMTP_USER:bare},{LOADGISTIC_EMAIL_REPLY_TO:bare}]){
+  assert.throws(()=>inspectNetlifyScanExceptions({firebaseBytes,environment:{...production,...extra}}),/^Error: NETLIFY_MAILBOX_REVIEW_REQUIRED$/);
+ }
+ assert.equal(inspectNetlifyScanExceptions({firebaseBytes,environment:{...production,LOADGISTIC_SMTP_USER:bare,LOADGISTIC_EMAIL_REPLY_TO:bare}}).reviewedMailboxFields,2);
+ for(const CONTEXT of ['deploy-preview','branch-deploy'])assert.equal(inspectNetlifyScanExceptions({firebaseBytes,environment:{...environment,CONTEXT}}).reviewedMailboxFields,0);
+});
+test('the actual prebuild accepts bare reviewed fields without printing mailbox values',()=>{
+ const bare=recordedMailbox();
+ const result=spawnSync(process.execPath,['scripts/check-netlify-scan-exceptions.mjs'],{
+  env:{...process.env,...environment,LOADGISTIC_SMTP_USER:bare,LOADGISTIC_EMAIL_REPLY_TO:bare},encoding:'utf8',timeout:10000
+ });
+ assert.equal(result.status,0);
+ assert.equal(result.stdout,'NETLIFY_SCAN_REVIEW_OK client_files=1 mailbox_fields=2\n');
+ assert.equal(result.stderr,'');
+ assert.equal((result.stdout+result.stderr).includes(bare),false,'mailbox must remain out of output');
 });
 test('production build cannot start from main, an unknown source or a missing delivered SHA',()=>{
  for(const extra of [{CONTEXT:'production',BRANCH:'main',COMMIT_REF:'a'.repeat(40)},{CONTEXT:'production',BRANCH:'production'},

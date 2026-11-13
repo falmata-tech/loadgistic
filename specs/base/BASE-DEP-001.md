@@ -15,7 +15,7 @@ rollout: Promote immutable artifacts only after required checks; roll back appli
 
 ### Scenario: a scanned public configuration exception cannot hide new secrets
 
-Given the exact reviewed Android Firebase client file and two existing mailbox identifiers are not private credentials\
+Given the exact reviewed Android Firebase client file and two existing mailbox fields are not private credentials\
 When Netlify builds this source with the narrowly named scan exceptions\
 Then a prebuild guard requires the exact reviewed client-file SHA-256 and mailbox-value SHA-256 values\
 And a changed file, changed mailbox value, broader exception or disabled scanner fails before building\
@@ -26,6 +26,19 @@ And evidence contains only fixed status codes and counts, never addresses, keys 
 The client key's observed 25-API allowlist and absent application restriction
 remain a separate hardening item; an exception is not blanket security clearance.
 NR-75 owns the source/restriction review and any future fingerprint revision.
+
+### Scenario: source formatting cannot become a mailbox configuration byte
+
+Given one reviewed bare mailbox is independently recorded inside Markdown backticks and a JavaScript string\
+When its exact value digest is prepared for the two named scan exceptions\
+Then surrounding source delimiters are excluded from the fixture before hashing\
+And the fixture is derived independently of the policy digest and exercised through the actual prebuild entry point\
+And configured backticks, quotes, whitespace, case changes and unreviewed values still fail exact-byte validation\
+And production requires both reviewed fields, while non-production may withhold them\
+And no address or credential enters test output, no scanner omission expands, and provider SMTP settings remain unchanged.
+
+NR-80 records the formatted-fixture defect. Correcting its source extraction is
+not authority to normalize configured values or accept an unknown mailbox.
 
 ### Scenario: only successful current main can advance Netlify production source
 

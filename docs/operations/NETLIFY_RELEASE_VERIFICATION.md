@@ -6,6 +6,22 @@ Scope: Loadgistic only. This runbook grants no production authority; follow
 
 ## Current checkpoint — November 13 UTC
 
+PR36 merged asab899497 after all16 PR jobs passed. Separate main CI43352081887
+passed all16 on attempt1, and source workflow43355866914 created/read back
+production at that exact SHA. The real Git webhook triggered production build
+6af67d14b459c7cc43f7212c. It failed before application build with
+NETLIFY_MAILBOX_REVIEW_REQUIRED; old6af4f16a16aab2cef815c573 stays live/rollback.
+NR-80 identifies a leading Markdown backtick incorrectly hashed with the SMTP
+identity and repeated by its test. The bare source identity has the already-
+reviewed Reply-To digest. Correct that literal binding and require both fields
+in production; preserve exact-byte rejection of altered/unknown configured
+values. No provider mailbox, SMTP scope, scanner, branch or publishing setting
+was changed during diagnosis. The inspected forms were cancelled. Full source
+qualification and actual production mailbox_fields=2, source and8-ZIP markers,
+published ID and runtime remain required; record final receipts in the repair PR.
+
+The following preparation checkpoint is historical relative to that result:
+
 PR33's exact scan-exception/source guard and PR35's final bundle verification
 are merged. PR35 merged as63cbb868 after all16 exact-head PR jobs passed. Separate
 main CI43344733398 failed isolated Featured team startup before migrations; safe
