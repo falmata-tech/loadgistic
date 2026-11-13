@@ -2,6 +2,12 @@ name: Operations proof boundary
 
 on:
   workflow_dispatch:
+    inputs:
+      case:
+        description: Fixed synthetic workflow to diagnose
+        type: choice
+        default: operations-proof
+        options: [operations-proof, admin-queues]
   pull_request:
     paths:
       - '.github/workflows/operations-proof.yml'
@@ -51,7 +57,18 @@ jobs:
         run: node scripts/verify-data-api-guard.mjs
       - run: npx playwright install --with-deps chromium
       - name: Repeat the exact proof task on desktop and phone without retries
-        run: node scripts/ci-operations-proof.mjs
+        env:
+          FOCUS_CASE: ${{ inputs.case || 'operations-proof' }}
+        run: node scripts/ci-operations-proof.mjs --case "$FOCUS_CASE"
+      - name: Retain only typed browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: focused-browser-failure
+          retention-days: 14
+          if-no-files-found: ignore
+          include-hidden-files: true
+          path: .local/ci-browser-diagnostics/*.json
       - name: Stop isolated Supabase
         if: always()
         run: supabase stop --no-backup

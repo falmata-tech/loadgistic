@@ -5,15 +5,21 @@ import {localAuditService,auditFleetProvider,checked} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
+import {adminQueueEvidence} from '../../scripts/lib/browser-workflow-evidence.mjs';
 // These assertions wait for streamed authorized/denied pages. Dedicated
 // performance gates retain their own bounds; the total case bound stays120s.
 const expect=baseExpect.configure({timeout:20000});
 
-async function failureEvidence(page:any,info:any,stage:string,error:unknown){
- const value=error instanceof Error?error.name:'OTHER',url=new URL(page.url());
- const evidence={stage,errorClass:['Error','TimeoutError','AssertionError','TypeError'].includes(value)?value:'OTHER',route:url.pathname.replace(/[a-f0-9-]{36}/gi,':id'),kind:['ORGANIZATION','PROVIDER_PROFILE'].includes(url.searchParams.get('kind')||'')?url.searchParams.get('kind'):null,recordCards:await page.locator('.admin-operation-record-card').count(),notFound:await page.getByRole('heading',{name:'404',exact:true}).count()};
- const file=info.outputPath('sanitized-failure-stage.json');mkdirSync(path.dirname(file),{recursive:true});writeFileSync(file,JSON.stringify(evidence,null,2)+'\n');
- if(evidence.recordCards===1)try{await page.locator('.admin-operation-record-card').screenshot({path:info.outputPath('synthetic-record-state.png'),animations:'disabled',timeout:5000});}catch{/* Capture cannot delay cleanup. */}
+async function failureEvidence(page:any,info:any,stage:string,error:unknown,pageErrors:string[]){
+ // Capture is best-effort and cannot replace the original workflow failure.
+ let recordCards=null,notFound=null;
+ try{recordCards=await page.locator('.admin-operation-record-card').count();notFound=await page.getByRole('heading',{name:'404',exact:true}).count();}catch{}
+ const evidence=adminQueueEvidence({title:info.title,project:info.project.name,stage,pageUrl:page.url(),error,recordCards,notFound,pageErrors});
+ if(!evidence)return;
+ console.log('CI_BROWSER_WORKFLOW_EVIDENCE '+JSON.stringify(evidence));
+ try{
+  const file=info.outputPath('sanitized-failure-stage.json');mkdirSync(path.dirname(file),{recursive:true});writeFileSync(file,JSON.stringify(evidence,null,2)+'\n');
+ }catch{/* CI retains the same typed stdout record. */}
 }
 
 // Exact disposable local records; these checks never submit moderation or erasure.
@@ -53,7 +59,7 @@ test('retired staff capacity feed cannot expose records and the public map remai
   const invalid=await page.request.get('/api/public/capacity?status=EMPTY&status=PARTIAL');expect(invalid.status()).toBe(400);
   await page.screenshot({path:info.outputPath('retired-admin-feed-public-map.png'),scale:'css'});
   expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw new Error('RETIRED_CAPACITY_ROUTE_WORKFLOW_FAILED: '+stage,{cause:error});}
+ }catch(error){await failureEvidence(page,info,stage,error,errors);throw new Error('RETIRED_CAPACITY_ROUTE_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{await logout?.();await cleanIdentities(db,ids);}
 });
 
@@ -75,7 +81,7 @@ test('Driver Open owner reaches its exact fleet and retains delegated workspace 
   await expect(details).toBeVisible();await details.getByRole('link',{name:'Open owner',exact:true}).click();
   stage='WORKSPACE_DENIED';await expect(page).toHaveURL(/\/admin\/operations$/);await expect(page.getByRole('heading',{name:'Platform Records',exact:true})).toBeVisible();await expect(details).toHaveCount(0);
   expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw new Error('ADMIN_DRIVER_OWNER_WORKFLOW_FAILED: '+stage,{cause:error});}
+ }catch(error){await failureEvidence(page,info,stage,error,errors);throw new Error('ADMIN_DRIVER_OWNER_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{
   for(const logout of logouts)await logout();await cleanIdentities(db,ids);
   if(owner){checked(await db.from('audit_logs').delete().eq('actor_user_id',owner.id));checked(await db.from('audit_logs').delete().eq('entity_id',owner.organization_id));checked(await db.auth.admin.deleteUser(owner.id));checked(await db.from('organizations').delete().eq('id',owner.organization_id));}
@@ -102,7 +108,7 @@ test('Content and deletion overflow pages recover saved synthetic cases with unc
   await page.goto('/admin/privacy?page=99999');await expect(page).not.toHaveURL(/\/admin\/privacy/);await expect(page.locator(`section[data-request-id="${requestId}"]`)).toHaveCount(0);
   const operations=await identity(db,ids,'SUPPORT',{can_manage_operations:true});stage='CONTENT_DENIED';logouts.push(await localSupportLogin(page,operations));await page.goto('/admin/reviews/content?page=99999');await expect(page).not.toHaveURL(/\/admin\/reviews\/content/);await expect(page.locator(`form[action="/api/admin/content/${reportId}"]`)).toHaveCount(0);
   expect(checked(await db.from('content_reports').select('status').eq('id',reportId).single()).status).toBe('PENDING');expect(checked(await db.from('account_deletion_requests').select('status').eq('id',requestId).single()).status).toBe('REQUESTED');expect(errors).toEqual([]);
- }catch(error){await failureEvidence(page,info,stage,error);throw new Error('ADMIN_QUEUE_PAGING_WORKFLOW_FAILED: '+stage,{cause:error});}
+ }catch(error){await failureEvidence(page,info,stage,error,errors);throw new Error('ADMIN_QUEUE_PAGING_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{
   for(const logout of logouts)await logout();checked(await db.from('content_reports').delete().eq('id',reportId));checked(await db.from('account_deletion_requests').delete().eq('id',requestId));await cleanIdentities(db,ids);
   if(owner){checked(await db.from('audit_logs').delete().eq('actor_user_id',owner.id));checked(await db.auth.admin.deleteUser(owner.id));checked(await db.from('organizations').delete().eq('id',owner.organization_id));}

@@ -59,6 +59,21 @@ fake-process privacy tests do not establish a working Docker/Auth/Storage stack.
 Required real CI startup, guards and browser workflows remain unchanged. Rollback
 restores the prior wrapper without changing fixtures, database or publication.
 
+### Scenario: an admin queue failure preserves its original diagnostic safely
+
+Given a synthetic admin queue workflow fails before cleanup\
+When the test and CI runner report the failure\
+Then only reviewed scenario, project, stage, route, matcher and error-class enums and bounded counts/source lines leave the process\
+And unknown fields, record IDs, query strings, assertion values, contacts and raw reports are discarded\
+And typed JSON is retained as a failure-only artifact without replacing the first saved evidence\
+And capture failure cannot replace the original assertion\
+And a fixed focused replay requires three independent desktop and phone passes with zero skips or retries, stopping at the first failure\
+And full required CI, saved statuses, role denial and existing timeouts remain unchanged.
+
+NR-78 owns diagnosis. If the original failure does not recur, its cause remains
+unisolated. Rollback restores diagnostic tooling only; no product/schema or
+hosted service change is part of this repair.
+
 ### Scenario: broken delivery tooling fails before expensive setup
 
 Given the repository's pinned workflow linter has been explicitly installed\

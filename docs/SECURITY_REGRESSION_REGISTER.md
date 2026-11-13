@@ -1,5 +1,26 @@
 # Security failures we must not repeat
 
+## NR-78 — Local admin diagnostics never reach the CI failure record
+
+Main CI43330733941 on f6fa95d failed desktop admin queue paging, worker4/job
+131579406987, after all16 PR34 checks passed. It is a different case from the
+Operations proof failure. The helper saved a local JSON file but CI uploaded
+no browser diagnostic; only the wrapper line105 survived. Original cause is
+unisolated. The source gate withheld publication; the Netlify branch form was
+left unsaved. No timeout/assertion relaxation or blind rerun occurred.
+
+Control: emit fresh allowlisted scenario/project/stage/route/error/matcher enums,
+bounded source lines and counts; never error bodies, URLs with IDs/query strings,
+assertion values, contacts or raw Playwright reports. Capture cannot replace the
+original failure. Retain only typed JSON with first-file preservation and14-day
+failure-only artifacts. Focused selection accepts only its fixed case and both
+projects, three independent passes, zero skips/retries, stopping on first failure.
+Negative tests map to tests/browser-workflow-evidence.test.mjs and
+ci-operations-proof.test.mjs; existing ci-browser-gate checks remain required.
+Owner: workflow maintainer. Next: focused isolated replay, diagnose any observed
+failure, then exact-source PR/main CI before publication. Local Docker is absent;
+unit evidence does not substitute for the actual workflow.
+
 ## NR-77 — CI startup discards the subprocess failure before it can be diagnosed
 
 Main CI43322153313 on16cfe62 failed worker7 in Start isolated Supabase, before

@@ -593,6 +593,16 @@ jobs:
       - name: Run desktop and mobile browser workflows
         run: node scripts/ci-browser-shard.mjs '${{ matrix.shard }}'
 
+      - name: Retain only typed browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-failure-shard-${{ matrix.shard }}
+          retention-days: 14
+          if-no-files-found: ignore
+          include-hidden-files: true
+          path: .local/ci-browser-diagnostics/*.json
+
       - name: Stop the task-owned Expo preview
         if: always()
         run: |

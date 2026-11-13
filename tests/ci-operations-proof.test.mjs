@@ -49,3 +49,14 @@ test('three independent proof runs stop at their first failure instead of retryi
   assert.equal(calls,failureAt);assert.match(output.join(''),new RegExp('repetition='+failureAt));
  }
 });
+
+test('admin queue diagnostics accept only the chosen case and both clean projects',()=>{
+ const value=report();value.suites[0].file='tests/e2e/admin-connected-queues.spec.ts';
+ value.suites[0].specs[0].title='Content and deletion overflow pages recover saved synthetic cases with unchanged controls';
+ assert.equal(inspectOperationsProofResult(processResult,value,'admin-queues'),null);
+ assert.notEqual(inspectOperationsProofResult(processResult,value),null);
+ assert.notEqual(inspectOperationsProofResult(processResult,report(),'admin-queues'),null);
+ assert.notEqual(inspectOperationsProofResult(processResult,value,'PRIVATE'),null);
+ value.suites[0].specs[0].tests[0].results[0].retry=1;
+ assert.notEqual(inspectOperationsProofResult(processResult,value,'admin-queues'),null);
+});

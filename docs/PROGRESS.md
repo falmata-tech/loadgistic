@@ -7,29 +7,40 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — isolated CI startup diagnostics
+## Active follow-up — retained admin queue diagnostics
 
-[PR33](https://github.com/falmata-tech/loadgistic/pull/33) merged as
-`16cfe629ea76939a1b303eb3c0c6ee5ca890d0ea` after exact-head
-[CI43317010387](https://github.com/falmata-tech/loadgistic/actions/runs/43317010387)
-passed all16 jobs. Independent main/tree readback matches the qualified PR tree.
-The separate [main run43322153313](https://github.com/falmata-tech/loadgistic/actions/runs/43322153313)
-failed worker7 at Start isolated Supabase, before its guards, fixtures or browser
-tests. Its log contains only an unrecognized-start code; the captured child
-failure was discarded. The original cause remains unisolated. Main validation,
-Android and container checks passed; other workflows were still running at this
-checkpoint. The delivery workflow must not promote this failed main run.
+PR34 merged as `f6fa95d29a93048684d3f14876406e774f6b6a89` after exact-head
+[CI43324894377](https://github.com/falmata-tech/loadgistic/actions/runs/43324894377)
+passed all16 jobs. Independent main/tree readback matched. The separate
+[main run43330733941](https://github.com/falmata-tech/loadgistic/actions/runs/43330733941)
+failed desktop Content/deletion overflow recovery in admin-connected-queues,
+worker4/job131579406987. Its local diagnostic was not retained by CI; only the
+wrapper source line105 survived. This is a different case from Operations proof.
+The original cause remains unisolated; no flaky classification or blind retry.
+All other13 substantive jobs passed, including worker7 startup. The source gate
+withheld publication; Netlify's proposed production-branch edit remains unsaved.
 
-The follow-up adds typed subprocess diagnostics before cleanup, with negative
-and actual fake-CLI privacy tests. Process/capture failures cannot borrow an
-earlier registry warning to authorize retry. No buffer limit, timeout, migration,
-browser assertion or release gate is relaxed. This is a diagnostic repair, not
-proof of the startup cause or a working local Docker stack. NR-77 / BASE-DEP-001
-own qualification and any later observed recovery.
-Local Node22.16.0 quality passes1,357 tests with zero failures/skips, types/spec/
-source checks and actionlint/ShellCheck for111 scripts. The six focused startup
-cases include an isolated fake-CLI integration; real Docker startup is not
-available in this workspace. Exact-source remote qualification remains pending.
+NR-78 / BASE-DEP-001 add allowlisted original stage/line/matcher and browser-error
+counts, a typed failure-only artifact and a fixed admin-queues choice in the
+existing focused replay. Unknown/private data never leaves the report process;
+no assertion, timeout, retry or required gate is relaxed. Focused replay and
+exact-source PR/main qualification remain pending. Local Docker is unavailable.
+Local Node22.16.0 quality passes1,361 tests with zero failures/skips, types/spec/
+source checks and actionlint/ShellCheck for112 operational scripts (unit34.91s).
+PR34's startup diagnostic repair passed its PR CI and subsequent main startup;
+the historical startup cause remains unisolated. Local pinned-Node quality for
+PR34 passed1,357 tests and actionlint/ShellCheck for111 scripts.
+
+Signed-in cloud Chrome reviewed the older published public app: Capacity filter
+persistence/clear, selected vehicle and details/back, guest private-Capacity
+sign-in denial, Featured and a provider's vehicle profile. Optimized vehicle
+image384 decoded. This is baseline review, not candidate release acceptance.
+PR34 preview6af644d0fc230a844d181cb5 completed provider build/scanning but its
+actual browser root renders a server exception; health503 reports missing
+production-only configuration. HTTP200 alone did not establish app success.
+The provider download contains482 public/edge files and no Node function ZIP;
+that archive does not establish final Node-package inspection. No production
+publication, new credential or production branch activation was performed.
 
 Netlify preview6af638bee267aedbdcecff19 for PR33 passed all five build/deploy
 stages and scanning, but initially failed cold start because its public Supabase
