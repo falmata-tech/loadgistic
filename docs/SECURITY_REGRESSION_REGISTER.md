@@ -1,5 +1,26 @@
 # Security failures we must not repeat
 
+## NR-79 — Disposable CI startup collides with a host port before migrations
+
+Main63cbb86/run43344733398 failed Featured team permission setup,
+job131624126011. The new retained diagnostic establishes exit1 after76.176s,
+19,128 stderr bytes, containerStart/portConflict true, no migration or process/
+capture error. No browser task ran in that job. The old published app was held;
+Netlify's production branch is armed but the source ref remains withheld.
+The exact port/binding owner was not retained. Ephemeral allocation is a source-
+backed prevention target, not a confirmed historical actor. No blind retry.
+
+Control: early CI-only reservation of55320–55329 in Linux automatic-allocation
+exclusions, preserving the entire previous set and independently verifying the
+union. Reject malformed/readback/command failures and local, non-Linux,
+self-hosted or wrong-project targets. Never kill a listener or broaden retries.
+Retain only fixed service enums for bind errors. Tests: ci-local-ports.test.mjs
+(preservation, idempotency, refusal, failure, fake-kernel integration) and the
+existing startup privacy/retry cases. Actual hosted qualification is required.
+Owner: workflow maintainer. Next: one focused isolated run, then full PR/main CI
+and the actual guarded production handoff. BASE-DEP-001 owns rollback: no hosted
+or owner-machine sysctl changes; discard the ephemeral runner normally.
+
 ## NR-78 — Local admin diagnostics never reach the CI failure record
 
 Main CI43330733941 on f6fa95d failed desktop admin queue paging, worker4/job

@@ -6,27 +6,40 @@ Scope: Loadgistic only. This runbook grants no production authority; follow
 
 ## Current checkpoint — November 13 UTC
 
-PR33's exact scan-exception/source guard is merged. PR34's startup diagnostics
-merged as f6fa95d after all16 PR jobs passed. Main CI43330733941 then failed a
-different desktop admin queue case; delivery correctly withheld production.
-Actual Netlify production branch remains main, automatic publishing ON. The
-main-to-production form was cancelled without saving after that failure.
-Published6af4f16a16aab2cef815c573 remains the rollback target.
+PR33's exact scan-exception/source guard and PR35's final bundle verification
+are merged. PR35 merged as63cbb868 after all16 exact-head PR jobs passed. Separate
+main CI43344733398 failed isolated Featured team startup before migrations; safe
+diagnostics identify a port-binding conflict, with exact port/owner unknown.
+Delivery correctly withholds production. NR-79's early disposable-runner port
+reservation passed actual focused run43346969178, including startup/security and
+three desktop plus three phone tasks without skips/retries. Exact PR/main and
+automatic publication still require their own terminal evidence.
+
+Netlify's production branch is now production, saved and independently read back;
+main alone is additionally tracked for non-production branch builds and PR
+previews. Netlify requires a production/tracked PR base; production-only tracking
+had stopped previews targeting main. This narrow correction is saved/read back,
+with untrusted-preview approval, private production scopes and automatic publishing
+ON retained. Arming before first qualified ref creation allows the Git
+webhook to be exercised by that push. It changes no source/CI gate. Published
+6af4f16a16aab2cef815c573 remains live and the rollback target. No new production
+publication has occurred at this checkpoint; record final run/deploy receipts in
+the release PR rather than a further status-only CI commit.
 
 Cloud Chrome reviewed the older public app's filters, selection/details/back,
 guest private-Capacity denial and Featured/provider profile. This does not
-qualify a new candidate. PR34 preview6af644d0fc230a844d181cb5 completed provider
-build/scanning but renders a server exception; health503 identifies absent
-production-only configuration. Its downloaded archive contains482 public/edge
-files, zero private-path matches and zero Node function bundles. It cannot be
-used as evidence of the final Node ZIP inspection required below. The new
-repository onPostBuild callback performs this check against FUNCTIONS_DIST after
-bundling and before deployment; its source/tests still need provider qualification.
-Do not copy
-production-only secrets into previews or infer app success from HTTP200.
+qualify a new candidate. PR35 preview6af65f2dee0414fbc504e277/head227297c completed
+all provider stages with adapter5.16.6. Its actual onPostBuild callback verified
+all8 final function ZIPs against FUNCTIONS_DIST after bundling and before
+deployment: root layout and nodeBundler none pass, zero private entries; the
+Next ZIP SHA256 is55f1cea41d86cd689e43b8a50d1fe33f99894146323da2e992262da76e45f396.
+The earlier downloaded public/edge archive contains no Node ZIPs and is not that
+proof. The preview still renders a server exception; health503 identifies absent
+production-only configuration. Packaging success is not runtime readiness.
+Do not copy production-only secrets into previews or infer app success from200.
 
-Production activation/publication and new scoped credential creation remain
-pending. Preserve the exact owner-approved branch field and all runtime gates.
+Provider branch activation is installed; actual production handoff/publication
+and new scoped credential creation remain pending. Preserve all runtime gates.
 
 ## Historical installed pipeline readback — November 12
 
@@ -68,17 +81,17 @@ setting was changed. Later source/preview changes are recorded above and below. 
 owns this discrepancy. Netlify's [secrets controller reference](https://docs.netlify.com/build/environment-variables/secrets-controller/)
 documents narrow exclusions; its existence does not approve one for this app.
 
-## Reviewed delivery correction — activation pending
+## Reviewed delivery correction and activation
 
 Current source preparation addresses NR-75 without changing application inputs.
 The actual c957a60 main run passed all16 jobs, while its automatic Netlify build
 6af61dc3ec2aa1b4a433776c failed scanning. Published deployment
-6af4f16a16aab2cef815c573 remains the rollback target. Provider activation and
-actual post-activation publication have not been performed.
+6af4f16a16aab2cef815c573 remains the rollback target. Provider branch activation
+has now been applied; actual post-activation publication is not yet established.
 
-| Boundary | Proposed exact change / retained control |
+| Boundary | Exact change / retained control |
 | --- | --- |
-| Netlify production branch | `main` → `production`; repository remains falmata-tech/loadgistic; retain production-branch-only builds and existing Deploy Preview approval/secret isolation. |
+| Netlify production branch | Applied/read back: `main` → `production`; repository remains falmata-tech/loadgistic. Only main is additionally tracked for non-production branch builds, preserving PR previews targeting main. Untrusted-preview approval and private production scopes retained. |
 | Automatic publishing | Remains ON. The new source prebuild rejects production from main and independently requires a complete successful current-main CI run and matching production ref. |
 | Delivery ref | After successful main push CI, the workflow creates or fast-forwards only refs/heads/production to that exact SHA. All16 jobs, latest attempt, same repository/workflow and current main are rechecked. No forced history or broad credential is used. |
 | Build command | Versioned command runs check-netlify-scan-exceptions.mjs before npm run build. Provider build/runtime settings otherwise stay unchanged. |
@@ -93,21 +106,24 @@ need certificate/SDK compatibility evidence; this correction changes no Google
 key, service account, native signing or Firebase rule. A client-configuration
 exception is not blanket security clearance.
 
-Activation order:
+Activation order (steps1–2 and provider branch arming completed for PR35):
 
 1. Qualify the exact PR, including the Netlify Deploy Preview and all required CI.
 2. Review the exact provider field above and the candidate. Keep scanner and
    source guards enabled. A premature merge remains fail-closed on main.
-3. Merge the qualified source under the owner's authorization. Verify main CI
+3. Arm production as Netlify's production branch before the first qualified ref
+   creation; track main alone for non-production branch builds so its PR previews
+   remain eligible. Preserve preview/secret scopes. This ordering lets the first push
+   test the webhook; it grants no permission to publish failed or unqualified CI.
+4. Merge the qualified source under the owner's authorization. Verify main CI
    and the delivery workflow's actual destination/readback. Do not label a
    prepared workflow or dry run as an installed/working promotion.
-4. Select production as Netlify's production branch, preserving preview/secret
-   scopes. Verify the resulting exact-source build and all runtime checks below;
+5. Verify the resulting automatic exact-source build and all runtime checks below;
    source qualification alone does not certify the generated adapter package.
-5. If deployment/runtime checks fail, retain the failure and restore the existing
+6. If deployment/runtime checks fail, retain the failure and restore the existing
    verified application through the reviewed rollback control. Do not force the
    production Git ref backward, replay schema or alter broad environment settings.
-6. After separately confirmed token creation/storage, run the existing strict
+7. After separately confirmed token creation/storage, run the existing strict
    advisor workflow. Missing-token failure must become actual metadata readback;
    the known WARN findings remain visible and the threshold stays unchanged.
 
@@ -121,6 +137,9 @@ Primary references: [Firebase API keys](https://firebase.google.com/docs/project
 [Netlify scan controls](https://docs.netlify.com/build/environment-variables/secrets-controller/),
 [GitHub workflow_run](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)
 and [scoped Supabase tokens](https://supabase.com/docs/guides/platform/personal-access-tokens).
+The [Deploy Preview prerequisites](https://docs.netlify.com/deploy/deploy-types/deploy-previews/)
+require a production or branch-deploy-enabled PR base. Tracking main restores
+preview eligibility; it does not turn main builds into production publications.
 
 ## Runtime release checks
 

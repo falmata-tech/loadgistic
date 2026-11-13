@@ -35,6 +35,11 @@ jobs:
       TRACKING_CODE_SECRET: ci-only-tracking-code-secret-not-for-production-123456
     steps:
       - uses: actions/checkout@v6
+
+      - name: Reserve fixed local service ports on this disposable runner
+        env:
+          LOADGISTIC_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: node scripts/ci-reserve-local-ports.mjs
       - uses: actions/setup-node@v6
         with:
           node-version: 22

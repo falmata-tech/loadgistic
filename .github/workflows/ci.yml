@@ -77,6 +77,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Reserve fixed local service ports on this disposable runner
+        env:
+          LOADGISTIC_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: node scripts/ci-reserve-local-ports.mjs
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -544,6 +549,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Reserve fixed local service ports on this disposable runner
+        env:
+          LOADGISTIC_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: node scripts/ci-reserve-local-ports.mjs
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
@@ -631,6 +641,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Reserve fixed local service ports on this disposable runner
+        env:
+          LOADGISTIC_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: node scripts/ci-reserve-local-ports.mjs
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
