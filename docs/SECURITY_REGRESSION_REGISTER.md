@@ -22,7 +22,8 @@ original cause remains unisolated. The strengthened fixture ends the previous
 actor's document before replacing cookies, waits for the positive final denial
 route/heading, and captures/cancels dialogs before the parent row. These source
 weaknesses are not established historical causes. Owner: workflow maintainer.
-Next: qualify these exact strengthened tasks, then PR/main CI before publication. Local Docker is absent;
+The strengthened run43338626560 on26020ce also passed all six tasks with zero
+skips/retries. Next: exact-source PR/main CI before publication. Local Docker is absent;
 unit evidence does not substitute for the actual workflow.
 
 ## NR-77 — CI startup discards the subprocess failure before it can be diagnosed

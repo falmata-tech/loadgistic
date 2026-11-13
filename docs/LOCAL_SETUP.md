@@ -11,6 +11,7 @@ reason to reset an existing workspace. Work only in Loadgistic.
 | Web Node |22.x; `.nvmrc` pins 22.16.0. Root package engines declare 22.x. |
 | Mobile Node |24.x, matching the mobile CI job; separate `apps/mobile` lockfile. |
 | npm |10 or newer; use `npm ci` against each existing lock. |
+| Python |3.11+ for deploy-ready ZIP inspection and its root contract tests; standard library only, no runtime/application dependency. |
 | Docker |A running Docker Engine with the CLI available to this process. A Supabase account connection does not provide local containers. |
 | Supabase CLI |2.111.0, matching all three CI setup steps. `SUPABASE_CLI_PATH` may select a project-local binary. |
 | Workflow analysis |Project-cached, checksum-pinned actionlint 1.7.12; ShellCheck 0.11.0 provides the additional shell analysis when installed. |

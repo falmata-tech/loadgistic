@@ -33,10 +33,12 @@ ends the previous actor's document before cookie replacement, requires final
 positive denial destinations/headings, and captures/cancels visible dialogs
 before parent-row screenshots. These repair observed fixture weaknesses without
 claiming they caused the historical failure. Saved PENDING/REQUESTED statuses,
-permission denial and all existing bounds remain required. Requalification of
-these strengthened tasks and exact-source PR/main CI remains pending. Local Docker is unavailable.
-Local Node22.16.0 quality passes1,362 tests with zero failures/skips, types/spec/
-source checks and actionlint/ShellCheck for112 operational scripts (unit33.54s).
+permission denial and all existing bounds remain required. The strengthened
+[run43338626560](https://github.com/falmata-tech/loadgistic/actions/runs/43338626560)
+on26020ce also passed three desktop/three phone tasks, zero skips/retries. The
+final change leaves this browser code unchanged. Required PR/main CI remains pending. Local Docker is unavailable.
+Local Node22.16.0 quality passes1,367 tests with zero failures/skips, types/spec/
+source checks and actionlint/ShellCheck for112 operational scripts (unit34.20s).
 PR34's startup diagnostic repair passed its PR CI and subsequent main startup;
 the historical startup cause remains unisolated. Local pinned-Node quality for
 PR34 passed1,357 tests and actionlint/ShellCheck for111 scripts.
@@ -49,7 +51,11 @@ PR34 preview6af644d0fc230a844d181cb5 completed provider build/scanning but its
 actual browser root renders a server exception; health503 reports missing
 production-only configuration. HTTP200 alone did not establish app success.
 The provider download contains482 public/edge files and no Node function ZIP;
-that archive does not establish final Node-package inspection. No production
+that archive does not establish final Node-package inspection. A repository
+onPostBuild check now inspects final deploy-ready ZIPs before deployment, rejects
+private/unsafe/corrupt archives and incorrect runtime/module/tracing layout, and
+reports only hashes/counts. Five actual-ZIP/hook contract tests pass, including privacy, missing/incorrect
+layout and corruption. Actual provider qualification is pending. No production
 publication, new credential or production branch activation was performed.
 
 Netlify preview6af638bee267aedbdcecff19 for PR33 passed all five build/deploy

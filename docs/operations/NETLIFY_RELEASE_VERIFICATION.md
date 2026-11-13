@@ -19,7 +19,10 @@ qualify a new candidate. PR34 preview6af644d0fc230a844d181cb5 completed provider
 build/scanning but renders a server exception; health503 identifies absent
 production-only configuration. Its downloaded archive contains482 public/edge
 files, zero private-path matches and zero Node function bundles. It cannot be
-used as evidence of the final Node ZIP inspection required below. Do not copy
+used as evidence of the final Node ZIP inspection required below. The new
+repository onPostBuild callback performs this check against FUNCTIONS_DIST after
+bundling and before deployment; its source/tests still need provider qualification.
+Do not copy
 production-only secrets into previews or infer app success from HTTP200.
 
 Production activation/publication and new scoped credential creation remain
@@ -147,6 +150,15 @@ production authorization gates. Self-review does not authorize publication.
    the semantic delta; do not substitute all generated settings or assume an
    unsupported CLI flag works. Keep the frozen payload unchanged.
 4. Inspect the final function ZIP, not just the intermediate build directory.
+   Managed Git builds now run the local verify-function-bundles plugin at
+   onPostBuild, after function bundling and before deployment. It reads actual
+   ZIPs without extraction/execution; checks bounded integrity, safe/private
+   paths, root run-config/BUILD_ID, included relative handler imports, matching
+   root tracing/app layout and the adapter's nodeBundler none manifest; then
+   logs only ZIP digests, sizes/counts and fixed booleans. Any missing verifier,
+   package or failed check stops deployment. Observe its actual provider marker
+   NETLIFY_FUNCTION_BUNDLES_VERIFIED; unit tests alone do not qualify a build.
+   See the [Netlify lifecycle](https://docs.netlify.com/extend/develop-and-share/develop-build-plugins/).
    Confirm the adapter's `nodeBundler: none` manifest is respected, its module
    paths resolve to included files, and `run-config.json` is in the expected
    runtime location. Reject private files. Record the ZIP hashes and verify
