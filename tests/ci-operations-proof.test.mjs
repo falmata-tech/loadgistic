@@ -60,3 +60,12 @@ test('admin queue diagnostics accept only the chosen case and both clean project
  value.suites[0].specs[0].tests[0].results[0].retry=1;
  assert.notEqual(inspectOperationsProofResult(processResult,value,'admin-queues'),null);
 });
+
+test('queue diagnosis branches start only the fixed isolated replay before a PR exists',()=>{
+ const source=readFileSync('.github/workflows/operations-proof.yml','utf8');
+ assert.match(source,/branches: \['diagnose\/admin-queues\/\*\*'\]/);
+ assert.match(source,/github.event_name == 'push' && 'admin-queues'/);
+ assert.match(source,/permissions:\n  contents: read/);
+ assert.match(source,/path: \.local\/ci-browser-diagnostics\/\*\.json/);
+ assert.doesNotMatch(source,/secrets\.|continue-on-error/);
+});

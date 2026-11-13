@@ -8,6 +8,8 @@ on:
         type: choice
         default: operations-proof
         options: [operations-proof, admin-queues]
+  push:
+    branches: ['diagnose/admin-queues/**']
   pull_request:
     paths:
       - '.github/workflows/operations-proof.yml'
@@ -58,7 +60,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Repeat the exact proof task on desktop and phone without retries
         env:
-          FOCUS_CASE: ${{ inputs.case || 'operations-proof' }}
+          FOCUS_CASE: ${{ inputs.case || (github.event_name == 'push' && 'admin-queues') || 'operations-proof' }}
         run: node scripts/ci-operations-proof.mjs --case "$FOCUS_CASE"
       - name: Retain only typed browser failure diagnostics
         if: failure()

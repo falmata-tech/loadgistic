@@ -22,11 +22,13 @@ withheld publication; Netlify's proposed production-branch edit remains unsaved.
 
 NR-78 / BASE-DEP-001 add allowlisted original stage/line/matcher and browser-error
 counts, a typed failure-only artifact and a fixed admin-queues choice in the
-existing focused replay. Unknown/private data never leaves the report process;
+existing focused replay. The diagnose/admin-queues/** branch lane runs this
+fixed isolated task before a PR/full matrix; it holds read-only permissions and
+no hosted credentials. Unknown/private data never leaves the report process;
 no assertion, timeout, retry or required gate is relaxed. Focused replay and
 exact-source PR/main qualification remain pending. Local Docker is unavailable.
-Local Node22.16.0 quality passes1,361 tests with zero failures/skips, types/spec/
-source checks and actionlint/ShellCheck for112 operational scripts (unit34.91s).
+Local Node22.16.0 quality passes1,362 tests with zero failures/skips, types/spec/
+source checks and actionlint/ShellCheck for112 operational scripts (unit33.54s).
 PR34's startup diagnostic repair passed its PR CI and subsequent main startup;
 the historical startup cause remains unisolated. Local pinned-Node quality for
 PR34 passed1,357 tests and actionlint/ShellCheck for111 scripts.
