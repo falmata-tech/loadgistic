@@ -13,7 +13,10 @@ all8 final function ZIPs. Separate main CI43344733398 failed Featured team setup
 before migrations with a retained port-binding conflict; the exact port/owner
 remain unknown. The production source remains withheld; no blind retry is claimed.
 Netlify's production branch is now production, saved and independently read back,
-with production-only branch builds, untrusted-preview approval and automatic
+with main alone additionally tracked for non-production branch builds/PR previews.
+Netlify requires the PR base to be production or a tracked branch; production-only
+tracking had stopped new main-targeted previews. The correction is saved/read
+back, with untrusted-preview approval, private production scopes and automatic
 publishing ON retained. Arming before the first qualified ref creation lets that
 push exercise the Git webhook without bypassing any source/CI check. Previous
 manual6af4f16a16aab2cef815c573 remains live and rollback. Installed settings do not

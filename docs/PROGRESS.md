@@ -17,8 +17,11 @@ all8 final function ZIPs before deployment. Main/tree readback matches the
 qualified tree683324acaf01b19864794b3f47e002f69ddb3ae5.
 
 Netlify production branch is now production, saved and independently read back;
-production-only branch builds, untrusted-preview approval and automatic publishing
-were retained. Arming before first ref creation lets the real qualified push
+main alone is additionally tracked for non-production branch builds and PR
+previews. Without that tracked base, Netlify stopped creating previews for PRs
+targeting main. This narrow correction is saved/read back; untrusted-preview
+approval, private production environment scopes and automatic publishing remain.
+Arming before first ref creation lets the real qualified push
 exercise the Git webhook. Every source/CI gate remains enforced. Old published
 6af4f16a16aab2cef815c573 remains live and rollback; no new publication occurred.
 Main CI43344733398 then failed Featured team setup/job131624126011 before any

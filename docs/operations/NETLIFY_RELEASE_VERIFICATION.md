@@ -16,8 +16,11 @@ three desktop plus three phone tasks without skips/retries. Exact PR/main and
 automatic publication still require their own terminal evidence.
 
 Netlify's production branch is now production, saved and independently read back;
-production-only branch builds, untrusted-preview approval and automatic publishing
-ON were retained. Arming before first qualified ref creation allows the Git
+main alone is additionally tracked for non-production branch builds and PR
+previews. Netlify requires a production/tracked PR base; production-only tracking
+had stopped previews targeting main. This narrow correction is saved/read back,
+with untrusted-preview approval, private production scopes and automatic publishing
+ON retained. Arming before first qualified ref creation allows the Git
 webhook to be exercised by that push. It changes no source/CI gate. Published
 6af4f16a16aab2cef815c573 remains live and the rollback target. No new production
 publication has occurred at this checkpoint; record final run/deploy receipts in
@@ -88,7 +91,7 @@ has now been applied; actual post-activation publication is not yet established.
 
 | Boundary | Exact change / retained control |
 | --- | --- |
-| Netlify production branch | Applied/read back: `main` → `production`; repository remains falmata-tech/loadgistic; production-branch-only builds and existing Deploy Preview approval/secret isolation retained. |
+| Netlify production branch | Applied/read back: `main` → `production`; repository remains falmata-tech/loadgistic. Only main is additionally tracked for non-production branch builds, preserving PR previews targeting main. Untrusted-preview approval and private production scopes retained. |
 | Automatic publishing | Remains ON. The new source prebuild rejects production from main and independently requires a complete successful current-main CI run and matching production ref. |
 | Delivery ref | After successful main push CI, the workflow creates or fast-forwards only refs/heads/production to that exact SHA. All16 jobs, latest attempt, same repository/workflow and current main are rechecked. No forced history or broad credential is used. |
 | Build command | Versioned command runs check-netlify-scan-exceptions.mjs before npm run build. Provider build/runtime settings otherwise stay unchanged. |
@@ -109,7 +112,8 @@ Activation order (steps1–2 and provider branch arming completed for PR35):
 2. Review the exact provider field above and the candidate. Keep scanner and
    source guards enabled. A premature merge remains fail-closed on main.
 3. Arm production as Netlify's production branch before the first qualified ref
-   creation, preserving preview/secret scopes. This ordering lets the first push
+   creation; track main alone for non-production branch builds so its PR previews
+   remain eligible. Preserve preview/secret scopes. This ordering lets the first push
    test the webhook; it grants no permission to publish failed or unqualified CI.
 4. Merge the qualified source under the owner's authorization. Verify main CI
    and the delivery workflow's actual destination/readback. Do not label a
@@ -133,6 +137,9 @@ Primary references: [Firebase API keys](https://firebase.google.com/docs/project
 [Netlify scan controls](https://docs.netlify.com/build/environment-variables/secrets-controller/),
 [GitHub workflow_run](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)
 and [scoped Supabase tokens](https://supabase.com/docs/guides/platform/personal-access-tokens).
+The [Deploy Preview prerequisites](https://docs.netlify.com/deploy/deploy-types/deploy-previews/)
+require a production or branch-deploy-enabled PR base. Tracking main restores
+preview eligibility; it does not turn main builds into production publications.
 
 ## Runtime release checks
 

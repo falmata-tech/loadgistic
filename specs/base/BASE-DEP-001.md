@@ -20,6 +20,7 @@ When Netlify builds this source with the narrowly named scan exceptions\
 Then a prebuild guard requires the exact reviewed client-file SHA-256 and mailbox-value SHA-256 values\
 And a changed file, changed mailbox value, broader exception or disabled scanner fails before building\
 And production-only values may remain absent from previews without being copied into them\
+And when production uses a gated delivery branch, main alone is tracked for non-production builds so main-targeted pull requests remain eligible for previews\
 And evidence contains only fixed status codes and counts, never addresses, keys or payloads.
 
 The client key's observed 25-API allowlist and absent application restriction
