@@ -37,8 +37,8 @@ permission denial and all existing bounds remain required. The strengthened
 [run43338626560](https://github.com/falmata-tech/loadgistic/actions/runs/43338626560)
 on26020ce also passed three desktop/three phone tasks, zero skips/retries. The
 final change leaves this browser code unchanged. Required PR/main CI remains pending. Local Docker is unavailable.
-Local Node22.16.0 quality passes1,367 tests with zero failures/skips, types/spec/
-source checks and actionlint/ShellCheck for112 operational scripts (unit34.20s).
+Local Node22.16.0 quality passes1,368 tests with zero failures/skips, types/spec/
+source checks and actionlint/ShellCheck for112 operational scripts (unit34.99s).
 PR34's startup diagnostic repair passed its PR CI and subsequent main startup;
 the historical startup cause remains unisolated. Local pinned-Node quality for
 PR34 passed1,357 tests and actionlint/ShellCheck for111 scripts.
@@ -54,8 +54,13 @@ The provider download contains482 public/edge files and no Node function ZIP;
 that archive does not establish final Node-package inspection. A repository
 onPostBuild check now inspects final deploy-ready ZIPs before deployment, rejects
 private/unsafe/corrupt archives and incorrect runtime/module/tracing layout, and
-reports only hashes/counts. Five actual-ZIP/hook contract tests pass, including privacy, missing/incorrect
-layout and corruption. Actual provider qualification is pending. No production
+reports only hashes/counts. Six actual-ZIP/hook contract tests pass, including privacy, missing/incorrect
+layout and corruption. PR35 preview6af65df5c28e3756b2f1cd7d failed safely at
+BUNDLE_DIRECTORY_OUTSIDE_SITE before deployment: FUNCTIONS_DIST is outside the
+checkout. The verifier now honors that explicit provider constant and confines
+ZIP reads to it; no archive path, private-file or layout check is relaxed.
+A focused negative/integration test covers this valid external output layout.
+Revised provider qualification remains pending. No production
 publication, new credential or production branch activation was performed.
 
 Netlify preview6af638bee267aedbdcecff19 for PR33 passed all five build/deploy

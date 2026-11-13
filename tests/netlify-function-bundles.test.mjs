@@ -8,8 +8,8 @@ import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const script=path.resolve('scripts/verify-netlify-function-bundles.py');
 const server='___netlify-server-handler';
-function fixture(change,root){
- const directory=path.join(root,'.netlify/functions');mkdirSync(directory,{recursive:true});
+function fixture(change,root,directory=path.join(root,'.netlify/functions')){
+ mkdirSync(directory,{recursive:true});
  const manifest=path.join(root,'.netlify/functions-internal',server);mkdirSync(manifest,{recursive:true});
  writeFileSync(path.join(manifest,server+'.json'),JSON.stringify({version:1,config:{nodeBundler:change==='bundler'?'esbuild':'none'}}));
  const files={
@@ -71,4 +71,15 @@ test('the provider callback verifies actual ZIP bytes before reporting success',
   assert.equal(result.status,0);assert.equal(result.stderr,'');assert.match(result.stdout,/^NETLIFY_FUNCTION_BUNDLES_VERIFIED /);
   assert.doesNotMatch(result.stdout,/SENTINEL|nextConfig|appDir/);
  }finally{rmSync(root,{recursive:true,force:true});}
+});
+
+test('the explicit provider bundle directory may live outside the source checkout',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'loadgistic-site-SENTINEL-'));
+ const output=mkdtempSync(path.join(tmpdir(),'loadgistic-functions-SENTINEL-'));
+ try{
+  fixture(undefined,root,output);
+  const result=spawnSync('python3',[script,output,root],{encoding:'utf8'});
+  assert.equal(result.status,0);assert.equal(JSON.parse(result.stdout).passed,true);
+  assert.equal(result.stderr,'');assert.doesNotMatch(result.stdout,/SENTINEL/);
+ }finally{rmSync(root,{recursive:true,force:true});rmSync(output,{recursive:true,force:true});}
 });

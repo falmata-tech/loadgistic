@@ -81,7 +81,7 @@ hosted service change is part of this repair.
 
 Given Netlify has completed adapter function bundling\
 When the repository's onPostBuild callback runs before deployment\
-Then it reads deploy-ready ZIPs without extraction or execution and requires intact bounded archives with unique safe paths and no private files\
+Then it reads only ZIPs within the explicit provider FUNCTIONS_DIST output, which may be outside the checkout, without extraction or execution and requires intact bounded archives with unique safe paths and no private files\
 And it requires the Next handler's nodeBundler none manifest, root run-config/BUILD_ID, included relative handler modules and matching root tracing/app layout\
 And missing tools/artifacts, changed bundling/layout, corruption or unsafe content fails the build without a fallback upload\
 And only fixed status/reason enums, counts, byte lengths and ZIP SHA-256 values are logged\

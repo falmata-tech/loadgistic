@@ -25,7 +25,8 @@ def read_json(archive, name):
 
 def inspect(functions, root):
     functions, root = pathlib.Path(functions).resolve(), pathlib.Path(root).resolve()
-    require(functions.is_relative_to(root), 'BUNDLE_DIRECTORY_OUTSIDE_SITE')
+    # FUNCTIONS_DIST is an explicit provider constant and may be outside the
+    # checkout. Only ZIPs inside that exact resolved output are inspected.
     paths = sorted(functions.glob('*.zip'))
     require(1 <= len(paths) <= 32, 'BUNDLE_COUNT_INVALID')
     server = '___netlify-server-handler'
@@ -36,7 +37,7 @@ def inspect(functions, root):
     summaries = []
     found_server = False
     for file in paths:
-        require(file.resolve().is_relative_to(root) and file.stat().st_size <= 256_000_000, 'BUNDLE_FILE_INVALID')
+        require(file.resolve().is_relative_to(functions) and file.stat().st_size <= 256_000_000, 'BUNDLE_FILE_INVALID')
         with zipfile.ZipFile(file) as archive:
             entries = archive.infolist()
             require(1 <= len(entries) <= 100_000, 'ENTRY_COUNT_INVALID')
