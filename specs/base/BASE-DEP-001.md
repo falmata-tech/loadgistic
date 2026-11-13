@@ -59,6 +59,40 @@ fake-process privacy tests do not establish a working Docker/Auth/Storage stack.
 Required real CI startup, guards and browser workflows remain unchanged. Rollback
 restores the prior wrapper without changing fixtures, database or publication.
 
+### Scenario: an admin queue failure preserves its original diagnostic safely
+
+Given a synthetic admin queue workflow fails before cleanup\
+When the test and CI runner report the failure\
+Then only reviewed scenario, project, stage, route, matcher and error-class enums and bounded counts/source lines leave the process\
+And unknown fields, record IDs, query strings, assertion values, contacts and raw reports are discarded\
+And typed JSON is retained as a failure-only artifact without replacing the first saved evidence\
+And capture failure cannot replace the original assertion\
+And a fixed focused replay requires three independent desktop and phone passes with zero skips or retries, stopping at the first failure\
+And synthetic actor changes stop the previous application document before replacing cookies\
+And role denial requires the final authorized destination and heading, not an intermediate URL\
+And dialogs are cancelled before parent-row capture, leaving saved PENDING/REQUESTED statuses unchanged\
+And full required CI, role/privacy denial and existing timeouts remain unchanged.
+
+NR-78 owns diagnosis. If the original failure does not recur, its cause remains
+unisolated. Rollback restores diagnostic tooling only; no product/schema or
+hosted service change is part of this repair.
+
+### Scenario: managed Netlify builds inspect final server ZIPs before deployment
+
+Given Netlify has completed adapter function bundling\
+When the repository's onPostBuild callback runs before deployment\
+Then it reads only ZIPs within the explicit provider FUNCTIONS_DIST output, which may be outside the checkout, without extraction or execution and requires intact bounded archives with unique safe paths and no private files\
+And it requires the Next handler's nodeBundler none manifest, root run-config/BUILD_ID, included relative handler modules and matching root tracing/app layout\
+And missing tools/artifacts, changed bundling/layout, corruption or unsafe content fails the build without a fallback upload\
+And only fixed status/reason enums, counts, byte lengths and ZIP SHA-256 values are logged\
+And immutable provider preview/runtime and required exact-source CI still qualify publication separately.
+
+NR-08/NR-10/NR-11/NR-69 negative checks are in
+`tests/netlify-function-bundles.test.mjs`. Python3.11+ standard library is a build/
+verification dependency only. Provider execution must be observed before marking
+this source gate installed. Rollback restores the previous known application;
+it does not bypass failed inspection or broaden preview credentials.
+
 ### Scenario: broken delivery tooling fails before expensive setup
 
 Given the repository's pinned workflow linter has been explicitly installed\

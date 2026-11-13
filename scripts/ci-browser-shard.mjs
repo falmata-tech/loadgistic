@@ -1,8 +1,9 @@
 import {spawnSync} from 'node:child_process';
-import {readFileSync,readdirSync} from 'node:fs';
+import {readFileSync,readdirSync,mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import axe from 'axe-core';
+import {parseWorkflowEvidence} from './lib/browser-workflow-evidence.mjs';
 
 const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const manifest=JSON.parse(readFileSync(path.join(root,'tests/e2e/ci-allowed-skips.json'),'utf8'));
@@ -234,6 +235,24 @@ function operationsProofFailure(result,file,title){
  return failure;
 }
 
+function workflowEvidence(result,file,title,project){
+ if(file!=='admin-connected-queues.spec.ts'||!Array.isArray(result?.stdout))return null;
+ const scenarios=new Map([
+  ['retired staff capacity feed cannot expose records and the public map remains available','RETIRED_CAPACITY'],
+  ['Driver Open owner reaches its exact fleet and retains delegated workspace denial','DRIVER_OWNER'],
+  ['Content and deletion overflow pages recover saved synthetic cases with unchanged controls','QUEUE_PAGING']
+ ]);
+ for(const item of result.stdout.slice(0,64)){
+  if(typeof item?.text!=='string'||item.text.length>8192)continue;
+  for(const line of item.text.split(/\r?\n/).slice(0,16)){
+   if(!line.startsWith('CI_BROWSER_WORKFLOW_EVIDENCE '))continue;
+   const value=parseWorkflowEvidence(line.slice('CI_BROWSER_WORKFLOW_EVIDENCE '.length));
+   if(value&&value.project===project&&value.scenario===scenarios.get(title))return value;
+  }
+ }
+ return null;
+}
+
 export function failedBrowserCaseDiagnostics(report){
  const diagnostics=[];
  for(const test of cases(report)){
@@ -248,10 +267,11 @@ export function failedBrowserCaseDiagnostics(report){
   const workflow=failedWorkflowStage(result,file,test.title);
   const portrait=portraitReplacementFailure(result,file,test.title);
   const operationsProof=operationsProofFailure(result,file,test.title);
+  const evidence=workflowEvidence(result,file,test.title,test.project);
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:operationsProof?.failureLine??failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
-   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{}),...(portrait?{portrait}:{}),...(operationsProof?{operationsProof}:{})});
+   line:evidence?.line??operationsProof?.failureLine??failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
+   ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{}),...(portrait?{portrait}:{}),...(operationsProof?{operationsProof}:{}),...(evidence?{workflowEvidence:evidence}:{})});
   if(diagnostics.length===20)break;
  }
  return diagnostics;
@@ -260,7 +280,7 @@ export function failedBrowserCaseDiagnostics(report){
 export function reportBrowserShardFailure(failure,shard,report,write=message=>process.stderr.write(message)){
  const summary=browserShardFailureSummary(failure,shard,report);
  write(`${summary}\n::error::${summary}\n`);
- for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow,portrait,operationsProof} of failedBrowserCaseDiagnostics(report)){
+ for(const {file,project,category,line,declarationLine,layout,a11y,authenticatedA11y,workflow,portrait,operationsProof,workflowEvidence} of failedBrowserCaseDiagnostics(report)){
   const location=`file=tests/e2e/${file}${line===null?'':`,line=${line}`}`;
   write(`::error ${location}::CI_BROWSER_CASE file=${file} line=${line??'unknown'} project=${project} category=${category} declaration_line=${declarationLine??'unknown'}\n`);
   if(layout)write(`::error ${location}::CI_BROWSER_LAYOUT file=${file} project=${project} measurements=${JSON.stringify(layout)}\n`);
@@ -268,8 +288,21 @@ export function reportBrowserShardFailure(failure,shard,report,write=message=>pr
   if(authenticatedA11y)write(`::error ${location}::CI_BROWSER_AUTH_A11Y role=${authenticatedA11y.role} route=${authenticatedA11y.route} stage=${authenticatedA11y.stage} error=${authenticatedA11y.errorType} duration_ms=${authenticatedA11y.durationMs??'unknown'} step_ms=${authenticatedA11y.stepDurationMs??'unknown'} rules=${authenticatedA11y.rules.join(',')||'unknown'}\n`);
   if(workflow)write(`::error ${location}::CI_BROWSER_STAGE file=${file} project=${project} stage=${workflow.stage} duration_ms=${workflow.durationMs??'unknown'}\n`);
   if(portrait)write(`::error ${location}::CI_BROWSER_PORTRAIT kind=${portrait.kind} old_status=${portrait.oldStatus} new_status=${portrait.newStatus}\n`);
+  if(workflowEvidence)write(`::error ${location}::CI_BROWSER_WORKFLOW project=${project} evidence=${JSON.stringify(workflowEvidence)}\n`);
   if(operationsProof)write(`::error ${location}::CI_BROWSER_OPERATIONS_PROOF project=${project} evidence=${JSON.stringify(operationsProof)}\n`);
  }
+}
+
+export function createBrowserFailureArtifact(failure,shard,report){
+ return {summary:browserShardFailureSummary(failure,shard,report),cases:failedBrowserCaseDiagnostics(report)};
+}
+export function persistBrowserFailureArtifact(failure,shard,report,directory=path.join(root,'.local/ci-browser-diagnostics')){
+ if(!Number.isInteger(shard)||shard<1||shard>8)return false;
+ try{
+  mkdirSync(directory,{recursive:true,mode:0o700});
+  writeFileSync(path.join(directory,`shard-${shard}.json`),JSON.stringify(createBrowserFailureArtifact(failure,shard,report),null,2)+'\n',{flag:'wx',mode:0o600});
+  return true;
+ }catch{return false;}
 }
 
 export function inspectBrowserShard(listResult,listReport,runResult,runReport,allowed=manifest.allowed){
@@ -312,6 +345,7 @@ function main(){
  const executed=runJson(args);
  const failure=inspectBrowserShard(listed.result,listed.report,executed.result,executed.report);
  if(failure){
+  if(!persistBrowserFailureArtifact(failure,shard,executed.report))process.stderr.write('CI_BROWSER_DIAGNOSTIC_NOT_SAVED\n');
   reportBrowserShardFailure(failure,shard,executed.report);
   process.exitCode=1;
   return;

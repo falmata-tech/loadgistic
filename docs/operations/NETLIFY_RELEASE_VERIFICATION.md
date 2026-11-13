@@ -4,7 +4,31 @@ BASE-DEP-001 / FEAT-SEC-001 / NR-08 / NR-10 / NR-11 / NR-69.
 Scope: Loadgistic only. This runbook grants no production authority; follow
 [PRODUCTION_AUTHORITY.md](../PRODUCTION_AUTHORITY.md).
 
-## Installed pipeline readback — November 12
+## Current checkpoint — November 13 UTC
+
+PR33's exact scan-exception/source guard is merged. PR34's startup diagnostics
+merged as f6fa95d after all16 PR jobs passed. Main CI43330733941 then failed a
+different desktop admin queue case; delivery correctly withheld production.
+Actual Netlify production branch remains main, automatic publishing ON. The
+main-to-production form was cancelled without saving after that failure.
+Published6af4f16a16aab2cef815c573 remains the rollback target.
+
+Cloud Chrome reviewed the older public app's filters, selection/details/back,
+guest private-Capacity denial and Featured/provider profile. This does not
+qualify a new candidate. PR34 preview6af644d0fc230a844d181cb5 completed provider
+build/scanning but renders a server exception; health503 identifies absent
+production-only configuration. Its downloaded archive contains482 public/edge
+files, zero private-path matches and zero Node function bundles. It cannot be
+used as evidence of the final Node ZIP inspection required below. The new
+repository onPostBuild callback performs this check against FUNCTIONS_DIST after
+bundling and before deployment; its source/tests still need provider qualification.
+Do not copy
+production-only secrets into previews or infer app success from HTTP200.
+
+Production activation/publication and new scoped credential creation remain
+pending. Preserve the exact owner-approved branch field and all runtime gates.
+
+## Historical installed pipeline readback — November 12
 
 Site `loadgistic-473` / `dbb0fcec-9ec9-4511-9737-db0e32849af5` is linked to
 `falmata-tech/loadgistic`. Builds are Active; main is the production branch and
@@ -32,14 +56,15 @@ Before changing the installed pipeline, prepare a reviewable correction:
    exact exception supported by Netlify, with its reason and verification.
    Never disable the scanner or omit whole docs/scripts/output directories.
 3. Specify how an exact successful main CI/artifact is promoted under the owner's
-   production authority. The current source workflow has no Netlify promotion
-   job and no same-commit wait was observed in the provider's automatic route.
+   production authority. At that initial readback no promotion
+   job or same-commit wait was observed; PR33 subsequently installed the source
+   gate described below, while provider activation remains pending.
    Preserve PR-preview credential isolation and rollback controls.
 4. Review that concrete configuration before applying hosted settings, then
    qualify the resulting preview, scan and promotion with the checks below.
 
-No exception, secret, environment scope or publishing setting was changed during
-housekeeping. [NR-75](../SECURITY_REGRESSION_REGISTER.md#nr-75--green-github-checks-conceal-a-blocked-automatic-publication-path)
+At that initial inspection no exception, secret, environment scope or publishing
+setting was changed. Later source/preview changes are recorded above and below. [NR-75](../SECURITY_REGRESSION_REGISTER.md#nr-75--green-github-checks-conceal-a-blocked-automatic-publication-path)
 owns this discrepancy. Netlify's [secrets controller reference](https://docs.netlify.com/build/environment-variables/secrets-controller/)
 documents narrow exclusions; its existence does not approve one for this app.
 
@@ -125,6 +150,15 @@ production authorization gates. Self-review does not authorize publication.
    the semantic delta; do not substitute all generated settings or assume an
    unsupported CLI flag works. Keep the frozen payload unchanged.
 4. Inspect the final function ZIP, not just the intermediate build directory.
+   Managed Git builds now run the local verify-function-bundles plugin at
+   onPostBuild, after function bundling and before deployment. It reads actual
+   ZIPs without extraction/execution; checks bounded integrity, safe/private
+   paths, root run-config/BUILD_ID, included relative handler imports, matching
+   root tracing/app layout and the adapter's nodeBundler none manifest; then
+   logs only ZIP digests, sizes/counts and fixed booleans. Any missing verifier,
+   package or failed check stops deployment. Observe its actual provider marker
+   NETLIFY_FUNCTION_BUNDLES_VERIFIED; unit tests alone do not qualify a build.
+   See the [Netlify lifecycle](https://docs.netlify.com/extend/develop-and-share/develop-build-plugins/).
    Confirm the adapter's `nodeBundler: none` manifest is respected, its module
    paths resolve to included files, and `run-config.json` is in the expected
    runtime location. Reject private files. Record the ZIP hashes and verify

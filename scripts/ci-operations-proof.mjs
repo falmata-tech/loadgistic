@@ -1,13 +1,17 @@
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {reportBrowserShardFailure} from './ci-browser-shard.mjs';
+import {reportBrowserShardFailure,persistBrowserFailureArtifact} from './ci-browser-shard.mjs';
 
 const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
-const file='operations-connected-actions.spec.ts';
-const title='Operations single-proof boundary preserves acknowledged bytes';
+export const focusedCases={
+ 'operations-proof':{file:'operations-connected-actions.spec.ts',title:'Operations single-proof boundary preserves acknowledged bytes'},
+ 'admin-queues':{file:'admin-connected-queues.spec.ts',title:'Content and deletion overflow pages recover saved synthetic cases with unchanged controls'}
+};
 
-export function inspectOperationsProofResult(processResult,report){
+export function inspectOperationsProofResult(processResult,report,focus='operations-proof'){
+ if(!Object.hasOwn(focusedCases,focus))return 'UNEXPECTED_SELECTION';
+ const {file,title}=focusedCases[focus];
  if(processResult.error||processResult.signal||processResult.status!==0)return 'PLAYWRIGHT_FAILED';
  if(!report||!Array.isArray(report.suites)||!Array.isArray(report.errors)||!report.stats)return 'REPORT_UNAVAILABLE';
  const {expected,skipped,unexpected,flaky}=report.stats;
@@ -38,21 +42,23 @@ export function inspectOperationsProofResult(processResult,report){
  return seen.size===2?null:'TWO_CLEAN_PROJECT_PASSES_REQUIRED';
 }
 
-export function runOperationsProofRepetitions(run,write=message=>process.stdout.write(message)){
+export function runOperationsProofRepetitions(run,write=message=>process.stdout.write(message),focus='operations-proof'){
  for(let repetition=1;repetition<=3;repetition++){
   const {result,report}=run();
-  const failure=inspectOperationsProofResult(result,report);
+  const failure=inspectOperationsProofResult(result,report,focus);
   if(failure){
    write(`CI_OPERATIONS_PROOF_${failure} repetition=${repetition}\n`);
    reportBrowserShardFailure(result.status===0?'FAILED_OR_FLAKY_TESTS':'PLAYWRIGHT_FAILED',4,report,write);
    return false;
   }
-  write(`CI Operations proof repetition ${repetition}: desktop and phone passed; zero skips or retries.\n`);
+  write(`CI focused ${Object.hasOwn(focusedCases,focus)?focus:'unknown'} repetition ${repetition}: desktop and phone passed; zero skips or retries.\n`);
  }
  return true;
 }
 function main(){
- if(process.argv.length!==2){process.stderr.write('CI_OPERATIONS_PROOF_ARGUMENTS_REJECTED\n');process.exitCode=1;return;}
+ const focus=process.argv.length===2?'operations-proof':process.argv.length===4&&process.argv[2]==='--case'?process.argv[3]:null;
+ if(!Object.hasOwn(focusedCases,focus)){process.stderr.write('CI_OPERATIONS_PROOF_ARGUMENTS_REJECTED\n');process.exitCode=1;return;}
+ const {file,title}=focusedCases[focus];
  // Fixed synthetic workflow only. Raw reports can contain request/session data.
  const run=()=>{
   const result=spawnSync(process.execPath,[path.join(root,'node_modules/playwright/cli.js'),'test',`tests/e2e/${file}`,
@@ -60,8 +66,9 @@ function main(){
    cwd:root,env:process.env,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:64*1024*1024,timeout:480_000
   });
   let report=null;try{report=JSON.parse(result.stdout||'');}catch{/* Bounded failure only. */}
+  if(inspectOperationsProofResult(result,report,focus))persistBrowserFailureArtifact('PLAYWRIGHT_FAILED',4,report);
   return {result,report};
  };
- process.exitCode=runOperationsProofRepetitions(run)?0:1;
+ process.exitCode=runOperationsProofRepetitions(run,undefined,focus)?0:1;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main();
