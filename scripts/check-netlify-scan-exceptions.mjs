@@ -11,7 +11,7 @@ export const scanExceptionPolicy=Object.freeze({
  firebaseSha256:'6903e064ef59a96775faf396eb13bef50ab344d41ab58607caa6951ffd210d53',
  omitKeys:'LOADGISTIC_SMTP_USER,LOADGISTIC_EMAIL_REPLY_TO',
  mailboxSha256:Object.freeze({
-  LOADGISTIC_SMTP_USER:'c39b924d0a3b573fe0783ac5f870a94cfdb2e5f00932ae8d10c3001e30ee0529',
+  LOADGISTIC_SMTP_USER:'a4efb892a5af4003986edc189640789559d060b29a2adec9255855441d2faf3a',
   LOADGISTIC_EMAIL_REPLY_TO:'a4efb892a5af4003986edc189640789559d060b29a2adec9255855441d2faf3a'
  })
 });
@@ -33,6 +33,7 @@ export function inspectNetlifyScanExceptions({firebaseBytes,environment={}}){
   if(typeof environment[key]!=='string'||environment[key].length>320||digest(environment[key])!==expected)throw Error('NETLIFY_MAILBOX_REVIEW_REQUIRED');
   reviewedMailboxFields++;
  }
+ if(environment.NETLIFY==='true'&&environment.CONTEXT==='production'&&reviewedMailboxFields!==2)throw Error('NETLIFY_MAILBOX_REVIEW_REQUIRED');
  return {reviewedClientFiles:1,reviewedMailboxFields};
 }
 async function main(){

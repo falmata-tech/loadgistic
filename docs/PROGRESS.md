@@ -7,7 +7,52 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — disposable CI port reservation
+## Active follow-up — exact bare mailbox policy
+
+[PR36](https://github.com/falmata-tech/loadgistic/pull/36) merged normally as
+ab899497befdcf5e699cb436de41c4bdb449fb63/tree5f86efd9a3a6104d73956def8ab03f33ef41668c.
+[PR CI43348321656](https://github.com/falmata-tech/loadgistic/actions/runs/43348321656)
+and separate [main CI43352081887](https://github.com/falmata-tech/loadgistic/actions/runs/43352081887)
+each passed all16 exact required jobs on attempt1. Main's12 isolated Supabase
+starts passed with the reservation guard. The independent Operations proof and
+earlier admin focus each passed three desktop/three phone repetitions, no retries
+or skips. PR36 preview6af66dd67c93c0214a4ce0fa verified all8 final function ZIPs
+on adapter5.16.6, zero private entries, and passed scanning2257 files.
+
+[Source workflow43355866914](https://github.com/falmata-tech/loadgistic/actions/runs/43355866914)
+created/read back production atab899497 using its short-lived Actions token.
+The actual Git webhook triggered production6af67d14b459c7cc43f7212c. It failed
+before application build with NETLIFY_MAILBOX_REVIEW_REQUIRED; no new production
+publication occurred. Old6af4f16a16aab2cef815c573 remains live/rollback, with fresh
+health200/ready and no blockers. Automatic transport is observed; successful
+automatic publication/runtime is not yet established.
+
+NR-80 identifies the source bug: the SMTP-user digest included Markdown's opening
+backtick, and its test repeated that parser/digest selection. Removing that one
+formatting byte yields the already-reviewed bare Reply-To digest. The repair
+binds both named fields to that exact bare identity, uses independent Markdown
+and JavaScript literals/real CLI tests, and requires both fields in production.
+Configured formatting/whitespace/case changes still fail; values are not trimmed
+or normalized. Focused local tests pass15/15. Pinned Node22.16.0 full quality
+passes1,377 tests, zero failures/skips, types/spec/source and actionlint/ShellCheck
+for113 scripts; unit38.46s. An isolated actual-CLI comparison proves ab899497's
+guard rejects the same bare inputs that the repair accepts with mailbox_fields=2,
+without printing either value. Exact PR/main/provider qualification remains next;
+final provider/runtime receipts belong in the repair PR.
+
+Provider secret values are not readable in the UI/API/CLI. The inspected edit
+forms were cancelled without saving. No diagnostic branch, publishing pause,
+mailbox/SMTP value/scope change or scanner waiver was applied. Netlify remains
+production branch production, main alone tracked for previews, auto-publish ON,
+untrusted previews require approval, private production scopes retained. The
+seven-day/project-only/two-read-capability advisor proposal is prepared in tab29,
+with the empty named GitHub secret form in tab30; no token was created/stored.
+Fresh hosted readback02:52UTC remains ACTIVE_HEALTHY,0 ERROR/2 WARN/1 INFO.
+The strict monitor is unchanged. Local Docker is still unavailable; application,
+native, schema and runtime source are unchanged. Earlier browser/private-byte
+receipt limits below remain explicit.
+
+## Historical port-reservation checkpoint — before PR36 qualification
 
 [PR35](https://github.com/falmata-tech/loadgistic/pull/35) merged normally as
 63cbb868b6521e2c02a94e893013eaaa847ef3b5 after all16 exact-head jobs in
