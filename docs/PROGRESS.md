@@ -1,6 +1,6 @@
 # Current work and release status
 
-Updated 2026-11-12. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-13 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
@@ -35,7 +35,12 @@ allocation actor is a prevention target, not an established historical cause.
 Local pinned Node22.16.0 quality passes1,374 tests, zero failures/skips, types/
 spec/source checks and actionlint/ShellCheck for113 scripts (unit36.49s). The
 fake-kernel entry integration changed only a disposable test file, not this host.
-Focused actual-provider and exact-source PR/main qualification remain pending.
+Actual hosted [focused run43346969178](https://github.com/falmata-tech/loadgistic/actions/runs/43346969178)
+on4b17173f passed reservation/readback, startup, catalog/API checks and all three
+independent desktop/phone repetitions, zero skips/retries. The following doc-only
+reconciliation changes no tested executable input. Exact-source PR/main and real
+production handoff/runtime qualification remain pending; their final receipts
+belong in the PR release record rather than another status-only CI commit.
 
 Supabase dashboard sign-in succeeded through the owner's secure GitHub choice.
 The project-only seven-day token with Project Settings Read + Advisors Read is
@@ -88,7 +93,7 @@ The read-only dry run verified actual c957a60/all16 jobs and reported that it
 would create production; **no reference was written by that dry run**.
 
 Activation and exact provider fields are in the
-[release runbook](operations/NETLIFY_RELEASE_VERIFICATION.md#reviewed-delivery-correction--activation-pending).
+[release runbook](operations/NETLIFY_RELEASE_VERIFICATION.md#reviewed-delivery-correction-and-activation).
 Source preparation, PR/main CI, provider activation and real publication remain
 separate evidence. The scoped Supabase token is prepared at its final review:
 project tpwyyzoqijjmbvsmmvcm only, Project Settings Read + Advisors Read, seven-day

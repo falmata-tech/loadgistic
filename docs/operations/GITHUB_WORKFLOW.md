@@ -7,13 +7,26 @@ a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR result
 ## Current delivery checkpoint, November 13 UTC
 
 PR33 installed the versioned scan-exception guard and a separate workflow that
-advances production only after all16 jobs on successful current main. PR34
-qualified startup diagnostics and merged as f6fa95d. Its main CI43330733941
-failed one desktop admin-queue case after13 other substantive jobs passed;
-E2E/release-ready correctly failed. The production source remains withheld.
-Netlify's production branch remains main, automatic publishing ON, and the
-previous manual artifact remains live. A prepared workflow is not provider
-activation or a proven automatic deployment. See current PROGRESS/runbook.
+advances production only after all16 jobs on successful current main. PR35
+merged as63cbb868 after all16 exact-head jobs passed. Its Netlify preview verified
+all8 final function ZIPs. Separate main CI43344733398 failed Featured team setup
+before migrations with a retained port-binding conflict; the exact port/owner
+remain unknown. The production source remains withheld; no blind retry is claimed.
+Netlify's production branch is now production, saved and independently read back,
+with production-only branch builds, untrusted-preview approval and automatic
+publishing ON retained. Arming before the first qualified ref creation lets that
+push exercise the Git webhook without bypassing any source/CI check. Previous
+manual6af4f16a16aab2cef815c573 remains live and rollback. Installed settings do not
+prove a successful automatic deployment. See current PROGRESS/runbook.
+
+NR-79 reserves55320–55329 from automatic allocation early on disposable hosted
+Linux runners only, preserving existing reservations and verifying the exact
+union. It does not kill listeners, change production or widen startup retries.
+Focused run43346969178/4b17173f passed actual reservation/startup/security and three
+desktop plus three phone tasks with zero skips/retries. Subsequent documentation
+reconciliation leaves these executable inputs unchanged. The exact PR/main and
+production publication remain independent prerequisites; final release receipts
+are recorded in the PR after those actions, not inferred from this focused run.
 
 For fixed admin-queue diagnosis before opening a PR, diagnose/admin-queues/**
 pushes run only the existing isolated focused workflow. It uses read-only
