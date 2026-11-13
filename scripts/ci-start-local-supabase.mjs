@@ -21,6 +21,9 @@ export function startupDiagnostic(result={}, {phase,elapsedMs}={}){
     processError:result.error?(processErrors.has(result.error.code)?result.error.code:'UNKNOWN'):null,
     elapsedMs:Number.isFinite(elapsedMs)&&elapsedMs>=0&&elapsedMs<=7200000?Math.floor(elapsedMs):null,
     stdoutBytes:Math.min(Buffer.byteLength(stdout),8388608),stderrBytes:Math.min(Buffer.byteLength(stderr),8388608),
+    conflictServices:[...new Set(stderr.split(/\r?\n/).filter(line=>/address already in use|port is already allocated/i.test(line))
+      .flatMap(line=>[...line.matchAll(/(?:0\.0\.0\.0|127\.0\.0\.1|\[::\]|\[::1\]):(5532[0-9])\b/g)]
+        .map(match=>['SHADOW_DATABASE','API','DATABASE','STUDIO','MAIL_HTTP','MAIL_SMTP','MAIL_POP3','ANALYTICS','LOCAL_SERVICE_8','LOCAL_SERVICE_9'][Number(match[1])-55320])))].sort(),
     indicators:{
       migrationsSeen:/Applying migration\b/i.test(stderr),
       migrationError:/\bmigration\b[^\r\n]{0,300}\b(?:error|failed|failure)\b|\b(?:error|failed|failure)\b[^\r\n]{0,300}\bmigration\b/i.test(stderr),

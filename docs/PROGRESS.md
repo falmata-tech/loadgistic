@@ -7,77 +7,55 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — retained admin queue diagnostics
+## Active follow-up — disposable CI port reservation
 
-PR34 merged as `f6fa95d29a93048684d3f14876406e774f6b6a89` after exact-head
-[CI43324894377](https://github.com/falmata-tech/loadgistic/actions/runs/43324894377)
-passed all16 jobs. Independent main/tree readback matched. The separate
-[main run43330733941](https://github.com/falmata-tech/loadgistic/actions/runs/43330733941)
-failed desktop Content/deletion overflow recovery in admin-connected-queues,
-worker4/job131579406987. Its local diagnostic was not retained by CI; only the
-wrapper source line105 survived. This is a different case from Operations proof.
-The original cause remains unisolated; no flaky classification or blind retry.
-All other13 substantive jobs passed, including worker7 startup. The source gate
-withheld publication; Netlify's proposed production-branch edit remains unsaved.
+[PR35](https://github.com/falmata-tech/loadgistic/pull/35) merged normally as
+63cbb868b6521e2c02a94e893013eaaa847ef3b5 after all16 exact-head jobs in
+[CI43340452362](https://github.com/falmata-tech/loadgistic/actions/runs/43340452362)
+passed. Its actual Netlify preview6af65f2dee0414fbc504e277/adapter5.16.6 verified
+all8 final function ZIPs before deployment. Main/tree readback matches the
+qualified tree683324acaf01b19864794b3f47e002f69ddb3ae5.
 
-NR-78 / BASE-DEP-001 add allowlisted original stage/line/matcher and browser-error
-counts, a typed failure-only artifact and a fixed admin-queues choice in the
-existing focused replay. The diagnose/admin-queues/** branch lane runs this
-fixed isolated task before a PR/full matrix; it holds read-only permissions and
-no hosted credentials. Unknown/private data never leaves the report process;
-no assertion, timeout, retry or required gate is relaxed. The initial focused
-[run43337731137](https://github.com/falmata-tech/loadgistic/actions/runs/43337731137)
-on c7356d2 passed three desktop and three phone tasks with zero skips/retries.
-The original failure did not recur; cause remains unisolated. The follow-up also
-ends the previous actor's document before cookie replacement, requires final
-positive denial destinations/headings, and captures/cancels visible dialogs
-before parent-row screenshots. These repair observed fixture weaknesses without
-claiming they caused the historical failure. Saved PENDING/REQUESTED statuses,
-permission denial and all existing bounds remain required. The strengthened
-[run43338626560](https://github.com/falmata-tech/loadgistic/actions/runs/43338626560)
-on26020ce also passed three desktop/three phone tasks, zero skips/retries. The
-final change leaves this browser code unchanged. Required PR/main CI remains pending. Local Docker is unavailable.
-Local Node22.16.0 quality passes1,368 tests with zero failures/skips, types/spec/
-source checks and actionlint/ShellCheck for112 operational scripts (unit34.99s).
-PR34's startup diagnostic repair passed its PR CI and subsequent main startup;
-the historical startup cause remains unisolated. Local pinned-Node quality for
-PR34 passed1,357 tests and actionlint/ShellCheck for111 scripts.
+Netlify production branch is now production, saved and independently read back;
+production-only branch builds, untrusted-preview approval and automatic publishing
+were retained. Arming before first ref creation lets the real qualified push
+exercise the Git webhook. Every source/CI gate remains enforced. Old published
+6af4f16a16aab2cef815c573 remains live and rollback; no new publication occurred.
+Main CI43344733398 then failed Featured team setup/job131624126011 before any
+migration. Retained diagnostics show a normal exit1,76.176s,19,128 stderr bytes,
+containerStart/portConflict true, and no migration/process/capture error. The
+exact port and binding owner remain unisolated; no flaky claim or blind retry.
 
-Signed-in cloud Chrome reviewed the older published public app: Capacity filter
-persistence/clear, selected vehicle and details/back, guest private-Capacity
-sign-in denial, Featured and a provider's vehicle profile. Optimized vehicle
-image384 decoded. This is baseline review, not candidate release acceptance.
-PR34 preview6af644d0fc230a844d181cb5 completed provider build/scanning but its
-actual browser root renders a server exception; health503 reports missing
-production-only configuration. HTTP200 alone did not establish app success.
-The provider download contains482 public/edge files and no Node function ZIP;
-that archive does not establish final Node-package inspection. A repository
-onPostBuild check now inspects final deploy-ready ZIPs before deployment, rejects
-private/unsafe/corrupt archives and incorrect runtime/module/tracing layout, and
-reports only hashes/counts. Six actual-ZIP/hook contract tests pass, including privacy, missing/incorrect
-layout and corruption. PR35 preview6af65df5c28e3756b2f1cd7d failed safely at
-BUNDLE_DIRECTORY_OUTSIDE_SITE before deployment: FUNCTIONS_DIST is outside the
-checkout. The verifier now honors that explicit provider constant and confines
-ZIP reads to it; no archive path, private-file or layout check is relaxed.
-A focused negative/integration test covers this valid external output layout.
-Revised provider qualification remains pending. No production
-publication, new credential or production branch activation was performed.
+NR-79 adds early fixed-port reservation only on disposable GitHub-hosted Linux
+runners, preserving all previous reservations and verifying the exact union.
+It excludes55320–55329 from automatic allocation before dependency/container
+network setup. Unknown listeners are never killed and retry rules stay unchanged.
+Safe startup diagnosis names only reviewed local service enums. The ephemeral-
+allocation actor is a prevention target, not an established historical cause.
+Local pinned Node22.16.0 quality passes1,374 tests, zero failures/skips, types/
+spec/source checks and actionlint/ShellCheck for113 scripts (unit36.49s). The
+fake-kernel entry integration changed only a disposable test file, not this host.
+Focused actual-provider and exact-source PR/main qualification remain pending.
 
-Netlify preview6af638bee267aedbdcecff19 for PR33 passed all five build/deploy
-stages and scanning, but initially failed cold start because its public Supabase
-configuration was absent. Added only the site's existing public URL and
-publishable key to Deploy Previews; readback confirmed exact matches and
-unchanged Production values. Private credentials and other contexts were not
-changed. One diagnosed rebuild then returned root200 and signed-out workspace401.
-Health/public Capacity returned503 with production-only server configuration
-absent, so this is bootstrap evidence, not full runtime qualification. PR34
-subsequently confirmed its immutable preview server exception as recorded above. Fresh live
-health and public Capacity return200; private workspace/photo access returns401.
-The last confirmed published deployment is6af4f16a16aab2cef815c573. No production
-branch activation, new credential creation or publication has been performed.
-Current source-bound outcomes also remain on PR33; preserve its original checks.
+Supabase dashboard sign-in succeeded through the owner's secure GitHub choice.
+The project-only seven-day token with Project Settings Read + Advisors Read is
+at final provider review; it is not created/stored and still requires action-time
+confirmation. The strict monitor stays unchanged; fresh metadata gives zero
+ERROR/two WARN/one INFO. Public Data API denial passed all3 probes. Production
+health after branch arming remains ready/no blockers with the existing warnings.
 
-## Gated Netlify delivery — merged, activation pending
+Application/public/function source, root dependency/lock, Next/Node and build
+inputs match886691b across891 Git entries. Prior November11 authenticated/private-
+byte and desktop/phone review is retained in the history, not relabeled as a fresh
+login. Current cloud Chrome exercised old-live public filters/details/Featured/
+private sign-in denial; images384/640 and guest private photo/proxy denials pass.
+The qualified preview still has a server exception/health503 with private
+production-only configuration absent; packaging success is not runtime readiness.
+No private credentials were copied into previews. Docker remains unavailable here.
+The existing high-zoom/short-height map issue and lack of fresh portrait/native
+review remain recorded in PR35. No product/schema/native/Google/Auth change.
+
+## Historical gate preparation — before provider activation
 
 PR32 is merged as `c957a60e6fe491c52a34f99c92037e7f06df3347`.
 Its [PR CI43292221647](https://github.com/falmata-tech/loadgistic/actions/runs/43292221647)

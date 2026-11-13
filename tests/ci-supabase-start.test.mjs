@@ -106,3 +106,9 @@ test('unrelated failure, failed cleanup and failed retry do not continue',async(
     assert.deepEqual(calls,scenario.calls);
   }
 });
+
+test('binding diagnostics retain only reviewed service enums, without changing retry authority',()=>{
+ const diagnostic=startupDiagnostic({status:1,stderr:'Error: Bind for 0.0.0.0:55325 failed: address already in use PRIVATE person@example.test\nBind for 0.0.0.0:60000 failed: port is already allocated'});
+ assert.deepEqual(diagnostic.conflictServices,['MAIL_SMTP']);assert.doesNotMatch(JSON.stringify(diagnostic),/PRIVATE|person@|55325|60000/);
+ assert.equal(knownStartupFailure('Bind for 0.0.0.0:55325 failed: address already in use'),null);
+});

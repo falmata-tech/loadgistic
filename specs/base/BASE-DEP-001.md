@@ -93,6 +93,26 @@ verification dependency only. Provider execution must be observed before marking
 this source gate installed. Rollback restores the previous known application;
 it does not bypass failed inspection or broaden preview credentials.
 
+### Scenario: fixed CI service ports are excluded from automatic host allocation
+
+Given an isolated GitHub-hosted Linux runner owns a disposable loadgistic-local stack\
+When its early setup runs before Node/dependency installation and Docker pulls\
+Then it preserves every existing ip_local_reserved_ports reservation and adds only55320–55329\
+And it independently reads back the exact union before starting services\
+And malformed state, failed commands/readback, self-hosted/local/non-Linux/wrong-project contexts fail without proceeding\
+And it never kills a listener, changes the ephemeral range, clears previous reservations or expands startup retry authority\
+And startup bind diagnostics expose only fixed local service enums, never raw errors, ports outside the reviewed set, addresses or credentials.
+
+NR-79 records the observed pre-migration binding conflict. The failed host's
+binding owner/port was not retained; ephemeral allocation is a prevention target,
+not a demonstrated historical cause. Unit/fake-kernel tests do not establish real
+provider enforcement. Qualify the early reservation, actual isolated startup and
+focused workflow before full CI. The setting disappears with the disposable
+runner; production and local owner machines are outside this operation.
+[Kernel port reservation semantics](https://docs.kernel.org/networking/ip-sysctl.html)
+and [hosted runner context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts)
+are the primary setup references.
+
 ### Scenario: broken delivery tooling fails before expensive setup
 
 Given the repository's pinned workflow linter has been explicitly installed\

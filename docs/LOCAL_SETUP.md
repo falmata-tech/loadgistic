@@ -22,6 +22,12 @@ production administrator/service credentials into the local checkout.
 A restricted shell's missing PATH is not proof that a separately installed
 runtime is absent: inspect the exact selected binary/socket first.
 
+CI-only port handling: the early ci-reserve-local-ports command is restricted
+to disposable GitHub-hosted Linux runners. It preserves/read-checks kernel
+reservations and excludes55320–55329 from automatic allocation before service
+setup. Do not run it as local setup, change this machine's kernel settings or
+kill an unknown listener; verify process/port ownership normally below.
+
 ## Fresh, disposable Loadgistic stack only
 
 These commands create/reset synthetic data. Use them only when this checkout's
