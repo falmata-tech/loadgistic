@@ -17,8 +17,12 @@ failure-only artifacts. Focused selection accepts only its fixed case and both
 projects, three independent passes, zero skips/retries, stopping on first failure.
 Negative tests map to tests/browser-workflow-evidence.test.mjs and
 ci-operations-proof.test.mjs; existing ci-browser-gate checks remain required.
-Owner: workflow maintainer. Next: focused isolated replay, diagnose any observed
-failure, then exact-source PR/main CI before publication. Local Docker is absent;
+Initial focused run43337731137 passed three desktop and three phone tasks;
+original cause remains unisolated. The strengthened fixture ends the previous
+actor's document before replacing cookies, waits for the positive final denial
+route/heading, and captures/cancels dialogs before the parent row. These source
+weaknesses are not established historical causes. Owner: workflow maintainer.
+Next: qualify these exact strengthened tasks, then PR/main CI before publication. Local Docker is absent;
 unit evidence does not substitute for the actual workflow.
 
 ## NR-77 — CI startup discards the subprocess failure before it can be diagnosed

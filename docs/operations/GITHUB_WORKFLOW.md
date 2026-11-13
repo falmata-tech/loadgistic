@@ -4,7 +4,29 @@ This is Loadgistic's working convention. AGENTS and production authority control
 permissions; these instructions do not install GitHub protections or authorize
 a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR results.
 
-## Verified pipeline, November 12
+## Current delivery checkpoint, November 13 UTC
+
+PR33 installed the versioned scan-exception guard and a separate workflow that
+advances production only after all16 jobs on successful current main. PR34
+qualified startup diagnostics and merged as f6fa95d. Its main CI43330733941
+failed one desktop admin-queue case after13 other substantive jobs passed;
+E2E/release-ready correctly failed. The production source remains withheld.
+Netlify's production branch remains main, automatic publishing ON, and the
+previous manual artifact remains live. A prepared workflow is not provider
+activation or a proven automatic deployment. See current PROGRESS/runbook.
+
+For fixed admin-queue diagnosis before opening a PR, diagnose/admin-queues/**
+pushes run only the existing isolated focused workflow. It uses read-only
+contents permission, no hosted credentials, three independent desktop/phone
+passes, zero skips/retries, and stops at first failure. PRs still run the full
+required matrix; this lane cannot authorize a release or replace main CI.
+
+The daily security-advisor workflow still lacks its scoped credential. Direct
+project inspection finds zero ERROR/two WARN/one INFO; provisioning access does
+not waive its strict WARN threshold. The independent public Data API guard
+passed all three read-only probes in this session. No hosted SQL/Auth/key change.
+
+## Historical verified pipeline, November 12
 
 Main c926092 has a successful16-job [CI run43119585046](https://github.com/falmata-tech/loadgistic/actions/runs/43119585046).
 The actual branch-rule browser readback requires a PR, strict/up-to-date

@@ -25,8 +25,16 @@ counts, a typed failure-only artifact and a fixed admin-queues choice in the
 existing focused replay. The diagnose/admin-queues/** branch lane runs this
 fixed isolated task before a PR/full matrix; it holds read-only permissions and
 no hosted credentials. Unknown/private data never leaves the report process;
-no assertion, timeout, retry or required gate is relaxed. Focused replay and
-exact-source PR/main qualification remain pending. Local Docker is unavailable.
+no assertion, timeout, retry or required gate is relaxed. The initial focused
+[run43337731137](https://github.com/falmata-tech/loadgistic/actions/runs/43337731137)
+on c7356d2 passed three desktop and three phone tasks with zero skips/retries.
+The original failure did not recur; cause remains unisolated. The follow-up also
+ends the previous actor's document before cookie replacement, requires final
+positive denial destinations/headings, and captures/cancels visible dialogs
+before parent-row screenshots. These repair observed fixture weaknesses without
+claiming they caused the historical failure. Saved PENDING/REQUESTED statuses,
+permission denial and all existing bounds remain required. Requalification of
+these strengthened tasks and exact-source PR/main CI remains pending. Local Docker is unavailable.
 Local Node22.16.0 quality passes1,362 tests with zero failures/skips, types/spec/
 source checks and actionlint/ShellCheck for112 operational scripts (unit33.54s).
 PR34's startup diagnostic repair passed its PR CI and subsequent main startup;
@@ -51,8 +59,8 @@ publishable key to Deploy Previews; readback confirmed exact matches and
 unchanged Production values. Private credentials and other contexts were not
 changed. One diagnosed rebuild then returned root200 and signed-out workspace401.
 Health/public Capacity returned503 with production-only server configuration
-absent, so this is bootstrap evidence, not full runtime qualification. Immutable
-rebuild/UI readback remained pending after slow Chrome responses. Fresh live
+absent, so this is bootstrap evidence, not full runtime qualification. PR34
+subsequently confirmed its immutable preview server exception as recorded above. Fresh live
 health and public Capacity return200; private workspace/photo access returns401.
 The last confirmed published deployment is6af4f16a16aab2cef815c573. No production
 branch activation, new credential creation or publication has been performed.

@@ -68,7 +68,10 @@ And unknown fields, record IDs, query strings, assertion values, contacts and ra
 And typed JSON is retained as a failure-only artifact without replacing the first saved evidence\
 And capture failure cannot replace the original assertion\
 And a fixed focused replay requires three independent desktop and phone passes with zero skips or retries, stopping at the first failure\
-And full required CI, saved statuses, role denial and existing timeouts remain unchanged.
+And synthetic actor changes stop the previous application document before replacing cookies\
+And role denial requires the final authorized destination and heading, not an intermediate URL\
+And dialogs are cancelled before parent-row capture, leaving saved PENDING/REQUESTED statuses unchanged\
+And full required CI, role/privacy denial and existing timeouts remain unchanged.
 
 NR-78 owns diagnosis. If the original failure does not recur, its cause remains
 unisolated. Rollback restores diagnostic tooling only; no product/schema or

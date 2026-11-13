@@ -22,6 +22,13 @@ async function failureEvidence(page:any,info:any,stage:string,error:unknown,page
  }catch{/* CI retains the same typed stdout record. */}
 }
 
+async function settledLocalLogin(page:any,id:string){
+ // End the previous actor's application document before replacing its cookies.
+ // This is scoped to these synthetic cases; the shared helper stays unchanged.
+ await page.goto('about:blank');
+ return localSupportLogin(page,id);
+}
+
 // Exact disposable local records; these checks never submit moderation or erasure.
 test.use({trace:'off',screenshot:'off'});
 async function identity(db:SupabaseClient,ids:string[],role:'ADMIN'|'SUPPORT'|'DRIVER',permissions:Record<string,boolean>={}){
@@ -43,7 +50,7 @@ test('retired staff capacity feed cannot expose records and the public map remai
  test.setTimeout(120000);const db=localAuditService(),ids:string[]=[];let stage='SETUP';let logout:(()=>Promise<unknown>)|undefined;
  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
  try{
-  const admin=await identity(db,ids,'ADMIN');logout=await localSupportLogin(page,admin);
+  const admin=await identity(db,ids,'ADMIN');logout=await settledLocalLogin(page,admin);
   stage='RETIRED_PAGE';await page.goto('/admin/capacity-network?status=EMPTY&status=PARTIAL&q=Synthetic%20transporter');
   // A streamed Next.js notFound can return the shell with HTTP 200 while
   // rendering the 404 state. Assert the actual page and the 410 API below.
@@ -70,14 +77,14 @@ test('Driver Open owner reaches its exact fleet and retains delegated workspace 
   owner=await auditFleetProvider(db,'admin-owner-link');const driver=await identity(db,ids,'DRIVER'),admin=await identity(db,ids,'ADMIN');
   checked(await db.from('organization_members').insert({organization_id:owner.organization_id,user_id:driver,membership_role:'DRIVER'}));
   checked(await db.from('drivers').insert({organization_id:owner.organization_id,user_id:driver,name:'Synthetic assigned driver'}));
-  stage='ADMIN_DRIVER';logouts.push(await localSupportLogin(page,admin));await page.goto(`/admin/operations/drivers/${driver}`);
+  stage='ADMIN_DRIVER';logouts.push(await settledLocalLogin(page,admin));await page.goto(`/admin/operations/drivers/${driver}`);
   const details=page.locator('.admin-operation-record-card');await expect(details).toBeVisible();
   const ownerLink=details.getByRole('link',{name:'Open owner',exact:true});await expect(ownerLink).toHaveAttribute('href',`/admin/operations/workspaces/${owner.organization_id}?kind=ORGANIZATION`);
   await details.screenshot({path:info.outputPath('driver-owner-link.png')});await ownerLink.click();
   stage='EXACT_OWNER';await expect(page).toHaveURL(new RegExp(`/admin/operations/workspaces/${owner.organization_id}\\?kind=ORGANIZATION$`));await expect(details).toBeVisible();
   await expect(page.getByRole('heading',{name:`Audit fleet ${owner.suffix}`,exact:true})).toBeVisible();
   await expect(details).toContainText(`@admin-owner-link-${owner.suffix}`);await details.screenshot({path:info.outputPath('driver-exact-owner.png')});
-  const operations=await identity(db,ids,'SUPPORT',{can_manage_operations:true});stage='DELEGATED_DRIVER';logouts.push(await localSupportLogin(page,operations));await page.goto(`/admin/operations/drivers/${driver}`);
+  const operations=await identity(db,ids,'SUPPORT',{can_manage_operations:true});stage='DELEGATED_DRIVER';logouts.push(await settledLocalLogin(page,operations));await page.goto(`/admin/operations/drivers/${driver}`);
   await expect(details).toBeVisible();await details.getByRole('link',{name:'Open owner',exact:true}).click();
   stage='WORKSPACE_DENIED';await expect(page).toHaveURL(/\/admin\/operations$/);await expect(page.getByRole('heading',{name:'Platform Records',exact:true})).toBeVisible();await expect(details).toHaveCount(0);
   expect(errors).toEqual([]);
@@ -95,18 +102,18 @@ test('Content and deletion overflow pages recover saved synthetic cases with unc
   owner=await auditFleetProvider(db,'admin-queue-page');const admin=await identity(db,ids,'ADMIN'),subject=await identity(db,ids,'DRIVER');
   checked(await db.from('content_reports').insert({id:reportId,organization_id:owner.organization_id,handle:`admin-queue-page-${owner.suffix}`,category:'PROFILE',detail:`Synthetic queue case ${reportId}`,reporter_digest:randomUUID().replaceAll('-','').repeat(2),created_at:'2099-01-01T00:00:00Z'}));
   checked(await db.from('account_deletion_requests').insert({id:requestId,subject_user_id:subject,requested_at:'1900-01-01T00:00:00Z',review_due_at:'1900-01-31T00:00:00Z'}));
-  logouts.push(await localSupportLogin(page,admin));stage='CONTENT_OVERFLOW';await page.goto('/admin/reviews/content?page=99999');
+  logouts.push(await settledLocalLogin(page,admin));stage='CONTENT_OVERFLOW';await page.goto('/admin/reviews/content?page=99999');
   const report=page.locator('section').filter({has:page.getByText(`Synthetic queue case ${reportId}`,{exact:true})});await expect(report).toBeVisible();await report.getByRole('button',{name:'Review report',exact:true}).click();
   for(const name of ['Hide reported content','Dismiss report'])await expect(report.getByRole('button',{name,exact:true})).toBeVisible();
-  await expect(page.getByText('No content reports yet.',{exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Previous',exact:true})).toHaveCount(0);await report.screenshot({path:info.outputPath('content-overflow-recovered.png')});
+  await expect(page.getByText('No content reports yet.',{exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Previous',exact:true})).toHaveCount(0);const reportDialog=report.getByRole('dialog',{name:'Review content report',exact:true});await reportDialog.screenshot({path:info.outputPath('content-review-controls.png')});await reportDialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(reportDialog).toHaveCount(0);await report.screenshot({path:info.outputPath('content-overflow-recovered.png')});
   stage='PRIVACY_OVERFLOW';await page.goto('/admin/privacy?page=99999');const request=page.locator(`section[data-request-id="${requestId}"]`);await expect(request).toBeVisible();
   await expect(request.getByRole('link',{name:'Review account',exact:true})).toHaveAttribute('href',`/admin/operations/users/${subject}`);
   await request.getByRole('button',{name:'Process deletion request',exact:true}).click();await expect(request.getByRole('checkbox')).toHaveAttribute('required','');await expect(request.getByLabel('Type DELETE to confirm')).toHaveAttribute('pattern','DELETE');await expect(request.getByRole('dialog',{name:'Process deletion request',exact:true}).getByRole('button',{name:'Process deletion request',exact:true})).toBeVisible();
-  await expect(page.getByText('No deletion requests yet.',{exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Previous',exact:true})).toHaveCount(0);await request.screenshot({path:info.outputPath('privacy-overflow-recovered.png')});
+  await expect(page.getByText('No deletion requests yet.',{exact:true})).toHaveCount(0);await expect(page.getByRole('link',{name:'Previous',exact:true})).toHaveCount(0);const deletionDialog=request.getByRole('dialog',{name:'Process deletion request',exact:true});await deletionDialog.screenshot({path:info.outputPath('privacy-review-controls.png')});await deletionDialog.getByRole('button',{name:'Cancel',exact:true}).click();await expect(deletionDialog).toHaveCount(0);await request.screenshot({path:info.outputPath('privacy-overflow-recovered.png')});
   stage='INVALID_PAGE';await page.goto('/admin/privacy?page=1.5');await expect(request).toBeVisible();await page.goto('/admin/reviews/content?page=1.5');await expect(report).toBeVisible();
-  const trust=await identity(db,ids,'SUPPORT',{can_manage_trust:true});stage='TRUST_SCOPE';logouts.push(await localSupportLogin(page,trust));await page.goto('/admin/reviews/content?page=99999');await expect(report).toBeVisible();
-  await page.goto('/admin/privacy?page=99999');await expect(page).not.toHaveURL(/\/admin\/privacy/);await expect(page.locator(`section[data-request-id="${requestId}"]`)).toHaveCount(0);
-  const operations=await identity(db,ids,'SUPPORT',{can_manage_operations:true});stage='CONTENT_DENIED';logouts.push(await localSupportLogin(page,operations));await page.goto('/admin/reviews/content?page=99999');await expect(page).not.toHaveURL(/\/admin\/reviews\/content/);await expect(page.locator(`form[action="/api/admin/content/${reportId}"]`)).toHaveCount(0);
+  const trust=await identity(db,ids,'SUPPORT',{can_manage_trust:true});stage='TRUST_SCOPE';logouts.push(await settledLocalLogin(page,trust));await page.goto('/admin/reviews/content?page=99999');await expect(report).toBeVisible();
+  await page.goto('/admin/privacy?page=99999');await expect(page).toHaveURL(/\/admin\/reviews(?:\?.*)?$/);await expect(page.getByRole('heading',{name:'Review Center',exact:true})).toBeVisible();await expect(page.locator(`section[data-request-id="${requestId}"]`)).toHaveCount(0);
+  const operations=await identity(db,ids,'SUPPORT',{can_manage_operations:true});stage='CONTENT_DENIED';logouts.push(await settledLocalLogin(page,operations));await page.goto('/admin/reviews/content?page=99999');await expect(page).toHaveURL(/\/admin\/operations(?:\?.*)?$/);await expect(page.getByRole('heading',{name:'Platform Records',exact:true})).toBeVisible();await expect(page.locator(`form[action="/api/admin/content/${reportId}"]`)).toHaveCount(0);
   expect(checked(await db.from('content_reports').select('status').eq('id',reportId).single()).status).toBe('PENDING');expect(checked(await db.from('account_deletion_requests').select('status').eq('id',requestId).single()).status).toBe('REQUESTED');expect(errors).toEqual([]);
  }catch(error){await failureEvidence(page,info,stage,error,errors);throw new Error('ADMIN_QUEUE_PAGING_WORKFLOW_FAILED: '+stage,{cause:error});}
  finally{
