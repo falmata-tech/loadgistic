@@ -112,7 +112,9 @@ try{
  truck:=(create_provider_vehicle(${quote(item.owner)},${json({make:'Synthetic',model:'Privacy race',plate:'PRIVACY-RACE-'+item.owner.slice(0,8),cargo_configuration:'Mini Box Truck',use_basis:'OWNED'})})->>'id')::uuid;
  device:=provision_telematics_device(${quote(admin)},${json({gatewayId:gateway,gatewayDeviceId:item.hardware,imei,protocol:'gt06',protocolDeviceId:imei,label:'Synthetic race tracker',synthetic:true,modelProfile:'SYNTHETIC_GT06',[scopeKey]:item.anchor})});
  perform assign_telematics_device(${quote(item.owner)},jsonb_build_object('deviceId',device->>'id','vehicleId',truck,'expectedRevision',device->>'revision'));
- perform select_telematics_location_source(${quote(item.owner)},jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',20,'manualLatitude',9.03,'manualLongitude',38.74,'expectedRevision','1970-01-01T00:00:00Z'));
+ -- Seed exact disposable retained history; Manual is no longer an app mutation.
+ insert into telematics_location_sources(vehicle_id,source,precision_km,selected_by,selected_at,revision,manual_latitude,manual_longitude)
+ values(truck,'MANUAL',20,${quote(item.owner)},clock_timestamp(),clock_timestamp(),9.03,38.74);
  perform set_vehicle_lifecycle(${quote(item.owner)},truck,false,'Synthetic closure race setup');end $setup$;
  select jsonb_build_object('truck',(select id from vehicles where ${item.company?'organization_id':'provider_profile_id'}=${quote(item.anchor)}),
  'device',(select id from telematics_devices where gateway_id=${quote(gateway)}and gateway_device_id=${item.hardware}));commit;`));

@@ -2,6 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
 import {demoMotionSignature,DEMO_MOTION_PATH} from '../../src/lib/demo-motion-auth.js';
 import {DEMO_MOTION_COHORT,DEMO_MOTION_BASE_TARGETS,DEMO_MOTION_FLEET_TARGETS} from '../../src/lib/demo-motion-cohort.js';
+import {demoMotionScenarioFix} from '../../src/lib/demo-motion-scenario.mjs';
 
 export const motionTargetNames=Object.freeze(process.env.LOADGISTIC_DEMO_GPS_COHORT==='true'
  ?[...DEMO_MOTION_BASE_TARGETS,...DEMO_MOTION_FLEET_TARGETS]:[...DEMO_MOTION_BASE_TARGETS]);
@@ -30,22 +31,8 @@ export function demoProcessAlive(pid,probe=(target,signal)=>process.kill(target,
  if(!Number.isSafeInteger(pid)||pid<2)return false;
  try{probe(pid,0);return true;}catch(error){return error?.code==='EPERM';}
 }
-const routes={
- 'company-truck':[[9.031,38.748],[9.031,38.757],[9.026,38.757],[9.026,38.748]],
- 'personal-truck':[[9.03,38.76],[9.03,38.768],[9.025,38.768],[9.025,38.76]],
- ...Object.fromEntries(DEMO_MOTION_FLEET_TARGETS.map(name=>{const {latitude,longitude}=DEMO_MOTION_COHORT[name];return [name,
-  [[latitude,longitude],[latitude,longitude+0.008],[latitude+0.005,longitude+0.008],[latitude+0.005,longitude]]];}))
-};
-const meters=(a,b)=>Math.hypot((b[0]-a[0])*111195,(b[1]-a[1])*111195*Math.cos((a[0]+b[0])*Math.PI/360));
-/** A bounded fictional urban circuit at20kph, not a surveyed real truck route. */
-export function demoRouteFix(target,elapsedSeconds){
- const route=routes[target];if(!route||!Number.isFinite(elapsedSeconds)||elapsedSeconds<0)throw Error('DEMO_ROUTE_INVALID');
- const segments=route.map((point,index)=>({a:point,b:route[(index+1)%route.length],length:meters(point,route[(index+1)%route.length])}));
- let distance=elapsedSeconds*(20000/3600)%segments.reduce((sum,segment)=>sum+segment.length,0);
- for(const segment of segments){if(distance<=segment.length)return {latitude:segment.a[0]+(segment.b[0]-segment.a[0])*distance/segment.length,
-  longitude:segment.a[1]+(segment.b[1]-segment.a[1])*distance/segment.length,speedKph:20,ignition:true};distance-=segment.length;}
- throw Error('DEMO_ROUTE_INVALID');
-}
+/** Milliseconds since the fixed wall-clock epoch, shared with the signed API. */
+export const demoRouteFix=demoMotionScenarioFix;
 export function demoMotionClient({url='http://127.0.0.1:3100'+DEMO_MOTION_PATH,secret,nodeEnv=process.env.NODE_ENV,fetch:request=fetch,now=Date.now}={}){
  const endpoint=new URL(url);
  if(nodeEnv==='production'||endpoint.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(endpoint.hostname)||endpoint.port!=='3100'
@@ -65,10 +52,14 @@ export async function runDemoMotion({request,simulate,seconds=60,resume=false,si
   ||new Set(targets).size!==targets.length||targets.some(target=>!motionTargetNames.includes(target))
   ||!Number.isInteger(staggerMs)||staggerMs<0||staggerMs>6000)throw Error('DEMO_RUNNER_INPUT_INVALID');
  const records=[],started=now(),deadline=started+seconds*1000;
- const state=()=>onState(records.map(({target,lease,status,ticks,failureCode})=>({target,lease,status,ticks,...(failureCode?{failureCode}:{})})));
+ const state=()=>onState(records.map(({target,lease,status,ticks,failureCode,scenario})=>({target,lease,status,ticks,...(scenario?{scenario}:{}),...(failureCode?{failureCode}:{})})));
  try{
   for(const target of targets){
    if(signal?.aborted)break;
+   try{demoRouteFix(target,now());}catch(error){
+    if(error.message!=='DEMO_MOTION_SCENARIO_UNAVAILABLE')throw error;
+    records.push({target,status:'UNAVAILABLE',ticks:0,failureCode:error.message,leaseReleased:true});state();continue;
+   }
    await request({action:'CONFIGURE',target});
    const lease=await request({action:resume?'RESUME':'START',target,seconds});
    if(!lease||lease.state!=='RUNNING'||!['GPS','MOBILE'].includes(lease.source)||!Number.isSafeInteger(lease.epoch)
@@ -77,7 +68,7 @@ export async function runDemoMotion({request,simulate,seconds=60,resume=false,si
   }
   // GT06 fix time has one-second precision; no capture can precede the new epoch.
   if(records.length&&!signal?.aborted)await sleep(1100,signal);
-  const outcomes=await Promise.allSettled(records.map(async (record,index)=>{
+  const outcomes=await Promise.allSettled(records.filter(record=>record.lease).map(async (record,index)=>{
    const {target,lease}=record,controller=new AbortController();let reportFailure;
    const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});
    const authority={target,leaseId:lease.leaseId,epoch:lease.epoch};
@@ -86,10 +77,11 @@ export async function runDemoMotion({request,simulate,seconds=60,resume=false,si
     if(controller.signal.aborted||signal?.aborted||now()>=deadline){record.status='STOPPED';state();return;}
     if(lease.source==='GPS'){
      await simulate({imei:DEMO_MOTION_COHORT[target].imei,durationMs:Math.max(1,deadline-now()),signal:controller.signal,
-      reportIntervalSeconds:60,
+      reportIntervalSeconds:30,
       beforeReport:async()=>{
        if(controller.signal.aborted||deadline-now()<1000)return null;
-       const fix=demoRouteFix(target,(now()-started)/1000);
+       const fix=demoRouteFix(target,now());
+       record.scenario={scenarioId:fix.scenarioId,scenarioVersion:fix.scenarioVersion,purpose:fix.purpose,step:fix.step};
        try{const saved=await request({action:'GPS',...authority,latitude:fix.latitude,longitude:fix.longitude});
         if(controller.signal.aborted)return null;record.ticks++;state();return {...fix,...saved};}
        catch(error){
@@ -101,11 +93,12 @@ export async function runDemoMotion({request,simulate,seconds=60,resume=false,si
       }});
     }else{
      while(!controller.signal.aborted&&now()<deadline){
-      const fix=demoRouteFix(target,(now()-started)/1000);
+      const fix=demoRouteFix(target,now());
+      record.scenario={scenarioId:fix.scenarioId,scenarioVersion:fix.scenarioVersion,purpose:fix.purpose,step:fix.step};
       await request({action:'PHONE',...authority,latitude:fix.latitude,longitude:fix.longitude});
       if(controller.signal.aborted)break;record.ticks++;state();
       const remaining=deadline-now();if(remaining<=0)break;
-      await sleep(Math.min(60000,remaining),controller.signal);
+      await sleep(Math.min(30000,remaining),controller.signal);
      }
     }
     if(record.status==='RUNNING')record.status='STOPPED';state();
@@ -121,10 +114,10 @@ export async function runDemoMotion({request,simulate,seconds=60,resume=false,si
     catch(error){record.status='STOP_UNCONFIRMED';record.failureCode=demoFailureCode(error);state();}
    }
   }));
-  const failed=outcomes.some(result=>result.status==='rejected')||records.some(record=>['PAUSED','STOP_UNCONFIRMED'].includes(record.status));
+  const failed=outcomes.some(result=>result.status==='rejected')||records.some(record=>['PAUSED','STOP_UNCONFIRMED','UNAVAILABLE'].includes(record.status));
   const failure=outcomes.find(result=>result.status==='rejected');
   const failureCode=failure?demoFailureCode(failure.reason):records.find(record=>record.failureCode)?.failureCode||null;
-  return {targets:records.map(({target,status,ticks,failureCode})=>({target,status,ticks,...(failureCode?{failureCode}:{})})),failed,failureCode};
+  return {targets:records.map(({target,status,ticks,failureCode,scenario})=>({target,status,ticks,...(scenario?{scenario}:{}),...(failureCode?{failureCode}:{})})),failed,failureCode};
  }finally{
   for(const record of records){
    // A stale STOP cannot clear REAL or stop a later generation.

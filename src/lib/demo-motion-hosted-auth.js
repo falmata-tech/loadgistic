@@ -1,7 +1,7 @@
 import {timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
 import {DEMO_MOTION_BODY_LIMIT} from './demo-motion-auth.js';
-import {HOSTED_DEMO_MOTION_PATH,hostedDemoMotionSignature} from './demo-motion-hosted-signature.mjs';
+import {HOSTED_DEMO_MOTION_PATH,hostedDemoMotionSignature,assertMotionSecretIsolation} from './demo-motion-hosted-signature.mjs';
 
 export {HOSTED_DEMO_MOTION_PATH,hostedDemoMotionSignature};
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -31,12 +31,8 @@ export function hostedDemoMotionConfiguration(environment,requestUrl){
   if(exactOrigin(environment.NEXT_PUBLIC_SUPABASE_URL)!==project
    ||!new URL(project).hostname.endsWith('.supabase.co'))throw Error('DEMO_HOSTED_DISABLED');
   const secret=environment.HOSTED_DEMO_MOTION_SECRET;
-  if(!hex.test(secret||'')||[environment.DEMO_WORLD_WORKER_SECRET,environment.LOADGISTIC_DEMO_MOTION_SECRET,
-   environment.SESSION_SECRET,environment.SUPABASE_SERVICE_ROLE_KEY].includes(secret))throw Error('DEMO_HOSTED_DISABLED');
-  for(const key of ['TELEMATICS_GATEWAYS_JSON','TELEMATICS_PRIVACY_GATEWAYS_JSON']){
-   const gateways=JSON.parse(environment[key]||'[]');
-   if(!Array.isArray(gateways)||gateways.some(row=>row?.secret===secret))throw Error('DEMO_HOSTED_DISABLED');
-  }
+  if(!hex.test(secret||''))throw Error('DEMO_HOSTED_DISABLED');
+  assertMotionSecretIsolation(environment,secret,'HOSTED_DEMO_MOTION_SECRET');
   return {origin,secret};
  }catch{throw Error('DEMO_HOSTED_DISABLED');}
 }

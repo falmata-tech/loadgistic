@@ -3,13 +3,53 @@ id: FEAT-GPS-001
 title: Provider fleet devices and attributed truck locations
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-FLT-001, FEAT-CAP-001, FEAT-GEO-001, FEAT-SHR-001, FEAT-IAM-001, FEAT-MOB-001, FEAT-ADM-001, FEAT-SEC-001]
 problem: Providers need one fleet workspace for their trucks, capacity sharing and their own GPS devices, with honest location provenance and safe device control.
-behavior: A self-hosted Traccar protocol gateway receives supported tracker telemetry. Loadgistic administrators provision exact device identifiers to one provider; providers assign their devices to their own trucks and explicitly choose GPS device, driver's phone or manually entered location. The current assigned driver may choose their own dated manual Capacity point or phone source without gaining device authority, while an active Tracking agreement keeps its separately agreed live source. Public/private capacity markers show a small top-left source icon without publishing device identifiers or exact coordinates. Durable ingestion, private telemetry and capability-scoped commands retain tenant isolation, stale-data honesty and existing publication, sharing and Tracking rules. Isolated synthetic simulation never writes to real accounts.
-contracts: [TelematicsGatewayPort, TelematicsDevice, DeviceOwnership, DeviceTruckAssignment, TruckLocationSelection, NormalizedTelemetry, TelemetryIngestPort, DeviceCommandPort, DeviceCommandState, LocationSourceProjection, TelematicsDemoManifest]
+behavior: A self-hosted Traccar protocol gateway receives supported tracker telemetry. Loadgistic administrators provision exact device identifiers to one provider; providers assign their devices to their own trucks and explicitly choose GPS device or driver's phone. New manual location mutations are refused in web, mobile, application and database commands. Legacy manual reports remain dated history until an authorized phone or GPS selection and report replaces them; consent, assignments and agreed Tracking are never changed implicitly. Public/private capacity markers show the actual source without device identifiers or precise coordinates. Independent real and synthetic services retain tenant isolation, durable ingestion, bounded health and demo provenance; simulation never writes to normal signup accounts.
+contracts: [TelematicsGatewayPort, TelematicsDevice, DeviceOwnership, DeviceTruckAssignment, TruckLocationSelection, NormalizedTelemetry, TelemetryIngestPort, DeviceCommandPort, DeviceCommandState, LocationSourceProjection, TelematicsDemoManifest, EnrollmentRelayPort, GatewayReadiness]
 observability: [telemetry_accepted, telemetry_duplicate, telemetry_stale, telemetry_denied, device_assignment_changed, location_source_changed, command_requested, command_dispatched, command_acknowledged, command_expired, gateway_health, ingest_lag]
 rollout: Prepare additive RLS-enabled private schema and pinned isolated server artifacts; rehearse on a backed-up local clone before local installation. Require exact owner review for hosted SQL, credentials, network exposure and new infrastructure. Verify actual protocol simulator roundtrips separately from hardware certification. Roll back consumers first and retain device ownership, assignments, telemetry and command history; never fall back to another provider's data.
 ---
 
-# Fleet GPS integration — accepted implementation, not deployed
+# Fleet GPS integration and location signals
+
+## November 13 direction — implementation in progress
+
+The owner now requires phone/GPS-only updates and independently operated real
+GPS and demo-signal services. This supersedes the historical manual-location
+acceptance below; it does not relabel those old reports or prove deployment.
+Fresh production metadata found no gateway/device/position registrations and no
+active simulator. Existing UI polling is not a push realtime subscription.
+Record actual ingest, database persistence, authorized projection and visible
+map updates before claiming an operating service. Real tracker hardware and
+native background/permission acceptance need their own device evidence.
+
+### Scenario: retired manual input cannot mutate location
+
+Given an authenticated owner or current driver with an existing vehicle\
+When a new or stale web/mobile client requests a manual source or coordinate edit\
+Then the application and database command refuse before any source, revision,
+location, demo marker or publication write\
+And calling the underlying command does not bypass that refusal\
+And the existing assignment, consent, capacity audience and Tracking agreement
+remain unchanged; a denial may produce only its sanitized security event.
+
+Given a vehicle still has a dated manual report from before this policy\
+When its location controls open\
+Then the old source and timestamp remain honest history, with no manual editor\
+And an authorized driver can explicitly select/capture phone location under the
+existing permission and privacy rules, or the authorized provider can select an
+assigned GPS device under the existing device/driver ownership rules\
+And no unavailable phone or GPS fix falls back to manual or another device.
+
+### Scenario: dedicated services are independently verifiable
+
+Given separate real GPS and approved synthetic service identities and stores\
+When either service starts, stops, restarts or loses its ingest destination\
+Then bounded readiness, heartbeat and persistence evidence identify that service\
+And its failure cannot enable the other service, remove consent or mutate a
+normal signup account\
+And controlled location and capacity changes are traced through accepted input,
+saved timestamps, authorized readback and the actual updated UI without exposing
+precise private locations.
 
 Providers can ask for tracker registration from GPS devices. The Support link
 preselects the GPS device setup topic without claiming their device is already
@@ -20,6 +60,141 @@ Expo. Providers retain capacity publication/networking and gain device managemen
 inside Fleet. Admin/staff management stays web-only. No new billing/plans.
 
 ## Architecture and readiness
+
+### Independent gateway services and bounded readiness — November13
+
+The physical receive-only gateway and fictional movement gateway have separate
+Compose projects, databases, persistent volumes, backend/egress networks,
+restricted bridge roles and HMAC identities. `compose.hosted.yml` contains only
+the physical service; `compose.synthetic.yml` contains the private fictional
+service and its default-off movement profile. Starting or stopping either
+project must not start, stop or publish a listener for the other. No hosted
+service is established by the presence of these deployment files.
+
+Given an operator validates only one reviewed deployment configuration\
+When the physical or synthetic manifest is rendered independently\
+Then it requires only that service's credentials and existing exact HTTPS ingest
+destination, and its networks and persistent data remain distinct\
+And synthetic GT06, API and database have no host port\
+And physical device commands stay disabled, with administration on loopback\
+And choosing the synthetic movement profile does not bypass its own enable,
+kill, database lease, source-selection or real-device takeover controls.
+
+The bridge bounds database connection establishment to five seconds, server-side
+statements to five seconds, lock waits to two seconds and client query waits to
+six seconds. Database URI options cannot disable those deadlines. Ingest HTTP
+keeps its ten-second deadline and private Traccar readiness uses a five-second
+GET of `/api/server`, without reading or logging its response body.
+
+Given a database, application or private Traccar check fails or stops completing\
+When the Docker readiness probe reads the bridge's private atomic heartbeat\
+Then startup, an explicit failure, a malformed/future heartbeat or a completed
+cycle/dependency check older than ninety seconds is unhealthy\
+And a busy loop alone cannot stand in for a successful dependency check\
+And health contains only timestamps, readiness/failure codes and aggregate
+pending-row/oldest-lag counts, without credentials, coordinates, device IDs,
+contacts, request bodies or command IDs\
+And readiness opens no public health listener and changes no telemetry record,
+lease, source, assignment, Capacity status or command authority.
+
+Successful readiness establishes recent bridge dependency connectivity. It does
+not certify tracker hardware, accepted fixes, queue drainage, browser update
+latency or a production deployment. Rehearse actual protocol packets, durable
+outbox recovery, replay/tamper/cross-owner/source-epoch denials and saved app/UI
+readback separately. NR-08/50/53/54 remain applicable. Roll back bridge consumers
+first, preserve their outbox and device history, and retain the exact persistent
+volume mapping if moving an existing combined deployment into independent
+projects; never start a fresh database in place of an existing volume silently.
+
+### Hosted enrollment relay — source contract, activation pending
+
+The application currently registers devices through an exact unique-ID lookup,
+an optional Traccar device creation and a single-device verification read. The
+hosted gateway keeps its administration/API port on loopback, so a Netlify
+application cannot complete that workflow without a separately secured connector.
+Do not expose the full Traccar API to make the workflow appear connected.
+
+The opt-in enrollment relay preserves the existing client contract with only
+canonical `GET /api/devices?uniqueId={identifier}`, `POST /api/devices` and
+`GET /api/devices/{positive-id}`. No general proxy or database queue is added.
+Each instance has a fixed REAL or SYNTHETIC scope and hard-coded matching private
+Traccar upstream. It publishes only a host-loopback socket; a separately reviewed
+host TLS reverse proxy is required for Netlify access. Raw administration, device
+protocol and database interfaces remain separate.
+
+Given a server authenticates to its exact enrollment relay\
+When its separate scoped bearer credential passes constant-time comparison\
+Then only the three canonical enrollment operations are accepted\
+And create accepts exactly name, unique ID, model and the three existing
+IMEI/protocol/synthetic attributes, with bounded strings and body\
+And the synthetic relay reads only the existing fictional allowlist and creates
+only the immutable admin spare; REAL refuses fictional allowlist identifiers\
+And unknown methods/routes/queries, encoded paths, cookies, upgrades, extra JSON,
+method overrides, general device changes and commands fail without an upstream
+write, with bounded concurrency, request count, body, response and total deadline.
+
+Traccar6.16 tokens identify a user and expiration, not endpoint scopes. The relay
+holds a separate regular-user Traccar token in an explicitly mounted protected
+file, outside its image and Netlify; startup refuses missing, non-owner or
+group/world-accessible credential files. It never forwards client authorization,
+cookies or headers upstream. The pinned token envelope supplies only a claimed
+user ID for a private authenticated self-read. Traccar verifies its signature
+and expiry; the relay requires that exact active non-admin/non-manager user,
+command restrictions and a positive device-creation limit before enrollment.
+An admin token, malformed token, altered identity or changed restriction fails
+closed. The pinned Traccar configurations disable separate service-account-token
+authentication; retain that boundary. Do not infer token validity from decoding
+its untrusted envelope.
+
+Given creation is interrupted or its result is ambiguous\
+When the existing app retries its exact lookup/create/verify sequence\
+Then the relay performs no automatic write retry, preserves the gateway record
+and returns only validated binding fields needed for exact reconciliation\
+And a changed name/model/identity, foreign scope or malformed upstream response
+cannot become a linked success\
+And no position, account/contact, permission, session cookie, command, raw error
+or secret is returned or logged.
+
+Source tests must exercise the actual existing registration client through the
+HTTP relay, including exact reuse, timeout-after-write reconciliation, pending
+link and conflicting-binding denial, plus unauthorized routes and cross-scope
+inputs. Provider TLS/DNS/firewall, protected credential setup, principal grants,
+actual Traccar integration and production browser qualification remain separate
+activation gates. Rollback stops the relay/consumer first and removes only its
+reviewed proxy route; retain created devices and app history for reconciliation.
+
+### Explicit local Next-to-relay launch — November14
+
+The local web launcher defaults to `LOADGISTIC_LOCAL_GATEWAY_API_MODE=direct`,
+which preserves its existing HTTP loopback18082 `/api/` contract. Only an
+explicit `relay` value permits HTTP loopback28083 `/api/`. The mode is a
+server-only rehearsal setting, not an application/API input. Unknown modes,
+another port/host/path and URL credentials, query or fragment are refused;
+there is no fallback or port disguise between the two modes.
+
+Given the operator explicitly selects local relay mode\
+When the existing protected gateway JSON and fictional manifest identify exactly
+one matching gateway, the local motion/database guards pass, and the relay token
+is a separate lower-case64-hex capability\
+Then the candidate Next child receives only that gateway's validated local
+configuration, retains synthetic-only intake and an empty physical default\
+And gateway, privacy, motion, fast-Capacity, world-worker and application
+credentials cannot be reused as its relay token\
+And protected-file metadata checks, child-environment secret transfer, local
+Supabase55321, web3100 and production refusal remain unchanged.
+
+Given relay mode or its protected configuration is missing or invalid\
+Then startup fails closed without printing a token or launching Next\
+And changing a gateway URL alone does not enable relay mode\
+And local launch never enables hosted controls, creates a public listener or
+changes production authentication or device permissions.
+
+Tests retain direct-mode acceptance and both modes' denials, including an
+explicit relay token collision with a configured fast-Capacity worker key.
+Actual Next-to-relay enrollment still requires the pinned Traccar regular-user
+and HTTP integration qualification. Rollback explicitly restores the protected
+direct configuration and clears the mode; leaving a relay URL in direct mode
+must refuse startup rather than silently selecting another endpoint.
 
 ### Private Fleet telemetry presentation — October25 qualification
 
@@ -166,10 +341,9 @@ And old or delayed positions cannot appear on the replacement truck or driver.
 ### Scenario: explicit source controls capacity location
 
 Given a provider owner controls a truck\
-When choosing GPS device, driver's phone or manual location\
+When choosing GPS device or driver's phone\
 Then the server persists that explicit source with current revision checks\
-And a manual position is validated as a worldwide coordinate and attributed to
-the owner, never labelled phone or GPS\
+And a new manual point/source request is refused without a write\
 And phone positions retain current-driver authorization and existing privacy\
 And incoming unselected sources may not replace the selected published position\
 And GPS selection requires a current assigned device; stale/offline data stays
@@ -179,7 +353,10 @@ independent and manageable by the authorized provider owner\
 And agreed Tracking continues its existing consent/phone/reporting contract;
 changing capacity source cannot disable shipment tracking or release obligations.
 
-### Scenario: assigned driver chooses a dated manual Capacity location
+### Historical October scenario: assigned driver manual Capacity location — retired
+
+The following records the previous implementation and its permission boundaries.
+It is not acceptance for new manual writes after the November 13 direction.
 
 Given the currently assigned, active driver has location access to one vehicle,
 even when the owner has not granted broader Capacity editing\

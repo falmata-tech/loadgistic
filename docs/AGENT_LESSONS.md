@@ -8,6 +8,32 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+Demo ownership and stopping (NR-83/84): an approved actor remaining a member
+does not prove that every current owner is synthetic. Recheck the exact current
+ownership boundary before each simulator command, including slower profile and
+reserved workflow lanes. A stop flag read without a transaction lock can race a
+write; retain one control/job lock order, preserve read-only historical replay,
+and qualify stopping with two real database sessions. Static guards and unrun
+SQL regressions do not establish actual takeover or stop behavior.
+
+Worker credential isolation (NR-82): a distinct HMAC purpose prevents signature
+replay, but a reused secret still grants its holder the other lane's authority.
+Reject known configured key equality at each receiving boundary as well as its
+signer. Include relay bearer tokens and unsafe later configuration entries; keep
+distinct existing credentials working. Check only equality and sanitized outcomes,
+never print secrets. Source/configuration findings do not establish a hosted
+incident or prove that an unactivated service has been qualified.
+
+Capacity freshness (NR-81): a faster timer does not reauthorize cached selected
+records. Test whole-feed denials and normal200 omission after a single grant is
+revoked. Preserve an outside-viewport popup only after the existing exact-truck
+authorized read; never infer a grant from a cached row. Use supplied stable vehicle
+identity to follow a new Capacity ID, remove old markers and reject stale scope
+responses. Timer refresh must wait for actual cursor work, stop in background and
+recover after a bounded deadline; a callback that merely increments state is not
+the network request's lifetime. Keep actual Chrome/database/native qualification
+separate from hook/transport tests.
+
 Accessibility audit readiness: a URL prefix, an old shell and absent skeletons
 do not prove that an App Router redirect has completed. October25 main CI
 40237550136 reported `CONTEXT_DESTROYED` for fleet Home; both local Chrome sizes
@@ -132,12 +158,18 @@ rules or blanket approval gates. A recurring script should have explicit inputs,
 target checks, bounded failure and meaningful negative tests; a disposable
 one-time operation does not automatically need a permanent utility.
 
-The first measured static run parsed104 scripts and linted the workflows in
+Historical tooling checkpoint, preserving its original counts and timings:
+the first measured static run parsed104 scripts and linted the workflows in
 7.917s. A second run with project-local ShellCheck0.11.0 passed shell analysis
 and the same104 script checks in7.317s. All40 focused tooling/runner checks pass,
 including malformed workflow/script rejection and parse-without-execution.
-These are local results. The complete source audit and1028-test local quality
-gate now pass; exact-source CI and release remain unfinished.
+These were local results. The complete source audit and1028-test local quality
+gate passed while exact-source CI and release were still unfinished at that
+checkpoint. [PR37's final receipts](https://github.com/falmata-tech/loadgistic/pull/37)
+subsequently establish the merged `520328b` delivery baseline, all 16 PR/main jobs
+and actual automatic production publication. Use [current progress](PROGRESS.md)
+for the next implementation task; do not repeat resolved preparation from this
+historical paragraph or relabel its older measurements.
 
 ## Overall setup assessment
 
@@ -155,7 +187,7 @@ actual checked-in setup, not a certification of every feature or hosted setting.
 | Scripts/DevOps | The new workflow static check runs before expensive CI setup; existing runner negative tests remain required. | Add behavior/failure coverage when an operational command changes. Parse success is not execution success. |
 | Dependencies | The existing weekly Dependabot configuration covered root npm and Actions. Mobile npm was missing and is now included, with bounded PR volume. | It takes effect from the repository's default branch, subject to GitHub enablement. Review Expo/RN compatibility before accepting updates; no automatic major upgrade or merge. CI already audits root dependencies and reviews mobile runtime findings. |
 | Agent context | Repo-scoped skills under `.agents/skills` are selected by task and do not alter other apps or global agent configuration. The Loadgistic UI/localization skill was added October21. | Use the UI skill only for visible experience work, keep bodies short and references conditional, and confirm the active client discovers the new skill before claiming its automatic selection. No token-cost reduction is measured. |
-| Shipping | Required same-source release jobs, immutable packages, Android profiles and approval records exist. | Prove reuse rather than rebuilding unchanged payloads; refresh short-lived prerequisites last. Current release remains unpromoted. |
+| Shipping | Required same-source release jobs, immutable packages, Android profiles and approval records exist. | Prove reuse rather than rebuilding unchanged payloads; refresh short-lived prerequisites last. The initially unpromoted release was subsequently qualified and published in [PR37](https://github.com/falmata-tech/loadgistic/pull/37); new work retains its own gates. |
 | Security/recovery | Local database/ACL/RLS, target checks, protected backups and rehearsal procedures exist. | Verify actual production controls and recovery evidence for the selected operation; a document or local check does not install provider enforcement. |
 | Operations | Health checks and launch/operations documentation exist. | Confirm alert ownership, escalation and hosted monitoring evidence separately; this housekeeping did not install or certify monitoring. Prefer existing provider/free capabilities before another paid service. |
 

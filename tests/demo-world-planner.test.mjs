@@ -1,112 +1,105 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {validateDemoWorldManifest,planDemoWorldSlot,planDemoWorldThrough} from '../src/lib/demo-world-planner.mjs';
+import {validateDemoWorldManifest,planDemoWorldSlot,planDemoWorldThrough,demoWorldPlanForStep,demoWorldCatalogStart,previousDemoWorldPlan} from '../src/lib/demo-world-planner.mjs';
+import {DEMO_CORRIDOR_CATALOG,validateDemoCorridorCatalog} from '../src/lib/demo-corridor-catalog.mjs';
+const fixture=JSON.parse(readFileSync(new URL('../resources/fixtures/managed-market.json',import.meta.url)));
+const manifest=JSON.parse(readFileSync(new URL('../resources/fixtures/demo-world-scenarios.json',import.meta.url)));
+const copy=structuredClone,activatedAt='2026-11-13T12:00:00.000Z',epoch=7;
+const targetKey='independent-partial';
+const options=extra=>({manifest,fixture,activatedAt,epoch,at:activatedAt,...extra});
+const make=extra=>demoWorldPlanForStep({...options(),targetKey,cycleIndex:0,stepIndex:0,...extra});
+function receipt(plan,extra={}){return {...plan,vehicleFixtureKey:plan.vehicleFixtureKey,capacityId:'saved-'+plan.targetKey,
+ appliedAt:new Date(Date.parse(plan.dueAt)+1000).toISOString(),completedAt:new Date(Date.parse(plan.dueAt)+2000).toISOString(),...extra};}
 
-const fixture=JSON.parse(readFileSync(new URL('../resources/fixtures/managed-market.json',import.meta.url),'utf8'));
-const manifest=JSON.parse(readFileSync(new URL('../resources/fixtures/demo-world-scenarios.json',import.meta.url),'utf8'));
-const copy=value=>structuredClone(value);
-
-test('demo-world manifest is bound to exact synthetic fixture ownership and capacity rows',()=>{
+test('the authored fast catalog is exact, bounded and has twenty preset phases',()=>{
  assert.equal(validateDemoWorldManifest(manifest,fixture),true);
- assert.equal(manifest.execution_scope,'local-dry-run');
+ assert.equal(manifest.mode,'RELATIVE_EPISODES');assert.equal(manifest.scenarios.length,5);
+ assert.equal(manifest.scenarios.reduce((n,row)=>n+row.phases.length,0),20);
+ assert.deepEqual(manifest.targets.filter(row=>row.mutable).map(row=>row.start_offset_seconds),[0,30,60,90,120]);
  assert.ok(!JSON.stringify(manifest).match(/email|phone|secret|password/i));
+ for(const scenario of manifest.scenarios)assert.deepEqual(scenario.phases.map(row=>[row.status,row.available_percent]),[['PARTIAL',80],['PARTIAL',60],['PARTIAL',30],['EMPTY',100]]);
 });
 
-test('capacity scenario produces deterministic, replay-stable plans at its two daily slots',()=>{
- const first=planDemoWorldSlot({manifest,fixture,at:'2026-10-21T08:00:00.000Z'});
- const replay=planDemoWorldSlot({manifest,fixture,at:new Date('2026-10-21T08:00:00.000Z')});
- const second=planDemoWorldSlot({manifest,fixture,at:'2026-10-21T14:00:00.000Z'});
- assert.deepEqual(first,replay);
- assert.equal(first.length,1);
- assert.equal(first[0].expectedStatus,'PARTIAL');
- assert.equal(first[0].nextStatus,'EMPTY');
- assert.equal(first[0].command,'capacity.set_status');
- assert.match(first[0].idempotencyKey,/^[a-f0-9]{64}$/);
- assert.notEqual(first[0].idempotencyKey,second[0].idempotencyKey);
- assert.equal(second[0].expectedStatus,'EMPTY');
- assert.equal(second[0].nextStatus,'PARTIAL');
+test('bootstrap is immediate, staggered and stable across restart rather than a daily wall-clock slot',()=>{
+ assert.equal(demoWorldCatalogStart(activatedAt),activatedAt);
+ assert.equal(demoWorldCatalogStart('2026-11-13T07:30:00.001Z'),'2026-11-13T07:30:00.001Z');
+ assert.equal(planDemoWorldSlot(options()).length,1);
+ assert.equal(planDemoWorldSlot(options({at:'2026-11-13T12:00:30.000Z'})).length,2);
+ const due=planDemoWorldSlot(options({at:'2026-11-13T12:02:00.000Z'}));
+ assert.equal(due.length,5);assert.equal(new Set(due.map(row=>row.vehicleFixtureKey)).size,5);
+ assert.deepEqual(due,planDemoWorldSlot(options({at:'2026-11-13T12:02:00.000Z'})));
+ for(const plan of due){assert.equal(plan.cycleIndex,0);assert.equal(plan.stepIndex,0);assert.equal(plan.allowUnreportedBootstrap,true);assert.match(plan.transitionId,/:e7:c0:p0$/);}
+ assert.throws(()=>planDemoWorldSlot(options({at:'bad'})),/DEMO_WORLD_TIME_INVALID/);
+ assert.throws(()=>planDemoWorldSlot(options({activatedAt:undefined})),/DEMO_WORLD_TIME_INVALID/);
 });
 
-test('unscheduled and non-minute instants produce no action',()=>{
- assert.deepEqual(planDemoWorldSlot({manifest,fixture,at:'2026-10-21T09:10:00.000Z'}),[]);
- assert.deepEqual(planDemoWorldSlot({manifest,fixture,at:'2026-10-21T08:00:01.000Z'}),[]);
- assert.throws(()=>planDemoWorldSlot({manifest,fixture,at:'not-a-date'}),{message:'DEMO_WORLD_TIME_INVALID'});
+test('long outage resumes only one next phase with current completion-based spacing and honest nominal audit',()=>{
+ const first=make(),saved=receipt(first),history={[targetKey]:saved};
+ const later=planDemoWorldThrough(options({at:'2026-11-14T12:00:00.000Z',previousReceiptsByTarget:history}));
+ assert.equal(later.length,5,'at most one eligible phase for each target, including untouched bootstrap targets');
+ const next=later.find(row=>row.targetKey===targetKey);
+ assert.equal(next.stepIndex,1);assert.equal(next.scheduledAt,'2026-11-13T12:02:00.000Z');
+ assert.equal(next.dueAt,'2026-11-13T12:02:02.000Z');
+ const resumed=receipt(next,{appliedAt:'2026-11-14T12:00:00.100Z',completedAt:'2026-11-14T12:00:01.000Z'});
+ const resumedHistory={[targetKey]:resumed};
+ assert.equal(planDemoWorldSlot(options({at:'2026-11-14T12:00:01.001Z',previousReceiptsByTarget:resumedHistory})).some(row=>row.targetKey===targetKey),false,'no catch-up burst');
+ assert.equal(planDemoWorldSlot(options({at:'2026-11-14T12:02:00.999Z',previousReceiptsByTarget:resumedHistory})).some(row=>row.targetKey===targetKey),false);
+ const following=planDemoWorldSlot(options({at:'2026-11-14T12:02:01.000Z',previousReceiptsByTarget:resumedHistory})).find(row=>row.targetKey===targetKey);
+ assert.equal(following.stepIndex,2);assert.equal(following.scheduledAt,'2026-11-13T12:04:00.000Z');assert.equal(following.nextAvailablePercent,30);
 });
 
-test('bounded daily plan covers five exact demo vehicles in order and can be replayed',()=>{
- const morning=planDemoWorldThrough({manifest,fixture,at:'2026-10-22T09:00:00.000Z'});
- const afternoon=planDemoWorldThrough({manifest,fixture,at:'2026-10-22T15:00:00.000Z'});
- assert.equal(morning.length,5);
- assert.equal(afternoon.length,14);
- assert.deepEqual(afternoon.slice(0,5),morning);
- assert.equal(new Set(afternoon.map(item=>item.vehicleFixtureKey)).size,5);
- assert.deepEqual(afternoon.map(item=>item.scheduledAt),[...afternoon.map(item=>item.scheduledAt)].sort());
- assert.deepEqual(planDemoWorldThrough({manifest,fixture,at:'2026-10-22T15:00:00.000Z'}),afternoon);
-});
-
-test('Empty-period load preference and route steps are ordered and return to baseline',()=>{
- const plans=planDemoWorldThrough({manifest,fixture,at:'2026-10-22T15:00:00.000Z'});
- const loads=plans.filter(item=>item.command==='capacity.set_load_preference');
- const routes=plans.filter(item=>item.command==='capacity.set_route');
- assert.deepEqual(loads.map(item=>[item.expectedStatus,item.nextStatus,item.expectedLoads,item.nextLoads]),
-  [['EMPTY','EMPTY','PTL','BOTH'],['EMPTY','EMPTY','BOTH','PTL']]);
- assert.deepEqual(routes.map(item=>[item.expectedStatus,item.nextStatus]),[['EMPTY','EMPTY'],['EMPTY','EMPTY']]);
- assert.deepEqual(routes[0].expectedRouteRefs,routes[1].nextRouteRefs);
- assert.deepEqual(routes[0].nextRouteRefs,routes[1].expectedRouteRefs);
- assert.ok(routes[0].nextRouteRefs.includes('builtin:adigrat'));
- assert.ok(new Set(plans.map(item=>item.idempotencyKey)).size===plans.length);
-});
-
-test('the planner leaves the curated stable Empty and Partial examples outside the transition',()=>{
- const plan=planDemoWorldSlot({manifest,fixture,at:'2026-10-21T08:00:00.000Z'});
- assert.deepEqual(plan.map(item=>item.vehicleFixtureKey),['veh-driver-1']);
- for(const target of manifest.targets.filter(item=>!item.mutable)){
-  const capacity=fixture.tables.capacities.find(row=>row.id===target.fixture_capacity_key);
-  assert.equal(capacity.status,target.baseline_status);
+test('relative phase identities progress in order across cycles with no daily reset',()=>{
+ let previous=null;
+ for(let n=0;n<9;n++){
+  const plan=make({cycleIndex:Math.floor(n/4),stepIndex:n%4,previousCompletedAt:previous?.completedAt??null});
+  assert.equal(plan.nextAvailablePercent,[80,60,30,100][n%4]);
+  if(n===0){assert.equal(previousDemoWorldPlan({manifest,fixture,plan}),null);assert.equal(plan.expectedAvailablePercent,null);}
+  else{const prior=previousDemoWorldPlan({manifest,fixture,plan});assert.equal(prior.transitionId,previous.transitionId);assert.equal(plan.dueAt,new Date(Date.parse(previous.completedAt)+120000).toISOString());}
+  previous=receipt(plan);
  }
 });
 
-test('rejects non-synthetic scope, mismatched owner links, and fixture drift',()=>{
- const wrongScope=copy(manifest);wrongScope.fixture_source='another-app';
- assert.throws(()=>validateDemoWorldManifest(wrongScope,fixture),{message:'DEMO_WORLD_SCOPE_REFUSED'});
- const wrongOwner=copy(fixture);wrongOwner.tables.vehicles.find(row=>row.id==='veh-driver-1').provider_profile_id='profile-public-owner-02';
- assert.throws(()=>validateDemoWorldManifest(manifest,wrongOwner),{message:'DEMO_WORLD_TARGET_NOT_OWNED'});
+test('the fleet04 route changes only with the authored Empty phase every two cycles',()=>{
+ const key='fleet-04-partial',baseline=DEMO_CORRIDOR_CATALOG.routes.find(row=>row.key==='cap-public-158').points.map(row=>row.place_ref),alternate=manifest.targets.find(row=>row.key===key).alternate_route_refs;
+ const plan=(cycleIndex,stepIndex)=>make({targetKey:key,cycleIndex,stepIndex,previousCompletedAt:new Date(Date.parse(activatedAt)+(90+cycleIndex*480+stepIndex*120)*1000).toISOString()});
+ assert.deepEqual(plan(0,3).nextRouteRefs,baseline);assert.deepEqual(plan(1,2).nextRouteRefs,baseline);
+ assert.equal(plan(1,3).nextStatus,'EMPTY');assert.deepEqual(plan(1,3).nextRouteRefs,alternate);
+ assert.deepEqual(plan(2,0).nextRouteRefs,alternate);assert.deepEqual(plan(3,3).nextRouteRefs,baseline);
+});
+
+test('complete ordered city sequences and unchanged source waypoints qualify only for their own target',()=>{
+ assert.equal(validateDemoCorridorCatalog(fixture),true);assert.equal(DEMO_CORRIDOR_CATALOG.routes.length,11);
+ for(const alternate of [['builtin:addis ababa','builtin:jigjiga','builtin:adigrat'],['builtin:adigrat','builtin:wukro','builtin:mekelle'],['builtin:adama','builtin:awash','builtin:mieso','builtin:dire dawa']]){
+  const changed=copy(manifest);changed.targets.find(row=>row.key==='fleet-04-partial').alternate_route_refs=alternate;
+  assert.throws(()=>validateDemoWorldManifest(changed,fixture),/DEMO_WORLD_ROUTE_REFUSED/);
+ }
+ const changed=copy(fixture),row=changed.tables.capacities.find(row=>row.id==='cap-partial'),points=JSON.parse(row.current_route_points_json);
+ points[0].lat+=0.001;row.current_route_points_json=JSON.stringify(points);
+ assert.throws(()=>validateDemoWorldManifest(manifest,changed),/DEMO_WORLD_ROUTE_REFUSED/);
+ const wrong=copy(DEMO_CORRIDOR_CATALOG);wrong.targets.find(row=>row.key==='fleet-04-partial').baseline_route_key='cap-public-221';
+ assert.throws(()=>validateDemoCorridorCatalog(fixture,wrong),/DEMO_WORLD_ROUTE_REFUSED/);
+});
+
+test('unknown actors, foreign ownership, expanded scope and duplicated targets remain denied',()=>{
+ for(const mutate of [m=>{m.fixture_source='customer';},m=>{m.actors[0].fixture_user_key='customer';},m=>{m.actors[0].email='private@example.test';},m=>{m.targets.push({...m.targets[0],key:'duplicate'});},m=>{m.targets.find(row=>row.key===targetKey).start_offset_seconds=5;}]){
+  const changed=copy(manifest);mutate(changed);assert.throws(()=>validateDemoWorldManifest(changed,fixture));
+ }
+ const wrongOwner=copy(fixture);wrongOwner.tables.vehicles.find(row=>row.id==='veh-driver-1').provider_profile_id='foreign';
+ assert.throws(()=>validateDemoWorldManifest(manifest,wrongOwner),/DEMO_WORLD_TARGET_NOT_OWNED/);
  const changedBaseline=copy(fixture);changedBaseline.tables.capacities.find(row=>row.id==='cap-partial').status='EMPTY';
- assert.throws(()=>validateDemoWorldManifest(manifest,changedBaseline),{message:'DEMO_WORLD_BASELINE_MISMATCH'});
+ assert.throws(()=>validateDemoWorldManifest(manifest,changedBaseline),/DEMO_WORLD_BASELINE_MISMATCH/);
 });
 
-test('rejects unknown actors, duplicated targets, and commands outside the narrow allowlist',()=>{
- const unknownActor=copy(manifest);unknownActor.actors[0].fixture_user_key='real-customer';
- assert.throws(()=>validateDemoWorldManifest(unknownActor,fixture),{message:'DEMO_WORLD_ACTOR_NOT_ALLOWLISTED'});
- const duplicateTarget=copy(manifest);duplicateTarget.targets.push({...duplicateTarget.targets[0],key:'duplicate'});
- assert.throws(()=>validateDemoWorldManifest(duplicateTarget,fixture),{message:'DEMO_WORLD_TARGET_DUPLICATED'});
- const outboundCommand=copy(manifest);outboundCommand.scenarios[0].command='notifications.send';
- assert.throws(()=>validateDemoWorldManifest(outboundCommand,fixture),{message:'DEMO_WORLD_COMMAND_REFUSED'});
- const extraContact=copy(manifest);extraContact.actors[0].email='someone@example.com';
- assert.throws(()=>validateDemoWorldManifest(extraContact,fixture),{message:'DEMO_WORLD_ACTOR_SHAPE_INVALID'});
+test('free percentages, phases, intervals and commands cannot change a catalog payload',()=>{
+ for(const value of [0,25,50,67,99,100,'80',null]){const changed=copy(manifest);changed.scenarios[0].phases[0].available_percent=value;assert.throws(()=>validateDemoWorldManifest(changed,fixture),/DEMO_WORLD_PERCENT_REFUSED/);}
+ for(const mutate of [m=>{m.scenarios[0].command='notifications.send';},m=>{m.scenarios[0].phases[0].status='FULL';},m=>{m.scenarios[0].phases[1].offset_seconds=1;},m=>{m.step_seconds=1;}]){const changed=copy(manifest);mutate(changed);assert.throws(()=>validateDemoWorldManifest(changed,fixture));}
 });
 
-test('rejects invalid statuses, broken transition chains and unsupported schedule slots',()=>{
- const invalidStatus=copy(manifest);invalidStatus.scenarios[0].transitions[0].to='OFF_DUTY';
- assert.throws(()=>validateDemoWorldManifest(invalidStatus,fixture),{message:'DEMO_WORLD_STATUS_REFUSED'});
- const brokenChain=copy(manifest);brokenChain.scenarios[0].transitions[1].from='PARTIAL';brokenChain.scenarios[0].transitions[1].to='EMPTY';
- assert.throws(()=>validateDemoWorldManifest(brokenChain,fixture),{message:'DEMO_WORLD_TRANSITION_CHAIN_INVALID'});
- const invalidSlot=copy(manifest);invalidSlot.scenarios[0].daily_slots_utc[0]=1440;
- assert.throws(()=>validateDemoWorldManifest(invalidSlot,fixture),{message:'DEMO_WORLD_SLOT_INVALID'});
-});
-
-test('rejects a route outside the fixture, preference drift, or editing after the status returns Partial',()=>{
- const unknownPlace=copy(manifest);
- unknownPlace.targets.find(target=>target.key==='fleet-04-partial').alternate_route_refs[2]='unlisted:somewhere';
- assert.throws(()=>validateDemoWorldManifest(unknownPlace,fixture),{message:'DEMO_WORLD_ROUTE_REFUSED'});
- const driftedLoad=copy(manifest);
- driftedLoad.scenarios.find(scenario=>scenario.key==='fleet-01-load-preference').transitions[0].from='FTL';
- assert.throws(()=>validateDemoWorldManifest(driftedLoad,fixture),{message:'DEMO_WORLD_TRANSITION_CHAIN_INVALID'});
- const afterPartial=copy(manifest);
- afterPartial.scenarios.find(scenario=>scenario.key==='fleet-04-route').daily_slots_utc[1]=900;
- assert.throws(()=>validateDemoWorldManifest(afterPartial,fixture),{message:'DEMO_WORLD_TRANSITION_CHAIN_INVALID'});
- const duplicate=copy(manifest);
- duplicate.scenarios.find(scenario=>scenario.key==='fleet-04-route').daily_slots_utc[0]=525;
- assert.throws(()=>validateDemoWorldManifest(duplicate,fixture),{message:'DEMO_WORLD_SLOT_INVALID'});
+test('forged receipt target, epoch, phase or actual time cannot schedule a successor',()=>{
+ const first=make(),valid=receipt(first);
+ for(const patch of [{targetKey:'fleet-01-partial'},{epoch:8},{stepIndex:2},{completedAt:'2026-11-13T11:59:00.000Z'},
+  {appliedAt:'2026-11-13T11:59:00.000Z'},{transitionId:'forged'},{scheduledAt:'2026-11-13T12:00:01.000Z'}]){
+  assert.throws(()=>planDemoWorldSlot(options({at:'2026-11-14T12:00:00.000Z',previousReceiptsByTarget:{[targetKey]:{...valid,...patch}}})),/DEMO_WORLD_PREDECESSOR_REFUSED/);
+ }
 });

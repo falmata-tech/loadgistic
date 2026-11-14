@@ -1,198 +1,155 @@
 import {createHash} from 'node:crypto';
+import {approvedDemoCorridor,validateDemoCorridorCatalog} from './demo-corridor-catalog.mjs';
 
-const SUPPORTED_STATUS=new Set(['EMPTY','PARTIAL']);
-const SUPPORTED_LOADS=new Set(['FTL','PTL','BOTH']);
-const SUPPORTED_COMMANDS=new Set(['capacity.set_status','capacity.set_load_preference','capacity.set_route']);
-
+const PHASES=Object.freeze([['PARTIAL',80],['PARTIAL',60],['PARTIAL',30],['EMPTY',100]]);
+const TARGETS=Object.freeze(['independent-partial','fleet-01-partial','fleet-02-partial','fleet-04-partial','fleet-06-partial']);
+const fail=code=>{throw Error(code);};
+const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function only(value,keys,code){
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!keys.includes(key)))fail(code);
+}
+function index(rows,key,code){
+ if(!Array.isArray(rows))fail(code);const result=new Map();
+ for(const row of rows){if(typeof row?.[key]!=='string'||!row[key]||result.has(row[key]))fail(code);result.set(row[key],row);}
+ return result;
+}
 function routeRefs(capacity){
  let points=capacity?.current_route_points_json;
- if(typeof points==='string'){
-  try{points=JSON.parse(points);}catch{throw new Error('DEMO_WORLD_ROUTE_REFUSED');}
- }
- if(!Array.isArray(points)||points.length<2||points.length>5
-  ||points.some(point=>typeof point?.place_ref!=='string'||!point.place_ref)
-  ||new Set(points.map(point=>point.place_ref)).size!==points.length)throw new Error('DEMO_WORLD_ROUTE_REFUSED');
+ if(typeof points==='string'){try{points=JSON.parse(points);}catch{fail('DEMO_WORLD_ROUTE_REFUSED');}}
+ if(!Array.isArray(points)||points.length<2||points.length>5||points.some(point=>!point?.place_ref)
+  ||new Set(points.map(point=>point.place_ref)).size!==points.length)fail('DEMO_WORLD_ROUTE_REFUSED');
  return points.map(point=>point.place_ref);
 }
-function acceptedLoads(capacity){
- const full=capacity?.accepts_full_load===true||capacity?.accepts_full_load===1;
- const partial=capacity?.accepts_partial_load===true||capacity?.accepts_partial_load===1;
- return full&&partial?'BOTH':full?'FTL':partial?'PTL':null;
+function instant(value){
+ const stamp=value instanceof Date?value.getTime():Date.parse(value);
+ if(!Number.isFinite(stamp))fail('DEMO_WORLD_TIME_INVALID');return stamp;
 }
 
-function requireOnlyKeys(value,keys,code){
- if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(key=>!keys.includes(key)))throw new Error(code);
-}
-function uniqueIndex(rows,key,code){
- if(!Array.isArray(rows))throw new Error(code);
- const index=new Map();
- for(const row of rows){
-  const value=row?.[key];
-  if(typeof value!=='string'||!value||index.has(value))throw new Error(code);
-  index.set(value,row);
- }
- return index;
-}
-function ownedBy(actor,vehicle){
- return Boolean(actor.organization_id&&vehicle.organization_id===actor.organization_id)
-  ||Boolean(actor.provider_profile_id&&vehicle.provider_profile_id===actor.provider_profile_id);
-}
-
-/** Validate every scenario identity against the checked-in synthetic fixture. */
+/** This is authored exact-target business data, not a random payload generator. */
 export function validateDemoWorldManifest(manifest,fixture){
- requireOnlyKeys(manifest,['schema_version','fixture_source','execution_scope','timezone','actors','targets','scenarios'],'DEMO_WORLD_MANIFEST_SHAPE_INVALID');
- if(manifest.schema_version!==1||manifest.fixture_source!=='loadgistic'||manifest.execution_scope!=='local-dry-run'||manifest.timezone!=='UTC')throw new Error('DEMO_WORLD_SCOPE_REFUSED');
- if(fixture?.schema_version!==1||fixture.fixture_source!=='loadgistic'||!fixture.tables)throw new Error('DEMO_WORLD_FIXTURE_REFUSED');
-
- const users=uniqueIndex(fixture.tables.users,'id','DEMO_WORLD_FIXTURE_USERS_INVALID');
- const vehicles=uniqueIndex(fixture.tables.vehicles,'id','DEMO_WORLD_FIXTURE_VEHICLES_INVALID');
- const capacities=uniqueIndex(fixture.tables.capacities,'id','DEMO_WORLD_FIXTURE_CAPACITIES_INVALID');
- const publicRouteRefs=new Set([...capacities.values()].filter(row=>row.visibility==='OPEN'&&row.availability_geometry==='ROUTE')
-  .flatMap(row=>routeRefs(row)));
- const actors=uniqueIndex(manifest.actors,'key','DEMO_WORLD_ACTORS_INVALID');
- const actorFixtureKeys=new Set();
+ only(manifest,['schema_version','catalog_version','fixture_source','execution_scope','timezone','mode','step_seconds','cycle_seconds','actors','targets','scenarios'],'DEMO_WORLD_MANIFEST_SHAPE_INVALID');
+ if(manifest.schema_version!==1||manifest.catalog_version!==2||manifest.fixture_source!=='loadgistic'
+  ||manifest.execution_scope!=='local-dry-run'||manifest.timezone!=='UTC'||manifest.mode!=='RELATIVE_EPISODES'
+  ||manifest.step_seconds!==120||manifest.cycle_seconds!==480)fail('DEMO_WORLD_SCOPE_REFUSED');
+ if(fixture?.schema_version!==1||fixture.fixture_source!=='loadgistic'||!fixture.tables)fail('DEMO_WORLD_FIXTURE_REFUSED');
+ const users=index(fixture.tables.users,'id','DEMO_WORLD_FIXTURE_USERS_INVALID');
+ const vehicles=index(fixture.tables.vehicles,'id','DEMO_WORLD_FIXTURE_VEHICLES_INVALID');
+ const capacities=index(fixture.tables.capacities,'id','DEMO_WORLD_FIXTURE_CAPACITIES_INVALID');
+ const actors=index(manifest.actors,'key','DEMO_WORLD_ACTORS_INVALID'),actorKeys=new Set();
  for(const actor of actors.values()){
-  requireOnlyKeys(actor,['key','fixture_user_key','role'],'DEMO_WORLD_ACTOR_SHAPE_INVALID');
-  const fixtureActor=users.get(actor.fixture_user_key);
-  if(!fixtureActor||fixtureActor.role!==actor.role||!['DRIVER','TRANSPORTER'].includes(actor.role)||actorFixtureKeys.has(actor.fixture_user_key))throw new Error('DEMO_WORLD_ACTOR_NOT_ALLOWLISTED');
-  actorFixtureKeys.add(actor.fixture_user_key);
+  only(actor,['key','fixture_user_key','role'],'DEMO_WORLD_ACTOR_SHAPE_INVALID');
+  if(!users.has(actor.fixture_user_key)||users.get(actor.fixture_user_key).role!==actor.role
+   ||!['DRIVER','TRANSPORTER'].includes(actor.role)||actorKeys.has(actor.fixture_user_key))fail('DEMO_WORLD_ACTOR_NOT_ALLOWLISTED');
+  actorKeys.add(actor.fixture_user_key);
  }
-
- const targets=uniqueIndex(manifest.targets,'key','DEMO_WORLD_TARGETS_INVALID');
- const vehicleKeys=new Set(),capacityKeys=new Set();
+ const targets=index(manifest.targets,'key','DEMO_WORLD_TARGETS_INVALID'),vehicleKeys=new Set(),capacityKeys=new Set();
  for(const target of targets.values()){
-  requireOnlyKeys(target,['key','actor_key','fixture_vehicle_key','fixture_capacity_key','baseline_status','expected_sharing_mode','alternate_route_refs','mutable'],'DEMO_WORLD_TARGET_SHAPE_INVALID');
-  const actor=actors.get(target.actor_key),fixtureActor=actor&&users.get(actor.fixture_user_key);
-  const vehicle=vehicles.get(target.fixture_vehicle_key),capacity=capacities.get(target.fixture_capacity_key);
-  if(!actor||!fixtureActor||!vehicle||!capacity||!ownedBy(fixtureActor,vehicle)||capacity.vehicle_id!==target.fixture_vehicle_key)throw new Error('DEMO_WORLD_TARGET_NOT_OWNED');
-  if(!SUPPORTED_STATUS.has(target.baseline_status)||capacity.status!==target.baseline_status||typeof target.mutable!=='boolean')throw new Error('DEMO_WORLD_BASELINE_MISMATCH');
-  if(target.mutable&&!['PUBLIC','PRIVATE','BOTH'].includes(target.expected_sharing_mode)
-   ||!target.mutable&&target.expected_sharing_mode!==undefined)throw new Error('DEMO_WORLD_SHARING_REFUSED');
-  if(target.alternate_route_refs!==undefined){
-   const alternate=target.alternate_route_refs;
-   if(capacity.availability_geometry!=='ROUTE'||!Array.isArray(alternate)||alternate.length<2||alternate.length>5
-    ||alternate.some(ref=>typeof ref!=='string'||!publicRouteRefs.has(ref))
-    ||new Set(alternate).size!==alternate.length
-    ||JSON.stringify(alternate)===JSON.stringify(routeRefs(capacity)))throw new Error('DEMO_WORLD_ROUTE_REFUSED');
-  }
-  if(vehicleKeys.has(target.fixture_vehicle_key)||capacityKeys.has(target.fixture_capacity_key))throw new Error('DEMO_WORLD_TARGET_DUPLICATED');
+  only(target,['key','actor_key','fixture_vehicle_key','fixture_capacity_key','baseline_status','baseline_available_percent','start_offset_seconds','expected_sharing_mode','alternate_route_refs','mutable'],'DEMO_WORLD_TARGET_SHAPE_INVALID');
+  const actor=actors.get(target.actor_key),owner=actor&&users.get(actor.fixture_user_key),vehicle=vehicles.get(target.fixture_vehicle_key),capacity=capacities.get(target.fixture_capacity_key);
+  if(!owner||!vehicle||!capacity||capacity.vehicle_id!==target.fixture_vehicle_key
+   ||!(owner.organization_id&&owner.organization_id===vehicle.organization_id)
+    &&!(owner.provider_profile_id&&owner.provider_profile_id===vehicle.provider_profile_id))fail('DEMO_WORLD_TARGET_NOT_OWNED');
+  if(!['EMPTY','PARTIAL'].includes(target.baseline_status)||capacity.status!==target.baseline_status||typeof target.mutable!=='boolean')fail('DEMO_WORLD_BASELINE_MISMATCH');
+  if(vehicleKeys.has(target.fixture_vehicle_key)||capacityKeys.has(target.fixture_capacity_key))fail('DEMO_WORLD_TARGET_DUPLICATED');
   vehicleKeys.add(target.fixture_vehicle_key);capacityKeys.add(target.fixture_capacity_key);
+  if(target.mutable){
+   const position=TARGETS.indexOf(target.key);
+   if(position<0||target.baseline_status!=='PARTIAL'||target.baseline_available_percent!==null||target.start_offset_seconds!==position*30)fail('DEMO_WORLD_TARGET_NOT_ALLOWLISTED');
+   if(!['PUBLIC','PRIVATE','BOTH'].includes(target.expected_sharing_mode))fail('DEMO_WORLD_SHARING_REFUSED');
+  }else if(target.expected_sharing_mode!==undefined||target.start_offset_seconds!==undefined||target.baseline_available_percent!==undefined)fail('DEMO_WORLD_MUTABILITY_MISMATCH');
+  if(capacity.availability_geometry==='ROUTE'&&!approvedDemoCorridor(target.key,target.fixture_vehicle_key,routeRefs(capacity)))fail('DEMO_WORLD_ROUTE_REFUSED');
+  if(target.alternate_route_refs!==undefined&&(!approvedDemoCorridor(target.key,target.fixture_vehicle_key,target.alternate_route_refs,{alternate:true})
+   ||same(target.alternate_route_refs,routeRefs(capacity))))fail('DEMO_WORLD_ROUTE_REFUSED');
  }
-
- const scenarios=uniqueIndex(manifest.scenarios,'key','DEMO_WORLD_SCENARIOS_INVALID');
- const events=[];
+ if(TARGETS.some(key=>!targets.get(key)?.mutable)||[...targets.values()].filter(row=>row.mutable).length!==5)fail('DEMO_WORLD_MUTABILITY_MISMATCH');
+ validateDemoCorridorCatalog(fixture);
+ const scenarios=index(manifest.scenarios,'key','DEMO_WORLD_SCENARIOS_INVALID'),seen=new Set();
  for(const scenario of scenarios.values()){
-  requireOnlyKeys(scenario,['key','command','daily_slots_utc','transitions'],'DEMO_WORLD_SCENARIO_SHAPE_INVALID');
-  if(!SUPPORTED_COMMANDS.has(scenario.command)||!Array.isArray(scenario.daily_slots_utc)||!Array.isArray(scenario.transitions)||scenario.daily_slots_utc.length!==scenario.transitions.length||scenario.transitions.length===0)throw new Error('DEMO_WORLD_COMMAND_REFUSED');
-  let previousMinute=-1;
-  for(let i=0;i<scenario.transitions.length;i++){
-   const transition=scenario.transitions[i],minute=scenario.daily_slots_utc[i];
-   requireOnlyKeys(transition,scenario.command==='capacity.set_status'?['target_key','from','to']
-    :['target_key','when_status','from','to'],'DEMO_WORLD_TRANSITION_SHAPE_INVALID');
-   const target=targets.get(transition.target_key);
-   if(!target?.mutable||!Number.isInteger(minute)||minute<0||minute>=1440||minute<=previousMinute)throw new Error('DEMO_WORLD_SLOT_INVALID');
-   previousMinute=minute;
-   if(scenario.command==='capacity.set_status'){
-    if(!SUPPORTED_STATUS.has(transition.from)||!SUPPORTED_STATUS.has(transition.to)||transition.from===transition.to)throw new Error('DEMO_WORLD_STATUS_REFUSED');
-   }else if(transition.when_status!=='EMPTY')throw new Error('DEMO_WORLD_STATUS_REFUSED');
-   else if(scenario.command==='capacity.set_load_preference'){
-    if(!SUPPORTED_LOADS.has(transition.from)||!SUPPORTED_LOADS.has(transition.to)||transition.from===transition.to)throw new Error('DEMO_WORLD_LOADS_REFUSED');
-   }else if(!target.alternate_route_refs||!['BASELINE','ALTERNATE'].includes(transition.from)
-    ||!['BASELINE','ALTERNATE'].includes(transition.to)||transition.from===transition.to)throw new Error('DEMO_WORLD_ROUTE_REFUSED');
-   events.push({scenario,transition,minute});
-  }
+  only(scenario,['key','target_key','command','phases','route_toggle_every_cycles'],'DEMO_WORLD_SCENARIO_SHAPE_INVALID');
+  const target=targets.get(scenario.target_key);
+  if(!target?.mutable||scenario.command!=='capacity.publish_phase'||scenario.key!==`${target.key}-capacity-episode`||seen.has(target.key)||!Array.isArray(scenario.phases)||scenario.phases.length!==4)fail('DEMO_WORLD_SCENARIO_REFUSED');
+  seen.add(target.key);
+  scenario.phases.forEach((phase,i)=>{
+   only(phase,['step_index','offset_seconds','status','available_percent'],'DEMO_WORLD_TRANSITION_SHAPE_INVALID');
+   if(phase.step_index!==i||phase.offset_seconds!==i*120||phase.status!==PHASES[i][0]||phase.available_percent!==PHASES[i][1])fail('DEMO_WORLD_PERCENT_REFUSED');
+  });
+  if(target.alternate_route_refs?scenario.route_toggle_every_cycles!==2:scenario.route_toggle_every_cycles!==undefined)fail('DEMO_WORLD_ROUTE_REFUSED');
  }
- const stateByTarget=new Map([...targets.values()].map(target=>{
-  const capacity=capacities.get(target.fixture_capacity_key);
-  return [target.key,{status:target.baseline_status,loads:acceptedLoads(capacity),route:'BASELINE'}];
- }));
- const targetMinutes=new Set(),loadTargets=new Set(),routeTargets=new Set();
- for(const {scenario,transition,minute} of events.sort((a,b)=>a.minute-b.minute)){
-  const key=`${transition.target_key}:${minute}`;
-  if(targetMinutes.has(key))throw new Error('DEMO_WORLD_SLOT_INVALID');
-  targetMinutes.add(key);
-  const state=stateByTarget.get(transition.target_key);
-  if(scenario.command==='capacity.set_status'){
-   if(state.status!==transition.from)throw new Error('DEMO_WORLD_TRANSITION_CHAIN_INVALID');
-   state.status=transition.to;
-   if(transition.to==='PARTIAL')state.loads='PTL';
-  }else if(scenario.command==='capacity.set_load_preference'){
-   if(state.status!==transition.when_status||state.loads!==transition.from)throw new Error('DEMO_WORLD_TRANSITION_CHAIN_INVALID');
-   loadTargets.add(transition.target_key);state.loads=transition.to;
-  }else{
-   if(state.status!==transition.when_status||state.route!==transition.from)throw new Error('DEMO_WORLD_TRANSITION_CHAIN_INVALID');
-   routeTargets.add(transition.target_key);state.route=transition.to;
-  }
- }
- for(const [key,state] of stateByTarget){
-  const target=targets.get(key),capacity=capacities.get(target.fixture_capacity_key);
-  if(state.status!==target.baseline_status||loadTargets.has(key)&&state.loads!==acceptedLoads(capacity)
-   ||routeTargets.has(key)&&state.route!=='BASELINE')throw new Error('DEMO_WORLD_TRANSITION_CHAIN_INVALID');
- }
- for(const target of targets.values()){
-  const scheduled=[...scenarios.values()].flatMap(scenario=>scenario.transitions.filter(transition=>transition.target_key===target.key));
-  if(target.mutable!==Boolean(scheduled.length))throw new Error('DEMO_WORLD_MUTABILITY_MISMATCH');
- }
- return true;
+ if(seen.size!==5)fail('DEMO_WORLD_MUTABILITY_MISMATCH');return true;
 }
 
-/** Return deterministic dry-run commands for the exact UTC minute supplied. */
-export function planDemoWorldSlot({manifest,fixture,at}){
- validateDemoWorldManifest(manifest,fixture);
- const timestamp=at instanceof Date?at.getTime():Date.parse(at);
- if(!Number.isFinite(timestamp))throw new Error('DEMO_WORLD_TIME_INVALID');
- const date=new Date(timestamp);
- if(date.getUTCSeconds()!==0||date.getUTCMilliseconds()!==0)return [];
- const day=date.toISOString().slice(0,10),minute=date.getUTCHours()*60+date.getUTCMinutes();
- const actorByKey=new Map(manifest.actors.map(actor=>[actor.key,actor]));
- const targetByKey=new Map(manifest.targets.map(target=>[target.key,target]));
- const capacityByKey=new Map(fixture.tables.capacities.map(capacity=>[capacity.id,capacity]));
+/** Begin immediately; no daily wall-clock activation or delayed catch-up window. */
+export function demoWorldCatalogStart(activatedAt){return new Date(instant(activatedAt)).toISOString();}
+function identity(target,scenario,activatedAt,epoch,cycleIndex,stepIndex){
+ const scheduledAt=new Date(instant(activatedAt)+(target.start_offset_seconds+cycleIndex*480+stepIndex*120)*1000).toISOString();
+ const transitionId=`v1:c2:${scenario.key}:${target.key}:e${epoch}:c${cycleIndex}:p${stepIndex}`;
+ return {transitionId,idempotencyKey:createHash('sha256').update(`loadgistic-demo-world|${transitionId}`).digest('hex'),scheduledAt};
+}
+function context(manifest,fixture,targetKey){
+ const target=manifest.targets.find(row=>row.key===targetKey&&row.mutable),scenario=manifest.scenarios.find(row=>row.target_key===targetKey);
+ if(!target||!scenario)fail('DEMO_WORLD_PLAN_REFUSED');
+ const actor=manifest.actors.find(row=>row.key===target.actor_key),capacity=fixture.tables.capacities.find(row=>row.id===target.fixture_capacity_key);
+ return {target,scenario,actor,capacity};
+}
+function expectedRoute(target,capacity,cycleIndex){
+ const baseline=routeRefs(capacity);
+ return target.alternate_route_refs&&Math.floor(cycleIndex/2)%2?target.alternate_route_refs:baseline;
+}
+
+/** One immutable step. Recovery time derives from the real previous completion. */
+export function demoWorldPlanForStep({manifest,fixture,activatedAt,epoch,targetKey,cycleIndex,stepIndex,previousCompletedAt=null}){
+ validateDemoWorldManifest(manifest,fixture);activatedAt=demoWorldCatalogStart(activatedAt);
+ if(!Number.isSafeInteger(epoch)||epoch<1||!Number.isSafeInteger(cycleIndex)||cycleIndex<0||!Number.isInteger(stepIndex)||stepIndex<0||stepIndex>3)fail('DEMO_WORLD_PLAN_REFUSED');
+ const {target,scenario,actor,capacity}=context(manifest,fixture,targetKey),first=cycleIndex===0&&stepIndex===0;
+ const identifiers=identity(target,scenario,activatedAt,epoch,cycleIndex,stepIndex);
+ if(first?previousCompletedAt!==null:previousCompletedAt===null)fail('DEMO_WORLD_PREDECESSOR_REFUSED');
+ const dueAt=first?identifiers.scheduledAt:new Date(instant(previousCompletedAt)+120000).toISOString();
+ if(instant(dueAt)<instant(identifiers.scheduledAt))fail('DEMO_WORLD_PREDECESSOR_REFUSED');
+ const expectedStatus=first?'PARTIAL':stepIndex===0?'EMPTY':'PARTIAL',phase=scenario.phases[stepIndex];
+ const expectedAvailablePercent=first?null:stepIndex===0?100:PHASES[stepIndex-1][1];
+ const expectedRouteRefs=expectedRoute(target,capacity,cycleIndex);
+ const nextRouteRefs=stepIndex===3&&target.alternate_route_refs&&cycleIndex%2===1
+  ?same(expectedRouteRefs,target.alternate_route_refs)?routeRefs(capacity):target.alternate_route_refs:expectedRouteRefs;
+ return Object.freeze({manifestVersion:1,catalogVersion:2,mode:'RELATIVE_EPISODES',activatedAt,epoch,targetKey,
+  scenarioKey:scenario.key,cycleIndex,stepIndex,previousCompletedAt,dueAt,...identifiers,
+  actorFixtureKey:actor.fixture_user_key,vehicleFixtureKey:target.fixture_vehicle_key,capacityFixtureKey:target.fixture_capacity_key,
+  expectedSharingMode:target.expected_sharing_mode,command:'capacity.publish_phase',
+  expectedStatus,nextStatus:phase.status,expectedAvailablePercent,nextAvailablePercent:phase.available_percent,
+  allowUnreportedBootstrap:first,expectedRouteRefs,nextRouteRefs});
+}
+
+/** Prior identity only: never fabricate an actual historical completion time. */
+export function previousDemoWorldPlan({manifest,fixture,plan}){
+ const {target,scenario}=context(manifest,fixture,plan.targetKey);
+ if(plan.cycleIndex===0&&plan.stepIndex===0)return null;
+ const cycleIndex=plan.stepIndex===0?plan.cycleIndex-1:plan.cycleIndex,stepIndex=(plan.stepIndex+3)%4;
+ return {...identity(target,scenario,plan.activatedAt,plan.epoch,cycleIndex,stepIndex),cycleIndex,stepIndex};
+}
+function lastReceipt(value,manifest,fixture,target,activatedAt,epoch){
+ if(!value||value.catalogVersion!==2||value.targetKey!==target.key||value.epoch!==epoch||value.activatedAt!==activatedAt
+  ||value.vehicleFixtureKey!==target.fixture_vehicle_key||typeof value.capacityId!=='string'||!value.capacityId
+  ||!Number.isSafeInteger(value.cycleIndex)||value.cycleIndex<0||!Number.isInteger(value.stepIndex)||value.stepIndex<0||value.stepIndex>3)fail('DEMO_WORLD_PREDECESSOR_REFUSED');
+ const {scenario}=context(manifest,fixture,target.key),expected=identity(target,scenario,activatedAt,epoch,value.cycleIndex,value.stepIndex);
+ if(value.scenarioKey!==scenario.key||value.transitionId!==expected.transitionId||value.idempotencyKey!==expected.idempotencyKey
+  ||value.scheduledAt!==expected.scheduledAt||instant(value.appliedAt)<instant(value.dueAt)
+  ||instant(value.completedAt)<instant(value.appliedAt)||instant(value.dueAt)<instant(value.scheduledAt))fail('DEMO_WORLD_PREDECESSOR_REFUSED');
+ return value;
+}
+
+/** At most one next step per target. Outages never produce catch-up bursts. */
+export function planDemoWorldSlot({manifest,fixture,activatedAt,epoch,at,previousReceiptsByTarget={}}){
+ validateDemoWorldManifest(manifest,fixture);activatedAt=demoWorldCatalogStart(activatedAt);const now=instant(at);
+ if(!Number.isSafeInteger(epoch)||epoch<1)fail('DEMO_WORLD_PLAN_REFUSED');
  const plans=[];
- for(const scenario of manifest.scenarios){
-  const transitionIndex=scenario.daily_slots_utc.indexOf(minute);
-  if(transitionIndex<0)continue;
-  const transition=scenario.transitions[transitionIndex],target=targetByKey.get(transition.target_key),actor=actorByKey.get(target.actor_key);
-  const slot=`${String(Math.floor(minute/60)).padStart(2,'0')}${String(minute%60).padStart(2,'0')}Z`;
-  const transitionId=`v${manifest.schema_version}:${scenario.key}:${target.key}:${day}:${slot}`;
-  const idempotencyKey=createHash('sha256').update(`loadgistic-demo-world|${transitionId}`).digest('hex');
-  const status=scenario.command==='capacity.set_status';
-  const basePlan={
-   manifestVersion:manifest.schema_version,
-   scenarioKey:scenario.key,
-   transitionId,
-   idempotencyKey,
-   scheduledAt:`${day}T${slot.slice(0,2)}:${slot.slice(2,4)}:00.000Z`,
-   actorFixtureKey:actor.fixture_user_key,
-   vehicleFixtureKey:target.fixture_vehicle_key,
-   capacityFixtureKey:target.fixture_capacity_key,
-   expectedSharingMode:target.expected_sharing_mode,
-   command:scenario.command,
-   expectedStatus:status?transition.from:transition.when_status,
-   nextStatus:status?transition.to:transition.when_status
-  };
-  if(scenario.command==='capacity.set_load_preference'){
-   basePlan.expectedLoads=transition.from;basePlan.nextLoads=transition.to;
-  }else if(scenario.command==='capacity.set_route'){
-   const baseline=routeRefs(capacityByKey.get(target.fixture_capacity_key));
-   basePlan.expectedRouteRefs=transition.from==='BASELINE'?baseline:target.alternate_route_refs;
-   basePlan.nextRouteRefs=transition.to==='BASELINE'?baseline:target.alternate_route_refs;
-  }
-  plans.push(Object.freeze(basePlan));
+ for(const target of manifest.targets.filter(row=>row.mutable)){
+  const raw=previousReceiptsByTarget instanceof Map?previousReceiptsByTarget.get(target.key):previousReceiptsByTarget[target.key];
+  const last=raw?lastReceipt(raw,manifest,fixture,target,activatedAt,epoch):null;
+  const stepIndex=last?(last.stepIndex+1)%4:0,cycleIndex=last?last.cycleIndex+Number(stepIndex===0):0;
+  const plan=demoWorldPlanForStep({manifest,fixture,activatedAt,epoch,targetKey:target.key,cycleIndex,stepIndex,previousCompletedAt:last?.completedAt??null});
+  if(instant(plan.dueAt)<=now)plans.push(plan);
  }
- return plans;
+ return plans.sort((a,b)=>a.dueAt.localeCompare(b.dueAt)||a.targetKey.localeCompare(b.targetKey));
 }
 
-/** All exact daily transitions up to a UTC cutoff, ordered for safe replay. */
-export function planDemoWorldThrough({manifest,fixture,at}){
- validateDemoWorldManifest(manifest,fixture);
- const timestamp=at instanceof Date?at.getTime():Date.parse(at);
- if(!Number.isFinite(timestamp))throw new Error('DEMO_WORLD_TIME_INVALID');
- const date=new Date(timestamp),day=date.toISOString().slice(0,10);
- const cutoff=date.getUTCHours()*60+date.getUTCMinutes();
- const minutes=new Set(manifest.scenarios.flatMap(scenario=>scenario.daily_slots_utc).filter(minute=>minute<=cutoff));
- return [...minutes].sort((a,b)=>a-b).flatMap(minute=>{
-  const hour=String(Math.floor(minute/60)).padStart(2,'0');
-  const part=String(minute%60).padStart(2,'0');
-  return planDemoWorldSlot({manifest,fixture,at:`${day}T${hour}:${part}:00.000Z`});
- });
-}
+/** Compatibility name: only the next eligible step, never every missed phase. */
+export function planDemoWorldThrough(options){return planDemoWorldSlot(options);}

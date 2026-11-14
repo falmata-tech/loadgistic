@@ -70,7 +70,7 @@ test('company-driver Home displays only its authorized pair regular overlay and 
 test('driver Home shows saved Planned and Preferred coverage without inventing reported location',()=>{
  for(const location of [null,{coordinate:null,radius:20,area:'',updatedAt:''}]){
   const view=renderer(),current={id:'plan',status:'PARTIAL',acceptedLoads:'PTL',sharingMode:'PRIVATE',availabilityGeometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],boundary:[]};
-  const truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,canSetManualLocation:true,publishedLocationSource:'GPS',location,current,regularServices:[service(),service(vehicleB,driverB)]};
+  const truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,canSetManualLocation:false,canSetPhoneLocation:true,publishedLocationSource:'GPS',location,current,regularServices:[service(),service(vehicleB,driverB)]};
   const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
   const tree=view.render(screen),map=find(tree,'TrackingMap');assert.ok(map,'saved coverage must not depend on reported coordinates');assert.equal(map.props.location,null);assert.equal(map.props.coverage.kind,'ROUTE');assert.deepEqual(map.props.coverage.places,current.route);assert.equal(map.props.regular.length,1);assert.deepEqual(map.props.regular[0].places,service().route);
   const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string').join(' ');assert.ok(!text.includes('GPS device'));assert.ok(text.includes('No driver location shared yet'));
@@ -87,7 +87,7 @@ test('Home discards an open regular editor when the active driver assignment cha
 });
 
 test('driver Home names Capacity and Location consistently and opens the assigned vehicle editor',()=>{
- const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Courier car',plate:'LOCAL',canLocate:false,canSetManualLocation:true,location:null,current:null,regularServices:[]};
+ const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Courier car',plate:'LOCAL',canLocate:false,canSetManualLocation:false,canSetPhoneLocation:true,location:null,current:null,regularServices:[]};
  const screen=view.compile('../src/screens/driver-home.tsx',{...common,DriverLocationEditor:'DriverLocationEditor',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
  let tree=view.render(screen);
  const capacity=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update planned capacity');
@@ -127,7 +127,7 @@ test('profile editor omits stale Services from the UI and from its saved command
 
 
 test('selected Fleet capacity keeps its map in first use and provides four focused owner tasks',()=>{
- const view=renderer(),pauses=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Fleet truck',plate:'LOCAL',configuration:'Box truck',canLocate:true,canSetManualLocation:true,location:null,current:null,regularServices:[]};
+ const view=renderer(),pauses=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Fleet truck',plate:'LOCAL',configuration:'Box truck',canLocate:true,canSetManualLocation:false,canSetPhoneLocation:true,location:null,current:null,regularServices:[]};
  const screen=view.compile('../src/screens/manage-capacity.tsx',{...common,RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true,profilePublished:false},error:'',reload:async()=>{}}),useCapacityLocation:(_truck,paused)=>{pauses.push(paused);return{busy:false,error:''};},capacitySharingMode:()=> 'PUBLIC',CAPACITY_SHARING_CHOICES:[],CAPACITY_LOAD_CHOICES:[],privacyRadii:[20]}).default;
  let tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:false});assert.equal(pauses.at(-1),true);
  let map=find(tree,'TrackingMap');assert.ok(map,'first use still renders the map');assert.equal(map.props.fill,true);assert.equal(map.props.location,null,'no device fix is invented');assert.equal(map.props.vehicleConfiguration,'Box truck');assert.equal(map.props.regular.length,0);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('No signal on the map yet')));assert.equal(find(tree,'ProfileSetup'),undefined,'account setup does not leak into a vehicle task');

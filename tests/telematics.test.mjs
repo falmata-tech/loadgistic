@@ -46,10 +46,14 @@ test('telemetry rejects unknown fields, nonfinite points, old and future replay 
  assert.throws(()=>validateTelemetry({...fix,receivedAt:'2026-09-14T12:00:00Z'},now),/TELEMETRY_TIME_INVALID/);
  assert.equal(validateTelemetry({...fix,observedAt:'2026-10-15T11:59:00Z'},now).observedAt,'2026-10-15T11:59:00Z');
 });
-test('manual source has worldwide validated coordinates and an exclusive owner binding',()=>{
- const base={vehicleId:randomUUID(),source:'MANUAL',expectedRevision:now.toISOString(),precisionKm:20,manualLatitude:51.5,manualLongitude:-0.1};
- assert.equal(selectLocationSchema.parse(base).manualLatitude,51.5);
- assert.throws(()=>selectLocationSchema.parse({...base,source:'GPS'}));assert.throws(()=>selectLocationSchema.parse({...base,manualLatitude:undefined}));
+test('new location selections accept only Phone or GPS with no manual point fields',()=>{
+ const base={vehicleId:randomUUID(),source:'MOBILE',expectedRevision:now.toISOString(),precisionKm:20};
+ for(const source of ['MOBILE','GPS'])assert.equal(selectLocationSchema.parse({...base,source}).source,source);
+ for(const changed of [{source:'MANUAL'},{manualLatitude:51.5,manualLongitude:-0.1},{manualLatitude:null},
+  {approximateLatitude:9,approximateLongitude:38},{source:'GPS',manualLongitude:0},{source:'PHONE'}])
+  assert.throws(()=>selectLocationSchema.parse({...base,...changed}));
+});
+test('device provisioning keeps an exclusive owner binding',()=>{
  const provision={ownerOrganizationId:randomUUID(),gatewayId:gateway.id,gatewayDeviceId:1,imei:'990000000000001',protocol:'gt06',protocolDeviceId:'990000000000001',label:'Synthetic'};
  assert.equal(provisionDeviceSchema.parse(provision).modelProfile,'UNVERIFIED');
  assert.throws(()=>provisionDeviceSchema.parse({...provision,ownerProviderProfileId:randomUUID()}));

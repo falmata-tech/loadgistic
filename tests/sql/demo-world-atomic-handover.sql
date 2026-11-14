@@ -1,4 +1,4 @@
--- FEAT-SIM-001. Run only after migration 187 on the disposable fixture clone.
+-- FEAT-SIM-001. Run after migrations221/223 on the disposable fixture clone.
 -- Every mutation in this test rolls back; never point this file at preview/hosted.
 begin;
 do $test$
@@ -122,79 +122,90 @@ begin
     then raise exception 'HANDOVER_DENIAL_WROTE_CAPACITY';end if;
 end $test$;
 
--- Force failure after both duty changes, both reassignments and the first
--- republish. The second republish must roll back the entire function call.
-create function pg_temp.demo_handover_fail_last() returns trigger
-language plpgsql as $$begin raise exception 'DEMO_HANDOVER_TEST_FORCED_FAILURE';end$$;
-create trigger demo_handover_test_fail_last before insert on public.capacities
-for each row when(new.vehicle_id='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7'::uuid
-  and new.status='EMPTY' and new.location_source='MANUAL_ADMIN')
-execute function pg_temp.demo_handover_fail_last();
+-- The exact historical scenario is held before its first mutation. Neither a
+-- direct internal call nor a retry may advance it or create Manual locations.
+create function pg_temp.handover_state() returns jsonb language sql stable as $$
+ select jsonb_build_object(
+  'capacities',(select jsonb_agg(to_jsonb(c) order by c.id) from public.capacities c
+    where c.vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7')),
+  'assignments',(select jsonb_agg(to_jsonb(a) order by a.id) from public.driver_vehicle_assignments a
+    where a.vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7')),
+  'sources',(select jsonb_agg(to_jsonb(s) order by s.vehicle_id) from public.telematics_location_sources s
+    where s.vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7')),
+  'locations',(select jsonb_agg(to_jsonb(l) order by l.vehicle_id) from public.vehicle_driver_locations l
+    where l.vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7')),
+  'sharing',(select jsonb_agg(to_jsonb(s) order by s.vehicle_id) from public.vehicle_capacity_sharing s
+    where s.vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7')),
+  'permissions',(select jsonb_agg(to_jsonb(p) order by p.user_id) from public.driver_permissions p
+    where p.user_id in(select driver_user_id from public.driver_vehicle_assignments
+      where vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7'))),
+  'featured',(select jsonb_agg(to_jsonb(s) order by s.id) from public.featured_provider_slots s),
+  'control',(select to_jsonb(c) from public.demo_world_control c where c.id=1),
+  'receipts',(select jsonb_agg(to_jsonb(r) order by r.simulation_day) from public.demo_world_handover_receipts r)
+ )
+$$;
 
 do $test$
 declare
   vehicle_a uuid:='54eb0674-4aa2-4975-bc1b-18999463a5b7';
   vehicle_b uuid:='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7';
-  before_count bigint;before_assignment_count bigint;denied boolean:=false;
-  failure_code text;
+  before_state jsonb;denied boolean;attempt integer;failure_code text;owner_id uuid;source_revision timestamptz;
 begin
-  select count(*) into before_count from public.capacities where vehicle_id in(vehicle_a,vehicle_b);
-  select count(*) into before_assignment_count from public.driver_vehicle_assignments
-    where vehicle_id in(vehicle_a,vehicle_b);
-  begin perform public.demo_world_execute_atomic_handover();
-  exception when others then
-    failure_code:=case when sqlerrm~'^DEMO_[A-Z0-9_]+$' then sqlerrm else 'OTHER_SQL_ERROR' end;
-    denied:=failure_code='DEMO_HANDOVER_TEST_FORCED_FAILURE';
-  end;
-  if not denied then raise exception 'HANDOVER_PARTIAL_COMMIT_NOT_BLOCKED: %',coalesce(failure_code,'NO_ERROR');end if;
-  if (select count(*) from public.capacities where vehicle_id in(vehicle_a,vehicle_b))<>before_count
-    or (select count(*) from public.driver_vehicle_assignments
-      where vehicle_id in(vehicle_a,vehicle_b))<>before_assignment_count
-    or (select count(*) from public.demo_world_handover_receipts)<>0
-    then raise exception 'HANDOVER_FAILURE_LEFT_PARTIAL_WRITES';end if;
+  before_state:=pg_temp.handover_state();
+  for attempt in 1..2 loop
+    denied:=false;
+    begin perform public.demo_world_execute_atomic_handover();
+    exception when others then
+      failure_code:=sqlerrm;denied:=failure_code='DEMO_MANUAL_LANE_HELD';
+    end;
+    if not denied then raise exception 'HANDOVER_MANUAL_LANE_NOT_HELD: %',coalesce(failure_code,'NO_ERROR');end if;
+    if pg_temp.handover_state() is distinct from before_state
+      then raise exception 'HANDOVER_MANUAL_DENIAL_LEFT_PARTIAL_STATE';end if;
+  end loop;
+  select u.id into owner_id from auth.users u where u.raw_app_meta_data->>'fixture_source'='loadgistic'
+    and u.raw_user_meta_data->>'fixture_key'='user-public-fleet-01';
+  select revision into source_revision from public.telematics_location_sources where vehicle_id=vehicle_a;
+  denied:=false;
+  begin perform public.select_telematics_location_source(owner_id,jsonb_build_object(
+    'vehicleId',vehicle_a,'source','MANUAL','precisionKm',10,
+    'expectedRevision',coalesce(source_revision,'1970-01-01'::timestamptz),
+    'manualLatitude',9.03,'manualLongitude',38.75));
+  exception when others then denied:=sqlerrm='INVALID_TELEMATICS_INPUT';end;
+  if not denied or pg_temp.handover_state() is distinct from before_state
+    then raise exception 'HANDOVER_DIRECT_MANUAL_MUTATION_NOT_DENIED';end if;
 end $test$;
-drop trigger demo_handover_test_fail_last on public.capacities;
 
 do $test$
 declare
   vehicle_a uuid:='54eb0674-4aa2-4975-bc1b-18999463a5b7';
   vehicle_b uuid:='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7';
-  original_a uuid;original_b uuid;outcome jsonb;replay jsonb;denied boolean:=false;
-  old_capacity_count bigint;old_featured_count bigint;
+  original_a uuid;original_b uuid;owner_id uuid;outcome jsonb;replay jsonb;denied boolean:=false;
+  prior_a public.capacities%rowtype;prior_b public.capacities%rowtype;
+  before_state jsonb;
 begin
   select driver_user_id into original_a from public.driver_vehicle_assignments
     where vehicle_id=vehicle_a and active;
   select driver_user_id into original_b from public.driver_vehicle_assignments
     where vehicle_id=vehicle_b and active;
-  select count(*) into old_capacity_count from public.capacities
-    where vehicle_id in(vehicle_a,vehicle_b);
-  select count(*) into old_featured_count from public.featured_provider_slots
-    where vehicle_id in(vehicle_a,vehicle_b);
+  select u.id into owner_id from auth.users u where u.raw_app_meta_data->>'fixture_source'='loadgistic'
+    and u.raw_user_meta_data->>'fixture_key'='user-public-fleet-01';
+  select * into prior_a from public.capacities where vehicle_id=vehicle_a order by updated_at desc,id desc limit 1;
+  select * into prior_b from public.capacities where vehicle_id=vehicle_b order by updated_at desc,id desc limit 1;
+  -- Seed only dated historical rows to retain replay/immutability coverage.
+  -- These are disposable test fixtures, not new Manual command permissions.
+  update public.capacities set location_source='MANUAL_ADMIN' where id in(prior_a.id,prior_b.id);
+  insert into public.demo_world_handover_receipts(simulation_day,owner_user_id,vehicle_a_id,vehicle_b_id,
+    previous_driver_a_id,previous_driver_b_id,previous_capacity_a_id,previous_capacity_b_id,
+    published_capacity_a_id,published_capacity_b_id)
+  values((clock_timestamp() at time zone 'UTC')::date,owner_id,vehicle_a,vehicle_b,
+    original_b,original_a,prior_a.id,prior_b.id,prior_a.id,prior_b.id);
+  update public.demo_world_control set enabled=false where id=1;
+  before_state:=pg_temp.handover_state();
   outcome:=public.demo_world_execute_atomic_handover();
-  if outcome->>'replayed'<>'false' or outcome->>'vehicleCount'<>'2'
-    then raise exception 'HANDOVER_RESULT_DRIFT';end if;
-  if (select count(*) from public.driver_vehicle_assignments a where a.active
-    and ((a.vehicle_id=vehicle_a and a.driver_user_id=original_b)
-      or (a.vehicle_id=vehicle_b and a.driver_user_id=original_a)))<>2
-    then raise exception 'HANDOVER_ASSIGNMENT_NOT_SWAPPED';end if;
-  if (select count(*) from public.capacities c
-    where c.id in(select published_capacity_a_id from public.demo_world_handover_receipts
-      union all select published_capacity_b_id from public.demo_world_handover_receipts)
-      and c.status='EMPTY' and c.visibility='OPEN' and c.location_source='MANUAL_ADMIN')<>2
-    then raise exception 'HANDOVER_FRESH_CAPACITY_MISSING';end if;
-  if (select count(*) from public.telematics_location_sources s
-      where s.vehicle_id in(vehicle_a,vehicle_b) and s.source='MANUAL'
-        and s.selected_by=(select owner_user_id from public.demo_world_handover_receipts limit 1))<>2
-    then raise exception 'HANDOVER_NEW_SOURCE_MISSING';end if;
-  if (select count(*) from public.featured_provider_slots where vehicle_id in(vehicle_a,vehicle_b))<>old_featured_count
-    or (select count(*) from public.vehicle_capacity_sharing s
-      where s.vehicle_id in(vehicle_a,vehicle_b) and s.mode='PUBLIC')<>2
-    then raise exception 'HANDOVER_FEATURED_OR_AUDIENCE_CHANGED';end if;
   replay:=public.demo_world_execute_atomic_handover();
-  if replay->>'replayed'<>'true'
-    or (select count(*) from public.demo_world_handover_receipts)<>1
-    or (select count(*) from public.capacities where vehicle_id in(vehicle_a,vehicle_b))<>old_capacity_count+7
-    then raise exception 'HANDOVER_REPLAY_WROTE_AGAIN';end if;
+  if outcome->>'replayed'<>'true' or outcome->>'vehicleCount'<>'2' or replay->>'replayed'<>'true'
+    or pg_temp.handover_state() is distinct from before_state
+    then raise exception 'HANDOVER_HISTORICAL_REPLAY_CHANGED_STATE';end if;
   begin update public.demo_world_handover_receipts set applied_at=clock_timestamp();
   exception when others then denied:=sqlerrm='DEMO_WORLD_RECEIPT_IMMUTABLE';end;
   if not denied then raise exception 'HANDOVER_RECEIPT_MUTABLE';end if;

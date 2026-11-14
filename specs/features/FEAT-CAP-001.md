@@ -11,6 +11,29 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## Phone and GPS location updates — current owner contract
+
+Given a provider or currently assigned driver edits a vehicle location\
+When the source editor opens on web or Expo\
+Then new updates offer Phone (`MOBILE`) and, under existing fleet permissions,
+an assigned GPS device only; no map-point or coordinate-entry action is offered\
+And a saved legacy `MANUAL` source/report remains honestly labelled Manually
+entered, with its saved age and privacy radius retained for historical reading\
+And opening it, changing only its radius, or cancelling never converts it to
+Phone/GPS or grants location consent. Manual writes are refused at the server.
+
+Given a legacy Manual source needs new updates\
+When its assigned driver deliberately chooses Phone and saves\
+Then capture permission and an obscured fix succeed before its source changes;
+denial leaves the saved source/location unchanged\
+And source revision, current assignment and driver-choice ownership remain
+authoritative. Configured GPS selection retains existing owner permissions.
+Capacity source edits never alter an active Tracking agreement's saved source.
+
+Qualification requires focused denial/retry/revision tests plus real local
+desktop/phone web and Expo save/readback. Native OS permission and movement
+acceptance requires Android evidence; Expo web alone does not qualify it.
+
 ## Map update and cluster stability — October25 repair in progress
 
 Given an already loaded Capacity result receives progressive pages or refreshes\

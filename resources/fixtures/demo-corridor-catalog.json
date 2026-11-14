@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "catalog_version": 2,
+  "purpose": "PLANNED_MARKET_CORRIDORS",
+  "source_note": "Approved checked-in marketplace city sequences, not driving geometry or a current trip.",
+  "routes": [
+    {
+      "key": "cap-partial",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-partial"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:sebeta",
+          "lat": 8.91,
+          "lng": 38.62
+        },
+        {
+          "place_ref": "osm:node/6206220262",
+          "lat": 8.9355248,
+          "lng": 38.6612727
+        }
+      ]
+    },
+    {
+      "key": "cap-public-113",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-113"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "osm:node/837433823",
+          "lat": 9.0333773,
+          "lng": 38.708354
+        },
+        {
+          "place_ref": "builtin:addis ababa",
+          "lat": 9.03,
+          "lng": 38.74
+        }
+      ]
+    },
+    {
+      "key": "cap-public-117",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-117"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "osm:node/8486668765",
+          "lat": 8.5088557,
+          "lng": 39.2075728
+        },
+        {
+          "place_ref": "builtin:adama",
+          "lat": 8.54,
+          "lng": 39.27
+        }
+      ]
+    },
+    {
+      "key": "cap-public-158",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-158"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "osm:node/1150948679",
+          "lat": 13.4557615,
+          "lng": 39.4890041
+        },
+        {
+          "place_ref": "builtin:mekelle",
+          "lat": 13.5,
+          "lng": 39.48
+        }
+      ]
+    },
+    {
+      "key": "cap-public-179",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-179"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:jigjiga",
+          "lat": 9.35,
+          "lng": 42.8
+        },
+        {
+          "place_ref": "osm:node/6575426386",
+          "lat": 9.3079659,
+          "lng": 42.9101754
+        }
+      ]
+    },
+    {
+      "key": "cap-public-221",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-221"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:adama",
+          "lat": 8.54,
+          "lng": 39.27
+        },
+        {
+          "place_ref": "builtin:awash",
+          "lat": 8.98,
+          "lng": 40.17
+        },
+        {
+          "place_ref": "builtin:mieso",
+          "lat": 9.24,
+          "lng": 40.75
+        },
+        {
+          "place_ref": "builtin:dire dawa",
+          "lat": 9.6,
+          "lng": 41.87
+        }
+      ]
+    },
+    {
+      "key": "cap-public-235",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-235"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:addis ababa",
+          "lat": 9.03,
+          "lng": 38.74
+        },
+        {
+          "place_ref": "builtin:debre birhan",
+          "lat": 9.68,
+          "lng": 39.53
+        },
+        {
+          "place_ref": "builtin:dessie",
+          "lat": 11.13,
+          "lng": 39.63
+        }
+      ]
+    },
+    {
+      "key": "cap-public-238",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-238"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:mekelle",
+          "lat": 13.5,
+          "lng": 39.48
+        },
+        {
+          "place_ref": "builtin:wukro",
+          "lat": 13.79,
+          "lng": 39.6
+        },
+        {
+          "place_ref": "builtin:adigrat",
+          "lat": 14.28,
+          "lng": 39.46
+        }
+      ]
+    },
+    {
+      "key": "cap-public-239",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-239"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:semera",
+          "lat": 11.79,
+          "lng": 41.01
+        },
+        {
+          "place_ref": "builtin:mille",
+          "lat": 11.42,
+          "lng": 40.77
+        },
+        {
+          "place_ref": "builtin:bati",
+          "lat": 11.18,
+          "lng": 40.02
+        },
+        {
+          "place_ref": "builtin:dessie",
+          "lat": 11.13,
+          "lng": 39.63
+        }
+      ]
+    },
+    {
+      "key": "cap-public-226",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-226"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "builtin:harar",
+          "lat": 9.31,
+          "lng": 42.12
+        },
+        {
+          "place_ref": "builtin:babile",
+          "lat": 9.21,
+          "lng": 42.33
+        },
+        {
+          "place_ref": "builtin:jigjiga",
+          "lat": 9.35,
+          "lng": 42.8
+        }
+      ]
+    },
+    {
+      "key": "cap-public-234",
+      "evidence": {
+        "file": "resources/fixtures/managed-market.json",
+        "table": "capacities",
+        "id": "cap-public-234"
+      },
+      "kind": "PLANNED_CITY_CORRIDOR",
+      "points": [
+        {
+          "place_ref": "osm:node/44927166",
+          "lat": 3.5241898,
+          "lng": 39.0512683
+        },
+        {
+          "place_ref": "builtin:yabelo",
+          "lat": 4.88,
+          "lng": 38.08
+        },
+        {
+          "place_ref": "builtin:konso",
+          "lat": 5.34,
+          "lng": 37.44
+        },
+        {
+          "place_ref": "builtin:arba minch",
+          "lat": 6.04,
+          "lng": 37.55
+        }
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "key": "independent-partial",
+      "vehicle_fixture_key": "veh-driver-1",
+      "baseline_route_key": "cap-partial",
+      "alternate_route_keys": []
+    },
+    {
+      "key": "public-independent-partial",
+      "vehicle_fixture_key": "veh-public-owner-02",
+      "baseline_route_key": "cap-public-221",
+      "alternate_route_keys": []
+    },
+    {
+      "key": "fleet-empty",
+      "vehicle_fixture_key": "veh-trans-1",
+      "baseline_route_key": null,
+      "alternate_route_keys": []
+    },
+    {
+      "key": "fleet-01-partial",
+      "vehicle_fixture_key": "veh-public-fleet-01-14",
+      "baseline_route_key": "cap-public-113",
+      "alternate_route_keys": []
+    },
+    {
+      "key": "fleet-02-partial",
+      "vehicle_fixture_key": "veh-public-fleet-02-3",
+      "baseline_route_key": "cap-public-117",
+      "alternate_route_keys": []
+    },
+    {
+      "key": "fleet-04-partial",
+      "vehicle_fixture_key": "veh-public-fleet-04-14",
+      "baseline_route_key": "cap-public-158",
+      "alternate_route_keys": [
+        "cap-public-238"
+      ]
+    },
+    {
+      "key": "fleet-06-partial",
+      "vehicle_fixture_key": "veh-public-fleet-06-5",
+      "baseline_route_key": "cap-public-179",
+      "alternate_route_keys": []
+    }
+  ]
+}

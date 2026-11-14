@@ -1,0 +1,35 @@
+name: loadgistic-scenarios-synthetic
+
+# Independent Capacity service; no GPS/database credentials or lifecycle.
+services:
+  synthetic-scenario-worker:
+    # Fast Capacity episodes have their own process/HMAC and no GPS/DB network.
+    profiles: [hosted-demo-scenarios]
+    build:
+      context: ../..
+      dockerfile: infra/telematics/Dockerfile.scenario
+    environment:
+      NODE_ENV: production
+      LOADGISTIC_SCENARIO_WORKER_ENABLED: ${LOADGISTIC_SCENARIO_WORKER_ENABLED:-false}
+      LOADGISTIC_SCENARIO_WORKER_KILL_SWITCH: ${LOADGISTIC_SCENARIO_WORKER_KILL_SWITCH:-true}
+      LOADGISTIC_DEMO_WORLD_SITE_ORIGIN: ${LOADGISTIC_DEMO_WORLD_SITE_ORIGIN:-}
+      LOADGISTIC_DEMO_WORLD_SITE_ID: ${LOADGISTIC_DEMO_WORLD_SITE_ID:-}
+      DEMO_CAPACITY_WORKER_SECRET: ${DEMO_CAPACITY_WORKER_SECRET:-}
+    networks: [scenario-egress]
+    restart: unless-stopped
+    mem_limit: 128m
+    pids_limit: 64
+    read_only: true
+    tmpfs: ['/run/loadgistic-scenario:rw,noexec,nosuid,size=1m,uid=1000,gid=1000,mode=0700']
+    healthcheck:
+      test: [CMD, node, /app/infra/telematics/scenario-worker.mjs, --health]
+      interval: 15s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
+
+networks:
+  scenario-egress: {}

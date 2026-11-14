@@ -114,10 +114,15 @@ qualify a rendered screen. A remote cloud browser may have a different loopback
 network from the shell; use a supported browser in the development environment
 rather than treating a connection refusal as an application regression.
 
-Do not point mutation tests or the fixture importer at Production. Installed
-Android camera, OS permissions, background location, cold restart and closed-app
-push require an exact installed build and separate device evidence. Ask before
-an owner-phone session. Browser/emulator/source tests do not establish those facts.
+Do not point mutation tests or the fixture importer at Production. Native
+Android checks require an exact installed build and separate device evidence.
+A task-owned virtual Android device can exercise OS permission screens,
+app/service lifecycles, synthetic location and compatible notification delivery;
+browser previews and source/export tests cannot establish those outcomes.
+Moving physical GPS, camera output, OEM battery/background policy and tracker
+hardware remain separate physical-device checks. Ask before an owner-phone
+session. See the [bounded native testing runbook](operations/ANDROID_DEVICE_TESTING.md)
+for managed-device account/APK/budget prerequisites and stopping controls.
 
 ## Current product boundaries in fixtures and tests
 

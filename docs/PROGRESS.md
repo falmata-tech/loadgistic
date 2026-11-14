@@ -1,13 +1,170 @@
 # Current work and release status
 
-Updated 2026-11-13 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-14 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — exact bare mailbox policy
+## Active priority — GPS gateway and signal simulators
+
+The owner's next priority is the GPS gateway and separate dedicated capacity and
+location signal simulator services, with periodic phone/GPS verification across
+the backend, database, Realtime and UI, followed by a tested production rollout.
+This work is in progress. Source now removes new Manual location controls on web
+and native while retaining honest, dated legacy reads. Backend retirement,
+trusted Demo account projection, normal-signup isolation and explicit holds for
+Manual-dependent simulator lanes are being qualified together. Real and synthetic
+GPS projects have separate deployment manifests and private readiness checks;
+the bounded hosted enrollment connection is implemented but not runtime-qualified. These source
+changes are unmerged and not deployed. The verified PR37 baseline below does not
+qualify this feature or its service runtime.
+
+The local candidate is on `feat/scenario-driven-demo-signals`, based on the
+unchanged published520328b. Its131 focused simulator/provenance/auth/worker tests
+pass with zero skips; source/spec/whitespace checks pass. Pending migrations221–225
+retire new Manual writes, project trusted Demo account provenance, hold historical
+Manual-dependent lanes, install the fast catalog and close demo organization
+ownership gaps. Ordinary co-owners, human edits and REAL source takeover refuse
+further simulation. Fast/profile control locks preserve in-flight save ordering;
+these source checks do not prove actual concurrent database behavior. No new SQL,
+service, secret or activation has been applied to production. Actual local SQL,
+normal signup, concurrent ownership/stop tests, images and UI remain next.
+
+The dedicated movement worker and workflow simulator are currently disabled in
+production; read-only inspection found no registered gateways, devices or saved
+GPS positions. Existing historical phone/manual reports do not prove a running
+GPS service or recurring simulator. Public Capacity currently uses 60-second
+visible-page polling, not push Realtime. Hosted operation and physical tracker
+acceptance remain separate, outstanding evidence.
+
+The owner's subsequent instruction makes visible early-user activity the
+priority: the candidate targets 30-second synthetic source reports, authored
+Capacity phases about every two to three minutes per demo vehicle with staggered actors,
+and 15-second foreground feed reads. Actual phone capture/background intervals
+are unchanged. A dedicated capacity-only worker replaces dependence on the
+15-minute dispatcher for this fast lane. Its30-second tick advances at most one
+due vehicle, so delayed activation/recovery cannot synchronize all five into a
+recurring burst. Slow profile/team/sharing lanes keep their separate cadence
+and activation prerequisites. Jobs must resume one valid next step after interruption,
+without bursts, skipped prerequisites or backdated observation times.
+
+The [scenario design contract](operations/SCENARIO_SIMULATOR_DESIGN.md) and ADR-084
+define versioned approved routes/states, rather than arbitrary city combinations
+or random field values. Offline source verification produced seven local mapped
+road courses, two explicit stationary Radius cases and one unavailable course
+which stays blocked. These are synthetic protocol courses, not full regional
+market journeys. [Road catalog provenance](../resources/fixtures/demo-road-catalog.README.md)
+records the source hashes, geometry and privacy limits. Runtime/SQL/UI and hosted
+acceptance remain pending; these data checks do not establish active movement.
+
+## Native Android testing — APK complete, device session pending
+
+The owner requested an agent-controlled Android VM/managed device for actual
+mobile workflow and parity review. The [Android device runbook](operations/ANDROID_DEVICE_TESTING.md)
+prepares one Genymotion Android15 ARM64 device in connected Chrome, with a
+60-minute provider stop limit. Current advertised usage is $0.06/device-minute
+($3.60 before tax for 60 minutes); the proposed $5 usage ceiling/account setup
+has not been approved or purchased. No cloud device, API credential or
+managed-device upload was created. The completed test APK has been saved for
+handoff; it has not been installed or launched on a device.
+
+Offline CNG and a fresh Android Hermes export passed for `com.loadgistic.app`
+1.2.0/code10. The final native input freeze includes the 15-second feed lifecycle
+and stable-vehicle selection changes. Current mobile gates pass 426 tests with
+zero failures/skips, clean types/lint, 796 translations and the 3,751-module export.
+The isolated full JDK 21/SDK 36/NDK/CMake/Gradle 9.3.1 toolchain is installed and
+verified. The bounded, single-worker ARM64 standalone build used a
+new disposable local test signer; no existing owner key was used. The completed
+non-debuggable release-variant APK is 59,110,117 bytes, SHA256
+`a7f4e3609e3be8ea9eaa1f4ff0aed8581aea99ecd3d7c2a734279600a1c7b441`.
+Packaged-bundle/source-map and native config/asset/lock checks establish executable
+input equivalence with `4b7af44b772d92b7c56024613fba7b1a766340aa`; its creation
+base 520328b/dirty-input freeze remains a separate receipt. Static qualification
+verifies the signature, ARM64-only ABI, minSDK 24/targetSDK 36, all 8 required/zero
+forbidden permission checks and 16KB ELF/ZIP alignment. This test signer does not
+make the APK Play-ready. MapLibre Native 11.5.0 and attributed OpenStreetMap tiles
+are configured; rendered maps and GMS/FCM operation still need device evidence.
+
+The first build failed after 654 seconds while resolving AndroidX AAR dependencies:
+official Google Maven HEAD requests returned403, before an application compilation failure was
+established. Fresh same-URL HEAD/GET and Java TLS/proxy diagnostics returned200.
+A second attempt exposed a task-local Ninja wrapper defect, corrected and tested
+against actual ARM64 CMake/restat commands. The third attempt compiled native
+libraries, app Java/Kotlin, Hermes, resources and dex, then reached its1200-second
+limit during required release lint analysis. Its cache and distinct failure
+receipts are retained; the original403 origin remains unconfirmed. The approved
+600-second incremental continuation completed in 238.851 seconds with all required
+release lint, signing, packaging and assembly checks retained. Build-process
+shutdown and cache-lock receipts released the native resource window; current
+database runtime status belongs to its ignored resume/active receipts. Native
+startup, permission/background-location and notification acceptance remain outstanding.
+
+Current phone Capacity checks each60seconds but captures only when Home is
+focused/foreground and 10 minutes are due. Agreed Tracking has a separate native
+background service requesting 10-minute fixes. Native tests must verify those
+actual boundaries, database observation/receipt times, privacy and web/native
+updates rather than claiming continuous reporting from the interval constant.
+
+Connected Chrome inspected the existing published PR37 provider market at
+390×844: mobile navigation, the filter sheet, applying Empty vehicle and clearing
+it worked; viewport override was reset afterward. This was a read-only inspection
+in the owner's existing account, with no account/location/capacity mutation. It
+qualifies that older phone-web surface only, not the changed local UI or native
+Android. Current local visual/workflow review still depends on the new stack.
+
+## Verified delivery baseline — PR37 published
+
+[PR37's final qualification and production receipts](https://github.com/falmata-tech/loadgistic/pull/37)
+supersede the preparation checkpoints below. PR37 merged as
+`520328bd61c70a7d278fd183c6a25ffde248ab7a`; its PR CI43358107986 and separate
+[main CI43374713806](https://github.com/falmata-tech/loadgistic/actions/runs/43374713806)
+each passed all 16 required jobs. [Source workflow43378172030](https://github.com/falmata-tech/loadgistic/actions/runs/43378172030)
+advanced production and confirmed the ref at that exact SHA. The automatic
+[Production deployment6af6ac945eb1cff1d55e577c](https://app.netlify.com/projects/loadgistic-473/deploys/6af6ac945eb1cff1d55e577c)
+is Published: source verification, mailbox_fields=2, all 8 final function ZIPs and
+secret scanning passed. Canonical/immutable health, images and public Chrome
+tasks passed; `6af4f16a16aab2cef815c573` remains the rollback target.
+
+PR37 also records later unchanged-source local quality: 1,377 root and 424 mobile
+tests passed, alongside types, lint, translations and the web production build.
+Those results do not relabel older timings or establish fresh authenticated,
+private-file or physical-phone acceptance.
+
+Local Docker has since progressed beyond the rootless-host limitation:
+task-owned QEMU 10.0.13 / Alpine 3.24.4 runs Engine 29.9.3 through mTLS; a no-certificate
+request is denied and the official hello-world container exits 0. Full local
+Supabase/Auth/Storage/mail, fixtures and browser qualification remain pending.
+Current process status is recorded in the ignored runtime resume/active receipts,
+not in a permanent session number. Captured container events correct the earlier
+startup inference: Realtime's schema/seed/health job exited0; the next
+Storage1.67.20 setup container exited255. PostgreSQL's137 came from subsequent
+CLI cleanup, with no observed OOM event. A network-disabled, built-in-only Node
+probe in the cached Storage image also exits255 with
+`exec /usr/local/bin/node: input/output error`, before application/database code.
+All 14 raw image layers pass compressed SHA/CRC and uncompressed DiffID checks.
+Their resolved musl loader is 666,216 bytes, while the original and never-started
+container materializations contain a regular zero-byte loader. This establishes
+a local image/cache materialization discrepancy; physical I/O damage and an
+application defect are not established. Supported public-image export and an
+isolated fresh Docker/dedicated-containerd recovery are being prepared; recovery
+has not completed. Migrations 221–225, local SQL/UI acceptance and production
+activation remain pending. No candidate migrations or fixtures have run. Fresh
+read-only hosted
+inspection confirms ledger219/max220 and all eight installed-function pins used
+by the candidate. The existing advisor categories remain unchanged.
+Use the [restricted local Docker setup](operations/RESTRICTED_LOCAL_DOCKER.md)
+for that separate dependency; container startup is not full application readiness.
+
+The owner paused Google verification for the proposed
+`loadgistic.support@gmail.com` sender migration. Existing production SMTP/Auth
+settings, credentials and mailbox scan policy remain unchanged. The separate
+strict advisor monitor still lacks its scoped credential; its two known WARNs
+remain visible. Google-key hardening and native/device acceptance remain separate
+open work. Reuse the completed source-bound receipts above when resuming.
+
+## Historical mailbox checkpoint — before PR37 qualification
 
 [PR36](https://github.com/falmata-tech/loadgistic/pull/36) merged normally as
 ab899497befdcf5e699cb436de41c4bdb449fb63/tree5f86efd9a3a6104d73956def8ab03f33ef41668c.

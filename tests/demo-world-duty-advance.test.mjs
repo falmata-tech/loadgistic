@@ -4,55 +4,37 @@ import {readFileSync} from 'node:fs';
 import {advanceDemoDuty} from '../src/lib/demo-world-duty-advance.js';
 
 const workerId='11111111-1111-4111-8111-111111111111';
-const lease='22222222-2222-4222-8222-222222222222';
 const status={enabled:false,pending_count:0,exhausted_count:0,last_completed_phase:null};
 
-test('disabled duty lane claims nothing and reports bounded status',async()=>{
-  const calls=[];
-  const result=await advanceDemoDuty({rpc:async(name,args)=>{
-    calls.push({name,args});
-    return name==='demo_world_claim_duty'?{data:[],error:null}:{data:status,error:null};
-  }},{workerId});
-  assert.deepEqual(calls,[
-    {name:'demo_world_claim_duty',args:{worker_id:workerId}},
-    {name:'demo_world_duty_status',args:undefined}
-  ]);
-  assert.equal(result.duty_accepted,0);
-  assert.equal(result.duty_enabled,false);
+test('held duty lane reads status without claiming or mutating any job',async()=>{
+  for(const enabled of [false,true]){
+    const saved={enabled,pending_count:3,exhausted_count:1,last_completed_phase:'OFF_DUTY'};
+    const before=structuredClone(saved),calls=[];
+    const result=await advanceDemoDuty({rpc:async(name,args)=>{
+      calls.push({name,args});assert.equal(name,'demo_world_duty_status');return {data:saved,error:null};
+    }},{workerId});
+    assert.deepEqual(calls,[{name:'demo_world_duty_status',args:undefined}]);
+    assert.deepEqual(saved,before);
+    assert.equal(result.duty_accepted,0);assert.equal(result.duty_completed,0);assert.equal(result.duty_replayed,0);
+    assert.equal(result.duty_enabled,enabled);assert.equal(result.duty_pending_count,3);assert.equal(result.duty_exhausted_count,1);
+    assert.equal(result.duty_last_completed_phase,'OFF_DUTY');
+    assert.equal(result.duty_state,'HELD');assert.equal(result.duty_hold_reason,'MANUAL_LOCATION_RETIRED');
+  }
 });
 
-test('a due phase executes only the database-selected job and lease',async()=>{
-  const calls=[];
-  const result=await advanceDemoDuty({rpc:async(name,args)=>{
-    calls.push({name,args});
-    if(name==='demo_world_claim_duty')return {data:[{job_id:7,lease_token:lease}],error:null};
-    if(name==='demo_world_execute_duty')return {data:{result:'APPLIED',phase:'OFF_DUTY'},error:null};
-    return {data:{...status,enabled:true,last_completed_phase:'OFF_DUTY'},error:null};
-  }},{workerId});
-  assert.deepEqual(calls[1],{name:'demo_world_execute_duty',args:{job_id:7,lease_token:lease}});
-  assert.equal(result.duty_completed,1);
-  assert.equal(result.duty_last_completed_phase,'OFF_DUTY');
-});
-
-test('invalid worker, claim, result or status fails closed',async()=>{
+test('held duty invalid worker and malformed readonly status still fail closed',async()=>{
   await assert.rejects(()=>advanceDemoDuty({rpc:async()=>{throw Error('SHOULD_NOT_OPEN');}},
     {workerId:'bad'}),/DEMO_DUTY_WORKER_INVALID/);
-  for(const claim of [{data:[{job_id:1,lease_token:'bad'}],error:null},
-    {data:[{job_id:1,lease_token:lease},{job_id:2,lease_token:lease}],error:null},
-    {data:null,error:{message:'private'}}]){
-    let executed=false;
+  for(const data of [null,{...status,pending_count:-1},{...status,exhausted_count:'1'},
+    {...status,enabled:'true'},{...status,last_completed_phase:'FORGED'}]){
+    const calls=[];
     await assert.rejects(()=>advanceDemoDuty({rpc:async name=>{
-      if(name==='demo_world_claim_duty')return claim;
-      executed=true;return {data:status,error:null};
-    }},{workerId}),/DEMO_DUTY_CLAIM_INVALID/);
-    assert.equal(executed,false);
+      calls.push(name);return {data,error:null};
+    }},{workerId}),/DEMO_DUTY_STATUS_INVALID/);
+    assert.deepEqual(calls,['demo_world_duty_status']);
   }
-  await assert.rejects(()=>advanceDemoDuty({rpc:async name=>
-    name==='demo_world_claim_duty'?{data:[{job_id:1,lease_token:lease}],error:null}
-      :{data:{result:'APPLIED',phase:'OTHER'},error:null}},{workerId}),/DEMO_DUTY_STEP_FAILED/);
-  await assert.rejects(()=>advanceDemoDuty({rpc:async name=>
-    name==='demo_world_claim_duty'?{data:[],error:null}
-      :{data:{...status,pending_count:-1},error:null}},{workerId}),/DEMO_DUTY_STATUS_INVALID/);
+  await assert.rejects(()=>advanceDemoDuty({rpc:async()=>({data:status,error:{message:'private'}})},
+    {workerId}),/DEMO_DUTY_STATUS_INVALID/);
 });
 
 test('exact duty manifest matches the checked-in synthetic vehicle, assignment and migration',()=>{

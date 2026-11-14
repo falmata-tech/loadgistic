@@ -1,6 +1,8 @@
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {z} from 'zod';
 import {DEMO_MOTION_COHORT} from './demo-motion-cohort.js';
+import {assertDemoMotionReport,demoMotionScenarioFix} from './demo-motion-scenario.mjs';
+import {assertMotionSecretIsolation} from './demo-motion-hosted-signature.mjs';
 
 export const DEMO_MOTION_PATH='/api/telematics/demo-motion';
 export const DEMO_MOTION_BODY_LIMIT=4096;
@@ -24,11 +26,9 @@ export function localDemoMotionConfiguration(environment,requestUrl){
   ||db.username||db.password||db.pathname!=='/'||db.search||db.hash
   ||request.protocol!=='http:'||!['localhost','127.0.0.1','[::1]'].includes(request.hostname)||request.port!=='3100'
   ||request.pathname!==DEMO_MOTION_PATH||request.search||request.hash||request.username||request.password
-  ||typeof secret!=='string'||!/^[a-f0-9]{64}$/.test(secret)
-  ||secret===environment.SUPABASE_SERVICE_ROLE_KEY)throw Error('DEMO_REQUEST_DENIED');
- // The demo credential cannot double as either gateway credential.
- let gateways,privacy;try{gateways=JSON.parse(environment.TELEMATICS_GATEWAYS_JSON||'[]');privacy=JSON.parse(environment.TELEMATICS_PRIVACY_GATEWAYS_JSON||'[]');}catch{throw Error('DEMO_REQUEST_DENIED');}
- if(!Array.isArray(gateways)||!Array.isArray(privacy)||[...gateways,...privacy].some(row=>row?.secret===secret))throw Error('DEMO_REQUEST_DENIED');
+  ||typeof secret!=='string'||!/^[a-f0-9]{64}$/.test(secret))throw Error('DEMO_REQUEST_DENIED');
+ try{assertMotionSecretIsolation(environment,secret,'LOADGISTIC_DEMO_MOTION_SECRET');}
+ catch{throw Error('DEMO_REQUEST_DENIED');}
  return {secret};
 }
 export function demoMotionSignature(secret,body,issuedAt,nonce){
@@ -43,8 +43,10 @@ export function authenticateDemoMotion(headers,body,config,now=Date.now()){
  return {nonce};
 }
 /** Narrow application port; no caller-selected RPC, actor, vehicle or destination. */
-export async function executeDemoMotion(input,rpc){
+export async function executeDemoMotion(input,rpc,{now=Date.now(),issuedAt=now}={}){
  const command=demoMotionCommand.parse(input),target_vehicle_id=DEMO_MOTION_TARGETS[command.target];
+ if(['CONFIGURE','START','RESUME'].includes(command.action))demoMotionScenarioFix(command.target,now);
+ assertDemoMotionReport(command,{now,issuedAt});
  if(command.action==='CONFIGURE')return rpc('configure_demo_motion_target',{target_vehicle_id});
  if(command.action==='STATUS')return rpc('demo_motion_status',{target_vehicle_id});
  if(command.action==='START'||command.action==='RESUME')return rpc('start_demo_motion',{target_vehicle_id,requested_seconds:command.seconds,explicit_resume:command.action==='RESUME'});

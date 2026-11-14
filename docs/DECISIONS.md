@@ -6,6 +6,56 @@ record the designs accepted at their dates; their email-only Capacity and
 platform-Brokerage clauses were superseded on October 24. Public-link Tracking
 still uses its own email authorization.
 
+## ADR-084 — Curated scenario catalog and coherent demo activity (2026-11-13)
+
+Status: owner-directed reconciliation in progress, FEAT-SIM-001/004 and
+FEAT-GPS-001. The owner requires comprehensive predefined business states and
+believable routes rather than arbitrary generated field combinations.
+
+Use versioned server-owned scenarios, explicit eligibility/preconditions and
+ordered events. Select only compatible predefined values; preserve the chosen
+scenario/seed/step so a run can be replayed. Related changes use existing atomic
+domain commands; independent location, capacity and profile events have separate
+cadences. Several demo actors may advance in bounded batches without sharing a
+global transaction or overwriting every field at once.
+
+Approve entire ordered corridor sequences. Known city names alone are not route
+validation. Moving synthetic fixes need qualified road geometry and source/hash
+evidence, bounded travel/dwell and continuous progress. Do not call city-center
+lines or the earlier offset rectangles road-following movement. An explicitly
+stationary reporting scenario is distinct; unqualified movement fails closed.
+Keep trusted operator demo enrollment, source consent, real-data takeover,
+privacy, normal-account denials and emergency stops at the write boundaries.
+
+The existing deterministic capacity fixture is a starting point, not proof of
+comprehensive behavior. New percentage states must reach the normal command,
+database timestamp and UI before being called implemented. See the
+[scenario design contract](operations/SCENARIO_SIMULATOR_DESIGN.md). Catalog,
+local acceptance and production activation remain separate checkpoints.
+
+## ADR-083 — Phone/GPS updates and isolated demo services (2026-11-13)
+
+Status: owner-directed implementation and verification in progress;
+FEAT-GPS-001 / FEAT-SIM-001 / FEAT-CAP-001 / FEAT-MOB-001. No new hosted
+service or simulator activation is established by this decision.
+
+New locations come from an explicitly selected phone or GPS source. Retire manual
+point mutation at UI, application and database boundaries while preserving dated
+history, current-driver ownership, privacy radii and independently agreed Tracking.
+Never relabel a manual point, manufacture phone consent or silently choose GPS.
+
+Keep the real tracker gateway and recurring marketplace simulator independently
+deployable, with separate stores, credentials and controls. An operator-owned
+demo provenance marker plus exact current bindings is required at every simulated
+write; normal signup and editable metadata cannot grant it. Relevant projections
+show trusted demo classification independently of the latest sensor source.
+
+Qualify protocol input, saved state, authorized projection and changing UI, including
+restarts, stale/replayed input and genuine-account denial. A running container or
+polling page is not proof of a deployed GPS feed, push realtime or native Android
+permission/background behavior. Hosting/cost/access and physical-device evidence
+remain separate from source implementation and local synthetic tests.
+
 ## ADR-082 — Share the minute scheduler without combining work authority (2026-11-11)
 
 Status: local implementation under release qualification, BASE-DEP-001 and

@@ -40,8 +40,10 @@ begin
  -- must not turn a manual Capacity point into a live shipment location.
  insert into provider_shipment_events(shipment_id,status,event_type,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,created_at)
  values(shipment,'CREATED','LOCATION','Synthetic owner phone area',9.11,38.81,10,'DEVICE_OBSCURED',provider_actor,clock_timestamp());
- result:=select_telematics_location_source(provider_actor,jsonb_build_object('vehicleId',vehicle,'source','MANUAL','precisionKm',10,'expectedRevision','1970-01-01T00:00:00Z','manualLatitude',9.03,'manualLongitude',38.74));
- source_revision:=result->>'revision';
+ -- Retained pre-policy history belongs only to this synthetic fixture.
+ insert into telematics_location_sources(vehicle_id,source,precision_km,selected_by,selected_at,revision,manual_latitude,manual_longitude)
+ values(vehicle,'MANUAL',10,provider_actor,clock_timestamp(),clock_timestamp(),9.03,38.74);
+ select s.revision::text into source_revision from telematics_location_sources s where s.vehicle_id=vehicle;
  viewed:=provider_guest_tracking_for_recipient(shipment,viewer_digest);
  perform pg_temp.tracking_assert(viewed->'current_location'='null'::jsonb and viewed->>'can_view_location'='false' and viewed->>'can_share'='false'
   and jsonb_array_length(viewed->'route')=3 and not(viewed::text like '%location_source%'),'VIEWER_POSITION_OR_SHARING_LEAK');

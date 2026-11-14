@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  SUPABASE_TELEMETRY_DISABLED: '1'
+  DO_NOT_TRACK: '1'
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -108,6 +112,19 @@ jobs:
           timeout --signal=TERM --kill-after=10s 3m docker build -q -f infra/telematics/Dockerfile.motion -t loadgistic-hosted-motion:ci .
           timeout --signal=TERM --kill-after=10s 30s docker run --rm --network none loadgistic-hosted-motion:ci node /app/infra/telematics/hosted-motion-worker.mjs --preflight |
             node -e "let s='';process.stdin.on('data',c=>s+=c);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.event!=='hosted_motion_preflight'||x.enabled!==false||x.deploymentAuthorized!==false)process.exit(1)})"
+
+      - name: Verify isolated enrollment relay container packaging
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 3m docker build -q -f infra/telematics/Dockerfile.relay -t loadgistic-enrollment-relay:ci .
+          timeout --signal=TERM --kill-after=10s 30s docker run --rm --network none loadgistic-enrollment-relay:ci node --input-type=module -e "import('/app/infra/telematics/enrollment-relay.mjs').then(m=>{if(typeof m.enrollmentRelayServer!=='function'||typeof m.createEnrollmentRelay!=='function'||typeof m.claimedTraccarUser!=='function')process.exit(1);console.log(JSON.stringify({event:'enrollment_relay_package_verified',deploymentAuthorized:false}))})"
+
+      - name: Verify default-off capacity scenario worker packaging
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 3m docker build -q -f infra/telematics/Dockerfile.scenario -t loadgistic-capacity-scenario:ci .
+          timeout --signal=TERM --kill-after=10s 30s docker run --rm --network none loadgistic-capacity-scenario:ci node /app/infra/telematics/scenario-worker.mjs --preflight |
+            node -e "let s='';process.stdin.on('data',c=>s+=c);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.event!=='demo_scenario_preflight'||x.enabled!==false||x.deploymentAuthorized!==false)process.exit(1)})"
 
       - name: Set up pinned Supabase CLI
         uses: supabase/setup-cli@v2
@@ -386,7 +403,7 @@ jobs:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: |
           set -euo pipefail
-          for suite in demo-world-durable-capacity demo-world-tracking-notification-sink; do
+          for suite in demo-world-durable-capacity demo-world-fast-catalog demo-world-tracking-notification-sink; do
             timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
           done
 
@@ -399,6 +416,11 @@ jobs:
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: timeout --signal=TERM --kill-after=10s 2m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-ci-isolated-setup.sql
+
+      - name: Reject simulator enrollment and writes for normal signup accounts
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: timeout --signal=TERM --kill-after=10s 3m docker exec -e PGOPTIONS='-c loadgistic.demo_isolated_test=true' -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-account-isolation.sql
 
       - name: Verify exact fictional GPS cohort and provisioning authority
         env:

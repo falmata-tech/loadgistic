@@ -23,15 +23,14 @@ function nodes(tree){if(Array.isArray(tree))return tree.flatMap(nodes);if(!tree|
 function find(tree,type,check=()=>true){const value=nodes(tree).find(node=>(node.type===type||node.type?.name===type)&&check(node));assert.ok(value,`${type} missing`);return value;}
 async function settle(){for(let i=0;i<6;i++)await Promise.resolve();}
 
-test('assigned driver chooses a manual Capacity point and radius using the existing source command',async()=>{
- const h=harness();let view=h.render();find(view,'SourceChoice',node=>node.props.label==='Manual capacity location').props.onPress();view=h.render();
- assert.equal(find(view,'Button',node=>node.props.message==='Update location').props.disabled,true,'a point is required');
- find(view,'Map').props.onPress({nativeEvent:{lngLat:[-105.27,40.015]}});view=h.render();
- find(view,'Pressable',node=>node.props.accessibilityLabel==='5 km').props.onPress();view=h.render();
- assert.deepEqual(find(view,'Marker').props.lngLat,[-105.27,40.015]);
- find(view,'Button',node=>node.props.message==='Update location').props.onPress();await settle();
- assert.equal(h.saved(),1);assert.deepEqual(h.calls,[{path:'/api/mobile/fleet/devices',body:{action:'SOURCE',input:{vehicleId,source:'MANUAL',expectedRevision:'original-revision',precisionKm:5,manualLatitude:40.015,manualLongitude:-105.27}}}]);
- assert.equal(h.calls.some(call=>call.path.includes('tracking')),false,'Capacity source choice must not modify an active shipment Tracking lease');
+test('legacy Manual is read-only and requires a deliberate phone choice before any capture or write',async()=>{
+ let captures=0;const h=harness({selection:{source:'MANUAL',manualPoint:{latitude:9,longitude:38}},capture:async()=>{captures++;return {};}});const view=h.render();
+ assert.equal(nodes(view).some(node=>node.type?.name==='SourceChoice'&&node.props.label==='Manual capacity location'),false);
+ assert.equal(nodes(view).some(node=>['Map','Marker'].includes(node.type)),false);
+ assert.equal(find(view,'SourceChoice',node=>node.props.label==='Driver’s phone').props.selected,false);
+ const save=find(view,'Button',node=>node.props.message==='Use phone location');assert.equal(save.props.disabled,true);
+ save.props.onPress();await settle();assert.equal(captures,0);assert.deepEqual(h.calls,[]);assert.equal(h.saved(),0);
+ assert.ok(nodes(view).some(node=>node.type==='Text'&&node.props.children.includes('Manually entered')));
 });
 
 test('denied phone capture preserves the manual source before any source write',async()=>{

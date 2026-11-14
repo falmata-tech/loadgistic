@@ -15,8 +15,12 @@ no command capability is enabled for real hardware.
 
 ## Hosted deployment template
 
-`compose.hosted.yml` is a portable deployment template for a dedicated Linux
-host. It is **not deployed or production-ready by itself**. Before activation,
+`compose.hosted.yml` is the physical receive-only gateway deployment template;
+`compose.synthetic.yml` is its independently deployed fictional counterpart.
+They have different Compose project names and no shared service dependencies,
+databases, volumes or backend networks. The synthetic movement profile exists
+only in the latter file. Either project can be stopped without stopping the
+other. These are **not deployed or production-ready by themselves**. Before activation,
 select the host and device network/APN, approve a source firewall policy and
 public address, complete the reviewed application gateway/device provisioning,
 and qualify backups, retention and recovery on that host. Do not expose the
@@ -31,15 +35,24 @@ from the selected deployment secret manager. It must define
 `GPS_INGRESS_BIND_ADDRESS`, unique `GATEWAY_DATABASE_PASSWORD` and
 `GATEWAY_BRIDGE_PASSWORD`, reviewed non-synthetic `GATEWAY_ID`, separate
 `GATEWAY_SECRET`, and the exact `LOADGISTIC_GATEWAY_URL` using HTTPS. The second
-stack requires distinct `SYNTHETIC_DATABASE_PASSWORD`, `SYNTHETIC_BRIDGE_PASSWORD`,
+project uses its own protected environment file and requires distinct
+`SYNTHETIC_DATABASE_PASSWORD`, `SYNTHETIC_BRIDGE_PASSWORD`,
 `SYNTHETIC_GATEWAY_ID` and `SYNTHETIC_GATEWAY_SECRET`, with that gateway registered
 in the application as `synthetic_only`. Neither hosted bridge receives a Traccar
 API token or dispatches tracker commands. Database passwords use URL-safe
 characters because the restricted bridge passes them in a PostgreSQL URI.
 Never put values in this guide, shell history or Git. Run the offline
-`node --env-file=/protected/path/telematics.env infra/telematics/hosted-config.mjs`
-preflight and validate the rendered Compose configuration without starting
-containers. That preflight only checks shapes and separation; it cannot prove
+preflights and validate Compose without printing its interpolated credentials:
+
+```sh
+node --env-file=/protected/path/gps-real.env infra/telematics/hosted-config.mjs --scope=real
+docker compose --env-file /protected/path/gps-real.env -f infra/telematics/compose.hosted.yml config --quiet
+node --env-file=/protected/path/gps-synthetic.env infra/telematics/hosted-config.mjs --scope=synthetic
+docker compose --env-file /protected/path/gps-synthetic.env -f infra/telematics/compose.synthetic.yml config --quiet
+```
+
+With both sets loaded, the no-argument preflight additionally checks their
+identities/secrets differ. These preflights only check shapes and separation; they cannot prove
 the selected host, database, gateway registration or authorization. Then follow the separately
 reviewed backup/provisioning/restore runbook before starting the stack. The
 template keeps real and synthetic databases and service traffic on separate
@@ -48,17 +61,152 @@ access, pins image versions, bounds container memory and rotates container logs.
 The synthetic GT06 listener and admin API have no host port. A firewall/DNS/credential change or actual
 deployment remains an owner-reviewed operation.
 
-The demo marketplace workflow simulator has a separate signed scheduled/background
-function pair in the Loadgistic Netlify source, separate from the existing
-managed-operations functions and using its own HMAC. It does not need TCP or
-another host, and must not join GPS protocol ingress or receive gateway database,
-device-command or Traccar API credentials. It remains disabled and uninstalled
-on the hosted site. The opt-in recurring GPS/phone movement worker and its
-hosted app authorization exist in source and have local checks, but neither is
-deployed or enabled; the isolated synthetic stack must not be presented as a
-moving hosted demo. See
-FEAT-SIM-001 and [the hosting comparison](../../docs/operations/DEMO-GPS-HOSTING.md)
-for the planned bounded, no-listener design.
+If a previous combined project already has data, inspect and explicitly retain
+its exact volume mapping before moving the fictional services to their new
+project. A new Compose project name normally creates a new volume; do not
+silently replace a saved gateway database. Stop consumers first, back up and
+restore-test the exact data, then move one service at a time with rollback.
+
+### Readiness and failure diagnosis
+
+Database connections, statements, lock waits and client queries have fixed
+five/five/two/six-second deadlines. URI query options are refused so they cannot
+disable these limits. Traccar readiness is a five-second private HTTP GET of
+`/api/server`; it reads no device and discards the body. Its container has an
+independent private HTTP health check. A bridge starts after Traccar is healthy.
+
+The non-root bridge atomically writes a private `0700` tmpfs heartbeat. Docker
+checks the file with `node gateway-health.mjs --check`, with no public health
+port or credential. Startup, explicit failure, malformed/future data, or a
+dependency check/completed telemetry cycle older than ninety seconds is
+unhealthy. Checks are scheduled by elapsed time, at most once per sixty seconds
+after successful completion; a slow cycle can deliberately become unhealthy.
+The priority command lane never refreshes telemetry progress. A transport error
+still retains the durable retry and immediately persists unhealthy status;
+ordinary successful batches cannot clear it before a newer full dependency check.
+
+Health logs contain readiness/failure codes, timestamps, pending count, oldest
+queue lag and aggregate outcome counts. They contain no raw fix, IMEI, device,
+contact, credential or request body. Alert on stale heartbeat, failures and
+growing queue lag using the host's chosen monitor. Docker `unhealthy` reports
+status; it does not itself restart a still-running process. Readiness proves
+recent dependency connectivity, not accepted telemetry, hardware certification,
+browser freshness or a production deployment. Rehearse those boundaries separately.
+
+### Opt-in enrollment relay
+
+`Dockerfile.relay` packages the narrow `enrollment-relay.mjs` connector without
+extra dependencies. The `enrollment-relay` profile in each independent project
+preserves the existing Add device lookup/create/verify client. It accepts only
+canonical `GET /api/devices?uniqueId=...`, `POST /api/devices` and
+`GET /api/devices/{positive-id}`. It is not a general Traccar proxy. Fixed REAL
+and SYNTHETIC instances use only their matching private backend network; host
+bindings are loopback `18083` and `28083`. Raw Traccar API and database exposure
+remain unchanged. The synthetic instance reads only known fictional identities
+and creates only the immutable admin spare. No tracker command is permitted.
+
+Each instance mounts exactly two existing protected files read-only: its own
+64-hex relay token and a different Traccar regular-user token. Configure
+`GATEWAY_RELAY_TOKEN_FILE`/`GATEWAY_RELAY_UPSTREAM_TOKEN_FILE` for physical, or
+`SYNTHETIC_RELAY_TOKEN_FILE`/`SYNTHETIC_RELAY_UPSTREAM_TOKEN_FILE` for fictional.
+Unset paths point at non-existent placeholders and cannot start the profile.
+Keep files outside the checkout/image. Grant only the relay container's UID1000
+read access using reviewed ownership/mode; do not make them world-readable.
+The tokens are not environment values or container image layers. Do not reuse
+bridge/privacy/movement HMACs or the local bootstrap administrator token.
+
+The upstream user must be active, non-admin, non-manager (`userLimit=0`), have
+`readonly=false`, `deviceReadonly=false`, `limitCommands=true`,
+`disableReports=true` and a positive reviewed device-creation limit. Grant only
+its gateway devices, no commands/groups/users, and verify those grants privately.
+Keep Traccar's separate `web.serviceAccountToken` authentication disabled as in
+both pinned XML configurations; it is not an enrollment credential.
+The relay reads the pinned token envelope only to locate the claimed principal;
+authenticated `GET /api/users/{claimed-id}` makes Traccar verify the signature
+and expiry before checking that exact user's current restrictions. Token
+decoding alone is never authentication. Changing the token format requires
+qualification before upgrading the pinned Traccar version.
+
+The relay enforces constant-time bearer comparison, four in-flight requests,
+sixty authenticated requests per minute, 4KiB canonical request JSON, 16KiB
+upstream responses and a 3.5-second total request deadline. It forwards only its
+own upstream Authorization/Accept/Content-Type headers, never client headers or
+cookies, and returns only binding fields needed by the app. Duplicate
+JSON keys, extra attributes, query/path encodings, method overrides, upgrades,
+commands, positions, reports and account operations are refused. Failure bodies
+contain a fixed code only. It never automatically retries creation; the existing
+app keeps exact reconciliation, Pending Link and conflict behavior.
+
+Before any hosted use, put a reviewed TLS reverse proxy in front of each chosen
+loopback relay, preserve the original URI, route only `/api/devices` and its
+single-device descendants, and deny everything else. Apply edge connection/abuse
+limits; invalid credentials do not consume the authenticated enrollment budget.
+Do not enable access logging of Authorization, cookies, bodies or private query
+identifiers. The app's exact gateway `apiUrl` becomes the reviewed HTTPS relay
+base ending `/api/`, and `apiToken` becomes its relay token. The Traccar token
+stays on the host. Reload the relay after file rotation and redeploy the app's
+matching configuration; no secret discovery/rotation occurs automatically.
+
+Provider TLS/DNS/firewall, protected credentials, actual Traccar roundtrip and
+production browser qualification are pending. Pure image import checks start no
+server and read no secret. Relay source/unit tests do not establish a hosted
+gateway or allow activation. See FEAT-GPS-001 and the hosting guide for rollout.
+
+### Independent Capacity scenario service
+
+`compose.scenario.yml` defines the third, independent project
+`loadgistic-scenarios-synthetic`. Its `hosted-demo-scenarios` profile contains
+only `synthetic-scenario-worker`, packaged by `Dockerfile.scenario`. It has no
+GPS service dependency, database, persistent volume, published port or shared
+backend network. It may share a future Linux host with either gateway while
+retaining its own deployment, credentials and stop controls. It renders without
+any real or synthetic GPS database/gateway environment values.
+
+The worker checks every 30 seconds, requests at most one due Capacity phase,
+and signs only
+`POST /api/internal/demo-world/capacity/advance` with purpose `capacity-advance`.
+Its only credential is `DEMO_CAPACITY_WORKER_SECRET`, distinct from the slow
+world, motion, gateway and application credentials. The container receives no
+world/motion HMAC, Supabase key, bridge credential or Traccar API token. It pins
+`LOADGISTIC_DEMO_WORLD_SITE_ORIGIN` and `LOADGISTIC_DEMO_WORLD_SITE_ID`; the app
+also verifies the actual production deployment binding before database access.
+
+Both controls default inert: `LOADGISTIC_SCENARIO_WORKER_ENABLED=false` and
+`LOADGISTIC_SCENARIO_WORKER_KILL_SWITCH=true`. An enabled container still needs
+the separately enabled app/database controls and exact operator-provisioned
+demo cohort. Use a protected scenario-only environment file outside Git for
+the offline checks; neither command below starts a service:
+
+```sh
+node --env-file=/protected/path/scenarios.env infra/telematics/scenario-worker.mjs --preflight
+docker compose --env-file /protected/path/scenarios.env -f infra/telematics/compose.scenario.yml --profile hosted-demo-scenarios config --quiet
+```
+
+The five existing targets follow authored 80→60→30→Empty 100 states, with at
+least 120 seconds after each actual completion before the next phase, typically
+120–150 seconds with polling. Oldest-due ordering and the worker's one-step
+budget preserve activity across actors after an outage instead of synchronizing
+all five saves. The signed API remains bounded to at most five for other
+qualified controller callers. The controller executes at most one phase per target
+per claim, persists receipts, resumes without a catch-up burst, and pauses a
+target after human state/Capacity-ID drift or REAL takeover. It never changes
+source consent/privacy or invents percentages. The old direct local CLI writer
+is retired; read-only `plan`/`status` remain. The separate Netlify 15-minute
+dispatcher handles infrequent lanes and cannot execute fast Capacity. Existing
+Manual-dependent duty/handover lanes report held work without mutating it.
+
+The non-root process records a private 0600 heartbeat in a 0700 tmpfs. Docker
+checks it using `node /app/infra/telematics/scenario-worker.mjs --health`, without
+a listener or key. Stale/malformed/foreign data and a stopped process fail health.
+Auth denial or disabled database becomes intentionally inert until restart;
+bounded heartbeat/log fields distinguish that state from active work. A healthy
+process alone does not prove accepted Capacity updates or visible UI refresh.
+
+Current production controls are disabled. The new catalog/migrations, API,
+worker and render tests are source evidence, not a deployed recurring service.
+Actual isolated SQL/signup, sustained cadence, browser/native and hosted
+qualification remain separate release gates. See FEAT-SIM-001 and
+[the hosting comparison](../../docs/operations/DEMO-GPS-HOSTING.md).
 
 ## Local rehearsal
 
@@ -121,6 +269,32 @@ that protected gateway configuration:
 the demo runner can reserve and send GPS packets while the bridge receives 401
 from the app and leaves fixes queued, so public GPS markers stay stale. A fresh
 saved fix in the app and Capacity API is required before claiming movement.
+
+The launcher's default `LOADGISTIC_LOCAL_GATEWAY_API_MODE=direct` continues to
+require HTTP loopback18082 `/api/`. To rehearse actual Next-to-relay enrollment,
+explicitly set `LOADGISTIC_LOCAL_GATEWAY_API_MODE=relay` in the approved local
+environment and put HTTP loopback28083 `/api/` in that same protected gateway
+configuration. The loopback relay must already be independently qualified and
+reachable from the owning runtime; changing the URL alone does not enable it.
+Do not redirect or disguise the relay as port18082 to satisfy the direct guard.
+
+Relay mode requires a lower-case64-hex `apiToken` separate from gateway/privacy,
+local/hosted motion, fast-Capacity/world-worker and application credentials.
+Only exact `direct` and `relay` values are accepted. Both modes retain the same
+protected-file/manifest checks, loopback Supabase55321 and web3100, local-motion
+opt-in and production refusal. The child remains synthetic-only with no physical
+default gateway. No credentials are passed in process arguments or printed.
+Rolling back requires restoring the reviewed protected direct configuration and
+clearing the mode; a relay URL in direct mode deliberately fails closed.
+
+Current receive-only qualification must use the reservation-aware local runtime
+with an explicitly reviewed target set and retain its lease until saved readback.
+Plain `simulate()` reports for recurring fixture devices lack the required
+reservation. The historical full rehearsals below are not interchangeable:
+`protocol-roundtrip.mjs` sends Locate, `verify-bridge-local.mjs` also exercises
+synthetic engine actions, and its/restart's plain simulator calls require current
+lease/reservation reconciliation before they can qualify this candidate. Do not
+count those earlier receipts as a new receive-only run.
 
 Then start the restricted bridge:
 

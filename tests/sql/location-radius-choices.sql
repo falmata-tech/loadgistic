@@ -20,17 +20,17 @@ begin
   'cargo_summary','Synthetic radius regression','customer_email','radius-owner@example.invalid','customer_email_digest',encode(gen_random_bytes(32),'hex'),
   'tracking_mode','LOCATION_AND_STATUS','expected_delivery_date',(current_date+2)::text,'tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
  update provider_shipments set created_at=cutover-interval '30 minutes',location_reset_at=null,tracking_precision_km=20 where id=shipment;
- result:=select_telematics_location_source(actor,jsonb_build_object('vehicleId',vehicle,'source','MANUAL','precisionKm',20,'expectedRevision','1970-01-01T00:00:00Z','manualLatitude',9.03,'manualLongitude',38.74));
- revision:=result->>'revision';
- -- Own explicit historical row, never a customer backfill or inferred capture.
- update telematics_location_sources set precision_km=40,selected_at=cutover-interval '20 minutes' where vehicle_id=vehicle;
+ -- Own explicit historical row, never a supported new manual mutation.
+ insert into telematics_location_sources(vehicle_id,source,precision_km,selected_by,selected_at,revision,manual_latitude,manual_longitude)
+ values(vehicle,'MANUAL',40,actor,cutover-interval '20 minutes',cutover-interval '20 minutes',9.03,38.74);
+ select s.revision::text into revision from telematics_location_sources s where s.vehicle_id=vehicle;
  before_fix:=telematics_effective_location(vehicle);
  perform pg_temp.radius_assert(before_fix->>'precisionKm'='40','OLD_MANUAL_CAPACITY_RADIUS_RELABELLED');
  perform pg_temp.radius_assert(tracking_selected_location(shipment) is null,'MANUAL_CAPACITY_POINT_MISLABELLED_LIVE_TRACKING');
  perform pg_temp.radius_denied(format('select select_telematics_location_source(%L,%L)',actor,jsonb_build_object('vehicleId',vehicle,'source','MANUAL','precisionKm',40,'expectedRevision',revision,'manualLatitude',9.03,'manualLongitude',38.74)::text),'INVALID_TELEMATICS_INPUT');
  perform pg_temp.radius_assert(telematics_effective_location(vehicle)=before_fix,'DENIED_CHOICE_CHANGED_OLD_POINT');
- result:=select_telematics_location_source(actor,jsonb_build_object('vehicleId',vehicle,'source','MANUAL','precisionKm',20,'expectedRevision',revision,'manualLatitude',9.03,'manualLongitude',38.74));revision:=result->>'revision';
- perform pg_temp.radius_assert(telematics_effective_location(vehicle)->>'precisionKm'='20' and tracking_selected_location(shipment) is null,'EXPLICIT_FRESH_MANUAL_SAVE_MISLABELLED_TRACKING');
+ perform pg_temp.radius_denied(format('select select_telematics_location_source(%L,%L)',actor,jsonb_build_object('vehicleId',vehicle,'source','MANUAL','precisionKm',20,'expectedRevision',revision,'manualLatitude',9.03,'manualLongitude',38.74)::text),'INVALID_TELEMATICS_INPUT');
+ perform pg_temp.radius_assert(telematics_effective_location(vehicle)=before_fix and tracking_selected_location(shipment) is null,'RETIRED_MANUAL_SAVE_CHANGED_HISTORY');
 
  perform select_telematics_location_source(actor,jsonb_build_object('vehicleId',vehicle,'source','MOBILE','precisionKm',20,'expectedRevision',revision));
  update telematics_location_sources set selected_at=cutover-interval '25 minutes' where vehicle_id=vehicle;

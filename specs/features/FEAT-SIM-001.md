@@ -4,12 +4,258 @@ title: Isolated demo movement with real-device takeover
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-GPS-001, FEAT-GEO-001, FEAT-CAP-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-SEC-001, FEAT-ENT-001]
 problem: Demo trucks need believable GPS and phone movement without overwriting real devices, changing customer data or implying unsupported phone telemetry.
 behavior: Explicit synthetic account/truck/device bindings may produce bounded demo movement through the normal location pipeline. Server-side arbitration pauses simulation when an authenticated real installation takes over, rejects stale queued synthetic reports, and never simulates customer accounts. Private registered phone-installation identities attribute real reports without exposing hardware identifiers. Public/private Capacity and permitted Tracking markers show the actual published source.
-contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor]
+contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance]
 observability: [demo_tick_accepted, demo_tick_paused, demo_target_denied, real_device_takeover, stale_source_report_denied, demo_runner_state, location_installation_revoked]
-rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Owner visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
+rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Agent-led local visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
 ---
 
 # Demo movement and device attribution
+
+## Curated scenarios — November13 owner clarification
+
+### Frequent Capacity episodes — catalog2
+
+The five existing mutable targets use twenty authored phases: Partial 80% →
+Partial 60% → Partial 30% → Empty 100%, then repeat. Each next phase becomes due
+120 seconds after the previous actual completion. Initial offsets 0/30/60/90/120
+seconds spread the five actors; the nominal cycle is eight minutes. The independent
+fast worker checks every 30 seconds with a one-phase total budget. Healthy
+per-target spacing is usually 120–150 seconds after completion. Full, Off Duty,
+arbitrary percentages and new targets are not added. Fleet-04 may toggle its
+approved planned corridor only in
+an Empty phase on odd cycles, about sixteen nominal minutes between changes.
+
+Given a new target's first phase has a fully unreported legacy estimate\
+When the exact current demo actor publishes the authored 80% value\
+Then the normal command creates real report time, actor and driver provenance.
+Any already reported human value, including 80%, refuses first bootstrap. Later
+phases require the immediate epoch/cycle/phase receipt and its exact current
+Capacity ID. A same-percentage human republication also pauses that target.
+
+Given the service has been unavailable while the current state and last receipt
+remain unchanged\
+When it resumes\
+Then it executes at most one next phase per target, with the actual normal save
+and completion times\
+And the following phase cannot run before that actual completion plus 120 seconds.
+The original nominal due time remains audit data; there is no catch-up burst,
+skipped phase, synthetic backdating or automatic 180-second timeout of a valid
+scenario. A changed state refuses instead of silently resetting the actor.
+
+Given all five actors are overdue after delayed activation or an outage\
+When the dedicated worker resumes its 30-second ticks\
+Then each tick requests only one oldest eligible phase, preserving cross-actor
+activity instead of saving all five together and synchronizing their clocks\
+And a paused invalid actor or another actor's live retry lease cannot starve
+independent eligible actors. The signed controller API accepts integer limits
+from 1 to 5; the dedicated service uses 1 and rejects any response claiming more.
+
+Each controller receipt records catalog version, target/scenario, epoch, cycle,
+phase, nominal scheduled time, operational due time, actual applied/completed
+times and saved Capacity ID. Replay reads the historical report without refreshing
+it. The unified database controller persists activation/epoch and receipt state;
+restart does not create a new episode or accept a mutation clock override.
+
+The legacy direct `executeDemoCapacityPlan` writer and local CLI `start`,
+`advance`, `advance-through` and other write verbs are retired. They refuse with
+`DEMO_WORLD_DIRECT_APPLY_RETIRED` before reading caller identity, credentials,
+checkpoint or receipts, and cannot fall back to a normal publish RPC. Local
+`plan` and `status` are read-only inspections; existing history remains intact.
+Local and hosted simulator services use the same `advanceDemoCapacity` database
+controller and migration 224 write boundary, including REAL/source takeover
+checks. Ordinary human Capacity product commands retain their existing rules.
+
+Given any caller, including an operator-marked account with a valid authored
+phase and old local receipts\
+When it attempts the retired direct writer or CLI write verb\
+Then the request refuses before Auth/client access or any saved-state change.
+Only actual API/database controller checks qualify simulator writes; mocked
+legacy adapter success is not acceptance evidence. Historical direct-apply
+observations below retain their original dates and are not a current write path.
+
+Catalog2 upgrade requires disabled, never-activated scheduling with no legacy
+jobs, or a separate explicit reconciliation. It never silently rewrites running
+work or completed history. Local SQL, API and visible UI qualification remain
+separate from the source and pure checks.
+
+The fast process is a standalone `compose.scenario.yml` project with the opt-in
+`hosted-demo-scenarios` profile. It has only outbound HTTPS, its exact site/origin
+and `DEMO_CAPACITY_WORKER_SECRET`; it receives no world/motion/gateway/database
+credential and needs no GPS configuration. Enable defaults false, kill defaults
+true, and its private heartbeat health check exposes no listener. The separate
+slow 15-minute world route never claims or executes fast Capacity jobs.
+
+Given either the slow world key or the fast Capacity key signs another lane,
+status/admin or motion purpose\
+When the request reaches its protected boundary\
+Then cryptographic authorization refuses it before storage. A fast container
+with any broader credential configured refuses startup. A 401/403 or disabled
+database leaves it inert rather than hammering the app; transient delivery errors
+retain normal lease-expiry retry without permanently pausing a coherent target.
+
+Given a future reviewed operator activation uses an exact fictional phone/GPS
+cohort target and its existing normal owner/source provisioning command\
+When the operator explicitly selects a 1 km privacy radius to observe the approved
+local road course crossing privacy cells\
+Then that selection is limited to the trusted demo target and remains a separately
+recorded activation choice. The running worker cannot lower or override a radius,
+change phone consent, enroll a normal account, or reverse REAL takeover. Existing
+20/40 km demo choices remain until such an explicit reviewed selection; later user
+source/privacy choices remain authoritative. This production activation plan is
+pending; no radius or hosted configuration was changed by this source work.
+
+The simulator chooses only server-owned, versioned scenarios with explicit
+target bindings, ordered approved place references, capacity transitions and
+reporting times. It generates no random cities, coordinates, route order or
+percentages. An optional deterministic seed may choose an approved scenario;
+it cannot synthesize new values or bypass its current-state prerequisites.
+
+Given a proposed corridor contains individually valid places in an unapproved
+sequence, repeats a stop, changes a catalog coordinate, or belongs to another
+target\
+When the catalog or planner validates it\
+Then validation refuses it before any command. A place appearing somewhere in
+the fixture is not evidence that an arbitrary city sequence is approved.
+
+Given several exact demo targets have due scenarios\
+When a bounded worker batch runs\
+Then each target advances only its own explicit predecessor state under its
+existing lease and immutable receipt\
+And independent due targets may advance in the same batch without resetting all
+accounts, replacing unrelated routes, or rewriting every vehicle on every tick.
+
+Given an explicit capacity estimate has no catalog phase and normal-command
+report provenance\
+When a capacity state changes\
+Then no percentage is invented or relabelled as a fresh report. Historical
+fixture values with no reported timestamp remain unreported.
+
+An approved marketplace city corridor is not a surveyed driving trace.
+Settlement centers and straight city segments cannot supply road-following GPS
+interpolation. Motion must use approved captured stop fixes or a sourced road
+trace with realistic timing; absent evidence stays unavailable. Area-only
+scenarios remain stationary. Real phone/GPS takeover and the exact demo-account
+boundary remain authoritative for every report.
+
+### Reviewed local motion courses
+
+The checked-in road catalog version `2026-11-12.1` defines seven `ROAD_LEG`
+courses using consecutive source-verified OSM way nodes, two explicitly authored
+`STATIONARY` area scenarios and one `UNAVAILABLE` course. Its purpose is
+`PROTOCOL_LOCAL`: these bounded local tests are not progress along the vehicle's
+planned regional Capacity corridor. The phone's Addis local course does not
+claim a Sebeta → Alem Gena journey. Preserve the saved Capacity plan separately.
+
+Given the approved road catalog and exact target\
+When a worker reports\
+Then its wall-clock scenario follows only the ordered road segments at 20 km/h,
+dwells 60 seconds at each end and reverses continuously without teleporting\
+And qualified phone/GPS reporting uses a 30 second cadence; lease renewal does not
+add a fixed post-cycle delay, while fast paused/failure cycles remain rate bounded\
+And stationary/dwell GPS packets report zero speed and heading; moving packets
+derive heading from their source segment. Phone reports gain no hardware fields.
+
+Given a signed GPS/phone request has an arbitrary point inside the old database
+box, a valid road point at the wrong scenario time, or capture time over 5 seconds
+from the trusted server clock\
+When the Next application boundary checks it\
+Then it refuses before opening storage. Valid reports must match the catalog at
+the signed capture time within 1 metre for quantization/serialization, then retain
+the existing database cohort, source, lease, nonce and takeover checks.
+
+Given the unavailable fleet08 course or changed catalog/source/geometry evidence\
+When a worker reaches that target\
+Then it sends no configure/start command, opens no socket and takes no lease;
+qualified independent targets can continue. No stationary fallback is inferred.
+
+The artifact is pinned by canonical hash in the shared runtime. Source node IDs,
+way version, extract date/hash and ODbL attribution remain in the catalog; changed
+coordinates with a recomputed local geometry hash still fail the reviewed pin.
+Server report logs and worker receipts include scenario ID/version/step and the
+local protocol purpose, never precise coordinates, contacts or device secrets.
+Focused offline tests do not establish actual database, browser, native or hosted
+operation, which remain separate qualification steps.
+
+## Current demo-account boundary — November 13
+
+This decision supersedes historical Manual preparations and source-changing
+handover examples below. New periodic locations come only from the selected
+phone or GPS pipeline. A simulator never selects Manual, invents phone consent,
+or converts an old point into a fresh phone/GPS report. The existing duty and
+handover lanes remain disabled until their normal commands preserve an actual
+supported phone/GPS source and satisfy the revised source contract.
+
+The application service does not claim or execute either held lane, even if an
+old database control is enabled. It preserves pending/exhausted counts and last
+completion facts, reports zero accepted/completed/replayed work plus operator
+state `HELD` and reason `MANUAL_LOCATION_RETIRED`, and continues other qualified
+lanes. Held work is neither silently completed nor discarded. The background
+summary validates and records that exact bounded state/reason without private
+job or lease data. Direct database execution remains subject to the retirement
+boundary as well as existing token, ordering and current-actor checks.
+
+Only operator-controlled Auth `app_metadata.fixture_source=loadgistic` establishes
+demo-account provenance. Exact scenario/cohort identity, active current owner and
+driver assignment, source binding, generation and enabled service controls remain
+separate mandatory write checks. Email, account name, inactivity, editable
+`user_metadata`, client flags and a public Demo label confer no authority.
+
+Given an account created through normal signup, including one whose editable
+metadata claims `fixture_source=loadgistic`, `is_demo=true` or an existing fixture
+key\
+When a simulator configure, lease, GPS/phone report or workflow command is tried\
+Then the server/database boundary refuses it\
+And the account, vehicle, assignment, selected source, Capacity history, location
+history, grants and simulator receipts are unchanged.
+
+Given an exact demo vehicle is transferred or its current driver is replaced by
+a normal account, even if that account forges editable fixture metadata\
+When an already running simulator attempts its next write\
+Then current authority is rechecked and the write is refused without affecting
+the new owner/driver or restoring the former assignment.
+
+Given an ordinary account becomes an additional owner of the exact demo
+organization\
+When a Capacity or provider-profile simulation phase attempts to mutate that
+shared organization or its vehicles, or a reserved synthetic Tracking actor is
+armed or used\
+Then it refuses because the approved actor is no longer the sole current owner\
+And normal account, membership, profile/page, vehicle, Capacity, source/location
+state and simulator receipts remain unchanged by the refused operation. The
+former owner's trusted marker cannot authorize simulation of a shared customer
+organization.
+
+Given an already authorized public/private Capacity row\
+When account provenance is projected for web or native details\
+Then `account_is_demo` is an exact boolean derived from the current provider
+owner's trusted operator marker through a bounded service-only read\
+And Demo account remains distinct from per-fix Demo location: neither flag
+changes the actual saved GPS/phone source, location age, permissions or consent\
+And the response contains no Auth metadata, fixture key, installation identifier
+or simulator control/lease field. Missing/non-boolean provenance is false.
+
+The separately deployed Capacity workflow dispatcher/background worker and
+dedicated motion worker retain distinct credentials and stop controls. Real GPS
+and synthetic GPS remain isolated. A production activation requires an exact
+operator-provisioned cohort and sustained ingestion/database/UI evidence;
+installed schema and a healthy container alone do not establish operation.
+
+Focused contracts: `tests/sql/demo-account-isolation.sql` checks rollback-only
+normal/forged account writes and current-owner transfer isolation;
+`scripts/verify-supabase-provider-signup.mjs` checks the actual local email-OTP
+signup plus customer-editable metadata forgery through Auth;
+`tests/demo-account-provenance.test.mjs`,
+`tests/provider-driver-presentation.test.mjs`, and the native public Capacity/detail
+tests check exact boolean projection and separate account/fix labels.
+`tests/telematics-hosted-motion-worker.test.mjs` covers expired lease reacquisition,
+stale generation cleanup, sticky REAL takeover and unconfirmed stop reporting.
+The November13 source changes still need the actual local SQL/signup runs and
+desktop/phone/Expo task review before they qualify for release.
+
+Rollback disables the relevant control and worker, invalidates matching leases,
+and retains history/receipts. It never restores an old owner, clears REAL takeover
+or bulk-converts customer sources. Observability reports bounded accepted,
+rejected, expired and takeover counts without coordinates or private identities.
 
 Status: implemented in the backed-up local preview, October18; focused SQL,
 runner and source-projection checks pass. Actual GPS protocol ingestion saved
@@ -44,7 +290,7 @@ lifecycle verification remain separate; no production simulator is enabled.
 - GPS/phone movement follows a bounded plausible fixture route and interval.
   Both simulated GPS packets and phone reports are sent no more frequently than
   once every 30 seconds, so demo movement does not flood the app or database.
-  Manual remains a dated static point, not a continuously moving fake phone.
+  Existing Manual history remains dated/static; new Manual writes are retired.
 - Published source badge is small/top-left on the truck circle on public/private
   Capacity and Tracking, web/phone/Expo. It derives from the saved fix, not a
   requested source awaiting its first report. Identifiers/telemetry remain private.
@@ -218,6 +464,23 @@ and About text through the normal `update_provider_profile_page` command at
 09:00 UTC, then restore the recorded baseline at 15:00 UTC. The scenario has
 its own default-off control as well as the global kill switch. It does not edit
 contacts, handles, vehicles, Capacity, documents or notifications.
+
+Current owner isolation additionally requires that the already approved demo
+actor is the organization's sole current OWNER. Migration 225 applies this guard
+to the final version197 executor and both reserved Tracking actor-readiness
+functions, preserving receipts, valid historical replay and private grants.
+Adding an ordinary co-owner after a profile claim refuses the save without
+changing the raw page/account/vehicle state, job or receipt. The owner-isolation
+source and rollback-only tests still require actual isolated SQL qualification;
+the older cycle observations below do not prove this new boundary.
+
+The executor also holds controls in global → profile → job order before a new
+save. A disable update waits for an accepted in-flight save; later saves refuse.
+Valid completed replay stays read-only and available with disabled controls.
+The lease clock is refreshed after lock waits and immediately before the normal
+save. An operator changing both controls in one transaction uses global then
+profile order; single-control stops remain valid. Actual two-session stop,
+owner-change and ordinary-profile-write concurrency requires isolated testing.
 
 Given the exact synthetic owner, page, current baseline and enabled controls\
 When a due SHOW_DEMO or RESTORE phase is claimed\

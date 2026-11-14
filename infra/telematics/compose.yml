@@ -31,6 +31,12 @@ services:
       - '127.0.0.1:15027:5027'
       - '127.0.0.1:15013:5013'
       - '127.0.0.1:15015:5015'
+    healthcheck:
+      test: [CMD, wget, -q, -T, '5', -O, /dev/null, 'http://127.0.0.1:8082/api/server']
+      interval: 15s
+      timeout: 6s
+      start_period: 90s
+      retries: 3
     restart: unless-stopped
     mem_limit: 1g
     logging: {driver: local, options: {max-size: 10m, max-file: '2'}}
@@ -39,7 +45,7 @@ services:
     profiles: [bridge]
     depends_on:
       database: {condition: service_healthy}
-      traccar: {condition: service_started}
+      traccar: {condition: service_healthy}
     environment:
       GATEWAY_DATABASE_URL: postgres://loadgistic_bridge:${GATEWAY_BRIDGE_PASSWORD}@database:5432/traccar
       GATEWAY_ID: ${GATEWAY_ID}
@@ -48,10 +54,18 @@ services:
       TRACCAR_API_URL: http://traccar:8082/api/
       TRACCAR_API_TOKEN: ${TRACCAR_API_TOKEN}
       LOADGISTIC_GATEWAY_URL: ${LOADGISTIC_GATEWAY_URL:-http://host.docker.internal:3100/api/telematics/gateway}
+      TRACCAR_READINESS_URL: http://traccar:8082/api/server
     extra_hosts: [host.docker.internal:host-gateway]
     restart: unless-stopped
     mem_limit: 256m
     read_only: true
+    tmpfs: ['/tmp/loadgistic-bridge:rw,noexec,nosuid,size=1m,uid=1000,gid=1000,mode=0700']
+    healthcheck:
+      test: [CMD, node, gateway-health.mjs, --check]
+      interval: 15s
+      timeout: 3s
+      start_period: 90s
+      retries: 3
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     logging: {driver: local, options: {max-size: 10m, max-file: '2'}}

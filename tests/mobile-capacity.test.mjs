@@ -46,21 +46,21 @@ test('native workspace never exposes proof paths or grants owner device-location
  const json = JSON.stringify(ownDriver); for (const key of ['secret-path', 'location_lat', 'location_lng', '"lat"', '"lng"']) assert.equal(json.includes(key), false);
  assert.equal(projectMobileCapacity({ ...data, access: { can_manage_capacity: false } }, 'driver', 'DRIVER').canPublish, false);
 });
-test('assigned driver retains location editor access after saving manual and can return to phone',()=>{
+test('legacy Manual history keeps deliberate Phone recovery without manual write capability',()=>{
  const base={id,assigned_driver:{id:'driver',name:'Driver'},location_selection:{source:'MANUAL',selectedAt:'2026-10-18T12:00:00Z'},driver_location:{lat:9,lng:38,radius:10,updatedAt:'2026-10-18T11:00:00Z'}};
  const capacity={vehicle_id:id,location_lat:9.1,location_lng:38.1,location_precision_km:10,location_updated_at:'2026-10-18T12:00:00Z',location_source:'MANUAL_ADMIN'};
  const manual=projectMobileCapacity({vehicles:[base],capacities:[capacity]},'driver','DRIVER').vehicles[0];
  assert.equal(manual.selectedLocationSource,'MANUAL');assert.equal(manual.canLocate,false);
- assert.equal(manual.canSetManualLocation,true);assert.equal(manual.canSetPhoneLocation,true);
- assert.equal(manual.canLocate||manual.canSetManualLocation,true,'Driver Home must keep the location button visible after manual save');
+ assert.equal(manual.canSetManualLocation,false);assert.equal(manual.canSetPhoneLocation,true);
+ assert.equal(manual.canLocate||manual.canSetPhoneLocation,true,'Driver Home must keep deliberate Phone recovery reachable');
  const phone=projectMobileCapacity({vehicles:[{...base,location_selection:{source:'MOBILE',selectedAt:'2026-10-18T13:00:00Z'}}],capacities:[capacity]},'driver','DRIVER').vehicles[0];
  assert.equal(phone.selectedLocationSource,'MOBILE');assert.equal(phone.canLocate,true);
- assert.equal(phone.canSetManualLocation,true);assert.equal(phone.canSetPhoneLocation,true);
+ assert.equal(phone.canSetManualLocation,false);assert.equal(phone.canSetPhoneLocation,true);
  const provider=projectMobileCapacity({vehicles:[base],capacities:[capacity]},'owner','TRANSPORTER').vehicles[0];
  const formerDriver=projectMobileCapacity({vehicles:[base],capacities:[capacity]},'other','DRIVER').vehicles[0];
  for(const viewer of [provider,formerDriver]){assert.equal(viewer.canLocate,false);assert.equal(viewer.canSetManualLocation,false);assert.equal(viewer.canSetPhoneLocation,false);}
  const selfDrivingOwner=projectMobileCapacity({vehicles:[{...base,assigned_driver:{id:'owner',name:'Owner'}}],capacities:[capacity]},'owner','TRANSPORTER').vehicles[0];
- assert.equal(selfDrivingOwner.canSetManualLocation,true);assert.equal(selfDrivingOwner.canSetPhoneLocation,true);
+ assert.equal(selfDrivingOwner.canSetManualLocation,false);assert.equal(selfDrivingOwner.canSetPhoneLocation,true);
 });
 test('saved approximate map coordinates validate presence, bounds and privacy radius',()=>{
  const project=driver_location=>projectMobileCapacity({vehicles:[{id,driver_location}]},'driver','DRIVER').vehicles[0].location;

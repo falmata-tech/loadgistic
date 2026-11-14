@@ -24,7 +24,7 @@ import {transporterSearchQuery,TRANSPORTER_SEARCH_DELAY_MS,TRANSPORTER_SEARCH_TI
 import {loadAccountCapacity,loadBusinessCapacity} from '../api/business-workspaces';
 import {ApiError} from '../api/response';
 import {useForegroundRefresh} from '../hooks/foreground-refresh';
-import {capacityRefreshResult,type CapacityRefreshResult} from '../map/capacity-refresh';
+import {capacityRefreshResult,currentCapacitySelection,type CapacityRefreshResult} from '../map/capacity-refresh';
 export type BusinessCapacityContext={workspaceId:string;scopeKey:string;request:(path:string)=>Promise<unknown>};
 export type AccountCapacityContext={scopeKey:string;request:(path:string)=>Promise<unknown>;networkHref?:'/network'|'/directory'};
 
@@ -123,11 +123,13 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const sharedIdentity = visitor.snapshot.capacity?.startedAt, sharedReady = Boolean(business||account||visitor.ready && visitor.snapshot.foreground && sharedIdentity);
   const [query, setQuery] = useState(''), [revision, setRevision] = useState(0);
   const [refreshTick,setRefreshTick]=useState(0);
-  const refreshCapacity=useCallback(async()=>{setRefreshTick(value=>value+1);},[]);
+  const pendingCapacityRequest=useRef<AbortController|null>(null);
+  const refreshCapacity=useCallback(async()=>{if(!pendingCapacityRequest.current)setRefreshTick(value=>value+1);},[]);
+  const pauseCapacityRefresh=useCallback(()=>{const pending=pendingCapacityRequest.current;pendingCapacityRequest.current=null;pending?.abort('paused');},[]);
   const profileFilters=useMemo<TruckFilters>(()=>blocked.length?{blocked:blockKey}:{},[blockKey,blocked.length]);
   const requestKey = `${business?.scopeKey||account?.scopeKey||''}:${mode}:${query}:${filterKey}:${revision}:${business||account?'':sharedIdentity || ''}:${sharedReady}`;
   const canLoad = mode === 'open' || sharedReady;
-  useForegroundRefresh(refreshCapacity,focused&&canLoad,60000);
+  useForegroundRefresh(refreshCapacity,focused&&canLoad,15000,pauseCapacityRefresh);
   const [result, setResult] = useState<CapacityRefreshResult<CapacitySignal> | null>(null);
   const [selection, setSelection] = useState<{ key: string; signal: CapacitySignal } | null>(null);
   const selectionRef=useRef(selection);
@@ -160,12 +162,13 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   // filter should keep its details when it still matches, and remove them when
   // it no longer appears in the returned vehicles.
   const selectedId=selection?.signal.id||(initialSelectionActive?initialFilters.truck:undefined);
-  const selected=selectedId?items.find(item=>item.id===selectedId)||null:null;
+  const selected=selectedId?items.find(item=>item.id===selectedId)||currentCapacitySelection(selection?.signal,items):null;
   const selectMapSignal=useCallback((signal:CapacitySignal)=>{cancelSearch();setInitialSelectionActive(false);setSelection({key:requestKey,signal});setDrawer(false);},[requestKey,cancelSearch]);
   const setSelected=(signal:CapacitySignal|null)=>{if(signal)selectMapSignal(signal);else clearSelection();};
   useEffect(() => {
-    if (!canLoad) return;
+    if (!canLoad||!focused) return;
     const controller = new AbortController();
+    pendingCapacityRequest.current=controller;
     let active=true;
     let timeout = setTimeout(() => controller.abort('timeout'), 30000);
     let finalItems:CapacitySignal[]=[];
@@ -175,15 +178,17 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
       if(!active||controller.signal.aborted)return;
       setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:'complete',items:finalItems}));
       const selectedId=selectionRef.current?.signal.id||(initialSelectionActiveRef.current?initialFilters.truck:undefined);
-      if(selectedId&&!finalItems.some(item=>item.id===selectedId))clearSelection();
+      const replacement=currentCapacitySelection(selectionRef.current?.signal,finalItems);
+      if(replacement&&selectionRef.current){const next={key:requestKey,signal:replacement};selectionRef.current=next;setSelection(next);}
+      else if(selectedId&&!finalItems.some(item=>item.id===selectedId))clearSelection();
     }).catch(error => {
       if(!active||controller.signal.aborted&&controller.signal.reason!=='timeout')return;
       const denied=Boolean((business||account||mode==='private')&&error instanceof ApiError&&[401,403,404].includes(error.status));
       if(denied)clearSelection();
       setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:denied?'denied':'failed',error:'Could not finish loading vehicles. Please try again.'}));
-    }).finally(() => { clearTimeout(timeout); if (active&&(!controller.signal.aborted || controller.signal.reason === 'timeout')) setResult(previous => previous?.key === requestKey ? { ...previous, loading: false } : { key: requestKey, items: [], loading: false, error: '' }); });
-    return () => { active=false;controller.abort(); clearTimeout(timeout); };
-  }, [query, requestKey, canLoad, mode, visitorController, effectiveFilters,business,account,refreshTick,clearSelection,initialFilters.truck]);
+    }).finally(() => { clearTimeout(timeout); if(pendingCapacityRequest.current===controller)pendingCapacityRequest.current=null; if (active&&(!controller.signal.aborted || controller.signal.reason === 'timeout')) setResult(previous => previous?.key === requestKey ? { ...previous, loading: false } : { key: requestKey, items: [], loading: false, error: '' }); });
+    return () => { active=false;controller.abort(); if(pendingCapacityRequest.current===controller)pendingCapacityRequest.current=null; clearTimeout(timeout); };
+  }, [query, requestKey, canLoad, focused, mode, visitorController, effectiveFilters,business,account,refreshTick,clearSelection,initialFilters.truck]);
   const resetResults=()=>{setResult(null);clearSelection();};
   const submitSearch=()=>{Keyboard.dismiss();search.submit();};
   const closeSearch=()=>{search.cancel();setDrawer(false);};

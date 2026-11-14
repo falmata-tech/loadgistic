@@ -69,7 +69,7 @@ function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckPr
       <GroupButton label={canPublish?'Planned capacity':'Duty status'} hint={canPublish?'Update planned capacity':'Update duty status'} icon="truck" color={color} onPress={()=>setSection('CAPACITY')}/>
       <GroupButton label="Photo" hint="Cargo space photo" icon="camera" onPress={()=>setSection('PHOTO')}/>
       {canRegular&&!!truck.driverId&&<GroupButton label={regularTitle} hint="Manage preferred corridor or service area" icon="repeat" onPress={()=>setSection('REGULAR')}/>}
-      {(truck.canLocate||truck.canSetManualLocation)&&<GroupButton label="Location" hint="Set vehicle location" icon="pin" onPress={()=>setSection('LOCATION')}/>}
+      {(truck.canLocate||truck.canSetPhoneLocation)&&<GroupButton label="Location" hint="Set vehicle location" icon="pin" onPress={()=>setSection('LOCATION')}/>}
      </ScrollView></View>
     {!!(loadError||location.error)&&<View style={styles.dock}><View style={styles.error}><ErrorText message={t(loadError||location.error)}/>{!!loadError&&<Button secondary message="Refresh" onPress={()=>{void refresh();}}/>}</View></View>}
    </View>

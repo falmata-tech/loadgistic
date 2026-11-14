@@ -11,6 +11,49 @@ rollout: Review affected actual web, Expo and installed Android tasks under the 
 
 # Native application
 
+## Foreground Capacity freshness — November13 owner direction
+
+Given a public or authorized private Capacity map is focused and foreground\
+When a15-second refresh becomes due\
+Then it reads the current authorized feed without restarting an unfinished
+cursor chain, replacing filters/viewport or requiring another tap\
+And background/blur cancels that cursor task and pauses further reads; return
+starts one fresh task. Existing30-second page deadlines and retry behavior remain.
+
+Given a returned current signal replaces the selected signal ID while retaining
+its supplied vehicle identity\
+When the map applies its latest authorized results\
+Then the selected details follow the replacement's status/percentage/age and
+only its current marker remains\
+And a completed private feed omission or current-scope access denial clears
+the removed row/selection; late old-scope data cannot restore it.
+
+This is UI polling, not push Realtime or a new background location service.
+Actual phone capture retains its separate ten-minute foreground due rule and
+agreed Tracking retains its separate consent/service. Focused actual-effect
+tests do not establish installed Android or end-to-end backend acceptance.
+
+## Phone and GPS source controls — current owner contract
+
+Given a native vehicle or Driver Home location editor opens\
+When it shows saved facts and permitted actions\
+Then it offers Phone and configured GPS under existing role/assignment rules;
+there is no Manual source, map-point picker or latitude/longitude entry action\
+And legacy Manual reports and historical types remain readable with the honest
+Manually entered label. Neither opening nor radius changes select Phone/GPS.
+
+Given the assigned driver deliberately chooses Phone\
+When Save requests foreground permission and captures an obscured fix\
+Then denial/blur/background preserves the old source and report; success saves
+the expected source revision before sending the phone report\
+And a failed report can retry without replaying a completed source change\
+And a former/unassigned driver receives no capture action. Existing privacy
+radii, driver-choice ownership and independent Tracking source remain intact.
+
+Verify native permission/movement on Android separately from the web/Expo
+editor workflow. Source tests and Expo appearance do not imply Android release
+acceptance or production delivery.
+
 ## One provider Home on entry — October26 work-first correction
 
 Work-first entry/order is implemented and locally qualified in current-source
@@ -738,12 +781,12 @@ explanations inside each editor. On short/landscape screens the compact rail can
 scroll vertically; the map itself does not scroll away.
 An editor opens above the retained map with the existing route/area, load, privacy
 and duty controls, respecting fleet-owner permissions. It can scroll for longer
-forms; close/back cannot dismiss an in-flight save. Successful saves and manual
-location changes refresh persisted state. Opening/closing without changes preserves
+forms; close/back cannot dismiss an in-flight save. Successful saves and explicit
+phone location captures refresh persisted state. Opening/closing without changes preserves
 map camera position. Unassigned drivers receive assignment/setup guidance.
 
 Verification: focused browser phone/landscape geometry, editor save/readback,
-manual first location and retry, denied permission, restricted driver permissions,
+explicit first phone location and retry, denied permission, restricted driver permissions,
 and native emulator appearance/actions. Owner visual approval remains required
 before full release gates. Simulated emulator fixes are not physical movement.
 

@@ -12,6 +12,7 @@ function boundedSummary(value){
     counts[key]=count;
   }
   if(counts.accepted!==counts.completed+counts.skipped+counts.failed)throw Error('DEMO_WORLD_SUMMARY_INVALID');
+  if(counts.accepted!==0)throw Error('DEMO_WORLD_SUMMARY_INVALID');
   if(typeof value?.database_enabled!=='boolean')throw Error('DEMO_WORLD_HEALTH_INVALID');
   for(const key of ['pending_count','oldest_due_age_seconds','exhausted_count']){
     if(!Number.isSafeInteger(value[key])||value[key]<0)throw Error('DEMO_WORLD_HEALTH_INVALID');
@@ -21,6 +22,8 @@ function boundedSummary(value){
     if(!Number.isSafeInteger(value[key])||value[key]<0)throw Error('DEMO_WORLD_HEALTH_INVALID');
   }
   if(value.handover_accepted>1||value.handover_completed>value.handover_accepted
+    ||value.handover_accepted!==0||value.handover_completed!==0
+    ||value.handover_state!=='HELD'||value.handover_hold_reason!=='MANUAL_LOCATION_RETIRED'
     ||(value.handover_last_completed_day!==null
       &&!/^\d{4}-\d{2}-\d{2}$/.test(String(value.handover_last_completed_day)))
     ||!/^\d{4}-\d{2}-\d{2}$/.test(String(value.handover_next_scheduled_day))){
@@ -64,6 +67,8 @@ function boundedSummary(value){
     if(!Number.isSafeInteger(value[key])||value[key]<0)throw Error('DEMO_WORLD_HEALTH_INVALID');
   }
   if(value.duty_accepted>1
+    ||value.duty_accepted!==0||value.duty_completed!==0||value.duty_replayed!==0
+    ||value.duty_state!=='HELD'||value.duty_hold_reason!=='MANUAL_LOCATION_RETIRED'
     ||value.duty_completed+value.duty_replayed>value.duty_accepted
     ||typeof value.duty_enabled!=='boolean'
     ||![null,'OFF_DUTY','RESTORE'].includes(value.duty_last_completed_phase)){
@@ -76,6 +81,8 @@ function boundedSummary(value){
     exhausted_count:value.exhausted_count,
     handover_accepted:value.handover_accepted,
     handover_completed:value.handover_completed,
+    handover_state:value.handover_state,
+    handover_hold_reason:value.handover_hold_reason,
     handover_pending_count:value.handover_pending_count,
     handover_last_completed_day:value.handover_last_completed_day,
     handover_next_scheduled_day:value.handover_next_scheduled_day,
@@ -106,6 +113,8 @@ function boundedSummary(value){
     duty_accepted:value.duty_accepted,
     duty_completed:value.duty_completed,
     duty_replayed:value.duty_replayed,
+    duty_state:value.duty_state,
+    duty_hold_reason:value.duty_hold_reason,
     duty_enabled:value.duty_enabled,
     duty_pending_count:value.duty_pending_count,
     duty_exhausted_count:value.duty_exhausted_count,

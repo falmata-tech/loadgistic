@@ -156,10 +156,15 @@ fixture importer against a hosted project. Hosted rollout applies migrations,
 configures private buckets/Auth/email/scanning separately, and verifies the
 exact target and matching application before traffic is enabled.
 
-Netlify automatic publishing is enabled, but its recent Git-triggered builds
-are blocked by secret scanning; the published manual package remains separate
-from green GitHub CI. See [current status](docs/PROGRESS.md) and the
-[deployment runbook](docs/operations/NETLIFY_RELEASE_VERIFICATION.md).
+Netlify's automatic production path is verified for the merged `520328b` baseline:
+PR and separate main runs each passed all 16 jobs, and deployment
+`6af6ac945eb1cff1d55e577c` was Published
+with source, scan, final-function ZIP and runtime checks passing. The complete
+[PR37 receipts](https://github.com/falmata-tech/loadgistic/pull/37) retain that
+evidence and rollback target. The next GPS/simulator work, local-stack acceptance
+and paused sender migration are separate in [current status](docs/PROGRESS.md);
+see [the deployment runbook](docs/operations/NETLIFY_RELEASE_VERIFICATION.md)
+for the gates required by a new release.
 
 Current Netlify verification, backup/rollback and smoke steps are in
 [the deployment runbook](docs/operations/NETLIFY_RELEASE_VERIFICATION.md) and

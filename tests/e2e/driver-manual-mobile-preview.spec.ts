@@ -7,7 +7,7 @@ import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 test.use({channel:'chrome',trace:'off',screenshot:'off',video:'off',actionTimeout:20_000,navigationTimeout:30_000});
 
-test('assigned driver updates the Expo Capacity map manually, then switches back to phone',async({browser},info)=>{
+test('assigned driver sees read-only legacy Manual in Expo and deliberately resumes phone updates',async({browser},info)=>{
  test.skip(info.project.name!=='desktop-chromium','One phone-size Chromium context exercises the Expo preview.');
  test.setTimeout(240_000);
  const db=localAuditService(),owner=await auditFleetProvider(db,'driver-manual-expo');
@@ -24,6 +24,7 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   const vehicle=checked(await db.rpc('create_provider_vehicle',{actor_user_id:owner.id,command:{make:'Isuzu',model:'Expo preview',plate:`EXP-${owner.suffix}`,cargo_configuration:'Mini Box Truck',use_basis:'OWNED'}}));
   vehicles.push(vehicle.id);
   driver=await auditFleetDriver(db,owner,vehicle.id);
+  checked(await db.from('telematics_location_sources').insert({vehicle_id:vehicle.id,source:'MANUAL',manual_latitude:40.015,manual_longitude:-105.27,selected_by:driver.id,precision_km:5}));
   const identity=checked(await db.auth.admin.getUserById(driver.id)).user;
   await page.goto('/account');await page.getByLabel('Email',{exact:true}).fill(identity.email);
   const since=Date.now();await page.getByRole('button',{name:'Send code',exact:true}).click();
@@ -40,23 +41,15 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
 
   await page.getByRole('button',{name:'Set vehicle location',exact:true}).click();
   await expect(page.getByText('Capacity map location')).toBeVisible();
-  await page.getByRole('radio',{name:'Manual capacity location'}).click();
-  await expect(page.getByText('A manual point stays until you update it. Update it when the vehicle moves.')).toBeVisible();
-  const map=page.locator('canvas').last();await expect(map).toBeVisible({timeout:30_000});
-  await map.click({position:{x:130,y:130}});
-  await page.getByRole('radio',{name:'5 km'}).click();
-  await expect(page.getByRole('button',{name:'Update location'})).toBeEnabled();
-  await page.screenshot({path:`${evidence}/expo-driver-manual-editor-phone.png`});
-  const manualSaved=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/fleet/devices'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Update location'}).click();
-  await page.screenshot({path:`${evidence}/expo-driver-after-save-click-phone.png`});
-  expect((await manualSaved).status()).toBe(200);
-  await expect(page.getByText('Capacity map location')).toHaveCount(0);
-  const selected=checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km').eq('vehicle_id',vehicle.id).single());
-  expect(selected.source).toBe('MANUAL');expect(selected.selected_by).toBe(driver.id);expect(selected.precision_km).toBe(5);
-  expect(Number.isFinite(selected.manual_latitude)).toBe(true);expect(Number.isFinite(selected.manual_longitude)).toBe(true);
-  await page.screenshot({path:`${evidence}/expo-driver-manual-home-phone.png`});
-
+  await expect(page.getByRole('radio',{name:'Manual capacity location'})).toHaveCount(0);
+  await expect(page.getByRole('radio',{name:'Driver’s phone'})).toHaveAttribute('aria-checked','false');
+  await expect(page.getByRole('button',{name:'Use phone location'})).toBeDisabled();
+  await expect(page.getByText('Manual locations are read-only. Choose a location source to resume updates.')).toBeVisible();
+  await page.screenshot({path:`${evidence}/expo-driver-legacy-read-only-phone.png`});
+  const selected=checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km,revision').eq('vehicle_id',vehicle.id).single());
+  expect(selected).toMatchObject({source:'MANUAL',manual_latitude:40.015,manual_longitude:-105.27,selected_by:driver.id,precision_km:5});
+  // Closing the saved legacy record must not grant phone consent or write a fix.
+  await page.getByRole('button',{name:'Close',exact:true}).click();
   const places=await Promise.all(['addis ababa','adama'].map(async name=>checked(await db.from('place_catalog').select('id,name').eq('normalized_name',name).order('population',{ascending:false}).limit(1).single())));
   ownerContext=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:{width:1280,height:900},extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});
   const ownerPage=await ownerContext.newPage();await localSupportLogin(ownerPage,owner.id);
@@ -78,19 +71,6 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await expect(ownerPage.getByRole('button',{name:'Move to draft',exact:true})).toBeVisible();
   expect(checked(await db.from('vehicles').select('publication_status').eq('id',vehicle.id).single()).publication_status).toBe('LIVE');
   checked(await db.from('company_pages').update({published:true}).eq('organization_id',owner.organization_id));
-  await publishProviderCapacity(owner,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:places.map((place:{id:string;name:string})=>({placeRef:place.id,label:place.name}))});
-  await page.reload();await expect(page.getByText('Manually entered')).toBeVisible({timeout:30_000});
-  await page.screenshot({path:`${evidence}/expo-driver-manual-published-phone.png`});
-  const viewport=[selected.manual_longitude-2,selected.manual_latitude-2,selected.manual_longitude+2,selected.manual_latitude+2].join(',');
-  const publicReply=await page.request.get(`/api/public/capacity?locationSource=MANUAL&viewport=${viewport}`);
-  expect(publicReply.status()).toBe(200);
-  const publicItem=(await publicReply.json()).items.find((item:{vehicle_id:string})=>item.vehicle_id===vehicle.id);
-  expect(publicItem).toBeTruthy();expect(publicItem.location_source).toBe('MANUAL_ADMIN');expect(publicItem.location_updated_label).toBeTruthy();
-  expect(publicItem.location_lat).not.toBe(selected.manual_latitude);expect(publicItem.location_lng).not.toBe(selected.manual_longitude);
-  const phoneBefore=await page.request.get(`/api/public/capacity?locationSource=MOBILE&viewport=${viewport}`);
-  expect(phoneBefore.status()).toBe(200);
-  expect((await phoneBefore.json()).items.some((item:{vehicle_id:string})=>item.vehicle_id===vehicle.id)).toBe(false);
-
   await page.getByRole('button',{name:'Set vehicle location',exact:true}).click();
   await page.getByRole('radio',{name:'Driver’s phone'}).click();
   const phoneSource=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/fleet/devices'&&response.request().method()==='POST');
@@ -100,6 +80,7 @@ test('assigned driver updates the Expo Capacity map manually, then switches back
   await expect(page.getByText('Capacity map location')).toHaveCount(0);
   const after=checked(await db.from('telematics_location_sources').select('source,selected_by').eq('vehicle_id',vehicle.id).single());
   expect(after).toMatchObject({source:'MOBILE',selected_by:driver.id});
+  await publishProviderCapacity(owner,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:places.map((place:{id:string;name:string})=>({placeRef:place.id,label:place.name}))});
   const capacity=checked(await db.from('capacities').select('location_source,location_updated_at').eq('vehicle_id',vehicle.id).order('updated_at',{ascending:false}).limit(1).single());
   expect(capacity.location_source).toBe('DEVICE_OBSCURED');expect(Number.isFinite(Date.parse(capacity.location_updated_at))).toBe(true);
   await page.reload();await expect(page.getByText('Driver’s phone')).toBeVisible({timeout:30_000});

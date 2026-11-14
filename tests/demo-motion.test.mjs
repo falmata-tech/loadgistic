@@ -63,10 +63,11 @@ test('runner failures expose only stable demo error codes',()=>{
  assert.equal(demoFailureCode(new TypeError('fetch failed')),'DEMO_TRANSPORT_UNAVAILABLE');
  assert.equal(demoFailureCode(new Error('request failed with bearer secret')),'DEMO_RUN_FAILED');
 });
-test('fictional route is bounded and moves at plausible speed without random cross-country jumps',()=>{
+test('explicit stationary and reviewed road scenarios preserve wall-clock continuity',()=>{
  for(const target of ['company-truck','personal-truck'])for(let seconds=0;seconds<2400;seconds+=5){
-  const a=demoRouteFix(target,seconds),b=demoRouteFix(target,seconds+5),distance=Math.hypot((b.latitude-a.latitude)*111195,(b.longitude-a.longitude)*111195*Math.cos(a.latitude*Math.PI/180));
+  const a=demoRouteFix(target,seconds*1000),b=demoRouteFix(target,(seconds+5)*1000),distance=Math.hypot((b.latitude-a.latitude)*111195,(b.longitude-a.longitude)*111195*Math.cos(a.latitude*Math.PI/180));
   assert.ok(distance<=28);assert.ok(a.latitude>9.02&&a.latitude<9.04&&a.longitude>38.74&&a.longitude<38.78);
+  if(target==='company-truck'){assert.equal(distance,0);assert.equal(a.speedKph,0);assert.equal(a.step,'STATIONARY');}
  }
  assert.throws(()=>demoRouteFix('customer',0));assert.throws(()=>demoRouteFix('company-truck',-1));
 });
@@ -81,16 +82,16 @@ test('phone takeover stops its reports and never changes source/radius or manual
  assert.equal(calls.some(row=>'source'in row||'precisionKm'in row||row.action==='MANUAL'),false);
  assert.equal(states.at(-1)[0].status,'PAUSED');assert.equal(states.at(-1)[0].failureCode,'DEMO_REPORT_DENIED');
 });
-test('local movement uses a 60-second cadence for both phone and GT06 sources',async()=>{
+test('local movement uses a 30-second cadence for both phone and GT06 sources',async()=>{
  const leaseId=randomUUID(),sleepCalls=[];let clock=0,phoneReports=0,gpsReports=0,gt06Interval;
  const request=async input=>{if(input.action==='START')return {state:'RUNNING',source:input.target==='company-truck'?'GPS':'MOBILE',epoch:1,leaseId,expiresAt:new Date(100000).toISOString()};
   if(input.action==='GPS'){gpsReports++;return {observedAt:new Date(2000).toISOString(),latitude:input.latitude,longitude:input.longitude};}
   if(input.action==='PHONE'){phoneReports++;return {recorded:true};}return {state:'OFF'};};
  const phone=await runDemoMotion({request,seconds:120,targets:['personal-truck'],now:()=>clock,sleep:async ms=>{sleepCalls.push(ms);clock+=ms;}});
- assert.equal(phone.failed,false);assert.equal(phoneReports,2);assert.deepEqual(sleepCalls,[1100,60000,58900]);
+ assert.equal(phone.failed,false);assert.equal(phoneReports,4);assert.deepEqual(sleepCalls,[1100,30000,30000,30000,28900]);
  clock=0;
  const gps=await runDemoMotion({request,seconds:10,targets:['company-truck'],now:()=>clock,sleep:async()=>{},simulate:async options=>{gt06Interval=options.reportIntervalSeconds;await options.beforeReport();return {positions:1};}});
- assert.equal(gps.failed,false);assert.equal(gpsReports,1);assert.equal(gt06Interval,60);
+ assert.equal(gps.failed,false);assert.equal(gpsReports,1);assert.equal(gt06Interval,30);
 });
 test('runtime result preserves only a sanitized failure code after a target pauses',async()=>{
  const states=[],leaseId=randomUUID();

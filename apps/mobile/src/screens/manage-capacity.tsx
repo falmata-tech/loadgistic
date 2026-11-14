@@ -138,7 +138,7 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
     if(status==='PARTIAL'&&free!==''&&(!/^\d{1,2}$/.test(free)||Number(free)<1||Number(free)>99))throw new Error('Enter 1% to 99% of space still free.');
     if (status !== 'OFF_DUTY') {
       if (!truck.driver) throw new Error('Assign a driver before publishing this vehicle.');
-      if (!truck.location && !locationSaved) throw new Error(truck.canSetManualLocation ? 'Update the Capacity map location first.' : truck.canLocate ? 'Share this vehicle’s location first.' : 'Ask the assigned driver to share the vehicle location, then refresh.');
+      if (!truck.location && !locationSaved) throw new Error(truck.canSetPhoneLocation ? 'Update the Capacity map location first.' : truck.canLocate ? 'Share this vehicle’s location first.' : 'Ask the assigned driver to share the vehicle location, then refresh.');
       const places = geometry === 'ROUTE' ? route : [center, ...boundary];
       if (places.some(place => !place.placeRef)) throw new Error('Choose each city from the suggestions.');
     }
@@ -172,7 +172,7 @@ export function CapacityEditor({ truck, canPublish, onSaved, onCancel, onBusy, s
             :<Copy message="Only shippers and brokers you share with can see this vehicle."/>}
           <AppLink href="/network" message="Manage vehicle sharing" style={{color:'#155eef',fontWeight:'700',paddingVertical:12}}/>
         </>}
-        {!truck.canLocate && !truck.location && <Copy message={truck.canSetManualLocation?"Set your location using Vehicle location on Home before publishing.":"Choose the vehicle’s location source in Fleet, then refresh before publishing."}/>}
+        {!truck.canLocate && !truck.location && <Copy message={truck.canSetPhoneLocation?"Set your location using Vehicle location on Home before publishing.":"Choose the vehicle’s location source in Fleet, then refresh before publishing."}/>}
       </>}
       <ErrorText message={error?t(error):''} /><Button message={section==='SHARING'?'Save sharing settings':'Save planned capacity'} onPress={save} busy={busy} />
     </> : !canPublish && section!=='LOCATION' ? <><Copy message={"Your fleet owner manages capacity. You can share location and change your duty status."}/><ErrorText message={error?t(error):''} />{truck.current && truck.current.status !== 'OFF_DUTY' ? <Button message="Go Off Duty" busy={busy} onPress={() => duty(false)} /> : truck.dutyConfigured ? <Button message="Mark Available" busy={busy} onPress={() => duty(true)} /> : <Copy message={"Ask your fleet owner to set up capacity before marking this vehicle Available."}/>}</> : <ErrorText message={error?t(error):''}/>}

@@ -6,6 +6,21 @@ Scope: Loadgistic only. This runbook grants no production authority; follow
 
 ## Current checkpoint — November 13 UTC
 
+[PR37's final publication record](https://github.com/falmata-tech/loadgistic/pull/37)
+is the verified delivery baseline. Its qualified PR and separate merged
+`520328b` main runs each passed all 16 required jobs. Source workflow43378172030
+advanced production and confirmed the ref at that SHA. Actual
+[Production deployment6af6ac945eb1cff1d55e577c](https://app.netlify.com/projects/loadgistic-473/deploys/6af6ac945eb1cff1d55e577c)
+was Published after independent source verification, mailbox_fields=2, all 8 final
+function ZIP checks and scanning 2,257 files. Canonical/immutable runtime and
+public Chrome tasks passed. Deployment6af4f16a16aab2cef815c573 remains rollback.
+This completed baseline is separate from the next GPS/simulator implementation,
+local-stack qualification and paused Google sender verification recorded in
+[current progress](../PROGRESS.md). No new SMTP setting or scan-policy change is
+part of this reconciliation; the strict advisor monitor remains separately open.
+
+## Historical mailbox checkpoint — before PR37 qualification
+
 PR36 merged asab899497 after all16 PR jobs passed. Separate main CI43352081887
 passed all16 on attempt1, and source workflow43355866914 created/read back
 production at that exact SHA. The real Git webhook triggered production build
@@ -98,6 +113,10 @@ owns this discrepancy. Netlify's [secrets controller reference](https://docs.net
 documents narrow exclusions; its existence does not approve one for this app.
 
 ## Reviewed delivery correction and activation
+
+The preparation record below predates PR37; its pending states are historical.
+The final qualification is linked above. The control matrix and activation
+procedure remain applicable to a new delivery change.
 
 Current source preparation addresses NR-75 without changing application inputs.
 The actual c957a60 main run passed all16 jobs, while its automatic Netlify build

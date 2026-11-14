@@ -1,0 +1,1780 @@
+{
+  "schema_version": 1,
+  "catalog_id": "loadgistic-demo-local-road-courses",
+  "catalog_version": "2026-11-12.1",
+  "coordinate_order": "longitude,latitude",
+  "source": {
+    "url": "https://download.geofabrik.de/africa/ethiopia-261112.osm.pbf",
+    "bytes": 140417001,
+    "published_md5": "612ba60fd2cfcba55286c1131472162d",
+    "sha256": "11f6475a36bae9c28d7eb8e5528086a4f287f600054abeb79b897941a5980a61",
+    "license": "ODbL-1.0",
+    "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "attribution": "© OpenStreetMap contributors",
+    "copyright_url": "https://www.openstreetmap.org/copyright",
+    "provider": "Geofabrik",
+    "source_date": "2026-11-12",
+    "data_timestamp": "2026-11-12T21:23:05Z"
+  },
+  "qualification": {
+    "bbox_radius_degrees": 0.035,
+    "allowed_highways": [
+      "primary",
+      "residential",
+      "secondary",
+      "tertiary",
+      "unclassified"
+    ],
+    "explicit_paved_surfaces": [
+      "asphalt",
+      "concrete",
+      "concrete:lanes",
+      "concrete:plates",
+      "paved",
+      "paving_stones",
+      "sett"
+    ],
+    "oneway": "Only absent/no/false/0; motorway and roundabout defaults excluded",
+    "access": "Restricted/private/destination/permit access excluded; restrictions not supplied are not physical verification",
+    "geometry": "Original consecutive OSM nodes in one mapped way; no synthesized vertices or joined roads",
+    "limits": "Mapped road geometry, not current road condition, turn legality or heavy-truck route certification",
+    "node_access_check": "Source nodes independently checked for barriers, fords, conditional/size and motor-vehicle access restrictions",
+    "no_certification": "This is mapped local-road protocol test geometry, not a full market-corridor journey, current road-condition assessment or heavy-truck routing certification."
+  },
+  "courses": {
+    "company-truck": {
+      "vehicle_id": "caf1d0db-4d8e-4ce9-a879-6c7b6017de3a",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 9.031,
+        "longitude": 38.748
+      },
+      "speed_kph": 0,
+      "dwell_seconds": 60,
+      "playback_policy": "STATIONARY",
+      "course_id": "company-truck-stationary-v1",
+      "mode": "STATIONARY",
+      "qualification": "FIXED_DEMO_ANCHOR",
+      "coordinates": [
+        [
+          38.748,
+          9.031
+        ]
+      ],
+      "geometry_sha256": "650adfc206c17f7e3c13b6bd51367152af1bd3e09aa2510ae23e47ffb3500c84",
+      "reason": "RADIUS_SCENARIO_EXPLICITLY_STATIONARY"
+    },
+    "personal-truck": {
+      "vehicle_id": "2f22cc5a-d654-4405-98b7-9a1a9cf42fe3",
+      "source": "MOBILE",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 9.03,
+        "longitude": 38.76
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "personal-truck-way-24891246-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "asphalt",
+      "osm_way_id": 24891246,
+      "osm_way_version": 17,
+      "osm_node_ids": [
+        266983292,
+        270456757,
+        5174696553,
+        270456758,
+        270456759,
+        2179742296,
+        5639312121,
+        5639258411,
+        270456760,
+        270456761,
+        548237834,
+        548237835,
+        561072700,
+        13983313387,
+        270456763,
+        270456764,
+        271735362,
+        270456765,
+        5184062911
+      ],
+      "coordinates": [
+        [
+          38.7572128,
+          9.026898
+        ],
+        [
+          38.7572711,
+          9.0265407
+        ],
+        [
+          38.7572955,
+          9.0263761
+        ],
+        [
+          38.7573372,
+          9.0260992
+        ],
+        [
+          38.7573693,
+          9.0258112
+        ],
+        [
+          38.7573573,
+          9.0255588
+        ],
+        [
+          38.7573382,
+          9.0254137
+        ],
+        [
+          38.7573181,
+          9.0253078
+        ],
+        [
+          38.7572491,
+          9.0250712
+        ],
+        [
+          38.7570359,
+          9.0245306
+        ],
+        [
+          38.7569493,
+          9.0243252
+        ],
+        [
+          38.7567715,
+          9.0239365
+        ],
+        [
+          38.7562857,
+          9.0230635
+        ],
+        [
+          38.7560917,
+          9.022715
+        ],
+        [
+          38.7557286,
+          9.022063
+        ],
+        [
+          38.755617,
+          9.0218257
+        ],
+        [
+          38.7555976,
+          9.0217609
+        ],
+        [
+          38.7555966,
+          9.0216317
+        ],
+        [
+          38.7556106,
+          9.0215057
+        ]
+      ],
+      "geometry_sha256": "28532140d205b97435dcad2aaacffedfb278f2aeed03c67fa77595d8bc1826b5",
+      "road_tags": {
+        "highway": "tertiary",
+        "name": "Wendimeneh Street",
+        "surface": "asphalt"
+      },
+      "distance_m": 645.29,
+      "nearest_anchor_m": 461.152,
+      "max_segment_m": 110.767,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 92,
+        "cells_by_radius_km": {
+          "1": 3,
+          "3": 1,
+          "5": 1,
+          "10": 1,
+          "20": 1
+        }
+      }
+    },
+    "fleet-01": {
+      "vehicle_id": "2020967a-92d3-4b1d-8f40-3c670dc97a50",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 9.015,
+        "longitude": 38.704
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "fleet-01-way-156003740-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "UNKNOWN",
+      "osm_way_id": 156003740,
+      "osm_way_version": 8,
+      "osm_node_ids": [
+        418363205,
+        5595642777,
+        418363310,
+        5595642776,
+        5595705211,
+        418363312,
+        418363316,
+        2367821083,
+        5595642775,
+        1683233421,
+        5595642774,
+        1683233425,
+        5595642773,
+        5595642770,
+        418363317,
+        5595642772,
+        5595642771,
+        1683233387,
+        5595642769,
+        1683233388,
+        5595663272,
+        1683233394,
+        5595642768,
+        5595642767,
+        5595642766,
+        418363691,
+        1683233458,
+        418363676,
+        1683233482,
+        418363628,
+        2216965587,
+        418363524,
+        5595642759,
+        2367833171,
+        5595642765,
+        1683233533
+      ],
+      "coordinates": [
+        [
+          38.700878,
+          9.0168425
+        ],
+        [
+          38.7003627,
+          9.0169792
+        ],
+        [
+          38.7002407,
+          9.0170004
+        ],
+        [
+          38.7000757,
+          9.0169991
+        ],
+        [
+          38.6999644,
+          9.0169976
+        ],
+        [
+          38.6997861,
+          9.0169951
+        ],
+        [
+          38.6991906,
+          9.0169805
+        ],
+        [
+          38.6988272,
+          9.0169752
+        ],
+        [
+          38.6982264,
+          9.0169845
+        ],
+        [
+          38.6978307,
+          9.017015
+        ],
+        [
+          38.6975799,
+          9.0170309
+        ],
+        [
+          38.6974324,
+          9.0170203
+        ],
+        [
+          38.6971843,
+          9.0169792
+        ],
+        [
+          38.6967967,
+          9.0169328
+        ],
+        [
+          38.6967337,
+          9.0169116
+        ],
+        [
+          38.6966787,
+          9.0168785
+        ],
+        [
+          38.6966465,
+          9.0168428
+        ],
+        [
+          38.6965984,
+          9.0168159
+        ],
+        [
+          38.6965366,
+          9.0167951
+        ],
+        [
+          38.6964825,
+          9.0168036
+        ],
+        [
+          38.6963783,
+          9.0168216
+        ],
+        [
+          38.6962683,
+          9.0168785
+        ],
+        [
+          38.6962295,
+          9.016913
+        ],
+        [
+          38.6962067,
+          9.0169501
+        ],
+        [
+          38.6961302,
+          9.0170097
+        ],
+        [
+          38.6959773,
+          9.0171002
+        ],
+        [
+          38.6956099,
+          9.01726
+        ],
+        [
+          38.6954986,
+          9.0173222
+        ],
+        [
+          38.6952652,
+          9.0174282
+        ],
+        [
+          38.6950359,
+          9.0175646
+        ],
+        [
+          38.6948267,
+          9.0176719
+        ],
+        [
+          38.6945786,
+          9.01786
+        ],
+        [
+          38.6943347,
+          9.018061
+        ],
+        [
+          38.6940756,
+          9.0182746
+        ],
+        [
+          38.6936679,
+          9.0186296
+        ],
+        [
+          38.6936304,
+          9.0186852
+        ]
+      ],
+      "geometry_sha256": "66292908d73fb5ae2e349bba79809cc3b043ce857bc37d90f7ad0bbbb13c175f",
+      "road_tags": {
+        "highway": "residential"
+      },
+      "distance_m": 871.474,
+      "nearest_anchor_m": 399.41,
+      "max_segment_m": 65.988,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 136,
+        "cells_by_radius_km": {
+          "1": 3,
+          "3": 1,
+          "5": 1,
+          "10": 1,
+          "20": 1
+        }
+      }
+    },
+    "fleet-02": {
+      "vehicle_id": "19838ed9-c898-43dd-a6d5-5d4c26d0e92d",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 8.5,
+        "longitude": 39.212
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "fleet-02-way-557521428-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "UNKNOWN",
+      "osm_way_id": 557521428,
+      "osm_way_version": 2,
+      "osm_node_ids": [
+        5376990070,
+        5376990076,
+        5593666978,
+        5376990077,
+        5593666979,
+        5593666980,
+        5376990078,
+        5376990079,
+        5376990080,
+        5593666976,
+        5593666977,
+        5376990081,
+        5593666974,
+        5593666975,
+        5376990082,
+        5376990083,
+        5376990084,
+        5376990085,
+        5376990086,
+        5593666973,
+        5376990087,
+        5593666972,
+        5376990088,
+        5593666971,
+        5376990089,
+        5376990090,
+        5376990091,
+        5376990092,
+        5376990093,
+        5593666970,
+        5376990094,
+        5376990095,
+        5376990096,
+        5376990097,
+        5376990098,
+        5376990099,
+        5376990100,
+        5376990101,
+        5376990102,
+        5376990103,
+        5376990104,
+        5376990105,
+        5376990106,
+        5376990107,
+        5593666969,
+        5376990108,
+        5593666967,
+        5593666968,
+        5593666965,
+        5593666966,
+        5376990109,
+        5376990110,
+        5376990043
+      ],
+      "coordinates": [
+        [
+          39.2220388,
+          8.5096025
+        ],
+        [
+          39.2220135,
+          8.5094175
+        ],
+        [
+          39.2219679,
+          8.5093246
+        ],
+        [
+          39.2218915,
+          8.5092265
+        ],
+        [
+          39.2217319,
+          8.5091283
+        ],
+        [
+          39.221693,
+          8.5090501
+        ],
+        [
+          39.2216822,
+          8.5089599
+        ],
+        [
+          39.2216849,
+          8.5087463
+        ],
+        [
+          39.2216822,
+          8.50855
+        ],
+        [
+          39.2216367,
+          8.5084572
+        ],
+        [
+          39.2216085,
+          8.5083285
+        ],
+        [
+          39.2215897,
+          8.5081495
+        ],
+        [
+          39.2215736,
+          8.5080473
+        ],
+        [
+          39.2215535,
+          8.5079956
+        ],
+        [
+          39.2214972,
+          8.5079174
+        ],
+        [
+          39.221359,
+          8.5078404
+        ],
+        [
+          39.2211847,
+          8.5076388
+        ],
+        [
+          39.2209634,
+          8.50729
+        ],
+        [
+          39.22084,
+          8.507099
+        ],
+        [
+          39.2207488,
+          8.5069146
+        ],
+        [
+          39.220726,
+          8.5067488
+        ],
+        [
+          39.2206845,
+          8.5065724
+        ],
+        [
+          39.2206228,
+          8.5063364
+        ],
+        [
+          39.2205504,
+          8.5059729
+        ],
+        [
+          39.2204779,
+          8.5056201
+        ],
+        [
+          39.2201748,
+          8.5049278
+        ],
+        [
+          39.2200381,
+          8.504575
+        ],
+        [
+          39.2199361,
+          8.5039091
+        ],
+        [
+          39.2197886,
+          8.5035271
+        ],
+        [
+          39.2195901,
+          8.5031398
+        ],
+        [
+          39.2194372,
+          8.5028242
+        ],
+        [
+          39.2191422,
+          8.5023811
+        ],
+        [
+          39.2188847,
+          8.5019779
+        ],
+        [
+          39.2187479,
+          8.5016755
+        ],
+        [
+          39.2186245,
+          8.5013943
+        ],
+        [
+          39.2186165,
+          8.501198
+        ],
+        [
+          39.218587,
+          8.5009752
+        ],
+        [
+          39.2186004,
+          8.5007656
+        ],
+        [
+          39.2186487,
+          8.5005587
+        ],
+        [
+          39.2186755,
+          8.5004897
+        ],
+        [
+          39.2186916,
+          8.5004314
+        ],
+        [
+          39.2187667,
+          8.5003253
+        ],
+        [
+          39.2188767,
+          8.500259
+        ],
+        [
+          39.2189424,
+          8.5001661
+        ],
+        [
+          39.2189786,
+          8.5000308
+        ],
+        [
+          39.2190188,
+          8.4997377
+        ],
+        [
+          39.2190443,
+          8.4996435
+        ],
+        [
+          39.2190483,
+          8.4995082
+        ],
+        [
+          39.2190376,
+          8.499422
+        ],
+        [
+          39.2190403,
+          8.4993716
+        ],
+        [
+          39.2190738,
+          8.4992894
+        ],
+        [
+          39.2191717,
+          8.4991435
+        ],
+        [
+          39.219287,
+          8.4989843
+        ]
+      ],
+      "geometry_sha256": "ce88ecf6a6c3f3bf2d7bfb7abaf591268c47727a596ea3f8df1d4f00221e24ab",
+      "road_tags": {
+        "highway": "unclassified"
+      },
+      "distance_m": 1301.364,
+      "nearest_anchor_m": 730.844,
+      "max_segment_m": 83.887,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 211,
+        "cells_by_radius_km": {
+          "1": 4,
+          "3": 2,
+          "5": 2,
+          "10": 1,
+          "20": 2
+        }
+      }
+    },
+    "fleet-03": {
+      "vehicle_id": "2c449a7d-d26d-4eeb-aa64-7f4ba9f33c9d",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 11.459,
+        "longitude": 37.303
+      },
+      "speed_kph": 0,
+      "dwell_seconds": 60,
+      "playback_policy": "STATIONARY",
+      "course_id": "fleet-03-stationary-v1",
+      "mode": "STATIONARY",
+      "qualification": "FIXED_DEMO_ANCHOR",
+      "coordinates": [
+        [
+          37.303,
+          11.459
+        ]
+      ],
+      "geometry_sha256": "58c97971220e9df00768e472b78fc785965ce5a4bfe214e94611e1818ded0ff5",
+      "reason": "RADIUS_SCENARIO_EXPLICITLY_STATIONARY"
+    },
+    "fleet-04": {
+      "vehicle_id": "0088dba7-04c7-425e-b5a9-64b721a753f0",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 13.468,
+        "longitude": 39.491
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "fleet-04-way-564500306-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "UNKNOWN",
+      "osm_way_id": 564500306,
+      "osm_way_version": 2,
+      "osm_node_ids": [
+        4401819724,
+        5438817812,
+        5438817811,
+        5438817810,
+        5438817805,
+        5438817806,
+        5438817809,
+        5438817808,
+        5438817807,
+        2335695927,
+        5438817804,
+        5438817803,
+        5438817802,
+        5438817801,
+        5438817800,
+        5438817799,
+        5438817798,
+        5438817797,
+        5438817796,
+        5438817795,
+        5438817794,
+        5438817793,
+        5438817792,
+        5438817791,
+        2747517745,
+        2140787994,
+        2140789111,
+        2140789122
+      ],
+      "coordinates": [
+        [
+          39.4864391,
+          13.467192
+        ],
+        [
+          39.4865946,
+          13.4669807
+        ],
+        [
+          39.486663,
+          13.4668373
+        ],
+        [
+          39.4867247,
+          13.466759
+        ],
+        [
+          39.4868159,
+          13.4666508
+        ],
+        [
+          39.4869688,
+          13.4665047
+        ],
+        [
+          39.4871297,
+          13.4663782
+        ],
+        [
+          39.4871847,
+          13.4663182
+        ],
+        [
+          39.4872411,
+          13.4662282
+        ],
+        [
+          39.4873551,
+          13.4659869
+        ],
+        [
+          39.4874637,
+          13.4658343
+        ],
+        [
+          39.4875388,
+          13.4657678
+        ],
+        [
+          39.487626,
+          13.4657013
+        ],
+        [
+          39.4879022,
+          13.4654965
+        ],
+        [
+          39.4880095,
+          13.4653713
+        ],
+        [
+          39.488204,
+          13.4651639
+        ],
+        [
+          39.4882764,
+          13.4651157
+        ],
+        [
+          39.4885138,
+          13.4649931
+        ],
+        [
+          39.4885929,
+          13.4649709
+        ],
+        [
+          39.488845,
+          13.4649526
+        ],
+        [
+          39.4889134,
+          13.4649213
+        ],
+        [
+          39.4889644,
+          13.4648809
+        ],
+        [
+          39.4896859,
+          13.4641766
+        ],
+        [
+          39.4897985,
+          13.4640932
+        ],
+        [
+          39.4916659,
+          13.4626989
+        ],
+        [
+          39.4919765,
+          13.4625463
+        ],
+        [
+          39.4926926,
+          13.4620142
+        ],
+        [
+          39.4930696,
+          13.4617406
+        ]
+      ],
+      "geometry_sha256": "12c8253ad4409ec86c64831e64a436fd550ea315d0c5744909e2705fb5f5f70b",
+      "road_tags": {
+        "highway": "unclassified"
+      },
+      "distance_m": 955.714,
+      "nearest_anchor_m": 410.009,
+      "max_segment_m": 254.591,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 135,
+        "cells_by_radius_km": {
+          "1": 4,
+          "3": 2,
+          "5": 2,
+          "10": 2,
+          "20": 1
+        }
+      }
+    },
+    "fleet-05": {
+      "vehicle_id": "5bf57d7a-2159-45f9-9f90-3cdef5ed43d8",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 11.783,
+        "longitude": 41.014
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "fleet-05-way-60542344-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "UNKNOWN",
+      "osm_way_id": 60542344,
+      "osm_way_version": 6,
+      "osm_node_ids": [
+        755841919,
+        755843773,
+        6152551382,
+        8004569770,
+        6152551374,
+        2207822653,
+        8004569778,
+        755842402,
+        8004601704,
+        2207822630
+      ],
+      "coordinates": [
+        [
+          41.010214,
+          11.7950901
+        ],
+        [
+          41.0109278,
+          11.7946708
+        ],
+        [
+          41.0119861,
+          11.7941632
+        ],
+        [
+          41.0120809,
+          11.7941177
+        ],
+        [
+          41.0133025,
+          11.7935317
+        ],
+        [
+          41.0142654,
+          11.7930698
+        ],
+        [
+          41.0149404,
+          11.7927391
+        ],
+        [
+          41.0164423,
+          11.7920033
+        ],
+        [
+          41.016963,
+          11.7917508
+        ],
+        [
+          41.0188545,
+          11.7908337
+        ]
+      ],
+      "geometry_sha256": "fd2ea6051ee419678bcd0ebd016fd629825edb62c64132e8f4a5ac083d9dea12",
+      "road_tags": {
+        "highway": "residential"
+      },
+      "distance_m": 1053.153,
+      "nearest_anchor_m": 1018.813,
+      "max_segment_m": 229.758,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 119,
+        "cells_by_radius_km": {
+          "1": 4,
+          "3": 2,
+          "5": 1,
+          "10": 1,
+          "20": 1
+        }
+      }
+    },
+    "fleet-06": {
+      "vehicle_id": "0dc90cf6-7735-4ccc-b030-98a81c40ffd6",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 9.35,
+        "longitude": 42.793
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "fleet-06-way-239286659-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "asphalt",
+      "osm_way_id": 239286659,
+      "osm_way_version": 11,
+      "osm_node_ids": [
+        10607032722,
+        5443300895,
+        10607029776,
+        2470861560,
+        5443302758,
+        12272235319,
+        1136507657,
+        5443302759,
+        4374927606,
+        5443425992,
+        2470861558,
+        5443302761,
+        5443302753,
+        2470861559,
+        5443302771,
+        5443302756,
+        5440032235,
+        5443302773,
+        5440032234,
+        10607032741,
+        2470861561
+      ],
+      "coordinates": [
+        [
+          42.8003357,
+          9.3469268
+        ],
+        [
+          42.7998379,
+          9.3469192
+        ],
+        [
+          42.7997839,
+          9.3469201
+        ],
+        [
+          42.7989637,
+          9.3469074
+        ],
+        [
+          42.7981402,
+          9.3468842
+        ],
+        [
+          42.7975215,
+          9.346876
+        ],
+        [
+          42.7967886,
+          9.3468663
+        ],
+        [
+          42.7962777,
+          9.3468546
+        ],
+        [
+          42.7958016,
+          9.3468588
+        ],
+        [
+          42.7952784,
+          9.3468574
+        ],
+        [
+          42.7942325,
+          9.3468744
+        ],
+        [
+          42.7941676,
+          9.3468747
+        ],
+        [
+          42.7937795,
+          9.3468717
+        ],
+        [
+          42.7926729,
+          9.3468802
+        ],
+        [
+          42.7920049,
+          9.3468832
+        ],
+        [
+          42.7915693,
+          9.3468817
+        ],
+        [
+          42.7907724,
+          9.3468991
+        ],
+        [
+          42.7906057,
+          9.3468972
+        ],
+        [
+          42.7891588,
+          9.3469095
+        ],
+        [
+          42.7886468,
+          9.3469229
+        ],
+        [
+          42.7885745,
+          9.34693
+        ]
+      ],
+      "geometry_sha256": "018e30988d3ab8e80bc650c83869eae033ea4c0d09c86e19f7172725e0b30dd5",
+      "road_tags": {
+        "highway": "tertiary",
+        "surface": "asphalt"
+      },
+      "distance_m": 1290.618,
+      "nearest_anchor_m": 348.757,
+      "max_segment_m": 158.758,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 159,
+        "cells_by_radius_km": {
+          "1": 3,
+          "3": 2,
+          "5": 2,
+          "10": 1,
+          "20": 1
+        }
+      }
+    },
+    "fleet-07": {
+      "vehicle_id": "02c0a10d-3b4b-4b83-9f85-6272f8b6ce95",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 9.299,
+        "longitude": 41.867
+      },
+      "speed_kph": 20,
+      "dwell_seconds": 60,
+      "playback_policy": "OUT_AND_BACK",
+      "course_id": "fleet-07-way-219956051-v1",
+      "mode": "ROAD_LEG",
+      "qualification": "MAPPED_OSM_SOURCE_VERIFIED",
+      "surface": "UNKNOWN",
+      "osm_way_id": 219956051,
+      "osm_way_version": 8,
+      "osm_node_ids": [
+        2290849121,
+        2290849137,
+        2290849105,
+        2290849352,
+        2290849242,
+        2290849047,
+        2290849055,
+        2290849275,
+        2290849053,
+        2290849029,
+        2290849032,
+        2290849314,
+        2290849049,
+        2290849228,
+        2290849305,
+        2290849328,
+        2290849333,
+        2290848912,
+        2290848947,
+        2290848930,
+        2290848967,
+        2290849101,
+        2290849415,
+        2290848964,
+        2290849012,
+        2290848990,
+        2290849056,
+        2290849186,
+        2290849095,
+        2290849487,
+        2290849453,
+        2151546074,
+        2151545665,
+        2151546284,
+        2151545989,
+        2151546041,
+        2151546098,
+        2151545867,
+        2151545637,
+        2151545641,
+        2151545884,
+        12095629643,
+        12095629644,
+        2151545844,
+        2151546019,
+        12095629642,
+        2151546057,
+        2151545335,
+        2151545602,
+        2151545539,
+        2151545628,
+        2151545599,
+        2151546130,
+        2151545601,
+        2151545329,
+        2151545573,
+        2151546015,
+        2151546332,
+        2151546021,
+        2151545660,
+        2151545638,
+        2151545617,
+        2151545415,
+        2151546000,
+        2151545419,
+        2151546235,
+        2151546011,
+        2151546049,
+        2151546207,
+        2151545813,
+        2151545384,
+        2151545436,
+        2151546165,
+        2151545569,
+        2151545716,
+        2151545630,
+        2151546201,
+        2151545537,
+        2151545527,
+        2151545507,
+        2151545644,
+        2151545725,
+        2151546070,
+        2151546139,
+        2151545952,
+        2151546073,
+        2151546218,
+        2151545566,
+        2151545597,
+        2151545532,
+        2151545709,
+        2151545811,
+        2151546075,
+        2151545828,
+        2151545824,
+        2151545821,
+        2151546002,
+        2151545834,
+        2151545955,
+        8627508814,
+        8627508813,
+        8627508812
+      ],
+      "coordinates": [
+        [
+          41.8322574,
+          9.3262635
+        ],
+        [
+          41.8327713,
+          9.3267203
+        ],
+        [
+          41.8333947,
+          9.3270575
+        ],
+        [
+          41.8350362,
+          9.3278833
+        ],
+        [
+          41.8354331,
+          9.3279044
+        ],
+        [
+          41.83627,
+          9.3277245
+        ],
+        [
+          41.8365704,
+          9.3275657
+        ],
+        [
+          41.8367742,
+          9.3274069
+        ],
+        [
+          41.8369352,
+          9.3272057
+        ],
+        [
+          41.8371819,
+          9.3268352
+        ],
+        [
+          41.8375574,
+          9.3265176
+        ],
+        [
+          41.838007,
+          9.3262651
+        ],
+        [
+          41.8385016,
+          9.325967
+        ],
+        [
+          41.83892,
+          9.3256812
+        ],
+        [
+          41.8402289,
+          9.3237332
+        ],
+        [
+          41.8404961,
+          9.3234595
+        ],
+        [
+          41.8412696,
+          9.3219121
+        ],
+        [
+          41.8421172,
+          9.3203347
+        ],
+        [
+          41.8430603,
+          9.318907
+        ],
+        [
+          41.8432759,
+          9.3185666
+        ],
+        [
+          41.8444014,
+          9.3179859
+        ],
+        [
+          41.8447458,
+          9.3177726
+        ],
+        [
+          41.8456363,
+          9.3167138
+        ],
+        [
+          41.8457757,
+          9.316375
+        ],
+        [
+          41.8456363,
+          9.315761
+        ],
+        [
+          41.8454539,
+          9.3154857
+        ],
+        [
+          41.8456363,
+          9.3153057
+        ],
+        [
+          41.8460654,
+          9.3152316
+        ],
+        [
+          41.8472027,
+          9.3149034
+        ],
+        [
+          41.8473314,
+          9.3147869
+        ],
+        [
+          41.8473314,
+          9.3145223
+        ],
+        [
+          41.8476748,
+          9.3139719
+        ],
+        [
+          41.8480718,
+          9.312278
+        ],
+        [
+          41.8482435,
+          9.3114521
+        ],
+        [
+          41.8487692,
+          9.3107004
+        ],
+        [
+          41.8489086,
+          9.3102875
+        ],
+        [
+          41.8490696,
+          9.3098323
+        ],
+        [
+          41.8495283,
+          9.3095595
+        ],
+        [
+          41.8501881,
+          9.3086887
+        ],
+        [
+          41.850754,
+          9.3080218
+        ],
+        [
+          41.8514407,
+          9.3069391
+        ],
+        [
+          41.8517169,
+          9.3065103
+        ],
+        [
+          41.8522668,
+          9.3059597
+        ],
+        [
+          41.8528461,
+          9.3055019
+        ],
+        [
+          41.8534094,
+          9.304578
+        ],
+        [
+          41.8537715,
+          9.3041307
+        ],
+        [
+          41.8540156,
+          9.3036332
+        ],
+        [
+          41.8544662,
+          9.3034877
+        ],
+        [
+          41.8548417,
+          9.3034559
+        ],
+        [
+          41.8552119,
+          9.3034929
+        ],
+        [
+          41.8557644,
+          9.3035326
+        ],
+        [
+          41.8561184,
+          9.3027068
+        ],
+        [
+          41.8563974,
+          9.3019974
+        ],
+        [
+          41.8565798,
+          9.3017115
+        ],
+        [
+          41.857835,
+          9.3004304
+        ],
+        [
+          41.8585968,
+          9.3001975
+        ],
+        [
+          41.8588006,
+          9.2999645
+        ],
+        [
+          41.859101,
+          9.2994246
+        ],
+        [
+          41.860013,
+          9.2983128
+        ],
+        [
+          41.8601739,
+          9.298154
+        ],
+        [
+          41.8603563,
+          9.298154
+        ],
+        [
+          41.8607426,
+          9.298387
+        ],
+        [
+          41.8612575,
+          9.2979317
+        ],
+        [
+          41.8615579,
+          9.2976564
+        ],
+        [
+          41.8618476,
+          9.2974446
+        ],
+        [
+          41.8627274,
+          9.2965023
+        ],
+        [
+          41.8629527,
+          9.2961953
+        ],
+        [
+          41.8642294,
+          9.2959094
+        ],
+        [
+          41.8645513,
+          9.2958141
+        ],
+        [
+          41.8656778,
+          9.2952212
+        ],
+        [
+          41.8659568,
+          9.2950835
+        ],
+        [
+          41.8660748,
+          9.2949777
+        ],
+        [
+          41.866225,
+          9.2947447
+        ],
+        [
+          41.8663215,
+          9.2944483
+        ],
+        [
+          41.8663537,
+          9.2941836
+        ],
+        [
+          41.8672335,
+          9.2924683
+        ],
+        [
+          41.8690789,
+          9.2913354
+        ],
+        [
+          41.8694544,
+          9.2912083
+        ],
+        [
+          41.8702054,
+          9.2911554
+        ],
+        [
+          41.87042,
+          9.2912507
+        ],
+        [
+          41.870538,
+          9.2913036
+        ],
+        [
+          41.8725765,
+          9.2915471
+        ],
+        [
+          41.8728447,
+          9.291886
+        ],
+        [
+          41.8731022,
+          9.2919177
+        ],
+        [
+          41.8735099,
+          9.2918648
+        ],
+        [
+          41.8741536,
+          9.2918012
+        ],
+        [
+          41.8745398,
+          9.2917589
+        ],
+        [
+          41.8748188,
+          9.2916742
+        ],
+        [
+          41.875205,
+          9.2915789
+        ],
+        [
+          41.8753874,
+          9.2915154
+        ],
+        [
+          41.87561,
+          9.2914809
+        ],
+        [
+          41.8757442,
+          9.2915869
+        ],
+        [
+          41.8758461,
+          9.2917113
+        ],
+        [
+          41.8760097,
+          9.2916742
+        ],
+        [
+          41.8761304,
+          9.2916398
+        ],
+        [
+          41.876278,
+          9.2916054
+        ],
+        [
+          41.8765435,
+          9.2915869
+        ],
+        [
+          41.8767205,
+          9.2915921
+        ],
+        [
+          41.8769055,
+          9.2916
+        ],
+        [
+          41.8770933,
+          9.291653
+        ],
+        [
+          41.877214,
+          9.2917323
+        ],
+        [
+          41.8772618,
+          9.2917787
+        ]
+      ],
+      "geometry_sha256": "bcf164c5e01c9774db463819335f0ac44d888266f8f20f2c27ee49e5c9de03a1",
+      "road_tags": {
+        "highway": "tertiary"
+      },
+      "distance_m": 7254.278,
+      "nearest_anchor_m": 444.528,
+      "max_segment_m": 259.895,
+      "source_verification": {
+        "exact_original_node_coordinates": true,
+        "consecutive_single_way_nodes": true,
+        "node_barrier_and_access_check": "passed",
+        "independent_pbf_reparse": true
+      },
+      "privacy_projection": {
+        "method": "Existing obscureCoordinate; samples at original vertices and <=10m linear intervals along each source segment; sampled cell count is a lower bound",
+        "sample_count": 874,
+        "cells_by_radius_km": {
+          "1": 19,
+          "3": 8,
+          "5": 5,
+          "10": 4,
+          "20": 2
+        }
+      }
+    },
+    "fleet-08": {
+      "vehicle_id": "28b05503-eb24-4b78-8646-6a1813207813",
+      "source": "GPS",
+      "purpose": "PROTOCOL_LOCAL",
+      "anchor": {
+        "latitude": 9.701,
+        "longitude": 41.827
+      },
+      "speed_kph": 0,
+      "dwell_seconds": 0,
+      "playback_policy": "NONE",
+      "course_id": null,
+      "mode": "UNAVAILABLE",
+      "qualification": "NO_QUALIFIED_ROAD_COURSE",
+      "coordinates": [],
+      "geometry_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "reason": "NO_MAPPED_ROAD_COURSE_WITHIN_REVIEWED_CONSERVATIVE_BOUNDS"
+    }
+  }
+}

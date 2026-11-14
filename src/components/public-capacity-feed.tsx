@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import {useBlockedProviders} from './content-safety';
-import {loadCapacityMapWindow,reconcileCapacityMapWindow} from '@/lib/capacity-map-loading.js';
+import {loadCapacityMapWindow,reconcileCapacityMapWindow,capacityVehicleIdentity,currentCapacitySelection} from '@/lib/capacity-map-loading.js';
 import {BUSINESS_SEARCH_PRIVACY_KM,obscureCoordinate,isValidCoordinate} from '@/lib/location-privacy.js';
 import {CAPACITY_FILTER_PRESENTATION as filterPresentation,initialCapacityQueryShape} from '@/lib/capacity-filter-presentation';
 import {CapacityConfigurationPicker} from './capacity-configuration-picker';
@@ -103,10 +103,15 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const resultsScroll=React.useRef(null as HTMLDivElement|null);
   const savedResultsScroll=React.useRef(0);
   function selectTruck(id:string|null){
+    selectedRef.current=id;
+    selectedVehicle.current=capacityVehicleIdentity(allItems.find((item:any)=>item.id===id));
     if(id){if(!selectedId)savedResultsScroll.current=resultsScroll.current?.scrollTop||0;search.pause();setSelectedId(id);}
     else closeTruck();
+    // A deliberate new selection supersedes its old exact authorization read.
+    if(selectionLookup.current)void loadWindow();
   }
   function closeTruck(){
+    selectedRef.current=null;selectedVehicle.current=null;
     setSelectedId(null);setDrawerOpen(true);
     requestAnimationFrame(()=>{if(resultsScroll.current)resultsScroll.current.scrollTop=savedResultsScroll.current;drawer.current?.focus();});
   }
@@ -144,12 +149,18 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const filterDialog=React.useRef(null as HTMLDialogElement|null);
   const viewport=React.useRef('');
   const selectedRef=React.useRef(selectedId);selectedRef.current=selectedId;
+  const selectedVehicle=React.useRef(capacityVehicleIdentity(allItems.find((item:any)=>item.id===selectedId)) as string|null);
+  const selectedRow=allItems.find((item:any)=>item.id===selectedId);
+  if(selectedRow)selectedVehicle.current=capacityVehicleIdentity(selectedRow);
+  else if(!selectedId)selectedVehicle.current=null;
   const generation=React.useRef(0);
   const pendingRequest=React.useRef(null as AbortController|null);
-  React.useEffect(()=>()=>pendingRequest.current?.abort(),[]);
+  const selectionLookup=React.useRef(null as AbortController|null);
+  React.useEffect(()=>()=>{generation.current+=1;pendingRequest.current?.abort();pendingRequest.current=null;},[]);
 
   const loadWindow=React.useCallback(async()=>{
     generation.current+=1;pendingRequest.current?.abort();
+    selectionLookup.current=null;
     const version=generation.current;
     const controller=new AbortController();pendingRequest.current=controller;
     const params=new URLSearchParams(query);
@@ -158,35 +169,89 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     params.delete('overview');params.delete('cursor');
     if(viewport.current&&!query.provider&&!query.truck)params.set('viewport',viewport.current);
     setLoading(true);setError('');
+    const privateFeed=apiPath!=='/api/public/capacity';
+    let privateDenied=false,completedItems:FeedResult['items']|null=null;
+    const requestPage=async(pageParams:URLSearchParams,deadlineMs=30000)=>{
+      const timeout=window.setTimeout(()=>controller.abort('timeout'),deadlineMs);
+      try{
+        const response=await fetch(`${apiPath}?${pageParams.toString()}`,{signal:controller.signal,cache:'no-store'});
+        if(!response.ok){
+          if(privateFeed&&[401,403,404].includes(response.status)&&version===generation.current){
+            privateDenied=true;setItems([]);selectedRef.current=null;selectedVehicle.current=null;setSelectedId(null);
+          }
+          throw new Error('Capacity could not be loaded.');
+        }
+        return await response.json();
+      }finally{window.clearTimeout(timeout);}
+    };
     try{
       await loadCapacityMapWindow({
         signal:controller.signal,
-        requestPage:async(cursor:string|null,signal:AbortSignal)=>{
+        requestPage:async(cursor:string|null)=>{
           const pageParams=new URLSearchParams(params);
           if(cursor)pageParams.set('cursor',cursor);
-          const response=await fetch(`${apiPath}?${pageParams.toString()}`,{signal,cache:'no-store'});
-          if(!response.ok){
-            if(apiPath.startsWith('/api/business-workspaces/')&&[401,403].includes(response.status)&&version===generation.current){setItems([]);setSelectedId(null);}
-            throw new Error('Capacity could not be loaded.');
-          }
-          return response.json();
+          return requestPage(pageParams);
         },
         onPage:(incoming:FeedResult['items'],state:{complete:boolean})=>{
           if(version!==generation.current)return;
-          setItems((current:FeedResult['items'])=>reconcileCapacityMapWindow(current,incoming,selectedRef.current,state.complete));
+          const replacement=selectedRef.current?currentCapacitySelection({id:selectedRef.current,vehicle_id:selectedVehicle.current},incoming):null;
+          if(replacement&&replacement.id!==selectedRef.current){selectedRef.current=replacement.id;setSelectedId(replacement.id);}
+          if(state.complete)completedItems=incoming;
+          // A missing selection may be outside the viewport or no longer eligible.
+          // Keep the current window until its one exact current read settles.
+          setItems((current:FeedResult['items'])=>reconcileCapacityMapWindow(current,incoming,selectedRef.current,false));
         }
       });
+      if(completedItems&&version===generation.current&&!controller.signal.aborted){
+        const incoming=completedItems as FeedResult['items'],verifyingSelected=selectedRef.current,verifyingVehicle=selectedVehicle.current;
+        let authorizedSelected:FeedResult['items'][number]|null=null;
+        if(verifyingSelected&&!incoming.some(item=>item.id===verifyingSelected)){
+          const selectedParams=new URLSearchParams(params);
+          selectedParams.delete('viewport');selectedParams.delete('cursor');selectedParams.delete('capacityId');
+          selectedParams.set('truck',verifyingSelected);
+          selectionLookup.current=controller;
+          try{
+            const result=await requestPage(selectedParams,10000);
+            if(result.filterError||result.hasMore!==false||!Array.isArray(result.items)||result.items.length>1
+              ||result.items.some((item:FeedResult['items'][number])=>item?.id!==verifyingSelected
+                ||verifyingVehicle&&capacityVehicleIdentity(item)!==verifyingVehicle))throw new Error('Capacity could not be loaded.');
+            authorizedSelected=result.items[0]||null;
+          }catch(problem){
+            if(version===generation.current&&(!controller.signal.aborted||controller.signal.reason==='timeout')){
+              if(privateFeed){
+                if(!privateDenied)setItems(incoming);
+                if(selectedRef.current===verifyingSelected){selectedRef.current=null;selectedVehicle.current=null;setSelectedId(null);}
+              }else setItems((current:FeedResult['items'])=>reconcileCapacityMapWindow(current,incoming,selectedRef.current,true));
+            }
+            throw problem;
+          }finally{if(selectionLookup.current===controller)selectionLookup.current=null;}
+        }
+        if(version===generation.current&&!controller.signal.aborted){
+          const selected=selectedRef.current;
+          const authorized=incoming.find(item=>item.id===selected)
+            ||(selected===verifyingSelected?authorizedSelected:null);
+          setItems(authorized&&!incoming.some(item=>item.id===authorized.id)?[authorized,...incoming]:incoming);
+          if(selected&&!authorized){selectedRef.current=null;selectedVehicle.current=null;setSelectedId(null);}
+        }
+      }
     }catch(problem){
-      if(version===generation.current&&!controller.signal.aborted)setError(problem instanceof Error?problem.message:'Capacity could not be loaded.');
+      if(version===generation.current&&(!controller.signal.aborted||controller.signal.reason==='timeout'))setError(controller.signal.reason==='timeout'?'Capacity could not be loaded.':problem instanceof Error?problem.message:'Capacity could not be loaded.');
     }finally{
+      if(pendingRequest.current===controller)pendingRequest.current=null;
       if(version===generation.current)setLoading(false);
     }
   },[apiPath,query,blockKey]);
   React.useEffect(()=>{
-    const refresh=()=>{if(document.visibilityState==='visible')void loadWindow();};
-    const timer=window.setInterval(refresh,60000);
+    const refresh=()=>{
+      if(document.visibilityState!=='visible'){
+        if(pendingRequest.current){generation.current+=1;pendingRequest.current.abort();pendingRequest.current=null;setLoading(false);}
+        return;
+      }
+      if(!pendingRequest.current)void loadWindow();
+    };
+    const timer=window.setInterval(refresh,15000);
     document.addEventListener('visibilitychange',refresh);
-    return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',refresh);};
+    return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',refresh);generation.current+=1;pendingRequest.current?.abort();pendingRequest.current=null;selectionLookup.current=null;};
   },[loadWindow]);
   function explore(bounds:number[]){
     const key=bounds.map(value=>value.toFixed(4)).join(',');

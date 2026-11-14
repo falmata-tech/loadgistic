@@ -97,13 +97,15 @@ function validPlacePoints(value,minimum){
 
 function verificationBadges(subjectType,records){return verificationBadgesFromApproved(subjectType,records);}
 
-async function capacityOwnerBadges(client,rows){
+async function capacityOwnerEvidence(client,rows){
   const organizationIds=[...new Set(rows.map(row=>row.provider_organization_id).filter(Boolean))];
   const providerIds=[...new Set(rows.map(row=>row.provider_profile_id).filter(Boolean))];
   if(!rows.length)return new Map();
   const {data,error}=await client.rpc('capacity_owner_documents',{organization_ids:organizationIds,provider_ids:providerIds});
   if(error)throw new Error('SUPABASE_CAPACITY_OWNER_DOCUMENTS_FAILED',{cause:error});
-  return new Map((data||[]).map(owner=>[owner.subject_id,verificationBadges(owner.subject_type,owner.documents)]));
+  return new Map((data||[]).map(owner=>[owner.subject_id,{
+    badges:verificationBadges(owner.subject_type,owner.documents),accountIsDemo:owner.account_is_demo===true
+  }]));
 }
 
 export async function listSupabasePublicCapacityCursor(filters={},options={}){
@@ -142,7 +144,7 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
   }
   const hasMore=rows.length>pageSize;
   const selected=rows.slice(0,pageSize);
-  const ownerBadges=await capacityOwnerBadges(client,selected);
+  const ownerEvidence=await capacityOwnerEvidence(client,selected);
   const items=selected.map(row=>{
     const recurring=(row.recurring_corridors||[]).slice(0,1).map(signal=>({
       ...signal,geometry:signal.geometry==='RADIUS'?'RADIUS':'ROUTE',
@@ -159,7 +161,8 @@ export async function listSupabasePublicCapacityCursor(filters={},options={}){
       recurring_corridors:recurring,current_route_points:validPlacePoints(row.current_route_points,row.availability_geometry==='ROUTE'?2:0),
       capacity_area_boundary:validPlacePoints(row.capacity_area_boundary,row.availability_geometry==='RADIUS'?3:0),
       driver_kind:driverKind,driver_kind_label:'Driver',
-      owner_verification_badges:ownerBadges.get(row.provider_organization_id||row.provider_profile_id)||[],
+      account_is_demo:ownerEvidence.get(row.provider_organization_id||row.provider_profile_id)?.accountIsDemo===true,
+      owner_verification_badges:ownerEvidence.get(row.provider_organization_id||row.provider_profile_id)?.badges||[],
       driver_verification_badges:verificationBadges('DRIVER',row.driver_documents),
       truck_verification_badges:publicVehicleAuthorityBadges(row.authority,truckDocumentBadges(row.vehicle_documents,row.authorization_documents,row.vehicle_id,row.platform_number)),
       possible_distance_min_km:distance?.minKm??null,possible_distance_max_km:distance?.maxKm??null,
@@ -273,10 +276,11 @@ async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorU
   if(error)throw managedCapacityError('SUPABASE_PRIVATE_CAPACITY_PROJECTION_FAILED',error);
   const rows=(data||[]).map(row=>row.payload||row);
   const selected=rows.slice(0,pageSize);
-  const ownerBadges=await capacityOwnerBadges(client,selected);
+  const ownerEvidence=await capacityOwnerEvidence(client,selected);
   const items=selected.map(row=>{
     const item=projectPrivateCapacityRow(row,hasNear,nearLat,nearLng);
-    return {...item,owner_verification_badges:ownerBadges.get(row.provider_organization_id||row.provider_profile_id)||[],geographic_match_label:capacityGeographicMatch(item,filters,originPlace,destinationPlace,areaPlace).label};
+    const owner=ownerEvidence.get(row.provider_organization_id||row.provider_profile_id);
+    return {...item,account_is_demo:owner?.accountIsDemo===true,owner_verification_badges:owner?.badges||[],geographic_match_label:capacityGeographicMatch(item,filters,originPlace,destinationPlace,areaPlace).label};
   });
   const hasMore=rows.length>pageSize;
   return {items,nextCursor:hasMore?encodePublicCursor(selected.at(-1)):null,hasMore,pageSize};

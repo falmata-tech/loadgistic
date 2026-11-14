@@ -1,4 +1,5 @@
 import {reconcileCapacityMapWindow} from '../../../../src/lib/capacity-map-loading.js';
+export {currentCapacitySelection} from '../../../../src/lib/capacity-map-loading.js';
 
 export type CapacityRefreshResult<T>={key:string;items:T[];loading:boolean;error:string};
 export type CapacityRefreshUpdate<T>={phase:'page'|'complete';items:T[]}|{phase:'failed'|'denied';error:string};

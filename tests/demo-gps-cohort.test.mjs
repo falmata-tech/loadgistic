@@ -26,7 +26,8 @@ test('all eight GPS targets are exact distinct fixture vehicles, drivers, provid
   assert.equal(DEMO_MOTION_TARGETS[name],target.vehicleId);
   assert.equal(assertDemoDevice(target.imei).protocolDeviceId,target.imei);
   assert.ok(migration.includes(`'${target.vehicleId}'`));assert.ok(migration.includes(`'${target.imei}'`));
-  for(const seconds of [0,30,120]){const fix=demoRouteFix(name,seconds);
+  if(name==='fleet-08'){assert.throws(()=>demoRouteFix(name,0),/DEMO_MOTION_SCENARIO_UNAVAILABLE/);continue;}
+  for(const seconds of [0,30,120]){const fix=demoRouteFix(name,seconds*1000);
    assert.ok(Math.abs(fix.latitude-target.latitude)<0.05&&Math.abs(fix.longitude-target.longitude)<0.05);}
  }
  assert.equal(DEMO_GPS_COHORT_DEVICES.length,8);
@@ -57,7 +58,7 @@ test('larger runner cohort requires an explicit local opt-in',()=>{
  assert.equal(optIn.status,0);assert.equal(optIn.stdout.trim(),'10');
 });
 
-test('the opted-in runner reserves and stops all eight fleet GPS targets through the narrow command port',async()=>{
+test('the opted-in runner reports qualified targets and leaves unavailable movement inert',async()=>{
  const previous=process.env.LOADGISTIC_DEMO_GPS_COHORT;process.env.LOADGISTIC_DEMO_GPS_COHORT='true';
  try{
   const {runDemoMotion,motionTargetNames}=await import('../scripts/telematics/demo-motion-runtime.mjs?gps-cohort-test');
@@ -69,8 +70,10 @@ test('the opted-in runner reserves and stops all eight fleet GPS targets through
    return command.action==='GPS'?{observedAt:new Date(clock).toISOString()}:{};};
   const result=await runDemoMotion({request,seconds:10,targets:motionTargetNames,staggerMs:0,now:()=>clock,
    sleep:async ms=>{clock+=ms;},simulate:async options=>{await options.beforeReport();return {positions:1};}});
-  assert.equal(result.failed,false);
-  for(const name of DEMO_MOTION_FLEET_TARGETS){assert.ok(calls.some(command=>command.action==='GPS'&&command.target===name));
+  assert.equal(result.failed,true);assert.equal(result.failureCode,'DEMO_MOTION_SCENARIO_UNAVAILABLE');
+  assert.equal(calls.some(command=>command.target==='fleet-08'),false);
+  assert.equal(result.targets.find(target=>target.target==='fleet-08').status,'UNAVAILABLE');
+  for(const name of DEMO_MOTION_FLEET_TARGETS.filter(name=>name!=='fleet-08')){assert.ok(calls.some(command=>command.action==='GPS'&&command.target===name));
    assert.ok(calls.some(command=>command.action==='STOP'&&command.target===name));}
  }finally{if(previous===undefined)delete process.env.LOADGISTIC_DEMO_GPS_COHORT;
   else process.env.LOADGISTIC_DEMO_GPS_COHORT=previous;}

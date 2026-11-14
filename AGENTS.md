@@ -6,6 +6,38 @@ Loadgistic helps fleets and independent drivers share capacity signals with Ship
 
 Do not add consumer-delivery framing, package-delivery roles, Internal Fleet, auctions, forced scanning, fake metrics, or complex capacity analytics.
 
+## Current location and simulation direction — November 13
+
+New vehicle location updates come only from an explicitly selected phone or GPS
+source. Retire manual point editing and its old-client/server mutation paths;
+retain dated legacy reports without relabelling them, changing consent or
+silently selecting a source. Capacity edits and agreed Tracking remain separate.
+Real GPS ingestion and the recurring marketplace simulator have independent
+services, credentials, lifecycles and stopping controls. Simulation may affect
+only operator-marked, exact approved demo accounts/vehicles; normal signup and
+editable metadata can never enroll an account. Show trusted demo provenance in
+the relevant account/signal UI and audit records. Source, local protocol tests,
+hosted service operation and physical-device acceptance are distinct evidence.
+
+The owner's subsequent November13 direction requires a versioned, server-owned
+catalog of realistic scenarios and allowed transitions. Do not generate random
+cities, route combinations, coordinates or capacity percentages. Selection may
+vary among eligible predefined scenarios, with a recorded seed/choice for replay.
+Related changes must preserve one coherent vehicle/account state; independent
+profile, capacity and location updates have their own schedules. Ordered city
+stops are not verified driving geometry. Movement requires qualified road data;
+unsupported movement fails closed, and stationary reporting must be explicitly
+catalogued. Retain scenario/version/step evidence and the demo-only write checks.
+
+The owner's later frequency requirement calls for visible early-user activity:
+synthetic source reports every30seconds, staggered Capacity steps at least120seconds
+per eligible demo vehicle and foreground feed reads every15seconds. Approved
+route/profile changes keep their slower scenario schedules. Resume only one
+valid next step after interruption, then wait its full interval; never burst
+missed events or backdate fresh-looking reports. Real-phone capture and privacy
+settings retain their separate contracts. Advance at most one due vehicle per
+30-second worker tick so recovery preserves activity between actors.
+
 ## Product experience standard
 
 Clarity is part of the product, not a finish pass or a cost-saving tradeoff.
@@ -150,8 +182,13 @@ Before major authentication, authorization, workflow, public-data, file, schema,
   gate: the agent performs and records the visual review. Keep the dev server
   running, inspect the actual changed screen in Chrome on desktop and phone,
   complete the affected task, and check saved results and permission boundaries.
-  Check the affected Expo view too; use an authorized phone session for native-only
-  behavior. Record URLs, screenshots, interactions, failures and remaining limits.
+  Check the affected Expo view too. Native permission and app/service lifecycle
+  checks require the exact installed build on an authorized Android device;
+  the owner's November13 request also permits a task-owned managed virtual phone
+  within its agreed account, artifact and budget. Verify its exact instance/ADB
+  identity. Physical hardware, OEM battery and tracker behavior still need their
+  own physical-device evidence; owner-phone sessions retain the permission rule
+  below. Record URLs, screenshots, interactions, failures and remaining limits.
   Do not claim a screen reviewed from screenshots or tests alone. Ask the owner
   only when a product decision or access needed for the review is unresolved.
   After the agent's review passes, run the required full tests/release gates.

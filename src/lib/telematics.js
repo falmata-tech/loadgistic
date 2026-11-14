@@ -1,5 +1,5 @@
 import {createSupabaseAdminClient} from './supabase-adapter.js';
-import {provisionDeviceSchema,assignDeviceSchema,selectLocationSchema,deviceCommandSchema,validateTelemetry,approximateTelematicsPosition} from './telematics-contract.js';
+import {provisionDeviceSchema,assignDeviceSchema,selectLocationSchema,deviceCommandSchema,validateTelemetry} from './telematics-contract.js';
 import {verifyGatewayDevice} from './telematics-gateway-auth.js';
 import {DEMO_MOTION_COHORT} from './demo-motion-cohort.js';
 import {DEMO_ADMIN_SPARE,isDemoAdminSpare} from './demo-admin-spare.js';
@@ -172,10 +172,6 @@ export function assignOwnedDevice(user,input){
 }
 export function selectVehicleLocationSource(user,input){
  const command=selectLocationSchema.parse(input);
- if(command.source==='MANUAL'){
-  const approximate=approximateTelematicsPosition(command.manualLatitude,command.manualLongitude,command.precisionKm);
-  return rpc('select_telematics_location_source',{actor_user_id:user.id,command:{...command,approximateLatitude:approximate.lat,approximateLongitude:approximate.lng}});
- }
  return rpc('select_telematics_location_source',{actor_user_id:user.id,command});
 }
 export async function requestDeviceCommand(user,input){

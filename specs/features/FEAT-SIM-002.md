@@ -11,6 +11,20 @@ rollout: Verify exact fixture identities and no pre-existing grant, rehearse on 
 
 # A provider shares private Capacity with a demo broker
 
+Current November13 boundary: operator-controlled Auth app metadata establishes
+demo provenance; editable user metadata, email/name patterns and client flags do
+not. Every actor and current workspace member must still match the exact reviewed
+synthetic scenario. The worker preserves the selected actual phone/GPS source and
+cannot select Manual or fabricate a location. Historical local observations below
+do not qualify current hosted activation.
+
+Given an ordinary signup forges a fixture key or `is_demo`/`fixture_source` in
+editable metadata, or joins the otherwise synthetic recipient workspace\
+When either scenario phase executes\
+Then the grant is refused at the database boundary and Capacity, sources,
+locations, grants, notifications and receipts remain unchanged. A trusted Demo
+account display flag confers no sharing or simulator permission.
+
 Status: implemented and exercised once on the local preview, then disabled;
 hosted scheduling and activation remain pending. This is a narrow scenario
 within the larger coordinated demo world. The ordinary Shipper / broker

@@ -10,7 +10,8 @@ export function loginPacket(imei){assertDemoDevice(imei);return gt06Packet(1,Buf
 export function gpsPacket(device,serial=2,now=new Date()){
  const payload=Buffer.alloc(18);payload.set([now.getUTCFullYear()-2000,now.getUTCMonth()+1,now.getUTCDate(),now.getUTCHours(),now.getUTCMinutes(),now.getUTCSeconds(),0xc8]);
  payload.writeUInt32BE(Math.round(Math.abs(device.latitude)*1800000),7);payload.writeUInt32BE(Math.round(Math.abs(device.longitude)*1800000),11);
- payload[15]=device.speedKph||0;payload.writeUInt16BE(0x1000|0x4000|(device.ignition?0x8000:0)|(device.latitude>=0?0x400:0)|(device.longitude<0?0x800:0),16);
+ const course=Number.isFinite(device.course)?((Math.round(device.course)%360)+360)%360:0;
+ payload[15]=device.speedKph||0;payload.writeUInt16BE(0x1000|0x4000|(device.ignition?0x8000:0)|(device.latitude>=0?0x400:0)|(device.longitude<0?0x800:0)|(course&0x3ff),16);
  return gt06Packet(0x10,payload,serial);
 }
 export function syntheticReply(command,serial=3){
@@ -19,14 +20,14 @@ export function syntheticReply(command,serial=3){
  return gt06Packet(0x15,payload,serial);
 }
 export async function simulate({imei='990000000000001',host='127.0.0.1',port=15023,durationMs=30000,onEvent=()=>{},motion=false,beforeReport,signal,reportIntervalSeconds:initialReportIntervalSeconds=5}={}){
+ if(motion)throw new Error('DEMO_MOTION_SCENARIO_REQUIRED');
  const device=assertDemoDevice(imei);if(!['127.0.0.1','localhost','::1'].includes(host)||port!==15023)throw new Error('REMOTE_TELEMATICS_DEMO_REFUSED');
  if(!Number.isInteger(initialReportIntervalSeconds)||initialReportIntervalSeconds<5||initialReportIntervalSeconds>3600)throw new Error('INVALID_REPORT_INTERVAL');
  if(signal?.aborted)return {login:false,positions:0,commands:0,syntheticRelayCut:false,syntheticReboots:0,reportIntervalSeconds:initialReportIntervalSeconds};
  return new Promise((resolve,reject)=>{
   const socket=net.createConnection({host,port});let stopping=false,pending=Buffer.alloc(0),serial=10,login=false,commands=0,positions=0,relayCut=false,reboots=0,reportIntervalSeconds=initialReportIntervalSeconds,reporting=false;
   const report=async()=>{if(stopping||socket.destroyed||socket.writableEnded||reporting)return;reporting=true;
-   try{const offset=motion?Math.sin(positions*Math.PI/4)*0.012:0;
-    const candidate={...device,latitude:device.latitude+offset,longitude:device.longitude+offset,speedKph:motion?20:0,ignition:motion};
+   try{const candidate={...device,speedKph:0,ignition:false};
     const authorized=beforeReport?await beforeReport(candidate):candidate;
     // A takeover/stop while awaiting reservation cannot emit a late packet.
     if(!authorized||stopping||signal?.aborted||socket.destroyed||socket.writableEnded)return;

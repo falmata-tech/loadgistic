@@ -8,7 +8,7 @@ export type SignalPoint = {latitude:number;longitude:number;label:string};
 export type RegularSignal = {geometry:'ROUTE'|'RADIUS';points:SignalPoint[]};
 export type CapacitySignal = {
   authority?:TruckAuthority; id: string; vehicleId:string; provider: string; handle: string; driver: string;portrait:string;
-  truck: string; status: 'EMPTY' | 'PARTIAL';
+  truck: string; status: 'EMPTY' | 'PARTIAL'; accountIsDemo?:boolean;
   driverPhone:string;providerPhone:string;driverKind:string;ownerDocumentsLabel:'Owner documents'|'Transport Provider documents';
   ownerBadges:PublicBadge[];driverBadges:PublicBadge[];truckBadges:PublicBadge[];
   acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
@@ -68,7 +68,7 @@ export function parseCapacityPage(value: unknown): CapacityPage {
       ownerDocumentsLabel:row.provider_organization_id?'Transport Provider documents':'Owner documents',
       ownerBadges:documentBadges(row.owner_verification_badges),driverBadges:documentBadges(row.driver_verification_badges),truckBadges:documentBadges(row.truck_verification_badges),
       truck: [text(row.vehicle_make), text(row.vehicle_model)].filter(Boolean).join(' '),
-      status: row.status, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
+      status: row.status,accountIsDemo:row.account_is_demo===true, sharingMode: text(row.sharing_mode), acceptedLoads: capacityLoadPreference(row.status, row.accepts_full_load, row.accepts_partial_load),
       availablePercent:row.available_percent_reported_at&&typeof row.available_percent==='number'&&Number.isInteger(row.available_percent)&&row.available_percent>=1&&row.available_percent<=99?row.available_percent:null,
       availablePercentReportedAt:publicDate(row.available_percent_reported_at),
       latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,

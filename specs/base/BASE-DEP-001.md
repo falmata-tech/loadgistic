@@ -615,7 +615,7 @@ When any one job fails, is cancelled or is skipped\
 Then `release-ready` fails even if the remaining jobs pass\
 And a deployable artifact is never inferred from one successful job or an earlier commit.
 
-The current `feat/mobile-app` and `release/**` branches start CI on push;
+The current `main` and `release/**` branches start CI on push;
 other feature branches require a pull request or an explicit dispatch of their
 exact source commit. Evidence: `.github/workflows/ci.yml` and
 `tests/ci-browser-gate.test.mjs`.

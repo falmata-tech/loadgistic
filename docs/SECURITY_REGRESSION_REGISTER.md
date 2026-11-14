@@ -1,5 +1,108 @@
 # Security failures we must not repeat
 
+## NR-84 — A simulator stop flag is checked without locking the control transaction
+
+November13 source review found that the fast Capacity executor checked its
+enabled control through an unlocked query. An operator could commit disabling it
+while a previously checked transaction was still publishing. This is a concurrency
+gap inferred from the source, not a measured production mutation after stopping.
+
+Repair: migration224 takes the control row `FOR SHARE` before the job lock,
+matching claim's control-before-job ordering. Migration225 likewise locks the
+global then profile control before the profile job. Disabling waits for accepted
+in-flight writes; subsequent writes refuse. Valid DONE replay remains read-only
+when disabled, and elapsed lock waits cannot revive an expired lease. Owner:
+simulator database maintainer. The durable/fast/profile SQL suites retain replay
+and unchanged-state regressions; actual local two-session lock/wait qualification
+remains pending. No hosted control was activated or changed by this repair.
+
+These are specific Capacity/profile controls, alongside motion's separate kill
+protocol. Business sharing has its own independent control; no single database
+flag is claimed to stop every lane. Team, business sharing and reserved Tracking
+remain outside initial activation until their exact stopping, cohort and
+concurrent-ownership boundaries are qualified. Their unactivated source is not
+evidence of a production incident or permission to enable them.
+
+## NR-83 — A marked owner remains after a normal co-owner joins a demo account
+
+November13 source review found that the fast Capacity controller required its
+approved actor to remain an OWNER but did not exclude an added unmarked co-owner.
+The account provenance reader would correctly stop labelling that organization
+as Demo, while the writer could still mutate its shared vehicle. The final
+profile executor from197 has the analogous owner-existence check. This is a
+source boundary defect; no affected hosted account or mutation was observed.
+
+Repair: migration224 requires exactly one current organization OWNER, equal to
+the approved actor, before Capacity publication. Organization/member locks keep
+that proof valid through the write, with owner-before-vehicle order preserving
+phone/GPS arbitration. Migration225 adds the equivalent profile proof after its
+existing page lock, using NOWAIT organization/member locks to refuse contention
+without a new page/organization lock cycle. It also narrows both reserved
+Tracking readiness helpers to one current marked owner, preserving private ACLs,
+unarmed controls and historical replay.
+
+Negative coverage: `tests/sql/demo-world-fast-catalog.sql` adds a normal co-owner
+and requires refusal with unchanged saved state, alongside REAL/live-phone
+takeover negatives. The profile and two existing Tracking reservation suites
+cover normal/forged co-owners, denied changes, preserved replay and rollback.
+Owner: simulator database maintainer. Actual PostgreSQL and concurrent ownership
+qualification are pending; reserved Tracking is not activated by these source
+changes. Do not infer write eligibility from a remaining marked member or a
+cached Demo label.
+
+## NR-82 — A narrow worker key can inherit another configured credential's authority
+
+November13 source review found asymmetric credential separation while adding the
+fast Capacity worker. Its signer rejected equality with the motion key, but the
+motion receiver did not reject the newly configured Capacity key. Gateway ingest,
+privacy and enrollment-relay configuration also accepted that key if an operator
+reused it. Different HMAC messages prevent replay of a signature; they do not
+prevent a holder of a reused key from creating another valid signature or bearer
+request. This is a source/configuration defect, not an observed hosted compromise.
+
+Control: Capacity/world/motion adapters reject reuse of their known configured
+keys; the new Capacity authority is checked by its signer and other receiving
+lanes. Gateway/privacy parsers reject the configured
+Capacity key as their HMAC secret; gateway configuration also rejects it as the
+relay API token. Distinct existing gateway/privacy inputs and raw-only callers
+retain their contracts. The fast container receives only its own key and refuses
+broader credentials. Never log key values while checking equality.
+
+Negative checks: `tests/demo-capacity-gateway-isolation.test.mjs` covers ingest,
+privacy and bearer collisions, unsafe second entries, distinct credentials,
+missing fast configuration and malformed existing inputs. Fast/world and motion
+configuration tests cover the other receiving lanes. Owner: simulator and GPS
+authentication maintainers. Next: complete exact-source gates and actual local
+API/controller qualification; hosted secret creation and activation are pending.
+
+## NR-81 — Capacity refresh retains a revoked or replaced selected signal
+
+Source review of `public-capacity-feed.tsx` found that private401/403 cleared
+cached vehicles only for business-workspace URLs. Account and retained private
+feed paths kept prior items on denial. A completed200 viewport also used
+`preserveSelectedMapTruck`, retaining an omitted selected row indefinitely. The
+account/business adapters return normal200 filtered pages when an individual
+vehicle grant is removed; that omission does not require a whole-feed403.
+The same selected-record cache could leave an old marker/details after a normal
+publication inserted a new Capacity ID for the existing vehicle.
+
+Owner: Capacity feed/UI. Repair: all current private401/403/404 responses clear
+items/selection. A selected signal missing from a completed window receives one
+bounded same-feed exact-truck read, preserving filters and authorization while
+removing viewport/cursor. Missing or failed private revalidation drops its cache.
+Fresh eligible replacements follow the supplied vehicle identity; old request
+generations cannot clear or restore newer scopes. Deliberate selection changes
+cancel and immediately supersede the old selection task. No grants are added.
+
+Negative coverage executes the real web/native request effects with synthetic
+transport in `tests/capacity-feed-refresh.test.mjs`: each private route/status,
+200 omission, stalled/malformed exact read, stale denial, changed selection,
+publication ID replacement, hidden/background pause and slow cursor completion.
+`tests/capacity-map-loading.test.mjs` retains complete-window coverage. These
+tests and source review are not a production exposure claim. Actual local
+database grant/revoke, desktop/phone Chrome/Expo and installed Android review
+remain pending with the parent qualification; no hosted rollout is recorded here.
+
 ## NR-80 — A formatted mailbox fixture passes tests but rejects production
 
 PR36 merged as ab899497befdcf5e699cb436de41c4bdb449fb63 after all16 exact PR jobs
@@ -25,6 +128,15 @@ source/CI gates, SMTP values/scopes and rollback unchanged. Negative/entry tests
 tests/netlify-delivery.test.mjs. Owner: release maintainer. Next: exact PR/main,
 actual production mailbox_fields=2/source/ZIP markers, published ID and runtime.
 
+Qualification completed in [PR37](https://github.com/falmata-tech/loadgistic/pull/37):
+its qualified PR and separate merged `520328b` main runs each passed all 16 jobs;
+source workflow43378172030 advanced production and confirmed the ref. Production
+`6af6ac945eb1cff1d55e577c` passed
+mailbox_fields=2, source, 8 final ZIP, scanning and postpublication runtime checks.
+The preceding Next statement is the preserved prequalification checkpoint;
+retain the negative controls for future changes. The requested support-sender
+migration is paused and has not changed these values or provider settings.
+
 ## NR-79 — Disposable CI startup collides with a host port before migrations
 
 Main63cbb86/run43344733398 failed Featured team permission setup,
@@ -45,6 +157,12 @@ existing startup privacy/retry cases. Actual hosted qualification is required.
 Owner: workflow maintainer. Next: one focused isolated run, then full PR/main CI
 and the actual guarded production handoff. BASE-DEP-001 owns rollback: no hosted
 or owner-machine sysctl changes; discard the ephemeral runner normally.
+
+Qualification completed: the focused startup run, PR36's PR/main runs and
+[PR37's final PR/main and publication receipts](https://github.com/falmata-tech/loadgistic/pull/37)
+passed the reservation/startup boundary. The preceding Next statement is
+historical. This establishes the installed prevention and delivery outcome;
+the original conflicting port and binding actor remain unknown.
 
 ## NR-78 — Local admin diagnostics never reach the CI failure record
 

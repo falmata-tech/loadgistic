@@ -116,8 +116,12 @@ async function main(){
     if(!assignment)await rpc('assign_telematics_device',{actor_user_id:state.ownerId,command:{deviceId:state.deviceId,vehicleId:state.vehicleId,expectedRevision:current.revision}});
     const selection=await checked(service.from('telematics_location_sources').select('source,manual_latitude,manual_longitude').eq('vehicle_id',state.vehicleId).maybeSingle(),'PRIVACY_VERIFY_SOURCE_READ_FAILED');
     if(selection&&(selection.source!=='MANUAL'||selection.manual_latitude!==9.031||selection.manual_longitude!==38.748))throw new Error('PRIVACY_VERIFY_OWNED_FIXTURE_CHANGED');
-    if(!selection)await rpc('select_telematics_location_source',{actor_user_id:state.ownerId,command:{vehicleId:state.vehicleId,source:'MANUAL',precisionKm:20,
-     manualLatitude:9.031,manualLongitude:38.748,expectedRevision:'1970-01-01T00:00:00Z'}});
+    // This loopback-only, exact owned privacy fixture includes retained pre-policy
+    // history for the erasure check. Never ask the app to create a new Manual fix.
+    if(!selection){const legacyStamp=new Date().toISOString();
+     await checked(service.from('telematics_location_sources').insert({vehicle_id:state.vehicleId,source:'MANUAL',precision_km:20,
+      selected_by:state.ownerId,selected_at:legacyStamp,revision:legacyStamp,manual_latitude:9.031,manual_longitude:38.748}),'PRIVACY_VERIFY_LEGACY_FIXTURE_FAILED');
+    }
    }
   }
  }
