@@ -13,10 +13,14 @@ The owner approved continuing with Netlify Capacity scheduling and an isolated
 managed development backend, subject to safety. New source adds a bounded
 development fixture preparer and real two-session Capacity/profile qualification.
 The complete local quality gate passes1518/1518 tests with zero failures/skips,
-plus spec/source/workflow/type checks. The concurrency script's expected native
-matrix is10 races,12 observed waits,10 exact denials,2 accepted commits and2
-disabled read-only replays; actual native execution remains pending. Both CI
-hooks recreate the disposable clone afterwards without editing immutable history.
+plus spec/source/workflow/type checks. Exact-source native
+[run43614507599](https://github.com/falmata-tech/loadgistic/actions/runs/43614507599)
+passed on attempt1 at28afe43f. Its real database receipt confirms10 races,
+12 observed waits,10 exact denials,2 accepted commits and2 disabled read-only
+replays. Clone recreation, subsequent normal-signup isolation, final cleanup and
+Supabase shutdown all passed. This qualifies the selected NR-83/84 Capacity/
+profile races and competing ordinary-profile save. Full PR/main CI, actual app
+review and hosted installation remain separate; immutable history was not edited.
 
 The fixture preparer checks exact branch metadata/keys, Auth and named core-table
 emptiness, seven expected private Storage buckets/empty roots and readable
@@ -42,7 +46,11 @@ not bypass the restriction through another UI shell or arbitrary tunnel.
 Existing Expo session restoration can support downstream synthetic workflow review
 without mail, but is not OTP delivery or native-device acceptance. Paid branch
 provisioning alone does not resolve preview connectivity. Production/main remain
-520328b and all new simulator work remains unmerged/unactivated.
+520328b and all new simulator work remains unmerged/unactivated. Fresh read-only
+production inspection found219 migration entries through220, none of221–225,
+all eight simulator controls off/unarmed (motion kill on), and zero registered
+gateways/devices/positions. Security advisors remain0ERROR,2 knownWARN and1INFO
+category covering110 private tables; no finding or gate was suppressed.
 
 ## Preserved development checkpoint — Netlify and native database diagnostics
 
@@ -144,8 +152,9 @@ ownership gaps. Ordinary co-owners, human edits and REAL source takeover refuse
 further simulation. Fast/profile control locks preserve in-flight save ordering;
 these source checks do not prove actual concurrent database behavior. No new SQL,
 service, secret or activation has been applied to production. The selected native
-SQL/normal-signup cases now pass; concurrent ownership/stop tests, actual changed
-images/UI and infrastructure/device operation remain to be qualified.
+SQL/normal-signup cases and the selected ten native Capacity/profile races now
+pass. Actual changed images/UI, other lanes' concurrency where required and
+infrastructure/device operation remain to be qualified.
 
 The dedicated movement worker and workflow simulator are currently disabled in
 production; read-only inspection found no registered gateways, devices or saved

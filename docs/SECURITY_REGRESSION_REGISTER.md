@@ -50,8 +50,12 @@ global then profile control before the profile job. Disabling waits for accepted
 in-flight writes; subsequent writes refuse. Valid DONE replay remains read-only
 when disabled, and elapsed lock waits cannot revive an expired lease. Owner:
 simulator database maintainer. The durable/fast/profile SQL suites retain replay
-and unchanged-state regressions; actual local two-session lock/wait qualification
-remains pending. No hosted control was activated or changed by this repair.
+and unchanged-state regressions. Native run43614507599 at28afe43f passed the real
+two-session Capacity/profile lock/wait matrix, including stop-first and
+executor-first order, expired leases after waits and disabled read-only replay.
+Its receipt is10 races/12 waits/10 denials/2 accepted writes/2 replays, with
+successful clone recreation and cleanup. No hosted control was activated or
+changed by this repair.
 
 These are specific Capacity/profile controls, alongside motion's separate kill
 protocol. Business sharing has its own independent control; no single database
@@ -82,9 +86,11 @@ Negative coverage: `tests/sql/demo-world-fast-catalog.sql` adds a normal co-owne
 and requires refusal with unchanged saved state, alongside REAL/live-phone
 takeover negatives. The profile and two existing Tracking reservation suites
 cover normal/forged co-owners, denied changes, preserved replay and rollback.
-Owner: simulator database maintainer. Actual PostgreSQL and concurrent ownership
-qualification are pending; reserved Tracking is not activated by these source
-changes. Do not infer write eligibility from a remaining marked member or a
+Owner: simulator database maintainer. The selected rollback suites passed in
+run43561193938; run43614507599 at28afe43f additionally passed real Capacity/
+profile co-owner races with unchanged denied state and insertion waiting for an
+accepted transaction. Reserved Tracking remains unarmed and retains its separate
+concurrent-ownership/activation gates. Do not infer write eligibility from a remaining marked member or a
 cached Demo label.
 
 ## NR-82 — A narrow worker key can inherit another configured credential's authority
