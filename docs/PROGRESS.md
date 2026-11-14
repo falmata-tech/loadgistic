@@ -7,7 +7,17 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Current continuation — isolated fixtures and native concurrency
+## Owner handoff instruction — November14
+
+The owner has stopped environment setup and requested that all existing changes
+and continuation details be committed/pushed for another agent. Start with the
+current [CLOUD_HANDOFF](CLOUD_HANDOFF.md); the old handoff is archived separately.
+No resource/cost prompt, environment recovery, merge, deployment or activation
+is part of this handoff. Current executable checkpoint is28afe43f; subsequent
+commits through this handoff only reconcile documentation. All implementation
+changes are already on `feat/scenario-driven-demo-signals` on GitHub.
+
+## Verified implementation checkpoint — isolated fixtures and native concurrency
 
 The owner approved continuing with Netlify Capacity scheduling and an isolated
 managed development backend, subject to safety. New source adds a bounded
@@ -54,12 +64,13 @@ category covering110 private tables; no finding or gate was suppressed.
 
 ## Preserved development checkpoint — Netlify and native database diagnostics
 
-The complete feature checkpoint is saved on
+The earlier pre-concurrency feature checkpoint is saved on
 [`feat/scenario-driven-demo-signals`](https://github.com/falmata-tech/loadgistic/tree/feat/scenario-driven-demo-signals)
 at implementation checkpoint `2b5751133d2060702558d569b4413ef86d87664f`, including
 the Netlify/development adapters and duty-authorization repair described here.
-Later documentation-only commits advance the branch without changing those
-executable inputs. The original three local commits remain on
+That checkpoint was superseded by implementation28afe43f and its1518-test/native
+concurrency qualification above; do not treat later implementation changes as
+documentation-only. The original three local commits remain on
 `checkpoint/scenario-local-e226`. No feature PR, full CI run, merge, deployment
 or simulator activation has occurred. The verified published baseline remains
 520328b below.
@@ -102,7 +113,9 @@ Phone/GPS SQL suites, eleven durable/catalog/paused/profile/Tracking suites,
 isolated GPS fixtures and the normal-signup isolation suite passed, together
 with startup, migrations/security, strict browser fixture preflight and both
 clone and Supabase cleanup. These diagnostics do not replace full PR/main CI,
-two-session concurrency checks or agent-led actual app review. See ADR-085 and local setup.
+other unqualified concurrency boundaries or agent-led actual app review. The
+selected Capacity/profile two-session checks passed later in43614507599, as
+recorded above. See ADR-085 and local setup.
 
 The local container stack remains unavailable in this Cloud workspace. The
 checkout-local Docker29.9.3 client is installed; a fresh direct check still
@@ -123,8 +136,9 @@ catalogs that omitted translations already loaded at runtime. Focused repairs
 preserve semantic and localization assertions. The complete `npm run quality`
 rerun passes1498/1498 tests, zero failures/skips, specs/source/workflow analysis
 and type checks. Independent source review found no material issue in the duty
-repair. The selected native SQL regression now passes as recorded above. Two-session
-concurrency, agent-led desktop/phone/Expo review, infrastructure operation,
+repair. The selected native SQL regression and the later Capacity/profile
+two-session matrix now pass as recorded above. Other required concurrency,
+agent-led desktop/phone/Expo review, infrastructure operation,
 exact production rollout and installed-device acceptance remain separate and
 unqualified. Candidate migrations221–225 have not been applied
 to production. Production settings and the SMTP verification pause remain intact.

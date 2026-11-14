@@ -8,7 +8,10 @@ still uses its own email authorization.
 
 ## ADR-085 — Netlify Capacity scheduling and isolated development (2026-11-14)
 
-Status: source implemented; runtime/database and release qualification pending.
+Status: source and selected disposable-database qualification complete; hosted
+runtime, actual candidate UI and full release qualification pending. Native
+runs43561193938 and43614507599 establish the selected SQL and Capacity/profile
+concurrency evidence recorded in [PROGRESS](PROGRESS.md).
 BASE-DEP-001 / FEAT-SIM-001. No hosted simulator activation or development
 database creation is established by this decision.
 

@@ -208,6 +208,7 @@ stability; it does not relabel creation source or prove the deployed backend.
 | Item | Qualified value |
 | --- | --- |
 | Local artifact | `.local/native-device-20261113/final-candidate/artifacts/loadgistic-1.2.0-code10-arm64-native-test-a7f4e3609e3b.apk` |
+| Saved artifact | Owner's ChatGPT Library, under the exact APK filename above; filename/size reverified November14. Resolve it only through authorized owner access. Private download links/account metadata are not published here. A fresh clone does not include the APK or ignored qualification receipts. |
 | APK SHA256 / bytes | `a7f4e3609e3be8ea9eaa1f4ff0aed8581aea99ecd3d7c2a734279600a1c7b441` /59,110,117 |
 | Package / version / SDK | `com.loadgistic.app`;1.2.0/code10; ARM64 only; min24/target36 |
 | Signing | Verified v2 signature; new disposable local debug certificate; non-debuggable release variant with standalone Hermes. No owner upload key/Play identity used. |
@@ -216,6 +217,13 @@ stability; it does not relabel creation source or prove the deployed backend.
 | Native structure |25 ELF64/AArch64 libraries, each with load alignment at least16KB; ZIP native16KB alignment passes. Physical16KB-device behavior remains untested. |
 | API / packaged code | Explicit `https://loadgistic.com`;6,158,512byte Hermes asset exactly matches generated release bundle. Private-file and known-secret-marker checks clear. |
 | Evidence | `qualification/artifact-readiness.json`, `apk-static-qualification.json`, `native-source-equivalence.json`, `native-source-graph-files.json` and `merged-permission-inventory.json` under the candidate directory. |
+
+For takeover, [CLOUD_HANDOFF](../CLOUD_HANDOFF.md) records the durable source and
+CI checkpoints. Remote f1380c8 through28afe43f have no diff in apps/mobile, src,
+root package/lock, resources or public at this handoff. That preserves source
+continuity with the qualified native inputs; the APK still targets the published
+production API and does not qualify a separate candidate backend or installed
+device behavior. Do not rebuild/re-sign solely because handoff docs changed.
 
 | Attempt | Observed result |
 | --- | --- |

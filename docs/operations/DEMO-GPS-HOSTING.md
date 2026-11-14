@@ -320,11 +320,16 @@ Do not infer safe storage cost from source row counts or a healthy container.
   blocks new simulated writes and reservation arming; a former demo owner's
   marker does not authorize simulation of a shared customer organization.
   Profile replay/history and private grants remain intact. The new migration
-  and rollback rejection tests are pending actual isolated SQL execution.
+  and rollback rejection tests passed on disposable native Supabase in
+  [run43561193938](https://github.com/falmata-tech/loadgistic/actions/runs/43561193938).
   Its profile save holds global then profile controls before the job; disable
   waits for an in-flight accepted save and blocks later writes. Operators
   changing both controls in one transaction must use global → profile order.
-  Source lock review does not replace the pending two-session concurrency test.
+  [Run43614507599](https://github.com/falmata-tech/loadgistic/actions/runs/43614507599)
+  then qualified the selected real two-session Capacity/profile stop and
+  co-owner races, lease expiry, ordinary profile save and disabled replay.
+  This does not establish hosted installation, activation or other lanes'
+  concurrent-ownership boundaries.
 - The provider-independent acceptance checklist is below. Once the provider is
   chosen, qualify the separately authorized movement worker on a staging host
   and add only the provider-specific network/deploy wiring needed for public TCP ingress.
