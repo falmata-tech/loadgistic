@@ -1,4 +1,24 @@
-# Current dependency review — 23 October 2026
+# Current dependency review — 14 November 2026
+
+The mobile app remains on Expo SDK 57. Its eleven Expo package ranges were
+updated to the SDK-compatible patch versions using `expo install --fix`, including
+`expo@~57.0.33` and Router `~57.0.31`; only the mobile package and lockfile changed.
+Expo Doctor and `expo install --check` now pass (Doctor 21/21 with this cloud
+environment's proxy enabled for the command). Mobile lint, typecheck, all 425
+tests and 804/804 strict translation entries pass. A fresh Android JavaScript
+export compiles 3,751 modules; this is source/bundle evidence, not an installed
+device check or a signed build.
+
+The fresh raw audit reports nine moderate affected package entries, zero high
+and zero critical, under one reviewed `minimatch` build-tool advisory. The
+runtime review uses the current lockfile, raw audit and exported source map;
+it still allows only an internal build. Retired Expo-nested Zod, deepmerge, glob
+and uuid advisory allowances were removed. The gate continues to require the
+patched direct Zod v4 in the Android bundle and to reject unreviewed findings or
+affected runtime packages. Do not treat Doctor success or this source review as
+signing, distribution or physical-device acceptance.
+
+# Historical dependency review — 23 October 2026
 
 The newly reviewed high-severity [Zod advisory](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
 blocks the October 23 PR CI run. The app's direct `zod@3.24.2` validation
