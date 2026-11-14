@@ -155,6 +155,7 @@ and separately authorized production/device operations.
 | Symptom | Safe next step |
 | --- | --- |
 | CLI reports Docker/Podman missing | Provide the supported local container runtime. Do not replace PostgreSQL/Auth/Storage with a mock or borrow hosted credentials. |
+| Fresh image pull exhausts disk under Docker `vfs` | Check `docker info --format '{{.Driver}}'` and free space. This driver copies each image layer; the Supabase Postgres image can consume tens of GiB during extraction even when `docker system df` reports far less. Stop only the task-owned pull and use a provisioned copy-on-write Docker runtime. The experimental native stack in CLI 2.122.1 cannot serve this project's `auth.email.template.*.content_path` templates, so it is not an equivalent local setup. Do not clear shared images or caches indiscriminately. |
 | Workflow-tool download fails | Check the selected process's network/proxy support; preserve the pinned checksum. Never disable TLS/hash verification. The November 12 environment-specific recovery is in PROGRESS. |
 | Blank/stale preview | Verify exact PID/cwd, API health, actual app bundle, schema and synthetic actor. Stop the dependent test at its first unavailable prerequisite; do not reset data or lengthen login waits. |
 | Local email absent | Check Mailpit and the exact current request/recipient, then Auth versus application-email configuration. Do not report provider acceptance as inbox receipt. |

@@ -1,13 +1,60 @@
 # Current work and release status
 
-Updated 2026-11-13 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-14 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — exact bare mailbox policy
+## November 14 source and local setup checkpoint
+
+The bare-mailbox repair in PR37 is now merged at `520328bd61c70a7d278fd183c6a25ffde248ab7a`.
+Read-only `git ls-remote` confirms both `main` and `production` point to that exact
+commit. [Main CI 43374713806](https://github.com/falmata-tech/loadgistic/actions/runs/43374713806)
+and the [production-source workflow 43378172030](https://github.com/falmata-tech/loadgistic/actions/runs/43378172030)
+both report success for that SHA. These checks establish source delivery and
+GitHub qualification; this checkpoint has no fresh Netlify production deploy,
+`mailbox_fields=2`, final function ZIP or published runtime readback. The
+provider/runtime receipts below remain separate work.
+
+The November 14 cloud workspace has pinned web Node 22.16.0, mobile Node 24,
+Supabase CLI 2.111.0, both installed app dependency trees and a running Expo web
+preview on 8084. Its actual Metro bundle and Capacity/Featured error screens
+rendered in Chromium. The local API is not ready: no `.env.local` or local
+PostgreSQL/Auth/Storage/mail stack exists. Next on 3100 started but correctly
+returned `SUPABASE_PUBLIC_CONFIG_MISSING` and was stopped. No fixture reset,
+hosted credential copy or hosted mutation occurred.
+
+A fresh isolated Supabase start hit public image-registry throttling and then a
+Docker `vfs` layer registration failure (`no space left on device`). The rootless
+daemon's layer copies briefly raised overlay use to about 45 GiB of 63 GiB.
+The task-owned pull was stopped and its eight unused downloaded images removed;
+Docker now reports zero images/containers/volumes and the overlay has about
+57 GiB free. A side-by-side experimental native CLI 2.122.1 was rejected before
+startup because it cannot serve this project's custom Auth `content_path` email
+templates; the pinned CLI and project config were not changed. A provisioned
+copy-on-write Docker engine is the remaining requirement for faithful local
+API, fixtures, browser transactions and native acceptance here. See
+[local setup](LOCAL_SETUP.md).
+
+The November 14 source follow-up also repairs Featured schedule labels in English,
+Amharic and Afaan Oromo across web/Expo, guards collapsed public-map bounds at
+extreme zoom, and aligns eleven Expo SDK 57 patch dependencies. Root quality
+passes 1,379 tests, zero failures/skips, with types, specs, source and workflow
+checks; mobile lint/types, 425 tests, 804/804 translations, Expo Doctor 21/21
+(command-scoped proxy) and an Android JavaScript export pass. The current mobile
+audit has one reviewed moderate tooling advisory affecting nine package entries,
+zero high/critical; [its review](MOBILE_DEPENDENCY_REVIEW.md) remains internal-build
+only. Actual data-backed Featured and 340×234 map visual tasks, local E2E,
+installed Android and any release gates still require their separate evidence.
+
+Expo Simulators can supply paid remote Android/iOS emulators but not physical
+device acceptance. This workspace is not logged into EAS, so account eligibility
+and a remote session were not verified or started. The linked Loadgistic Expo
+project remains separate from any other projects in that account.
+
+## Prior follow-up — exact bare mailbox policy
 
 [PR36](https://github.com/falmata-tech/loadgistic/pull/36) merged normally as
 ab899497befdcf5e699cb436de41c4bdb449fb63/tree5f86efd9a3a6104d73956def8ab03f33ef41668c.
