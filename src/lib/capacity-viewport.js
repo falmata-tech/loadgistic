@@ -3,11 +3,16 @@ import {contentBlocks} from './content-blocks.js';
 import {canonicalCapacityFilters} from './capacity-filter-values.js';
 export const MAX_MAP_TRUCKS=140;
 // Wrapped world copies cannot be sent as invalid west/east filter coordinates.
-export function worldCapacityViewport([west,south,east,north]) {
+export function worldCapacityViewport(bounds) {
+ if(!Array.isArray(bounds)||bounds.length!==4||!bounds.every(Number.isFinite))return null;
+ const [west,south,east,north]=bounds;
+ if(west>=east||south>=north)return null;
  const shift=Math.floor(((west+east)/2+180)/360)*360;
+ if(!Number.isFinite(shift)||!Number.isFinite(east-west))return null;
  let left=west-shift,right=east-shift;
  if(east-west>=360||left< -180||right>180){left=-180;right=180;}
- return [left,Math.max(-85,Math.min(84.999999,south)),right,Math.min(85,Math.max(-84.999999,north))];
+ const result=[left,Math.max(-85,Math.min(84.999999,south)),right,Math.min(85,Math.max(-84.999999,north))];
+ return result.every(Number.isFinite)&&result[0]<result[2]&&result[1]<result[3]?result:null;
 }
 // Public map bounds contain no device location. Exact visitor GPS stays client-only.
 export function parseCapacityViewport(value){

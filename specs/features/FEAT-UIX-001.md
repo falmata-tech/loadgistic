@@ -409,6 +409,11 @@ And the unlocked Private capacity session bar and Log out remain above its map\
 And both maps retain at least 300 CSS pixels of height at 320 by 640\
 And the document has no horizontal overflow or forced vertical scrolling.
 
+Given browser zoom or a resize temporarily collapses the public map canvas\
+When Leaflet reports zero-size, collapsed, or non-finite visible bounds\
+Then the map does not request Capacity with an invalid viewport\
+And a later usable resize can resume normal viewport loading without widening the requested area.
+
 Implementation plan: derive desktop content spacing from the same rail inset and
 width as navigation; let the map shell consume actual remaining flex height rather
 than subtracting a fixed header estimate. Verify bounding boxes, navigation clicks,

@@ -48,6 +48,12 @@ test('wrapped world copies and dateline bounds remain valid database viewports',
  for(const bounds of [[270,-10,290,10],[170,-10,190,10],[-540,-90,540,90],[0,-5,1,5]])assert.deepEqual(parseCapacityViewport(worldCapacityViewport(bounds)),worldCapacityViewport(bounds));
 });
 
+test('collapsed and non-finite map bounds never become a public Capacity request viewport',()=>{
+ for(const bounds of [null,[],[0,0,0,1],[0,0,1,0],[1,0,0,1],[0,0,Infinity,1],[0,NaN,1,2],[180,10,180,11],[-1e308,0,1e308,1]])
+  assert.equal(worldCapacityViewport(bounds),null);
+ assert.deepEqual(worldCapacityViewport([38,8,40,10]),[38,8,40,10]);
+});
+
 test('multi-option database groups are canonical, independent and strictly bounded',()=>{
  const result=capacityDatabaseFilters({status:'PARTIAL, EMPTY,PARTIAL',loadType:'PTL,FTL',stopOption:'MULTI_PICK,MULTI_DROP',freshness:'UPDATE_NEEDED,FRESH',vehicleCategory:'Pickup truck,Cargo van',locationSource:'MOBILE,GPS,MOBILE'});
  assert.equal(result.status,'EMPTY,PARTIAL');assert.equal(result.load_type,'FTL,PTL');

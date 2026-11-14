@@ -43,6 +43,8 @@ function ResizeMap(){
 }
 
 function capacityViewport(map:L.Map){
+  const size=map.getSize();
+  if(size.x<=0||size.y<=0)return null;
   const bounds=map.getBounds().pad(0.1);
   return worldCapacityViewport([bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()]);
 }
@@ -56,7 +58,8 @@ function ProgressiveCapacityLoader({onExplore}:{onExplore?:(bounds:number[])=>vo
     window.clearTimeout(timer.current);
     if(!explore.current)return;
     timer.current=window.setTimeout(()=>{
-      explore.current?.(capacityViewport(map));
+      const bounds=capacityViewport(map);
+      if(bounds)explore.current?.(bounds);
     },350);
   },[map]);
   useMapEvents({moveend:schedule,resize:schedule});
