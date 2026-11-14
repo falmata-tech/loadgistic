@@ -7,7 +7,44 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Current development path — Netlify and native database diagnostics
+## Current continuation — isolated fixtures and native concurrency
+
+The owner approved continuing with Netlify Capacity scheduling and an isolated
+managed development backend, subject to safety. New source adds a bounded
+development fixture preparer and real two-session Capacity/profile qualification.
+The complete local quality gate passes1518/1518 tests with zero failures/skips,
+plus spec/source/workflow/type checks. The concurrency script's expected native
+matrix is10 races,12 observed waits,10 exact denials,2 accepted commits and2
+disabled read-only replays; actual native execution remains pending. Both CI
+hooks recreate the disposable clone afterwards without editing immutable history.
+
+The fixture preparer checks exact branch metadata/keys, Auth and named core-table
+emptiness, seven expected private Storage buckets/empty roots and readable
+catalog status. Explicit apply needs the exact development ref and a new private
+receipt, creates only three marked demo actors/two trucks plus one normal signup/
+truck, and uses current lifecycle commands. It resets/deletes nothing and
+activates no worker. Owner-only independent controls remain a separate read-only
+provider inspection before apply; the service key's ACLs are preserved. Focused
+Node22 tests and independent review pass. No hosted fixture setup occurred.
+
+The latest native branch-cost confirmation expired. Supabase's exact organization
+quote is $0.01344/hour before other usage charges; no development branch was
+created and no cost was approved. Do not repeatedly renew the confirmation or
+incur cost for an interactive review before a usable preview route is established.
+
+Connected user Chrome is available. A ready task-owned localhost probe was
+unreachable from that browser, a separate executor command and the Cloud desktop
+browser. Both probe servers were stopped. The approval policy rejected a
+host-level socket-capability check because sandbox escalation is disabled. No
+preview/port-forward/request-changes tool is currently exposed. A shared localhost
+or supported preview connection is required for agent-led web/Expo review; do
+not bypass the restriction through another UI shell or arbitrary tunnel.
+Existing Expo session restoration can support downstream synthetic workflow review
+without mail, but is not OTP delivery or native-device acceptance. Paid branch
+provisioning alone does not resolve preview connectivity. Production/main remain
+520328b and all new simulator work remains unmerged/unactivated.
+
+## Preserved development checkpoint — Netlify and native database diagnostics
 
 The complete feature checkpoint is saved on
 [`feat/scenario-driven-demo-signals`](https://github.com/falmata-tech/loadgistic/tree/feat/scenario-driven-demo-signals)
@@ -32,7 +69,8 @@ without Docker here. The bootstrap validates exact branch metadata and developme
 keys, makes two read-only API checks, and exclusively creates a private environment;
 it does not seed fixtures, configure email or qualify migrations/browser flows.
 Only production projects were found. The native development-branch cost confirmation
-expired; no branch/resource was created, no cost was accepted and no retry occurred.
+expired; no branch/resource was created and no cost was accepted. The latest
+continuation above records the renewed confirmation and connectivity checks.
 Do not use production service credentials or weaken the local-only fixture guards.
 
 The explicit `simulator-db` operations diagnostic runs the disposable Supabase

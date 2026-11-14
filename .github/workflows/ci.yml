@@ -408,6 +408,20 @@ jobs:
             timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
           done
 
+      - name: Verify simulator stop, ownership and ordinary profile save races
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+          LOADGISTIC_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+        run: timeout --signal=TERM --kill-after=10s 5m node scripts/verify-demo-world-concurrency-local.mjs
+
+      - name: Recreate disposable clone after committed simulator race evidence
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=10s 3m node scripts/ci-disposable-gps-database.mjs remove
+          timeout --signal=TERM --kill-after=10s 10m node scripts/ci-disposable-gps-database.mjs create
+
       - name: Verify GPS privacy and credential races on disposable database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci

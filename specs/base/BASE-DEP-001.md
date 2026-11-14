@@ -298,6 +298,60 @@ bootstrap source and any exact task-created local environment after preserving
 existing preview work; it does not delete or reset a hosted branch. Full SQL,
 email, application workflow and release checks remain separate.
 
+### Scenario: a separate managed development fixture setup preserves target isolation
+
+Given a task-owned data-less development branch has passed exact provider-metadata,
+migration and independent private-control inspection\
+When the separate review-fixture preparer receives its protected development keys\
+Then its default mode checks Auth, the named core business tables, catalog2 and
+the seven existing private Storage bucket definitions and empty roots without fixture writes\
+And explicit apply additionally requires the exact development project ref and a
+new exclusive mode0600 private receipt\
+And it creates only three existing marked demo actors/two deterministic trucks and
+one ordinary signup/truck, preserving the full-set fixture catalog/sharing transforms\
+And real registration, assignment, content-policy and publication commands establish
+the current lifecycle, with no borrowed verification, reviews, subscriptions or mail\
+And capacities retain dated locations and NULL percentage-report provenance;
+setup never manufactures a new phone/GPS report or consent\
+And matching migration-created places/buckets remain intact; existing identities,
+business rows, Storage objects/prefixes or drift refuse before writes\
+And partial failure preserves a private STOPPED_REVIEW_REQUIRED receipt and never
+retries, resets, deletes or imports the full local fixture world\
+And the preparer reports workersActivated=false and independentControlsInspected=false,
+without pretending its service key can inspect owner-only controls.
+
+Evidence: `scripts/prepare-managed-dev-review-fixtures.mjs` and its negative tests.
+The operator must first inspect all independent controls through the authorized
+read-only provider connection on the exact development branch. Existing control
+ACLs, bootstrap's refused `--seed` and all loopback-only fixture guards stay intact.
+This is preparation, not a provider creation, mail/OTP qualification or browser
+acceptance. A supported shared localhost/preview connection must be established
+before paying for a development resource solely for interactive review.
+
+### Scenario: simulator concurrency evidence uses real native transactions
+
+Given the exact native GitHub runner owns the isolated loadgistic-local container
+and loadgistic_telematics_ci clone with final224/225 function bodies and private ACLs\
+When the bounded concurrency verifier runs after the existing rollback SQL suites\
+Then separate real sessions prove stop-first, owner-first, expiry-after-wait and
+executor-first behavior for Capacity and provider-profile work\
+And profile checks both independent stop controls and an ordinary competing profile save\
+And observed lock waits identify the actual blocking session, exact denials retain
+complete private state fingerprints, and no deadlock/timeout is accepted as success\
+And two accepted commits have bounded intended effects and disabled DONE replays
+do not refresh source, consent, audiences, grants or history\
+And successful evidence requires all ten races, twelve waits, ten denials, two
+accepted writes and two read-only replays\
+And the existing clone lifecycle discards and recreates that disposable database
+before later suites, preserving immutable receipts rather than editing them\
+And fixed typed stages/counts are the only output; missing native identity,
+installed-definition drift, private-output overflow or a partial matrix fails.
+
+Evidence: `scripts/verify-demo-world-concurrency-local.mjs`, its transport/guard
+tests and both existing CI workflows. NR-83/84 remain runtime qualification items
+until the exact native diagnostic passes. No hosted execution or full release
+verdict is granted by this test lane.
+
 ### Scenario: schema rollout
 
 Given a database migration is required\

@@ -120,6 +120,50 @@ this branch; their target guards remain unchanged. Role workflows need separate
 reviewed synthetic setup. Mailpit/email/signup suites remain on the full isolated
 local stack or native GitHub runners.
 
+### Separate review fixtures after operator inspection
+
+Bootstrap remains unseeded. A separate preparer is available for only three exact
+demo actors/two trucks plus one ordinary signup/truck. Before using it, inspect
+the exact development branch's installed migrations and all independent controls
+through the approved read-only provider connection: global world/profile/business/
+team/duty off, hosted motion off with kill on, both reserved Tracking controls
+unarmed, and no previous jobs/receipts. These control tables intentionally deny
+the application service key; do not grant it access or claim that one global
+status proves every control off.
+
+```bash
+node scripts/prepare-managed-dev-review-fixtures.mjs --manifest .local/managed-dev/manifest.json --credentials .local/managed-dev/credentials.json
+node scripts/prepare-managed-dev-review-fixtures.mjs --manifest .local/managed-dev/manifest.json --credentials .local/managed-dev/credentials.json --apply-to-project EXACT_DEVELOPMENT_REF --receipt .local/managed-dev/review-fixtures.json
+```
+
+Default mode performs read-only checks. Apply requires the exact branch ref and
+a new private receipt; it refuses existing Auth/core business records and any
+Storage file/prefix or unexpected bucket definition. It preserves matching
+migration-created places/buckets and never resets/deletes or calls the local
+importer. Synthetic passwords and recovery details stay in the mode0600 receipt.
+Lifecycle RPCs establish assignment, policy and Live publication without invented
+verification; locations remain dated and percentage-report provenance remains
+NULL. Setup activates no worker. Its report explicitly leaves owner-only
+independent-control inspection to the operator. A partial failure stops with
+STOPPED_REVIEW_REQUIRED; inspect that receipt before any further action.
+
+For visible web review, explicitly enable the existing fixture password form
+only in the private development environment. Expo can restore a real synthetic
+Supabase refresh session through its existing controller for downstream review;
+this is not evidence of email/OTP delivery. Do not weaken local-only scripts or
+production login guards to initialize that session on a managed backend.
+
+### Reachability is a separate prerequisite
+
+November14 checks found connected user Chrome, but a task-owned localhost probe
+was unreachable from it and from the Cloud desktop browser. A separate executor
+command also could not reach the listening process. The environment's approval
+policy rejected a host-level capability check because escalated commands are
+disabled. Both probes were stopped. No supported preview/port-forward tool is
+currently exposed. Resolve shared localhost or approved preview forwarding before
+provisioning a charged branch solely for interactive review; do not bypass the
+restriction with a shell launched through another UI or an unapproved tunnel.
+
 The web URL is `http://127.0.0.1:3100`. Use the same running API for the Expo
 preview on8084 below. Select the actual backend and source version in review
 evidence; a successful bootstrap does not establish completed application tasks.
