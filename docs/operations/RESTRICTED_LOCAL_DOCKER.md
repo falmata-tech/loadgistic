@@ -1,10 +1,15 @@
-# Restricted local Docker checkpoint
+# Restricted local Docker checkpoint — stopped
 
-## Current limitation and resumption
+## Current local-stack limitation
 
 The current managed workspace has no normal Docker client or standard managed
-socket, and creating a Unix socket returns `EPERM`. Restore a Docker-enabled
-environment before resuming the [normal local setup](../LOCAL_SETUP.md).
+socket, and creating a Unix socket returns `EPERM`. This limits the full local
+Supabase stack and its fixture/SQL harness. Next.js and Expo can run directly on
+Node against an isolated managed Supabase development branch; Netlify functions
+also do not require this VM. Use [local setup](../LOCAL_SETUP.md) and
+[ADR-085](../DECISIONS.md) for that path. No managed development resource was
+created: its cost confirmation expired, and bootstrap remains unseeded source.
+Full local suites can use a normal Docker environment or native GitHub runners.
 
 The nested QEMU workaround became a development bottleneck. A separate store
 was eventually verified empty and responsive after correcting an argv assumption,
@@ -21,8 +26,10 @@ digests in the export independently match the pinned source. The original store,
 failed setup metadata and partial replacement store remain intact. No application
 database, candidate migration or fixture import completed.
 
-Stop this workaround here. First verify the managed Docker client, socket and
-IPC capability; then use the existing setup, migrations and fixture preflight.
+Stop this workaround here; do not resume the manager or start another VM.
+When the full local suite is needed, verify a normal managed Docker client,
+socket and IPC capability, then use the existing setup, migrations and fixture
+preflight. Daily app development need not wait for that local stack.
 Successful daemon startup or matching image bytes do not qualify the app. Keep
 the preserved receipts below separate from database, browser and service-runtime
 acceptance. Current source and remaining work are in [PROGRESS](../PROGRESS.md).
@@ -32,93 +39,54 @@ November 13. It is an environment-specific development checkpoint, not a hosted
 service or a general replacement for [normal local setup](../LOCAL_SETUP.md). Production credentials
 are not required and must not be copied into it.
 
-## Verified runtime
+## Historical tool checks
 
-Docker Engine 29.9.3 has run in a task-owned Alpine 3.24.4 virtual machine under
-QEMU 10.0.13 software emulation. The retained guest has four virtual CPUs, 2 GB
-RAM and a protected 32 GiB task disk. Docker's official hello-world container
-has executed successfully. The loopback Docker endpoint requires mutual TLS;
+Docker Engine 29.9.3 ran in a task-owned Alpine 3.24.4 virtual machine under
+QEMU 10.0.13 software emulation. The retained guest was configured with four
+virtual CPUs, 2 GB RAM and a protected 32 GiB task disk. Docker's official
+hello-world container executed successfully. The loopback Docker endpoint required mutual TLS;
 a client without a certificate was rejected. Compose 5.7.1 has been checked
 against its upstream checksum and executed on the host and guest.
 
-The VM avoids host-daemon installation and host privilege changes. This host
+The VM avoided host-daemon installation and host privilege changes. This host
 does not provide hardware virtualization or usable host Unix sockets. Attempts
 with larger guests were interrupted by SIGKILL; the captured evidence does not
-establish a guest out-of-memory event or an application/CI defect. The current
-2 GB guest uses serialized image pulls to reduce memory pressure.
+establish a guest out-of-memory event or an application/CI defect. The
+2 GB guest used serialized image pulls to reduce memory pressure.
 
 The selected command-line tools are project-local: Node 22.16.0, Supabase CLI
 2.111.0, Docker CLI 29.9.3 and ShellCheck 0.11.0. Expo has its separate Node 24
 runtime. Keep SDK and default shell settings for other projects unchanged.
 
-## Resume the current runtime checkpoint
+## Historical manager receipts — do not resume
 
-The retained execution owns its PID and network namespace. A new command can
-see the same files but cannot reach that execution's loopback ports. Therefore
-Docker, Supabase clients, the web server and loopback tests must run through the
-owning retained shell. Earlier task-tool sessions31501/95684/95469 are historical
-and must not be retried. Root-owned session 50113/run `run-root-20261114T000151`
-is a historical corrected-manager receipt, not a current liveness claim. Read
-the ignored `.local/vm/resume.json` and `.local/vm/active-root-runtime.json`, then
-the corresponding job/exit receipts, for the current owning execution and state.
-Session numbers are receipts, not permanent addresses. The cached disk is
-retained. Session33989
-shut down cleanly after a monitor bug: a background completion marker shared a
-line with the terminal prompt. The corrected marker starts its own line and
-the manager awaits actual Docker API readiness without restarting the daemon.
+The stopped execution owned its PID and network namespace. Other commands could
+see the files but not that execution's loopback services. Earlier task-tool
+sessions31501/95684/95469, session50113/run `run-root-20261114T000151` and
+session33989 are historical receipts, not current addresses or liveness claims.
+Session33989 shut down after a monitor bug: a completion marker shared a line
+with the terminal prompt. The corrected marker started its own line and later
+readiness checks inspected the already-running daemons without restarting them.
 
-Reuse the active manager first. For a replacement only after verified task
-shutdown, review the ignored
-`.local/vm/runtime-manager.py`, its approved startup/job digests and
-`.local/vm/resume.json`. Launch that manager once through a root-owned retained
-PTY. It starts Docker only, verifies the disk lock and exposes protected request
-and result directories in `.local/vm/active-root-runtime.json`. Use its serialized
-allowlisted jobs; do not run dependent clients through a different execution.
-The first jobs are Docker state inspection and one instrumented core startup.
-Timeouts pause further work until root inspection; stopping the runtime uses a
-graceful shutdown of its exact task-owned guest.
+The ignored `.local/vm/resume.json`, `.local/vm/active-root-runtime.json`,
+`.local/vm/runtime-manager.py`, corresponding job/exit records and
+`.local/vm/restricted-local-docker-handoff.md` preserve the attempted execution
+and startup/job digests. Their old launch instructions are superseded by the
+stop decision above. The cached disk and partial stores remain retained; do not
+format, clean or restart them to make an application test pass.
 
-The manager supplies the equivalent of this environment to its serialized jobs.
-Do not type shell commands into the running Python manager or run a new
-execution against its inaccessible loopback endpoint:
+The historical manager used loopback55276 with mutual TLS and task-lifetime
+certificates. It set `SUPABASE_TELEMETRY_DISABLED=1` and `DO_NOT_TRACK=1` before
+the pinned CLI/helper. Official controls and versioned source were inspected
+after a startup inspection was rejected over an unverified PostHog connection.
+The no-op/send guards do not explain the unrelated startup failure. The
+endpoint is no longer a service; never publish it or print certificates,
+status JSON, local keys, passwords or email codes.
 
-```bash
-source .local/activate-tools.sh
-export SUPABASE_TELEMETRY_DISABLED=1
-export DO_NOT_TRACK=1
-export DOCKER_HOST=tcp://127.0.0.1:55276
-export DOCKER_TLS_VERIFY=1
-export DOCKER_CERT_PATH="$PWD/.local/vm/client-tls"
-export NO_PROXY=127.0.0.1,localhost,::1
-export no_proxy=127.0.0.1,localhost,::1
-docker info --format '{{.ServerVersion}}'
-```
-
-The two telemetry controls are set before launching the pinned Supabase CLI or
-its helper. Official controls and versioned source were checked after automatic
-review rejected a startup inspection over an unverified PostHog connection.
-Do not retry the rejected execution or add `--create-ticket`/`--debug` to startup.
-The main CLI uses no-op analytics with these controls; the inspected helper's
-send guard suppresses queued analytics. A new, telemetry-disabled execution must
-be qualified separately; these controls do not explain the earlier startup error.
-
-The certificates have a short task lifetime; do not treat the endpoint as a
-permanent service or publish it. Never print client keys, startup/status JSON,
-local service keys, passwords or email codes. Do not interrupt the parent shell
-to stop a child job: that can terminate the entire execution namespace. Use
-bounded child processes and their individual status/exit receipts instead.
-
-The ignored `.local/vm/restricted-local-docker-handoff.md` contains the precise
-current process handoff. The monitored launcher and its separate exit files
-distinguish a terminated VM from an unavailable application. Cached images and
-the existing task disk should survive a process restart. Inspect their state;
-do not format the disk or reset/import fixtures just because a listener stopped.
-
-A replacement execution has a different temporary network proxy and public
-certificate authority. Its guest must receive that execution's own configuration
-through the monitored launcher. Reusing an old execution's proxy or certificate
-bundle causes registry TLS failures. Preserve normal TLS and checksum checks;
-do not solve this by disabling verification.
+A replacement execution's proxy/certificate context differed from the original,
+which explained registry TLS failures when stale configuration was reused.
+Normal TLS and checksum checks were preserved. These are tooling lessons, not
+instructions to prepare another replacement VM.
 
 ## Application readiness is a separate checkpoint
 
@@ -144,13 +112,15 @@ This is a measured local image/cache materialization discrepancy. It does not
 establish damaged public layers, physical I/O damage or an application defect.
 The audit changed no unpacked snapshot and performed no repair.
 
-A supported public-image export and recovery using a fresh isolated Docker
-instance with dedicated containerd are being prepared. Recovery has not
-completed; preserve the original disk/cache and diagnose the bounded recovery
-result before another whole-stack retry. Full PostgreSQL, Auth, REST, Storage,
-Realtime and Mailpit readiness, migrations 221–225, fixture import, managed SQL/UI
-verification and production activation remain pending. Neither successful Docker
-startup nor a pulled image establishes a working application.
+The supported public-image export completed. A separate empty Docker store with
+dedicated containerd was qualified, but its offline import ended with
+`unexpected EOF` after584.272seconds and only three image references loaded.
+The VM/controller then stopped; the queued failure diagnostic never ran.
+Recovery did not complete and is no longer an active work plan. Preserve the
+original/partial stores and receipts. No application database, candidate
+migration or fixture import completed through this workaround; current
+verification/publication status belongs in [PROGRESS](../PROGRESS.md).
+Neither successful Docker startup nor a pulled image establishes a working app.
 
 The reduced local stack excludes Studio, analytics, Vector and Edge runtime
 using the CLI's supported exclusions; it retains health checks. Follow the
@@ -164,7 +134,7 @@ execution. A working VM-local URL does not establish that Chrome can reach it.
 Qualify a supported development connection before claiming browser acceptance.
 Keep signed-in production accounts out of mutation tests.
 
-Native Android compilation/emulation and Traccar stacks compete with this
+Native Android compilation/emulation and Traccar stacks competed with this
 software-emulated database for memory and CPU. Serialize heavy work; prefer a
 qualified hosted Android device for native runtime review. Native permissions,
 background updates, physical GPS hardware, hosted gateway operation and
@@ -181,8 +151,8 @@ after task-owned process shutdown/cache-lock checks. No device installation or
 native runtime acceptance occurred. See the [Android device runbook](ANDROID_DEVICE_TESTING.md)
 for its static checks, prior build receipts and remaining device test boundaries.
 
-Local default Playwright Chromium is available by sourcing
-`.local/chromium-20261114/activate.sh` inside the root-owned job environment.
+Local default Playwright Chromium was prepared with
+`.local/chromium-20261114/activate.sh` in the root-owned job environment.
 Its pinned Chrome Headless Shell151.0.7922.34 passed actual synthetic-page
 interaction at1280×800 and390×844. This is tool readiness, not Loadgistic review.
 The complete Chrome binary's first launch hit the host's AF_UNIX denial; no

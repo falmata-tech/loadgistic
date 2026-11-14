@@ -35,8 +35,19 @@ per eligible demo vehicle and foreground feed reads every15seconds. Approved
 route/profile changes keep their slower scenario schedules. Resume only one
 valid next step after interruption, then wait its full interval; never burst
 missed events or backdate fresh-looking reports. Real-phone capture and privacy
-settings retain their separate contracts. Advance at most one due vehicle per
-30-second worker tick so recovery preserves activity between actors.
+settings retain their separate contracts. Prefer a Netlify minute schedule that
+advances at most two due actors per invocation; healthy per-actor activity is
+expected about every120–180seconds, subject to actual scheduler/database checks.
+The optional dedicated container advances one due actor per30-second tick. Run
+only one Capacity scheduler, explicitly stopping any external container before
+enabling Netlify. Neither scheduler skips phases or catches up missed events.
+
+Normal Next.js/Expo development can use an isolated managed Supabase development
+branch; Docker is required for the complete disposable local database stack,
+not for the app process or Netlify Capacity function. Use native GitHub runners
+for the bounded simulator database diagnostic when this workspace cannot run
+that stack. Do not resume the nested-VM workaround, copy production service keys
+into development, or weaken local-only fixture guards. See ADR-085 and local setup.
 
 ## Product experience standard
 

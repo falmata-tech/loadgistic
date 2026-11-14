@@ -1,8 +1,15 @@
 # Local development and test setup
 
-Current workflow, reconciled 2026-11-12. Use the checked-in package scripts and
+Current workflow, reconciled 2026-11-14. Use the checked-in package scripts and
 [active status](PROGRESS.md); dated restore/build receipts are history, not a
 reason to reset an existing workspace. Work only in Loadgistic.
+
+Next.js runs directly on Node22; Expo uses Node24. The application can use an
+isolated managed Supabase development branch without local Docker. Docker is
+needed for the repository's full local Supabase/fixture harness and its native
+GitHub runner suites. It is not a prerequisite for normal application source,
+unit/type checks, compilation or a Netlify scheduled function. See
+[ADR-085](DECISIONS.md) for the development and simulator hosting boundaries.
 
 ## Prerequisites
 
@@ -12,11 +19,12 @@ reason to reset an existing workspace. Work only in Loadgistic.
 | Mobile Node |24.x, matching the mobile CI job; separate `apps/mobile` lockfile. |
 | npm |10 or newer; use `npm ci` against each existing lock. |
 | Python |3.11+ for deploy-ready ZIP inspection and its root contract tests; standard library only, no runtime/application dependency. |
-| Docker |A running Docker Engine with the CLI available to this process. A Supabase account connection does not provide local containers. |
-| Supabase CLI |2.111.0, matching all three CI setup steps. `SUPABASE_CLI_PATH` may select a project-local binary. |
+| Docker |Required for the full local Supabase stack and container checks. The managed development branch path below does not use it. |
+| Supabase CLI |2.111.0 for local setup and CI; `SUPABASE_CLI_PATH` may select a project-local binary. The managed bootstrap uses Node directly. |
 | Workflow analysis |Project-cached, checksum-pinned actionlint 1.7.12; ShellCheck 0.11.0 provides the additional shell analysis when installed. |
 
-Verify the actual runtime, CLI version and Docker daemon before preparing fixtures.
+Verify the actual runtime and selected backend before starting the app. Verify
+the CLI version and Docker daemon before preparing local fixtures.
 Do not install globally, change shared SDKs, stop another app's services or copy
 production administrator/service credentials into the local checkout.
 A restricted shell's missing PATH is not proof that a separately installed
@@ -28,7 +36,95 @@ reservations and excludes55320–55329 from automatic allocation before service
 setup. Do not run it as local setup, change this machine's kernel settings or
 kill an unknown listener; verify process/port ownership normally below.
 
-## Fresh, disposable Loadgistic stack only
+## Managed development branch without Docker
+
+Use an isolated branch with its own Supabase API/Auth/Storage/Realtime and
+credentials. Do not reuse Production, another product's project or a schema
+inside the production database. A Supabase account connection supplies access to
+the provider; it does not create a development branch or install local services.
+
+The November14 read-only inventory found no Loadgistic development branch. The
+branch cost confirmation expired and no managed resource was created. The
+bootstrap below is implemented and tested with synthetic transport; no hosted
+bootstrap, candidate migration, fixture import or browser task is credited by it.
+Provisioning and any paid resource remain a separate provider operation.
+
+Record the exact branch metadata returned by a provider read in an ignored
+operator manifest, for example `.local/managed-dev/manifest.json`:
+
+```json
+{
+  "version": 1,
+  "scope": "loadgistic-managed-development",
+  "production_project_ref": "tpwyyzoqijjmbvsmmvcm",
+  "development_project_ref": "abcdefghijklmnopqrst",
+  "branch_id": "11111111-1111-4111-8111-111111111111",
+  "branch_name": "loadgistic-development",
+  "verified_branch": {
+    "id": "11111111-1111-4111-8111-111111111111",
+    "name": "loadgistic-development",
+    "project_ref": "abcdefghijklmnopqrst",
+    "parent_project_ref": "tpwyyzoqijjmbvsmmvcm",
+    "is_default": false,
+    "with_data": false
+  }
+}
+```
+
+The development ref/UUID above are examples, not an existing resource. Replace
+them and the branch name with the exact independently read provider values;
+the branch must be nondefault, data-less on creation and under the named
+Loadgistic parent. The manifest selects a target; it is not a provider-enforced
+permission or proof that its database is still empty.
+
+Prepare a separate ignored `.local/managed-dev/credentials.json` containing only:
+
+```json
+{
+  "development_project_ref": "abcdefghijklmnopqrst",
+  "publishable_key": "REPLACE_WITH_DEVELOPMENT_PUBLISHABLE_KEY",
+  "service_role_key": "REPLACE_WITH_DEVELOPMENT_SERVER_KEY"
+}
+```
+
+Use branch-specific values from the provider. Never copy a production service
+key, management token or database password into this file. Keep both input files
+owned by this process, regular, non-symlinked, with mode0600; keep their directory
+private. Do not print keys or commit the files. Google login remains disabled;
+no Google development credential is required.
+
+With Node22 selected, preflight first, then create the environment explicitly:
+
+```bash
+node scripts/configure-managed-dev-supabase.mjs --manifest .local/managed-dev/manifest.json --credentials .local/managed-dev/credentials.json
+node scripts/configure-managed-dev-supabase.mjs --manifest .local/managed-dev/manifest.json --credentials .local/managed-dev/credentials.json --write-env
+npm run dev
+```
+
+The bootstrap checks exact parent/ref/name/UUID/default/data-copy metadata,
+refuses known production projects and mismatched legacy key claims, and verifies
+both keys through two bounded GETs to the exact development Auth and Data API.
+It creates `.env.local` exclusively with mode0600, fresh distinct session/code
+secrets, `APP_URL=http://127.0.0.1:3100`, disabled workers/push and empty application
+mail adapters. Existing environments and symlinks are refused. Its report omits
+keys and records that fixtures, data freshness, migrations, email and browser
+workflows are unverified. Mode0600 is not a boundary against another process
+running as the same OS user.
+
+This is **unseeded bootstrap only**. `--seed` refuses before reading credentials
+or making a request. It does not call an importer, create identities, mark demo
+accounts, accept policies, apply SQL, configure hosted Auth/SMTP, enable workers
+or send mail. Hosted Auth's email configuration is not inspected. Do not run
+the local fixture configurator/importer or loopback-only audit helpers against
+this branch; their target guards remain unchanged. Role workflows need separate
+reviewed synthetic setup. Mailpit/email/signup suites remain on the full isolated
+local stack or native GitHub runners.
+
+The web URL is `http://127.0.0.1:3100`. Use the same running API for the Expo
+preview on8084 below. Select the actual backend and source version in review
+evidence; a successful bootstrap does not establish completed application tasks.
+
+## Full fresh, disposable local Supabase stack
 
 These commands create/reset synthetic data. Use them only when this checkout's
 `loadgistic-local` database is new/disposable and the ports are owned by this task.
@@ -75,7 +171,9 @@ does not make it an available customer login option.
 
 ## Resume an existing preview without losing its history
 
-Start its existing Docker/Supabase services and `npm run dev`. Verify the app,
+For a local stack, start its existing Docker/Supabase services and `npm run dev`.
+For a managed branch, retain its existing branch and private environment; start
+the Node app without Docker. Verify the app,
 process ownership, database project and current installed schema before testing.
 Do not repeat `supabase:local:configure`, `db:reset`, fixture import or database
 reset merely because a browser is empty or a process stopped.
@@ -92,7 +190,8 @@ and browser wrappers sequential because both manage temporary type references.
 
 ## Expo browser preview
 
-Keep the actual web API running on 3100 against local services. In another
+Keep the actual web API running on3100 against the selected isolated Supabase
+backend. In another
 terminal, select Node 24, then:
 
 ```bash
@@ -157,9 +256,18 @@ Agent-led actual Chrome desktop/phone and affected Expo review precedes full UI
 release gates. The owner is needed only for unresolved product decisions/access
 and separately authorized production/device operations.
 
+The `Operations proof boundary` workflow's `simulator-db` choice, or a push to
+`diagnose/simulator-db/**`, qualifies the candidate database boundary on a native
+GitHub Linux runner. It uses the full local stack, inert controls, security/API
+denial, strict fixture preflight and the selected Phone/GPS and demo-isolation
+SQL suites. It has no hosted credentials and performs no production deployment.
+Its result does not replace the full same-commit CI matrix, application browser
+review, native-device evidence or production rollout gates. A configured workflow
+alone is not a passing run.
+
 | Symptom | Safe next step |
 | --- | --- |
-| CLI reports Docker/Podman missing | Provide the supported local container runtime. Do not replace PostgreSQL/Auth/Storage with a mock or borrow hosted credentials. |
+| Local Supabase CLI reports Docker/Podman missing | Run the full local suite in a supported native Docker environment or GitHub runner. Continue normal app work through a separately provisioned isolated managed branch; never borrow production credentials. Do not resume the stopped nested VM workaround. |
 | Workflow-tool download fails | Check the selected process's network/proxy support; preserve the pinned checksum. Never disable TLS/hash verification. The November 12 environment-specific recovery is in PROGRESS. |
 | Blank/stale preview | Verify exact PID/cwd, API health, actual app bundle, schema and synthetic actor. Stop the dependent test at its first unavailable prerequisite; do not reset data or lengthen login waits. |
 | Local email absent | Check Mailpit and the exact current request/recipient, then Auth versus application-email configuration. Do not report provider acceptance as inbox receipt. |
@@ -168,5 +276,6 @@ and separately authorized production/device operations.
 
 The map tile URL/attribution pair accepts a single attributed HTTPS template or
 uses the direct community fallback. Do not proxy, prefetch or bulk-copy tiles.
-The development environment is ready only after its database/Auth/Storage/mail,
-fixture and actual task checks succeed; dependency installation alone is partial.
+Record readiness by capability: dependencies or a managed bootstrap do not prove
+fixtures, mail, SQL migrations, actual saved tasks or device behavior. Complete
+each affected boundary before claiming its verification or a releasable app.

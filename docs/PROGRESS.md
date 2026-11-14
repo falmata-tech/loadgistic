@@ -7,36 +7,54 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Current Cloud runtime checkpoint — blocked
+## Current development path — Netlify and native database diagnostics
 
-The complete feature source is saved on
+The complete feature checkpoint is saved on
 [`feat/scenario-driven-demo-signals`](https://github.com/falmata-tech/loadgistic/tree/feat/scenario-driven-demo-signals)
-at `f1380c8316c4817b4127504c55e5fc1f1ba8830c`, tree
-`4dea35ca497ab5a08f4ff747c8fb63c7e8abec37`. That tree exactly matches the
-preserved local e226693 checkpoint; only five documentation files differ from
-the executable 4b7af44 snapshot used for the Android qualification. The original
-three local commits remain on `checkpoint/scenario-local-e226`. No feature PR,
-full CI run, merge, deployment or simulator activation has occurred.
+at `e9c9a616a17cd662a61a08951df858b0311fdf1f`, including the new Netlify/development
+adapters described here. The original three local commits remain on
+`checkpoint/scenario-local-e226`. No feature PR, full CI run, merge, deployment
+or simulator activation has occurred. The verified published baseline remains
+520328b below.
 
-The current Cloud workspace has no normal Docker client or managed socket at
-the three checked standard paths. A direct Unix-socket creation probe returns
-`EPERM`; unprivileged user namespaces alone do not supply the missing Docker
-capability. The QEMU software-emulation workaround proved Engine/hello-world
-and later a separate empty Docker/containerd store, but did not produce a ready
-application stack. The offline import stopped with `unexpected EOF` after three
-image references loaded; its VM/controller subsequently no longer held the
-disk, and the queued diagnostic did not run. The termination cause is unconfirmed.
-All fourteen exported Storage layer sizes and SHA256 digests match the pinned
-source. Original and partial cache stores are preserved.
+The preferred fast Capacity scheduler is now a default-off Netlify minute
+function, with a bounded two-due-actor request through the existing guarded
+controller. Per-actor phases remain at least120seconds after actual completion;
+healthy spacing is expected120–180seconds, and foreground UI reads every15seconds.
+The one-actor/30-second dedicated container remains an alternative, never a second
+active scheduler. Synthetic GPS/phone movement stays a separate service. Source
+and focused tests do not establish hosted timing or successful database writes.
 
-Resume in a Docker-enabled managed environment using the normal local setup.
-Do not continue the nested-VM workaround or count its daemon/image checks as
-application acceptance. Candidate migrations 221–225, fixture import, database
-and concurrency tests, desktop/phone/Expo review and production activation remain
-pending. The source cadence is 30-second synthetic reports, one due Capacity
-publication per 30-second worker tick, at least 120 seconds per demo vehicle,
-and 15-second foreground feed reads. These are implemented contracts, not live
-operation evidence. The last published baseline below passed all sixteen CI jobs.
+Normal Next.js/Expo development can use an isolated managed Supabase branch,
+without Docker here. The bootstrap validates exact branch metadata and development
+keys, makes two read-only API checks, and exclusively creates a private environment;
+it does not seed fixtures, configure email or qualify migrations/browser flows.
+Only production projects were found. The native development-branch cost confirmation
+expired; no branch/resource was created, no cost was accepted and no retry occurred.
+Do not use production service credentials or weaken the local-only fixture guards.
+
+The explicit `simulator-db` operations diagnostic runs the disposable Supabase
+stack on a native GitHub runner via `diagnose/simulator-db/**`. It applies fresh
+migrations221–225, checks inert controls and security, runs the strict browser
+fixture preflight and targeted rollback SQL/isolated GPS clone regressions. Its
+exact-source [run43560119545](https://github.com/falmata-tech/loadgistic/actions/runs/43560119545)
+is in progress; its result does not replace full PR/main CI, concurrency
+checks or agent-led desktop/phone/Expo review. See ADR-085 and local setup.
+
+The local container stack remains unavailable in this Cloud workspace: the checked
+standard sockets/client were absent and direct Unix-socket creation returned
+`EPERM`. The stopped QEMU workaround proved Engine/hello-world and a separate empty
+Docker/containerd store, but never a ready application stack. Its offline import
+ended with `unexpected EOF` after three image references loaded; the VM/controller
+subsequently stopped holding the disk and the queued diagnostic never ran. The
+termination cause is unconfirmed. All fourteen exported Storage layer sizes/digests
+match their pinned source, and original/partial stores are preserved. Do not resume
+this workaround or treat it as a prerequisite for the app/Netlify work above.
+
+Focused source checks currently pass for the new Netlify adapter, managed branch
+bootstrap and diagnostic workflow; schema/API/actual browser and production
+activation remain unqualified. Candidate migrations221–225 have not been applied
+to production. Production settings and the SMTP verification pause remain intact.
 
 ## Active priority — GPS gateway and signal simulators
 
@@ -74,10 +92,11 @@ The owner's subsequent instruction makes visible early-user activity the
 priority: the candidate targets 30-second synthetic source reports, authored
 Capacity phases about every two to three minutes per demo vehicle with staggered actors,
 and 15-second foreground feed reads. Actual phone capture/background intervals
-are unchanged. A dedicated capacity-only worker replaces dependence on the
-15-minute dispatcher for this fast lane. Its30-second tick advances at most one
-due vehicle, so delayed activation/recovery cannot synchronize all five into a
-recurring burst. Slow profile/team/sharing lanes keep their separate cadence
+are unchanged. A separate Capacity-only Netlify function replaces dependence on the
+15-minute dispatcher for this fast lane. Its minute schedule advances at most two
+due actors. The optional30-second container advances only one and must be stopped
+before Netlify is enabled. Neither path catches up missed phases or saves all five
+actors together after an outage. Slow profile/team/sharing lanes keep their separate cadence
 and activation prerequisites. Jobs must resume one valid next step after interruption,
 without bursts, skipped prerequisites or backdated observation times.
 

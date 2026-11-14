@@ -6,6 +6,47 @@ record the designs accepted at their dates; their email-only Capacity and
 platform-Brokerage clauses were superseded on October 24. Public-link Tracking
 still uses its own email authorization.
 
+## ADR-085 — Netlify Capacity scheduling and isolated development (2026-11-14)
+
+Status: source implemented; runtime/database and release qualification pending.
+BASE-DEP-001 / FEAT-SIM-001. No hosted simulator activation or development
+database creation is established by this decision.
+
+Use a separate native Netlify scheduled function for the fast Capacity lane.
+Every minute it submits one signed, bounded request for at most two due actors
+to the existing durable controller. The controller retains approved demo-only
+bindings, sole-owner and human-takeover checks, leases, idempotency, phase order
+and a minimum120-second per-target interval after completion. Expected healthy
+per-actor activity is120–180seconds; actual scheduler/database evidence remains
+required. No sleeps, persistent loop, backdating or catch-up batches are added.
+The optional one-actor/30-second container is an alternative: explicitly stop it
+before enabling Netlify. A site environment flag cannot prove another host stopped.
+
+The function is default-off with its own enable/kill flags and pinned production
+site/origin checks. It uses only the Capacity-purpose HMAC key and endpoint;
+Netlify's same-site Functions environment does not physically isolate each
+function's secrets. Independently hosted containers retain their narrow injected
+environment. Slow world/profile/team/sharing and reserved Tracking lanes retain
+their separate controls and qualification; enabling global dispatch does not
+authorize those lanes. Raw GPS TCP/Traccar and synthetic movement remain separate
+services, credentials and hosting, independent of this HTTP Capacity adapter.
+
+Run normal Next.js/Expo processes against an isolated managed Supabase development
+branch when the full local container stack is unavailable. The guarded bootstrap
+accepts operator-verified nondefault, data-less branch metadata and development
+keys, performs read-only checks, and exclusively creates a private environment.
+It does not seed data, configure email or qualify schema/browser workflows.
+Keep production credentials out and retain loopback-only fixture guards.
+
+Use the explicit `simulator-db` operations diagnostic on a native GitHub runner
+for fresh migrations221–225, inert controls, security checks, strict browser
+fixture preflight and rollback SQL/isolated GPS clone regressions. Its
+`diagnose/simulator-db/**` push lane does not replace full PR/main CI, actual
+desktop/phone/Expo review, concurrency proof or release/backup gates. Stop the
+unsuccessful nested-VM workaround; Docker startup alone is not app acceptance.
+Rollback leaves both scheduler switches off or restores the prior application
+artifact; no schema change is introduced by this adapter.
+
 ## ADR-084 — Curated scenario catalog and coherent demo activity (2026-11-13)
 
 Status: owner-directed reconciliation in progress, FEAT-SIM-001/004 and

@@ -272,8 +272,31 @@ And missing or unavailable managed configuration fails closed with a bounded non
 Given Loadgistic source, local setup, browser tests, fixture generation, scale checks, and deployment artifacts\
 When repository boundaries are validated\
 Then no executable source imports `node:sqlite` or opens a local database file\
-And local development and automated workflows use the isolated Supabase PostgreSQL/Auth/Storage project\
+And development uses isolated Supabase PostgreSQL/Auth/Storage through either a local stack or a separately provisioned managed development branch\
+And the existing fixture/reset, Mailpit and automated database harness retain their exact local-target checks and run on supported local Docker or native GitHub runners\
 And disposable scale data is created and rolled back in PostgreSQL rather than a second persistence engine.
+
+### Scenario: managed development bootstrap does not require local Docker
+
+Given an operator has separately provisioned and independently read a nondefault data-less development branch under the exact Loadgistic production parent\
+When the Node22 managed-development bootstrap receives its exact branch manifest and protected development-only key file\
+Then it requires matching parent, project ref, branch UUID and name, rejects known production targets and refuses mismatched legacy key claims\
+And two bounded nonredirecting GETs verify the development publishable and server keys against that exact Auth/Data API host\
+And explicit environment creation uses exclusive mode0600 creation, preserves existing files and symlink targets, and generates distinct local secrets without printing keys\
+And the resulting configuration uses the Node web API on3100 with workers/push disabled and no configured application-mail adapter; Expo's existing Node24 preview uses8084\
+And bootstrap performs no database or provider write, fixture import, account creation, demo enrollment, policy acceptance, hosted email configuration or service activation\
+And every seed request fails before credential reads or requests, with existing local importer/audit guards unchanged\
+And the report explicitly leaves data freshness, migrations, email and browser acceptance unverified rather than claiming a seeded or releasable environment.
+
+Evidence: `scripts/configure-managed-dev-supabase.mjs` and
+`tests/managed-dev-supabase-setup.test.mjs`; [ADR-085](../../docs/DECISIONS.md)
+and [local setup](../../docs/LOCAL_SETUP.md) describe the operational boundary.
+The operator manifest records provider metadata; it does not enforce remote
+permissions or prove continued emptiness. No managed resource was created in
+this checkpoint after its cost confirmation expired. Rollback removes the new
+bootstrap source and any exact task-created local environment after preserving
+existing preview work; it does not delete or reset a hosted branch. Full SQL,
+email, application workflow and release checks remain separate.
 
 ### Scenario: schema rollout
 
@@ -575,6 +598,22 @@ this focused workflow alone does not qualify or publish a release.
 Evidence: `scripts/ci-operations-proof.mjs`, its negative tests and
 `.github/workflows/operations-proof.yml`. Rollback removes the focused tool and
 diagnostic fields; it does not remove the underlying proof/privacy assertions.
+
+### Scenario: simulator database diagnosis uses native GitHub runner services
+
+Given candidate Phone/GPS and demo-simulator changes need a bounded database qualification without the stopped nested development VM\
+When the Operations proof workflow is manually selected with `case=simulator-db` or receives a push to `diagnose/simulator-db/**`\
+Then its dedicated native Linux runner starts the isolated local Supabase stack and requires migrations221–225, inert controls and the curated catalog before fixtures\
+And ordinary PostGIS/catalog and Data API denial checks, strict one-pass fixture preflight, Phone/GPS-only writes and durable simulator/owner-isolation SQL cases remain enforced\
+And its disposable GPS clone preserves the existing server-matched PostgreSQL and exact target/cleanup guards\
+And this branch prefix does not also run the unrelated browser-proof repetitions, copy hosted credentials, enroll production accounts or publish the application\
+And checked source, finite command/job budgets and cleanup failures retain their real result\
+And a passing focused run qualifies only those database boundaries; the complete same-commit CI matrix, actual application review, native-device evidence and production gates still apply.
+
+Evidence: `.github/workflows/operations-proof.yml` and
+`tests/ci-operations-proof.test.mjs`. Source/contract checks do not establish that
+this runner actually passed. Rollback removes the dedicated diagnostic selection
+without weakening the main CI matrix, target checks or security assertions.
 
 ### Scenario: accessibility scans wait for the final workspace route
 

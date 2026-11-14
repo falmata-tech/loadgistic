@@ -122,25 +122,47 @@ used coordinate-offset rectangles, and the planner accepted individually known
 cities without validating a whole approved sequence.
 
 The owner's later frequency requirement supersedes that daily cadence for the
-active marketplace lane. Target synthetic location reports every 30 seconds and
-Capacity phases at least120seconds apart per eligible demo vehicle. The dedicated
-30-second worker advances at most one due vehicle per tick, preserving visible
-staggering even after delayed activation or an outage. With five eligible actors,
-normal phase spacing is about120–150seconds per vehicle. The fixed Capacity cycle is
-Partial 80% → Partial 60% → Partial 30% → Empty 100%. Route variants change only in
-their eligible Empty phase, approximately every16–20minutes. Foreground web/native
-feed reads target 15 seconds, pausing when hidden/backgrounded and avoiding
-overlapping incomplete loads. These are candidate contracts, not production
-operation evidence, and they do not change real-phone capture intervals.
+active marketplace lane. The preferred Capacity runtime is now the independent
+Netlify `demo-capacity` scheduled function: one native minute tick requests at
+most two oldest due actors through the existing signed Capacity-only endpoint.
+Each actor advances only one valid next phase, and its following phase becomes
+due at least 120 seconds after actual completion. With five healthy eligible
+actors, expected per-actor spacing is about 120–180 seconds; provider scheduling,
+execution time, pauses and failures can make it longer. This is a throughput
+expectation, not observed production timing or a thirty-second cron claim.
 
-Use a dedicated fast capacity worker. The existing 15-minute workflow dispatcher
-can retain its slow lanes; repeatedly querying profile/team/sharing work every
-30seconds is unnecessary. First activation should begin a valid initial phase
-promptly. After a short outage, apply only the next prerequisite-satisfied step
-with its actual completion time, then wait the full interval before another;
-preserve original nominal timing for audit. Human changes pause that target.
-Keep the longer outage/backlog review boundary and do not compress missed work
-into a burst to make the market appear busy.
+The fixed Capacity cycle is Partial 80% → Partial 60% → Partial 30% → Empty 100%.
+Route variants change only in the eligible Empty phase on the authored cycles;
+the nominal lower bound between such changes is sixteen minutes, with actual
+timing following completed phases. Independent synthetic location reports still
+target 30 seconds through their separately hosted source worker. Foreground
+web/native feed reads target 15 seconds, pause when hidden/backgrounded and avoid
+overlapping incomplete loads. These contracts do not change real-phone capture
+intervals. A Capacity save never manufactures a fresh GPS or phone observation.
+
+The existing standalone Capacity container remains an optional alternative:
+one due actor per 30-second tick, normally about 120–150 seconds per actor.
+Run exactly one Capacity scheduler. Before enabling the Netlify function, stop
+any external container and verify it stopped; the Netlify environment check
+cannot discover or stop an independently configured host process. Neither
+Capacity option requires the Traccar/GPS stack or local Docker. The app can use
+managed Supabase while GPS-host qualification proceeds separately.
+
+The Netlify function reads `DEMO_CAPACITY_WORKER_SECRET`, signs only
+`/api/internal/demo-world/capacity/advance`, and neither selects targets nor
+opens the database itself. Its same-site runtime environment is not physical
+secret isolation. The optional container is separately configured with only its
+narrow key and site/origin, without application, database or gateway credentials.
+Both retain the database's demo ownership, takeover, due-time, lease and receipt
+guards. The separate 15-minute world dispatcher never executes fast Capacity;
+its slower profile/team/sharing controls remain off for initial activation.
+
+After an outage, each invocation keeps its ordinary budget and requests only
+the next prerequisite-satisfied phase for each claimed actor, with actual save
+and completion time. Then wait the full per-actor interval; preserve nominal
+timing for audit. There is no extra catch-up loop, skipped phase, backdated
+freshness or recovery burst. Human changes pause only their target. Keep the
+longer outage/backlog review boundary rather than compressing missed work.
 
 The reconciliation must preserve trusted account provenance and the new
 Phone/GPS-only policy. Historical Manual-dependent duty/handover lanes remain

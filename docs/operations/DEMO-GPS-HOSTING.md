@@ -1,7 +1,7 @@
 # Demo simulator and GPS hosting plan
 
-**Updated November13, 2026: source implementation and provider-neutral hosting
-plan; no configured production GPS feed.** Read-only inspection of the exact
+**Updated November14, 2026: preferred serverless Capacity runtime and separate
+GPS hosting plan; no new hosted activation.** The November13 read-only inspection of the exact
 Loadgistic project found it healthy, with the telemetry ingestion/provisioning
 functions and hosted-movement control installed. It found zero registered
 gateways, devices, assignments or telemetry positions. Hosted movement is
@@ -30,21 +30,32 @@ the control is installed on production and disabled. The recurring movement
 worker is an opt-in private profile; its hosted runtime and end-to-end accepted
 fixes remain unqualified.
 
-The frequent Capacity runner is a third independent project,
-`compose.scenario.yml`, with no gateway/database configuration dependency. It
-checks a Capacity-only signed app endpoint every 30 seconds with a one-phase
-budget. Five actors follow authored 80→60→30→Empty 100 episodes, at least 120
-seconds after each target's actual completion, typically 120–150 seconds with
-polling. Oldest-due ordering spreads overdue actors across ticks after an outage;
-it cannot publish all five together. The existing Netlify 15-minute dispatcher keeps
-the infrequent lanes; it cannot execute fast Capacity. Duty and handover remain
-held because their historical preparation depended on retired Manual writes.
+The preferred frequent Capacity runner is now the independent Netlify
+`demo-capacity` scheduled function. One native minute invocation signs a request
+for at most two oldest due actors. Five actors follow authored
+80→60→30→Empty 100 episodes, at least 120 seconds after each target's actual
+completion. Expected healthy spacing is about 120–180 seconds per actor; actual
+provider timing, execution and pauses can make it longer. It advances one next
+phase per claimed actor without catch-up loops, skipped phases or backdating.
+Foreground web/native feed reads target 15 seconds. This function publishes
+Capacity only; it does not produce or refresh GPS/phone locations.
 
-Keep the Loadgistic app and durable controls on Netlify and Supabase. Put the
-independent fast runner, Traccar, its isolated database, and restricted bridge
-on a measured Linux host that supports Docker Compose, persistent storage, a
-public IPv4 address, and inbound TCP. These projects may share that host without
-sharing lifecycle, credentials, databases or backend networks. No host is selected.
+The standalone `compose.scenario.yml` container remains an optional alternative,
+with one due actor per 30-second tick and normally 120–150 seconds per actor.
+Run exactly one Capacity scheduler. Stop and verify any external container before
+enabling the Netlify replacement; checking the site's environment cannot stop a
+different host. The separate Netlify 15-minute dispatcher cannot execute fast
+Capacity. Its sharing/profile/team controls remain disabled for initial Capacity
+activation; duty and handover remain held because they depended on Manual writes.
+
+Keep the Loadgistic app, minute Capacity function and durable controls on
+Netlify and Supabase. Normal app development can use managed Supabase; it does
+not require local Docker or a running Traccar gateway. Only the real GPS and
+synthetic source services need their separately qualified hosting. The existing
+Traccar templates target a measured Linux host with Docker Compose, persistent
+storage and the required TCP networking. Real and synthetic stacks may share
+that host with independent lifecycle, credentials, databases and backend
+networks. No host is selected; Capacity progress does not wait for that selection.
 
 ```mermaid
 flowchart TD
@@ -58,15 +69,19 @@ flowchart TD
   syntheticbridge -->|HTTPS| app
   motion -->|signed HTTPS phone and lease commands| app
   app --> appdb[(Supabase application database)]
-  schedule[Netlify scheduled dispatcher] --> worker[Netlify background worker]
+  schedule[Slow Netlify dispatcher] --> worker[Slow Netlify background worker]
   worker -->|infrequent demo commands| app
-  scenarios[Independent Capacity runner] -->|Capacity-only signed HTTPS| app
+  scenarios[Netlify minute Capacity function] -->|Capacity-only signed HTTPS| app
 ```
 
 Each Traccar database remains isolated from Supabase. Its restricted bridge is
 the only component that forwards normalized GPS events to Loadgistic. The demo
-workflow worker and movement worker have separate authorization: neither gets a
-bridge, Traccar API, tracker-command or database credential. The movement worker
+workflow and movement lanes have separate purpose keys and receiving
+authorization. Netlify's Capacity function reads its narrow key and calls the
+guarded app endpoint; the same-site environment can contain other app settings
+and is not physical secret isolation. The independently configured Capacity
+container and movement worker receive only their own narrow authority, without
+bridge, Traccar API, tracker-command or database credentials. The movement worker
 only opens the synthetic gateway's private GT06 socket and signs narrow app
 requests. The independent hosted templates have separate real and synthetic Traccar databases,
 bridge credentials and Docker networks. Only the real gateway maps host port
@@ -95,18 +110,57 @@ before claiming that vehicles are moving.
 | Option | Public GT06 TCP | Demo workflow jobs | Fit for the current code |
 | --- | --- | --- | --- |
 | Supabase Cron / Edge Functions | No inbound device socket | Can schedule/call bounded work | Possible for bounded HTTPS/database work, but adds a second scheduler/runtime pattern and does not host this persistent TCP stack. |
-| Netlify Functions | No inbound device socket | Infrequent signed dispatcher/background lanes | Retains the existing15-minute pattern; it does not supply the new 30-second Capacity runner. |
+| Netlify Functions | No inbound device socket | Preferred minute Capacity function, at most two due actors; separate slow dispatcher/background lanes | Fits bounded HTTPS Capacity work using the existing durable controller. No Docker or raw GPS service is needed for this lane. |
 | Netlify Server, Early Access | No documented raw GT06 listener or Java/Docker deployment for this stack | Long-lived Node HTTP/WebSocket/SSE backend | A current Netlify option for HTTP servers, but not a replacement for these persistent Traccar/PostgreSQL containers. It scales to zero when idle, replaces instances after eight hours and offers temporary instance disk only. |
 | Fly.io container | Yes, raw TCP is supported | Could run a separate worker container | Technically viable, but the current Compose deployment needs a Fly-specific split, networking, and persistent-volume setup. It is more provider-specific work than a VM for this existing stack. |
-| Standard Linux VM | Yes, with public IPv4 and firewall rules | Independent frequent Capacity and private movement containers; slow lanes remain on Netlify | Fits the three independent Compose projects. Requires OS patching, monitoring and backup ownership; provider, plan and billing remain unselected. |
+| Standard Linux VM | Yes, with public IPv4 and firewall rules | Private movement container; optional Capacity container instead of the Netlify function | Fits the independent Compose projects. Capacity hosting here is optional. Requires OS patching, monitoring and backup ownership; provider, plan and billing remain unselected. |
 
-Netlify scheduled functions run only on published deploys, not on Deploy
-Previews; they can be invoked manually during testing. Their short runtime
-makes them a dispatcher, while a signed background function handles a bounded
-batch. That matches the existing application pattern and avoids adding Supabase
-Cron plus `pg_net` plus another Edge Function just for the simulator. Supabase
-Cron remains a reasonable alternative if the workflow later becomes a small
-database-native task, but it does not solve GPS ingress.
+Netlify scheduled functions use minute-resolution UTC cron and have a 30-second
+execution limit. They run on a schedule only for published deploys, with manual
+invocation available in provider tooling for testing; their URL is not a public
+trigger. The new Capacity function calls the bounded signed app endpoint
+directly with a 20-second deadline. The existing slower dispatcher still uses
+a background worker for its own lanes. No long-lived timer or unsupported
+thirty-second cron is needed. Supabase Cron remains an alternative for bounded
+database-native work, but adding it is unnecessary for this adapter and does
+not solve GPS ingress.
+
+### Capacity activation and stopping boundaries
+
+The source adapter is `netlify/functions/demo-capacity.mjs`; it stays off unless
+all existing production world/site gates and both new switches are explicit:
+
+| Setting | Required active value or boundary |
+| --- | --- |
+| `LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED` | `true`; missing/false is off |
+| `LOADGISTIC_DEMO_CAPACITY_NETLIFY_KILL_SWITCH` | `false`; missing/true is off |
+| `LOADGISTIC_DEMO_WORLD_ENABLED` / `LOADGISTIC_DEMO_WORLD_KILL_SWITCH` | `true` / `false`; other lane database controls remain disabled |
+| `LOADGISTIC_DEMO_WORLD_SITE_ID` / `LOADGISTIC_DEMO_WORLD_SITE_ORIGIN` | Exact reviewed production UUID/HTTPS origin matching runtime `SITE_ID` / `URL` |
+| `DEMO_CAPACITY_WORKER_SECRET` | Protected distinct 64-hex key, Functions production context only |
+| `LOADGISTIC_SCENARIO_WORKER_ENABLED` | Must not be `true` in this deployment; independently hosted containers must also be stopped and verified |
+
+The key signs only purpose `capacity-advance` and
+`/api/internal/demo-world/capacity/advance`. The adapter accepts no selected
+target, percentage, route or mutation clock. It makes one request, bounds its
+response to 8 KiB, and logs only whitelisted aggregate health/counts. The existing
+controller owns due times, exact demo membership/sole ownership, source takeover,
+leases, predecessor state and immutable receipts. Site-wide environment access
+means this is a narrow code/API boundary, not a separate process credential vault.
+
+The shared world HTTP gate can also admit its separate 15-minute dispatcher;
+initial Capacity activation must therefore leave profile, business-sharing and
+team controls off, with Manual-dependent duty/handover held and movement's own
+enable/kill controls off. The Capacity function never invokes those endpoints.
+Stopping requires the selected scheduler's stop control and the transactional
+database control for accepted/in-flight work. Preserve saved history and leases'
+normal expiry/replay rules; do not reset customer records or clear REAL takeover.
+Switching deployment requires verification that the previous scheduler stopped.
+
+Focused signed adapter/controller tests pass locally; they do not establish
+installed migration221–225 behavior, actual Netlify scheduling, sustained saves
+or browser/native acceptance. Those checks and exact hosted activation remain
+separate. The normal GitHub runner diagnostic uses isolated Supabase and
+rollback-only suites; a diagnostic result is not a full release verdict.
 
 Fly is a TCP option, but its container and storage wiring is not a direct
 drop-in for the Compose templates. Its current public-network documentation
@@ -133,7 +187,8 @@ has been selected by this reconciliation.
 ## Size and network starting point
 
 The base dual-gateway Compose limits total 3.5 GiB across six containers; the
-opt-in movement and independent Capacity workers each add a 128 MiB limit;
+opt-in movement worker adds a 128 MiB limit. The alternative Capacity container
+adds another 128 MiB only when used instead of the Netlify function;
 each optional enrollment relay adds
 128 MiB, before the Linux host, filesystem cache and WAL. Do not size a
 VM from those limits or assume a 4 GiB machine is sufficient. Measure the
@@ -163,8 +218,10 @@ unverified.
 
 The reviewed catalog has eight eligible GPS reporters and one phone reporter;
 fleet-08 is unavailable. At an ideal 30-second cadence that is 23,040 GPS and
-2,880 phone fixes/day. The independent Capacity worker's one-phase/30-second
-budget caps it at 2,880 successful publications/day; completion-based spacing,
+2,880 phone fixes/day. Either Capacity scheduler has a nominal uninterrupted
+throughput budget of 2,880 publications/day: two actors per minute on Netlify or
+one per 30-second container tick. This is not a separately enforced daily quota.
+Completion-based spacing,
 outages, pauses and takeover reduce actual throughput. These are source-derived
 write budgets, not measured production volume or database size.
 
@@ -176,7 +233,7 @@ write budgets, not measured production volume or database size.
 | Demo GPS reservations | A reservation per GPS tick plus correlation update. | Successful START deletes at most 1,000 reservations older 1 day; that cleanup stops when START stops. |
 | Synthetic phone / latest Capacity / source controls | Current-row UPSERT/UPDATE, including demo provenance and last-seen state. | No new phone-history row per synthetic tick. Row count is bounded, but WAL, dead tuples and indexes still incur writes, including stationary reports. |
 | Motion / gateway HTTP nonces | One row per authorized command/request, not one per GPS fix. | Motion commands delete at most 1,000 nonces older 10 minutes. Bridge PRUNE deletes at most 1,000 gateway nonces older 1 day. |
-| Capacity / publication audit / durable step / immutable receipt | Four append rows per successful phase; prior current Capacity expires by UPDATE. Worker ceiling is 11,520 append rows/day, about 4.20 million/year. | No routine archive/age prune is configured. One unfinished job per target bounds pending work, not completed history. |
+| Capacity / publication audit / durable step / immutable receipt | Four append rows per successful phase; prior current Capacity expires by UPDATE. At nominal scheduled throughput this is 11,520 append rows/day, about 4.20 million/year. | No routine archive/age prune is configured. One unfinished job per target bounds pending work, not completed history. |
 
 The source has gateway/event uniqueness, device/time and raw-position
 `(created_at,id)` indexes, plus latest-Capacity vehicle/update/id indexes.
@@ -239,13 +296,23 @@ Do not infer safe storage cost from source row counts or a healthy container.
   the controls installed and disabled; the finite local Capacity run is separate
   historical evidence. The worker logs only counts and
   aggregate lag, never contacts, device IDs or locations.
+- `netlify/functions/demo-capacity.mjs` supplies the preferred independent
+  minute Capacity schedule. It calls only the narrow signed controller with a
+  maximum of two due actors; both adapter flags default off/inert, and existing
+  world/site and database controls remain required. Its bounded 20-second
+  request/8 KiB response tests cover signing, denial, two independent actors,
+  a paused actor beside another actor's progress and sanitized failure without
+  an internal retry. These in-process checks do not qualify an installed
+  database or published provider schedule. The function's same-site environment
+  is not physical secret isolation. It requires no gateway provisioning.
 - `compose.scenario.yml` and `Dockerfile.scenario` package only the independent
-  `synthetic-scenario-worker`. Its profile is opt-in, enable defaults false and
+  optional replacement `synthetic-scenario-worker`. Its profile is opt-in, enable defaults false and
   kill defaults true. It has only HTTPS egress, pinned site/origin and the separate
   `DEMO_CAPACITY_WORKER_SECRET`; it receives no slow world/motion/gateway key or
   database credential. The app accepts that key only for
   `/api/internal/demo-world/capacity/advance` and purpose `capacity-advance`.
-  A private tmpfs heartbeat supplies bounded health without a listener. Offline
+  It runs only when the Netlify Capacity scheduler is stopped. A private tmpfs
+  heartbeat supplies bounded health without a listener. Offline
   rendering succeeds without any GPS database/gateway variables. These checks
   do not prove an actual deployment, accepted save or visible browser/native run.
 - Source migration 225 adds sole-current-demo-owner checks to the final profile
@@ -274,8 +341,9 @@ synthetic Compose file describes the isolated fictional gateway. A separate HMAC
 app route exists in source and its SQL control is installed on production with
 the database control disabled and kill switch on. No running hosted movement
 worker has been established. The marketplace
-slow worker in Netlify handles infrequent lanes; fast Capacity has its own
-independent worker and duty/handover are held. Neither emits GPS or phone fixes.
+slow worker in Netlify handles infrequent lanes; fast Capacity uses its own
+minute function or optional replacement container and duty/handover are held.
+Neither Capacity scheduler emits GPS or phone fixes.
 Leave all existing local refusals in place.
 
 The template already splits the synthetic and real gateways. The synthetic
@@ -528,9 +596,12 @@ Use two actual synthetic GT06 packets and a phone lease tick to correlate
 reservation, decoded gateway row, durable outbox, signed ingest, saved source
 projection and authorized UI readback. Measure observed-at/received-at/visible-at
 latency and age labels rather than inferring freshness from a green health
-probe. The audited public web feed refreshes every sixty seconds; it is polling,
-not a push Realtime subscription. A two-second bridge cycle does not make that
-UI instantaneous. Physical phone/background-location behavior and a physical
+probe. The published baseline inspected November13 polls the public web feed
+every sixty seconds. The candidate targets fifteen-second foreground web/native
+reads, pausing while hidden/backgrounded; deployed observation must identify
+which version is under test. Both are polling rather than a push Realtime
+subscription. A two-second bridge cycle does not make either UI instantaneous.
+Physical phone/background-location behavior and a physical
 tracker bench require their own device evidence.
 
 Pause/restart the bridge and app, retain queued fixes, restore delivery without
@@ -543,7 +614,7 @@ run against the deployed candidate and its actual configured gateway.
 
 ## References
 
-- [Netlify scheduled functions](https://docs.netlify.com/build/functions/scheduled-functions/) and [background functions](https://docs.netlify.com/build/functions/background-functions/)
+- [Netlify scheduled functions](https://docs.netlify.com/build/functions/scheduled-functions/), [function runtime limits](https://docs.netlify.com/build/functions/configuration/) and [background functions](https://docs.netlify.com/build/functions/background-functions/), checked November14, 2026
 - [Netlify Server](https://docs.netlify.com/build/server/), [limits](https://docs.netlify.com/build/server/limits/) and [configuration](https://docs.netlify.com/build/server/configuration/), checked November13, 2026
 - [Supabase scheduled Edge Functions](https://supabase.com/docs/guides/functions/schedule-functions) and [runtime limits](https://supabase.com/docs/guides/functions/limits)
 - [Fly.io public network services](https://docs.fly.io/networking/services) and [resource pricing](https://fly.io/docs/about/pricing/), checked November13, 2026

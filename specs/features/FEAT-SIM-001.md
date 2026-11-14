@@ -4,7 +4,7 @@ title: Isolated demo movement with real-device takeover
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-GPS-001, FEAT-GEO-001, FEAT-CAP-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-SEC-001, FEAT-ENT-001]
 problem: Demo trucks need believable GPS and phone movement without overwriting real devices, changing customer data or implying unsupported phone telemetry.
 behavior: Explicit synthetic account/truck/device bindings may produce bounded demo movement through the normal location pipeline. Server-side arbitration pauses simulation when an authenticated real installation takes over, rejects stale queued synthetic reports, and never simulates customer accounts. Private registered phone-installation identities attribute real reports without exposing hardware identifiers. Public/private Capacity and permitted Tracking markers show the actual published source.
-contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance]
+contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance, DemoCapacitySchedule]
 observability: [demo_tick_accepted, demo_tick_paused, demo_target_denied, real_device_takeover, stale_source_report_denied, demo_runner_state, location_installation_revoked]
 rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Agent-led local visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
 ---
@@ -15,12 +15,19 @@ rollout: Implement and negatively test local contracts and exact synthetic targe
 
 ### Frequent Capacity episodes — catalog2
 
+November14 runtime reconciliation replaces the earlier container-only hosting
+plan. The dated local observations below retain their original scope; neither
+the minute adapter nor its passing tests establish hosted operation.
+
 The five existing mutable targets use twenty authored phases: Partial 80% →
 Partial 60% → Partial 30% → Empty 100%, then repeat. Each next phase becomes due
 120 seconds after the previous actual completion. Initial offsets 0/30/60/90/120
-seconds spread the five actors; the nominal cycle is eight minutes. The independent
-fast worker checks every 30 seconds with a one-phase total budget. Healthy
-per-target spacing is usually 120–150 seconds after completion. Full, Off Duty,
+seconds spread the five actors; the nominal cycle is eight minutes. The preferred
+Netlify scheduled function checks once per minute with a two-actor total budget.
+Expected healthy per-target spacing is 120–180 seconds after completion; actual
+provider scheduling and execution may take longer. The optional standalone
+container checks every 30 seconds with a one-actor budget, normally 120–150
+seconds per target. These schedulers are mutually exclusive. Full, Off Duty,
 arbitrary percentages and new targets are not added. Fleet-04 may toggle its
 approved planned corridor only in
 an Empty phase on odd cycles, about sixteen nominal minutes between changes.
@@ -43,12 +50,17 @@ skipped phase, synthetic backdating or automatic 180-second timeout of a valid
 scenario. A changed state refuses instead of silently resetting the actor.
 
 Given all five actors are overdue after delayed activation or an outage\
-When the dedicated worker resumes its 30-second ticks\
-Then each tick requests only one oldest eligible phase, preserving cross-actor
-activity instead of saving all five together and synchronizing their clocks\
+When the selected Capacity scheduler resumes\
+Then a minute Netlify invocation requests at most two oldest eligible actors,
+or an optional container tick requests at most one\
+And each actor advances only one valid next phase, preserving cross-actor
+activity instead of draining all overdue work together\
 And a paused invalid actor or another actor's live retry lease cannot starve
 independent eligible actors. The signed controller API accepts integer limits
-from 1 to 5; the dedicated service uses 1 and rejects any response claiming more.
+from 1 to 5; the Netlify adapter uses 2 and the container uses 1. Each rejects a
+response above its own budget. Neither loops to catch up, skips a phase or
+backdates a save. Foreground web/native feeds read every 15 seconds while active;
+this remains polling and does not guarantee instantaneous presentation.
 
 Each controller receipt records catalog version, target/scenario, epoch, cycle,
 phase, nominal scheduled time, operational due time, actual applied/completed
@@ -78,12 +90,50 @@ jobs, or a separate explicit reconciliation. It never silently rewrites running
 work or completed history. Local SQL, API and visible UI qualification remain
 separate from the source and pure checks.
 
-The fast process is a standalone `compose.scenario.yml` project with the opt-in
-`hosted-demo-scenarios` profile. It has only outbound HTTPS, its exact site/origin
-and `DEMO_CAPACITY_WORKER_SECRET`; it receives no world/motion/gateway/database
-credential and needs no GPS configuration. Enable defaults false, kill defaults
-true, and its private heartbeat health check exposes no listener. The separate
-slow 15-minute world route never claims or executes fast Capacity jobs.
+The preferred `netlify/functions/demo-capacity.mjs` adapter uses native
+`* * * * *` scheduling and a 20-second HTTP deadline within Netlify's
+30-second scheduled-function runtime. It requires explicit
+`LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED=true` and
+`LOADGISTIC_DEMO_CAPACITY_NETLIFY_KILL_SWITCH=false`, the existing global
+world enable/kill gates and the exact production site/origin. Missing flags
+leave it off. It signs only the Capacity endpoint with
+`DEMO_CAPACITY_WORKER_SECRET`, reads a bounded response and logs whitelisted
+counts/health. It opens no database or GPS connection. The function's same-site
+environment may contain other app settings; this is purpose-limited code and
+receiving authorization, not physical process/secret isolation.
+
+The optional fast process remains a standalone `compose.scenario.yml` project
+with the opt-in `hosted-demo-scenarios` profile. It has only outbound HTTPS,
+its exact site/origin and narrow Capacity key; it receives no
+world/motion/gateway/database credential and needs no GPS configuration. Enable
+defaults false, kill defaults true, and its private heartbeat exposes no listener.
+The Netlify adapter refuses a configured enabled container flag, but cannot
+detect another host's environment: rollout must actually stop and verify that
+external worker before switching schedulers. The app and minute Capacity
+scheduler do not require local Docker or a provisioned raw GPS host.
+
+The separate slow 15-minute world route never claims or executes fast Capacity
+jobs. Its profile/team/sharing controls remain disabled for initial Capacity
+activation; enabling a shared HTTP gate does not authorize enabling those lanes.
+Historical Manual-dependent duty/handover remain held. Motion keeps separate
+flags, key, source worker and hosting. Source checks and signed adapter/controller
+tests do not qualify installed SQL, scheduled provider execution or visible UI.
+
+Given the minute adapter lacks an enable/kill/site gate, uses a preview or wrong
+origin, has a colliding key, or has the container enable flag configured\
+When it is invoked\
+Then it performs no Capacity request. With valid gates, it makes one bounded
+signed request for at most two actors and never calls a slow, motion or GPS lane.
+
+Given an independently hosted Capacity container may still be running\
+When changing scheduler deployment\
+Then the operator stops and verifies that process before enabling its replacement;
+a same-site environment check is not evidence that another host is stopped.
+
+Focused adapter checks: `tests/demo-capacity-netlify.test.mjs`,
+`tests/demo-capacity-advance.test.mjs` and `tests/demo-world-worker.test.mjs`.
+Published cadence, current-schema persistence, concurrency, saved projections
+and desktop/phone/Expo workflow acceptance remain separate rollout evidence.
 
 Given either the slow world key or the fast Capacity key signs another lane,
 status/admin or motion purpose\
@@ -234,9 +284,11 @@ changes the actual saved GPS/phone source, location age, permissions or consent\
 And the response contains no Auth metadata, fixture key, installation identifier
 or simulator control/lease field. Missing/non-boolean provenance is false.
 
-The separately deployed Capacity workflow dispatcher/background worker and
-dedicated motion worker retain distinct credentials and stop controls. Real GPS
-and synthetic GPS remain isolated. A production activation requires an exact
+The Capacity scheduler, slow workflow dispatcher/background worker and dedicated
+motion worker retain distinct purpose keys and stop controls. Netlify functions
+share the site's runtime environment; independent container credential isolation
+is a separate deployment property. Real GPS and synthetic GPS remain isolated.
+A production activation requires an exact
 operator-provisioned cohort and sustained ingestion/database/UI evidence;
 installed schema and a healthy container alone do not establish operation.
 
@@ -447,15 +499,16 @@ workflows.
   external support message, tracker command or other third-party action. Only the
   tracking owner and explicitly authorized synthetic staff receive a moving
   location; status-only recipients receive route/status only.
-- Production simulation, if separately approved, uses its own scheduled
-  dispatcher and background worker, separate from both the regular managed
-  operations worker and GPS bridge. The short schedule only dispatches; a
-  bounded background worker claims a small durable batch using idempotent leases,
-  a separate HMAC, server-side demo manifest, kill switch, safe retries and
-  sanitized metrics. It has no unauthenticated or caller-selected command,
-  GPS gateway credential or device-control capability. The existing local-only
-  GPS runner remains local-only; production is never enabled by weakening its
-  environment guard.
+- Production simulation, if separately approved, uses the independent minute
+  Capacity function for at most two due actors and the separate 15-minute
+  dispatcher/background worker for qualified slow lanes. Initial activation
+  leaves slow controls disabled and Manual-dependent lanes held. The optional
+  one-actor/30-second Capacity container replaces the minute function rather than
+  running beside it. Both call the same durable controller using idempotent
+  leases, a separate HMAC, exact demo manifest, kill control and sanitized metrics.
+  The Capacity adapter has no caller-selected target or command and never calls
+  GPS/device-control endpoints; same-site Netlify environment variables are not
+  physically isolated. The local-only GPS runner retains its environment guard.
 
 ### Provider-profile scenario — local cycle verified
 
