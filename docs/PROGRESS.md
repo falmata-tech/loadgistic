@@ -7,6 +7,37 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
+## Current Cloud runtime checkpoint — blocked
+
+The complete feature source is saved on
+[`feat/scenario-driven-demo-signals`](https://github.com/falmata-tech/loadgistic/tree/feat/scenario-driven-demo-signals)
+at `f1380c8316c4817b4127504c55e5fc1f1ba8830c`, tree
+`4dea35ca497ab5a08f4ff747c8fb63c7e8abec37`. That tree exactly matches the
+preserved local e226693 checkpoint; only five documentation files differ from
+the executable 4b7af44 snapshot used for the Android qualification. The original
+three local commits remain on `checkpoint/scenario-local-e226`. No feature PR,
+full CI run, merge, deployment or simulator activation has occurred.
+
+The current Cloud workspace has no normal Docker client or managed socket at
+the three checked standard paths. A direct Unix-socket creation probe returns
+`EPERM`; unprivileged user namespaces alone do not supply the missing Docker
+capability. The QEMU software-emulation workaround proved Engine/hello-world
+and later a separate empty Docker/containerd store, but did not produce a ready
+application stack. The offline import stopped with `unexpected EOF` after three
+image references loaded; its VM/controller subsequently no longer held the
+disk, and the queued diagnostic did not run. The termination cause is unconfirmed.
+All fourteen exported Storage layer sizes and SHA256 digests match the pinned
+source. Original and partial cache stores are preserved.
+
+Resume in a Docker-enabled managed environment using the normal local setup.
+Do not continue the nested-VM workaround or count its daemon/image checks as
+application acceptance. Candidate migrations 221–225, fixture import, database
+and concurrency tests, desktop/phone/Expo review and production activation remain
+pending. The source cadence is 30-second synthetic reports, one due Capacity
+publication per 30-second worker tick, at least 120 seconds per demo vehicle,
+and 15-second foreground feed reads. These are implemented contracts, not live
+operation evidence. The last published baseline below passed all sixteen CI jobs.
+
 ## Active priority — GPS gateway and signal simulators
 
 The owner's next priority is the GPS gateway and separate dedicated capacity and

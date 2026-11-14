@@ -1,5 +1,32 @@
 # Restricted local Docker checkpoint
 
+## Current limitation and resumption
+
+The current managed workspace has no normal Docker client or standard managed
+socket, and creating a Unix socket returns `EPERM`. Restore a Docker-enabled
+environment before resuming the [normal local setup](../LOCAL_SETUP.md).
+
+The nested QEMU workaround became a development bottleneck. A separate store
+was eventually verified empty and responsive after correcting an argv assumption,
+two legitimately read-only audit modes, and the plural
+`containerd-plugins-namespace` configuration key. The earlier startup-monitor
+timeout remains a failed receipt; subsequent owned-process/configuration and API
+checks qualified the already-running daemons without restarting them.
+
+The subsequent offline image import ended with `unexpected EOF` after loading
+Postgres, GoTrue and PostgREST references. The VM/controller stopped before its
+queued kernel/daemon diagnostic ran; its disk lock is now available. No exit
+cause or host OOM is established. All fourteen Storage layer payload sizes and
+digests in the export independently match the pinned source. The original store,
+failed setup metadata and partial replacement store remain intact. No application
+database, candidate migration or fixture import completed.
+
+Stop this workaround here. First verify the managed Docker client, socket and
+IPC capability; then use the existing setup, migrations and fixture preflight.
+Successful daemon startup or matching image bytes do not qualify the app. Keep
+the preserved receipts below separate from database, browser and service-runtime
+acceptance. Current source and remaining work are in [PROGRESS](../PROGRESS.md).
+
 Updated November 14, 2026. This records the task-owned runtime prepared on
 November 13. It is an environment-specific development checkpoint, not a hosted
 service or a general replacement for [normal local setup](../LOCAL_SETUP.md). Production credentials
