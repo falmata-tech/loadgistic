@@ -63,9 +63,57 @@ test('admin queue diagnostics accept only the chosen case and both clean project
 
 test('queue diagnosis branches start only the fixed isolated replay before a PR exists',()=>{
  const source=readFileSync('.github/workflows/operations-proof.yml','utf8');
- assert.match(source,/branches: \['diagnose\/admin-queues\/\*\*'\]/);
+ assert.match(source,/branches: \['diagnose\/admin-queues\/\*\*', 'diagnose\/simulator-db\/\*\*'\]/);
  assert.match(source,/github.event_name == 'push' && 'admin-queues'/);
  assert.match(source,/permissions:\n  contents: read/);
  assert.match(source,/path: \.local\/ci-browser-diagnostics\/\*\.json/);
  assert.doesNotMatch(source,/secrets\.|continue-on-error/);
+});
+
+test('simulator database diagnosis is explicit, isolated and cannot replace the existing browser proof',()=>{
+ const source=readFileSync('.github/workflows/operations-proof.yml','utf8');
+ const browser=source.slice(source.indexOf('  proof:'),source.indexOf('  simulator-db:'));
+ const database=source.slice(source.indexOf('  simulator-db:'));
+ assert.match(source,/default: operations-proof/);
+ assert.match(source,/options: \[operations-proof, admin-queues, simulator-db\]/);
+ assert.match(browser,/if: \$\{\{ inputs\.case != 'simulator-db' && !\(github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/heads\/diagnose\/simulator-db\/'\)\) \}\}/);
+ assert.match(browser,/run: node scripts\/ci-operations-proof\.mjs --case "\$FOCUS_CASE"/);
+ assert.match(database,/if: \$\{\{ \(github\.event_name == 'workflow_dispatch' && inputs\.case == 'simulator-db'\) \|\| \(github\.event_name == 'push' && startsWith\(github\.ref, 'refs\/heads\/diagnose\/simulator-db\/'\)\) \}\}/);
+ assert.match(database,/runs-on: ubuntu-latest\n    timeout-minutes: 45/);
+ assert.match(database,/version: 2\.111\.0/);
+ for(const required of ['ci-reserve-local-ports.mjs','prepare-local-security.mjs','check-database-security.sql',
+  'verify-database-security-gate.mjs','npm run supabase:local:configure','verify-data-api-guard.mjs',
+  'npx playwright install --with-deps chromium','ci-fixture-preflight.mjs'])assert.ok(database.includes(required),required);
+ assert.ok(database.indexOf('run: npm run check')<database.indexOf('ci-start-local-supabase.mjs'));
+ assert.match(database,/array\['221','222','223','224','225'\]::text\[\]/);
+ assert.match(database,/catalog_version=2/);assert.match(database,/SIMULATOR_DIAGNOSTIC_INERT_BASELINE_REQUIRED/);
+ assert.match(database,/Remove disposable GPS test database\n        if: always\(\)/);
+ assert.match(database,/Stop isolated Supabase\n        if: always\(\)/);
+ assert.doesNotMatch(database,/secrets\.|continue-on-error|--linked|--project-ref|SUPABASE_ACCESS_TOKEN|DATABASE_URL|supabase (?:link|db push|config push)/);
+});
+
+test('simulator database regression plan preserves rollback and GPS fixture ordering',()=>{
+ const source=readFileSync('.github/workflows/operations-proof.yml','utf8');
+ const database=source.slice(source.indexOf('  simulator-db:'));
+ const manual=['driver-manual-capacity-location','location-radius-choices','telematics',
+  'telematics-account-privacy','tracking-owner-delegation','tracking-selected-sources'];
+ const simulator=['demo-world-durable-capacity','demo-world-fast-catalog','demo-world-tracking-notification-sink',
+  'demo-world-duty-cycle','demo-world-atomic-handover','demo-world-handover-worker','demo-world-provider-profile',
+  'demo-world-tracking-lifecycle-readiness','demo-world-tracking-lifecycle-reservation',
+  'demo-tracking-exact-incomplete-resume','demo-world-tracking-live-reservation'];
+ for(const suites of [manual,simulator]){
+  assert.ok(database.includes(`for suite in ${suites.join(' ')}; do`));
+  for(const suite of suites){
+   const sql=readFileSync(`tests/sql/${suite}.sql`,'utf8');
+   assert.match(sql,/^begin;/m,suite);assert.match(sql,/^rollback;/mi,suite);
+   assert.doesNotMatch(sql,/^commit;/mi,suite);
+  }
+ }
+ assert.ok(database.indexOf('ci-fixture-preflight.mjs')<database.indexOf('for suite in driver-manual'));
+ assert.ok(database.indexOf('demo-world-fast-catalog')<database.indexOf('demo-ci-isolated-setup.sql'));
+ assert.ok(database.indexOf('demo-ci-isolated-setup.sql')<database.indexOf('demo-account-isolation.sql'));
+ assert.match(database,/docker exec -e PGOPTIONS='-c loadgistic\.demo_isolated_test=true'[^\n]+demo-account-isolation\.sql/);
+ assert.match(database,/test "\$LOADGISTIC_TEST_DATABASE" = loadgistic_telematics_ci/);
+ assert.match(database,/--force|ci-disposable-gps-database\.mjs remove/);
+ assert.doesNotMatch(database,/demo-world-provider-profile-v2-history|infra\/telematics|supabase\/migrations\/18[5-9]/);
 });
