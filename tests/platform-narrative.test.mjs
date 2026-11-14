@@ -2,12 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {capacityIntroduction,platformAbout,signupBenefits} from '../src/lib/platform-copy.js';
+import {loadEffectiveWebCatalogs} from '../scripts/lib/effective-i18n-catalogs.mjs';
 const audienceMessages=()=>platformAbout.audiences.flatMap(audience=>[audience.label,audience.heading,audience.action,...audience.facts.flat()]);
 
-test('brief capacity heading and the fuller About story are localized across web and native',()=>{
+test('brief capacity heading and the fuller About story are localized across web and native',async()=>{
+  const catalogs=await loadEffectiveWebCatalogs();
   const messages=[capacityIntroduction.title,capacityIntroduction.webDescription,platformAbout.title,platformAbout.body,...audienceMessages(),...signupBenefits.business,...signupBenefits.provider,'See how Loadgistic works','Find room for your load','Put your vehicles on the map','From one vehicle to a whole network','Show available space, find the right capacity, and keep trusted partners moving together.'];
   for(const locale of ['am','om']){
-    const catalog=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
+    const catalog=catalogs[locale];
     for(const message of messages)assert.ok(catalog[message]?.trim()&&catalog[message]!==message,`${locale}: ${message}`);
   }
   for(const file of ['src/app/page.tsx','apps/mobile/src/screens/capacity.tsx']){
@@ -40,7 +42,10 @@ test('story leads with the known transporter network and leaves tracking after a
   assert.match(platformAbout.audiences[0].facts[0][1],/vehicle type.*route.*current load.*confirm the job/);
   assert.match(platformAbout.audiences[0].facts[1][1],/provider shares with your business.*team.*private map/);
   assert.match(platformAbout.audiences[1].facts[0][1],/owner’s permission.*open space.*routes/);
-  assert.match(platformAbout.audiences[2].facts[1][1],/compatible tracker.*Manual and phone/);
+  const gpsCopy=platformAbout.audiences[2].facts[1][1];
+  assert.match(gpsCopy,/compatible tracker.*assign it to a vehicle.*Phone location/);
+  assert.doesNotMatch(gpsCopy,/\bManual\b/i);
+  assert.match(platformAbout.audiences[2].facts[2][1],/share Tracking after the work is agreed/);
   const copy=JSON.stringify([capacityIntroduction,platformAbout]);
   assert.doesNotMatch(copy,/paid subscription|guaranteed availability|automatic alerts|\bour fleet\b/i);
 });
