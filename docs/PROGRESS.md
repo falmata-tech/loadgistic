@@ -11,8 +11,10 @@ the source, hosted schema, web publication and installed Android are separate.
 
 The complete feature checkpoint is saved on
 [`feat/scenario-driven-demo-signals`](https://github.com/falmata-tech/loadgistic/tree/feat/scenario-driven-demo-signals)
-at `e9c9a616a17cd662a61a08951df858b0311fdf1f`, including the new Netlify/development
-adapters described here. The original three local commits remain on
+at implementation checkpoint `2b5751133d2060702558d569b4413ef86d87664f`, including
+the Netlify/development adapters and duty-authorization repair described here.
+Later documentation-only commits advance the branch without changing those
+executable inputs. The original three local commits remain on
 `checkpoint/scenario-local-e226`. No feature PR, full CI run, merge, deployment
 or simulator activation has occurred. The verified published baseline remains
 520328b below.
@@ -47,11 +49,14 @@ expected denial and existing lock order. Its SQL matrix expands to36 negative
 cases with installation/demo snapshots. Clone cleanup had also assumed creation
 started and failed its client-version guard; both workflows now check whether
 creation was attempted, retaining partial-create cleanup. Supabase shutdown
-passed. Later SQL suites did not run. A fresh exact-source diagnostic remains
-required. Corrected source2b575113 is saved and
+passed. Later SQL suites did not run in that first diagnostic. Corrected-source
 [run43561193938](https://github.com/falmata-tech/loadgistic/actions/runs/43561193938)
-is in progress. These diagnostics do not replace full PR/main CI, concurrency or
-actual app review. See ADR-085 and local setup.
+completed successfully on attempt1 at2b575113 in about five minutes. All six
+Phone/GPS SQL suites, eleven durable/catalog/paused/profile/Tracking suites,
+isolated GPS fixtures and the normal-signup isolation suite passed, together
+with startup, migrations/security, strict browser fixture preflight and both
+clone and Supabase cleanup. These diagnostics do not replace full PR/main CI,
+two-session concurrency checks or agent-led actual app review. See ADR-085 and local setup.
 
 The local container stack remains unavailable in this Cloud workspace. The
 checkout-local Docker29.9.3 client is installed; a fresh direct check still
@@ -72,7 +77,10 @@ catalogs that omitted translations already loaded at runtime. Focused repairs
 preserve semantic and localization assertions. The complete `npm run quality`
 rerun passes1498/1498 tests, zero failures/skips, specs/source/workflow analysis
 and type checks. Independent source review found no material issue in the duty
-repair. Actual SQL regression and concurrency qualification remain separate. Schema/API/actual browser and production activation remain unqualified. Candidate migrations221–225 have not been applied
+repair. The selected native SQL regression now passes as recorded above. Two-session
+concurrency, agent-led desktop/phone/Expo review, infrastructure operation,
+exact production rollout and installed-device acceptance remain separate and
+unqualified. Candidate migrations221–225 have not been applied
 to production. Production settings and the SMTP verification pause remain intact.
 
 ## Active priority — GPS gateway and signal simulators
@@ -97,8 +105,9 @@ Manual-dependent lanes, install the fast catalog and close demo organization
 ownership gaps. Ordinary co-owners, human edits and REAL source takeover refuse
 further simulation. Fast/profile control locks preserve in-flight save ordering;
 these source checks do not prove actual concurrent database behavior. No new SQL,
-service, secret or activation has been applied to production. Actual local SQL,
-normal signup, concurrent ownership/stop tests, images and UI remain next.
+service, secret or activation has been applied to production. The selected native
+SQL/normal-signup cases now pass; concurrent ownership/stop tests, actual changed
+images/UI and infrastructure/device operation remain to be qualified.
 
 The dedicated movement worker and workflow simulator are currently disabled in
 production; read-only inspection found no registered gateways, devices or saved

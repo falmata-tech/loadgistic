@@ -24,8 +24,11 @@ and unchanged source/Capacity/phone/assignment/Tracking state remain required.
 Owner: location/duty database maintainer. The rollback SQL expands to36 requests
 across three entry points, three target states, both duty directions and forged/
 absent phone proofs, with installation/binding/receipt/demo/Tracking lease
-snapshots. The denial enum is unchanged. Focused source tests pass; a new
-exact-source native SQL run must still qualify the repair before release.
+snapshots. The denial enum is unchanged. Focused source tests and independent
+review pass. Exact-source native run43561193938 at2b575113 then passed all six
+Phone/GPS SQL suites, including this matrix, plus the selected simulator suites
+and both cleanup steps. This qualifies the disposable database repair; actual
+concurrency, full release gates and hosted installation remain separate.
 
 The diagnostic separately attempted clone cleanup before its PostgreSQL client
 or clone existed. Both diagnostic and main CI now gate cleanup on clone creation
