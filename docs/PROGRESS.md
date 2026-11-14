@@ -48,12 +48,16 @@ cases with installation/demo snapshots. Clone cleanup had also assumed creation
 started and failed its client-version guard; both workflows now check whether
 creation was attempted, retaining partial-create cleanup. Supabase shutdown
 passed. Later SQL suites did not run. A fresh exact-source diagnostic remains
-required;
-this result does not replace full PR/main CI, concurrency or actual app review. See ADR-085 and local setup.
+required. Corrected source2b575113 is saved and
+[run43561193938](https://github.com/falmata-tech/loadgistic/actions/runs/43561193938)
+is in progress. These diagnostics do not replace full PR/main CI, concurrency or
+actual app review. See ADR-085 and local setup.
 
-The local container stack remains unavailable in this Cloud workspace: the checked
-standard sockets/client were absent and direct Unix-socket creation returned
-`EPERM`. The stopped QEMU workaround proved Engine/hello-world and a separate empty
+The local container stack remains unavailable in this Cloud workspace. The
+checkout-local Docker29.9.3 client is installed; a fresh direct check still
+returns permission denied at the standard Docker API socket, and Unix-socket
+creation returns `EPERM`. Installing the client does not provide an accessible
+daemon. The stopped QEMU workaround proved Engine/hello-world and a separate empty
 Docker/containerd store, but never a ready application stack. Its offline import
 ended with `unexpected EOF` after three image references loaded; the VM/controller
 subsequently stopped holding the disk and the queued diagnostic never ran. The

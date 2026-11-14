@@ -2,8 +2,9 @@
 
 ## Current local-stack limitation
 
-The current managed workspace has no normal Docker client or standard managed
-socket, and creating a Unix socket returns `EPERM`. This limits the full local
+The checkout-local Docker29.9.3 client is installed. A fresh direct check returns
+permission denied when connecting to the standard Docker API socket, and creating
+a Unix socket returns `EPERM`; no working managed daemon is available. This limits the full local
 Supabase stack and its fixture/SQL harness. Next.js and Expo can run directly on
 Node against an isolated managed Supabase development branch; Netlify functions
 also do not require this VM. Use [local setup](../LOCAL_SETUP.md) and
