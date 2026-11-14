@@ -55,6 +55,21 @@ test('all translated catalogs have matching keys and named placeholders',()=>{
  for(const catalog of catalogs){assert.deepEqual(Object.keys(catalog).sort(),keys);for(const [key,value] of Object.entries(catalog)){assert.equal(typeof value,'string');assert.ok(value.trim(),key);assert.deepEqual(variables(value),variables(key),key);}}
 });
 
+test('Featured programme statuses and sponsor interludes are translated without changing names',()=>{
+ const sponsorName='Scheduled';
+ for(const locale of ['am','om']){
+  const messages=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url)));
+  for(const label of ['Scheduled','Featured now','Interlude','Showcase finished','Programme pause']){
+   assert.ok(messages[label],`${locale}: ${label}`);
+   assert.notEqual(translateMessage(messages,label),label,`${locale}: ${label}`);
+  }
+  const sponsor=translateMessage(messages,'Sponsor · {name}',{name:sponsorName});
+  assert.equal(sponsor,messages['Sponsor · {name}'].replace('{name}',sponsorName));
+  assert.ok(sponsor.includes(sponsorName));
+  assert.ok(!sponsor.startsWith('Sponsor · '));
+ }
+});
+
 test('tracking progression and corrected visible messages have both supported translations',async()=>{
  const {trackingProgress,TRACKING_JOURNEY}=await import('../src/lib/tracking-progress.js');
  const labels=new Set(['Going to pickup','Loading','En route','Unloading','Complete','Problem',

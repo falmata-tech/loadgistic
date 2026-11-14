@@ -625,6 +625,13 @@ Given the phone programme includes its schedule and a sponsor\
 When the board renders\
 Then compact heading spacing keeps the first truck row within the existing 281px board-offset budget, retaining readable text and 44px controls.
 
+Given a visitor opens the Featured schedule in English, Amharic or Afaan Oromo\
+When the programme is scheduled, showing a provider, between providers or finished\
+Then its status and any programme pause use the selected interface language\
+And a sponsor interlude translates only the app-owned “Sponsor” label, keeping the sponsor name unchanged\
+And the date uses the selected locale while the saved programme time and its EAT meaning stay unchanged\
+And a programme pause never claims a provider is live or that a TikTok broadcast is live.
+
 The public Featured projection exposes a bounded relative map link only for an
 Open Empty/Partial signal. It strips the internal capacity field with the other
 internal identifiers; private/unavailable signals never produce a map link.

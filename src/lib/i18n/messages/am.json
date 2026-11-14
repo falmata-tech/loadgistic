@@ -1052,6 +1052,8 @@
   "No calls waiting.": "ስልክ የሚጠብቅ ጥያቄ የለም።",
   "They sign in with an email code. No password is created here.": "በኢሜይል በሚደርሳቸው ኮድ ይገባሉ። እዚህ የይለፍ ቃል አይፈጠርም።",
   "Showcase finished": "የዛሬው ማስተዋወቂያ አልቋል",
+  "Scheduled": "በፕሮግራሙ ተይዟል",
+  "Interlude": "የፕሮግራም እረፍት",
   "A rotating showcase, not a ranking. Times are spotlight slots in East Africa Time, not truck availability.": "አጓጓዦችን በተራ የምናስተዋውቅበት ነው፤ ደረጃ አንሰጥም። የታዩት ሰዓቶች የማስተዋወቂያ ጊዜያት ናቸው፣ መኪናው የሚገኝባቸው ጊዜያት አይደሉም። ሰዓቱ EAT ነው።",
   "Update capacity": "ያለውን የጭነት ቦታ ያዘምኑ",
   "Publish Empty or Partial truck availability.": "መኪናዎ ባዶ መሆኑን ወይም ተጨማሪ ጭነት መቀበሉን ያሳውቁ።",

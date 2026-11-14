@@ -52,6 +52,30 @@ test('Featured loading keeps board geometry and a failed read keeps retry reacha
  assert.ok(failed.some(node=>node.type==='Button'&&node.props.message==='Try again'));
 });
 
+test('Featured schedule localizes its phase and pause while retaining the sponsor name',()=>{
+ const sponsorName='Scheduled';
+ const feature={headline:'Daily Featured Transport Providers',introduction:'',date:'2030-10-26',start:'22:30',end:'23:59',programme:[
+  {kind:'PROVIDER',slot:1,label:'First provider',startsAt:'2030-10-26T19:30:00Z',endsAt:'2030-10-26T19:40:00Z',timeLabel:'22:30–22:40'},
+  {kind:'BREAK',slot:null,label:`Sponsor · ${sponsorName}`,startsAt:'2030-10-26T19:40:00Z',endsAt:'2030-10-26T19:42:00Z',timeLabel:'22:40–22:42'},
+  {kind:'BREAK',slot:null,label:'Programme pause',startsAt:'2030-10-26T19:42:00Z',endsAt:'2030-10-26T19:44:00Z',timeLabel:'22:42–22:44'},
+  {kind:'PROVIDER',slot:2,label:'Second provider',startsAt:'2030-10-26T19:44:00Z',endsAt:'2030-10-26T20:59:00Z',timeLabel:'22:44–23:59'}
+ ],trucks:[{slot:1,handle:'first',name:'First provider',fleetSize:1,isCompany:true,portrait:'',place:'Adama',available:false},{slot:2,handle:'second',name:'Second provider',fleetSize:1,isCompany:true,portrait:'',place:'Awash',available:false}],sponsors:[{kind:'ADVERTISER',name:sponsorName,handle:'sponsor',description:'User description',website:'',phone:''}],tiktokUrl:'',tiktokStatus:'NOT_SCHEDULED'};
+ const programmeState=(start,end,now)=>now<Date.parse(start)?'Upcoming':now<Date.parse(end)?'Featured now':'Finished';
+ for(const locale of ['am','om']){
+  const catalog=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
+  const t=(key,values)=>translateMessage(catalog,key,values);
+  for(const [time,phase] of [['2030-10-26T19:20:00Z','Scheduled'],['2030-10-26T19:35:00Z','Featured now'],['2030-10-26T19:41:00Z','Interlude'],['2030-10-26T21:00:00Z','Showcase finished']]){
+   let slot=0;const now=Date.parse(time);
+   const useState=initial=>{slot++;return[slot===1?now:slot===2?true:typeof initial==='function'?initial():initial,()=>{}];};
+   const text=renderedText(screen('../src/screens/featured.tsx',feature,{useLanguage:()=>({locale,t}),useState,programmeState}).default());
+   assert.ok(text.includes(t(phase))&&text.includes('10:30PM–11:59PM EAT'),`${locale} ${phase}`);
+   assert.ok(text.includes(t('Sponsor · {name}',{name:sponsorName})),`${locale} sponsor label`);
+   assert.ok(text.includes(t('Programme pause')),`${locale} pause`);
+   assert.ok(text.includes('User description')&&text.includes(sponsorName),'record content remains unchanged');
+  }
+ }
+});
+
 test('transporter presentation retains contacts, documents, user content and truck map actions',()=>{
  const provider={handle:'long-company',name:'A long commercial transporter name',image:'/portrait.jpg',kind:'Independent transporter',city:'Adama',headline:'Freight services',contacts:{phone:'000',whatsapp:'111',email:'public@example.test',website:'https://example.test'},about:'Public provider description',services:'Road freight',badges:[{type:'IDENTITY',reviewed:true}],regular:{places:['Adama','Addis Ababa'],kind:'ROUTE'},reviewCount:1,averageRating:5,reviews:[{id:'review-1',rating:5,createdAt:'2026-10-13',note:'Original customer note /reference',disputed:true}],fleet:{total:1,page:1,pages:1},trucks:[{number:'TRK1',name:'Toyota Hiace',configuration:'Cargo van',image:'/van.jpg',driver:'Public Driver',driverKind:'Independent driver',phone:'222',regular:{kind:'ROUTE',places:['Truck route A','Truck route B']},capacity:{status:'EMPTY',updated:'Capacity updated today',origin:'Adama',destination:'Addis Ababa',locationUpdated:'Location updated today',mapHref:'/?provider=long-company&truck=00000000-0000-4000-8000-000000000001'},driverBadges:[{type:'DRIVER_IDENTITY'}],truckBadges:[{type:'VEHICLE_OWNERSHIP'}]}]};
  const translated=[],component=screen('../src/screens/transporter.tsx',provider,{useLocalSearchParams:()=>({handle:provider.handle}),useLanguage:()=>({t:(message,values={})=>{translated.push(message);return message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match));}})}).default,tree=component(),all=nodes(tree),text=renderedText(tree);
