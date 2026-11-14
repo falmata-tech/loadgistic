@@ -37,6 +37,25 @@ begin
  end loop;
 
  -- Going Off duty remains available. Reject obsolete input at every entry.
+ -- The outer 163 radius and 157 phone wrappers inspect the selected source
+ -- before the leaf's locked assignment check. Refuse an unauthorized target
+ -- first, so Manual/Phone/missing IDs have one denial and cannot reach real
+ -- device-use attribution. These are read-only checks: retain the established
+ -- owner -> device -> vehicle lock order in note_real_location_device_use and
+ -- the leaf's current-authority recheck under the vehicle lock. An early
+ -- vehicle lock here would invert that order for a synthetic Phone target.
+ guard:=guard||$duty_scope$
+ if not exists(select 1 from public.provider_capacity_actor_scope(actor_user_id))
+  then raise exception 'FORBIDDEN';end if;
+ if not exists(select 1 from public.provider_capacity_actor_scope(actor_user_id) scope where scope.workspace_access)
+  then raise exception 'SUBSCRIPTION_ACCESS_REQUIRED';end if;
+ if not exists(select 1 from public.vehicles candidate
+  join public.driver_vehicle_assignments assignment on assignment.vehicle_id=candidate.id and assignment.active
+  where candidate.id=(command->>'vehicle_id')::uuid and candidate.active
+   and assignment.driver_user_id=actor_user_id
+   and public.fleet_actor_can_use_vehicle(actor_user_id,candidate.id))
+  then raise exception 'INVALID_VEHICLE';end if;
+$duty_scope$;
  foreach function_name in array array[
   'set_provider_assigned_vehicle_duty','set_provider_assigned_vehicle_duty_pre_radius163',
   'set_provider_assigned_vehicle_duty_pre_phone157'

@@ -36,3 +36,28 @@ test('pending selected source remains an actionable safe domain error',async()=>
   assert.match(errorMessage(new Error('LOCATION_SOURCE_PENDING')),/GPS device needs a new location/);assert.doesNotMatch(errorMessage(new Error('LOCATION_SOURCE_PENDING')),/P0001|private|LOCATION_SOURCE_PENDING/);
  }finally{globalThis.fetch=prior.fetch;console.error=prior.log;for(const [name,value]of[['NEXT_PUBLIC_SUPABASE_URL',prior.url],['SUPABASE_SERVICE_ROLE_KEY',prior.key]]){if(value===undefined)delete process.env[name];else process.env[name]=value;}}
 });
+
+test('duty source and phone attribution follow actor and assignment denial at every retained entry',async()=>{
+ const sql=await readFile(new URL('../supabase/migrations/221_retire_manual_capacity_location.sql',import.meta.url),'utf8');
+ const guard=sql.match(/guard:=guard\|\|\$duty_scope\$([\s\S]*?)\$duty_scope\$;/)?.[1];
+ assert.ok(guard,'duty authorization prefix is explicit');
+ assert.match(guard,/provider_capacity_actor_scope\(actor_user_id\)/);
+ assert.match(guard,/scope\.workspace_access/);
+ assert.match(guard,/assignment\.vehicle_id=candidate\.id and assignment\.active/);
+ assert.match(guard,/candidate\.active[\s\S]*assignment\.driver_user_id=actor_user_id/);
+ assert.match(guard,/fleet_actor_can_use_vehicle\(actor_user_id,candidate\.id\)/);
+ assert.match(guard,/raise exception 'INVALID_VEHICLE'/);
+ assert.doesNotMatch(guard,/telematics_location_sources|note_real_location_device_use|authorize_phone_location_report|\bfor (?:update|share)\b|\b(?:insert|update|delete)\s/i);
+ const recipients=sql.slice(sql.indexOf('$duty_scope$;')+'$duty_scope$;'.length,sql.indexOf('end $retire_manual_inputs$;'));
+ for(const name of ['set_provider_assigned_vehicle_duty','set_provider_assigned_vehicle_duty_pre_radius163',
+  'set_provider_assigned_vehicle_duty_pre_phone157'])assert.ok(recipients.includes(`'${name}'`),name);
+ assert.match(recipients,/execute replace\(definition,anchor,guard\)/);
+ const regression=await readFile(new URL('../tests/sql/driver-manual-capacity-location.sql',import.meta.url),'utf8');
+ assert.match(regression,/array\[vehicle_id,unused_vehicle_id,gen_random_uuid\(\)\]/);
+ assert.match(regression,/requested_duty in array array\[true,false\]/);
+ assert.match(regression,/with_phone_proof in array array\[false,true\]/);
+ for(const table of ['phone_location_installations','phone_location_bindings','phone_location_report_receipts',
+  'demo_motion_targets','demo_motion_gps_reports','demo_hosted_motion_control'])assert.ok(regression.includes(`from ${table}`),table);
+ assert.match(regression,/location_snapshot\(actor\) is distinct from denial_before/);
+ assert.match(regression,/^rollback;/m);
+});

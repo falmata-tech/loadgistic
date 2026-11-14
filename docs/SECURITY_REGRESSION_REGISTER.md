@@ -1,5 +1,39 @@
 # Security failures we must not repeat
 
+## NR-85 — Duty denial depends on an unauthorized vehicle's location source
+
+November14 native diagnostic run43560119545 at e9c9a616 started the full isolated
+Supabase stack, applied migrations221–225 and passed security, fixture and strict
+browser preflight checks. Its first Phone/GPS SQL regression then observed
+`INVALID_VEHICLE` for a foreign retained Manual vehicle but `FORBIDDEN` for a
+foreign default-Phone vehicle. Both requests were denied; the differing result
+still exposes source-dependent information across an account boundary.
+
+Trace: the retained phone157 duty wrapper calls real-device-use attribution for
+Phone/default/absent targets before the base command's assigned-vehicle check;
+Manual skips that call. Migration221's source-readiness check in the base leaf
+does not correct this earlier wrapper ordering. No production probe or accepted
+unauthorized write is established by this disposable test.
+
+Source repair in unreleased migration221 establishes the authorized active
+assigned-vehicle boundary before source-dependent work at all three public and
+retained duty entry points. It adds read-only checks, preserving existing
+owner/device/vehicle lock order and the leaf's locked authority recheck. Uniform
+foreign/absent denial, exact current-driver authority, ordinary Off Duty behavior
+and unchanged source/Capacity/phone/assignment/Tracking state remain required.
+Owner: location/duty database maintainer. The rollback SQL expands to36 requests
+across three entry points, three target states, both duty directions and forged/
+absent phone proofs, with installation/binding/receipt/demo/Tracking lease
+snapshots. The denial enum is unchanged. Focused source tests pass; a new
+exact-source native SQL run must still qualify the repair before release.
+
+The diagnostic separately attempted clone cleanup before its PostgreSQL client
+or clone existed. Both diagnostic and main CI now gate cleanup on clone creation
+having been attempted, retaining partial-create/cancelled cleanup and all
+existing target/client guards. Negative workflow checks pass. This secondary
+failure must not replace the original SQL error or become a reason to rerun
+the same unchanged source.
+
 ## NR-84 — A simulator stop flag is checked without locking the control transaction
 
 November13 source review found that the fast Capacity executor checked its

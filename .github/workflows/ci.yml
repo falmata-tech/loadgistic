@@ -165,6 +165,7 @@ jobs:
           printf '/usr/lib/postgresql/%s/bin\n' "$local_pg_major" >> "$GITHUB_PATH"
 
       - name: Create disposable GPS test database
+        id: simulator_clone
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: node scripts/ci-disposable-gps-database.mjs create
@@ -488,7 +489,7 @@ jobs:
         run: timeout --signal=TERM --kill-after=10s 3m node scripts/verify-driver-capacity-phone-lock-order-local.mjs ordered
 
       - name: Remove disposable GPS test database
-        if: always()
+        if: ${{ always() && contains(fromJSON('["success","failure","cancelled"]'), steps.simulator_clone.outcome) }}
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: node scripts/ci-disposable-gps-database.mjs remove

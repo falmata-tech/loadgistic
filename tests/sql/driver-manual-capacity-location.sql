@@ -32,7 +32,16 @@ create function pg_temp.location_snapshot(vehicle uuid) returns jsonb language s
   'capacity',(select jsonb_agg(to_jsonb(c) order by c.id) from capacities c where c.vehicle_id=$1),
   'phone',(select jsonb_agg(to_jsonb(p) order by p.driver_user_id) from vehicle_driver_locations p where p.vehicle_id=$1),
   'assignments',(select jsonb_agg(to_jsonb(a) order by a.id) from driver_vehicle_assignments a where a.vehicle_id=$1),
-  'tracking',(select jsonb_agg(to_jsonb(t) order by t.id) from provider_shipments t where t.assigned_vehicle_id=$1));
+  'tracking',(select jsonb_agg(to_jsonb(t) order by t.id) from provider_shipments t where t.assigned_vehicle_id=$1),
+  'installations',(select jsonb_agg(to_jsonb(i) order by i.id) from phone_location_installations i),
+  'bindings',(select jsonb_agg(to_jsonb(b) order by b.id) from phone_location_bindings b where b.vehicle_id=$1),
+  'phone_receipts',(select jsonb_agg(to_jsonb(r) order by r.binding_id,r.report_id) from phone_location_report_receipts r
+   where r.binding_id in(select b.id from phone_location_bindings b where b.vehicle_id=$1)),
+  'tracking_leases',(select jsonb_agg(to_jsonb(l) order by l.id) from tracking_device_leases l
+   where l.shipment_id in(select t.id from provider_shipments t where t.assigned_vehicle_id=$1)),
+  'demo_target',(select to_jsonb(d) from demo_motion_targets d where d.vehicle_id=$1),
+  'demo_reports',(select jsonb_agg(to_jsonb(r) order by r.epoch,r.observed_at) from demo_motion_gps_reports r where r.vehicle_id=$1),
+  'hosted_control',(select to_jsonb(c) from demo_hosted_motion_control c where c.id=1));
 $$;
 do $test$
 #variable_conflict use_variable
@@ -41,6 +50,7 @@ declare owner_id uuid:=gen_random_uuid();driver_id uuid:=gen_random_uuid();other
  installation_id uuid:=gen_random_uuid();secret text:=encode(gen_random_bytes(32),'hex');
  capability text:=encode(gen_random_bytes(32),'hex');binding jsonb;editor jsonb;result jsonb;proof jsonb;
  cities text[];recipient_digest text:=encode(gen_random_bytes(32),'hex');capacity_before jsonb;phone_before jsonb;before_state jsonb;stamp timestamptz;function_name text;actor uuid;
+ requested_duty boolean;with_phone_proof boolean;denial_before jsonb;denied_command jsonb;
 begin
  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values
   (owner_id,owner_id||'@example.invalid',clock_timestamp(),'{}','{}'),
@@ -112,11 +122,25 @@ begin
   jsonb_build_object('vehicle_id',vehicle_id,'on_duty',true)),'LOCATION_SOURCE_PENDING');
  perform pg_temp.expect_location_denial(format('select set_provider_assigned_vehicle_duty(%L,%L::jsonb)',owner_id,
   jsonb_build_object('vehicle_id',vehicle_id,'on_duty',true)),'INVALID_VEHICLE');
- -- A different tenant gets the same denial for Manual, default Phone and an
- -- absent vehicle. Source readiness must not become an ID/status oracle.
- foreach actor in array array[vehicle_id,unused_vehicle_id,gen_random_uuid()] loop
-  perform pg_temp.expect_location_denial(format('select set_provider_assigned_vehicle_duty(%L,%L::jsonb)',other_id,
-   jsonb_build_object('vehicle_id',actor,'on_duty',true,'location_precision_km',10)),'INVALID_VEHICLE');
+ -- Every entry refuses a different tenant uniformly for retained Manual,
+ -- default Phone and absent vehicles, in both duty directions and even with
+ -- a forged phone proof. Source/installation readiness is not an ID oracle.
+ foreach function_name in array array['set_provider_assigned_vehicle_duty',
+  'set_provider_assigned_vehicle_duty_pre_radius163','set_provider_assigned_vehicle_duty_pre_phone157'] loop
+  foreach actor in array array[vehicle_id,unused_vehicle_id,gen_random_uuid()] loop
+   foreach requested_duty in array array[true,false] loop
+    foreach with_phone_proof in array array[false,true] loop
+     denial_before:=pg_temp.location_snapshot(actor);
+     denied_command:=jsonb_build_object('vehicle_id',actor,'on_duty',requested_duty,'location_precision_km',10);
+     if with_phone_proof then denied_command:=denied_command||jsonb_build_object('phone_installation',
+      jsonb_build_object('installation_id',gen_random_uuid(),'secret_digest',repeat('a',64),
+       'binding_id',gen_random_uuid(),'revision',gen_random_uuid(),'report_id',gen_random_uuid(),'observed_at',clock_timestamp()));end if;
+     perform pg_temp.expect_location_denial(format('select %I(%L,%L::jsonb)',function_name,other_id,denied_command),'INVALID_VEHICLE');
+     if pg_temp.location_snapshot(actor) is distinct from denial_before
+      then raise exception 'FOREIGN_DUTY_DENIAL_CHANGED_SAVED_STATE';end if;
+    end loop;
+   end loop;
+  end loop;
  end loop;
  if apply_telematics_capacity_location(vehicle_id) then raise exception 'LEGACY_MANUAL_REPORT_MATERIALIZED_AGAIN';end if;
  if pg_temp.location_snapshot(vehicle_id) is distinct from before_state then raise exception 'LEGACY_MANUAL_REFRESH_CHANGED_SAVED_STATE';end if;

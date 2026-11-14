@@ -87,9 +87,30 @@ test('simulator database diagnosis is explicit, isolated and cannot replace the 
  assert.ok(database.indexOf('run: npm run check')<database.indexOf('ci-start-local-supabase.mjs'));
  assert.match(database,/array\['221','222','223','224','225'\]::text\[\]/);
  assert.match(database,/catalog_version=2/);assert.match(database,/SIMULATOR_DIAGNOSTIC_INERT_BASELINE_REQUIRED/);
- assert.match(database,/Remove disposable GPS test database\n        if: always\(\)/);
+ assert.match(database,/Remove disposable GPS test database\n        if: \$\{\{ always\(\) &&/);
  assert.match(database,/Stop isolated Supabase\n        if: always\(\)/);
  assert.doesNotMatch(database,/secrets\.|continue-on-error|--linked|--project-ref|SUPABASE_ACCESS_TOKEN|DATABASE_URL|supabase (?:link|db push|config push)/);
+});
+
+test('both clone cleanups cover partial attempts without masking an earlier setup failure',()=>{
+ for(const [file,job,end] of [
+  ['.github/workflows/operations-proof.yml','  simulator-db:',undefined],
+  ['.github/workflows/ci.yml','  validate:','  e2e-shards:']
+ ]){
+  const source=readFileSync(file,'utf8');
+  const database=source.slice(source.indexOf(job),end?source.indexOf(end):undefined);
+  assert.match(database,/Create disposable GPS test database\n        id: simulator_clone\n/,file);
+  const cleanup=database.match(/Remove disposable GPS test database\n        if: (.+)\n/);
+  assert.ok(cleanup,`${file}: clone cleanup must have an explicit attempt guard`);
+  assert.match(cleanup[1],/^\$\{\{ always\(\) && contains\(fromJSON\('[^']+'\), steps\.simulator_clone\.outcome\) \}\}$/);
+  const attempted=JSON.parse(cleanup[1].match(/fromJSON\('([^']+)'\)/)[1]);
+  assert.deepEqual(attempted,['success','failure','cancelled']);
+  for(const [outcome,expected] of [['success',true],['failure',true],['cancelled',true],['',false],['skipped',false]]){
+   assert.equal(attempted.includes(outcome),expected,`${file}: cleanup after clone outcome ${outcome||'unreached'}`);
+  }
+  assert.match(database,/Remove disposable GPS test database[\s\S]+?node scripts\/ci-disposable-gps-database\.mjs remove/);
+  assert.match(database,/Stop isolated Supabase\n        if: always\(\)/);
+ }
 });
 
 test('simulator database regression plan preserves rollback and GPS fixture ordering',()=>{

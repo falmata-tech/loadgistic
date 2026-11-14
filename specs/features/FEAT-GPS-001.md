@@ -40,6 +40,21 @@ existing permission and privacy rules, or the authorized provider can select an
 assigned GPS device under the existing device/driver ownership rules\
 And no unavailable phone or GPS fix falls back to manual or another device.
 
+### Scenario: unauthorized duty requests do not disclose the selected source
+
+Given a current actor has no assigned-vehicle authority over another account's
+retained Manual vehicle, default-Phone vehicle or an absent vehicle ID\
+When the actor requests a duty change through the public or retained command\
+Then each request has the same authorized-vehicle denial before source-dependent
+readiness or real-device attribution\
+And source, revision, Capacity, phone reports, assignments and Tracking remain
+unchanged. A legacy Manual source does not bypass the actor/assignment check,
+and the repair does not grant an owner permission to drive an unassigned vehicle.
+
+NR-85 records the native SQL observation and wrapper ordering. The rollback SQL
+suite retains actual cross-account/nonexistent IDs and saved-state comparisons;
+source inspection alone does not qualify the database repair.
+
 ### Scenario: dedicated services are independently verifiable
 
 Given separate real GPS and approved synthetic service identities and stores\

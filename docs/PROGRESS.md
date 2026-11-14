@@ -38,8 +38,18 @@ stack on a native GitHub runner via `diagnose/simulator-db/**`. It applies fresh
 migrations221–225, checks inert controls and security, runs the strict browser
 fixture preflight and targeted rollback SQL/isolated GPS clone regressions. Its
 exact-source [run43560119545](https://github.com/falmata-tech/loadgistic/actions/runs/43560119545)
-is in progress; its result does not replace full PR/main CI, concurrency
-checks or agent-led desktop/phone/Expo review. See ADR-085 and local setup.
+passed native startup, all five migrations, security/inert controls, synthetic
+fixtures, Data API denial and strict browser fixture preflight (one pass, zero
+skips). The first SQL suite then found a real source-dependent cross-account duty
+denial mismatch; NR-85 records the repair: migration221 now checks active assigned-vehicle
+scope before source-dependent work at all three duty entries, retaining the
+expected denial and existing lock order. Its SQL matrix expands to36 negative
+cases with installation/demo snapshots. Clone cleanup had also assumed creation
+started and failed its client-version guard; both workflows now check whether
+creation was attempted, retaining partial-create cleanup. Supabase shutdown
+passed. Later SQL suites did not run. A fresh exact-source diagnostic remains
+required;
+this result does not replace full PR/main CI, concurrency or actual app review. See ADR-085 and local setup.
 
 The local container stack remains unavailable in this Cloud workspace: the checked
 standard sockets/client were absent and direct Unix-socket creation returned
@@ -52,8 +62,13 @@ match their pinned source, and original/partial stores are preserved. Do not res
 this workaround or treat it as a prerequisite for the app/Netlify work above.
 
 Focused source checks currently pass for the new Netlify adapter, managed branch
-bootstrap and diagnostic workflow; schema/API/actual browser and production
-activation remain unqualified. Candidate migrations221–225 have not been applied
+bootstrap and diagnostic workflow. The first full unit gate found eleven
+failures: an outdated feed mock, a retired Manual-copy assertion and audit/test
+catalogs that omitted translations already loaded at runtime. Focused repairs
+preserve semantic and localization assertions. The complete `npm run quality`
+rerun passes1498/1498 tests, zero failures/skips, specs/source/workflow analysis
+and type checks. Independent source review found no material issue in the duty
+repair. Actual SQL regression and concurrency qualification remain separate. Schema/API/actual browser and production activation remain unqualified. Candidate migrations221–225 have not been applied
 to production. Production settings and the SMTP verification pause remain intact.
 
 ## Active priority — GPS gateway and signal simulators
