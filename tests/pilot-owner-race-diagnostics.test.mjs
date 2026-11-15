@@ -29,6 +29,9 @@ const fs=require('node:fs');
 const args=process.argv.slice(2),scenario=process.env.FAKE_PILOT_DIAGNOSTIC;
 const input=fs.readFileSync(0,'utf8');
 const record=value=>fs.appendFileSync(process.env.FAKE_PILOT_TRACE,value+'\\n');
+if(args.includes('psql')||args.includes('-Fc')||args.includes('--exit-on-error')){
+ const index=args.indexOf('-d');fs.appendFileSync(process.env.FAKE_PILOT_DATABASE_TRACE,(index<0?'MISSING':args[index+1])+'\\n');
+}
 if(args.includes('context')){
  record('CONTEXT');
  process.stdout.write(scenario==='unknown-json'?'PRIVATE_SENTINEL /private/customer/7188e96a':JSON.stringify('unix:///var/run/docker.sock'));
@@ -42,6 +45,8 @@ if(args.includes('context')){
  record('RESTORE_ROLE');
  if(scenario==='admin-auth'){
   process.stderr.write('FATAL: password authentication failed for user PRIVATE_SENTINEL /private/customer/7188e96a');process.exitCode=1;
+ }else if(scenario==='missing-password'){
+  process.stderr.write('PILOT_RACE_LOCAL_ADMIN_PASSWORD_REQUIRED\\n');process.exitCode=64;
  }else process.stdout.write('PRIVATE_SENTINEL_WRONG_ROLE');
 }else{
  record('FORBIDDEN_CALL');process.stderr.write('PRIVATE_SENTINEL unexpected database action');process.exitCode=1;
@@ -52,20 +57,25 @@ for(const [scenario,stage,code,category,expectedCalls] of [
  ['major-mismatch','PREFLIGHT_PG_MAJOR_CHECK','PILOT_RACE_PG_MAJOR_MISMATCH','unclassified',['CONTEXT','IDENTITY','DATABASE','CLIENT_VERSION']],
  ['admin-auth','PREFLIGHT_RESTORE_ROLE','PILOT_RACE_PROCESS_FAILED','authentication-failed',['CONTEXT','IDENTITY','DATABASE','CLIENT_VERSION','RESTORE_ROLE']],
  ['wrong-role','PREFLIGHT_RESTORE_ROLE','PILOT_RACE_RESTORE_ROLE_MISMATCH','unclassified',['CONTEXT','IDENTITY','DATABASE','CLIENT_VERSION','RESTORE_ROLE']],
+ ['missing-password','PREFLIGHT_RESTORE_ROLE','PILOT_RACE_LOCAL_ADMIN_PASSWORD_REQUIRED','unclassified',['CONTEXT','IDENTITY','DATABASE','CLIENT_VERSION','RESTORE_ROLE']],
  ['unknown-json','PREFLIGHT_DOCKER_CONTEXT','PILOT_RACE_UNCLASSIFIED','unclassified',['CONTEXT']],
 ])test(`real runner publishes a bounded ${scenario} refusal before backup or fixture writes`,()=>{
- const root=mkdtempSync(path.join(tmpdir(),'loadgistic-pilot-diagnostic-')),bin=path.join(root,'bin'),trace=path.join(root,'calls.txt');
+ const root=mkdtempSync(path.join(tmpdir(),'loadgistic-pilot-diagnostic-')),bin=path.join(root,'bin'),trace=path.join(root,'calls.txt'),databaseTrace=path.join(root,'databases.txt');
  try{
   mkdirSync(bin);writeFileSync(path.join(bin,'docker'),fakeDocker,{mode:0o700});
   const result=spawnSync(process.execPath,[runner],{cwd:root,env:{...process.env,PATH:bin,DOCKER_HOST:'',DOCKER_CONTEXT:'',
    LOADGISTIC_TEST_DATABASE:'loadgistic_telematics_ci',LOADGISTIC_PILOT_OWNER_RACE_CONFIRM:'loadgistic_telematics_ci',
-   FAKE_PILOT_DIAGNOSTIC:scenario,FAKE_PILOT_TRACE:trace},encoding:'utf8',timeout:8000});
+   FAKE_PILOT_DIAGNOSTIC:scenario,FAKE_PILOT_TRACE:trace,FAKE_PILOT_DATABASE_TRACE:databaseTrace},encoding:'utf8',timeout:8000});
   assert.equal(result.error,undefined);assert.equal(result.status,1);assert.equal(result.stderr,'');
   const receipt=JSON.parse(result.stdout);
-  assert.equal(receipt.ok,false);assert.equal(receipt.races,0);assert.equal(receipt.baselineRestored,false);assert.equal(receipt.primaryUnchanged,true);
+  assert.equal(receipt.ok,false);assert.equal(receipt.races,0);assert.equal(receipt.baselineRestored,false);
+  assert.equal(receipt.primaryVerification,'not-performed');assert.equal(Object.hasOwn(receipt,'primaryUnchanged'),false);
   assert.deepEqual(receipt.failure,{stage,code,category});
   assert.doesNotMatch(result.stdout,/PRIVATE_SENTINEL|private\/customer|7188e96a|password authentication|unix:\/\/\/|loadgistic-pilot-diagnostic-/);
   assert.deepEqual(readFileSync(trace,'utf8').trim().split('\n'),expectedCalls);
+  const databases=expectedCalls.includes('DATABASE')?readFileSync(databaseTrace,'utf8').trim().split('\n'):[];
+  assert.equal(databases.length,expectedCalls.filter(call=>['DATABASE','RESTORE_ROLE'].includes(call)).length);
+  assert.ok(databases.every(database=>database==='loadgistic_telematics_ci'),'every SQL database argument remains the exact disposable clone');
   const evidence=path.join(root,'.local',readdirSync(path.join(root,'.local'))[0]);
   assert.deepEqual(JSON.parse(readFileSync(path.join(evidence,'failure.private.json'),'utf8')),receipt.failure);
   assert.equal(statSync(path.join(evidence,'failure.private.json')).mode&0o777,0o600);

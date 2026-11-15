@@ -392,6 +392,25 @@ Evidence: `pilot-owner-race-diagnostics.test.mjs` exercises the real runner with
 fake Docker commands and proves PG-major, role/authentication and unknown-text
 refusals occur before backup/setup/drop operations. FEAT-SIM-001 / NR-86.
 
+### Scenario: pilot race archive clients authenticate only inside the verified local container
+
+Given the exact opted-in disposable clone is in the pinned local container\
+When the owner-race verifier runs a supabase_admin query, backup or restoration\
+Then one fixed shell wrapper requires its existing POSTGRES_PASSWORD and exports
+it as PGPASSWORD only inside that container before executing validated positional arguments\
+And the role remains exactly supabase_admin and the database remains the named clone\
+And a missing password refuses before any client starts, without role fallback\
+And the secret is never read back to the host, printed or placed in argv\
+And strict current-user/version checks, restore fingerprints and existing bounds remain.
+
+Contracts: this repairs local child-process authentication, not database roles,
+passwords, configuration or hosted authority. The receipt marks primary database
+verification as not performed; exact clone arguments do not constitute measured
+primary equality. Evidence: `pilot-owner-race-auth.test.mjs` runs the real wrapper
+with fake clients for query/dump/restore, including missing credentials and shell
+metacharacters; `pilot-owner-race-diagnostics.test.mjs` retains actual-entry
+refusals and verifies every SQL database argument is the exact clone. FEAT-SIM-001 / NR-86.
+
 ### Scenario: schema rollout
 
 Given a database migration is required\

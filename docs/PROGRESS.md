@@ -42,6 +42,24 @@ owned PG17 clone confirms installed guard order and ACLs, controls off and no
 handover jobs/receipts, but its retained historical B record is still Empty.
 No clone is created or altered and no SQL replay is claimed against that stale
 fixture; the next fresh focused CI must exercise the actual repaired SQL.
+Fresh d9b1db2 Operations43757362926 passes the repaired Manual suite21 and
+pilot rollback-only SQL27. Owner-race28 now identifies the actual pre-race
+failure: PREFLIGHT_RESTORE_ROLE / PILOT_RACE_PROCESS_FAILED /
+authentication-failed. The strict client/server major check already passes;
+no transport/version repair is indicated. The in-container supabase_admin
+process lacks its local password. Both cleanup steps pass. Prepare the same
+checked local credential for every admin query/dump/restore without exposing it
+or changing roles; preserve all target, version, backup and timeout guards.
+The same-role repair now wraps every connected admin query/dump/restore in
+one validated in-container command. Its existing POSTGRES_PASSWORD becomes
+PGPASSWORD only there; no password reaches host memory, argv or logs. Missing
+credentials refuse before a client starts. All31 focused checks pass in6.209s,
+including real-shell fake-client quoting/negative checks; independent review and
+spec/source/workflow checks pass (124 scripts,11.906s). One authorized read-only
+PG17 query confirms exact clone/current role through the actual wrapper, with
+no data write. It does not prove the pending PG15 authentication/race/restore.
+The old unmeasured primaryUnchanged claim is replaced with an explicit
+primaryVerification:not-performed; exact clone arguments remain tested.
 
 Netlify builds the exactf67 preview6afa0cf4576519d1f022ab30 successfully in99s.
 Its installed postBuild guard checks all11 final function ZIPs: root layout and

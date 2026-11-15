@@ -258,6 +258,14 @@ capacity guard first. Author the exact rollback-only Empty precondition when
 testing the later hold, and retain a distinct Partial/no-state-change denial.
 Fixture repair must not reinstate the size rule or reinterpret the earlier
 refusal as a failure of Manual-lane protection.
+After that fixture repair, the typed diagnostic identifies local supabase_admin
+authentication before any race; the strict major check passes. Use the existing
+password only within the verified container for every connected admin client,
+with fixed role/clone arguments and no fallback or host/argv/log disclosure.
+The31-case check passes in6.209s and the real read-only PG17 wrapper query passes;
+fresh PG15 race/restore proof remains separate. Replace a hardcoded unchanged
+claim with explicit not-performed verification rather than reporting a
+declaration as an observed primary snapshot.
 
 The final phone keyboard E2E reached the correct canonical filter request, but
 Next's route response took5,657ms while the URL assertion allowed5,000ms. The

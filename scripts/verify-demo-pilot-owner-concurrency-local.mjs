@@ -5,7 +5,7 @@ import {createReadStream,createWriteStream,mkdirSync,mkdtempSync,writeFileSync,c
 import {randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {checkedMatchingPgMajor,checkedLocalRestoreRole,captureGpsCloneGraphql,checkedGpsCloneArchive,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS,postgresErrorCategory} from './ci-disposable-gps-clone.mjs';
-import {pinnedLocalPilotDocker,publicPilotOwnerFailure} from './lib/pilot-owner-race-target.mjs';
+import {pinnedLocalPilotDocker,publicPilotOwnerFailure,pilotOwnerAdminExecArgs} from './lib/pilot-owner-race-target.mjs';
 
 const database=process.env.LOADGISTIC_TEST_DATABASE;
 const targets={loadgistic_pilot_ci:{container:'supabase_db_loadgistic-review-20261114',project:'loadgistic-review-20261114'},
@@ -31,14 +31,14 @@ function processRun(command,args,{input,source,destination,env=process.env,timeo
   timer=setTimeout(()=>{try{writeFileSync(path.join(evidence,'process-timeout.private.json'),JSON.stringify({event:'pilot_process_timeout',stage,timeoutMs:timeout,elapsedMs:Date.now()-started,program:command==='docker'?'DOCKER':'NODE'}),{mode:0o600,flag:'wx'});}catch{}
    child.kill('SIGTERM');reject(Error('PILOT_RACE_PROCESS_TIMEOUT'));},timeout);
   child.on('close',async code=>{clearTimeout(timer);if(code!==0){writeFileSync(path.join(evidence,'last-process-error.private.log'),stderr,{mode:0o600});
-    const error=Error('PILOT_RACE_PROCESS_FAILED');error.category=postgresErrorCategory(stderr);reject(error);
+    const error=Error(stderr.trim()==='PILOT_RACE_LOCAL_ADMIN_PASSWORD_REQUIRED'?'PILOT_RACE_LOCAL_ADMIN_PASSWORD_REQUIRED':'PILOT_RACE_PROCESS_FAILED');error.category=postgresErrorCategory(stderr);reject(error);
    }else{try{await flushed;resolve(stdout.trim());}catch(error){reject(error);}}});
  });
 }
 const docker=(args,options={})=>{if(!dockerTarget)fail('PILOT_RACE_UNPINNED_DOCKER');return processRun('docker',[...dockerTarget.args,...args],{...options,env:dockerTarget.environment});};
 const selectedContainer=()=>containerId||container;
-const queryAs=(role,sql)=>docker(['exec','-i',selectedContainer(),'psql','-X','-qAt','-U',role,'-d',database,'-v','ON_ERROR_STOP=1'],{input:sql});
-const query=sql=>queryAs('postgres',sql),adminQuery=sql=>queryAs('supabase_admin',sql);
+const query=sql=>docker(['exec','-i',selectedContainer(),'psql','-X','-qAt','-U','postgres','-d',database,'-v','ON_ERROR_STOP=1'],{input:sql});
+const adminQuery=sql=>docker(pilotOwnerAdminExecArgs({containerId:selectedContainer(),database,operation:'query'}),{input:sql});
 const json=async sql=>JSON.parse(await query(sql));
 async function verifyTarget({restoring=false}={}){
  const phase=restoring?'RESTORE_TARGET':'PREFLIGHT';
@@ -138,7 +138,7 @@ try{
  stage='BACKUP_GRAPHQL_SNAPSHOT';graphqlSnapshot=await captureGpsCloneGraphql({major:serverMajor,query:adminQuery});
  if(graphqlSnapshot)writeFileSync(path.join(evidence,'graphql-wrapper.private.json'),JSON.stringify(graphqlSnapshot),{mode:0o600});
  stage='BACKUP_ARCHIVE';
- await docker(['exec',selectedContainer(),'pg_dump','-U','supabase_admin','-Fc','-d',database],{destination:path.join(evidence,'baseline.private.dump')});
+ await docker(pilotOwnerAdminExecArgs({containerId:selectedContainer(),database,operation:'dump'}),{destination:path.join(evidence,'baseline.private.dump')});
  if(serverMajor===15){stage='BACKUP_ARCHIVE_TOC';archiveToc=await docker(['exec','-i',selectedContainer(),'pg_restore','-l'],{source:path.join(evidence,'baseline.private.dump'),maxOutput:2000000});}
  stage='BACKUP_ARCHIVE_VALIDATE';
  checkedGpsCloneArchive({major:serverMajor,graphqlSnapshot,toc:archiveToc});backupReady=true;
@@ -156,11 +156,11 @@ try{
    stage='RESTORE_CREATE';await docker(['exec',selectedContainer(),'createdb','-U','postgres','--owner=postgres',database]);
    stage='RESTORE_ARCHIVE';
    await restoreGpsCloneArchive({major:serverMajor,graphqlSnapshot,readToc:()=>archiveToc,targetQuery:adminQuery,
-    restoreArchive:async list=>{const args=['exec','-i',selectedContainer(),'pg_restore','-U','supabase_admin','-d',database,'--exit-on-error'];
+    restoreArchive:async list=>{let listFile=null;
      if(list!==null){if(!listCreated){await docker(['exec',selectedContainer(),'mkdir','-m','700',listDirectory]);listCreated=true;}
       const name='restore-'+(++listIndex)+'.list',local=path.join(evidence,name);writeFileSync(local,list,{mode:0o600});
-      await docker(['cp',local,selectedContainer()+':'+listDirectory+'/'+name]);args.push('-L',listDirectory+'/'+name);}
-     await docker(args,{source:path.join(evidence,'baseline.private.dump'),timeout:GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS});}});
+      await docker(['cp',local,selectedContainer()+':'+listDirectory+'/'+name]);listFile=listDirectory+'/'+name;}
+     await docker(pilotOwnerAdminExecArgs({containerId:selectedContainer(),database,operation:'restore',listFile}),{source:path.join(evidence,'baseline.private.dump'),timeout:GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS});}});
    stage='RESTORE_VERIFY';const restoredFingerprint=await json(baselineSql);
    writeFileSync(path.join(evidence,'restored-fingerprint.private.json'),JSON.stringify(restoredFingerprint),{mode:0o600});
    if(JSON.stringify(restoredFingerprint)!==JSON.stringify(baseline))fail('PILOT_RACE_BASELINE_MISMATCH');restored=true;
@@ -168,6 +168,6 @@ try{
    writeFileSync(path.join(evidence,'restore-failure.private.json'),JSON.stringify(restoreFailure),{mode:0o600});process.exitCode=1;
   }finally{if(listCreated)await docker(['exec',selectedContainer(),'rm','-rf','--',listDirectory]).catch(()=>{process.exitCode=1;});}
  }
- const result={event:'pilot_owner_concurrency',ok:process.exitCode!==1,...counters,baselineRestored:restored,primaryUnchanged:true,...(runFailure?{failure:runFailure}:{}),...(restoreFailure?{restoreFailure}:{})};
+ const result={event:'pilot_owner_concurrency',ok:process.exitCode!==1,...counters,baselineRestored:restored,primaryVerification:'not-performed',...(runFailure?{failure:runFailure}:{}),...(restoreFailure?{restoreFailure}:{})};
  writeFileSync(path.join(evidence,'receipt.json'),JSON.stringify(result,null,2),{mode:0o600});console.log(JSON.stringify(result));
 }

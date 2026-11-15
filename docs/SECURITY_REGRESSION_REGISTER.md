@@ -66,6 +66,25 @@ pass in11.616s, including real-runner fake-Docker refusals before backup/setup/
 drop and unknown-message/path/identity exclusion. Static workflow checks pass.
 Actual cause identification and fixed PG15 execution still require the focused
 disposable run; this finding remains open.
+The next fresh focused run43757362926/d9b1db2 passes the repaired Manual suite
+and pilot SQL; its race verifier now reports PREFLIGHT_RESTORE_ROLE /
+PILOT_RACE_PROCESS_FAILED / authentication-failed, before any backup or race.
+The matching-version guard passes. This identifies missing authentication for
+the same local supabase_admin role, not an ownership denial or PG-major defect.
+Owner: telematics database maintainer. Next action: supply its existing local
+container password to all admin query/dump/restore children without host/argv/
+log disclosure, role fallback or wider target authority, then qualify the full
+focused race/restore. Cleanup passes. The old primaryUnchanged:true receipt was
+a declaration without a primary snapshot; do not cite it as measured equality.
+Remove or explicitly mark that unmeasured claim rather than adding primary
+database access only to support a diagnostic field.
+The same-role credential wrapper is prepared for all connected admin clients;
+it uses only the existing verified-container password internally and refuses
+missing credentials without fallback.31 focused tests and independent review
+pass, including real-shell private-output/metacharacter checks and exact-clone
+arguments. One read-only PG17 clone identity probe passes. The primary receipt
+now explicitly says verification was not performed. Fresh PG15 race/restore
+execution remains required; no hosted change is claimed.
 
 ## NR-85 — Duty denial depends on an unauthorized vehicle's location source
 

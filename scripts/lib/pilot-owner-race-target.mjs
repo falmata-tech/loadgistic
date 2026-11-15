@@ -10,6 +10,33 @@ export async function pinnedLocalPilotDocker({environment,inspectContext}){
  return Object.freeze({endpoint,args:Object.freeze(['--host',endpoint]),environment:Object.freeze(env)});
 }
 
+// Supabase CLI puts the checked local database password in this container.
+// Keep it there: no secret is returned to the host, placed in argv, or logged.
+const localAdminWrapper=[
+ 'if [ -z "${POSTGRES_PASSWORD:-}" ]; then',
+ ' printf "%s\\n" "PILOT_RACE_LOCAL_ADMIN_PASSWORD_REQUIRED" >&2; exit 64;',
+ 'fi;',
+ 'export PGPASSWORD="$POSTGRES_PASSWORD";',
+ 'exec "$@";',
+].join('\n');
+export function pilotOwnerAdminExecArgs(options){
+ const denied=()=>{throw Error('PILOT_RACE_ADMIN_COMMAND_DENIED');};
+ if(!options||typeof options!=='object'||Array.isArray(options)
+  ||Object.keys(options).some(key=>!['containerId','database','operation','listFile'].includes(key)))denied();
+ const {containerId,database,operation,listFile=null}=options;
+ if(typeof containerId!=='string'||!/^[a-f0-9]{64}$/.test(containerId)||!['loadgistic_pilot_ci','loadgistic_telematics_ci'].includes(database)
+  ||!['query','dump','restore'].includes(operation))denied();
+ if(listFile!==null&&(operation!=='restore'||typeof listFile!=='string'
+  ||!/^\/tmp\/loadgistic-pilot-race-[a-f0-9-]{36}\/restore-[1-9][0-9]*\.list$/.test(listFile)))denied();
+ const commands={
+  query:['psql','-X','-qAt','-U','supabase_admin','-d',database,'-v','ON_ERROR_STOP=1'],
+  dump:['pg_dump','-U','supabase_admin','-Fc','-d',database],
+  restore:['pg_restore','-U','supabase_admin','-d',database,'--exit-on-error',...(listFile===null?[]:['-L',listFile])],
+ };
+ return Object.freeze(['exec',...(operation==='dump'?[]:['-i']),containerId,
+  'sh','-c',localAdminWrapper,'loadgistic-pilot-admin',...commands[operation]]);
+}
+
 // Only fixed vocabulary crosses into CI logs. Error messages can contain SQL,
 // account identifiers, paths or connection data; even a PILOT_ prefix is not an
 // authority to publish an arbitrary message.
@@ -31,6 +58,7 @@ const failureCodes=new Set([
  'PILOT_RACE_EXPECTED_BLOCKER_TIMEOUT','PILOT_RACE_RESULT_MISSING','PILOT_RACE_WRONG_DENIAL','PILOT_OWNER_RACE_FIXTURE_MISSING',
  'PILOT_PROVISION_FIRST_FAILED','PILOT_REPORT_FIRST_FAILED','PILOT_REPORT_SAVED_FACTS_WRONG','PILOT_RACE_STOP_FAILED',
  'PILOT_RACE_LOCAL_BASELINE_REQUIRED','PILOT_RACE_BASELINE_MISMATCH',
+ 'PILOT_RACE_LOCAL_ADMIN_PASSWORD_REQUIRED','PILOT_RACE_ADMIN_COMMAND_DENIED',
 ]);
 const sharedFailureCodes=new Map([
  ['GPS CI PostgreSQL client/server major mismatch','PILOT_RACE_PG_MAJOR_MISMATCH'],
