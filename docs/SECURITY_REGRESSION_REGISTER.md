@@ -100,8 +100,16 @@ actual frozen helper also passes a12.489s isolated PG15.8/pg_graphql one-entry
 restore followed by zero-entry proof/restore, with owner/body/ACL/membership and
 zero initial-state equality. Default drift and the actual wrong-database server
 guard refuse; no probe functions or fixture commits remain, and the owned empty
-container is removed. Primary capture remains read-only. Full Supabase fixture,
-race/restore and current-source CI qualification remain outstanding.
+container is removed. Primary capture remains read-only.
+Focused Supabase run[43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+at e169fef5531cc74b3d365c301083ea69b57d753f now passes Capacity/Manual suites21,
+pilot bindings27 and owner races28: four races/four waits, one accepted provision
+and report each, two denied provision and report each, baseline restored with
+matching fingerprints. INITIAL_WRAPPER_ACL has zero exact/related ACL entries,
+one matching initial row, expected owner and creationProof:MATCHED. Clone removal29
+and Supabase stop30 pass. Primary verification remains explicitly not-performed.
+This clears the focused PG15 failure; NR-86 remains open for complete required
+CI and hosted review. No hosted migration or activation occurred.
 
 ## NR-85 — Duty denial depends on an unauthorized vehicle's location source
 

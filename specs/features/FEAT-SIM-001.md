@@ -93,6 +93,13 @@ mappings, constraints, devices, public facts and history. Restore a prior
 application artifact if needed; namespace or definition reversion is a separate
 owner-reviewed operation and must not recreate an authorization bypass.
 
+Focused local Supabase qualification at e169fef in
+[run43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+passes the combined pilot bindings, four actual owner races/four waits,
+baseline restoration and disposable cleanup (NR-86 / BASE-DEP-001). Primary
+verification is explicitly not performed. This does not install hosted227,
+change the inspected hosted ledger ending at220 or waive the rollout gates.
+
 ### Limited daily operation — November15 owner cost constraint
 
 The owner requested a few hours per day with very limited credit usage. Use a

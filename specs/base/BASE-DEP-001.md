@@ -360,7 +360,8 @@ Then Docker context precedence is resolved before accepting a Unix endpoint and
 every daemon/session command pins that endpoint and the same immutable container ID\
 And an unsupported or mismatched server/client version refuses before fixture writes\
 And PostgreSQL15 archive restoration retains the exact existing GraphQL wrapper,
-extension membership and deferred ACL sequence; PostgreSQL17 uses direct restoration\
+extension membership and deferred ACL sequence or the qualified unchanged-initial-ACL
+path below; PostgreSQL17 uses direct restoration\
 And four real races identify four blocker waits, accept one provisioning and one
 report operation, and deny two later operations per lane without changed state\
 And successful evidence requires the protected baseline restored with matching
@@ -399,7 +400,10 @@ cleanup and timeout bounds. Rollback restores the previous helper and runner,
 never weakens ACL checks or changes a hosted catalog. Contracts: BASE-DEP-001 /
 FEAT-SIM-001 / NR-86; focused clone and actual-entry fake-process tests qualify
 source logic. A separate isolated PG15 dummy probe establishes ACL-elision
-semantics, not complete Supabase race/restore qualification.
+semantics. Focused Supabase run[43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+at e169fef then passes the actual zero-entry creation proof, four races/four
+waits, baseline restoration and both cleanup steps. Primary verification is
+explicitly not performed; complete final PR/release gates remain separate.
 
 ### Scenario: pilot race preflight failures remain diagnosable without private logs
 
@@ -744,7 +748,7 @@ diagnostic fields; it does not remove the underlying proof/privacy assertions.
 
 Given candidate Phone/GPS and demo-simulator changes need a bounded database qualification without the stopped nested development VM\
 When the Operations proof workflow is manually selected with `case=simulator-db` or receives a push to `diagnose/simulator-db/**`\
-Then its dedicated native Linux runner starts the isolated local Supabase stack and requires migrations221–225, inert controls and the curated catalog before fixtures\
+Then its dedicated native Linux runner starts the isolated local Supabase stack and requires migrations221–226, inert controls and the curated catalog before fixtures\
 And ordinary PostGIS/catalog and Data API denial checks, strict one-pass fixture preflight, Phone/GPS-only writes and durable simulator/owner-isolation SQL cases remain enforced\
 And its disposable GPS clone preserves the existing server-matched PostgreSQL and exact target/cleanup guards\
 And this branch prefix does not also run the unrelated browser-proof repetitions, copy hosted credentials, enroll production accounts or publish the application\

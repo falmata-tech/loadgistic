@@ -11,12 +11,16 @@ the source, hosted schema, web publication and installed Android are separate.
 
 Current checkpoint: local3100 and the six capped essential services remain
 available; the last container snapshot is736MiB combined. Mixed planning,
-matching/privacy and actual desktop/phone/Expo reviews pass. The PG15 archive
-follow-up now passes41 focused checks in5.209s, source/spec/workflow checks with
-pinned ShellCheck (124 scripts,7.664s), and an actual isolated pg_graphql helper
-integration in12.489s. Full Supabase races/restoration and final-source CI remain
-required. PR39 stays draft; its current published head is stillf67db02 while
-the diagnostic branch qualifies the follow-ups. Production remains unchanged.
+matching/privacy and actual desktop/phone/Expo reviews pass. Complete local
+`npm run quality` at e169fef exits0:1,594 tests pass, zero failures/skips,
+63.714s unit duration, followed by TypeScript. The focused PG15/Supabase run
+[43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+at that exact source passes security, all Capacity/Manual suites, pilot bindings,
+four races/four blocker waits and baseline restoration. Clone removal and
+Supabase cleanup pass. Primary verification is explicitly not performed.
+The final PR source still needs its full browser/build/release matrix; PR39
+remains draft and production remains unchanged. The follow-ups and this
+evidence checkpoint are being prepared for its next source push.
 
 The owner approved the limited hosted planning audit. Its private review packet
 proposes120 Capacity/19 assigned Preferred plans, preserving seven newer
@@ -25,8 +29,11 @@ catalog evidence rows. Fourteen hosted canonical-coordinate differences are
 resolved; two invalid Area proposals are excluded. Two signature/MD5-only reads
 match the locally installed consumers exactly and qualify latest selection
 without returning hosted function bodies. The broader body read remains rejected.
-No hosted data/configuration write occurred. Review-only SQL preparation and
-operation-specific rehearsal are separate from this read-only evidence.
+No hosted data/configuration write occurred. Private review-only forward,
+inverse and read-only verification SQL are being prepared offline; they are
+unexecuted and unrehearsed. The84-reference canonical guard uses the documented
+1e-6-degree tolerance, not exact-byte coordinate capture. Operation-specific
+backup, isolated restore, rehearsal and owner execution remain separate gates.
 Netlify previewf67 builds/archives pass; its runtime remains unqualified because
 the scoped preview handler reports SUPABASE_NOT_CONFIGURED.
 
@@ -108,7 +115,13 @@ Receipt `pg15-helper-integration-20261115-a/receipt.private.json` SHA256
 2f3c84dff7e9d9f4d07f6537f00d79c17c097f23474663240526d43d11885d00 binds
 helper SHAe1a7ac31730010a18928983f3654513d99c0d3214ef25f0f9629d29fb9011827.
 The owned container/fresh data are removed. Proof-attempt status distinguishes
-an attempted refusal from a probe never run. Full Supabase CI remains separate.
+an attempted refusal from a probe never run. Fresh focused e169fef run43765684621
+then passes the actual Supabase scenario: step21 Capacity/catalog/Manual/owner
+suites, step27 rollback-only pilot bindings and step28 four races/four actual
+waits, one accepted provision/report each and two denied provision/report each.
+The zero-entry archive creation proof matches and baselineRestored is true;
+primaryVerification remains not-performed. Both cleanup steps pass. This clears
+the focused PG15 blocker; the full final PR matrix remains a separate gate.
 
 Netlify builds the exactf67 preview6afa0cf4576519d1f022ab30 successfully in99s.
 Its installed postBuild guard checks all11 final function ZIPs: root layout and
