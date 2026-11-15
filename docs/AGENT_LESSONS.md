@@ -251,6 +251,13 @@ processes to prove unknown text remains private and preflight fails before
 backup/setup/drop. The diagnostic-only27-case check passes in11.616s; use the
 focused disposable lane to identify the cause before another full CI. Never
 infer a SQL-version defect from zero race counts or upload private evidence.
+The focused120cb7d lane then stopped before pilot setup: atomic handover's
+held-lane test inherited cap-public-103 as Empty from the removed size-based
+importer override. Its actual saved Partial state correctly triggered the older
+capacity guard first. Author the exact rollback-only Empty precondition when
+testing the later hold, and retain a distinct Partial/no-state-change denial.
+Fixture repair must not reinstate the size rule or reinterpret the earlier
+refusal as a failure of Manual-lane protection.
 
 The final phone keyboard E2E reached the correct canonical filter request, but
 Next's route response took5,657ms while the URL assertion allowed5,000ms. The

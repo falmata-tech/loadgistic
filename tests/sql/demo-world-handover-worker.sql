@@ -127,7 +127,10 @@ begin
     and u.raw_user_meta_data->>'fixture_key'='user-public-fleet-01';
   select id into capacity_a from public.capacities where vehicle_id=vehicle_a order by updated_at desc,id desc limit 1;
   select id into capacity_b from public.capacities where vehicle_id=vehicle_b order by updated_at desc,id desc limit 1;
-  update public.capacities set location_source='MANUAL_ADMIN' where id in(capacity_a,capacity_b);
+  -- A completed historical handover published Empty rows. Normal fixture
+  -- imports retain Partial records; stage only this dated replay input here.
+  update public.capacities set status='EMPTY',market_status='EMPTY',available_percent=100,
+    location_source='MANUAL_ADMIN' where id in(capacity_a,capacity_b);
   insert into public.demo_world_handover_receipts(simulation_day,owner_user_id,vehicle_a_id,vehicle_b_id,
     previous_driver_a_id,previous_driver_b_id,previous_capacity_a_id,previous_capacity_b_id,
     published_capacity_a_id,published_capacity_b_id)

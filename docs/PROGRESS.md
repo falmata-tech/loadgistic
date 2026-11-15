@@ -24,6 +24,24 @@ checks pass in11.616s; specs/source/workflow pass (124 scripts,13.454s). Guards,
 restore sequencing and time limits are unchanged. Its focused disposable CI
 lane is next; this is diagnostic preparation, not a repair of an established
 PG15 cause or a green replacement for the failed run.
+Diagnostic commit120cb7d was pushed only to the focused simulator branch.
+Operations43755913195 stops earlier in `demo-world-atomic-handover`: the held
+Manual-lane assertion gets DEMO_HANDOVER_CAPACITY_REFUSED because cap-public-103
+now legitimately imports as PARTIAL/Route after removal of size-based forced
+Empty status. Migration187's retained Empty baseline guard runs before223's
+hold. Pilot steps27/28 are skipped; the original preflight cause is still
+unknown. Both cleanup steps pass. Repair the rollback-only fixture's explicit
+Empty baseline for the hold test, preserving separate Partial refusal and
+unchanged-state evidence; do not restore a category rule or weaken validators.
+The repair is confined to the two rollback-only handover suites and their
+fixture contract tests. It proves the actual Partial refusal first, then stages
+only two exact historical Empty/100% rows for the separate held-lane/replay
+checks. Audit and Featured-day facts join the denial snapshot. All26 focused
+checks pass in884.8ms and source/diff checks pass. Read-only inspection of the
+owned PG17 clone confirms installed guard order and ACLs, controls off and no
+handover jobs/receipts, but its retained historical B record is still Empty.
+No clone is created or altered and no SQL replay is claimed against that stale
+fixture; the next fresh focused CI must exercise the actual repaired SQL.
 
 Netlify builds the exactf67 preview6afa0cf4576519d1f022ab30 successfully in99s.
 Its installed postBuild guard checks all11 final function ZIPs: root layout and

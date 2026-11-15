@@ -140,6 +140,8 @@ create function pg_temp.handover_state() returns jsonb language sql stable as $$
     where p.user_id in(select driver_user_id from public.driver_vehicle_assignments
       where vehicle_id in('54eb0674-4aa2-4975-bc1b-18999463a5b7','49d736cb-cd47-47dd-9f8d-2f7c1e8199e7'))),
   'featured',(select jsonb_agg(to_jsonb(s) order by s.id) from public.featured_provider_slots s),
+  'featured_days',(select jsonb_agg(to_jsonb(d) order by d.id) from public.featured_provider_days d),
+  'audit',(select jsonb_agg(to_jsonb(a) order by a.id) from public.audit_logs a),
   'control',(select to_jsonb(c) from public.demo_world_control c where c.id=1),
   'receipts',(select jsonb_agg(to_jsonb(r) order by r.simulation_day) from public.demo_world_handover_receipts r)
  )
@@ -150,7 +152,31 @@ declare
   vehicle_a uuid:='54eb0674-4aa2-4975-bc1b-18999463a5b7';
   vehicle_b uuid:='49d736cb-cd47-47dd-9f8d-2f7c1e8199e7';
   before_state jsonb;denied boolean;attempt integer;failure_code text;owner_id uuid;source_revision timestamptz;
+  capacity_a uuid;capacity_b uuid;baseline_b_status text;baseline_b_market_status text;staged_count integer;
 begin
+  select id into capacity_a from public.capacities where vehicle_id=vehicle_a order by updated_at desc,id desc limit 1;
+  select id,status::text,market_status::text into capacity_b,baseline_b_status,baseline_b_market_status
+    from public.capacities where vehicle_id=vehicle_b order by updated_at desc,id desc limit 1;
+  -- This ordinary vehicle now retains its authored Partial signal. The strict
+  -- historical handover must refuse that baseline before reaching its hold.
+  if capacity_a is null or capacity_b is null or baseline_b_status is distinct from 'PARTIAL'
+    or baseline_b_market_status is distinct from 'PARTIAL'
+    then raise exception 'HANDOVER_PARTIAL_BASELINE_MISSING';end if;
+  before_state:=pg_temp.handover_state();denied:=false;
+  begin perform public.demo_world_execute_atomic_handover();
+  exception when others then
+    failure_code:=sqlerrm;denied:=failure_code='DEMO_HANDOVER_CAPACITY_REFUSED';
+  end;
+  if not denied then raise exception 'HANDOVER_PARTIAL_BASELINE_ACCEPTED: %',coalesce(failure_code,'NO_ERROR');end if;
+  if pg_temp.handover_state() is distinct from before_state
+    then raise exception 'HANDOVER_PARTIAL_DENIAL_CHANGED_STATE';end if;
+  -- Reach the separate Manual hold with an explicit historical fixture. Only
+  -- these two exact latest rows change, inside this rollback-only transaction;
+  -- fixture import and normal vehicle categories keep their actual load status.
+  update public.capacities set status='EMPTY',market_status='EMPTY',available_percent=100
+    where id in(capacity_a,capacity_b);
+  get diagnostics staged_count=row_count;
+  if staged_count<>2 then raise exception 'HANDOVER_HISTORICAL_BASELINE_MISSING';end if;
   before_state:=pg_temp.handover_state();
   for attempt in 1..2 loop
     denied:=false;
