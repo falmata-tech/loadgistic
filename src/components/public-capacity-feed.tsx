@@ -82,7 +82,9 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const items=React.useMemo(()=>allItems.filter((item:any)=>!blocked.includes(item.provider_handle)),[allItems,blockKey]);
   const [loading,setLoading]=React.useState(false);
   const [error,setError]=React.useState(initial.filterError||'');
-  const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(initial.items.some((item:any)=>item.id===query.truck)?query.truck:null);
+  const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(
+    initial.items.some((item:any)=>item.id===query.truck)?query.truck
+      :query.truck&&!initial.filterError&&initial.items.length===1?initial.items[0].id:null);
   const [viewer,setViewer]:[Point|null,(value:Point|null)=>void]=React.useState(null);
   const parsedNearLat=Number(query.nearLat);
   const parsedNearLng=Number(query.nearLng);
@@ -213,8 +215,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
           try{
             const result=await requestPage(selectedParams,10000);
             if(result.filterError||result.hasMore!==false||!Array.isArray(result.items)||result.items.length>1
-              ||result.items.some((item:FeedResult['items'][number])=>item?.id!==verifyingSelected
-                ||verifyingVehicle&&capacityVehicleIdentity(item)!==verifyingVehicle))throw new Error('Capacity could not be loaded.');
+              ||result.items.some((item:FeedResult['items'][number])=>verifyingVehicle
+                ?capacityVehicleIdentity(item)!==verifyingVehicle:item?.id!==verifyingSelected))throw new Error('Capacity could not be loaded.');
             authorizedSelected=result.items[0]||null;
           }catch(problem){
             if(version===generation.current&&(!controller.signal.aborted||controller.signal.reason==='timeout')){
@@ -231,6 +233,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
           const authorized=incoming.find(item=>item.id===selected)
             ||(selected===verifyingSelected?authorizedSelected:null);
           setItems(authorized&&!incoming.some(item=>item.id===authorized.id)?[authorized,...incoming]:incoming);
+          if(authorized&&authorized.id!==selected){selectedRef.current=authorized.id;setSelectedId(authorized.id);}
           if(selected&&!authorized){selectedRef.current=null;selectedVehicle.current=null;setSelectedId(null);}
         }
       }

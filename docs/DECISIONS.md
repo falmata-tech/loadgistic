@@ -1,5 +1,23 @@
 # Architecture Decisions
 
+## November14 — Capacity links follow the current vehicle publication
+
+FEAT-CAP-001 / NR-81: a linked Capacity ID identifies a vehicle's current
+authorized offer, rather than permanently selecting one append-only publication.
+The repository adapter performs at most two indexed identity reads when a link
+ID is present, then passes only the resolved ID into the existing audience and
+filter projection. Identity reads disclose no rows and cannot grant access.
+Missing history stays restrictive; read failures stop before the projection.
+Ordinary map requests have no additional identity reads. No schema, grants,
+provider enforcement, scheduler or saved history changes.
+
+Web and Expo selections, open detail panels and initial selection camera fitting
+use the stable vehicle identity across publication replacements. Current DTOs
+still own every displayed fact. A completed authorized omission clears selection;
+background pause, generation cancellation, pagination and bounded retry remain.
+This repairs the actual local80→60 publication failure, not a new manual refresh
+step or an activation of simulated movement. Hosted rollout retains its gates.
+
 Current account-only Capacity sharing is specified in [FEAT-CON-001](../specs/features/FEAT-CON-001.md)
 and [FEAT-SHR-001](../specs/features/FEAT-SHR-001.md). Earlier decisions below
 record the designs accepted at their dates; their email-only Capacity and

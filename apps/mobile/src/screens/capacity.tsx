@@ -177,6 +177,11 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
     loading.then(()=>{
       if(!active||controller.signal.aborted)return;
       setResult(previous=>capacityRefreshResult(previous,requestKey,{phase:'complete',items:finalItems}));
+      // A deep link may already resolve to a newer authorized publication.
+      // Keep that vehicle identity for subsequent refreshes, like a map tap.
+      if(!selectionRef.current&&initialSelectionActiveRef.current&&finalItems.length===1){
+        const next={key:requestKey,signal:finalItems[0]};selectionRef.current=next;setSelection(next);
+      }
       const selectedId=selectionRef.current?.signal.id||(initialSelectionActiveRef.current?initialFilters.truck:undefined);
       const replacement=currentCapacitySelection(selectionRef.current?.signal,finalItems);
       if(replacement&&selectionRef.current){const next={key:requestKey,signal:replacement};selectionRef.current=next;setSelection(next);}

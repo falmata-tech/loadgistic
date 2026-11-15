@@ -11,6 +11,29 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## Current publication behind a vehicle link — November14
+
+Given a map link names an earlier Capacity publication for a vehicle\
+When that vehicle publishes a replacement\
+Then public and private map reads resolve the link to that same vehicle's latest
+publication before applying the existing audience, current-driver, status,
+provider and other filters; an old link never grants access or revives history\
+And the selected details follow the replacement without a reload on web/Expo.
+
+Given the replacement is private, Off Duty, outside the requested filters, or
+the reader's grant was revoked\
+When the next complete authorized read finishes\
+Then the old selection and details are removed. A lookup failure uses normal
+bounded retry behaviour and cannot return an unfiltered or unverified record.
+
+Changed contract: server-side Capacity link resolution uses at most two indexed
+identity reads only when a publication ID was supplied; ordinary map reads are
+unchanged. The final projection remains the sole disclosure boundary. Existing
+query error/status and freshness observations apply; never log identity rows.
+Rollout requires real publication/privacy browser checks and exact-source gates.
+Rollback restores the prior application adapter without altering saved history,
+grants, controls or schema. Local qualification does not authorize deployment.
+
 ## Phone and GPS location updates — current owner contract
 
 Given a provider or currently assigned driver edits a vehicle location\

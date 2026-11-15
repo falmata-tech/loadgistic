@@ -1,5 +1,6 @@
 import {verificationBadgesFromApproved,truckDocumentBadges,publicVehicleAuthorityBadges} from '../verification-summary.js';
 import {capacityDatabaseFilters} from '../capacity-viewport.js';
+import {currentCapacityLinkFilters} from '../capacity-link.js';
 import {privatePhotoDatabaseFilters} from '../business-capacity/photo-filter.js';
 import {loadPublicProviderFleet,publicFleetVehicleIds} from '../public-provider-paging.js';
 import { createSupabaseAdminClient } from '../supabase-adapter.js';
@@ -110,6 +111,7 @@ async function capacityOwnerEvidence(client,rows){
 
 export async function listSupabasePublicCapacityCursor(filters={},options={}){
   const client=createSupabaseAdminClient();
+  filters=await currentCapacityLinkFilters(client,filters);
   const pageSize=Math.max(12,Math.min(16,Number(options.pageSize)||14));
   const cursor=decodePublicCursor(options.cursor);
   const resolved=await resolveCapacityFilterPlaces(client,filters);
@@ -257,6 +259,7 @@ export async function listSupabaseLoadgisticSharedCapacity(){throw new Error('PL
 
 async function listSupabasePrivateCapacityProjection(audience,emailDigest,actorUserId,filters,options,businessWorkspaceId){
   const client=createSupabaseAdminClient();
+  filters=await currentCapacityLinkFilters(client,filters);
   const resolved=await resolveCapacityFilterPlaces(client,filters);
   if(resolved.filterError)return {items:[],hasMore:false,nextCursor:null,pageSize:100,filterError:resolved.filterError};
   const [originPlace,destinationPlace,areaPlace,truckCity]=resolved.places;

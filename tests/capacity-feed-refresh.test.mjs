@@ -100,6 +100,20 @@ test('private selected read preserves an authorized outside-viewport popup and f
  const h=web({apiPath:'/api/account-capacity'});try{let state=h.render();state.selectTruck('old');h.render().explore([1,2,3,4]);h.http.requests[0].reply(page([]));await settle();h.http.requests[1].reply(page([row('old','vehicle-a',80)]));await settle();state=h.render();assert.equal(state.selectedId,'old');assert.equal(state.items[0].available_percent,80);assert.equal(h.http.requests.length,2);}finally{h.close();}
 });
 
+test('an exact linked read may replace the publication only for the same selected vehicle',async()=>{
+ for(const apiPath of ['/api/public/capacity','/api/account-capacity']){
+  const h=web({apiPath,query:{truck:'old'}});try{
+   h.render().loadWindow();h.http.requests[0].reply(page([]));await settle();
+   h.http.requests[1].reply(page([row('new','vehicle-a',60)]));await settle();
+   const state=h.render();assert.equal(state.selectedId,'new');assert.deepEqual(state.items.map(item=>[item.id,item.available_percent]),[['new',60]]);
+  }finally{h.close();}
+ }
+});
+
+test('a web deep link selects its sole authorized current publication on initial load',()=>{
+ const h=web({query:{truck:'old'},initialItems:[row('current')]});try{assert.equal(h.render().selectedId,'current');}finally{h.close();}
+});
+
 test('private exact checks fail closed on timeout, malformed pages and another truck',async()=>{
  for(const result of [null,{items:'invalid',hasMore:false},page([row('unrelated','foreign')]),page([row('old','foreign')]),page([row('old')],'next')]){
   const h=web({apiPath:'/api/account-capacity'});try{let state=h.render();state.selectTruck('old');h.render().loadWindow();h.http.requests[0].reply(page([row('other','vehicle-b')]));await settle();assert.equal(h.http.requests.length,2);if(result===null)h.time.advance(10000);else h.http.requests[1].reply(result);await settle();state=h.render();assert.equal(state.selectedId,null);assert.deepEqual(state.items.map(item=>item.id),['other']);assert.ok(state.error);assert.equal(h.http.requests.length,2);}finally{h.close();}
@@ -154,6 +168,15 @@ function native(){
 
 test('native15s foreground refresh waits for complete cursor work and follows new publication identity',async()=>{
  const h=native();try{let state=h.render();assert.equal(h.http.requests.length,1);h.time.advance(15000);await settle();h.render();assert.equal(h.http.requests.length,1);h.http.requests[0].reply(page([row('old')],'next'));await settle();h.time.advance(15000);h.render();assert.equal(h.http.requests.length,2);h.http.requests[1].reply(page([]));await settle();state=h.render();state.selectMapSignal(state.items[0]);state=h.render();h.time.advance(15000);h.render();assert.equal(h.http.requests.length,3);h.http.requests[2].reply(page([row('new','vehicle-a',80)]));await settle();state=h.render();assert.deepEqual(state.items.map(item=>item.id),['new']);assert.equal(state.selected.id,'new');assert.equal(state.selected.availablePercent,80);assert.equal(state.selection.signal.id,'new');}finally{h.close();}
+});
+
+test('native deep links retain the authorized replacement vehicle across later publications',async()=>{
+ const h=native();try{
+  h.render({initialFilters:{truck:'old'}});h.http.requests[0].reply(page([row('replacement','vehicle-a',60)]));await settle();
+  let state=h.render();assert.equal(state.selected.id,'replacement');
+  h.time.advance(15000);h.render();h.http.requests[1].reply(page([row('latest','vehicle-a',30)]));await settle();
+  state=h.render();assert.equal(state.selected.id,'latest');assert.equal(state.selected.availablePercent,30);
+ }finally{h.close();}
 });
 
 test('native background/blur pauses requests; resume reads once and privacy denial cannot retain a popup',async()=>{

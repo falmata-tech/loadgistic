@@ -120,6 +120,32 @@ API/controller qualification; hosted secret creation and activation are pending.
 
 ## NR-81 — Capacity refresh retains a revoked or replaced selected signal
 
+November14 Mac continuation reproduced a missing end-to-end case: a selected
+public link naming the old Capacity ID retained80% after an actual60%
+publication, then lost selection. The API returned the new saved value; source
+tracing found the old ID remained a restrictive filter, and web/native detail
+panels and cameras also used that changing ID as their identity.
+
+Local repair resolves an existing link to the latest publication of the same
+vehicle using bounded server-only identity reads, then calls the unchanged
+public/account/business authorized projection with all original filters. Missing
+history never widens the query. Identity rows are not serialized, lookup failures
+remain errors, and an ID grants no authority. Exact selected revalidation accepts
+a new ID only for its already-known vehicle. Both maps retain the current panel
+and camera for that vehicle and refresh panel content from the new record.
+The local Chrome desktop/phone and Expo phone workflow demonstrates80→60,
+original-link reload and removal after private sharing; normal synthetic actors
+remain unlabelled as Demo. Root/helper regressions retain wrong-vehicle,
+malformed, stale-scope and read-failure denials. Earlier desktop readiness and
+privacy-refresh timeouts are retained as failed observations; a later diagnostic
+pass does not establish repeated-run reliability. A separate local phone-web
+broker-owner/staff check subsequently passed the real private replacement,
+old-link account API readback and exact grant revocation, with both selections
+cleared and public/anonymous denial retained. First teardown failed on an owned
+audit-log foreign key; scoped recovery and corrected full teardown pass, with
+the fixture baseline restored. Private Expo permission transitions, installed
+Android and full candidate CI remain pending.
+
 Source review of `public-capacity-feed.tsx` found that private401/403 cleared
 cached vehicles only for business-workspace URLs. Account and retained private
 feed paths kept prior items on denial. A completed200 viewport also used

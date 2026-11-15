@@ -7,7 +7,67 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Owner handoff instruction — November14
+## Active Mac continuation — November14 (CST)
+
+The owner resumed local development and asked to reduce local resource use,
+then continue unfinished work. Candidate checkout `.local/scenario-dev` uses
+`feat/scenario-local-review` from remote handoff0df8590. The original checkout,
+its generated metadata/user settings and old local database history are preserved.
+The old local stack had completed simulator history and enabled controls, so it
+was stopped without deletion. Fresh local project `loadgistic-review-20261114`
+owns the normal5532x ports and has the exact migrations through225, security
+gate and verified synthetic fixtures. Its controls remain disabled/unarmed.
+No paid development branch, hosted mutation, merge, deployment or activation occurred.
+
+Only six essential local containers run, with per-service CPU/memory limits;
+web3100 uses Node22.16.0 and its own Turbopack root. Expo8084 uses Node24.18.1
+and one Metro worker, stopped after review. Old inactive Next caches freed
+about2.8GB; the original11GB mobile install remains preserved and the candidate
+installed its exact lock in about634MB. See [LOCAL_SETUP](LOCAL_SETUP.md) and
+the candidate's ignored `.local/README.md` for restart and return instructions.
+
+Actual Chrome/database review found the selected publication stayed at80%
+after a real60% save. The link kept the old Capacity ID and map detail/camera
+state used that changing ID. The local repair resolves the current same-vehicle
+publication before the unchanged authorized projection and preserves the open
+panel/camera using vehicle identity. Exact lookup still checks supplied vehicle
+identity, all filters and current permissions. No schema or grant change.
+
+Focused helper/feed checks pass34/34. Chrome phone and later diagnostic desktop
+pass real80→60, original-link reload and private removal; Expo390×844 passes the
+same flow. The public Demo label was inspected in actual Chrome using the saved
+Sheger fixture. The strict browser fixture preflight passes one/zero-skips.
+Screenshots and sanitized evidence are under the candidate's ignored
+`.local/review-evidence/`. Initial desktop waits, a private-removal timeout,
+Storage startup failure and the failed first quality gate are preserved.
+These isolated passes do not diagnose those earlier runtime failures or qualify
+repeated reliability or installed Android.
+
+The first quality run found the macOS native-runner expectation and temporary
+path fixture issues, two missing renderer-helper bindings, and sandbox-blocked
+loopback relay/GT06 tests. Fixture repairs retain native target refusal and all
+security assertions;25 targeted checks pass. The full `npm run quality` now passes
+with Node22, Python3.14 and authorized loopback access:1,525 tests, zero failures
+or skips, plus spec/source/workflow and root TypeScript. Unit runtime364.764s.
+Mobile Node24 types/lint and426 tests pass with zero failures/skips. The final
+web replay passes both desktop and phone with zero retries (33.5s/32.1s).
+A separate390×844 broker-owner/staff journey passes current private publication,
+old-link API readback, exact grant revocation and clearing both open selections;
+anonymous account reads return401 and public discovery stays empty. Its first
+workflow assertions passed but provider teardown failed on an audit-log foreign
+key. Exact remnants were removed after scope checks; corrected teardown and the
+complete replay pass47.6s. Readback restores154 users/143 vehicles/9 organizations
+and zero task-owned provider remnants; world/motion/Tracking remain off/unarmed.
+Receipts and the guarded local harness are in `.local/review-evidence/` and
+`.local/private-refresh.spec.ts`; the maintained public regression is
+`tests/e2e/capacity-live-refresh.spec.ts`. Metro remains stopped, web3100 running.
+
+Next: qualify the remaining Phone/GPS source-switch and native-only journeys,
+private Expo permission transitions and the full exact-source candidate CI.
+Hosted/device/activation gates remain separate and unfinished. No production
+build, package, merge or publication is claimed by this local checkpoint.
+
+## Preserved owner handoff instruction — November14
 
 The owner has stopped environment setup and requested that all existing changes
 and continuation details be committed/pushed for another agent. Start with the

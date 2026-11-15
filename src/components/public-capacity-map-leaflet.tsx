@@ -12,6 +12,7 @@ import {capacityMarkerFanLayout} from '@/lib/capacity-marker-fan.js';
 import {OffsetSignalPolyline as OffsetPolyline,type SignalPath} from '@/components/offset-signal-polyline';
 import {areaCamera} from '@/lib/workspace-area-navigation.js';
 import {worldCapacityViewport} from '@/lib/capacity-viewport';
+import {capacityVehicleIdentity} from '@/lib/capacity-map-loading.js';
 import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '@/lib/map-initial-camera.js';
 import {locationSourceLabel,locationSourceSvg,locationSourceColor} from '@/lib/location-source.js';
 import sourceStyles from './location-source-badge.module.css';
@@ -21,7 +22,7 @@ import {capacityStatusPresentation} from '@/lib/capacity-status-presentation';
 
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
-type Signal={location_source?:string;location_is_demo?:boolean;accepts_full_load?:boolean|number;accepts_partial_load?:boolean|number;id:string;provider_name:string;platform_number?:string;status:string;cargo_configuration?:string;availability_geometry?:string|null;current_signal_geometry_visible?:boolean;location_lat?:number;location_lng?:number;location_precision_km?:number;work_radius_km?:number;location_updated_at?:string|null;capacity_updated_label?:string;capacity_confirmation_needed?:boolean;location_updated_label?:string;location_is_last_reported?:boolean;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];current_route_points?:PlacePoint[];recurring_corridors?:any[]};
+type Signal={location_source?:string;location_is_demo?:boolean;accepts_full_load?:boolean|number;accepts_partial_load?:boolean|number;id:string;vehicle_id?:string;provider_name:string;platform_number?:string;status:string;cargo_configuration?:string;availability_geometry?:string|null;current_signal_geometry_visible?:boolean;location_lat?:number;location_lng?:number;location_precision_km?:number;work_radius_km?:number;location_updated_at?:string|null;capacity_updated_label?:string;capacity_confirmation_needed?:boolean;location_updated_label?:string;location_is_last_reported?:boolean;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];current_route_points?:PlacePoint[];recurring_corridors?:any[]};
 type MapSignalInfo={id:string;accent:'truck'|'location'|'empty'|'partial'|'regular';label:string;title:string;primary:string;detail:string};
 const NO_OWN_SIGNALS:string[]=[];
 
@@ -124,7 +125,8 @@ function Bounds({items,viewer,selectedId,keepItemsInView,restored=false}:{items:
       if(pendingRestore.current&&!previousView.current)previousView.current=pendingRestore.current;
       pendingRestore.current=null;
       if(!previousView.current)previousView.current={center:map.getCenter(),zoom:map.getZoom()};
-      if(fittedSelected.current!==selected.id){
+      const selectedIdentity=capacityVehicleIdentity(selected)||selected.id;
+      if(fittedSelected.current!==selectedIdentity){
         const selectedBounds=L.latLngBounds([]);
         if(selected.current_signal_geometry_visible!==false){
           if(hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))selectedBounds.extend(L.latLng(Number(selected.location_lat),Number(selected.location_lng)).toBounds((Number(selected.location_precision_km)||20)*2200));
@@ -132,7 +134,7 @@ function Bounds({items,viewer,selectedId,keepItemsInView,restored=false}:{items:
           (selected.capacity_area_boundary||[]).forEach(point=>selectedBounds.extend([point.lat,point.lng]));
         }
         (selected.recurring_corridors||[]).slice(0,1).forEach(signal=>(signal.geometry==='RADIUS'?signal.area_boundary||[]:signal.route_points||[]).forEach((point:PlacePoint)=>selectedBounds.extend([point.lat,point.lng])));
-        if(selectedBounds.isValid()){fittedSelected.current=selected.id;map.fitBounds(selectedBounds,{paddingTopLeft:[58,125],paddingBottomRight:[130,60],maxZoom:12,animate:false});}
+        if(selectedBounds.isValid()){fittedSelected.current=selectedIdentity;map.fitBounds(selectedBounds,{paddingTopLeft:[58,125],paddingBottomRight:[130,60],maxZoom:12,animate:false});}
       }
       return;
     }
@@ -338,15 +340,16 @@ export function PublicCapacityMapLeaflet({items,ownSignalIds=NO_OWN_SIGNALS,view
   const {t}=useTranslation();
   const [restoredView]=React.useState(()=>restoredPublicCamera(rememberPublicView));
   const selected=items.find(item=>item.id===selectedId)||null;
+  const selectedIdentity=selected?(capacityVehicleIdentity(selected)||selected.id):null;
   const [pinnedInfo,setPinnedInfo]=React.useState(null as MapSignalInfo|null);
   const lastSignalClick=React.useRef(null as {time:number;x:number;y:number}|null);
   const [legendOpen,setLegendOpen]=React.useState(false);
-  React.useEffect(()=>{setPinnedInfo(null);},[selectedId]);
+  React.useEffect(()=>{setPinnedInfo(null);},[selectedIdentity]);
   const availabilityAccent:'empty'|'partial'=selected?.status==='PARTIAL'?'partial':'empty';
-  const locationInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selected.id}:location`,accent:'location',label:selected.location_is_last_reported?'Last reported approximate location':'Approximate location',title:selected.location_is_last_reported?'Last reported vehicle area':'Where the vehicle may be',primary:t('Within {distance} km · {update}',{distance:selected.location_precision_km||20,update:localizedUpdateLabel(selected.location_updated_label,t,'location')}),detail:t('The transporter chose this location accuracy. This is not an exact or live position.')}:null;
-  const radiusInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selected.id}:area`,accent:availabilityAccent,label:'Planned area',title:'Planned area',primary:t('{center} · {count} boundary cities · {update}',{center:selected.capacity_area_center_label||t('Selected center'),count:selected.capacity_area_boundary?.length||0,update:localizedUpdateLabel(selected.capacity_updated_label,t)}),detail:t('The outlined area shows where this vehicle can serve. Confirm its location, availability and cargo fit.')}:null;
-  const routeInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selected.id}:route`,accent:availabilityAccent,label:'Planned route',title:'Planned route',primary:t('{route} · {update}',{route:(selected.current_route_points||[]).map(point=>point.label).join(' → '),update:localizedUpdateLabel(selected.capacity_updated_label,t)}),detail:t('This route is the vehicle’s last published capacity signal. Confirm pickup, delivery, timing and cargo fit.')}:null;
-  const regularInfos:MapSignalInfo[]=(selected?.recurring_corridors||[]).slice(0,1).map(signal=>signal.geometry==='RADIUS'?{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Preferred area',title:signal.area_center_label||'Preferred area',primary:(signal.area_boundary||[]).map((point:PlacePoint)=>point.label).join(' · '),detail:'Ask about availability.'}:{id:`${selected?.id}:regular:${signal.id}`,accent:'regular' as const,label:'Preferred corridor',title:'Preferred corridor',primary:(signal.route_points||[]).map((point:PlacePoint)=>point.label).join(' ↔ '),detail:'Ask about availability.'});
+  const locationInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selectedIdentity}:location`,accent:'location',label:selected.location_is_last_reported?'Last reported approximate location':'Approximate location',title:selected.location_is_last_reported?'Last reported vehicle area':'Where the vehicle may be',primary:t('Within {distance} km · {update}',{distance:selected.location_precision_km||20,update:localizedUpdateLabel(selected.location_updated_label,t,'location')}),detail:t('The transporter chose this location accuracy. This is not an exact or live position.')}:null;
+  const radiusInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selectedIdentity}:area`,accent:availabilityAccent,label:'Planned area',title:'Planned area',primary:t('{center} · {count} boundary cities · {update}',{center:selected.capacity_area_center_label||t('Selected center'),count:selected.capacity_area_boundary?.length||0,update:localizedUpdateLabel(selected.capacity_updated_label,t)}),detail:t('The outlined area shows where this vehicle can serve. Confirm its location, availability and cargo fit.')}:null;
+  const routeInfo:MapSignalInfo|null=selected&&selected.current_signal_geometry_visible!==false?{id:`${selectedIdentity}:route`,accent:availabilityAccent,label:'Planned route',title:'Planned route',primary:t('{route} · {update}',{route:(selected.current_route_points||[]).map(point=>point.label).join(' → '),update:localizedUpdateLabel(selected.capacity_updated_label,t)}),detail:t('This route is the vehicle’s last published capacity signal. Confirm pickup, delivery, timing and cargo fit.')}:null;
+  const regularInfos:MapSignalInfo[]=(selected?.recurring_corridors||[]).slice(0,1).map(signal=>signal.geometry==='RADIUS'?{id:`${selectedIdentity}:regular:${signal.id}`,accent:'regular' as const,label:'Preferred area',title:signal.area_center_label||'Preferred area',primary:(signal.area_boundary||[]).map((point:PlacePoint)=>point.label).join(' · '),detail:'Ask about availability.'}:{id:`${selectedIdentity}:regular:${signal.id}`,accent:'regular' as const,label:'Preferred corridor',title:'Preferred corridor',primary:(signal.route_points||[]).map((point:PlacePoint)=>point.label).join(' ↔ '),detail:'Ask about availability.'});
   const signalEvents=(info:MapSignalInfo)=>({
     click:(event:any)=>{
       L.DomEvent.stopPropagation(event);
@@ -373,14 +376,14 @@ export function PublicCapacityMapLeaflet({items,ownSignalIds=NO_OWN_SIGNALS,view
   const currentPoints=selected?.availability_geometry==='ROUTE'?selected.current_route_points:selected&&(selected.status==='EMPTY'||selected.status==='PARTIAL')?selected.capacity_area_boundary:undefined;
   const currentClosed=selected?.availability_geometry==='RADIUS'||Boolean(currentPoints?.length&&currentPoints[0].lat===currentPoints.at(-1)?.lat&&currentPoints[0].lng===currentPoints.at(-1)?.lng);
   const currentPath:SignalPath|undefined=selected?.current_signal_geometry_visible!==false&&currentPoints&&currentPoints.length>=2?{positions:currentPoints.map(point=>[point.lat,point.lng]),closed:currentClosed,offset:currentClosed?-12:-6}:undefined;
-  const truckInfo:MapSignalInfo|null=selected?{id:`${selected.id}:truck`,accent:'truck',label:'Vehicle details',title:'Vehicle details',primary:'',detail:''}:null;
+  const truckInfo:MapSignalInfo|null=selected?{id:`${selectedIdentity}:truck`,accent:'truck',label:'Vehicle details',title:'Vehicle details',primary:'',detail:''}:null;
   const infoChoices:MapSignalInfo[]=[];
   if(truckInfo)infoChoices.push(truckInfo);
   if(locationInfo&&selected&&hasCoordinate(selected.location_lat)&&hasCoordinate(selected.location_lng))infoChoices.push(locationInfo);
   if(currentPath&&currentPath.positions.length>=(currentPath.closed?3:2))infoChoices.push((selected?.availability_geometry==='RADIUS'?radiusInfo:routeInfo)!);
   (selected?.recurring_corridors||[]).slice(0,1).forEach((signal,index)=>{const closed=signal.geometry==='RADIUS',points=closed?signal.area_boundary:signal.route_points;if(points?.length>=(closed?3:2))infoChoices.push(regularInfos[index]);});
   const shortLabel=(info:MapSignalInfo)=>info.accent==='truck'?'Vehicle':info.accent==='location'?'Location':info.accent==='regular'?(info.label==='Preferred corridor'?'Preferred corridor':'Preferred area'):info.label;
-  const activeInfo:MapSignalInfo|null=pinnedInfo&&selected&&pinnedInfo.id.startsWith(`${selected.id}:`)?pinnedInfo:null;
+  const activeInfo:MapSignalInfo|null=pinnedInfo&&selected?infoChoices.find(info=>info.id===pinnedInfo.id)||null:null;
   return <Localized as="div" copy={["aria-label"]} className="public-capacity-map" aria-label="Map of available vehicles" onClickCapture={(event:React.MouseEvent<HTMLDivElement>)=>{
     const target=event.target;
     if(target instanceof Element&&target.closest('.leaflet-container')&&!target.closest('.map-interactive-signal'))lastSignalClick.current=null;

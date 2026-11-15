@@ -34,6 +34,21 @@ recover after a bounded deadline; a callback that merely increments state is not
 the network request's lifetime. Keep actual Chrome/database/native qualification
 separate from hook/transport tests.
 
+November14 continuation: a test that injects a replacement row bypasses the real
+link filter. Exercise a real publication with its original deep link, reload it,
+and then remove its eligibility. Keep the open panel and camera stable through
+the same vehicle's new publication, but refresh its facts and remove it after an
+authorized omission. The Chrome/Expo run exposed both the old-ID filter and
+panel reset. New imported helpers also belong in renderer fixtures. For portable
+tooling tests, canonicalize temporary fixture paths on macOS and prove native-only
+commands refuse unsupported hosts before spawning. Use the installed Python3.11+
+and loopback socket permission for their actual integration tests; do not skip or
+weaken those checks. Failed initial local gate evidence remains preserved.
+Synthetic teardown must remove only its own audit references before deleting
+the referenced provider organization. Preserve the original workflow failure if
+cleanup also fails, record exact remaining IDs privately, and verify the fixture
+baseline after scoped recovery rather than counting assertions alone as a pass.
+
 Accessibility audit readiness: a URL prefix, an old shell and absent skeletons
 do not prove that an App Router redirect has completed. October25 main CI
 40237550136 reported `CONTEXT_DESTROYED` for fleet Home; both local Chrome sizes
