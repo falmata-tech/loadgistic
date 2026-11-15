@@ -9,6 +9,7 @@ import {
   applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
+import {getPlaceCoordinate} from '../src/lib/ethiopia-places.js';
 
 const root=process.cwd();
 const fixture=JSON.parse(fs.readFileSync(path.join(root,'resources/fixtures/managed-market.json'),'utf8'));
@@ -23,6 +24,10 @@ const projectedVehicles=applyManagedFixtureVehicleCatalog(
 const tables={...rawTables,users:projectedUsers,vehicles:projectedVehicles,
   driver_vehicle_assignments:projectedAssignments};
 const vehiclesById=new Map(tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
+const discoveryByCapacity=new Map(JSON.parse(fs.readFileSync(path.join(root,'resources/fixtures/managed-market-discovery.json'),'utf8')).capacity_choices.map(row=>[row.capacity_id,row]));
+const settlementPoints=new Map(JSON.parse(fs.readFileSync(path.join(root,'resources/geo/ethiopia-settlements.json'),'utf8')).elements
+  .map(point=>[`osm:${point.type}/${point.id}`,{lat:point.lat??point.center?.lat,lng:point.lon??point.center?.lon}]));
+const canonicalPoint=reference=>settlementPoints.get(reference)||getPlaceCoordinate(String(reference).replace(/^builtin:/,''));
 const smallVehicleTypes=new Set([
   'Cargo van','Pickup truck','Pickup stake body',
   'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
@@ -103,35 +108,29 @@ test('managed fixture routes and service areas retain valid place geometry for e
   }
 });
 
-test('local-vehicle signals remain local to their truck and connected market',()=>{
+test('smaller vehicle signals include local and regional plans with saved availability and privacy',()=>{
   const managedCapacities=applyManagedFixtureMarketPolicy(tables.capacities,tables.vehicles);
+  const spans=[];let areas=0;
   for(const capacity of managedCapacities){
+    const saved=tables.capacities.find(row=>row.id===capacity.id);
+    for(const field of ['market_status','available_percent','accepts_full_load','accepts_partial_load'])assert.deepEqual(capacity[field],saved[field]);
+    assert.equal(capacity.location_precision_km,discoveryByCapacity.get(capacity.id)?.location_precision_km??saved.location_precision_km,capacity.id);
     const vehicle=vehiclesById.get(capacity.vehicle_id);
     if(!smallVehicleTypes.has(vehicle?.cargo_configuration)
       &&!['Courier car','Courier motorcycle'].includes(vehicle?.cargo_configuration))continue;
-    assert.ok(capacity.location_precision_km<=5,`${capacity.id} has an oversized local privacy area`);
-    const points=capacity.availability_geometry==='ROUTE'
-      ?json(capacity.current_route_points_json)
-      :[{lat:capacity.capacity_area_center_lat,lng:capacity.capacity_area_center_lng}];
-    const distanceToSignal=distanceBetweenKm(
-      {lat:capacity.location_lat,lng:capacity.location_lng},points[0]
-    );
-    assert.ok(distanceToSignal<=35,`${capacity.id} starts ${distanceToSignal.toFixed(1)} km from its truck`);
     if(capacity.availability_geometry==='ROUTE'){
-      const routeDistance=points.slice(1).reduce((total,point,index)=>
-        total+distanceBetweenKm(points[index],point),0);
-      assert.ok(routeDistance<=30,`${capacity.id} spans ${routeDistance.toFixed(1)} km`);
-    }
+      const points=json(capacity.current_route_points_json);
+      spans.push(points.slice(1).reduce((total,point,index)=>total+distanceBetweenKm(points[index],point),0));
+    }else areas++;
   }
+  assert.ok(spans.some(distance=>distance<40));assert.ok(spans.some(distance=>distance>100));assert.ok(areas>0);
 });
 
 test('demo truck locations are distributed across real markets without diagonal generation',()=>{
   const locationsByPlace=new Map();
   for(const capacity of tables.capacities){
-    const currentPoints=json(capacity.current_route_points_json);
-    const anchor=capacity.availability_geometry==='ROUTE'
-      ?currentPoints[0]
-      :{lat:capacity.capacity_area_center_lat,lng:capacity.capacity_area_center_lng};
+    const anchor=canonicalPoint(capacity.location_place_ref);
+    assert.ok(anchor,`${capacity.id} has a real named observation place`);
     const distanceToNamedPlace=distanceBetweenKm(
       {lat:capacity.location_lat,lng:capacity.location_lng},anchor
     );
@@ -164,25 +163,18 @@ test('demo truck locations are distributed across real markets without diagonal 
   assert.ok(Math.max(...publicByPlace.values())<=6);
 });
 
-test('demo corridor routes remain geographically coherent with their assigned vehicles',()=>{
-  const capacityByVehicle=new Map(tables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
+test('current and Preferred plans use canonical settlement geometry',()=>{
+  const assertCanonical=(point,id)=>{
+    const saved=canonicalPoint(point.place_ref);assert.ok(saved,`${id} has a known place`);
+    assert.ok(distanceBetweenKm(point,saved)<=0.01,`${id} retains the place coordinate`);
+  };
+  for(const capacity of tables.capacities){
+    const points=capacity.availability_geometry==='ROUTE'?json(capacity.current_route_points_json):json(capacity.capacity_area_boundary_json);
+    for(const point of points)assertCanonical(point,capacity.id);
+  }
   for(const regular of tables.profile_routes){
-    const capacity=capacityByVehicle.get(regular.assigned_vehicle_id);
-    assert.ok(capacity,regular.id);
-    const distanceToRegular=point=>{
-      if(regular.geometry==='ROUTE')return capacityRoutePointMatch(point,json(regular.route_points_json),{radiusKm:10}).distance_km;
-      const match=serviceAreaGeometryMatch(point,json(regular.area_boundary_json),{searchRadiusKm:10});
-      return match.inside?0:match.distance_km;
-    };
-    const locationDistance=distanceToRegular({lat:capacity.location_lat,lng:capacity.location_lng});
-    assert.ok(locationDistance!==null&&locationDistance<=3.1,`${capacity.id} location is ${locationDistance} km from regular service`);
-    const currentPoints=capacity.availability_geometry==='ROUTE'
-      ?json(capacity.current_route_points_json)
-      :[{lat:capacity.capacity_area_center_lat,lng:capacity.capacity_area_center_lng}];
-    for(const point of currentPoints){
-      const currentDistance=distanceToRegular(point);
-      assert.ok(currentDistance!==null&&currentDistance<=3.1,`${capacity.id} current signal is ${currentDistance} km from regular service`);
-    }
+    const points=regular.geometry==='ROUTE'?json(regular.route_points_json):json(regular.area_boundary_json);
+    for(const point of points)assertCanonical(point,regular.id);
   }
 });
 

@@ -7,6 +7,7 @@ declare plan jsonb:='[{"target":"company-truck","eligible":true,"vehicleKey":"ve
  remap jsonb:='{"caf1d0db-4d8e-4ce9-a879-6c7b6017de3a":"8aef1b45-2d81-4296-ae3e-cf10ed4af81c","6727b198-d771-436a-9f1f-7bf27b8cea2f":"71f2b553-aa61-4137-bb05-0d5ff2011d34","2f22cc5a-d654-4405-98b7-9a1a9cf42fe3":"8e21d4b2-e392-4e30-90da-84a6b03f8f9d","c640c548-ada2-4b9e-ac3c-235585525a6f":"8c8e2564-15d5-4ebf-89a2-53c916d71c6d","2020967a-92d3-4b1d-8f40-3c670dc97a50":"3f5b6847-e7fc-4057-85af-b520e80cd944","c36022ff-bf3e-432d-ae96-93d1537cf79e":"a1448edf-6fb6-47ff-b7c6-d8d3cd9dbfcd","19838ed9-c898-43dd-a6d5-5d4c26d0e92d":"3b10d829-19c5-497a-a1d9-5640b87f21f8","43db4203-8bec-4494-9ed2-0d9952c9e300":"47e536ac-bc2a-4a4f-a3ef-65f1acca1f79","2c449a7d-d26d-4eeb-aa64-7f4ba9f33c9d":"559d49fb-a410-4dd9-bd91-93d542308f48","b2bca706-2f47-4d28-bad0-a028d017413d":"3c57cf8b-fa30-41d9-a62e-4d1a10ae423b","0088dba7-04c7-425e-b5a9-64b721a753f0":"173f14af-1ef4-4ca8-9bf7-38978ec4a680","8efdd114-47be-4e3d-bf11-b6bc24d2c511":"89d8060b-9949-4186-b8c7-22b0936bd036","5bf57d7a-2159-45f9-9f90-3cdef5ed43d8":"2e3244d4-570a-4287-bfb6-2eba9d4590a4","750641af-6014-4f80-9116-3e6f79e8104e":"06572edc-b92d-433d-ae6b-cefe36d31877","0dc90cf6-7735-4ccc-b030-98a81c40ffd6":"bea4baf1-4fea-4a97-a5b4-34607d4e9b39","22dd3b30-0bc5-4fdf-810b-3aee3081ac19":"393bf3e0-0637-44f4-8044-696ed5949414","02c0a10d-3b4b-4b83-9f85-6272f8b6ce95":"becd7873-1e09-4979-a4bc-338f2b4104d2","94cc36ee-eb4b-4bd5-b8af-2485fe9a64f5":"b455600c-bbac-4426-ad88-ca233235272d","28b05503-eb24-4b78-8646-6a1813207813":"79ad2b14-15a0-4054-b799-994cd955afa8","97eafa4d-0c1f-462f-9f3b-acead2853909":"7dc66a37-d62f-4831-9591-e2fb00f28cfd"}'::jsonb;
  binding record;item record;original record;changed record;definition text;patched text;
  owner_id uuid;driver_id uuid;expected_org uuid;expected_provider uuid;namespace_seen boolean;
+ anchor text;replacement text;guard_start integer;guard_end integer;legacy_condition text;
  namespace_anchor text:=$ns227$->>'fixture_source'='loadgistic'$ns227$;
  old_values text:=$old227$  ('company-truck','caf1d0db-4d8e-4ce9-a879-6c7b6017de3a'::uuid),
   ('personal-truck','2f22cc5a-d654-4405-98b7-9a1a9cf42fe3'::uuid),
@@ -68,6 +69,13 @@ begin
  for binding in select value from jsonb_array_elements(plan) where (value->>'eligible')::boolean loop
   expected_org:=(binding.value->'pilot'->>'organizationId')::uuid;
   expected_provider:=(binding.value->'pilot'->>'providerProfileId')::uuid;
+  -- The shared physical-device helper uses KEY SHARE. Protect this exact
+  -- synthetic sole-owner proof before it takes profile locks.
+  if expected_org is not null then
+   perform 1 from public.organizations where id=expected_org and type='TRANSPORT_COMPANY' for update;
+   if not found then raise exception 'DEMO_PILOT_OWNER_DRIFT';end if;
+   perform 1 from public.organization_members where organization_id=expected_org order by id for share;
+  end if;
   if not public.telematics_lock_owner_scope(expected_org,expected_provider) then raise exception 'DEMO_PILOT_OWNER_DRIFT';end if;
   if expected_org is not null then
    if(select count(*) from public.organization_members where organization_id=expected_org and membership_role='OWNER')<>1
@@ -101,6 +109,7 @@ begin
   ('public.netlify_demo_motion_command(uuid,uuid,text,jsonb)','a0a25836eacf614e3349432bc5acffbd'),
   ('public.prepare_netlify_demo_gateway(uuid,uuid)','39b789f806a488fe20e48a318802c565'),
   ('public.provision_telematics_device_pre_privacy154(uuid,jsonb)','3bcb7dc5e02bf258706981f5345e2474'),
+  ('public.provision_telematics_device(uuid,jsonb)','7a30da13d386c0bc0e6176566c15e19c'),
   ('public.demo_world_execute_capacity_step(bigint,uuid)','4195ca9ad49df3a00737e014d9700107'),
   ('public.capacity_owner_documents(uuid[],uuid[])','334de08c716bbb6b335c4e8c9f4e6b94'),
   ('public.demo_world_tracking_activation_guard()','4f5ff1725fbacf5cb004f4be424c3c9f')
@@ -140,7 +149,26 @@ begin
  $body227$;
  $helper227$;
  execute 'revoke all on function public.demo_pilot_provision_allowed227(uuid,uuid,uuid,text) from public,anon,authenticated,service_role';
- for item in select unnest(array['public.demo_motion_binding(uuid)','public.demo_motion_binding_fleet(uuid)','public.hosted_demo_motion_command(uuid,uuid,jsonb)','public.netlify_demo_motion_command(uuid,uuid,text,jsonb)','public.prepare_netlify_demo_gateway(uuid,uuid)','public.provision_telematics_device_pre_privacy154(uuid,jsonb)','public.demo_world_execute_capacity_step(bigint,uuid)','public.capacity_owner_documents(uuid[],uuid[])','public.demo_world_tracking_activation_guard()']) as signature loop
+ execute $lockhelper227$
+ create function public.demo_pilot_lock_scope227(owner_org uuid,owner_profile uuid)
+ returns boolean language plpgsql security definer set search_path=public,pg_temp as $lockbody227$
+ begin
+  if owner_org is null then return owner_profile is not distinct from '8c8e2564-15d5-4ebf-89a2-53c916d71c6d'::uuid;end if;
+  if owner_profile is not null or owner_org not in('71f2b553-aa61-4137-bb05-0d5ff2011d34'::uuid,
+   'a1448edf-6fb6-47ff-b7c6-d8d3cd9dbfcd'::uuid,'47e536ac-bc2a-4a4f-a3ef-65f1acca1f79'::uuid,
+   '89d8060b-9949-4186-b8c7-22b0936bd036'::uuid,'06572edc-b92d-433d-ae6b-cefe36d31877'::uuid,
+   'b455600c-bbac-4426-ad88-ca233235272d'::uuid) then return false;end if;
+  -- Organization FOR UPDATE blocks a new co-owner's FK insertion; member
+  -- SHARE locks also block promotion/removal. Always precede profile/device/
+  -- vehicle locks. Reentrant lease checks reuse this first-boundary lock.
+  perform 1 from public.organizations where id=owner_org and type='TRANSPORT_COMPANY' for update;
+  if not found then return false;end if;
+  perform 1 from public.organization_members where organization_id=owner_org order by id for share;
+  return true;
+ end $lockbody227$;
+ $lockhelper227$;
+ execute 'revoke all on function public.demo_pilot_lock_scope227(uuid,uuid) from public,anon,authenticated,service_role';
+ for item in select unnest(array['public.demo_motion_binding(uuid)','public.demo_motion_binding_fleet(uuid)','public.hosted_demo_motion_command(uuid,uuid,jsonb)','public.netlify_demo_motion_command(uuid,uuid,text,jsonb)','public.prepare_netlify_demo_gateway(uuid,uuid)','public.provision_telematics_device_pre_privacy154(uuid,jsonb)','public.provision_telematics_device(uuid,jsonb)','public.demo_world_execute_capacity_step(bigint,uuid)','public.capacity_owner_documents(uuid[],uuid[])','public.demo_world_tracking_activation_guard()']) as signature loop
   select p.oid,p.proowner,p.proacl,p.proconfig,p.provolatile,p.prolang,p.prosecdef into original from pg_proc p where p.oid=item.signature::regprocedure;
   definition:=pg_get_functiondef(original.oid);patched:=definition;
   if item.signature in('public.hosted_demo_motion_command(uuid,uuid,jsonb)','public.netlify_demo_motion_command(uuid,uuid,text,jsonb)') then
@@ -150,15 +178,47 @@ begin
   for binding in select key,value from jsonb_each_text(remap) loop patched:=replace(patched,binding.key,binding.value);end loop;
   if item.signature='public.capacity_owner_documents(uuid[],uuid[])' then
    patched:=replace(patched,namespace_anchor,$both227$->>'fixture_source' in('loadgistic','loadgistic-production-pilot-v1')$both227$);
+  elsif item.signature='public.provision_telematics_device_pre_privacy154(uuid,jsonb)' then
+   -- Preserve the existing LOCAL alternatives verbatim. They must never become
+   -- a second PILOT authority beside the exact, sole-owner helper below.
+   null;
   else patched:=replace(patched,namespace_anchor,$pilotns227$->>'fixture_source'='loadgistic-production-pilot-v1'$pilotns227$);end if;
+  if item.signature in('public.demo_motion_binding(uuid)','public.demo_motion_binding_fleet(uuid)','public.prepare_netlify_demo_gateway(uuid,uuid)') then
+   anchor:=case item.signature when 'public.demo_motion_binding(uuid)' then 'if not public.telematics_lock_owner_scope(expected_org,expected_provider)'
+    when 'public.demo_motion_binding_fleet(uuid)' then 'if not public.telematics_lock_owner_scope(allowed.organization_id,null)'
+    else 'if not public.telematics_lock_owner_scope(item.organization_id,item.provider_profile_id)' end;
+   replacement:=case item.signature when 'public.demo_motion_binding(uuid)' then 'if not public.demo_pilot_lock_scope227(expected_org,expected_provider) then raise exception ''DEMO_TARGET_DENIED'';end if;'
+    when 'public.demo_motion_binding_fleet(uuid)' then 'if not public.demo_pilot_lock_scope227(allowed.organization_id,null) then raise exception ''DEMO_TARGET_DENIED'';end if;'
+    else 'if not public.demo_pilot_lock_scope227(item.organization_id,item.provider_profile_id) then raise exception ''DEMO_TARGET_DENIED'';end if;' end;
+   if(length(patched)-length(replace(patched,anchor,'')))/length(anchor)<>1 then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
+   patched:=replace(patched,anchor,replacement||E'\n '||anchor);
+  end if;
   if item.signature='public.prepare_netlify_demo_gateway(uuid,uuid)' then
    if position('jsonb_array_length(bindings)<>10' in patched)=0 then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
    patched:=replace(patched,'jsonb_array_length(bindings)<>10','jsonb_array_length(bindings)<>7');
    patched:=replace(patched,'''deviceCount'',10','''deviceCount'',7');
   elsif item.signature='public.provision_telematics_device_pre_privacy154(uuid,jsonb)' then
-   if position('not (public.telematics_is_demo_owner(owner_id) or' in patched)=0 then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
-   patched:=replace(patched,'not (public.telematics_is_demo_owner(owner_id) or',
-    'not (public.demo_pilot_provision_allowed227(owner_id,owner_org,owner_profile,command->>''imei'') or public.telematics_is_demo_owner(owner_id) or');
+   anchor:=' if synthetic_value and(';
+   guard_start:=position(anchor in patched);guard_end:=position(E'\n  or gateway.synthetic_only<>synthetic_value' in patched);
+   if guard_start=0 or guard_end<=guard_start or position('not (public.telematics_is_demo_owner(owner_id) or' in patched)=0 then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
+   legacy_condition:=rtrim(substring(patched from guard_start+length(anchor) for guard_end-guard_start-length(anchor)));
+   if right(legacy_condition,1)<>')' then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
+   legacy_condition:=left(legacy_condition,length(legacy_condition)-1);
+   replacement:=anchor||$pilotguard227$not gateway.synthetic_only or case
+    when exists(select 1 from auth.users u where u.id=owner_id and u.raw_app_meta_data->>'fixture_source'='loadgistic-production-pilot-v1') then
+     gateway.synthetic_transport<>'NETLIFY_DEMO' or command->>'protocol' is distinct from 'gt06'
+     or command->>'protocolDeviceId' is distinct from command->>'imei'
+     or command->>'modelProfile' is distinct from 'SYNTHETIC_GT06'
+     or not public.demo_pilot_provision_allowed227(owner_id,owner_org,owner_profile,command->>'imei')
+    else ($pilotguard227$||legacy_condition||') end)';
+   patched:=overlay(patched placing replacement from guard_start for guard_end-guard_start);
+  elsif item.signature='public.provision_telematics_device(uuid,jsonb)' then
+   anchor:=' if not public.telematics_lock_owner_scope(';
+   if(length(patched)-length(replace(patched,anchor,'')))/length(anchor)<>1 then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
+   patched:=replace(patched,anchor,$wrapperlock227$ if coalesce((command->>'synthetic')::boolean,false) then
+  perform public.demo_pilot_lock_scope227(nullif(command->>'ownerOrganizationId','')::uuid,nullif(command->>'ownerProviderProfileId','')::uuid);
+ end if;
+$wrapperlock227$||anchor);
   elsif item.signature='public.netlify_demo_motion_command(uuid,uuid,text,jsonb)' then
    if position($claim227$return jsonb_build_object('claimed',true,'expiresAt',window_row.expires_at);$claim227$ in patched)=0
     then raise exception 'DEMO_PILOT_ANCHOR_DRIFT';end if;
@@ -202,5 +262,8 @@ begin
   or has_function_privilege('anon','public.demo_pilot_provision_allowed227(uuid,uuid,uuid,text)','EXECUTE')
   or has_function_privilege('authenticated','public.demo_pilot_provision_allowed227(uuid,uuid,uuid,text)','EXECUTE')
   or has_function_privilege('service_role','public.demo_pilot_provision_allowed227(uuid,uuid,uuid,text)','EXECUTE')
+  or has_function_privilege('anon','public.demo_pilot_lock_scope227(uuid,uuid)','EXECUTE')
+  or has_function_privilege('authenticated','public.demo_pilot_lock_scope227(uuid,uuid)','EXECUTE')
+  or has_function_privilege('service_role','public.demo_pilot_lock_scope227(uuid,uuid)','EXECUTE')
   then raise exception 'DEMO_PILOT_COMMAND_BOUNDARY_DRIFT';end if;
 end $pilot227$;

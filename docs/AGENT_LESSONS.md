@@ -222,6 +222,48 @@ historical paragraph or relabel its older measurements.
 
 ## Overall setup assessment
 
+November15 fixture follow-up: a full1,567-case run retained17 failures after a
+focused planning pass. Updating the size/local-only policy requires checking old
+geography consumers too: six exact corridor evidence rows were outside the13
+mutable-target reservations, and a profile-history scenario pins its page and
+Preferred baseline. Preserve the complete authored input graph, not just target
+vehicles. A city used as its own Area vertex is not an enclosing boundary; use
+actual surrounding settlements and validate again after canonical resolution.
+The repaired focused33-case run passes in8.245s; local data correction, actual
+affected review and the full replay remain separate evidence. Do not push a new
+CI while a known fixture finding is unresolved or report progress from the log
+tail without first checking its failure summary.
+
+The next complete attempt passed all1,572 cases but TypeScript rejected a new
+generic React hook call and an inferred callback parameter under the existing
+offline React shim. Follow the repo's argument-assertion/explicit-parameter
+convention instead of weakening types. After the two type-only corrections,
+TypeScript and nine focused keyboard cases pass; a saved comparison proves
+the transpiled runtime AST unchanged. Preserve the failed combined receipt,
+reuse unchanged runtime/browser evidence, and require complete exact-source CI
+rather than calling the failed local command green.
+
+The final phone keyboard E2E reached the correct canonical filter request, but
+Next's route response took5,657ms while the URL assertion allowed5,000ms. The
+submit handler closes the dialog before navigation commits; a closed dialog is
+not evidence of a completed route transition. Await the existing navigation for
+the exact selected references alongside Show vehicles, then retain the normal
+five-second assertion and90-second test budget. This is test sequencing, not a
+product change or a claim to have identified the latency's cause; preserve the
+failed receipt and compare the actual submitted query before retrying.
+
+November15 local review: keep optional Expo on the documented one-worker command
+and stop it after review. An accidentally unbounded-worker preview was blank at
+87.2% CPU/8.9% memory. A single-worker restart without resets completed the first
+bundle in121.2s under high whole-Mac load, then a warm bundle in0.867s and settled
+at0.4% CPU/496468KiB RSS. Stopping the verified owned PID closed8084 while3100
+remained available. This is measured local recovery, not proof that worker count
+caused the original hang or permission to stop other projects/system indexers.
+Normal-profile cancellation stacks also did not identify an application defect:
+app promises caught aborts, a detached-observer counterfactual reproduced the
+uncaught branch, and clean-incognito cancellation tasks did not. Do not add global
+suppression or disable cancellation without identifying the escaping promise.
+
 This is ongoing engineering housekeeping, not only a response to the October20
 incident. Review the relevant area when work exposes friction; do not rerun a
 whole-platform audit for each small change. The assessment below concerns the

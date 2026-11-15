@@ -4,6 +4,9 @@ import {demoPilotBindingPlan,DEMO_PILOT_SOURCE} from './demo-pilot-binding-polic
 
 const database=process.env.LOADGISTIC_TEST_DATABASE;
 if(!['loadgistic_telematics_ci','loadgistic_pilot_ci'].includes(database))throw Error('ISOLATED_PILOT_DATABASE_REQUIRED');
+const args=process.argv.slice(2),raceSetup=args.length===1&&args[0]==='--owner-race-setup';
+if(args.length&&!raceSetup)throw Error('PILOT_TEST_ARGUMENT_DENIED');
+if(raceSetup&&process.env.LOADGISTIC_PILOT_RACE_SETUP!=='ALLOW_COMMITTED_DISPOSABLE_PILOT_OWNER_TEST')throw Error('PILOT_RACE_SETUP_OPT_IN_REQUIRED');
 const plan=demoPilotBindingPlan(),q=s=>"'"+s.replaceAll("'","''")+"'";
 const map=Object.fromEntries(plan.flatMap(p=>Object.keys(p.local).filter(k=>p.local[k]).map(k=>[p.local[k],p.pilot[k]])));
 const vehicles=plan.map(p=>q(p.local.vehicleId)+'::uuid').join(',');
@@ -12,7 +15,7 @@ const migration=readFileSync(new URL('../supabase/migrations/227_netlify_demo_pi
 if((migration.match(/^do \$pilot227\$/gm)||[]).length!==1)throw Error('PILOT_MIGRATION_TEST_BOUNDARY_DRIFT');
 const callable=migration.replace(/^do \$pilot227\$/m,'create function pg_temp.apply_pilot227() returns void language plpgsql as $pilot227$');
 
-process.stdout.write(`begin;
+const verificationSql=`begin;
 set local statement_timeout='120s';
 set local lock_timeout='5s';
 do $guard$ begin
@@ -99,6 +102,10 @@ declare item text;digest text;result jsonb:='{}';begin
  select md5(jsonb_agg(to_jsonb(u) order by u.id)::text) into digest from auth.users u;
  return result||jsonb_build_object('auth_users',digest);
 end $facts$;
+create function pg_temp.pilot_provision_state() returns jsonb language sql stable as $facts$
+ select jsonb_build_object('devices',(select md5(coalesce(jsonb_agg(to_jsonb(d) order by d.id)::text,'[]')) from public.telematics_devices d),
+  'audit',(select md5(coalesce(jsonb_agg(to_jsonb(a) order by a.id)::text,'[]')) from public.audit_logs a))
+$facts$;
 do $negative$
 declare owner_id uuid;coowner_id uuid;before_state jsonb;old_meta jsonb;original_definition text;columns_sql text;begin
  before_state:=pg_temp.pilot_public_facts();
@@ -130,7 +137,8 @@ end $negative$;
 create temp table pilot_public_before as select pg_temp.pilot_public_facts() as facts;
 select pg_temp.apply_pilot227();
 do $positive$
-declare administrator uuid;gateway uuid:=gen_random_uuid();result jsonb;run_id uuid:=gen_random_uuid();item record;nonce uuid;report jsonb;
+declare administrator uuid;gateway uuid:=gen_random_uuid();wrong_gateway uuid:=gen_random_uuid();normal_owner uuid:=gen_random_uuid();
+ result jsonb;run_id uuid:=gen_random_uuid();item record;nonce uuid;report jsonb;provision_command jsonb;before_provision jsonb;
  before_sources jsonb;before_notifications jsonb;after_notifications jsonb;counts integer:=0;before_positions bigint;capacity_count integer:=0;job record;columns_sql text;begin
  if pg_temp.pilot_public_facts() is distinct from(select facts from pilot_public_before) then raise exception 'PILOT_MIGRATION_CHANGED_PUBLIC_FACTS';end if;
  if(select count(*) from public.demo_motion_fleet_allowlist)<>5 then raise exception 'PILOT_EXCLUSIONS_FAILED';end if;
@@ -140,6 +148,32 @@ declare administrator uuid;gateway uuid:=gen_random_uuid();result jsonb;run_id u
   then raise exception 'PILOT_SHARING_DRIFT_NOT_PAUSED';end if;
  select id into administrator from public.profiles where active and role='ADMIN' order by id limit 1;
  select jsonb_build_object('email',facts->'email_deliveries','access',facts->'access_email_deliveries','push',facts->'native_push_outbox','sink',facts->'demo_world_tracking_notification_sink') into before_notifications from pilot_public_before;
+ -- Exercise the public entry directly before any approved device exists. The
+ -- preparer's earlier owner check must not hide a retained-leaf OR bypass.
+ perform public.register_telematics_gateway(administrator,gateway,'Pilot direct provision fixture',encode(sha256(convert_to(gen_random_uuid()::text,'UTF8')),'hex'),true);
+ update public.telematics_gateways set synthetic_transport='NETLIFY_DEMO' where id=gateway;
+ perform public.register_telematics_gateway(administrator,wrong_gateway,'Pilot protocol denial fixture',encode(sha256(convert_to(gen_random_uuid()::text,'UTF8')),'hex'),true);
+ provision_command:=jsonb_build_object('gatewayId',gateway,'gatewayDeviceId',3,'imei','990000000000005','protocol','gt06',
+  'protocolDeviceId','990000000000005','label','Pilot direct provisioning test','modelProfile','SYNTHETIC_GT06','synthetic',true,
+  'ownerOrganizationId','a1448edf-6fb6-47ff-b7c6-d8d3cd9dbfcd');
+ before_provision:=pg_temp.pilot_provision_state();
+ perform pg_temp.pilot_command_denied(format('select public.provision_telematics_device(%L,%L::jsonb)',administrator,provision_command||jsonb_build_object('gatewayId',wrong_gateway)),'DEVICE_OWNER_INVALID');
+ if pg_temp.pilot_provision_state() is distinct from before_provision then raise exception 'PILOT_PROTOCOL_DENIAL_CHANGED_STATE';end if;
+ perform pg_temp.pilot_command_denied(format('select public.provision_telematics_device(%L,%L::jsonb)',administrator,provision_command-'protocol'),'INVALID_TELEMATICS_INPUT');
+ if pg_temp.pilot_provision_state() is distinct from before_provision then raise exception 'PILOT_MISSING_PROTOCOL_CHANGED_STATE';end if;
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(normal_owner,normal_owner::text||'@example.invalid',clock_timestamp(),'{"provider":"email","providers":["email"]}','{}');
+ update public.profiles set role='TRANSPORTER',active=true,full_name='Normal owner provisioning denial' where id=normal_owner;
+ insert into public.organization_members(organization_id,user_id,membership_role) values('a1448edf-6fb6-47ff-b7c6-d8d3cd9dbfcd',normal_owner,'OWNER');
+ before_provision:=pg_temp.pilot_provision_state();
+ perform pg_temp.pilot_command_denied(format('select public.provision_telematics_device(%L,%L::jsonb)',administrator,provision_command),'DEVICE_OWNER_INVALID');
+ if pg_temp.pilot_provision_state() is distinct from before_provision then raise exception 'PILOT_COOWNER_PROVISION_CHANGED_STATE';end if;
+ delete from public.organization_members where organization_id='a1448edf-6fb6-47ff-b7c6-d8d3cd9dbfcd' and user_id=normal_owner;
+ -- Ordinary physical-device enrollment remains the existing admin operation.
+ update public.telematics_gateways set synthetic_only=false where id=wrong_gateway;
+ result:=public.provision_telematics_device(administrator,provision_command||jsonb_build_object('gatewayId',wrong_gateway,
+  'imei','123456789012345','protocolDeviceId','123456789012345','synthetic',false,'modelProfile','UNVERIFIED'));
+ if not exists(select 1 from public.telematics_devices where id=(result->>'id')::uuid and not synthetic) then raise exception 'PILOT_REAL_PROVISION_CHANGED';end if;
  before_sources:=pg_temp.pilot_public_facts()->'telematics_location_sources';
  result:=public.prepare_netlify_demo_gateway(administrator,gateway);
  if result->>'deviceCount'<>'7' or result->>'sourceChoicesRequired'<>'7' or result->>'enabled'<>'false'
@@ -149,6 +183,9 @@ declare administrator uuid;gateway uuid:=gen_random_uuid();result jsonb;run_id u
  if(select count(*) from public.telematics_devices where gateway_id=gateway)<>7 then raise exception 'PILOT_PREPARATION_NOT_IDEMPOTENT';end if;
  if has_function_privilege('authenticated','public.demo_pilot_provision_allowed227(uuid,uuid,uuid,text)','EXECUTE')
   or has_function_privilege('service_role','public.demo_pilot_provision_allowed227(uuid,uuid,uuid,text)','EXECUTE')
+  or has_function_privilege('anon','public.demo_pilot_lock_scope227(uuid,uuid)','EXECUTE')
+  or has_function_privilege('authenticated','public.demo_pilot_lock_scope227(uuid,uuid)','EXECUTE')
+  or has_function_privilege('service_role','public.demo_pilot_lock_scope227(uuid,uuid)','EXECUTE')
   then raise exception 'PILOT_HELPER_PERMISSION_LEAK';end if;
  -- Explicit fixture source choices are separate from setup and create no consent.
  for item in select value from jsonb_array_elements(${q(JSON.stringify(plan.filter(p=>p.eligible)))}::jsonb) loop
@@ -207,4 +244,33 @@ declare administrator uuid;gateway uuid:=gen_random_uuid();result jsonb;run_id u
 end $positive$;
 select jsonb_build_object('event','pilot_binding_sql','ok',true,'targets',7,'excluded',3,'capacityPhases',3,'publicFactsPreserved',true,'rolledBack',true);
 rollback;
+`;
+if(!raceSetup)process.stdout.write(verificationSql);
+else{
+ const boundary='\ndo $positive$\n';
+ if(verificationSql.split(boundary).length!==2)throw Error('PILOT_RACE_SETUP_BOUNDARY_DRIFT');
+ process.stdout.write(verificationSql.split(boundary)[0]+`
+-- Explicitly opted-in disposable committed fixture for real multi-session races.
+do $race_setup$
+declare administrator uuid;gateway uuid:=gen_random_uuid();normal_owner uuid:=gen_random_uuid();item record;begin
+ select id into administrator from public.profiles where active and role='ADMIN' order by id limit 1;
+ perform public.prepare_netlify_demo_gateway(administrator,gateway);
+ for item in select value from jsonb_array_elements(${q(JSON.stringify(plan.filter(p=>p.eligible)))}::jsonb) loop
+  insert into public.telematics_location_sources(vehicle_id,source,precision_km,selected_by)
+   select (item.value->'pilot'->>'vehicleId')::uuid,item.value->>'source',5,
+    case when item.value->'pilot'->>'organizationId' is null then
+     (select user_id from public.provider_profiles where id=(item.value->'pilot'->>'providerProfileId')::uuid)
+    else(select user_id from public.organization_members where organization_id=(item.value->'pilot'->>'organizationId')::uuid and membership_role='OWNER')end;
+ end loop;
+ insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(normal_owner,normal_owner::text||'@example.invalid',clock_timestamp(),'{"provider":"email","providers":["email"]}',
+   '{"fixture_key":"pilot227-owner-race-normal"}');
+ update public.profiles set role='TRANSPORTER',active=true,full_name='Pilot owner race normal co-owner' where id=normal_owner;
+ -- Empty exact device slots exercise public provisioning, then the ordinary
+ -- preparer restores/assigns them before motion races. No report exists yet.
+ delete from public.telematics_devices where gateway_id=gateway and imei in('990000000000005','990000000000006');
+end $race_setup$;
+select jsonb_build_object('event','pilot_owner_race_setup','committedFixture',true,'isolated',true);
+commit;
 `);
+}

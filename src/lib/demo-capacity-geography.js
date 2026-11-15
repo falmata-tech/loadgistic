@@ -1,4 +1,5 @@
 import { distanceBetweenKm } from './domain.js';
+import { serviceAreaGeometryMatch } from './route-matching.js';
 
 function place(key,label,lat,lng){return Object.freeze({key,place_ref:`builtin:${key}`,label:`${label}, Ethiopia`,lat,lng});}
 
@@ -269,6 +270,49 @@ const AREA_RADIUS_BUCKETS=Object.freeze([20,50,70,100,250,500]);
 function normalizedRef(value){return String(value||'').toLowerCase().replace('builtin:jijiga','builtin:jigjiga').trim();}
 function orderedBoundary(center,points){return [...points].sort((a,b)=>Math.atan2(a.lat-center.lat,a.lng-center.lng)-Math.atan2(b.lat-center.lat,b.lng-center.lng));}
 
+function surrounds(center,boundary){
+  if(boundary.length<3||boundary.length>5||boundary.some(point=>point.place_ref===center.place_ref))return false;
+  const match=serviceAreaGeometryMatch(center,boundary,{searchRadiusKm:0});
+  return match.inside&&match.distance_km!==null&&match.distance_km>0.000001;
+}
+
+// The named center must be inside its boundary, not reused as one of the
+// surrounding towns. Select only existing settlements; some bases have no
+// qualified Area example and must use a Route instead.
+function smallestSurroundingBoundary(center,points){
+  const candidates=[...new Map(points.filter(point=>point.place_ref!==center.place_ref)
+    .map(point=>[point.place_ref,point])).values()];
+  const rings=[];
+  function choose(start,selected){
+    if(selected.length>=3){
+      const boundary=orderedBoundary(center,selected);
+      if(surrounds(center,boundary)){
+        const distances=boundary.map(point=>distanceBetweenKm(center,point));
+        rings.push({boundary,farthest:Math.max(...distances),total:distances.reduce((sum,value)=>sum+value,0)});
+      }
+    }
+    if(selected.length===5)return;
+    for(let index=start;index<candidates.length;index++)choose(index+1,[...selected,candidates[index]]);
+  }
+  choose(0,[]);
+  return rings.sort((first,second)=>first.farthest-second.farthest||first.total-second.total
+    ||first.boundary.length-second.boundary.length
+    ||first.boundary.map(point=>point.place_ref).join('|').localeCompare(second.boundary.map(point=>point.place_ref).join('|')))[0]?.boundary||null;
+}
+
+const serviceAreaBoundaries=new Map();
+function serviceAreaBoundary(base,city){
+  const key=`${base.key}:${city}`;
+  if(!serviceAreaBoundaries.has(key)){
+    const regional=orderedBoundary(base.place,RAW_SERVICE_AREAS[base.key]||[]);
+    const nearby=(CITY_ROUTES_BY_BASE[base.key]||[]).flatMap(choice=>choice.points);
+    serviceAreaBoundaries.set(key,city?smallestSurroundingBoundary(base.place,[...nearby,...regional])
+      :surrounds(base.place,regional)?regional:smallestSurroundingBoundary(base.place,[...nearby,...regional]));
+  }
+  const boundary=serviceAreaBoundaries.get(key);
+  return boundary?[...boundary]:null;
+}
+
 export function demoPlanningSeed(record={}){
   const identity=String(record.vehicle_id||record.id||record.platform_number||record.place_ref||record.location_place_ref||'demo');
   let value=2166136261;
@@ -310,10 +354,10 @@ export function demoRegularRoutesForBase(record,count=1){
 export function demoServiceAreaForLocation(record,index=0){
   const base=nearestDemoBase(record);
   const city=(demoPlanningSeed(record)+Math.abs(index))%2===0;
-  const cityPoints=[...new Map((CITY_ROUTES_BY_BASE[base.key]||CITY_ROUTES_BY_BASE.addis)
-    .flatMap(choice=>choice.points).map(point=>[point.place_ref,point])).values()];
-  const boundary=orderedBoundary(base.place,city&&cityPoints.length>=3?cityPoints:RAW_SERVICE_AREAS[base.key]||RAW_SERVICE_AREAS.addis);
+  const boundary=serviceAreaBoundary(base,city);
+  if(!boundary)return null;
   const farthestKm=Math.max(...boundary.map(candidate=>distanceBetweenKm(base.place,candidate)));
-  const radiusKm=AREA_RADIUS_BUCKETS.find(bucket=>farthestKm<=bucket+2)||AREA_RADIUS_BUCKETS.at(-1);
+  const radiusKm=AREA_RADIUS_BUCKETS.find(bucket=>farthestKm<=bucket);
+  if(radiusKm===undefined)return null;
   return {base,center:base.place,boundary,radiusKm,movementScope:radiusKm>20?'BOTH':'LOCAL'};
 }

@@ -1551,7 +1551,7 @@ legend { font-weight:800; padding:0 7px; }
 .place-results{position:absolute;z-index:40;top:calc(100% + 4px);left:0;right:0;max-height:280px;overflow:auto;background:var(--surface);border:1px solid var(--border);box-shadow:0 12px 28px rgba(17,24,39,.14)}
 .place-result{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-bottom:1px solid var(--border);background:transparent;color:inherit;text-align:left;cursor:pointer}
 .place-result:last-child{border-bottom:0}
-.place-result:hover,.place-result:focus{background:var(--surface-soft)}
+.place-result:hover,.place-result:focus,.place-result[aria-selected=true]{background:var(--surface-soft)}
 .place-result svg{width:18px;height:18px;flex:0 0 auto;color:var(--primary)}
 .place-result span{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%}
 .place-result small{text-transform:capitalize;color:var(--muted)}

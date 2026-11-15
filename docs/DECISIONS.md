@@ -18,7 +18,16 @@ not change. Local correction snapshots and locks exact synthetic rows, refuses
 scope/row drift and preserves unrelated fields and history. Hosted data changes
 require their own reviewed target, backup, rehearsal and scoped rollback.
 
-Local readback:130 capacity plans,27 Preferred plans and16 restored Partial
+The full gate exposed six additional exact corridor evidence records outside
+the13 reserved vehicles and city-Area examples using their center as a vertex.
+Preserve every catalog evidence record and the profile scenario's exact page/
+Preferred baseline, then validate the complete catalog before writing. Areas use
+three through five actual other settlements strictly around their center, with
+an honest covering radius; insufficient verified geometry yields a Route example.
+Seven other public fleet descriptions follow their saved Preferred plan. These
+are authored fixture choices, never rules limiting an owner's service distance.
+
+Initial local readback before that correction:130 capacity plans,27 Preferred plans and16 restored Partial
 signals; among113 smaller vehicles,31 routes under40km,27 over100km and25 Areas.
 Distances are point-path sums, not measured road mileage. The real API passes
 five matching and15 denial checks. Browser/Expo review and full release gates
@@ -28,11 +37,20 @@ remain separate; this is not evidence of hosted installation.
 
 FEAT-SIM-001 / FEAT-SEC-001 / NR-82/83/84. Local fixture UUIDs do not name the
 existing production-pilot records. Migration227 atomically maps only unused
-private simulator catalogs and nine pinned function bodies to that namespace.
+private simulator catalogs and ten pinned function bodies to that namespace.
 It refuses active/previously-used controls, mixed identities, catalog/body drift,
 changed eligible owners/drivers and co-owners. Function owners, execution ACLs
 and security configuration are preserved. A database without pilot records is
 unchanged. Engine-command demo authority remains unchanged.
+
+NR-86 hardens this exact PILOT mode: synthetic enrollment has one authoritative
+helper rather than an inherited alternative OR branch; only the reviewed direct
+transport, profile and protocol identity qualify. A separate owner-only scope
+helper locks the exact organization and memberships before profile/device/vehicle
+locks in the first callable binding, preparation and public provisioning boundary.
+Four measured two-session races prove both ownership orderings; direct
+co-owner/wrong/missing-protocol denials preserve enrollment state. The LOCAL
+branch and ordinary real-device path are unchanged; no broad shared-lock rewrite.
 
 Seven existing scopes qualify; fleet-03/06/08 are excluded because their old
 fleet authority is no longer current. Capacity owner/sharing drift pauses the

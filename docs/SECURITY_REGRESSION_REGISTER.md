@@ -1,5 +1,56 @@
 # Security failures we must not repeat
 
+## NR-86 — Pilot remapping reuses an incomplete synthetic owner boundary
+
+November15 independent review of unreleased227 at local28acf38 found two
+source defects before hosted installation. Its exact new provisioning helper
+could refuse an added normal co-owner while an inherited OR fleet-allowlist
+branch still admitted that marked owner through the public provisioning entry.
+The remapped motion bindings also counted sole ownership under an organization
+`FOR KEY SHARE` lock, compatible with a concurrent co-owner FK insertion; a
+late count alone did not establish transactionally stable authority (NR-83).
+The race is initially a source inference, not evidence of a hosted write.
+
+Owner: telematics database maintainer. Next action: make the exact pilot helper
+the sole new pilot synthetic-enrollment authority, constrain its transport and
+take organization/membership locks before profile/device/vehicle locks at each
+callable boundary. Test public provisioning with a normal co-owner and wrong
+transport using unchanged device/audit snapshots, preserve ordinary real-device
+enrollment, then run real two-session owner-first/report-first clone races.
+Keep this finding open until those actual waits/denials, the isolated combined
+scenario, security checks and exact-source gates pass. No hosted migration,
+device enrollment, source choice or activation has occurred.
+
+Local repair now pins ten existing functions, leaves the old LOCAL provisioning
+alternatives confined to their old provenance, makes exact PILOT authority the
+only new synthetic path and restricts it to the direct Netlify protocol/profile.
+An owner-only helper takes the exact organization `FOR UPDATE` and memberships
+`FOR SHARE` before existing profile/device/vehicle locks. All new helpers are
+revoked from PUBLIC/anon/authenticated/service_role. The retained real-device
+path and synthetic engine authority remain unchanged.
+
+Measured local proof: four races and four actual `pg_blocking_pids` waits in
+`.local/pilot-owner-races-9vEhAP/receipt.json`. Provision-first and report-first
+each accept once while co-owner insertion waits; owner-first and subsequent
+calls with that co-owner deny (two provision and two report denials), preserving
+saved state. The named clone is backed up, restored and fingerprint-verified.
+The final rollback-only SQL also passes direct public co-owner/wrong-transport/
+missing-protocol refusals with unchanged device/audit facts, ordinary real-device
+enrollment, seven movement reports, three Capacity phases and notification
+denials. Six focused binding tests pass; both CI paths now register the guarded
+race runner and retain cancellation cleanup. Exact-source full gates remain
+pending. This qualification is PILOT-only; the LOCAL branch remains unchanged.
+
+The final pinned-Docker runner repeats all four races/four waits with the expected
+counts, but its full restore exceeded a generic30s subprocess bound. No SQL
+failure or changed fingerprint is established. Targeted recovery proof confirms
+all saved fingerprints match, no restore session remains and the primary is
+unchanged (`.local/pilot-restore-check-Fr0OS6/receipt.json`). Full catalog restores
+now share the existing clone helper's120s allowance, with typed stage/code
+diagnostics; security/lease/parser bounds and the three-minute CI wrapper stay
+unchanged. Do not relabel the failed integrated receipt successful. PostgreSQL15
+runtime, complete current-source CI and hosted review remain outstanding.
+
 ## NR-85 — Duty denial depends on an unauthorized vehicle's location source
 
 November14 native diagnostic run43560119545 at e9c9a616 started the full isolated

@@ -352,6 +352,27 @@ tests and both existing CI workflows. NR-83/84 remain runtime qualification item
 until the exact native diagnostic passes. No hosted execution or full release
 verdict is granted by this test lane.
 
+### Scenario: pilot owner races preserve the exact disposable database baseline
+
+Given the explicitly opted-in local pilot or native CI clone is owned by this task\
+When the bounded pilot owner race verifier runs\
+Then Docker context precedence is resolved before accepting a Unix endpoint and
+every daemon/session command pins that endpoint and the same immutable container ID\
+And an unsupported or mismatched server/client version refuses before fixture writes\
+And PostgreSQL15 archive restoration retains the exact existing GraphQL wrapper,
+extension membership and deferred ACL sequence; PostgreSQL17 uses direct restoration\
+And four real races identify four blocker waits, accept one provisioning and one
+report operation, and deny two later operations per lane without changed state\
+And successful evidence requires the protected baseline restored with matching
+fingerprints; failure/cancellation retains private evidence and clone cleanup.
+
+Contracts: the opt-in names only `loadgistic_pilot_ci` or
+`loadgistic_telematics_ci`; it never authorizes the primary or a hosted database.
+Observe typed stages/counts and restore status only. Rollback restores the owned
+clone from its protected archive; normal CI also retains its always-cleanup step.
+Evidence: `verify-demo-pilot-owner-concurrency-local.mjs`, clone restore/target
+negative tests and both existing CI workflows. FEAT-SIM-001 / NR-86.
+
 ### Scenario: schema rollout
 
 Given a database migration is required\

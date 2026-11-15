@@ -21,6 +21,8 @@ default-off compatibility migration for that exact existing namespace. It must
 refuse mixed/changed cohorts, active controls, prior simulator history or
 unexpected installed definitions. A database without pilot records retains
 the existing local contracts. Owner production-operation review still applies.
+Migration227 is prepared locally, not applied hosted; the inspected hosted
+ledger remains through220.
 
 Given the exact stopped, never-activated hosted pilot cohort\
 When the reviewed compatibility migration is applied\
@@ -46,6 +48,22 @@ old owner. Other lanes remain disabled. The receiver and database still own
 all mutations; a returned window target list is bounded to known names and
 cannot enroll or authorize caller-selected vehicles.
 
+Given a normal co-owner is added to an otherwise exact pilot fleet\
+When any public provisioning entry point or synthetic movement command runs\
+Then no inherited alternative allowlist branch may bypass the exact sole-owner
+proof, and rejected enrollment leaves devices, assignments and audit state
+unchanged. New pilot synthetic enrollment is limited to the reviewed direct
+Netlify transport; ordinary real-device enrollment retains its own authority.
+
+Given ownership changes concurrently with pilot preparation or a movement report\
+When the first transaction locks the owner scope\
+Then an owner-first committed change denies the later synthetic write without
+changing its published facts, while a report-first transaction serializes the
+co-owner change behind its accepted write\
+And stronger owner/membership locks are acquired before profile, device and
+vehicle locks, with actual two-session waits and both orderings recorded.
+Sequential counts or denial tests alone do not qualify this race boundary.
+
 Given the existing pilot has no old local Tracking example and both separately
 reserved Tracking lanes are disarmed\
 When its Capacity control is enabled alongside direct movement\
@@ -64,13 +82,16 @@ no active window/lease, and restores the prior application artifact if needed.
 Retain pilot mappings, constraints, devices and history; reverting the namespace
 after reports exist is a separate reviewed data operation.
 
-Changed contracts: HostedPilotDemoBinding and bounded server-selected window
+Changed contracts: ExactPilotDemoBinding and bounded server-selected window
 targets. Observability remains aggregate eligibility/paused/report counts.
 Rollout requires rollback-only pilot fixtures, denial/recovery checks, combined
 local rehearsal, exact-source CI, protected hosted backup/restore/rehearsal and
-review of the exact SQL and activation fields. Rollback first disables both
-lanes, preserves public facts/history and restores only reviewed private
-bindings/definitions after drift checks; no broad customer-data restore.
+review of the exact SQL and activation fields. Rollback first stops both
+schedulers and any external alternatives, disables Capacity and motion
+(kill-on/netlify-disabled), verifies no active window/lease, and retains pilot
+mappings, constraints, devices, public facts and history. Restore a prior
+application artifact if needed; namespace or definition reversion is a separate
+owner-reviewed operation and must not recreate an authorization bypass.
 
 ### Limited daily operation — November15 owner cost constraint
 

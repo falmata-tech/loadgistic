@@ -9,7 +9,85 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15 (CST)
 
-Current resume checkpoint: bbcc3dd is pushed in draftPR39. Its CI43730171962
+Local gate components now pass:45 specs/42 features,774 source files,124
+workflow scripts, all1,572 unit/contract cases (zero skips,303.865s), TypeScript,
+nine focused keyboard cases and two desktop/phone keyboard E2E cases without
+retries (97.567s). The complete quality attempt passed its checks/tests but
+exited2 on two new component typing errors; the correction follows existing
+React-shim conventions. A saved transpiled-runtime AST comparison is identical
+before/after, TypeScript then exits0 and the nine keyboard cases pass in4.704s.
+Reuse unchanged runtime/E2E evidence; exact-source CI must still run its complete
+quality command, PG15 database scenario, build and browser matrix before this
+candidate is release-qualified. No hosted write or activation is included.
+
+The first full local gate found17 failures (1,550/1,567 tests passed, zero skips,
+335.802s; specs/source/workflow passed with124 scripts). Do not treat the earlier
+focused pass count as full qualification. Failures group into obsolete small/
+observed-location proximity assertions, real Area centers used as boundary
+vertices, six rewritten Capacity rows serving as exact simulator catalog
+evidence, and stale public fleet route copy. Source repair preserves all11
+catalog evidence rows/20 phases, uses actual enclosing settlement rings with
+honest radius and Route fallback, retains canonical observed locations, and
+derives seven public fleet descriptions from their saved Preferred plan while
+preserving the exact profile scenario page/Preferred baseline. All33 focused
+repair cases pass in8.245s, including Area, market/fixture/copy and complete
+catalog/planner checks. A fresh LOCAL-only correction then rehearsed24 Capacity,
+five Preferred and seven page updates with four actual denials and exact clone
+rollback. The namespace guard was corrected to the shared trusted pilot marker
+before application; the clone test temporarily counted one actual marker,
+denied it and restored zero. SQL7c0392963d39b2df7326448788ca37aa6f16a85fa880b22943c494207dfd3a72
+was applied once with a durable intent. Independent readback confirms all36
+rows, unchanged availability/unrelated facts and untouched other rows, catalog11,
+current drivers,85 positions, one receipt and both controls off. Receipt
+`planning-repair-apply-v3-1794769211428-receipt.private.json` remains private;
+the exact inverse is prepared, not applied. The actual browser/Expo review is
+complete; final matching and local gate components pass, with CI pending. During the
+review, Gateway401 returned31.5ms and the database had no observed lock wait.
+Those facts did not identify the intermittent local API delay's cause.
+One controlled owned Next restart then preserved cache/env/data, stopped the
+optional Expo preview and recovered the expected local adapter. Startup took
+10.5s; API compilation15.6s and root26.5s. The one correct-capacity API check
+returns200/one exact record in2.840s. This is unconfirmed dev-request/HMR-state
+recovery, not a proven SQL/cancellation repair. Actual Pixel9 review now shows
+the corrected Adama Area's Wenji/Welenchiti/Mojo boundary and preserved age.
+A native Profile click opened the external call-app prompt; it was cancelled
+before FaceTime opened. Actual keyboard focus/activation then opened Profile.
+Desktop and Pixel9 Chrome review at3100 verified the selected HyundaiH-1's
+saved Area, enclosing polygon, all three boundary labels, age and Vehicle
+details, followed the actual Profile link, checked its corrected headline and
+About text at both widths, and returned to the saved map selection. Earlier
+unchanged long-van, keyboard/canonical-filter and anonymous private-data checks
+remain separately recorded; these observations do not claim native-device QA.
+The single-worker Expo web preview at8084 verified the same saved Area and
+Vehicle details on Pixel9, the corrected Profile description, reload and return
+to the selected map record. Its first profile request took15.158s during an
+11.2s endpoint compile and showed the visible timeout. An AX click did not send
+a request; focusing Try again with Tab and pressing Return did, recovering in
+8.086s. Reload then completed in16.197s without another retry. Existing four
+development warnings remain. The owned Expo listener was verified and stopped
+after review; Next3100 remains running. The subsequent bounded API replay passed
+three cases before a15s request timeout. A bounded capture observed one active
+PostgREST query, no blockers or lock waits; it did not establish the cause.
+With Expo stopped and the database idle, one controlled complete replay passes
+all20 cases in57.754s: five real saved-plan matches and15 reverse/conflicting
+AND/status/private/anonymous denials. Receipt
+`planning-api-final-v3-1794771186245-receipt.private.json` binds the final saved
+snapshot and applied repair. The partial failure receipt remains separate;
+neither timeout nor assertion was relaxed, and no SQL repair is claimed.
+Final saved-snapshot counts for configurations named Mini, van, Pickup or Light
+are112 vehicles:87 Routes/25 Areas,30 routes under40km and27 over100km. Preferred
+plans are21 Routes/nine Areas. These exact installed-snapshot counts supersede
+the earlier source-derived113/88/31 counts below; distances are point-path sums,
+not measured road mileage. All saved statuses remain unchanged by the final
+planning/copy-only correction.
+No hosted correction is applied. Automatic approval review rejected per-record
+hosted planning/mapping access and a manifest-joined aggregate; the separate
+hosted audit is restricted to cohort-level aggregate queries without that
+manifest. Exact hosted correction preparation is blocked by that access scope.
+
+The follow-up to28acf38 contains the independently reviewed ownership, planning
+and keyboard repairs below. At this recorded pre-push checkpoint, bbcc3dd is the
+remote draftPR39 head. Its CI43730171962
 finished with failures in browser shards2/4 (`fleet-onboarding.spec.ts`, desktop
 line523/declaration422, and `tracking-route-map.spec.ts`); the other shards and
 validation/mobile/container/Featured checks passed. Operations proof43730171992
@@ -21,7 +99,7 @@ movement target list. It excludes fleet-03/06/08, which currently belong to
 independent providers rather than their originally authored fleet scopes;
 eligibility does not restore old owners. Actual rollback-only SQL now passes on
 the owned `loadgistic_pilot_ci` clone: unchanged public/auth/source/consent facts,
-nine function metadata checks, seven exact virtual devices and reports,
+ten function metadata checks, seven exact virtual devices and reports,
 three excluded targets, owner/driver/co-owner/body-drift refusals, replay denial,
 source-choice preservation and unchanged engine authority. Controls stop and
 history is retained before rollback. The combined rehearsal also applies three
@@ -67,16 +145,82 @@ fixture/matching/adapter/binding/diagnostic tests pass; spec/source/workflow che
 pass with122 operational scripts, actionlint1.7.12 and ShellCheck0.11.0. The
 original fixture bytes and exact before/after receipts remain private.
 
+Independent review then found two new PILOT qualification blockers (NR-86):
+an inherited fleet-provision OR alternative bypassed the new co-owner helper,
+and motion's old KEY SHARE/count proof did not serialize a concurrent co-owner.
+The corrected227 keeps old alternatives restricted to LOCAL provenance, takes
+strong exact-org/member locks before profile/device/vehicle locks at each first
+callable boundary, and permits new pilot synthetic devices only on the reviewed
+direct transport/profile/protocol identity. Ordinary real enrollment is unchanged.
+Final combined SQL and six focused binding tests pass, including direct public
+co-owner/wrong/missing-protocol refusals with unchanged device/audit facts.
+Four real races/observed blocker waits pass: one provision and one report accept
+before the waiting co-owner; owner-first and subsequent operations deny twice
+per lane without changing saved state. The owned clone baseline is restored and
+verified. Both CI paths register the guarded race runner and cancellation cleanup;
+workflow validation passes123 scripts. These ownership proofs apply to PILOT,
+not the unchanged LOCAL branch. No hosted operation occurred.
+
+Final runner review found and fixed two additional qualification gaps before a
+push: CI uses PostgreSQL15 rather than the Mac's17, and `DOCKER_CONTEXT` overrides
+`DOCKER_HOST`. The runner now pins the effective Unix endpoint and immutable
+container ID, supports matching15/17 clients and shares the existing exact PG15
+GraphQL wrapper/deferred-ACL restore path. Twenty-two guard/restore-order tests
+and workflow validation for124 scripts pass. The single actual PG17 rerun
+records all four races/four waits and expected accepted/denied counts, but its
+baseline restore status is false (`.local/pilot-owner-races-MZNVQg`). Diagnosis
+finds the generic30s subprocess limit was incorrectly used for a full catalog
+restore; no SQL error/fingerprint mismatch is established. The correction reuses
+the existing clone helper's120s catalog-restore limit for that operation only;
+security/lease bounds and the three-minute CI wrapper remain. The owned clone's
+targeted saved fingerprint check now passes with no changed fields and no active
+restore session (`.local/pilot-restore-check-Fr0OS6/receipt.json`). The primary
+remains untouched. Retain the failed four-race receipt and separate targeted
+restore proof; integrated PostgreSQL15 runtime qualification remains for CI.
+
 The three cases named by CI's failed shards pass unchanged against the local
 services in2.5minutes, including both driving-provider signup/publish/cleanup
 paths and authorized/revoked Tracking proof. The CI-only causes remain unproven;
 new allowlisted stage/code/status diagnostics retain the next failure without
 customer data, relaxed timeouts or dropped assertions. Their focused replay
-passes all three in1.8minutes; TypeScript also passes. Current actual Chrome control reports `cgWindowNotFound` and its browser
-host is unavailable; the owner has been asked to open a normal Chrome window.
-Desktop/phone/Expo review and the new full quality/release gates remain open.
-The local web server stays on3100. Expo preview started successfully on8084 and
-was stopped again while browser access is unavailable to avoid idle resource use.
+passes all three in1.8minutes; the pre-keyboard TypeScript check also passes.
+The first actual Chrome attempt was blocked by `cgWindowNotFound`; the owner's
+subsequent go-ahead allowed review to resume. Actual desktop and Pixel9
+412×924 views show the van's five-stop Addis Ababa→Assosa plan, separate honest
+location/capacity ages, the Area example's five real boundary settlements,
+vehicle details, reload retention and the anonymous private-view sign-in boundary.
+Screenshots and interactions are captured in the native-CUA conversation; no
+call, account, source or location update was submitted.
+
+Review also reproduced a real keyboard bug: Arrow Down/Enter submitted the
+surrounding form before selecting a suggestion. The shared place input now has
+active-option/ARIA state, keyboard selection, Escape recovery and stale-result
+clearing, preserving pointer selection and layout. Nine focused component
+tests and both desktop/phone E2E pass (42.5s), using the actual first catalog
+identity rather than assuming a built-in ID. Actual desktop Chrome selection,
+Escape/reopen and explicit apply pass with persisted canonical query values.
+The actual Pixel9 keyboard journey also passes: both canonical places remain
+selected in the open form, Escape/reopen works, and explicit Show vehicles saves
+the query and shows the matching van. One earlier unfiltered map request returned
+503; the subsequent filtered request and saved result recovered. A clean
+incognito comparison did not reproduce the normal-profile AbortError messages;
+catches and a detached-observer counterfactual do not justify an application
+suppression/fix, and no particular observer is attributed. The503 cause is
+unconfirmed: the route collapses multiple backend failures to this status.
+Actual Expo web on8084/Pixel9 passes long-route and Area selection, all five
+route stops/boundary settlements, vehicle details, truthful source/age/privacy,
+close/return paths and Area selection after reload. Its existing four development
+warnings remain visible; this is not native background/device qualification.
+The initial unbounded-worker
+process was blank at87.2% CPU/8.9% memory; the verified owned process was stopped
+and restarted using the documented single-worker command, without cache/reset
+or dependency changes. The initial single-worker bundle took121.2s during high
+system load; a later warm bundle took0.867s. Once settled, the owned process
+measured496468KiB RSS/0.4% CPU. It was then stopped and8084 confirmed closed.
+The local web server stays on3100. Final actual Chrome review also focuses the
+empty Area combobox and verifies that one Escape closes the filter dialog and
+returns focus to Filter. That full quality attempt's failures and follow-up are
+recorded above; current full replay/release gates remain pending.
 The web/API is healthy and the six capped Docker containers measure764MiB in
 this warm sample. No new push/CI or release is claimed before the actual review. Hosted demo
 data and production remain unchanged.

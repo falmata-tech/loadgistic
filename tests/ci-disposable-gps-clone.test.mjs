@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
   checkedLocalGpsPassword, checkedLocalRestoreRole, checkedMatchingPgMajor,
   postgresErrorCategory, runGpsClonePipeline, splitPgGraphqlAclToc,
+  captureGpsCloneGraphql,checkedGpsCloneArchive,restoreGpsCloneArchive,
 } from '../scripts/ci-disposable-gps-clone.mjs';
 
 const child = (source) => [process.execPath, ['-e', source]];
@@ -134,4 +136,48 @@ test('GPS CI defers only the PG15 GraphQL wrapper ACL and retains all other gran
   assert.equal(result.main, `; archive\n${other}\n`);
   assert.throws(() => splitPgGraphqlAclToc(other), /expected one Supabase pg_graphql wrapper ACL/);
   assert.throws(() => splitPgGraphqlAclToc(`${special}\n${special}`), /expected one Supabase pg_graphql wrapper ACL/);
+});
+
+const graphqlIdentity='a'.repeat(32)+'|'+'b'.repeat(32);
+const graphqlDefinition='CREATE OR REPLACE FUNCTION graphql_public.graphql("operationName" text, query text, variables jsonb, extensions jsonb) RETURNS jsonb LANGUAGE sql AS $$ SELECT null::jsonb $$;';
+const graphqlToc='; archive\n3664; 0 0 ACL graphql_public FUNCTION graphql("operationName" text, query text, variables jsonb, extensions jsonb) supabase_admin\n3665; 0 0 ACL public TABLE vehicles postgres\n';
+function graphqlSource(sql){
+ if(sql.includes('select e.extname'))return 'pg_graphql';
+ if(sql.includes('select md5('))return graphqlIdentity;
+ if(sql.includes('select pg_get_functiondef('))return graphqlDefinition;
+ throw Error('Unexpected fake source read');
+}
+test('the pinned application PG15 baseline uses the shared deferred GraphQL restore sequence',async()=>{
+ const config=readFileSync('supabase/config.toml','utf8');const major=Number(config.match(/^major_version\s*=\s*(\d+)/m)?.[1]);
+ assert.equal(major,15,'The current application remains on PostgreSQL15; changing it requires separate review');
+ const snapshot=await captureGpsCloneGraphql({major,query:graphqlSource});
+ const calls=[];let restoredAcl=false;
+ await restoreGpsCloneArchive({major,graphqlSnapshot:snapshot,readToc:async()=>graphqlToc,
+  restoreArchive:async list=>{calls.push(list.includes('TABLE vehicles')?'MAIN':'ACL');if(!list.includes('TABLE vehicles'))restoredAcl=true;},
+  targetQuery:async sql=>{if(sql.includes('is null')){calls.push('GAP');return 't';}
+   if(sql.startsWith('CREATE OR REPLACE')){calls.push('WRAPPER');assert.equal(sql.trim(),graphqlDefinition);return '';}
+   if(sql.startsWith('alter extension')){calls.push('EXTENSION');return '';}
+   if(sql.includes('select e.extname')){calls.push('CHECK_EXTENSION');return 'pg_graphql';}
+   if(sql.includes('select md5(')){calls.push('CHECK_IDENTITY');return restoredAcl?graphqlIdentity:'wrong';}
+   throw Error('Unexpected fake restore query');}
+ });
+ assert.deepEqual(calls,['MAIN','GAP','WRAPPER','EXTENSION','ACL','CHECK_EXTENSION','CHECK_IDENTITY']);
+ const lifecycle=readFileSync('scripts/ci-disposable-gps-database.mjs','utf8'),races=readFileSync('scripts/verify-demo-pilot-owner-concurrency-local.mjs','utf8');
+ for(const source of [lifecycle,races])assert.match(source,/await restoreGpsCloneArchive\(/);
+ assert.match(races,/checkedMatchingPgMajor\(clientMajor,check\.major\)/);assert.doesNotMatch(races,/check\.major\s*!==\s*17/);
+});
+test('PG15 archive validation rejects missing grants, changed snapshots and ACL drift without accepting a partial restore',async()=>{
+ const snapshot=await captureGpsCloneGraphql({major:15,query:graphqlSource});let restores=0;
+ for(const value of [{...snapshot,extension:'public'},{...snapshot,identity:'secret'},{...snapshot,definition:'SELECT PRIVATE'}]){
+  await assert.rejects(restoreGpsCloneArchive({major:15,graphqlSnapshot:value,readToc:async()=>graphqlToc,restoreArchive:async()=>{restores++;}}),/invalid pg_graphql restore snapshot/);
+ }
+ assert.equal(restores,0);assert.throws(()=>checkedGpsCloneArchive({major:15,graphqlSnapshot:snapshot,toc:'table grant only'}),/expected one Supabase pg_graphql wrapper ACL/);
+ await assert.rejects(restoreGpsCloneArchive({major:15,graphqlSnapshot:snapshot,readToc:async()=>graphqlToc,restoreArchive:async()=>{},
+  targetQuery:async sql=>sql.includes('is null')?'t':sql.includes('select e.extname')?'pg_graphql':sql.includes('select md5(')?'0'.repeat(65):''}),/definition or grants differ/);
+});
+test('PG17 archive restoration stays direct and unreviewed versions refuse before a restore',async()=>{
+ const calls=[];assert.equal(await captureGpsCloneGraphql({major:17,query:()=>{throw Error('Unexpected PG15 read');}}),null);
+ await restoreGpsCloneArchive({major:17,restoreArchive:async list=>calls.push(list),readToc:()=>{throw Error('Unexpected PG15 TOC');}});
+ assert.deepEqual(calls,[null]);
+ await assert.rejects(restoreGpsCloneArchive({major:16,restoreArchive:async()=>calls.push('UNSAFE')}),/client\/server major mismatch/);assert.deepEqual(calls,[null]);
 });

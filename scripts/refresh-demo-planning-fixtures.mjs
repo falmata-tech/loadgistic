@@ -1,9 +1,10 @@
 // Source fixture preparation only. This script never connects to a database.
 import fs from 'node:fs';
-import {diversifyFixturePlanning} from './fixture-capacity-plans.mjs';
+import {diversifyFixturePlanning,refreshDemoFleetPlanningCopy} from './fixture-capacity-plans.mjs';
 import {getPlaceCoordinate} from '../src/lib/ethiopia-places.js';
 import {normalizePlace} from '../src/lib/route-matching.js';
 import {distanceBetweenKm} from '../src/lib/domain.js';
+import {validateDemoCorridorCatalog} from '../src/lib/demo-corridor-catalog.mjs';
 
 if(process.argv.slice(2).some(arg=>arg!=='--write'))throw Error('Use --write or omit it for a preview');
 const path='resources/fixtures/managed-market.json',before=fs.readFileSync(path,'utf8'),fixture=JSON.parse(before);
@@ -29,10 +30,11 @@ function canonical(point){
  return {key:normalizePlace(selected.name).replaceAll(' ','-'),place_ref:selected.place_ref,label:`${selected.name}, Ethiopia`,
   name:selected.name,lat:selected.lat,lng:selected.lng,place_type:selected.place_type};
 }
-const tables=diversifyFixturePlanning(fixture.tables,{resolvePlace:canonical});
+const tables=refreshDemoFleetPlanningCopy(diversifyFixturePlanning(fixture.tables,{resolvePlace:canonical}));
+validateDemoCorridorCatalog({...fixture,tables});
 const changed=key=>tables[key].filter((row,index)=>JSON.stringify(row)!==JSON.stringify(fixture.tables[key][index])).length;
 if(process.argv.includes('--write')){
  if(fs.readFileSync(path,'utf8')!==before)throw Error('DEMO_FIXTURE_SOURCE_CHANGED');
  fs.writeFileSync(path,JSON.stringify({...fixture,tables},null,2)+'\n');
 }
-console.log(JSON.stringify({written:process.argv.includes('--write'),changedCapacityPlans:changed('capacities'),changedPreferredPlans:changed('profile_routes'),hostedWrites:0}));
+console.log(JSON.stringify({written:process.argv.includes('--write'),changedCapacityPlans:changed('capacities'),changedPreferredPlans:changed('profile_routes'),changedFleetDescriptions:changed('company_pages'),hostedWrites:0}));

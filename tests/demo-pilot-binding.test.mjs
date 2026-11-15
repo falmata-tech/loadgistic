@@ -63,3 +63,26 @@ test('pilot SQL fixture refuses ordinary database names and stays registered on 
   assert.match(step,/-d "\$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1/);
  }
 });
+
+test('committed owner-race setup requires its exact argument and independent explicit opt-in',()=>{
+ const run=(args,extra={})=>spawnSync(process.execPath,['scripts/demo-pilot-binding-test-sql.mjs',...args],{
+  env:{...process.env,LOADGISTIC_TEST_DATABASE:'loadgistic_pilot_ci',LOADGISTIC_PILOT_RACE_SETUP:'',...extra},encoding:'utf8',timeout:5000});
+ for(const [args,extra,code] of [[['--write'],{},'PILOT_TEST_ARGUMENT_DENIED'],
+  [['--owner-race-setup','--write'],{},'PILOT_TEST_ARGUMENT_DENIED'],
+  [['--owner-race-setup'],{},'PILOT_RACE_SETUP_OPT_IN_REQUIRED'],
+  [['--owner-race-setup'],{LOADGISTIC_PILOT_RACE_SETUP:'true'},'PILOT_RACE_SETUP_OPT_IN_REQUIRED']]){
+  const result=run(args,extra);assert.notEqual(result.status,0);assert.equal(result.stdout,'');assert.match(result.stderr,new RegExp(code));
+ }
+ const normal=run([],{LOADGISTIC_PILOT_RACE_SETUP:'ALLOW_COMMITTED_DISPOSABLE_PILOT_OWNER_TEST'});
+ assert.equal(normal.status,0);assert.match(normal.stdout,/rollback;\n$/);assert.doesNotMatch(normal.stdout,/committedFixture/);
+ const optedIn=run(['--owner-race-setup'],{LOADGISTIC_PILOT_RACE_SETUP:'ALLOW_COMMITTED_DISPOSABLE_PILOT_OWNER_TEST'});
+ assert.equal(optedIn.status,0);assert.match(optedIn.stdout,/PILOT_FIXTURE_GUARDS_NOT_RESTORED/);assert.match(optedIn.stdout,/committedFixture/);assert.match(optedIn.stdout,/commit;\n$/);
+});
+
+test('owner race runner refuses primary, hosted or unconfirmed targets before spawning a database process',()=>{
+ for(const [database,confirmation] of [['postgres','postgres'],['production','production'],['loadgistic_pilot_ci',''],['loadgistic_telematics_ci','wrong']]){
+  const result=spawnSync(process.execPath,['scripts/verify-demo-pilot-owner-concurrency-local.mjs'],{
+   env:{...process.env,LOADGISTIC_TEST_DATABASE:database,LOADGISTIC_PILOT_OWNER_RACE_CONFIRM:confirmation,PATH:''},encoding:'utf8',timeout:5000});
+  assert.notEqual(result.status,0);assert.equal(result.stdout,'');assert.match(result.stderr,/EXACT_DISPOSABLE_PILOT_RACE_CONFIRMATION_REQUIRED/);assert.doesNotMatch(result.stderr,/ENOENT|PILOT_RACE_SPAWN_FAILED/);
+ }
+});

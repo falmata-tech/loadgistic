@@ -57,7 +57,7 @@ unchanged and both controllers remain off.
 
 **Local compatibility preparation:** migration227 maps the exact existing pilot
 namespace, excluding fleet-03/06/08 rather than restoring previous owners. It
-changes only private catalogs and nine pinned function bodies, preserving their
+changes only private catalogs and ten pinned function bodies, preserving their
 security metadata. Source choices, consent, sharing, accounts and saved public
 facts remain untouched. Three Capacity scopes can run; fleet-06 stays paused for
 ownership drift and fleet-02 for sharing drift. The bounded window returns seven
@@ -73,10 +73,31 @@ driver/target/replay drift and Tracking arming/forbidden notification, verifies
 unchanged notification queues, and stops both controls while retaining history.
 This is local database evidence, not provider-runtime/deployment qualification.
 
+PILOT qualification also serializes exact sole-owner membership before taking
+profile, device and vehicle locks. The public synthetic provisioning boundary
+uses only the exact pilot helper; retained LOCAL alternatives cannot admit a
+pilot device. Wrong or missing protocol identity and a newly added co-owner
+refuse without changing device/audit facts. Four actual two-session races on an
+owned isolated clone observed the expected blocker waits, accepted the operation
+that locked first, and denied later provisioning/reporting after the co-owner
+committed. The clone baseline was restored and fingerprinted. NR-86 retains the
+original findings and current proof; these changes do not alter LOCAL contracts.
+The runner pins the effective local Docker endpoint and immutable container ID,
+including Docker context precedence. PostgreSQL15 restores share the existing
+exact GraphQL wrapper/deferred-ACL repair; matching PostgreSQL17 restores use
+the direct archive path. Guard/restore-order tests pass locally; current-source
+CI still has to exercise the PostgreSQL15 stack.
+
 The owner's independent planning-diversity request changes fixture plans across
-all configurations, not simulator course authority. The exact13 authored
-simulator/private/handover inputs are preserved.130 capacity plans and27
-Preferred plans are corrected locally, with16 Partial signals restored from
+all configurations, not simulator course authority. Preserve the13 authored
+simulator/private/handover vehicle inputs, every exact corridor catalog evidence
+row and the profile scenario's page/Preferred baseline. The full gate caught six
+additional evidence rows, invalid center-as-boundary Areas and obsolete size/
+proximity assertions; the corrected builder validates the full catalog before
+writing and uses strictly enclosing real settlement rings or a Route fallback.
+Seven nonreserved public fleet descriptions follow their saved Preferred plan.
+The initial local patch changed130 capacity plans and27
+Preferred plans, with16 Partial signals restored from
 the old larger-vehicle import override. Location ages, privacy and motion history
 remain unchanged; five actual API matches and15 denials pass. All103 required
 planning place references exist locally. Hosted data correction remains a

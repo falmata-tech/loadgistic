@@ -3,6 +3,7 @@
 import {spawn} from 'node:child_process';
 
 const STDERR_LIMIT = 8192;
+export const GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS=120000;
 
 export function checkedLocalGpsPassword(status) {
   let url;
@@ -44,6 +45,50 @@ export function splitPgGraphqlAclToc(toc) {
     main: `${lines.filter((line) => !pattern.test(line)).join('\n').trimEnd()}\n`,
     deferred: `${deferred[0]}\n`,
   };
+}
+
+const graphqlWrapper='graphql_public.graphql(text,text,jsonb,jsonb)';
+const graphqlIdentitySql=`select md5(pg_get_functiondef(p.oid)) || '|' || md5(coalesce(p.proacl::text,''))
+ from pg_proc p where p.oid=to_regprocedure('${graphqlWrapper}');`;
+const graphqlExtensionSql=`select e.extname from pg_depend d join pg_extension e on e.oid=d.refobjid
+ where d.classid='pg_proc'::regclass and d.objid=to_regprocedure('${graphqlWrapper}') and d.deptype='e';`;
+function checkedGraphqlSnapshot(snapshot){
+ if(snapshot?.extension!=='pg_graphql'||!/^[a-f0-9]{32}\|[a-f0-9]{32}$/.test(snapshot?.identity||'')
+  ||typeof snapshot?.definition!=='string'||!snapshot.definition.startsWith('CREATE OR REPLACE FUNCTION graphql_public.graphql('))
+  throw Error('GPS CI invalid pg_graphql restore snapshot');
+ return snapshot;
+}
+
+// Capture before a disposable source is dropped, or from the unchanged local
+// primary used by normal CI cloning. No credentials or customer rows are read.
+export async function captureGpsCloneGraphql({major,query}){
+ checkedMatchingPgMajor(major,major);
+ if(major!==15)return null;
+ return checkedGraphqlSnapshot({extension:await query(graphqlExtensionSql),identity:await query(graphqlIdentitySql),
+  definition:await query(`select pg_get_functiondef('${graphqlWrapper}'::regprocedure);`)});
+}
+
+export function checkedGpsCloneArchive({major,graphqlSnapshot,toc}){
+ checkedMatchingPgMajor(major,major);
+ if(major===17)return null;
+ checkedGraphqlSnapshot(graphqlSnapshot);
+ return splitPgGraphqlAclToc(toc);
+}
+
+// Both clone creation and same-clone baseline restoration use this exact PG15
+// sequence. Callbacks own their checked local connection and private archive.
+export async function restoreGpsCloneArchive({major,graphqlSnapshot,readToc,restoreArchive,targetQuery}){
+ checkedMatchingPgMajor(major,major);
+ if(major===17){await restoreArchive(null);return;}
+ const source=checkedGraphqlSnapshot(graphqlSnapshot),lists=checkedGpsCloneArchive({major,graphqlSnapshot:source,toc:await readToc()});
+ await restoreArchive(lists.main);
+ if(await targetQuery(`select to_regprocedure('${graphqlWrapper}') is null;`)!=='t')
+  throw Error('GPS CI expected PostgreSQL15 GraphQL wrapper restore gap changed');
+ await targetQuery(source.definition+'\n');
+ await targetQuery(`alter extension pg_graphql add function ${graphqlWrapper};`);
+ await restoreArchive(lists.deferred);
+ if(await targetQuery(graphqlExtensionSql)!=='pg_graphql'||await targetQuery(graphqlIdentitySql)!==source.identity)
+  throw Error('GPS CI restored GraphQL wrapper definition or grants differ');
 }
 
 export function postgresErrorCategory(stderr) {

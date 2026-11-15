@@ -11,6 +11,34 @@ rollout: The importer is repeatable and additive; local startup idempotently qua
 
 # Ethiopia place catalog
 
+### Scenario: keyboard selection keeps the surrounding form open
+
+Given a user types a place and the bounded catalog suggestions are visible\
+When they use Arrow Down or Arrow Up and then Enter\
+Then the highlighted suggestion is announced and selected with its canonical
+place reference, and the enclosing search/edit form does not submit\
+And focus remains in the place input; the existing Save or Show vehicles action
+still owns form submission. An IME composition is not a selection command.
+
+Given suggestions are open or a query is still in flight\
+When the user presses Escape\
+Then suggestions close without closing the containing dialog or changing the
+saved place; a late result cannot reopen them\
+And editing a chosen label immediately clears its old reference and stale
+suggestions. Pointer/assistive activation still chooses the actual result.
+
+Given an empty, saved or unmatched place field has no suggestions/loading\
+When the user presses Escape\
+Then the normal containing-dialog Escape action remains available; invisible
+combobox state must not consume it or alter the saved canonical place.
+
+Changed contract: `AsyncPlaceCombobox` adds active-option keyboard/ARIA state,
+preserving catalog requests, click selection, caller key handling, labels,
+layout and explicit form submission. No schema, permission or location-observation
+change. Review desktop and phone searches, canonical query persistence/reload,
+Escape recovery and click choice before release. Rollback restores the previous
+component/CSS artifact without changing stored records or the catalog.
+
 ### Scenario: import Ethiopian settlements
 
 Given an Ethiopia OpenStreetMap Overpass settlement extract or a Geofabrik PBF with the Osmium command-line tool\

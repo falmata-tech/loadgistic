@@ -4,8 +4,11 @@ import {readFileSync} from 'node:fs';
 import {demoCurrentRouteForLocation,demoServiceAreaForLocation,demoRegularRoutesForBase,DEMO_PLACES} from '../src/lib/demo-capacity-geography.js';
 import {capacityGeographicMatch} from '../src/lib/capacity-geographic-match.js';
 import {distanceBetweenKm} from '../src/lib/domain.js';
+import {serviceAreaGeometryMatch} from '../src/lib/route-matching.js';
 import {diversifyFixturePlanning,AUTHORED_DEMO_PLAN_VEHICLES} from '../scripts/fixture-capacity-plans.mjs';
 import {applyManagedFixtureMarketPolicy} from '../scripts/fixture-market-policy.mjs';
+import {DEMO_CORRIDOR_CATALOG,validateDemoCorridorCatalog} from '../src/lib/demo-corridor-catalog.mjs';
+import {demoWorldPlanForStep} from '../src/lib/demo-world-planner.mjs';
 
 const record={id:'same-vehicle',location_place_ref:'builtin:addis ababa',location_lat:9.03,location_lng:38.74};
 const configs=['Courier car','Courier motorcycle','Cargo van','Pickup truck','Mini Open Body Truck','Light Box Truck','Medium Box Truck','Heavy Rigid Stake Body Truck','Tractor + Container Trailer'];
@@ -22,8 +25,13 @@ test('every configuration has the same city and regional planning choices',()=>{
   for(const i of [0,1])assert.deepEqual(demoServiceAreaForLocation(input,i),demoServiceAreaForLocation(record,i));
  }
  const areas=[0,1].map(i=>demoServiceAreaForLocation(record,i));
- assert.ok(areas.some(area=>area.radiusKm===20));assert.ok(areas.some(area=>area.radiusKm>20));
- assert.ok(areas.every(area=>area.boundary.length>=3&&area.boundary.every(p=>!p.key.includes('edge'))));
+ assert.ok(areas.every(area=>area&&area.boundary.length>=3&&area.boundary.length<=5));
+ assert.equal(new Set(areas.map(area=>JSON.stringify(area.boundary))).size,2);
+ for(const area of areas){
+  assert.equal(serviceAreaGeometryMatch(area.center,area.boundary).inside,true);
+  assert.ok(Number.isFinite(area.radiusKm)&&area.radiusKm>0);
+  assert.ok(area.boundary.every(p=>!p.key.includes('edge')&&distanceBetweenKm(area.center,p)<=area.radiusKm));
+ }
 });
 
 test('small long-distance routes match ordered endpoints and refuse reversed or unrelated AND criteria',()=>{
@@ -63,5 +71,45 @@ test('fixture planning preserves authority, location observations, privacy choic
  for(const choice of discovery.capacity_choices){
   const row=managed.find(c=>c.id===choice.capacity_id);
   assert.equal(row.visibility,choice.visibility);assert.equal(row.location_precision_km,choice.location_precision_km);
+ }
+});
+
+test('diversity refresh preserves every exact corridor input and all twenty authored phases',()=>{
+ const fixture=JSON.parse(readFileSync('resources/fixtures/managed-market.json','utf8'));
+ const manifest=JSON.parse(readFileSync('resources/fixtures/demo-world-scenarios.json','utf8'));
+ const refreshed={...fixture,tables:diversifyFixturePlanning(fixture.tables)};
+ assert.equal(validateDemoCorridorCatalog(refreshed),true);
+ const planningFields=['availability_geometry','movement_scope','origin','destination','corridor',
+  'origin_place_ref','origin_lat','origin_lng','destination_place_ref','destination_lat','destination_lng',
+  'current_route_origin','current_route_destination','current_route_points_json',
+  'current_origin_place_ref','current_origin_lat','current_origin_lng',
+  'current_destination_place_ref','current_destination_lat','current_destination_lng',
+  'local_place_ref','local_place_label','local_center_lat','local_center_lng','local_radius_km','work_radius_km',
+  'capacity_area_center_place_ref','capacity_area_center_label','capacity_area_center_lat','capacity_area_center_lng',
+  'capacity_area_boundary_json'];
+ let evidenceOutsideMutableVehicles=0;
+ for(const route of DEMO_CORRIDOR_CATALOG.routes){
+  const before=fixture.tables.capacities.find(row=>row.id===route.evidence.id);
+  const after=refreshed.tables.capacities.find(row=>row.id===route.evidence.id);
+  assert.ok(before&&after,route.evidence.id);
+  for(const field of planningFields)assert.deepEqual(after[field],before[field],`${route.evidence.id}.${field}`);
+  if(!AUTHORED_DEMO_PLAN_VEHICLES.has(before.vehicle_id))evidenceOutsideMutableVehicles++;
+ }
+ assert.ok(evidenceOutsideMutableVehicles>0,'alternate and other exact evidence must survive independently of mutable target vehicles');
+ const activatedAt='2026-11-13T12:00:00.000Z';let phases=0;
+ for(const target of manifest.targets.filter(row=>row.mutable))for(let stepIndex=0;stepIndex<4;stepIndex++){
+  const previousCompletedAt=stepIndex===0?null:new Date(Date.parse(activatedAt)+(target.start_offset_seconds+(stepIndex-1)*120)*1000+1000).toISOString();
+  const options={manifest,activatedAt,epoch:1,targetKey:target.key,cycleIndex:0,stepIndex,previousCompletedAt};
+  assert.deepEqual(demoWorldPlanForStep({...options,fixture:refreshed}),demoWorldPlanForStep({...options,fixture}));
+  phases++;
+ }
+ assert.equal(phases,20);
+ for(const change of ['coordinate','order']){
+  const changed=structuredClone(refreshed);
+  const row=changed.tables.capacities.find(capacity=>capacity.id===DEMO_CORRIDOR_CATALOG.routes[0].evidence.id);
+  const points=JSON.parse(row.current_route_points_json);
+  if(change==='coordinate')points[0].lat+=0.001;else points.reverse();
+  row.current_route_points_json=JSON.stringify(points);
+  assert.throws(()=>validateDemoCorridorCatalog(changed),/DEMO_WORLD_ROUTE_REFUSED/,change);
  }
 });
