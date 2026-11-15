@@ -373,6 +373,34 @@ clone from its protected archive; normal CI also retains its always-cleanup step
 Evidence: `verify-demo-pilot-owner-concurrency-local.mjs`, clone restore/target
 negative tests and both existing CI workflows. FEAT-SIM-001 / NR-86.
 
+### Scenario: a second PostgreSQL15 dump may omit an unchanged extension ACL
+
+Given the exact GraphQL wrapper remains owned by supabase_admin in pg_graphql\
+When a PostgreSQL15 archive contains no exact or related wrapper ACL entry\
+Then omission is accepted only with exactly one correctly keyed extension
+initial-privilege record whose ACL hash equals the current non-NULL ACL hash\
+And missing, malformed, duplicate, unknown or mismatched metadata refuses\
+And before any committed owner-race fixture, only its verified disposable clone
+proves the same owner's fresh function ACL in graphql_public using a bounded
+transaction which always rolls back and never executes the dummy function\
+And read-only capture on the unchanged primary never creates a probe\
+And restoration checks the newly created wrapper's owner and complete definition
+immediately, requiring exact current ACL equality before extension enrollment
+when no deferred ACL exists\
+And final owner, definition, ACL and membership equality remain mandatory, with
+initial-privilege equality also required for the omitted-ACL path\
+And the original single-entry deferred-ACL path and PostgreSQL17 direct path remain.
+
+Observe only fixed archive modes, bounded entry-count buckets and proof states;
+definitions, ACLs, role hashes, SQL and archives stay private. Unknown or duplicate
+related TOC entries never become permission to omit grants. Failed proof stops
+before fixture installation; restore mismatch remains failure under existing
+cleanup and timeout bounds. Rollback restores the previous helper and runner,
+never weakens ACL checks or changes a hosted catalog. Contracts: BASE-DEP-001 /
+FEAT-SIM-001 / NR-86; focused clone and actual-entry fake-process tests qualify
+source logic. A separate isolated PG15 dummy probe establishes ACL-elision
+semantics, not complete Supabase race/restore qualification.
+
 ### Scenario: pilot race preflight failures remain diagnosable without private logs
 
 Given the exact opted-in disposable clone fails a preflight or restore check\

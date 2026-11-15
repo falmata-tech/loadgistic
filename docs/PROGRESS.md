@@ -9,6 +9,29 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15 (CST)
 
+Current checkpoint: local3100 and the six capped essential services remain
+available; the last container snapshot is736MiB combined. Mixed planning,
+matching/privacy and actual desktop/phone/Expo reviews pass. The PG15 archive
+follow-up now passes41 focused checks in5.209s, source/spec/workflow checks with
+pinned ShellCheck (124 scripts,7.664s), and an actual isolated pg_graphql helper
+integration in12.489s. Full Supabase races/restoration and final-source CI remain
+required. PR39 stays draft; its current published head is stillf67db02 while
+the diagnostic branch qualifies the follow-ups. Production remains unchanged.
+
+The owner approved the limited hosted planning audit. Its private review packet
+proposes120 Capacity/19 assigned Preferred plans, preserving seven newer
+publications, seven prior rows, ten unassigned plans,13 reserved vehicles and11
+catalog evidence rows. Fourteen hosted canonical-coordinate differences are
+resolved; two invalid Area proposals are excluded. Two signature/MD5-only reads
+match the locally installed consumers exactly and qualify latest selection
+without returning hosted function bodies. The broader body read remains rejected.
+No hosted data/configuration write occurred. Review-only SQL preparation and
+operation-specific rehearsal are separate from this read-only evidence.
+Netlify previewf67 builds/archives pass; its runtime remains unqualified because
+the scoped preview handler reports SUPABASE_NOT_CONFIGURED.
+
+### Qualification history and retained failures
+
 Pushed draftPR39 candidatef67db02. Exact CI43754634231 passes the combined
 pilot rollback-only SQL (step41) but its new owner-race runner fails in about
 0.2s before any race, acceptance, denial or blocker wait. The console receipt
@@ -60,6 +83,32 @@ PG17 query confirms exact clone/current role through the actual wrapper, with
 no data write. It does not prove the pending PG15 authentication/race/restore.
 The old unmeasured primaryUnchanged claim is replaced with an explicit
 primaryVerification:not-performed; exact clone arguments remain tested.
+Focused ea43c73 run43758528135 passes Manual/pilot SQL and admin authentication,
+then refuses BACKUP_ARCHIVE_VALIDATE / PILOT_RACE_GRAPHQL_ACL_REQUIRED before
+fixture writes or races. The exact-match ACL entry count is not1; that diagnostic
+alone does not establish zero versus unknown/duplicate shape. Both cleanup
+steps pass. An independent empty PG15.8 probe using a cached official image,
+network disabled, capped resources and fresh temporary data completes in8.847s
+and is removed. It confirms extension enrollment records current initial ACLs
+and a second dump can omit an unchanged ACL. It also proves a counterexample:
+matching current/initial ACLs alone does not ensure fresh CREATE permissions.
+The pending narrow repair must pin owner/current/initial metadata, refuse any
+unknown/duplicate shape, prove same-role/schema recreation on the disposable
+clone before fixture commits, and verify ACL/owner before enrollment plus final
+body/ACL/membership equality. Keep primary capture read-only. The generic
+plpgsql dummy probe is not full Supabase restoration qualification.
+The completed helper keeps primary capture read-only, requires exact owner and
+initial-ACL facts for the zero-entry shape, and runs a harmless same-schema/role
+creation proof only on the verified disposable clone before fixture commits.
+It checks recreated owner/body/zero-mode ACL before enrollment and full equality
+afterward. All41 focused checks pass; an actual cached PG15.8/pg_graphql probe
+passes one-entry restore, zero-entry redump/proof/restore, default-drift and
+wrong-database refusals with zero leftover probe functions/fixture commits.
+Receipt `pg15-helper-integration-20261115-a/receipt.private.json` SHA256
+2f3c84dff7e9d9f4d07f6537f00d79c17c097f23474663240526d43d11885d00 binds
+helper SHAe1a7ac31730010a18928983f3654513d99c0d3214ef25f0f9629d29fb9011827.
+The owned container/fresh data are removed. Proof-attempt status distinguishes
+an attempted refusal from a probe never run. Full Supabase CI remains separate.
 
 Netlify builds the exactf67 preview6afa0cf4576519d1f022ab30 successfully in99s.
 Its installed postBuild guard checks all11 final function ZIPs: root layout and

@@ -85,6 +85,23 @@ pass, including real-shell private-output/metacharacter checks and exact-clone
 arguments. One read-only PG17 clone identity probe passes. The primary receipt
 now explicitly says verification was not performed. Fresh PG15 race/restore
 execution remains required; no hosted change is claimed.
+Focused ea43c73 authentication succeeds, then the archive guard refuses before
+fixture writes. A separate empty PG15.8 probe (8.847s, removed) confirms legitimate
+ACL omission after extension re-enrollment and a counterexample to hash-only
+eligibility: fresh CREATE may use different defaults. Owner: telematics database
+maintainer. Next action: retain exact owner/current/initial metadata and archive
+shape checks; require a disposable-clone-only rollback creation proof before
+fixture commits, immediate recreated owner/ACL checks before ADD and final full
+identity/membership equality. Missing metadata, unknown/duplicate ACLs and default
+drift must still refuse. Do not mutate the unchanged primary, install catalog
+repairs or treat the generic dummy probe as complete Supabase restoration proof.
+The bounded extension is prepared with those guards and41 focused passes. The
+actual frozen helper also passes a12.489s isolated PG15.8/pg_graphql one-entry
+restore followed by zero-entry proof/restore, with owner/body/ACL/membership and
+zero initial-state equality. Default drift and the actual wrong-database server
+guard refuse; no probe functions or fixture commits remain, and the owned empty
+container is removed. Primary capture remains read-only. Full Supabase fixture,
+race/restore and current-source CI qualification remain outstanding.
 
 ## NR-85 — Duty denial depends on an unauthorized vehicle's location source
 

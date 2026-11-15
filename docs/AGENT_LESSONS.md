@@ -266,6 +266,16 @@ The31-case check passes in6.209s and the real read-only PG17 wrapper query passe
 fresh PG15 race/restore proof remains separate. Replace a hardcoded unchanged
 claim with explicit not-performed verification rather than reporting a
 declaration as an observed primary snapshot.
+The next archive refusal is a distinct PG15 behavior: re-enrolling an extension
+function records its current ACL as initial, so a second pg_dump may omit an
+unchanged ACL. A matching current/initial hash is insufficient when current
+CREATE defaults differ. An empty12.489s actual pg_graphql/helper probe verifies
+both restore shapes and counterexamples. Pin owner/metadata and archive shape,
+prove same-role/schema recreation on the disposable clone before fixture commits,
+and check recreated ACL before enrollment plus final equality. Keep primary
+capture read-only, retain the one-entry flow and refuse drift/unknown shapes.
+The41-case focused check passes in5.209s; full Supabase races/restoration still
+need CI. Mark a failed proof ATTEMPTED rather than NOT_PERFORMED when it ran.
 
 The final phone keyboard E2E reached the correct canonical filter request, but
 Next's route response took5,657ms while the URL assertion allowed5,000ms. The

@@ -4,7 +4,7 @@ import {spawn} from 'node:child_process';
 import {createReadStream,createWriteStream,mkdirSync,mkdtempSync,writeFileSync,chmodSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import path from 'node:path';
-import {checkedMatchingPgMajor,checkedLocalRestoreRole,captureGpsCloneGraphql,checkedGpsCloneArchive,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS,postgresErrorCategory} from './ci-disposable-gps-clone.mjs';
+import {checkedMatchingPgMajor,checkedLocalRestoreRole,captureGpsCloneGraphql,checkedGpsCloneArchive,gpsCloneGraphqlArchiveDiagnostic,proveGpsCloneGraphqlCreation,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS,postgresErrorCategory} from './ci-disposable-gps-clone.mjs';
 import {pinnedLocalPilotDocker,publicPilotOwnerFailure,pilotOwnerAdminExecArgs} from './lib/pilot-owner-race-target.mjs';
 
 const database=process.env.LOADGISTIC_TEST_DATABASE;
@@ -16,6 +16,7 @@ const {container,project}=targets[database],q=s=>"'"+String(s).replaceAll("'","'
 mkdirSync('.local',{recursive:true});const evidence=mkdtempSync(path.resolve('.local/pilot-owner-races-'));chmodSync(evidence,0o700);
 let stage='PREFLIGHT',baseline=null,backupReady=false,setupAttempted=false,restored=false,runFailure=null,restoreFailure=null;
 let dockerTarget=null,containerId=null,serverMajor=null,graphqlSnapshot=null,archiveToc=null;const live=new Set();
+let graphqlArchive=null;
 const counters={races:0,observedBlockerWaits:0,acceptedProvision:0,acceptedReports:0,deniedProvision:0,deniedReports:0};
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function fail(code){throw Error(code);}
@@ -141,7 +142,17 @@ try{
  await docker(pilotOwnerAdminExecArgs({containerId:selectedContainer(),database,operation:'dump'}),{destination:path.join(evidence,'baseline.private.dump')});
  if(serverMajor===15){stage='BACKUP_ARCHIVE_TOC';archiveToc=await docker(['exec','-i',selectedContainer(),'pg_restore','-l'],{source:path.join(evidence,'baseline.private.dump'),maxOutput:2000000});}
  stage='BACKUP_ARCHIVE_VALIDATE';
- checkedGpsCloneArchive({major:serverMajor,graphqlSnapshot,toc:archiveToc});backupReady=true;
+ const archiveInput={major:serverMajor,graphqlSnapshot,toc:archiveToc};
+ const diagnostic=gpsCloneGraphqlArchiveDiagnostic(archiveInput);
+ if(diagnostic)graphqlArchive={...diagnostic,creationProof:'NOT_PERFORMED'};
+ const archive=checkedGpsCloneArchive(archiveInput);
+ if(archive?.diagnostic.mode==='INITIAL_WRAPPER_ACL'){
+  stage='BACKUP_GRAPHQL_CREATION_PROOF';
+  graphqlArchive.creationProof='ATTEMPTED';
+  await proveGpsCloneGraphqlCreation({database,graphqlSnapshot,query:adminQuery});
+  graphqlArchive.creationProof='MATCHED';
+ }else if(graphqlArchive)graphqlArchive.creationProof='NOT_REQUIRED';
+ backupReady=true;
  stage='COMMITTED_FIXTURE_GENERATE';const setup=await processRun(process.execPath,['scripts/demo-pilot-binding-test-sql.mjs','--owner-race-setup'],{env:{...process.env,LOADGISTIC_PILOT_RACE_SETUP:'ALLOW_COMMITTED_DISPOSABLE_PILOT_OWNER_TEST'}});
  stage='COMMITTED_FIXTURE_INSTALL';
  setupAttempted=true;await docker(['exec','-i','-e','PGOPTIONS=-c loadgistic.demo_isolated_test=true',selectedContainer(),'psql','-X','-qAt','-U','postgres','-d',database,'-v','ON_ERROR_STOP=1'],{input:setup});
@@ -168,6 +179,6 @@ try{
    writeFileSync(path.join(evidence,'restore-failure.private.json'),JSON.stringify(restoreFailure),{mode:0o600});process.exitCode=1;
   }finally{if(listCreated)await docker(['exec',selectedContainer(),'rm','-rf','--',listDirectory]).catch(()=>{process.exitCode=1;});}
  }
- const result={event:'pilot_owner_concurrency',ok:process.exitCode!==1,...counters,baselineRestored:restored,primaryVerification:'not-performed',...(runFailure?{failure:runFailure}:{}),...(restoreFailure?{restoreFailure}:{})};
+ const result={event:'pilot_owner_concurrency',ok:process.exitCode!==1,...counters,baselineRestored:restored,primaryVerification:'not-performed',...(graphqlArchive?{graphqlArchive}:{}),...(runFailure?{failure:runFailure}:{}),...(restoreFailure?{restoreFailure}:{})};
  writeFileSync(path.join(evidence,'receipt.json'),JSON.stringify(result,null,2),{mode:0o600});console.log(JSON.stringify(result));
 }
