@@ -4,8 +4,8 @@ import {spawn} from 'node:child_process';
 import {createReadStream,createWriteStream,mkdirSync,mkdtempSync,writeFileSync,chmodSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import path from 'node:path';
-import {checkedMatchingPgMajor,checkedLocalRestoreRole,captureGpsCloneGraphql,checkedGpsCloneArchive,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS} from './ci-disposable-gps-clone.mjs';
-import {pinnedLocalPilotDocker} from './lib/pilot-owner-race-target.mjs';
+import {checkedMatchingPgMajor,checkedLocalRestoreRole,captureGpsCloneGraphql,checkedGpsCloneArchive,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS,postgresErrorCategory} from './ci-disposable-gps-clone.mjs';
+import {pinnedLocalPilotDocker,publicPilotOwnerFailure} from './lib/pilot-owner-race-target.mjs';
 
 const database=process.env.LOADGISTIC_TEST_DATABASE;
 const targets={loadgistic_pilot_ci:{container:'supabase_db_loadgistic-review-20261114',project:'loadgistic-review-20261114'},
@@ -14,7 +14,7 @@ if(!Object.hasOwn(targets,database||'')||process.env.LOADGISTIC_PILOT_OWNER_RACE
 if(process.argv.length!==2)throw Error('PILOT_OWNER_RACE_ARGUMENT_DENIED');
 const {container,project}=targets[database],q=s=>"'"+String(s).replaceAll("'","''")+"'";
 mkdirSync('.local',{recursive:true});const evidence=mkdtempSync(path.resolve('.local/pilot-owner-races-'));chmodSync(evidence,0o700);
-let stage='PREFLIGHT',baseline=null,backupReady=false,setupAttempted=false,restored=false,restoreFailure=null;
+let stage='PREFLIGHT',baseline=null,backupReady=false,setupAttempted=false,restored=false,runFailure=null,restoreFailure=null;
 let dockerTarget=null,containerId=null,serverMajor=null,graphqlSnapshot=null,archiveToc=null;const live=new Set();
 const counters={races:0,observedBlockerWaits:0,acceptedProvision:0,acceptedReports:0,deniedProvision:0,deniedReports:0};
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -30,7 +30,9 @@ function processRun(command,args,{input,source,destination,env=process.env,timeo
   child.stdin.on('error',()=>{});child.on('error',()=>reject(Error('PILOT_RACE_SPAWN_FAILED')));
   timer=setTimeout(()=>{try{writeFileSync(path.join(evidence,'process-timeout.private.json'),JSON.stringify({event:'pilot_process_timeout',stage,timeoutMs:timeout,elapsedMs:Date.now()-started,program:command==='docker'?'DOCKER':'NODE'}),{mode:0o600,flag:'wx'});}catch{}
    child.kill('SIGTERM');reject(Error('PILOT_RACE_PROCESS_TIMEOUT'));},timeout);
-  child.on('close',async code=>{clearTimeout(timer);if(code!==0){writeFileSync(path.join(evidence,'last-process-error.private.log'),stderr,{mode:0o600});reject(Error('PILOT_RACE_PROCESS_FAILED'));}else{try{await flushed;resolve(stdout.trim());}catch(error){reject(error);}}});
+  child.on('close',async code=>{clearTimeout(timer);if(code!==0){writeFileSync(path.join(evidence,'last-process-error.private.log'),stderr,{mode:0o600});
+    const error=Error('PILOT_RACE_PROCESS_FAILED');error.category=postgresErrorCategory(stderr);reject(error);
+   }else{try{await flushed;resolve(stdout.trim());}catch(error){reject(error);}}});
  });
 }
 const docker=(args,options={})=>{if(!dockerTarget)fail('PILOT_RACE_UNPINNED_DOCKER');return processRun('docker',[...dockerTarget.args,...args],{...options,env:dockerTarget.environment});};
@@ -38,15 +40,21 @@ const selectedContainer=()=>containerId||container;
 const queryAs=(role,sql)=>docker(['exec','-i',selectedContainer(),'psql','-X','-qAt','-U',role,'-d',database,'-v','ON_ERROR_STOP=1'],{input:sql});
 const query=sql=>queryAs('postgres',sql),adminQuery=sql=>queryAs('supabase_admin',sql);
 const json=async sql=>JSON.parse(await query(sql));
-async function verifyTarget(){
- if(!dockerTarget)dockerTarget=await pinnedLocalPilotDocker({environment:process.env,
-  inspectContext:async name=>JSON.parse(await processRun('docker',['context','inspect',...(name?[name]:[]),'--format','{{json .Endpoints.docker.Host}}']))});
+async function verifyTarget({restoring=false}={}){
+ const phase=restoring?'RESTORE_TARGET':'PREFLIGHT';
+ if(!dockerTarget){stage=phase+'_DOCKER_CONTEXT';dockerTarget=await pinnedLocalPilotDocker({environment:process.env,
+  inspectContext:async name=>JSON.parse(await processRun('docker',['context','inspect',...(name?[name]:[]),'--format','{{json .Endpoints.docker.Host}}']))});}
+ stage=phase+'_CONTAINER_IDENTITY';
  const identity=(await docker(['inspect','--format','{{.Id}}|{{index .Config.Labels "com.supabase.cli.project"}}',selectedContainer()])).split('|');
  if(!/^[a-f0-9]{64}$/.test(identity[0])||identity[1]!==project||containerId&&identity[0]!==containerId)fail('PILOT_RACE_CONTAINER_DRIFT');containerId=identity[0];
+ stage=phase+'_DATABASE_IDENTITY';
  const check=await json("select jsonb_build_object('database',current_database(),'major',current_setting('server_version_num')::integer/10000);");
+ stage=phase+'_DUMP_CLIENT_VERSION';
  const client=await docker(['exec',selectedContainer(),'pg_dump','--version']),clientMajor=Number(client.match(/PostgreSQL\)\s+(\d+)/)?.[1]);
+ stage=phase+'_PG_MAJOR_CHECK';
  checkedMatchingPgMajor(clientMajor,check.major);
  if(check.database!==database||serverMajor!==null&&check.major!==serverMajor)fail('PILOT_RACE_DATABASE_DRIFT');serverMajor=check.major;
+ stage=phase+'_RESTORE_ROLE';
  checkedLocalRestoreRole(await adminQuery('select current_user;'));
 }
 const baselineSql=`select jsonb_build_object(
@@ -124,22 +132,26 @@ async function runRaces(){
 }
 
 try{
- await verifyTarget();const guard=await query("select exists(select 1 from public.vehicles where id='caf1d0db-4d8e-4ce9-a879-6c7b6017de3a') and not exists(select 1 from auth.users where raw_app_meta_data->>'fixture_source'='loadgistic-production-pilot-v1');");if(guard!=='t')fail('PILOT_RACE_LOCAL_BASELINE_REQUIRED');
+ await verifyTarget();stage='PREFLIGHT_LOCAL_BASELINE';const guard=await query("select exists(select 1 from public.vehicles where id='caf1d0db-4d8e-4ce9-a879-6c7b6017de3a') and not exists(select 1 from auth.users where raw_app_meta_data->>'fixture_source'='loadgistic-production-pilot-v1');");if(guard!=='t')fail('PILOT_RACE_LOCAL_BASELINE_REQUIRED');
+ stage='PREFLIGHT_BASELINE_FINGERPRINT';
  baseline=await json(baselineSql);writeFileSync(path.join(evidence,'baseline-fingerprint.private.json'),JSON.stringify(baseline),{mode:0o600});
- stage='BACKUP';graphqlSnapshot=await captureGpsCloneGraphql({major:serverMajor,query:adminQuery});
+ stage='BACKUP_GRAPHQL_SNAPSHOT';graphqlSnapshot=await captureGpsCloneGraphql({major:serverMajor,query:adminQuery});
  if(graphqlSnapshot)writeFileSync(path.join(evidence,'graphql-wrapper.private.json'),JSON.stringify(graphqlSnapshot),{mode:0o600});
+ stage='BACKUP_ARCHIVE';
  await docker(['exec',selectedContainer(),'pg_dump','-U','supabase_admin','-Fc','-d',database],{destination:path.join(evidence,'baseline.private.dump')});
- if(serverMajor===15)archiveToc=await docker(['exec','-i',selectedContainer(),'pg_restore','-l'],{source:path.join(evidence,'baseline.private.dump'),maxOutput:2000000});
+ if(serverMajor===15){stage='BACKUP_ARCHIVE_TOC';archiveToc=await docker(['exec','-i',selectedContainer(),'pg_restore','-l'],{source:path.join(evidence,'baseline.private.dump'),maxOutput:2000000});}
+ stage='BACKUP_ARCHIVE_VALIDATE';
  checkedGpsCloneArchive({major:serverMajor,graphqlSnapshot,toc:archiveToc});backupReady=true;
- stage='COMMITTED_FIXTURE';const setup=await processRun(process.execPath,['scripts/demo-pilot-binding-test-sql.mjs','--owner-race-setup'],{env:{...process.env,LOADGISTIC_PILOT_RACE_SETUP:'ALLOW_COMMITTED_DISPOSABLE_PILOT_OWNER_TEST'}});
+ stage='COMMITTED_FIXTURE_GENERATE';const setup=await processRun(process.execPath,['scripts/demo-pilot-binding-test-sql.mjs','--owner-race-setup'],{env:{...process.env,LOADGISTIC_PILOT_RACE_SETUP:'ALLOW_COMMITTED_DISPOSABLE_PILOT_OWNER_TEST'}});
+ stage='COMMITTED_FIXTURE_INSTALL';
  setupAttempted=true;await docker(['exec','-i','-e','PGOPTIONS=-c loadgistic.demo_isolated_test=true',selectedContainer(),'psql','-X','-qAt','-U','postgres','-d',database,'-v','ON_ERROR_STOP=1'],{input:setup});
  await runRaces();
-}catch(error){writeFileSync(path.join(evidence,'failure.private.json'),JSON.stringify({stage,code:/^PILOT_[A-Z_]+$/.test(error.message||'')?error.message:'UNCLASSIFIED'},null,2),{mode:0o600});process.exitCode=1;
+}catch(error){runFailure=publicPilotOwnerFailure(stage,error);writeFileSync(path.join(evidence,'failure.private.json'),JSON.stringify(runFailure,null,2),{mode:0o600});process.exitCode=1;
 }finally{
  for(const state of [...live]){if(!state.closed)await state.finish(false).catch(()=>{});}
  if(backupReady&&setupAttempted){
   const listDirectory='/tmp/loadgistic-pilot-race-'+randomUUID();let listCreated=false,listIndex=0;
-  try{stage='RESTORE_TARGET_CHECK';await verifyTarget();
+  try{stage='RESTORE_TARGET_CHECK';await verifyTarget({restoring:true});
    stage='RESTORE_DROP';await docker(['exec',selectedContainer(),'dropdb','-U','postgres',database]);
    stage='RESTORE_CREATE';await docker(['exec',selectedContainer(),'createdb','-U','postgres','--owner=postgres',database]);
    stage='RESTORE_ARCHIVE';
@@ -152,10 +164,10 @@ try{
    stage='RESTORE_VERIFY';const restoredFingerprint=await json(baselineSql);
    writeFileSync(path.join(evidence,'restored-fingerprint.private.json'),JSON.stringify(restoredFingerprint),{mode:0o600});
    if(JSON.stringify(restoredFingerprint)!==JSON.stringify(baseline))fail('PILOT_RACE_BASELINE_MISMATCH');restored=true;
-  }catch(error){restoreFailure={stage,code:/^PILOT_[A-Z_]+$/.test(error.message||'')?error.message:/^GPS CI /.test(error.message||'')?'PILOT_RACE_CLONE_VALIDATION':'UNCLASSIFIED'};
+  }catch(error){restoreFailure=publicPilotOwnerFailure(stage,error);
    writeFileSync(path.join(evidence,'restore-failure.private.json'),JSON.stringify(restoreFailure),{mode:0o600});process.exitCode=1;
   }finally{if(listCreated)await docker(['exec',selectedContainer(),'rm','-rf','--',listDirectory]).catch(()=>{process.exitCode=1;});}
  }
- const result={event:'pilot_owner_concurrency',ok:process.exitCode!==1,...counters,baselineRestored:restored,primaryUnchanged:true,...(restoreFailure?{restoreFailure}:{})};
+ const result={event:'pilot_owner_concurrency',ok:process.exitCode!==1,...counters,baselineRestored:restored,primaryUnchanged:true,...(runFailure?{failure:runFailure}:{}),...(restoreFailure?{restoreFailure}:{})};
  writeFileSync(path.join(evidence,'receipt.json'),JSON.stringify(result,null,2),{mode:0o600});console.log(JSON.stringify(result));
 }

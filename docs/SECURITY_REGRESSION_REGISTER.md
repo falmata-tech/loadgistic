@@ -51,6 +51,22 @@ diagnostics; security/lease/parser bounds and the three-minute CI wrapper stay
 unchanged. Do not relabel the failed integrated receipt successful. PostgreSQL15
 runtime, complete current-source CI and hosted review remain outstanding.
 
+Exact-sourcef67 CI43754634231 passes the combined pilot rollback-only SQL but
+the new race runner exits in about0.2s with zero races/waits/accepted/denied
+counts. Cleanup succeeds. Its failure stage/code exists only in ignored private
+evidence and is absent from the console receipt; no preflight cause or PG15 SQL
+defect is established. Owner: telematics database maintainer. Next action:
+retain only allowlisted stage/code evidence in the public receipt, negatively
+test unknown-message/path/identity exclusion, then use the focused disposable
+lane to identify and repair the actual failure before another full CI. Do not
+upload private captures, relax target/security bounds or relabel this result.
+The diagnostic-only follow-up implements exact stage/code/category allowlists
+and separate preflight labels. All27 focused target/restore/diagnostic checks
+pass in11.616s, including real-runner fake-Docker refusals before backup/setup/
+drop and unknown-message/path/identity exclusion. Static workflow checks pass.
+Actual cause identification and fixed PG15 execution still require the focused
+disposable run; this finding remains open.
+
 ## NR-85 — Duty denial depends on an unauthorized vehicle's location source
 
 November14 native diagnostic run43560119545 at e9c9a616 started the full isolated

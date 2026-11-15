@@ -373,6 +373,25 @@ clone from its protected archive; normal CI also retains its always-cleanup step
 Evidence: `verify-demo-pilot-owner-concurrency-local.mjs`, clone restore/target
 negative tests and both existing CI workflows. FEAT-SIM-001 / NR-86.
 
+### Scenario: pilot race preflight failures remain diagnosable without private logs
+
+Given the exact opted-in disposable clone fails a preflight or restore check\
+When the verifier emits its final failed receipt\
+Then the receipt retains a fixed allowlisted stage, failure code and error category\
+And distinct Docker, database identity, client-version and local restore-role checks
+remain distinguishable before any backup or fixture write\
+And unknown messages, paths, account IDs, raw SQL and connection details remain private\
+And failure stays a failed result with zero fabricated races and unchanged cleanup,
+security and three-minute CI bounds.
+
+Contracts: diagnostics grant no target or restore authority. Exact stage/code
+vocabulary and static PostgreSQL error categories are public; raw process stderr
+and archives retain their existing private evidence paths. Unknown errors use
+the unclassified code/category, never their text. No automatic retry is added.
+Evidence: `pilot-owner-race-diagnostics.test.mjs` exercises the real runner with
+fake Docker commands and proves PG-major, role/authentication and unknown-text
+refusals occur before backup/setup/drop operations. FEAT-SIM-001 / NR-86.
+
 ### Scenario: schema rollout
 
 Given a database migration is required\

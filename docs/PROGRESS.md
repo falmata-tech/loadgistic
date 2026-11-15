@@ -9,6 +9,36 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15 (CST)
 
+Pushed draftPR39 candidatef67db02. Exact CI43754634231 passes the combined
+pilot rollback-only SQL (step41) but its new owner-race runner fails in about
+0.2s before any race, acceptance, denial or blocker wait. The console receipt
+does not retain the private failure stage/code, so no PG15 SQL/restore cause
+is established. Clone removal and Supabase stop both pass. Mobile boundaries
+and Operations proof43754634230 pass; downstream browser/container/Featured
+qualification is skipped/blocked, not green. Diagnose the preflight and retain
+typed failure evidence before another complete CI.
+The diagnostic-only repair now emits strictly allowlisted stage/code/category
+for each preflight boundary, with no raw message, path, account ID or SQL.
+Fake-Docker CLI checks prove failure precedes backup/setup/drop. All27 focused
+checks pass in11.616s; specs/source/workflow pass (124 scripts,13.454s). Guards,
+restore sequencing and time limits are unchanged. Its focused disposable CI
+lane is next; this is diagnostic preparation, not a repair of an established
+PG15 cause or a green replacement for the failed run.
+
+Netlify builds the exactf67 preview6afa0cf4576519d1f022ab30 successfully in99s.
+Its installed postBuild guard checks all11 final function ZIPs: root layout and
+nodeBundlerNone true, privateEntries0; one edge function is also deployed.
+Actual Chrome public entry shows server exception digest2221522590. The scoped
+preview Next handler log identifies SUPABASE_NOT_CONFIGURED. Packaging passes;
+preview runtime is unqualified. Production-only credentials were not copied or
+configuration changed. The deploy list still shows production520328b at
+6af6ac945eb1cff1d55e577c. No production publication or simulator activation.
+Three completed task-created review tabs were then closed, including the two
+local pages Chrome labelled1.8GB/2.8GB; unrelated tabs/apps remain open. The
+kept local3100 server returns200/ok with the expected local Supabase adapters
+in836ms after cleanup. This is observed cleanup/health, not an OS-memory delta
+or a resolved explanation for earlier latency.
+
 Local gate components now pass:45 specs/42 features,774 source files,124
 workflow scripts, all1,572 unit/contract cases (zero skips,303.865s), TypeScript,
 nine focused keyboard cases and two desktop/phone keyboard E2E cases without

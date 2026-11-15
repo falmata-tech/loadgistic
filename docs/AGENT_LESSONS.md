@@ -243,6 +243,15 @@ the transpiled runtime AST unchanged. Preserve the failed combined receipt,
 reuse unchanged runtime/browser evidence, and require complete exact-source CI
 rather than calling the failed local command green.
 
+The first installed PG15 race-runner attempt failed in0.2s before any race, but
+kept its only stage/code in an ignored private file. Private captures excluded
+from artifacts cannot be the sole CI diagnostic. Emit fixed allowlisted stage,
+code and category values in the final receipt; test the real CLI with fake
+processes to prove unknown text remains private and preflight fails before
+backup/setup/drop. The diagnostic-only27-case check passes in11.616s; use the
+focused disposable lane to identify the cause before another full CI. Never
+infer a SQL-version defect from zero race counts or upload private evidence.
+
 The final phone keyboard E2E reached the correct canonical filter request, but
 Next's route response took5,657ms while the URL assertion allowed5,000ms. The
 submit handler closes the dialog before navigation commits; a closed dialog is
