@@ -88,9 +88,14 @@ test('session transport bounds stalled, oversized and failed children without pr
  await duplicate.done;assert.throws(()=>duplicate.state(),/SESSION_STATE_REQUIRED/);
 });
 
-test('failed runtime evidence emits only a fixed stage and aggregate counters',async()=>{
+test('native failure evidence is sanitized and other hosts refuse before spawning',async()=>{
  const fake=fakeSpawn((child,close)=>{child.stderr.write('ERROR: PRIVATE_CONTACT_SECRET_LOCATION\n');close(3);});
  const output=[];
+ if(process.platform!=='linux'||Number(process.versions.node.split('.')[0])!==22){
+  await assert.rejects(verifyDemoWorldConcurrency({environment,spawnProcess:fake.spawnProcess,emit:value=>output.push(value)}),/NATIVE_NODE22_REQUIRED/);
+  assert.equal(fake.calls.length,0);assert.deepEqual(output,[]);
+  return;
+ }
  assert.equal(await verifyDemoWorldConcurrency({environment,spawnProcess:fake.spawnProcess,emit:value=>output.push(value)}),false);
  assert.equal(output.length,1);assert.deepEqual(JSON.parse(output[0]),{event:'demo-world-concurrency',ok:false,
   stage:'target',failure:'COMMAND_FAILED',races:0,waits:0,denials:0,accepted:0,replays:0,cloneMustBeRecreated:true});

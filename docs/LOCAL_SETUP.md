@@ -1,5 +1,44 @@
 # Local development and test setup
 
+## Current Mac candidate workspace — November14
+
+The original checkout and its existing edits are preserved. Candidate work is
+in `.local/scenario-dev` on `feat/scenario-local-review`, based on the pushed
+`feat/scenario-driven-demo-signals` handoff. Its private `.env.local` selects the
+fresh **local** Supabase project `loadgistic-review-20261114` on the normal5532x
+ports. Migrations through225 and checked-in synthetic fixtures are installed;
+the old `loadgistic-local` containers are stopped with all volumes/history kept.
+Do not start both projects on those ports or reset the old database.
+
+The candidate's ignored `.local/README.md` records exact startup/return commands
+and `.local/review-supabase` selects its CLI project. The repository's older
+container-specific SQL helpers still name `supabase_db_loadgistic-local`; do not
+use them as evidence about this review project. Its PostGIS containment and
+security gate were applied/checked explicitly on the new named container.
+
+Normal iteration reuses this stack, dependencies and `.next-dev`; no import,
+database reset, dependency install or complete CI suite is part of restart.
+Web uses Node22.16.0/3100 with Turbopack scoped to this checkout. Expo uses
+Node24.18.1/8084 and `npm run preview:web -- --max-workers 1` only while reviewing
+mobile; stop Metro afterwards. Unit, type/build and browser gates run sequentially.
+The review database is capped at1.5 CPU cores/1536MB, and each of Auth, Storage,
+PostgREST, Kong and Mailpit at0.5 core/512MB. No Studio, Realtime, analytics,
+vector, pooler, edge runtime or simulator worker is started. These are local
+limits; keep required behaviour and classify failures instead of raising test
+budgets or disabling gates. These limits apply to the current containers; reapply
+them if the CLI recreates containers. Production build behaviour and hosted
+configuration were not changed.
+
+One fresh start reached225 but failed Storage readiness during concurrent first
+setup; its cause remains unconfirmed. One controlled retry with protected logs
+passed in201.771s after dependency installation completed. That is startup
+evidence, not a diagnosis of the original failure. Refreshing planner statistics
+after the fixture import changed no business records. Loopback Data API diagnosis
+may require normal sandbox approval; a connection refusal from a restricted
+shell alone does not prove the running app's database is unavailable.
+
+## Standard setup and alternate environments
+
 Current workflow, reconciled 2026-11-14. Use the checked-in package scripts and
 [active status](PROGRESS.md); dated restore/build receipts are history, not a
 reason to reset an existing workspace. Work only in Loadgistic.
