@@ -13,6 +13,36 @@ rollout: Implement and negatively test local contracts and exact synthetic targe
 
 ## Netlify-only demo — November15 owner decision
 
+### Limited daily operation — November15 owner cost constraint
+
+The owner requested a few hours per day with very limited credit usage. Use a
+two-hour daily window,09:00 inclusive to11:00 exclusive Africa/Addis_Ababa
+(06:00–08:00 UTC). Both native cron schedules use `* 6-7 * * *`. Dispatchers,
+the motion background window and application receivers recheck server time;
+caller timestamps cannot extend operating hours. No new dependency, provider
+extension or schema change is needed. Saved records and age labels stay visible.
+
+Given a disabled lane, a delayed/manual invocation outside operating hours or
+the exact11:00 closing boundary\
+When the Netlify simulator is invoked\
+Then no new batch/window/report is dispatched or opens storage outside hours\
+And an already accepted Capacity transaction may finish, while a motion window
+never sleeps into another report beyond closing time. Existing kill controls
+remain authoritative and no source, consent, history or REAL state is reset.
+
+Given the next day's window opens\
+When the existing controls and approved current actor/source state still qualify\
+Then due work resumes from its durable state without catch-up, backdating or
+resetting publication history. Operational pauses longer than existing backlog
+limits still require their existing review; hours do not bypass those limits.
+
+Observability remains bounded report/denial counts; ordinary off-hours wake-ups
+are inert. Reverting hours requires a reviewed source change and leaves existing
+enable/kill gates intact. At the prior32.622-second local timing,120 windows/day
+estimate326.22 movement credits per30days, versus3,914.64 at24hours. The55-second
+application ceiling estimates550 background credits; API, Capacity, bandwidth
+and other team use are additional. This is no account spending guarantee.
+
 The owner selected a Netlify-only demo simulator using existing Supabase state.
 This replaces the hosted demo's Traccar transport, not real tracker reception or
 local GT06 decoder qualification. Direct synthetic events must be recorded as

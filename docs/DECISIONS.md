@@ -2,6 +2,16 @@
 
 ## ADR-086 — Netlify-only fictional movement (2026-11-15)
 
+Owner cost constraint, later November15: use only a few hours daily. Set both
+native demo schedules to09:00–11:00 Africa/Addis_Ababa (06:00–08:00 UTC), with
+runtime server-time checks at dispatch/background/application boundaries.
+Motion stops scheduling its next report at closing; an accepted Capacity
+transaction may finish. Outside hours no new automatic work starts, while saved
+facts and age labels remain. The prior32.622-second window extrapolates to
+326.22 movement credits per30days at this duty cycle, before other usage; this
+is no hard account spending limit. Keep auto-recharge off and purchases separate.
+No schema, source choice, consent, customer workflow or discovery coverage changes.
+
 Status: owner selected; adapter and migration226 locally implemented. Hosted
 installation, exact-source full qualification and activation remain pending.
 BASE-DEP-001 / FEAT-SIM-001 / FEAT-GPS-001 / FEAT-SEC-001 / NR-82/83/84.

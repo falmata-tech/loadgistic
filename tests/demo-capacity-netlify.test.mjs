@@ -7,7 +7,7 @@ import {
   DEMO_WORLD_TIMESTAMP_HEADER,verifyDemoWorldSignature
 } from '../src/lib/demo-world-worker-auth.js';
 
-const origin='https://loadgistic.example',now=1_790_000_000_000;
+const origin='https://loadgistic.example',now=Date.parse('2026-11-15T06:00:00Z');
 const site='1d01c0c0-4554-4747-93b8-34ce3448ab95';
 const environment={
   CONTEXT:'production',NODE_ENV:'production',URL:origin,SITE_ID:site,
@@ -30,7 +30,7 @@ async function captureLogs(callback){
 }
 
 test('Netlify Capacity runs minutely and remains off without every independent activation gate',async()=>{
-  assert.deepEqual(config,{schedule:'* * * * *'});
+  assert.deepEqual(config,{schedule:'* 6-7 * * *'});
   for(const change of [
     {LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED:undefined},
     {LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED:'false'},

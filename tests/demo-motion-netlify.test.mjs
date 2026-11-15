@@ -8,7 +8,7 @@ import {demoMotionScenarioFix} from '../src/lib/demo-motion-scenario.mjs';
 import {dispatchNetlifyMotion} from '../netlify/functions/demo-motion.mjs';
 import {executeNetlifyMotion} from '../netlify/functions/demo-motion-background.mjs';
 
-const origin='https://demo-motion.example',site=randomUUID(),at=Date.parse('2026-11-15T12:00:00Z');
+const origin='https://demo-motion.example',site=randomUUID(),at=Date.parse('2026-11-15T06:00:00Z');
 const environment={NODE_ENV:'production',CONTEXT:'production',SITE_ID:site,URL:origin,
  NEXT_PUBLIC_SUPABASE_URL:'https://demo-motion.supabase.co',
  LOADGISTIC_HOSTED_MOTION_ENABLED:'true',LOADGISTIC_HOSTED_MOTION_KILL_SWITCH:'false',
@@ -89,7 +89,7 @@ test('native scheduler dispatches one signed background request and requires asy
  authenticateNetlifyMotion(new Headers(init.headers),init.body,config,NETLIFY_MOTION_BACKGROUND,at);
  assert.deepEqual(Object.keys(JSON.parse(init.body)),['runId']);
  await assert.rejects(dispatchNetlifyMotion(new Request(origin+NETLIFY_MOTION_SCHEDULE),{
-  environment,fetchImpl:async()=>new Response(null,{status:200})}),/DISPATCH_FAILED/);
+  environment,now:()=>at,fetchImpl:async()=>new Response(null,{status:200})}),/DISPATCH_FAILED/);
 });
 
 test('client signs fresh nonces and does not automatically retry an ambiguous transport failure',async()=>{

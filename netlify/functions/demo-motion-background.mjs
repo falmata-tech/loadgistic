@@ -1,9 +1,10 @@
 import {NETLIFY_MOTION_BACKGROUND,netlifyMotionConfiguration,authenticateNetlifyMotion,netlifyMotionClient,runNetlifyMotionWindow,readNetlifyMotionBody} from '../../src/lib/demo-motion-netlify.mjs';
+import {demoOperatingHoursOpen} from '../../src/lib/demo-operating-hours.mjs';
 
 export async function executeNetlifyMotion(request,{environment=process.env,fetchImpl=fetch,now=Date.now,sleep}={}){
  if(request.method!=='POST')throw Error('DEMO_NETLIFY_AUTH_DENIED');
  const config=netlifyMotionConfiguration(environment,request.url,NETLIFY_MOTION_BACKGROUND);
- if(!config)return {enabled:false};
+ if(!config||!demoOperatingHoursOpen(now()))return {enabled:false};
  const body=await readNetlifyMotionBody(request);
  authenticateNetlifyMotion(request.headers,body,config,NETLIFY_MOTION_BACKGROUND,now());
  const input=JSON.parse(body);

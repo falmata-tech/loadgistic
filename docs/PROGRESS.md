@@ -9,6 +9,78 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15 (CST)
 
+Read-only Netlify review now confirms the existing credit-based Pro plan and
+disabled auto-recharge; exact balance/usage stays in private local receipts.
+The owner requested only a few demo hours daily with very limited credit use.
+The candidate now bounds both native schedulers to09:00–11:00 Addis Ababa
+(06:00–08:00 UTC), rechecks hours in dispatch/background/application code and
+ends motion's next due report at the closing boundary. Saved records, privacy,
+age labels and current controller history remain intact. Thirty-four focused
+schedule/adapter/controller and relay checks pass without skips. The full replay
+passes all1,539 tests without failures/skips in170.063s, plus spec/source/workflow
+checks and TypeScript. Its first run retained one unchanged relay subprocess
+timeout at the existing one-second bound; the focused replay passes unchanged.
+An intervening restricted-shell run denied local sockets and is infrastructure
+evidence, not an application regression. Exact-source CI is next; no deployment.
+The final workflow supplement also passes with pinned ShellCheck0.11.0 present
+(117 operational scripts, actionlint1.7.12); the first full replay's PATH lacked
+that optional shell analyzer. No gate or timeout was weakened.
+
+Before this hours revision, exact36ba420 passed all16 required PR jobs in
+CI43698414595 and separate Operations proof43698414651. Actual Netlify preview
+6af97855d4747cfd94e846bf at that head deployed11 functions, verified all11 final
+ZIPs with zero private entries and passed scanning2,314files. It is preview
+packaging evidence, not a production runtime or the revised schedule artifact.
+The source-unchanged combined local run accepted one Capacity phase alongside
+18 motion updates. An open actual Chrome map then received three fresh source
+observations through normal polling with selection, panel and camera preserved.
+These later receipts and exact hashes are linked in draftPR39 and private local
+checkpoints without invalidating the qualified source through a status-only push.
+
+Current hosted read-only inspection: Loadgistic is ACTIVE_HEALTHY, Supabase Pro,
+ledger220, no registered gateway/device/position or motion target, no Capacity
+steps; both controls are disabled and never activated. Logical database size is
+43,183,251bytes, not a disk-volume/WAL quota measurement. Existing two security
+WARN categories remain visible; no advisor/configuration repair is claimed.
+Production still publishes520328b. The owner-requested Docker Desktop restart
+completed successfully. All six essential local containers resumed; Storage
+became healthy after startup without a reset or another restart. Existing caps
+persisted: database1.5CPU/1.5GiB, other services0.5CPU/512MiB each. One settled
+sample totals about565MiB container memory. Local3100 health returns ok against
+the retained Supabase records. Local external-auth/email/scanner production
+readiness blockers remain expected; this is development readiness only.
+
+Read-only hosted cohort preflight finds zero matches for the candidate's ten
+local fixture vehicle IDs and zero identities marked with its `loadgistic`
+fixture source. This is not hidden by RLS: the inspected role bypasses RLS and
+sees146 vehicles. The separately approved production-pilot namespace contains
+152 marked identities; all ten deterministically mapped pilot vehicles exist,
+but fleet-03/06/08 fail the candidate's exact active-owner provenance predicate.
+All ten have no explicit source selection. Pilot fleet-02/06 remain PUBLIC,
+where the authored Capacity targets require BOTH; the current statuses also
+need exact scenario bootstrap review. The installed five Capacity target IDs
+match no hosted vehicle. No names/emails were used to grant authority, and no
+hosted identity, target, assignment, sharing or source was changed. Deployment
+and activation require a tested exact pilot binding/eligibility plan in addition
+to the existing backup, security, CI and owner operation review.
+
+Native Chrome hands-on review now reaches the local app after Docker recovery:
+at `http://127.0.0.1:3100/`, open Search, find BlueLine, choose Show vehicles on
+map, select its GPS Demo marker, read Vehicle and Approximate location, close
+the dialogs, switch to Pixel9 emulation412×924, open location, reload and reopen
+the same saved GPS Demo attribution. Desktop and phone screenshots are retained
+in the computer-use conversation; controls and dialog content fit, and normal
+desktop view is restored with the server running. No call, consent, source or
+record mutation was made. Earlier automated private/permission/native receipts
+remain separate; this hands-on session does not cover signed-in Phone or Expo.
+One initial navigation/HMR session exposed an unhandled AbortError pointing to
+the feed's request-abort cleanup. The existing loader catches cancellation;
+after reload, console has zero messages and the saved map task succeeds, but the
+original cause is not established. Keep this finding open for a bounded actual
+navigation reproduction; do not claim a repair or suppress ordinary errors.
+All30 existing feed refresh/cancellation/denial/recovery hook tests pass unchanged;
+they do not substitute for reproducing this actual Chrome observation.
+
 The owner selected the Netlify-only demo simulator. Capacity and fictional
 GPS/Phone movement are one experience with separate guarded commands and controls.
 The new minute scheduler dispatches one bounded background window; the existing
@@ -36,7 +108,8 @@ the test budget and one original test incorrectly expected this private target
 publicly; both failures are preserved. A local unfiltered RPC diagnostic then
 returns15 rows in722ms without an SQL error; the earlier server error's cause
 remains unconfirmed. Chrome computer controls separately time out twice, so
-hands-on review and account-plan readback are not claimed from automation/images.
+hands-on review was not claimed from those automation/images. The later native
+Chrome Netlify plan and preview readback is recorded above.
 Two additional desktop/phone checks wait for the private map's actual Leaflet
 geometry and loaded tiles before capturing it; both pass. The strict native
 translation audit passes796/796 fixed messages and the actual one-worker Android

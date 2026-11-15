@@ -2,6 +2,7 @@ import {createHash,createHmac,randomUUID,timingSafeEqual} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
 import {hostedDemoMotionConfiguration,HOSTED_DEMO_MOTION_PATH} from './demo-motion-hosted-auth.js';
 import {DEMO_MOTION_COHORT} from './demo-motion-cohort.js';
+import {demoOperatingWindowEnd} from './demo-operating-hours.mjs';
 
 export const NETLIFY_MOTION_PATH='/api/internal/demo-motion/netlify';
 export const NETLIFY_MOTION_BACKGROUND='/.netlify/functions/demo-motion-background';
@@ -91,12 +92,14 @@ function dueTime(value,now){
 export async function runNetlifyMotionWindow({client,runId,now=Date.now,
  sleep=(ms,signal)=>delay(ms,undefined,{signal}),signal}={}){
  if(typeof client!=='function'||!uuid.test(runId||''))throw Error('DEMO_NETLIFY_INPUT_DENIED');
- const started=now(),claim=await client({action:'CLAIM',runId});
+ const started=now(),operatingEnd=demoOperatingWindowEnd(started);
+ if(operatingEnd===null)return {claimed:false,recorded:0,notDue:0,unavailable:0,failed:0};
+ const claim=await client({action:'CLAIM',runId});
  if(typeof claim?.claimed!=='boolean')throw Error('DEMO_NETLIFY_RESPONSE_DENIED');
  if(!claim.claimed)return {claimed:false,recorded:0,notDue:0,unavailable:0,failed:0};
  const expiry=Date.parse(claim.expiresAt);
  if(!Number.isFinite(expiry)||expiry<=now()||expiry>now()+60_000)throw Error('DEMO_NETLIFY_RESPONSE_DENIED');
- const deadline=Math.min(expiry,started+55_000),counts={claimed:true,recorded:0,notDue:0,unavailable:0,failed:0};
+ const deadline=Math.min(expiry,started+55_000,operatingEnd),counts={claimed:true,recorded:0,notDue:0,unavailable:0,failed:0};
  await Promise.all(NETLIFY_MOTION_TARGETS.map(async target=>{
   try{
    const prepared=await client({action:'PREPARE',runId,target});

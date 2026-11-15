@@ -3,6 +3,7 @@ import {
   DEMO_CAPACITY_ADVANCE_PATH,DEMO_WORLD_BATCH_LIMIT,
   DEMO_WORLD_SIGNATURE_HEADER,DEMO_WORLD_TIMESTAMP_HEADER
 } from '../../src/lib/demo-world-worker-auth.js';
+import {demoOperatingHoursOpen} from '../../src/lib/demo-operating-hours.mjs';
 
 const FUNCTION_PATH='/.netlify/functions/demo-capacity';
 const RESPONSE_LIMIT_BYTES=8192;
@@ -55,7 +56,7 @@ function boundedSummary(value){
 
 /** Wake the durable controller once for at most two due actors; it owns writes. */
 export async function runDemoCapacity({invocationUrl,environment=process.env,fetchImpl=fetch,now=Date.now()}={}){
-  if(!enabled(environment))return {enabled:false};
+  if(!enabled(environment)||!demoOperatingHoursOpen(now))return {enabled:false};
   let incoming;
   try{incoming=new URL(String(invocationUrl||''));}catch{throw Error('DEMO_CAPACITY_ORIGIN_INVALID');}
   if(incoming.origin!==demoWorldOrigin(environment)||incoming.pathname!==FUNCTION_PATH
@@ -94,4 +95,5 @@ export async function executeDemoCapacity(request,options={}){
 export default async function(request){return executeDemoCapacity(request);}
 
 // Native cron has minute resolution. No long-lived loop, backdating or catch-up.
-export const config={schedule:'* * * * *'};
+// UTC 06:00–07:59 = daily 09:00–10:59 Addis Ababa; runtime also checks hours.
+export const config={schedule:'* 6-7 * * *'};

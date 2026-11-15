@@ -26,6 +26,35 @@ existing account's plan before enabling its schedule. Sources:
 
 ### Selected runtime and local evidence
 
+**Current operating policy:** the owner requested a few hours per day with very
+limited credit use. Run both native schedulers only09:00–11:00 Addis Ababa daily
+(UTC cron `* 6-7 * * *`). Dispatch/background/application code rechecks server
+time so a delayed/manual invocation cannot start new work outside that window.
+Motion's window stops before another due report after closing; a Capacity
+transaction accepted before closing may finish. Saved records/history/privacy
+and age labels remain; the next day resumes durable due work without catch-up.
+These are runtime hours, not a user-facing loading mode or a guaranteed budget.
+
+Read-only provider review confirms the existing Pro tier with3,000 included
+monthly credits and auto-recharge disabled. Keep exact live balance privately.
+At the measured32.622-second local timing,120 windows/day estimates326.22
+movement credits/30days; the55-second application ceiling estimates550 credits.
+Scheduler/API/Capacity execution, requests, bandwidth and other team projects
+are additional. No credit pack, auto-recharge or plan change is authorized.
+The continuous-operation estimates below are historical comparisons, not the
+selected daily policy. This source change still needs exact-source qualification.
+
+**Hosted activation blocker, November15 read-only preflight:** the configured
+ten local fixture vehicle IDs match no hosted vehicle, and the hosted identities
+use the separate `loadgistic-production-pilot-v1` provenance. Deterministic pilot
+mapping finds ten vehicles, but three fail exact active-owner provenance; none
+has an explicit source choice. The installed five Capacity targets also point
+to absent local IDs. Do not import/reset fixtures, relabel identities, substitute
+names/emails for authority, widen sharing or force source selections. Prepare and
+test the exact eligible pilot binding and current state/route/sharing contract
+before requesting the existing production-operation review. Existing data remains
+unchanged and both controllers remain off.
+
 `demo-motion` runs every minute and signs one POST to
 `demo-motion-background`. The background function has a55-second application
 deadline and calls only `/api/internal/demo-motion/netlify`. Its request supplies

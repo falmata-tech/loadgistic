@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {NETLIFY_MOTION_PATH,NETLIFY_MOTION_TARGETS,netlifyMotionConfiguration,authenticateNetlifyMotion,readNetlifyMotionBody} from './demo-motion-netlify.mjs';
 import {demoMotionScenarioFix} from './demo-motion-scenario.mjs';
+import {demoOperatingHoursOpen} from './demo-operating-hours.mjs';
 
 const inputSchema=z.discriminatedUnion('action',[
  z.object({action:z.literal('CLAIM'),runId:z.string().uuid()}).strict(),
@@ -17,7 +18,7 @@ export async function handleNetlifyDemoMotion(request,{environment=process.env,c
  try{
   if(request.method!=='POST')throw Error('DEMO_NETLIFY_AUTH_DENIED');
   const config=netlifyMotionConfiguration(environment,request.url,NETLIFY_MOTION_PATH);
-  if(!config)throw Error('DEMO_HOSTED_DISABLED');
+  if(!config||!demoOperatingHoursOpen(now))throw Error('DEMO_HOSTED_DISABLED');
   const body=await readNetlifyMotionBody(request);
   const {nonce}=authenticateNetlifyMotion(request.headers,body,config,NETLIFY_MOTION_PATH,now);
   const input=inputSchema.parse(JSON.parse(body));

@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto';
+import {demoOperatingHoursOpen} from './demo-operating-hours.mjs';
 import {
   DEMO_WORLD_ADVANCE_PATH,
   DEMO_CAPACITY_ADVANCE_PATH,
@@ -162,6 +163,11 @@ async function handleAdvance(request,{
   },environment,now)){
     return Response.json({ok:false,code:'UNAUTHORIZED'},{status:401,headers:{'Cache-Control':'no-store'}});
   }
+  // Bound the selected Netlify runner without changing the optional container
+  // contract. The operator must keep those runners mutually exclusive.
+  if(capacityOnly&&environment.LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED==='true'
+    &&!demoOperatingHoursOpen(now))return Response.json({ok:false,code:'OUTSIDE_DEMO_HOURS'},
+      {status:403,headers:{'Cache-Control':'no-store'}});
   let input;
   try{input=JSON.parse(body);}catch{input=null;}
   if(!input||Object.keys(input).length!==1||(capacityOnly
