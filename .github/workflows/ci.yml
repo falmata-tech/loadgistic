@@ -451,6 +451,15 @@ jobs:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/hosted-demo-motion-control.sql
 
+      - name: Verify Netlify demo windows, direct provenance and account isolation
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          for suite in netlify-demo-provision netlify-demo-motion; do
+            timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
+
       - name: Verify broker sharing scenario and private feed on disposable database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci

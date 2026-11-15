@@ -85,7 +85,10 @@ test('simulator database diagnosis is explicit, isolated and cannot replace the 
   'verify-database-security-gate.mjs','npm run supabase:local:configure','verify-data-api-guard.mjs',
   'npx playwright install --with-deps chromium','ci-fixture-preflight.mjs'])assert.ok(database.includes(required),required);
  assert.ok(database.indexOf('run: npm run check')<database.indexOf('ci-start-local-supabase.mjs'));
- assert.match(database,/array\['221','222','223','224','225'\]::text\[\]/);
+ assert.match(database,/array\['221','222','223','224','225','226'\]::text\[\]/);
+ assert.match(database,/kill_switch and not netlify_enabled/);
+ assert.match(database,/demo_motion_netlify_window where run_id is not null/);
+ assert.match(database,/for suite in hosted-demo-motion-control netlify-demo-provision netlify-demo-motion; do/);
  assert.match(database,/catalog_version=2/);assert.match(database,/SIMULATOR_DIAGNOSTIC_INERT_BASELINE_REQUIRED/);
  assert.match(database,/Remove disposable GPS test database\n        if: \$\{\{ always\(\) &&/);
  assert.match(database,/Stop isolated Supabase\n        if: always\(\)/);

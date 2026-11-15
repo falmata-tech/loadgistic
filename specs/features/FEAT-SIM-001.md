@@ -4,12 +4,68 @@ title: Isolated demo movement with real-device takeover
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-GPS-001, FEAT-GEO-001, FEAT-CAP-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-SEC-001, FEAT-ENT-001]
 problem: Demo trucks need believable GPS and phone movement without overwriting real devices, changing customer data or implying unsupported phone telemetry.
 behavior: Explicit synthetic account/truck/device bindings may produce bounded demo movement through the normal location pipeline. Server-side arbitration pauses simulation when an authenticated real installation takes over, rejects stale queued synthetic reports, and never simulates customer accounts. Private registered phone-installation identities attribute real reports without exposing hardware identifiers. Public/private Capacity and permitted Tracking markers show the actual published source.
-contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance, DemoCapacitySchedule]
+contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance, DemoCapacitySchedule, NetlifyDemoMotionWindow, DirectDemoProvenance, VirtualDemoGatewayPreparation]
 observability: [demo_tick_accepted, demo_tick_paused, demo_target_denied, real_device_takeover, stale_source_report_denied, demo_runner_state, location_installation_revoked]
 rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Agent-led local visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
 ---
 
 # Demo movement and device attribution
+
+## Netlify-only demo — November15 owner decision
+
+The owner selected a Netlify-only demo simulator using existing Supabase state.
+This replaces the hosted demo's Traccar transport, not real tracker reception or
+local GT06 decoder qualification. Direct synthetic events must be recorded as
+`NETLIFY_DEMO`; they are never evidence of a decoded protocol packet or hardware.
+
+Given the exact approved synthetic targets, current sole owners and assignments\
+When the default-off Netlify scheduler starts an authenticated bounded window\
+Then the server computes movement from the unchanged reviewed road catalog,
+preserves the thirty-second due time and shares only the existing obscured
+public/private projection\
+And the unavailable course stays unavailable; normal accounts, Manual choices,
+real-device takeover and changed ownership/source/assignment remain denied.
+
+Given duplicate invocations, delayed retries, a stopped control or an old window\
+When another report is requested\
+Then durable window ownership, nonce, source generation and report due time
+prevent duplicate, backdated, catch-up or post-stop writes\
+And restart uses current wall-clock positions and saved state rather than reset
+progress. A native retry cannot replay an expired signed invocation.
+
+Given the protocol bridge is absent\
+When a Netlify window claims the direct-demo lane\
+Then existing gateway-scoped thirty-day retention still runs with its bounded
+one-thousand-row batches and an indexed gateway/creation-time lookup\
+And ordinary protocol/real gateways are not selected for this maintenance.
+
+Given a gateway reserved for direct Netlify demo delivery\
+When the ordinary gateway ingest endpoint receives a report for it\
+Then it refuses; only the narrow service-only Netlify command may enter the
+existing guarded ingest pipeline and mark direct-event provenance\
+And real/protocol gateways retain their current ingest contract.
+
+Given stopped controls and the exact existing fictional owner/driver records\
+When the service-only virtual-gateway preparer is invoked by a current admin\
+Then it validates all ten bindings before creation and preserves source choices,
+Manual data and consent\
+And conflicting existing gateway bindings, co-ownership and non-admin callers
+refuse without partial setup. Repeating the same setup is idempotent.
+
+Given a valid signed worker report\
+When the application derives its catalog point and capture time\
+Then caller-selected geometry/identity/source/time fields refuse before storage\
+And a capture older than five seconds after database lock waits refuses without
+refreshing saved location time.
+
+Changed contracts: NetlifyDemoMotionWindow, direct synthetic transport provenance
+and a private service-only command. Existing Capacity scheduling, routes, UI,
+privacy radii and physical command authority are unchanged. Observability is
+sanitized window/report counts and delivery kind, never coordinates or secrets.
+Rollout requires local SQL denial/recovery tests, actual app readback, exact-source
+full gates, measured Netlify compute and owner review of exact fields/SQL and
+backup/restore evidence. Rollback disables the new app/database controls and
+retains all history; switching transport never silently replaces gateway data.
 
 ## Curated scenarios — November13 owner clarification
 

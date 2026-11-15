@@ -58,6 +58,15 @@ alongside native state. Prove Cancel and denied capture preserve saved facts,
 then retry with real local API/database readback. An inaccessible separate Chrome
 process is a hands-on-review limit, not a passing review receipt.
 
+November15 validation: preserve the five-second mail-parser process guard. A
+full local run timed out at5.047s while computer-control work was also active;
+the unchanged isolated check passed in1.750s, and the controlled full replay
+passed1,536 tests without skips in188.403s (parser1.620s). Contention remains a
+hypothesis, not a proven cause. Finish heavy Chrome/Hermes work before the full
+gate, retain failed receipts and do not increase a security budget to label a
+failed suite green. Reuse unchanged native test/type/lint evidence and run only
+the missing strict audit/export before the candidate's first CI push.
+
 Accessibility audit readiness: a URL prefix, an old shell and absent skeletons
 do not prove that an App Router redirect has completed. October25 main CI
 40237550136 reported `CONTEXT_DESTROYED` for fleet Home; both local Chrome sizes

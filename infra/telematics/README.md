@@ -216,10 +216,16 @@ The first command refuses to overwrite an existing setup.
 
 ```sh
 node scripts/telematics/prepare-local.mjs
-docker compose --env-file .local/telematics/compose.env -f infra/telematics/compose.yml up -d database traccar
+docker compose --env-file .local/telematics/compose.env -f infra/telematics/compose.yml up -d --wait --wait-timeout 180 database traccar
 node scripts/telematics/bootstrap-gateway.mjs
 node scripts/telematics/protocol-roundtrip.mjs
 ```
+
+Wait for both health checks before bootstrap; container creation alone is not
+readiness. On a fresh November15 Mac rehearsal, Traccar was still initializing
+when the API bootstrap first ran and closed its socket. The new isolated database
+confirmed zero users before the successful retry. Keep the failed receipt and
+inspect actual state before retrying a potentially accepted registration.
 
 Bootstrap creates and reads back exact device IDs through the documented Traccar
 API. The local administrator's API credential stays server-side; it is unrelated

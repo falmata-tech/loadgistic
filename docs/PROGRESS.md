@@ -1,11 +1,90 @@
 # Current work and release status
 
-Updated 2026-11-14 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-15. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
+
+## Active hosting request — November15 (CST)
+
+The owner selected the Netlify-only demo simulator. Capacity and fictional
+GPS/Phone movement are one experience with separate guarded commands and controls.
+The new minute scheduler dispatches one bounded background window; the existing
+Supabase database owns the window, due times, leases and accepted history.
+No VM or running Traccar service is required for this selected demo. Real tracker
+reception and GT06 decoder qualification remain separate. Direct events carry
+private `NETLIFY_DEMO` provenance and the existing public Demo label.
+
+Migration226 and the signed adapter are implemented locally, default-off.
+Two actual local handler/database rehearsals each saved18 updates (16 GPS and
+two Phone), with zero failures; the one course lacking qualified geometry refused.
+The final window took32.622seconds with Traccar stopped. Other Capacity records
+were unchanged and cleanup restored disabled controls, stopped leases and an
+empty active window. These receipts exercise real SQL and handlers with injected
+local configuration, not the Netlify provider runtime or production API adapter.
+Rollback-only provisioning and window/permission/replay/stop SQL suites pass;
+fresh setup preserves every existing source choice, including Manual, and creates
+no consent. Twenty focused adapter/auth/workflow checks pass without skips.
+Actual Chrome automation passes four desktop/phone checks: saved GPS reaches the
+public map with Demo source attribution and survives reload; the private Phone
+target stays absent publicly, rejects anonymous account access and remains
+visible with its saved Phone source to its authorized driver. No source or
+capture timestamp changes during these reads. Initial cold compilation exhausted
+the test budget and one original test incorrectly expected this private target
+publicly; both failures are preserved. A local unfiltered RPC diagnostic then
+returns15 rows in722ms without an SQL error; the earlier server error's cause
+remains unconfirmed. Chrome computer controls separately time out twice, so
+hands-on review and account-plan readback are not claimed from automation/images.
+Two additional desktop/phone checks wait for the private map's actual Leaflet
+geometry and loaded tiles before capturing it; both pass. The strict native
+translation audit passes796/796 fixed messages and the actual one-worker Android
+Hermes/source-map export completes. Existing unchanged mobile426-test/type/lint
+receipts at e21853c remain applicable; no signing, install or Play release occurred.
+Migration226's four final local function bodies match source, its local ledger
+is reconciled and the unchanged installed-database security gate passes.
+Real two-session window/stop testing passes three races with three actual
+PostgreSQL blocker waits. Rollback SQL also checks direct-only retention scope.
+
+The initial full quality run passes1,535/1,536 with zero skips; the unchanged
+mail-parser five-second process guard times out at5.047s. Its one isolated replay
+passes in1.750s without increasing the budget. Preserve the failed full receipt;
+it is not a green full gate. The controlled full replay then passes all1,536
+tests with zero failures/skips in188.403s, including the parser in1.620s, plus
+spec/source/workflow checks and TypeScript. Heavy Android/browser work had
+finished; CPU contention is a hypothesis for the earlier timeout, not a proven
+cause. Exact-source GitHub CI, hands-on review, account-plan readback and the
+reviewed production SQL/configuration/backup/restore remain pending. See the updated
+[hosting plan](operations/DEMO-GPS-HOSTING.md). No hosted write or purchase occurred.
+
+The following protocol-stack rehearsal is an alternative transport's historical
+evidence, not proof that direct Netlify events passed a decoder:
+
+At e21853c, all three existing bridge/movement/Capacity container images build
+on this ARM64 Mac; disconnected worker-image preflights remain disabled.
+The46 hosting/topology/protocol/credential checks pass with zero skips.
+A credential-free47-entry source archive and immutable local build receipts
+are in `.local/simulator-host-20261115/`; x86 artifacts and hosted runtime are
+unqualified. The separate local project `loadgistic-telematics-review-20261115`
+preserves the old gateway volumes. Its actual fictional GT06 round trip passes
+decoding, a synthetic Locate acknowledgement and durable outbox checks. Existing
+guarded provisioning registers only ten fixed fictional devices. An explicit
+synthetic personal-driver command selects Phone; other exact targets select GPS.
+
+A two-target120-second local run saved fresh GPS through the bridge/application
+database and public Capacity API with Demo provenance intact. It paused after
+one tick per target with `DEMO_MOTION_REPORT_DENIED`; HTTP409 requests took
+8–9seconds against the unchanged5-second capture guard. That timing is consistent
+with queuing but actual capture age was not logged, so the cause is not conclusively
+established. A warm controlled replay completes four GPS and four Phone ticks,
+stops normally, and readback confirms both leases OFF. This is a bounded local
+receipt, not sustained hosted timing, all ten targets or hands-on map acceptance.
+The first premature bootstrap and protocol invocation are retained; zero gateway
+users were confirmed before the readiness retry. The local guide now waits for
+health before bootstrap. No production SQL/settings/merge/deployment, host
+resource or payment was made. Existing full release and owner authority gates
+remain required.
 
 ## Active Mac continuation — November14 (CST)
 

@@ -1,5 +1,35 @@
 # Architecture Decisions
 
+## ADR-086 — Netlify-only fictional movement (2026-11-15)
+
+Status: owner selected; adapter and migration226 locally implemented. Hosted
+installation, exact-source full qualification and activation remain pending.
+BASE-DEP-001 / FEAT-SIM-001 / FEAT-GPS-001 / FEAT-SEC-001 / NR-82/83/84.
+
+Keep the existing Capacity scheduler and add a separate minute motion dispatcher
+with a bounded background window. Supabase owns window arbitration, saved due
+times and leases; the application derives approved geometry and capture time.
+Workers cannot select coordinates, identity, source or observation time. Preserve
+the30-second minimum, five-second capture guard, sole-owner/driver/source proof,
+Manual refusal, REAL takeover and existing obscured public/private projection.
+Direct positions carry private NETLIFY_DEMO provenance; the public Demo label
+does not claim hardware or a decoded GT06 packet. Real tracker hosting remains
+separate and no VM is required for this selected fictional demo.
+
+Default-off site/project-pinned functions use the existing distinct motion HMAC,
+separate from Capacity/gateway/session credentials. Same-site Functions settings
+are not physical secret isolation. A service-only stopped-state preparer creates
+only exact virtual fixture bindings, preserving source choices and consent.
+The direct lane retains bounded gateway-scoped30-day retention. Stop waits on
+accepted transactions, revokes its window/leases and preserves history. Rollback
+disables the new controls and restores the previous app artifact if necessary.
+
+Two local handler/database windows save18 updates each with zero failures and
+leave normal Capacity unchanged. The final32.622-second window is a local timing
+receipt; it does not certify Netlify runtime, full source CI or a free hosting
+allowance. Review the actual account plan and continuous compute estimate before
+activation, then apply existing owner-reviewed SQL/config/backup/restore gates.
+
 ## November14 — Capacity links follow the current vehicle publication
 
 FEAT-CAP-001 / NR-81: a linked Capacity ID identifies a vehicle's current

@@ -15,9 +15,9 @@ function exactOrigin(raw){
 }
 
 /** This is separate from the loopback-only local demo adapter. */
-export function hostedDemoMotionConfiguration(environment,requestUrl){
+export function hostedDemoMotionConfiguration(environment,requestUrl,{allowMissingNodeEnv=false}={}){
  try{
-  if(environment.NODE_ENV!=='production'||environment.CONTEXT&&environment.CONTEXT!=='production'
+  if((environment.NODE_ENV!=='production'&&!(allowMissingNodeEnv&&environment.NODE_ENV===undefined))||environment.CONTEXT&&environment.CONTEXT!=='production'
    ||environment.LOADGISTIC_HOSTED_MOTION_ENABLED!=='true'||environment.LOADGISTIC_HOSTED_MOTION_KILL_SWITCH!=='false')
    throw Error('DEMO_HOSTED_DISABLED');
   const siteId=environment.LOADGISTIC_HOSTED_MOTION_SITE_ID;

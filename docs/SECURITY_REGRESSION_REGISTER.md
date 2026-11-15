@@ -64,6 +64,16 @@ remain outside initial activation until their exact stopping, cohort and
 concurrent-ownership boundaries are qualified. Their unactivated source is not
 evidence of a production incident or permission to enable them.
 
+November15 Netlify direct-demo extension: migration226 locks the motion control
+before its durable window and existing owner/device/vehicle/target commands.
+Rollback SQL covers duplicate/stale windows, due-time bursts, replay, stop and
+sticky REAL state. An actual isolated Mac two-session rehearsal records three
+races and three observed PostgreSQL blocker waits: duplicate claim refuses,
+disable waits for an accepted claim then clears its window, and stop-first
+denies a waiting claim. The first harness omitted the existing activation-time
+prerequisite and failed before a claim; corrected replay passes and restores
+disabled controls. These local receipts do not qualify hosted operation.
+
 ## NR-83 — A marked owner remains after a normal co-owner joins a demo account
 
 November13 source review found that the fast Capacity controller required its
@@ -93,6 +103,12 @@ accepted transaction. Reserved Tracking remains unarmed and retains its separate
 concurrent-ownership/activation gates. Do not infer write eligibility from a remaining marked member or a
 cached Demo label.
 
+November15 direct-demo provisioning and report SQL also reject an added normal
+co-owner and preserve denied position state. Fresh virtual-gateway preparation
+validates all ten existing owner/driver scopes before creating bindings, refuses
+conflicting gateways and preserves every source choice, including Manual. Tests:
+`tests/sql/netlify-demo-provision.sql` and `tests/sql/netlify-demo-motion.sql`.
+
 ## NR-82 — A narrow worker key can inherit another configured credential's authority
 
 November13 source review found asymmetric credential separation while adding the
@@ -117,6 +133,14 @@ missing fast configuration and malformed existing inputs. Fast/world and motion
 configuration tests cover the other receiving lanes. Owner: simulator and GPS
 authentication maintainers. Next: complete exact-source gates and actual local
 API/controller qualification; hosted secret creation and activation are pending.
+
+November15 Netlify direct-demo requests retain this separation and bind their
+HMAC to the exact origin, purpose path, body, nonce and fresh timestamp. Adapter
+tests reject preview/development, another site/project, cross-purpose signatures,
+credential collisions and caller-selected geometry/identity/source/time before
+storage. The Next receiver still requires production NODE_ENV; native Functions
+may omit that build-time variable but retain exact runtime site/project/origin
+and production-only secret scopes. Provider settings have not been installed.
 
 ## NR-81 — Capacity refresh retains a revoked or replaced selected signal
 

@@ -115,7 +115,7 @@ jobs:
         run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < scripts/check-database-security.sql
       - name: Prove the security gate rejects reintroduced browser grants
         run: node scripts/verify-database-security-gate.mjs
-      - name: Require migrations 221 through 225 and inert simulator controls
+      - name: Require migrations 221 through 226 and inert simulator controls
         run: |
           set -euo pipefail
           test "$(docker inspect --format '{{ index .Config.Labels "com.supabase.cli.project" }}' supabase_db_loadgistic-local)" = loadgistic-local
@@ -124,8 +124,8 @@ jobs:
           begin
             if current_database()<>'postgres' or
               (select array_agg(version::text order by version) from supabase_migrations.schema_migrations
-                where version in ('221','222','223','224','225'))
-                is distinct from array['221','222','223','224','225']::text[] then
+                where version in ('221','222','223','224','225','226'))
+                is distinct from array['221','222','223','224','225','226']::text[] then
               raise exception 'SIMULATOR_DIAGNOSTIC_MIGRATIONS_REQUIRED';
             end if;
             if not exists(select 1 from public.demo_world_control where id=1 and not enabled
@@ -134,7 +134,8 @@ jobs:
               or (select count(*) from public.demo_world_schedule)<>20
               or exists(select 1 from public.demo_world_steps)
               or exists(select 1 from public.demo_world_receipts)
-              or not exists(select 1 from public.demo_hosted_motion_control where id=1 and not enabled and kill_switch)
+              or not exists(select 1 from public.demo_hosted_motion_control where id=1 and not enabled and kill_switch and not netlify_enabled)
+              or exists(select 1 from public.demo_motion_netlify_window where run_id is not null)
               or not exists(select 1 from public.demo_world_profile_control where id=1 and not enabled)
               or not exists(select 1 from public.demo_world_business_share_control where id=1 and not enabled)
               or not exists(select 1 from public.demo_world_team_control where id=1 and not enabled)
@@ -214,6 +215,14 @@ jobs:
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
         run: timeout --signal=TERM --kill-after=10s 3m docker exec -e PGOPTIONS='-c loadgistic.demo_isolated_test=true' -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < tests/sql/demo-account-isolation.sql
+      - name: Verify hosted and Netlify motion permission, windows and stop contracts
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          for suite in hosted-demo-motion-control netlify-demo-provision netlify-demo-motion; do
+            timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
+          done
       - name: Remove disposable GPS test database
         if: ${{ always() && contains(fromJSON('["success","failure","cancelled"]'), steps.simulator_clone.outcome) }}
         env:

@@ -6,7 +6,7 @@ The original checkout and its existing edits are preserved. Candidate work is
 in `.local/scenario-dev` on `feat/scenario-local-review`, based on the pushed
 `feat/scenario-driven-demo-signals` handoff. Its private `.env.local` selects the
 fresh **local** Supabase project `loadgistic-review-20261114` on the normal5532x
-ports. Migrations through225 and checked-in synthetic fixtures are installed;
+ports. Migrations through226 and checked-in synthetic fixtures are installed;
 the old `loadgistic-local` containers are stopped with all volumes/history kept.
 Do not start both projects on those ports or reset the old database.
 
@@ -28,6 +28,12 @@ limits; keep required behaviour and classify failures instead of raising test
 budgets or disabling gates. These limits apply to the current containers; reapply
 them if the CLI recreates containers. Production build behaviour and hosted
 configuration were not changed.
+
+November15: the optional Netlify-only demo adapter is locally qualified with
+the separate Traccar stack stopped. Normal development still starts no motion
+worker. Migration226's four final installed function bodies match source; its
+local ledger is reconciled after the explicit local SQL rehearsal and security
+gate. Hosted migrations, account settings and production are untouched.
 
 One fresh start reached225 but failed Storage readiness during concurrent first
 setup; its cause remains unconfirmed. One controlled retry with protected logs

@@ -1,5 +1,144 @@
 # Demo simulator and GPS hosting plan
 
+## November15 owner request — host the combined demo system
+
+The owner is ready to host the simulator and wants a simple, secure integration.
+Capacity changes and fictional GPS/Phone movement are one demo experience with
+separate worker authorities. The owner selected the Netlify-only demo option;
+no VM purchase is required. Real tracker hosting remains a separate service and
+is not required to operate the fictional simulator.
+
+The owner subsequently asked whether everything can stay on Netlify. A
+Netlify-native **demo** uses bounded scheduled/background
+functions to advance approved fictional positions and Capacity through scoped
+application commands, with durable state in the existing Supabase database.
+The serverless movement adapter is implemented and locally qualified; it does not
+deploy Traccar/PostgreSQL on Netlify or qualify a real TCP receiver. Keep Demo
+provenance, exact actor/source/owner guards,30-second movement cadence, private
+disclosure and restart/stop behavior unchanged. Do not relabel direct synthetic
+events as decoded protocol receipts. Provider-runtime qualification and activation
+remain pending; local evidence is recorded below.
+Netlify background functions are billed by allocated memory and duration, so
+waiting between ticks is not free compute; measure the candidate against the
+existing account's plan before enabling its schedule. Sources:
+[background functions](https://docs.netlify.com/build/functions/background-functions/),
+[compute billing](https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/).
+
+### Selected runtime and local evidence
+
+`demo-motion` runs every minute and signs one POST to
+`demo-motion-background`. The background function has a55-second application
+deadline and calls only `/api/internal/demo-motion/netlify`. Its request supplies
+an approved target name, never coordinates, actor/source or capture time. The
+application computes the catalog point and current capture time. Migration226
+rechecks source, ownership, assignment, lease, five-second capture age and
+thirty-second per-target due time under locks. A durable window prevents overlapping
+runners; stale signed retries and normal gateway ingest into this lane refuse.
+The window reuses the existing bounded30-day telemetry-retention policy, only
+for synthetic Netlify gateways. Ordinary protocol gateways remain separate.
+
+The service-only `prepare_netlify_demo_gateway` command validates the exact ten
+existing fictional vehicles, sole owners and current drivers before creating
+virtual device bindings. It refuses an existing gateway's conflicting bindings,
+requires stopped controls, preserves all source choices/consent and never starts
+a worker. Any required source selections are separate explicit owner/driver
+commands. No Traccar password, raw TCP listener or gateway API token is needed.
+
+Two local real-database windows each saved16 GPS and two Phone updates with zero
+failures; one unqualified course stayed unavailable. The final window took32.622s.
+Traccar was stopped, other Capacity rows remained unchanged and cleanup restored
+all motion controls off. The focused SQL and adapter denial/recovery tests pass.
+This is local handler/SQL evidence, not hosted scheduler, browser or actual
+Netlify-runtime evidence. Private receipts are in the candidate's ignored
+`.local/simulator-host-20261115/` directory.
+
+At the documented default1GB allocation and10 credits/GB-hour, one32.622-second
+window each minute for30days estimates391.464GB-hours /3,914.64credits for the
+background function alone. The55-second application ceiling estimates660GB-hours
+/6,600credits, excluding scheduler/API execution, requests, bandwidth, Capacity
+and existing app usage. These are extrapolations from local timing, not a bill
+or account quota. Read the actual existing plan and allocation before activation;
+waiting time is billable. [Netlify function billing](https://docs.netlify.com/build/functions/usage-and-billing/).
+
+At the current eight qualified GPS targets/two updates per minute,30days retains
+about691,200 raw positions before expiry. The32-row local direct-event sample
+averages277bytes per row (about183MiB extrapolated tuple payload), before indexes,
+page overhead, other app history and existing usage. This is a local estimate,
+not the hosted database's measured allocation. Check the existing Supabase plan
+and storage headroom as well as Netlify compute. Installed reservation cleanup
+and ten-minute nonce expiry remain active; no unbounded replay table is added.
+
+Rollout still requires full exact-source CI, a reviewed immutable source/SQL
+digest, protected backup plus restore/rehearsal, exact production-only environment
+fields and the owner's production-operation review. Keep both new Netlify flags
+disabled/kill-on and database `netlify_enabled=false` until that review. Stop
+and verify any external motion worker before switching. Activation must verify
+the actual scheduled invocation, accepted saved events, public/private maps and
+kill/readback. Rollback disables the new flags/control and retains history;
+restore the previous app artifact if required. Do not undo schema/history broadly.
+
+Production review targets the existing Loadgistic site
+`dbb0fcec-9ec9-4511-9737-db0e32849af5` (`loadgistic-473`), canonical
+`https://loadgistic.com`, and Supabase project `tpwyyzoqijjmbvsmmvcm`.
+These are recorded intended targets; re-read their current identity, ledger,
+environment scopes and deployed source before applying anything.
+
+| Reviewed field | Proposed installation / activation |
+| --- | --- |
+| Migration226 | Exact versioned SQL; additive defaults off, private table/functions and retained protocol ingest wrapper. Migrations221–225 require their own current-ledger reconciliation; never replay already installed SQL. |
+| New environment gates | Production Functions only: `LOADGISTIC_DEMO_MOTION_NETLIFY_ENABLED=false`, `LOADGISTIC_DEMO_MOTION_NETLIFY_KILL_SWITCH=true` initially. Set true/false only in the separately reviewed activation. |
+| Existing motion gates | Retain the exact site/origin/Supabase pins and distinct `HOSTED_DEMO_MOTION_SECRET`; global enable/kill gates must also be deliberately activated. No production key may be copied into a preview. |
+| External runner | Verify no external hosted-motion process is active; leave `LOADGISTIC_HOSTED_MOTION_WORKER_ENABLED` absent/false. |
+| Virtual gateway setup | Review a new immutable gateway UUID and current admin/ten-fixture owner/driver bindings. Call only `prepare_netlify_demo_gateway` while all motion controls are stopped; review its count and required source choices. |
+| Database activation | Review exact singleton `demo_hosted_motion_control` before/after values: enabled/kill/netlify flags, actual activation time and unchanged manifest version. Enable only the qualified direct-demo lane. |
+| Capacity / other scenarios | The existing separate Capacity gates and scheduler review still apply. Profile, team, sharing, duty and Tracking are not implicitly activated. |
+| Rollback | Disable/kill new environment gates and set database `netlify_enabled=false`; confirm no active window or direct-demo RUNNING lease. Preserve history and REAL state. |
+
+No new broad provider setting, credential privilege or public network listener is
+part of this change. Source preparation is not provider enforcement or authority
+to bypass a failed gate. Owner-only production execution remains governed by
+[PRODUCTION_AUTHORITY](../PRODUCTION_AUTHORITY.md).
+
+### Historical VM alternative — not selected
+
+The already prepared container option keeps the minute Capacity function on Netlify and
+puts the fictional gateway database, Traccar, restricted bridge and movement
+worker on one Linux Docker host. The app remains on Netlify/Supabase. Netlify's
+scheduled functions have a30-second execution limit and run automatically only
+on published deploys, so they are not the persistent movement process.
+If the owner prefers both workers on the VM, the existing independent
+`compose.scenario.yml` is the alternative; explicitly disable the Netlify
+Capacity scheduler and verify exactly one runner before activation.
+
+Current provider reference checked November15: DigitalOcean Basic Regular
+2 vCPU/4 GiB/80 GiB includes4,000 GiB transfer at$24/month base; weekly basic
+backups add20%, making$28.80 before tax, excess usage and existing Netlify/
+Supabase charges. This is a simulator-only starting configuration, not a measured
+dual real/synthetic production capacity claim or an approved purchase. The
+owner's provider account, region/availability, checkout estimate and budget are
+still required before creating the resource. Sources: [Droplet pricing](https://www.digitalocean.com/pricing/droplets),
+[backup pricing](https://docs.digitalocean.com/products/backups/details/pricing/),
+[Netlify scheduling limits](https://docs.netlify.com/build/functions/scheduled-functions/).
+
+For the simulator-only host, publish no GT06, Traccar administration or database
+ports. The movement worker uses private Docker networking; the bridge makes
+outbound signed HTTPS requests to the exact Loadgistic ingest endpoint. Restrict
+operator access to the approved admin network/provider console. Keep independent
+gateway, movement and Capacity keys; the VM never receives Supabase administrator
+credentials. Do not enable enrollment relays or real device commands just to
+start fictional movement. Network controls, backups/restore, disk/queue health,
+host updates and the actual hosted ingest/browser task still need verification;
+the design is not a guarantee that operational/security issues cannot occur.
+
+Three existing container definitions build at local source e21853c;46 focused
+hosting/topology/protocol/credential checks pass with zero skips. Both worker
+images' disconnected preflights stay disabled. A credential-free source archive
+and local image/build receipts are prepared under the ignored Mac candidate
+`.local/simulator-host-20261115/`. Images built on this Mac are ARM64; an x86 host
+must build/qualify that architecture from the exact source. These receipts do
+not establish hosted installation, exact-source full CI, a production migration
+or activation. No provider resource or production setting was changed.
+
 **Updated November14, 2026: preferred serverless Capacity runtime and separate
 GPS hosting plan; no new hosted activation.** The November13 read-only inspection of the exact
 Loadgistic project found it healthy, with the telemetry ingestion/provisioning
@@ -16,7 +155,7 @@ The earlier statement that migration189 was absent from production is obsolete;
 the current catalog/control readback supersedes it. No host, DNS, firewall,
 billing, secret, database or activation change was made by this audit.
 
-## The short answer
+## Historical November14 transport answer — superseded for the selected demo
 
 Only the real-device GPS gateway needs a public raw TCP listener. The larger
 demo workflow simulator runs authenticated app commands over HTTPS.
