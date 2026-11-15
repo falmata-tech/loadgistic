@@ -55,6 +55,33 @@ test the exact eligible pilot binding and current state/route/sharing contract
 before requesting the existing production-operation review. Existing data remains
 unchanged and both controllers remain off.
 
+**Local compatibility preparation:** migration227 maps the exact existing pilot
+namespace, excluding fleet-03/06/08 rather than restoring previous owners. It
+changes only private catalogs and nine pinned function bodies, preserving their
+security metadata. Source choices, consent, sharing, accounts and saved public
+facts remain untouched. Three Capacity scopes can run; fleet-06 stays paused for
+ownership drift and fleet-02 for sharing drift. The bounded window returns seven
+currently qualifying names. The fresh/local branch retains its ten targets.
+
+The old local-only Tracking shipment is absent on the hosted project; both
+reserved Tracking controls are disarmed. Pilot Capacity activation explicitly
+requires those facts, the original manifest and no pending old-example outbox.
+All other Tracking definitions/permissions and notification interception remain
+unchanged. A rollback-only clone test creates seven virtual bindings, records
+six GPS/one Phone report, applies three Capacity phases, refuses co-owner/body/
+driver/target/replay drift and Tracking arming/forbidden notification, verifies
+unchanged notification queues, and stops both controls while retaining history.
+This is local database evidence, not provider-runtime/deployment qualification.
+
+The owner's independent planning-diversity request changes fixture plans across
+all configurations, not simulator course authority. The exact13 authored
+simulator/private/handover inputs are preserved.130 capacity plans and27
+Preferred plans are corrected locally, with16 Partial signals restored from
+the old larger-vehicle import override. Location ages, privacy and motion history
+remain unchanged; five actual API matches and15 denials pass. All103 required
+planning place references exist locally. Hosted data correction remains a
+separate exact reviewed operation; no fixture reset/import is part of hosting.
+
 `demo-motion` runs every minute and signs one POST to
 `demo-motion-background`. The background function has a55-second application
 deadline and calls only `/api/internal/demo-motion/netlify`. Its request supplies
@@ -66,8 +93,9 @@ runners; stale signed retries and normal gateway ingest into this lane refuse.
 The window reuses the existing bounded30-day telemetry-retention policy, only
 for synthetic Netlify gateways. Ordinary protocol gateways remain separate.
 
-The service-only `prepare_netlify_demo_gateway` command validates the exact ten
-existing fictional vehicles, sole owners and current drivers before creating
+The service-only `prepare_netlify_demo_gateway` command validates the exact
+existing fictional vehicles (ten fresh/local, seven reviewed pilot), sole owners
+and current drivers before creating
 virtual device bindings. It refuses an existing gateway's conflicting bindings,
 requires stopped controls, preserves all source choices/consent and never starts
 a worker. Any required source selections are separate explicit owner/driver
@@ -114,14 +142,14 @@ environment scopes and deployed source before applying anything.
 
 | Reviewed field | Proposed installation / activation |
 | --- | --- |
-| Migration226 | Exact versioned SQL; additive defaults off, private table/functions and retained protocol ingest wrapper. Migrations221–225 require their own current-ledger reconciliation; never replay already installed SQL. |
+| Migrations226/227 | Exact versioned SQL;226 adds default-off direct movement,227 supplies guarded existing-pilot bindings and Capacity-only activation prerequisites. Migrations221–225 require current-ledger reconciliation; never replay already installed SQL. |
 | New environment gates | Production Functions only: `LOADGISTIC_DEMO_MOTION_NETLIFY_ENABLED=false`, `LOADGISTIC_DEMO_MOTION_NETLIFY_KILL_SWITCH=true` initially. Set true/false only in the separately reviewed activation. |
 | Existing motion gates | Retain the exact site/origin/Supabase pins and distinct `HOSTED_DEMO_MOTION_SECRET`; global enable/kill gates must also be deliberately activated. No production key may be copied into a preview. |
 | External runner | Verify no external hosted-motion process is active; leave `LOADGISTIC_HOSTED_MOTION_WORKER_ENABLED` absent/false. |
-| Virtual gateway setup | Review a new immutable gateway UUID and current admin/ten-fixture owner/driver bindings. Call only `prepare_netlify_demo_gateway` while all motion controls are stopped; review its count and required source choices. |
+| Virtual gateway setup | Review a new immutable gateway UUID and current admin/seven-pilot owner/driver bindings. Call only `prepare_netlify_demo_gateway` while all motion controls are stopped; review its count and separate required source choices. |
 | Database activation | Review exact singleton `demo_hosted_motion_control` before/after values: enabled/kill/netlify flags, actual activation time and unchanged manifest version. Enable only the qualified direct-demo lane. |
 | Capacity / other scenarios | The existing separate Capacity gates and scheduler review still apply. Profile, team, sharing, duty and Tracking are not implicitly activated. |
-| Rollback | Disable/kill new environment gates and set database `netlify_enabled=false`; confirm no active window or direct-demo RUNNING lease. Preserve history and REAL state. |
+| Rollback | Stop/disable both native schedules and external alternatives; set Capacity `enabled=false` and motion `enabled=false,kill_switch=true,netlify_enabled=false`. Confirm no active window/direct-demo RUNNING lease; restore the previous application if needed. Preserve pilot mappings, constraints, history and REAL state. |
 
 No new broad provider setting, credential privilege or public network listener is
 part of this change. Source preparation is not provider enforcement or authority

@@ -11,6 +11,35 @@ rollout: Replace all pre-customer demo radius and endpoint-only route fixtures w
 
 # Public truck-capacity signals
 
+## Demo planning diversity — November15 owner correction
+
+Vehicle size must not imply local-only work, a delivery role, or Empty/100%
+capacity. Demo planning examples should mix city, regional and long-distance
+routes and areas across configurations, with actual Empty and Partial records
+and their saved load preferences. This changes authored demo data, not matching
+eligibility or a provider's publication capabilities.
+
+Given the same saved planning facts and search criteria\
+When a vehicle configuration changes between smaller and larger types\
+Then planning generation and geographic matching do not impose a different
+service distance, geometry, availability percentage, sharing or location radius.
+
+Given an explicitly authored demo plan\
+When fixtures are prepared\
+Then small and large configurations each include local and longer-distance
+examples, and route/area, direction and combined-filter matches and rejections
+are exercised against the actual matching code\
+And identity, ownership, assignments, public/private sharing, location privacy,
+source/capture time, consent and proof records remain unchanged.
+
+The GPS simulator's reviewed local road course represents fictional current
+movement; it is independent from a published commercial plan. Preserve exact
+authored Capacity-scenario baselines while broadening other fixture plans;
+changing one of those baselines requires updating and rehearsing its scenario.
+Rollout records measured before/after plan distributions and local browser/Expo
+readback. Hosted demo-data changes still require exact owner operation review,
+backup/restore/rehearsal and rollback limited to the reviewed planning fields.
+
 ## Current publication behind a vehicle link — November14
 
 Given a map link names an earlier Capacity publication for a vehicle\

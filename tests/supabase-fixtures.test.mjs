@@ -4,8 +4,8 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import {
-  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,LONG_HAUL_VEHICLE_CONFIGURATIONS,MANAGED_COURIER_FIXTURE_VEHICLES,
-  selectSharedFixtureVehicleIds,SMALL_LOCAL_VEHICLE_CONFIGURATIONS,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS,
+  applyManagedFixtureMarketPolicy,applyManagedFixtureVehicleCatalog,ensureIndependentVehicleAssignments,MANAGED_COURIER_FIXTURE_VEHICLES,
+  selectSharedFixtureVehicleIds,managedFixtureSharingPolicies,HANDOVER_FIXTURE_VEHICLE_IDS,
   managedFixtureFeaturedSchedule
 } from '../scripts/fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from '../scripts/fixture-driver-portraits.mjs';
@@ -212,18 +212,17 @@ test('managed import keeps Open capacity larger than each explicitly shared demo
   const {capacities,vehicles}=fixture.tables;
   const vehicleById=new Map(vehicles.map(vehicle=>[vehicle.id,vehicle]));
   const managed=applyManagedFixtureMarketPolicy(capacities,vehicles);
-  assert.equal(managed.filter(capacity=>SMALL_LOCAL_VEHICLE_CONFIGURATIONS.has(
-    vehicleById.get(capacity.vehicle_id)?.cargo_configuration
-  )).every(capacity=>capacity.location_precision_km<=5),true);
+  assert.deepEqual(managed,applyManagedFixtureMarketPolicy(capacities,vehicles.map(vehicle=>({...vehicle,cargo_configuration:'Mini Box Truck'}))),
+    'vehicle size must not change saved sharing, privacy or capacity facts');
+  for(let index=0;index<capacities.length;index++)for(const field of ['status','market_status','available_percent','accepts_full_load','accepts_partial_load','planned_space_status']){
+    assert.equal(managed[index][field],capacities[index][field],field);
+  }
   const publicCapacity=managed.filter(capacity=>capacity.visibility==='OPEN');
   const privateCapacity=managed.filter(capacity=>capacity.visibility==='PRIVATE');
-  const longHaul=managed.filter(capacity=>LONG_HAUL_VEHICLE_CONFIGURATIONS
-    .has(vehicleById.get(capacity.vehicle_id)?.cargo_configuration));
-  assert.equal(longHaul.length,25);
-  assert.equal(longHaul.every(capacity=>capacity.market_status==='EMPTY'&&capacity.status==='EMPTY'
-    &&capacity.available_percent===100&&capacity.visibility==='OPEN'),true);
   assert.ok(publicCapacity.length>privateCapacity.length);
-  assert.equal(publicCapacity.filter(capacity=>capacity.market_status==='PARTIAL').length,35);
+  assert.ok(publicCapacity.some(capacity=>capacity.market_status==='PARTIAL'));
+  assert.ok(managed.some(capacity=>/Medium|Heavy|Tractor/.test(vehicleById.get(capacity.vehicle_id)?.cargo_configuration)
+    &&capacity.market_status==='PARTIAL'),'larger vehicles retain actual Partial records');
   assert.ok(publicCapacity.filter(capacity=>capacity.market_status==='EMPTY').length>15);
 
   const shared=selectSharedFixtureVehicleIds(managed,.25,{excludedVehicleIds:HANDOVER_FIXTURE_VEHICLE_IDS});

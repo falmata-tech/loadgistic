@@ -9,6 +9,78 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15 (CST)
 
+Current resume checkpoint: bbcc3dd is pushed in draftPR39. Its CI43730171962
+finished with failures in browser shards2/4 (`fleet-onboarding.spec.ts`, desktop
+line523/declaration422, and `tracking-route-map.spec.ts`); the other shards and
+validation/mobile/container/Featured checks passed. Operations proof43730171992
+passed. Preserve these failures and diagnose the exact cases before another CI.
+
+Local follow-up preparation adds atomic migration227 for the existing
+production-pilot namespace, a pure binding plan and a bounded server-selected
+movement target list. It excludes fleet-03/06/08, which currently belong to
+independent providers rather than their originally authored fleet scopes;
+eligibility does not restore old owners. Actual rollback-only SQL now passes on
+the owned `loadgistic_pilot_ci` clone: unchanged public/auth/source/consent facts,
+nine function metadata checks, seven exact virtual devices and reports,
+three excluded targets, owner/driver/co-owner/body-drift refusals, replay denial,
+source-choice preservation and unchanged engine authority. Controls stop and
+history is retained before rollback. The combined rehearsal also applies three
+actual Capacity phases. It discovered the global activation guard's old local
+Tracking prerequisite; read-only hosted inspection confirms that example absent
+and both reservations disarmed. The exact pilot-only activation mode preserves
+all other Tracking functions and existing outbox checks, denies arming/forbidden
+notifications and leaves every notification queue unchanged. Both CI workflows register this bounded
+isolated test. No hosted migration, setting, source or control was changed.
+
+The owner's additional request is realistic planning diversity independent of
+the simulator: all smaller vehicles are ordinary transport vehicles and need a
+mix of local and longer routes/areas and actual Empty/Partial signals. Audit
+confirms every mini/van/pickup/light-truck route in the credential-free fixture
+is under40km, with no route over100km. The old geographic generator selected a
+`DELIVERY` catalog by size and the importer forced larger vehicles to Empty/100%.
+Local source now removes those category rules. An explicit143-record discovery
+manifest preserves existing sharing and location privacy independently of size;
+saved availability/load facts are retained. Geographic helper choices now mix
+city/local/regional plans for every configuration. Exact authored simulator and
+handover/private fixtures are reserved inputs, not size restrictions. Their GPS
+courses remain separate from the commercial plan.
+
+The source-fixture refresh command is preview-only unless `--write` is passed.
+Its first preview refused unresolved Chamuk before writing; selection now uses
+the existing verified settlement catalog without inventing substitute points.
+The refreshed source is idempotent. A protected snapshot and exact157-row patch
+were rehearsed with rollback on the clone, then applied only to local marked
+synthetic records:130 capacity plans,27 Preferred plans and16 Partial signals
+previously overwritten by the larger-vehicle rule. Scope/current-row drift is a
+hard refusal. All other fields,13 reserved plans, privacy, location capture
+times and simulator history are preserved (85 positions and one Capacity
+receipt remain; both lanes disabled). The exact157-row restore is also rehearsed
+in the isolated clone and verifies full original-row equality before rollback.
+
+Saved local smaller-vehicle distribution:113 vehicles,88 Routes/25 Areas;
+31 routes under40km and27 over100km, compared with104 under40km and none over100km
+before. These are point-path sums, not road-mileage claims. Twenty actual local
+API requests pass five route/area matches and15 reverse-direction, conflicting
+AND/status, private-data and anonymous account denials. All103 required canonical
+planning references exist in the running local place catalog. Forty-four focused
+fixture/matching/adapter/binding/diagnostic tests pass; spec/source/workflow checks
+pass with122 operational scripts, actionlint1.7.12 and ShellCheck0.11.0. The
+original fixture bytes and exact before/after receipts remain private.
+
+The three cases named by CI's failed shards pass unchanged against the local
+services in2.5minutes, including both driving-provider signup/publish/cleanup
+paths and authorized/revoked Tracking proof. The CI-only causes remain unproven;
+new allowlisted stage/code/status diagnostics retain the next failure without
+customer data, relaxed timeouts or dropped assertions. Their focused replay
+passes all three in1.8minutes; TypeScript also passes. Current actual Chrome control reports `cgWindowNotFound` and its browser
+host is unavailable; the owner has been asked to open a normal Chrome window.
+Desktop/phone/Expo review and the new full quality/release gates remain open.
+The local web server stays on3100. Expo preview started successfully on8084 and
+was stopped again while browser access is unavailable to avoid idle resource use.
+The web/API is healthy and the six capped Docker containers measure764MiB in
+this warm sample. No new push/CI or release is claimed before the actual review. Hosted demo
+data and production remain unchanged.
+
 Read-only Netlify review now confirms the existing credit-based Pro plan and
 disabled auto-recharge; exact balance/usage stays in private local receipts.
 The owner requested only a few demo hours daily with very limited credit use.

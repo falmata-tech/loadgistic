@@ -4,7 +4,7 @@ title: Isolated demo movement with real-device takeover
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-GPS-001, FEAT-GEO-001, FEAT-CAP-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-SEC-001, FEAT-ENT-001]
 problem: Demo trucks need believable GPS and phone movement without overwriting real devices, changing customer data or implying unsupported phone telemetry.
 behavior: Explicit synthetic account/truck/device bindings may produce bounded demo movement through the normal location pipeline. Server-side arbitration pauses simulation when an authenticated real installation takes over, rejects stale queued synthetic reports, and never simulates customer accounts. Private registered phone-installation identities attribute real reports without exposing hardware identifiers. Public/private Capacity and permitted Tracking markers show the actual published source.
-contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance, DemoCapacitySchedule, NetlifyDemoMotionWindow, DirectDemoProvenance, VirtualDemoGatewayPreparation]
+contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance, DemoCapacitySchedule, NetlifyDemoMotionWindow, DirectDemoProvenance, VirtualDemoGatewayPreparation, ExactPilotDemoBinding]
 observability: [demo_tick_accepted, demo_tick_paused, demo_target_denied, real_device_takeover, stale_source_report_denied, demo_runner_state, location_installation_revoked]
 rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Agent-led local visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
 ---
@@ -12,6 +12,65 @@ rollout: Implement and negatively test local contracts and exact synthetic targe
 # Demo movement and device attribution
 
 ## Netlify-only demo — November15 owner decision
+
+### Existing hosted pilot bindings — November15 preflight
+
+Local fixture UUIDs and `loadgistic` markers do not identify the separately
+approved `loadgistic-production-pilot-v1` records. Prepare one atomic,
+default-off compatibility migration for that exact existing namespace. It must
+refuse mixed/changed cohorts, active controls, prior simulator history or
+unexpected installed definitions. A database without pilot records retains
+the existing local contracts. Owner production-operation review still applies.
+
+Given the exact stopped, never-activated hosted pilot cohort\
+When the reviewed compatibility migration is applied\
+Then only private simulator bindings and known function definitions are mapped
+to the existing pilot UUIDs and trusted application provenance\
+And no account, owner, assignment, source choice, sharing, consent, public
+Capacity or saved location is changed. Synthetic engine-command access stays
+unchanged. Every changed function retains its owner, security configuration and
+execution ACL.
+
+Given fleet-03, fleet-06 or fleet-08 no longer has the originally authored fleet
+owner scope\
+When the Netlify demo is prepared\
+Then those three are excluded from gateway enrollment and signed window work;
+the seven currently qualifying targets still require exact sole-owner,
+driver, vehicle and namespace checks on every command. A changed eligible
+owner, added co-owner, normal identity or conflicting device refuses atomically.
+
+Given a Capacity target whose sharing or owner scope differs from the catalog\
+When private pilot bindings are prepared\
+Then that target remains paused instead of widening sharing or restoring an
+old owner. Other lanes remain disabled. The receiver and database still own
+all mutations; a returned window target list is bounded to known names and
+cannot enroll or authorize caller-selected vehicles.
+
+Given the existing pilot has no old local Tracking example and both separately
+reserved Tracking lanes are disarmed\
+When its Capacity control is enabled alongside direct movement\
+Then the Capacity activation preflight permits only that bounded pilot mode;
+the missing local Tracking example is not fabricated or enrolled\
+And an existing local Tracking record, armed reservation, pending outbox or
+changed manifest still refuses activation\
+And all Tracking notification interceptors and arming guards remain unchanged;
+attempting a forbidden notification fails with unchanged queues. The combined
+rollback-only rehearsal must save actual Capacity and motion results, then stop
+both controls without deleting history.
+
+Operational rollback stops both native schedulers and external alternatives,
+sets Capacity disabled and motion disabled/kill-on/netlify-disabled, verifies
+no active window/lease, and restores the prior application artifact if needed.
+Retain pilot mappings, constraints, devices and history; reverting the namespace
+after reports exist is a separate reviewed data operation.
+
+Changed contracts: HostedPilotDemoBinding and bounded server-selected window
+targets. Observability remains aggregate eligibility/paused/report counts.
+Rollout requires rollback-only pilot fixtures, denial/recovery checks, combined
+local rehearsal, exact-source CI, protected hosted backup/restore/rehearsal and
+review of the exact SQL and activation fields. Rollback first disables both
+lanes, preserves public facts/history and restores only reviewed private
+bindings/definitions after drift checks; no broad customer-data restore.
 
 ### Limited daily operation — November15 owner cost constraint
 

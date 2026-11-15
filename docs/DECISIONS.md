@@ -1,5 +1,55 @@
 # Architecture Decisions
 
+## ADR-088 — Demo planning is independent of vehicle size (2026-11-15)
+
+FEAT-CAP-001 / FEAT-MAT-001 / FEAT-SIM-001. The owner explicitly removes the
+small-vehicle/local-only assumption. Give every configuration the same authored
+city, regional and longer Route/Area choices. Preserve actual Empty/Partial and
+load facts; remove the import rule forcing larger configurations to Empty/100%.
+An explicit record-bound discovery manifest preserves existing fixture sharing
+and location precision without making either depend on size.
+
+Planning is separate from a captured location and from fictional movement
+courses. The source-only refresh verifies real canonical settlements and refuses
+unknown points before writing. Exact simulator, private and handover inputs stay
+reserved until their scenarios are separately changed. Matching eligibility,
+direction, coherent endpoint/area AND predicates and publication permissions do
+not change. Local correction snapshots and locks exact synthetic rows, refuses
+scope/row drift and preserves unrelated fields and history. Hosted data changes
+require their own reviewed target, backup, rehearsal and scoped rollback.
+
+Local readback:130 capacity plans,27 Preferred plans and16 restored Partial
+signals; among113 smaller vehicles,31 routes under40km,27 over100km and25 Areas.
+Distances are point-path sums, not measured road mileage. The real API passes
+five matching and15 denial checks. Browser/Expo review and full release gates
+remain separate; this is not evidence of hosted installation.
+
+## ADR-087 — Bind the existing hosted pilot without restoring old authority (2026-11-15)
+
+FEAT-SIM-001 / FEAT-SEC-001 / NR-82/83/84. Local fixture UUIDs do not name the
+existing production-pilot records. Migration227 atomically maps only unused
+private simulator catalogs and nine pinned function bodies to that namespace.
+It refuses active/previously-used controls, mixed identities, catalog/body drift,
+changed eligible owners/drivers and co-owners. Function owners, execution ACLs
+and security configuration are preserved. A database without pilot records is
+unchanged. Engine-command demo authority remains unchanged.
+
+Seven existing scopes qualify; fleet-03/06/08 are excluded because their old
+fleet authority is no longer current. Capacity owner/sharing drift pauses the
+affected target. Preparation creates virtual bindings while leaving controls off
+and source choice, consent, public facts and saved observations untouched.
+The signed worker validates the bounded database-selected target list before
+work. An isolated rollback test models the namespace, restores all original
+constraints/triggers before assertions, tests refusals, saves seven direct
+reports, applies three Capacity phases, rejects replay and stops without deleting
+positions. The Capacity activation guard requires the old local-only Tracking
+example absent and both reserved Tracking lanes disarmed. Other Tracking function
+bodies, ACLs and all existing notification/outbox checks remain unchanged;
+forbidden notification insertion and Tracking arming refuse with unchanged queues.
+No hosted write or activation is established. Rollback stops/disables both lanes
+and restores the previous application artifact if needed, preserving pilot
+bindings/constraints/history. Reversing those data bindings is a separate review.
+
 ## ADR-086 — Netlify-only fictional movement (2026-11-15)
 
 Owner cost constraint, later November15: use only a few hours daily. Set both

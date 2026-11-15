@@ -8,6 +8,7 @@ import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {openFleetDriver,clickFleetLink} from './fleet-task-helpers';
+import {focusedBrowserEvidence} from '../../scripts/lib/focused-browser-evidence.mjs';
 
 async function verifyNewEmail(page:any,email:string,wrongFirst=false){
   await page.goto('/login');
@@ -430,6 +431,8 @@ for(const useBasis of ['OWNED','PERMISSION']){
   const suffix=randomUUID().slice(0,8),email=`independent-${suffix}@loadgistic.local`;
   let userId='',providerId='',vehicleId='',cleanupStage='NOT_STARTED',workflowStage='VERIFY_EMAIL';
   const workflowStarted=Date.now();
+  const failureEvidence=(stage:string,error:unknown)=>console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(focusedBrowserEvidence({
+   title:info.title,project:info.project.name,stage,error,elapsedMs:Date.now()-workflowStarted})));
   let primaryFailure:unknown=null;
   const cleanupEvidence=(status:'complete'|'failed',error?:unknown)=>{
    const details=error&&typeof error==='object'?error as {code?:unknown;status?:unknown;name?:unknown}:null;
@@ -500,7 +503,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.screenshot({path:info.outputPath(`${useBasis.toLowerCase()}-first-capacity.png`),fullPage:true});
    workflowStage='COMPLETE';
-  }catch(error){primaryFailure=error;throw error;}finally{
+  }catch(error){primaryFailure=error;failureEvidence(workflowStage,error);throw error;}finally{
    console.log(`DRIVING_PROVIDER_STAGE basis=${useBasis} stage=${workflowStage} elapsed_ms=${Date.now()-workflowStarted}`);
    try{
     // Exact synthetic identities only, including a partially completed signup.
@@ -524,7 +527,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
      if(deletion.error)throw deletion.error;
     }
     cleanupStage='COMPLETE';cleanupEvidence('complete');
-   }catch(error){cleanupEvidence('failed',error);if(!primaryFailure)throw error;}
+   }catch(error){cleanupEvidence('failed',error);failureEvidence('CLEANUP_'+cleanupStage,error);if(!primaryFailure)throw error;}
   }
  });
 }

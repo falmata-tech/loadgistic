@@ -460,6 +460,14 @@ jobs:
             timeout --signal=TERM --kill-after=10s 3m docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "tests/sql/$suite.sql"
           done
 
+      - name: Verify exact existing pilot bindings with rollback-only namespace fixtures
+        env:
+          LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci
+        run: |
+          set -euo pipefail
+          timeout --signal=TERM --kill-after=5s 30s node scripts/demo-pilot-binding-test-sql.mjs > "$RUNNER_TEMP/demo-pilot-binding.sql"
+          timeout --signal=TERM --kill-after=10s 3m docker exec -e PGOPTIONS='-c loadgistic.demo_isolated_test=true' -i supabase_db_loadgistic-local psql -X -U postgres -d "$LOADGISTIC_TEST_DATABASE" -v ON_ERROR_STOP=1 < "$RUNNER_TEMP/demo-pilot-binding.sql"
+
       - name: Verify broker sharing scenario and private feed on disposable database
         env:
           LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci

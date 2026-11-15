@@ -97,10 +97,16 @@ export async function runNetlifyMotionWindow({client,runId,now=Date.now,
  const claim=await client({action:'CLAIM',runId});
  if(typeof claim?.claimed!=='boolean')throw Error('DEMO_NETLIFY_RESPONSE_DENIED');
  if(!claim.claimed)return {claimed:false,recorded:0,notDue:0,unavailable:0,failed:0};
+ // A reviewed hosted cohort may exclude targets whose owner scope changed.
+ // The receiving database still authorizes every target independently.
+ const targets=claim.targets===undefined?NETLIFY_MOTION_TARGETS:claim.targets;
+ if(!Array.isArray(targets)||!targets.length||targets.length>NETLIFY_MOTION_TARGETS.length
+  ||new Set(targets).size!==targets.length||targets.some(target=>!NETLIFY_MOTION_TARGETS.includes(target)))
+  throw Error('DEMO_NETLIFY_RESPONSE_DENIED');
  const expiry=Date.parse(claim.expiresAt);
  if(!Number.isFinite(expiry)||expiry<=now()||expiry>now()+60_000)throw Error('DEMO_NETLIFY_RESPONSE_DENIED');
  const deadline=Math.min(expiry,started+55_000,operatingEnd),counts={claimed:true,recorded:0,notDue:0,unavailable:0,failed:0};
- await Promise.all(NETLIFY_MOTION_TARGETS.map(async target=>{
+ await Promise.all(targets.map(async target=>{
   try{
    const prepared=await client({action:'PREPARE',runId,target});
    if(prepared?.ready!==true)throw Error('DEMO_NETLIFY_RESPONSE_DENIED');

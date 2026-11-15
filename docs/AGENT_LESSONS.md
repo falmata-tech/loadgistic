@@ -8,6 +8,22 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+November15 fixture preparation: inspect data generators as well as search
+predicates before blaming matching. The old demo generator assigned only city
+routes to small configurations and forced larger ones to Empty/100%. Preserve
+record-bound sharing/privacy independently, vary authored planning facts and
+prove actual API positive/negative matches. Never refresh location timestamps
+or reset simulator history to make a planning correction look current.
+
+Rollback-only namespace tests must use a named guarded disposable database.
+When constructing a historical fixture copy, drain deferred foreign-key events
+before restoring trigger settings, restore every original constraint/trigger
+state before migration assertions, and roll back the complete test. A fixture
+construction bypass is never part of the migration or a production procedure.
+The corrected pilot SQL passes in seconds and leaves the primary database's
+85 position records and one Capacity receipt intact. Preserve failing receipts;
+do not relax immutable-history triggers in the migration to satisfy setup.
+
 Demo ownership and stopping (NR-83/84): an approved actor remaining a member
 does not prove that every current owner is synthetic. Recheck the exact current
 ownership boundary before each simulator command, including slower profile and
