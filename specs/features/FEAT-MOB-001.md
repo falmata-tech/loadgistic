@@ -50,6 +50,16 @@ And a failed report can retry without replaying a completed source change\
 And a former/unassigned driver receives no capture action. Existing privacy
 radii, driver-choice ownership and independent Tracking source remain intact.
 
+Given the Phone source and shared-accuracy choices render in Expo web\
+When a choice is selected, changed or disabled\
+Then its accessible checked/disabled state matches the visible choice, including
+the unselected Phone choice on a saved Manual record\
+And changing accuracy alone cannot enable Phone sharing or change saved facts.
+Explicit ARIA state supplements the native accessibility state; no API, source
+revision, consent or persistence contract changes. Existing mobile request errors
+remain the observable failure boundary. Rollout uses the normal application
+artifact; rollback restores the previous component without data changes.
+
 Verify native permission/movement on Android separately from the web/Expo
 editor workflow. Source tests and Expo appearance do not imply Android release
 acceptance or production delivery.

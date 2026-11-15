@@ -34,11 +34,13 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
   expect(checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km,revision').eq('vehicle_id',vehicles[0]).single())).toEqual(legacyBefore);
   await dialog.getByRole('button',{name:'Cancel'}).click();
   let selected=legacyBefore;
-  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByRole('button',{name:'Edit approximate location'})).toContainText('Manually entered');
+  // The retained choice has no published report. The map must not invent one.
+  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByRole('button',{name:'Edit approximate location'})).toContainText('Not set');
+  expect(checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km,revision').eq('vehicle_id',vehicles[0]).single())).toEqual(legacyBefore);
   await expect(page.getByRole('button',{name:'Edit planned capacity: Off Duty'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Edit approximate location'}).first()).toBeVisible();
   checked(await db.rpc('update_fleet_driver_access',{actor_user_id:owner.id,command:{driver_user_id:driver.id,vehicle_id:vehicles[0],can_manage_capacity:false,can_manage_tracking:true}}));
-  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByTestId('restricted-driver-map')).toContainText('Manually entered');
+  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByTestId('restricted-driver-map')).toContainText('Manual locations are read-only. Choose a location source to resume updates.');
 
   const unassigned=await page.request.get(`/api/capacity/manual-location?vehicleId=${vehicles[1]}`);expect(unassigned.status()).toBe(404);
   const forbidden=await page.request.post('/api/fleet/devices',{data:{action:'SOURCE',input:{vehicleId:vehicles[1],source:'MANUAL',precisionKm:5,expectedRevision:'1970-01-01T00:00:00Z',manualLatitude:40,manualLongitude:-105}}});expect(forbidden.status()).toBe(400);
@@ -65,6 +67,20 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
   await expect(restrictedDialog.getByRole('button',{name:'Choose on map'})).toHaveCount(0);
   await expect(restrictedDialog.getByRole('button',{name:'Save location'})).toBeDisabled();
   await restrictedDialog.getByRole('button',{name:'Use my phone'}).click();
+  // A real browser permission refusal must not save consent or a location.
+  await context.grantPermissions([],{origin:'http://127.0.0.1:3100'});
+  expect(await page.evaluate(async()=>(await navigator.permissions.query({name:'geolocation'})).state)).toBe('denied');
+  const locationsBefore=checked(await db.from('vehicle_driver_locations').select('*').eq('vehicle_id',vehicles[0]));
+  const writes:string[]=[];
+  const captureWrite=(request:import('playwright-core').Request)=>{const path=new URL(request.url()).pathname;if(request.method()==='POST'&&['/api/fleet/devices','/api/capacity/location'].includes(path))writes.push(path);};
+  page.on('request',captureWrite);
+  await restrictedDialog.getByRole('button',{name:'Save location'}).click();
+  await expect(restrictedDialog.getByText('Allow location for Loadgistic in your browser, then try again.')).toBeVisible();
+  expect(writes).toEqual([]);page.off('request',captureWrite);
+  expect(checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km,revision').eq('vehicle_id',vehicles[0]).single())).toEqual(legacyBefore);
+  expect(checked(await db.from('vehicle_driver_locations').select('*').eq('vehicle_id',vehicles[0]))).toEqual(locationsBefore);
+  await page.screenshot({path:`${screenshots}/driver-location-permission-denied-phone.png`});
+  await context.grantPermissions(['geolocation'],{origin:'http://127.0.0.1:3100'});
   const phoneSource=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/fleet/devices'&&response.request().method()==='POST');
   const phoneReport=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/capacity/location'&&response.request().method()==='POST');
   await restrictedDialog.getByRole('button',{name:'Save location'}).click();expect((await phoneSource).status()).toBe(200);expect((await phoneReport).status()).toBe(200);await expect(restrictedDialog).toHaveCount(0);

@@ -49,6 +49,15 @@ the referenced provider organization. Preserve the original workflow failure if
 cleanup also fails, record exact remaining IDs privately, and verify the fixture
 baseline after scoped recovery rather than counting assertions alone as a pass.
 
+Source choices are not location reports (NR-21): a retained Manual selection
+without a saved report must not make the map invent a point or report label.
+Check the saved selection/revision separately from the published projection.
+Native accessibility state also does not prove browser semantics (NR-37): keep
+the real Expo checked-state assertion and supply supported explicit ARIA state
+alongside native state. Prove Cancel and denied capture preserve saved facts,
+then retry with real local API/database readback. An inaccessible separate Chrome
+process is a hands-on-review limit, not a passing review receipt.
+
 Accessibility audit readiness: a URL prefix, an old shell and absent skeletons
 do not prove that an App Router redirect has completed. October25 main CI
 40237550136 reported `CONTEXT_DESTROYED` for fleet Home; both local Chrome sizes

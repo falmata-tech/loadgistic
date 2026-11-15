@@ -1339,6 +1339,19 @@ The Expo preview additionally requires explicit aria-checked alongside native
 accessibilityState; actual checkbox and decoded-image tests prove the visible
 control instead of inferring it from a component-state test.
 
+November14 local continuation reproduced the same renderer boundary in
+`driver-location-editor.tsx`: its source and privacy-radius radios had native
+checked state but no browser `aria-checked` under the installed
+react-native-web0.21.3. The existing real Expo regression failed on the unselected
+Phone choice after successful email-code sign-in. Explicit checked/disabled ARIA
+state now supplements the native state. The regression retains that assertion,
+checks mutually exclusive accuracy choices, and proves a radius-only edit/Close
+leaves the saved Manual choice and location unchanged. Permission-denial/retry
+also checks zero source/report writes and exact saved readback before consent.
+Owner: mobile location maintainer. Evidence is in the isolated Mac candidate's
+`.local/location-review/`; hands-on review and installed Android remain separate
+from automated Chrome/Expo evidence.
+
 Evidence: capacity-filter values/HTTP/SSR tests, SQL capacity-multiple-options,
 web/native component checks and all14 focused browser cases. Owner: capacity/API
 and native UI maintainer. Local verification complete; owner visual review,
@@ -2173,6 +2186,14 @@ browser CI and the matched web/Android rollout; physical-phone acceptance stays
 distinct from browser and emulator evidence.
 
 ## NR-21 — Workflow contracts change but their browser fixtures remain obsolete
+
+November14 local continuation: the legacy Manual web fixture inserted a saved
+source choice but no historical location report. Its reload assertion expected
+the map to label a report that did not exist. The current saved projection and
+actual editor correctly retain Manual while the map says Not set. The repaired
+assertion checks that distinction and exact unchanged source/revision after
+Cancel; the restricted map retains its read-only hint. Do not invent a reported
+point or alter the current projection to satisfy a source-only fixture.
 
 **Cause:** Mandatory truck ownership, named sharing contacts, delivery dates,
 photo proofs and recipient approval changed while older browser fixtures still

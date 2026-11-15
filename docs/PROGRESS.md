@@ -62,8 +62,40 @@ Receipts and the guarded local harness are in `.local/review-evidence/` and
 `.local/private-refresh.spec.ts`; the maintained public regression is
 `tests/e2e/capacity-live-refresh.spec.ts`. Metro remains stopped, web3100 running.
 
-Next: qualify the remaining Phone/GPS source-switch and native-only journeys,
-private Expo permission transitions and the full exact-source candidate CI.
+The next local source-control checks exposed two different issues. The web
+fixture stored a legacy Manual choice without a historical report; its map
+correctly says Not set while the editor retains that choice. Its assertion now
+checks exact saved source/revision after Cancel and reload. Expo's installed web
+renderer omitted checked state for the source and accuracy radios; explicit
+ARIA checked/disabled state now supplements native state without changing
+appearance, consent, API or saved-source rules (NR-21/37).
+
+Maintained actual Chrome tests pass the web Manual→Phone journey48.2s,
+Expo390×844 journey31.7s and desktop first private phone fix23.6s, zero retries
+or skips. Both source-switch tests deny browser location first, prove zero
+source/report writes and unchanged database facts, then grant the synthetic
+browser fix and complete the real save/reload. Provider override and unassigned
+vehicle denials remain covered. Expo also checks accuracy-only edit/Close,
+mutually exclusive accessible state and restored saved Phone source. Web's six
+and mobile's11 focused tests pass; full mobile426/426 passes19.654s, with types
+and lint. Root spec/source/workflow and TypeScript pass. The earlier1,525-test
+root quality receipt covers the preceding checkpoint; it is not a new exact-source
+full gate for this small mobile accessibility repair.
+
+Sanitized logs and failed first runs are retained in `.local/location-review/`.
+The source/denial/saved phone screenshots were inspected. Native Chrome control
+opened the local Expo sign-in page but selected the existing user process instead
+of the separate headed test browser; the browser access host was unavailable.
+The diagnostic headed journey passed automatically after its review pauses were
+released with explicit **not reviewed** receipts. That is not completed hands-on
+desktop/phone editor review. Actual Android permissions/background movement,
+configured GPS ingest and private Expo permission transitions remain unqualified.
+Scoped cleanup restores154 users/143 vehicles/9 organizations; world/motion and
+Tracking controls remain off/unarmed. Metro8084 is stopped; web3100 is running.
+
+Next: finish hands-on source editor review when the correct browser process is
+available, configured GPS/native-only journeys, private Expo permission
+transitions and the full exact-source candidate CI.
 Hosted/device/activation gates remain separate and unfinished. No production
 build, package, merge or publication is claimed by this local checkpoint.
 
