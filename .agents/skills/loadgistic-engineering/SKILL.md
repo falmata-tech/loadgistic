@@ -18,6 +18,11 @@ commands succeed; do not infer current rules from older test names. Reuse curren
 application ports, guarded SQL and synthetic fixture factories instead of making
 UI-only shells or a second persistence model.
 
+For simulator work, follow the November 15 CST delivery loop in
+`docs/AGENT_LESSONS.md`: one GPS saved-state/map/stop journey, then Phone privacy
+and Capacity, then the cohort. Keep Netlify adapters thin, fixtures small and
+preconditions reproducible; do not make full backup/restore ordinary setup.
+
 For user-visible screen, workflow, navigation or localization changes, also use
 `loadgistic-ui-ux` for the role/task review, empty-state guidance, multilingual
 fit and desktop/phone experience checks. Keep its product-specific design detail

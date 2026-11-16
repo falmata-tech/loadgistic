@@ -50,6 +50,15 @@ recover after a bounded deadline; a callback that merely increments state is not
 the network request's lifetime. Keep actual Chrome/database/native qualification
 separate from hook/transport tests.
 
+Invalid-filter denial (NR-37): an SSR alert is not a durable result if the map's
+viewport or automatic refresh clears it. Main CI43892022196 failed the alert
+assertion, the exact local case reproduced it, and Chrome showed refresh hiding
+the error after 15 seconds. Preserve the first failure and test the invalid
+state through reapply and refresh before correcting it. Do not lengthen the
+assertion or call this fixture/infrastructure noise without observed evidence;
+keep the valid-filter refresh/recovery checks too. Repair qualification remains
+pending, separately from the approved c3 release and installed OFF settings.
+
 November14 continuation: a test that injects a replacement row bypasses the real
 link filter. Exercise a real publication with its original deep link, reload it,
 and then remove its eligibility. Keep the open panel and camera stable through
@@ -206,6 +215,36 @@ register/checklist. Do not create a daily transcript, a new framework, redundant
 rules or blanket approval gates. A recurring script should have explicit inputs,
 target checks, bounded failure and meaningful negative tests; a disposable
 one-time operation does not automatically need a permanent utility.
+
+November 15 CST continuation (NR-61/76): use existing application ports and
+guarded database controllers, with thin Netlify transport/scheduling adapters.
+Start with one reproducible GPS fixture: report, verify saved database state,
+exercise the actual map, then stop and prove no further write. Follow with Phone
+privacy and Capacity before expanding to the cohort. Check current installed
+preconditions together; keep fixture setup disposable and tests rollback-only.
+Before a long run, retain a fixed operation ID, safe SQLSTATE or explicit unknown,
+bounded byte/status counts and duration; raw SQL, records and errors stay private.
+After one controlled retry, distinguish product, fixture and infrastructure
+causes before repeating. Reuse unchanged passing receipts and an available
+identity-verified initialized isolated database. Reserve full backup/restore for
+release or production-specific diagnosis; it is not routine feature setup.
+Keep local services lean and heavy jobs serial. These are manual workflow rules;
+neither this note nor a reviewed, unexecuted diagnostic installs enforcement.
+
+November 16 CST fixture follow-up: match the actual LOCAL ledger and hash-verified
+function overlay as explicit preconditions; do not invent hosted ledger 227 or edit
+history. Keep local fixture, archived-source and product evidence distinct. A
+4.948 s guard refusal preceded commands; diagnosis led only to a LOCAL guard fix.
+V12 native/positive-C setup passed before Capacity returned `POLICY_REQUIRED`.
+A three-second same-container repeat matched the stderr hash and located normal
+`require_content_policy` → publish → Capacity executor calls. Check actor consent
+and synthetic readiness before the cohort; already-consented local fixtures do
+not establish snapshot readiness. Preserve the source-B failure and guard; no
+PostGIS cause, hosted consent backfill or later B success is established.
+Before long scenarios, check normal policy acceptance and actual current
+publication eligibility, including qualifying fleet ownership or financed licence
+facts. Do not fabricate reviews, backfill hosted consent or bypass guards. This
+is manual readiness guidance, not an installed gate or a later B success claim.
 
 Historical tooling checkpoint, preserving its original counts and timings:
 the first measured static run parsed104 scripts and linted the workflows in

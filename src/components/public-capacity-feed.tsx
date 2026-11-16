@@ -161,6 +161,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   React.useEffect(()=>()=>{generation.current+=1;pendingRequest.current?.abort();pendingRequest.current=null;},[]);
 
   const loadWindow=React.useCallback(async()=>{
+    // A rejected query needs an explicit correction, not a background retry.
+    if(initial.filterError)return;
     generation.current+=1;pendingRequest.current?.abort();
     selectionLookup.current=null;
     const version=generation.current;
@@ -243,8 +245,9 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       if(pendingRequest.current===controller)pendingRequest.current=null;
       if(version===generation.current)setLoading(false);
     }
-  },[apiPath,query,blockKey]);
+  },[apiPath,query,blockKey,initial.filterError]);
   React.useEffect(()=>{
+    if(initial.filterError)return;
     const refresh=()=>{
       if(document.visibilityState!=='visible'){
         if(pendingRequest.current){generation.current+=1;pendingRequest.current.abort();pendingRequest.current=null;setLoading(false);}
@@ -255,7 +258,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     const timer=window.setInterval(refresh,15000);
     document.addEventListener('visibilitychange',refresh);
     return()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',refresh);generation.current+=1;pendingRequest.current?.abort();pendingRequest.current=null;selectionLookup.current=null;};
-  },[loadWindow]);
+  },[loadWindow,initial.filterError]);
   function explore(bounds:number[]){
     const key=bounds.map(value=>value.toFixed(4)).join(',');
     if(key===viewport.current||viewport.current&&Boolean(query.provider||query.truck))return;

@@ -35,6 +35,11 @@ Use the browser project/config and local ports in the current checked-in setup;
 verify the responding app and database target before testing. Run heavy browser
 and unit gates sequentially on the Mac. After one controlled retry, diagnose.
 
+Apply NR-61/76 and the November 15 CST loop in `docs/AGENT_LESSONS.md`: retain fixed
+operation IDs, safe SQLSTATE/unknown and duration before long runs. Reuse unchanged
+passing receipts and an available verified initialized isolated database with
+rollback tests; reserve full restore for release or production-specific diagnosis.
+
 Record reviewed, changed, tested and still-unverified files separately. Reuse
 completed unchanged receipts after interruptions. Coordinate shared-file edits
 with the main agent; parallel source review does not justify concurrent mutation

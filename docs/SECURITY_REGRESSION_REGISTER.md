@@ -440,6 +440,22 @@ no product repair or flaky classification is inferred. Owner: workflow/test
 maintainer. Next if it recurs: use the retained checkpoint/original site to
 diagnose the cause before a controlled repair. See BASE-DEP-001 and PROGRESS.
 
+Earlier November 15 CST recurrence (historical): V11 A+C passed in 138,609 ms; B
+returned 472 stderr bytes without a usable SQLSTATE. Preserve A+C success and B
+failure separately; no product cause or completed GPS journey is established.
+Before another long test, retain only a fixed operation ID, allowlisted SQLSTATE
+or explicit unknown, status/byte counts and duration; test unknown/error privacy.
+The review-only V12 diagnostic has not executed, so no improved runtime diagnosis
+is claimed. Owner: rehearsal maintainer. Next: diagnose that startup boundary on
+the exact isolated target, without raw SQL/errors or another blind replay.
+
+November 16 CST: a 4.948 s guard refusal preceded commands; diagnosis led to a
+LOCAL guard correction; product code was unchanged. The archive B failure (472 bytes)
+remains unresolved (LOCAL PostGIS public/archive extensions). Retain fixed steps,
+SQLSTATE and complete reviewed RPC enums, including `DEMO_REPORT_DENIED`, rather
+than labelling a known denial unknown. LOCAL combined-B success does not qualify
+archived B or hosted activation. Owner: rehearsal maintainer; next: source diagnosis.
+
 ## NR-75 — Green GitHub checks conceal a blocked automatic publication path
 
 **Observed November 12:** main c926092 passes all 16 GitHub jobs, while Netlify
@@ -883,6 +899,14 @@ cancelled when the owner required the full test audit.
 before the next final backup; verify artifact reuse and actual rollout outcomes.
 These controls are workflow requirements, not a substitute for provider-side
 enforcement or permission to reuse expired evidence.
+
+November 15 CST continuation: unchanged A+C/restore receipts need not be rerun to
+diagnose a later B startup failure. Reuse an available identity-verified initialized
+isolated database and rollback-only fixtures; check its current state first.
+Full backup/restore belongs to release or production-specific diagnosis, not
+ordinary GPS/Phone/Capacity iteration. Preserve original timestamps and refresh
+expired production prerequisites separately. This is manual workflow guidance;
+no database reuse automation or production-authority waiver is installed.
 
 ## NR-60 — Personal-fleet employee omitted from sharing authority
 
@@ -1486,6 +1510,22 @@ also checks zero source/report writes and exact saved readback before consent.
 Owner: mobile location maintainer. Evidence is in the isolated Mac candidate's
 `.local/location-review/`; hands-on review and installed Android remain separate
 from automated Chrome/Expo evidence.
+
+November16 continuation: main CI43892022196 on merge `6ee0109` (the exact c3
+tree) failed desktop `capacity-multiple-options.spec.ts:81` after an invalid
+filter reapply: the error overlay must keep `role="alert"`. The other seven
+browser shards passed; `e2e` and `release-ready` failed as dependent guards and
+source workflow43896533348 was skipped. The exact local case found a loading
+overlay with no role over 14 polls/five seconds. Actual Chrome showed the error
+returning after reapply, then disappearing on the 15-second automatic refresh.
+No disclosure or PostGIS cause is established. Keep an invalid parsed query
+fail-closed across viewport loads and refresh; correct it only through the
+explicit valid-filter action. Do not weaken the alert assertion or increase its
+timeout to hide the behavior. Owner: Capacity UI/API maintainer. Next: qualify
+the minimal component repair with reapply, automatic-refresh, valid correction
+and preserved normal refresh checks, actual desktop/phone review and required
+CI. The repair is not yet qualified; c3 release authority does not itself bind
+new source, and production remains old520 held/schema220/18 disabled fields.
 
 Evidence: capacity-filter values/HTTP/SSR tests, SQL capacity-multiple-options,
 web/native component checks and all14 focused browser cases. Owner: capacity/API
