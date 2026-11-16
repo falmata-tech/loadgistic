@@ -9,6 +9,8 @@ const environment={NODE_ENV:'development',NEXT_PUBLIC_SUPABASE_URL:'http://127.0
  LOADGISTIC_DEMO_MOTION_ENABLED:'true',LOADGISTIC_DEMO_MOTION_SECRET:demoSecret};
 const gateway={id:randomUUID(),secret:gatewaySecret,apiUrl:'http://127.0.0.1:18082/api/',apiToken:'b'.repeat(32)};
 const manifest={purpose:'local-fictional-gps',gatewayId:gateway.id};
+const relayToken='c'.repeat(64),relayGateway={...gateway,apiUrl:'http://127.0.0.1:28083/api/',apiToken:relayToken};
+const relayEnvironment={...environment,LOADGISTIC_LOCAL_GATEWAY_API_MODE:'relay'};
 
 test('local web launcher passes only validated protected gateway config to child environment',()=>{
  const protectedJson=JSON.stringify([gateway]);
@@ -21,6 +23,63 @@ test('local web launcher passes only validated protected gateway config to child
  assert.equal(child.NEXT_DIST_DIR,'.next-dev');
  assert.equal(inherited.TELEMATICS_GATEWAYS_JSON,'[]');
 });
+
+test('relay launch requires the explicit exact mode and preserves the direct default',()=>{
+ const relayJson=JSON.stringify([relayGateway]);
+ for(const hostname of ['127.0.0.1','localhost','[::1]']){
+  const json=JSON.stringify([{...relayGateway,apiUrl:`http://${hostname}:28083/api/`}]);
+  const inherited={...relayEnvironment,TELEMATICS_DEFAULT_GATEWAY_ID:'foreign',TELEMATICS_LOCAL_SYNTHETIC_ONLY:'false'};
+  const child=localWebEnvironment(inherited,json,manifest);
+  assert.equal(child.TELEMATICS_GATEWAYS_JSON,json);
+  assert.equal(child.TELEMATICS_DEMO_GATEWAY_ID,gateway.id);
+  assert.equal(child.TELEMATICS_DEFAULT_GATEWAY_ID,'');
+  assert.equal(child.TELEMATICS_LOCAL_SYNTHETIC_ONLY,'true');
+  assert.equal(inherited.TELEMATICS_DEFAULT_GATEWAY_ID,'foreign');
+ }
+ assert.throws(()=>localWebEnvironment(environment,relayJson,manifest));
+ assert.throws(()=>localWebEnvironment({...environment,LOADGISTIC_LOCAL_GATEWAY_API_MODE:'direct'},relayJson,manifest));
+ assert.equal(localWebEnvironment({...environment,LOADGISTIC_LOCAL_GATEWAY_API_MODE:'direct'},JSON.stringify([gateway]),manifest).TELEMATICS_GATEWAYS_JSON,JSON.stringify([gateway]));
+ for(const value of ['',null,false,{},[],'RELAY',' relay','relay ','unknown'])
+  assert.throws(()=>localWebEnvironment({...environment,LOADGISTIC_LOCAL_GATEWAY_API_MODE:value},relayJson,manifest));
+});
+
+test('relay mode refuses alternate endpoints, malformed configuration and production targets',()=>{
+ for(const apiUrl of ['http://127.0.0.1:18082/api/','http://127.0.0.1:18083/api/','http://127.0.0.1:8080/api/',
+  'https://127.0.0.1:28083/api/','http://127.0.0.1.evil:28083/api/','http://host.docker.internal:28083/api/',
+  'http://10.0.2.2:28083/api/','http://user@127.0.0.1:28083/api/','http://127.0.0.1:28083/api/?x=1',
+  'http://127.0.0.1:28083/api/#private','http://127.0.0.1:28083/api','http://127.0.0.1:28083/other/'])
+  assert.throws(()=>localWebEnvironment(relayEnvironment,JSON.stringify([{...relayGateway,apiUrl}]),manifest));
+ for(const patch of [{NODE_ENV:'production'},{NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co'},
+  {NEXT_PUBLIC_SUPABASE_URL:'http://127.0.0.1:54321'},{LOADGISTIC_DEMO_MOTION_ENABLED:'false'}])
+  assert.throws(()=>localWebEnvironment({...relayEnvironment,...patch},JSON.stringify([relayGateway]),manifest));
+ for(const payload of ['[]',JSON.stringify([relayGateway,relayGateway]),'{'])
+  assert.throws(()=>localWebEnvironment(relayEnvironment,payload,manifest));
+ for(const badManifest of [undefined,{...manifest,purpose:'real-gps'},{...manifest,gatewayId:randomUUID()}])
+  assert.throws(()=>localWebEnvironment(relayEnvironment,JSON.stringify([relayGateway]),badManifest));
+});
+
+test('relay token must be a distinct strong capability including configured fast-worker/privacy keys',()=>{
+ for(const apiToken of ['b'.repeat(32),'c'.repeat(63),'C'.repeat(64),'g'.repeat(64),gatewaySecret,demoSecret])
+  assert.throws(()=>localWebEnvironment(relayEnvironment,JSON.stringify([{...relayGateway,apiToken}]),manifest));
+ for(const key of ['HOSTED_DEMO_MOTION_SECRET','DEMO_CAPACITY_WORKER_SECRET','DEMO_WORLD_WORKER_SECRET',
+  'SESSION_SECRET','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_SEED_SERVICE_ROLE_KEY','GATEWAY_SECRET',
+  'SYNTHETIC_GATEWAY_SECRET','GATEWAY_PRIVACY_SECRET','SYNTHETIC_GATEWAY_PRIVACY_SECRET'])
+  assert.throws(()=>localWebEnvironment({...relayEnvironment,[key]:relayToken},JSON.stringify([relayGateway]),manifest),key);
+ const privacy=JSON.stringify([{id:randomUUID(),secret:relayToken}]);
+ assert.throws(()=>localWebEnvironment({...relayEnvironment,TELEMATICS_PRIVACY_GATEWAYS_JSON:privacy},JSON.stringify([relayGateway]),manifest));
+});
+
+for(const [mode,configuration] of [['direct',gateway],['relay',relayGateway]]){
+ for(const field of ['secret','apiToken']){
+  test(`${mode} launch checks a passed fast-worker key against gateway ${field} before child setup`,()=>{
+   const inheritedCapacitySecret=process.env.DEMO_CAPACITY_WORKER_SECRET;
+   const capacitySecret='d'.repeat(64),checked={...configuration,[field]:capacitySecret};
+   const supplied={...environment,LOADGISTIC_LOCAL_GATEWAY_API_MODE:mode,DEMO_CAPACITY_WORKER_SECRET:capacitySecret};
+   assert.throws(()=>localWebEnvironment(supplied,JSON.stringify([checked]),manifest),{message:'GATEWAY_UNAVAILABLE'});
+   assert.equal(process.env.DEMO_CAPACITY_WORKER_SECRET===inheritedCapacitySecret,true);
+  });
+ }
+}
 
 test('local web launcher refuses remote destinations, disabled demo motion and shared credentials',()=>{
  for(const apiUrl of ['https://loadgistic.com/api/','http://127.0.0.1.evil:18082/api/',

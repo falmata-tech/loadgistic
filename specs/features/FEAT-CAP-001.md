@@ -3,13 +3,88 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Providers publish one latest Empty or Partial signal with public or explicitly shared account visibility. Planned and Preferred routes/areas are OR availability offers within the same vehicle, permission and status filters; reported approximate location is separate. Both statuses support Area or Route. Area queries compare advertised routes and areas; older visible signals carry honest capacity/location ages for either audience. Migrations211/213/217 implement these corrections locally; hosted rollout is pending. No email guest Capacity or exact-coordinate disclosure is supported.
+behavior: Providers publish one latest Empty or Partial signal with public or explicitly shared account visibility. Planned and Preferred routes/areas are OR availability offers within the same vehicle, permission and status filters; reported approximate location is separate. Both statuses support Area or Route. Area queries compare advertised routes and areas; older visible signals carry honest capacity/location ages for either audience. Migrations211/213/217 are recorded on the hosted ledger through220; ledger presence does not establish current end-to-end qualification. No email guest Capacity or exact-coordinate disclosure is supported.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
 rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
 ---
 
 # Public truck-capacity signals
+
+## Demo planning diversity — November15 owner correction
+
+Vehicle size must not imply local-only work, a delivery role, or Empty/100%
+capacity. Demo planning examples should mix city, regional and long-distance
+routes and areas across configurations, with actual Empty and Partial records
+and their saved load preferences. This changes authored demo data, not matching
+eligibility or a provider's publication capabilities.
+
+Given the same saved planning facts and search criteria\
+When a vehicle configuration changes between smaller and larger types\
+Then planning generation and geographic matching do not impose a different
+service distance, geometry, availability percentage, sharing or location radius.
+
+Given an explicitly authored demo plan\
+When fixtures are prepared\
+Then small and large configurations each include local and longer-distance
+examples, and route/area, direction and combined-filter matches and rejections
+are exercised against the actual matching code\
+And identity, ownership, assignments, public/private sharing, location privacy,
+source/capture time, consent and proof records remain unchanged.
+
+The GPS simulator's reviewed local road course represents fictional current
+movement; it is independent from a published commercial plan. Preserve exact
+authored Capacity-scenario baselines while broadening other fixture plans;
+changing one of those baselines requires updating and rehearsing its scenario.
+Rollout records measured before/after plan distributions and local browser/Expo
+readback. Hosted demo-data changes still require exact owner operation review,
+backup/restore/rehearsal and rollback limited to the reviewed planning fields.
+
+## Current publication behind a vehicle link — November14
+
+Given a map link names an earlier Capacity publication for a vehicle\
+When that vehicle publishes a replacement\
+Then public and private map reads resolve the link to that same vehicle's latest
+publication before applying the existing audience, current-driver, status,
+provider and other filters; an old link never grants access or revives history\
+And the selected details follow the replacement without a reload on web/Expo.
+
+Given the replacement is private, Off Duty, outside the requested filters, or
+the reader's grant was revoked\
+When the next complete authorized read finishes\
+Then the old selection and details are removed. A lookup failure uses normal
+bounded retry behaviour and cannot return an unfiltered or unverified record.
+
+Changed contract: server-side Capacity link resolution uses at most two indexed
+identity reads only when a publication ID was supplied; ordinary map reads are
+unchanged. The final projection remains the sole disclosure boundary. Existing
+query error/status and freshness observations apply; never log identity rows.
+Rollout requires real publication/privacy browser checks and exact-source gates.
+Rollback restores the prior application adapter without altering saved history,
+grants, controls or schema. Local qualification does not authorize deployment.
+
+## Phone and GPS location updates — current owner contract
+
+Given a provider or currently assigned driver edits a vehicle location\
+When the source editor opens on web or Expo\
+Then new updates offer Phone (`MOBILE`) and, under existing fleet permissions,
+an assigned GPS device only; no map-point or coordinate-entry action is offered\
+And a saved legacy `MANUAL` source/report remains honestly labelled Manually
+entered, with its saved age and privacy radius retained for historical reading\
+And opening it, changing only its radius, or cancelling never converts it to
+Phone/GPS or grants location consent. Manual writes are refused at the server.
+
+Given a legacy Manual source needs new updates\
+When its assigned driver deliberately chooses Phone and saves\
+Then capture permission and an obscured fix succeed before its source changes;
+denial leaves the saved source/location unchanged\
+And source revision, current assignment and driver-choice ownership remain
+authoritative. Configured GPS selection retains existing owner permissions.
+Capacity source edits never alter an active Tracking agreement's saved source.
+
+Qualification requires focused denial/retry/revision tests plus real local
+desktop/phone web and Expo save/readback. Native OS permission and movement
+acceptance requires Android evidence; Expo web alone does not qualify it.
 
 ## Map update and cluster stability — October25 repair in progress
 
@@ -826,16 +901,33 @@ And denial leaves the full public Board usable with a manual Retry location perm
 
 ### Scenario: demo capacity geography follows plausible Ethiopian roads
 
+The November15 owner decision supersedes the former small-vehicle30km rule and
+the demo's requirement to put current/Preferred plans around the same observed
+point. Planned service and observed location are separate saved facts.
+
 Given the public Capacity Board is populated with pre-customer demonstration trucks\
 When demonstration capacity geometry is rebuilt\
 Then every current Capacity route contains two through five distinct cities in a plausible road-travel sequence\
-And the route passes through or immediately beside the truck's approximate current city rather than jumping to an unrelated part of Ethiopia\
-And every Service area uses a center near the truck's approximate current city and a boundary that contains that center\
-And cargo vans, pickups, and mini trucks expose current capacity geography within 30 kilometres of their base city or town\
-And each explicitly truck-and-driver-bound regular signal contains or closely approaches only that pair's demonstration location\
+And every vehicle configuration draws from the same local and regional choices,
+including cargo vans, pickups, mini trucks and larger vehicles\
+And every Service area uses a real named center and three through five other
+settlements that strictly surround it, with a radius covering the boundary\
+And an insufficient verified surrounding settlement set yields a Route example
+instead of invented boundary points or a vehicle-capability restriction\
+And a current or Preferred plan may start away from the observed location;
+authoring it preserves that observation's place, time, source and privacy\
+And each regular signal remains bound to its exact current vehicle/Driver pair\
 And older unbound provider route fixtures remain retained history without a guessed truck assignment\
-And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a nearby center and enclosing boundary\
+And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a named center and enclosing boundary\
 And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
+
+Given exact Capacity rows also provide approved simulator corridor evidence\
+When ordinary demo plans are refreshed\
+Then those complete ordered coordinates remain unchanged, including evidence
+outside mutable simulator target vehicles\
+And every authored phase and its coordinate/order denials still qualify before
+writing the source fixture. Public fleet descriptions are derived from their
+saved Preferred plan; neither headlines nor descriptions claim the old route.
 
 Given a truck's latest current capacity visibility is Private network\
 When an anonymous visitor opens or filters the public Capacity Board\

@@ -4,10 +4,14 @@ import {z} from 'zod';
 export const GATEWAY_BODY_LIMIT=131072;
 export const gatewayConfigSchema=z.object({id:z.string().uuid(),secret:z.string().min(32).max(256),
  apiUrl:z.string().url(),apiToken:z.string().min(16).max(4096)}).strict();
-export function loadGatewayConfigurations(raw=process.env.TELEMATICS_GATEWAYS_JSON){
+export function loadGatewayConfigurations(raw=process.env.TELEMATICS_GATEWAYS_JSON,environment=process.env){
  try{
   const rows=z.array(gatewayConfigSchema).max(10).parse(JSON.parse(raw||'[]'));
   if(new Set(rows.map(row=>row.id)).size!==rows.length)throw new Error();
+  const capacitySecret=environment?.DEMO_CAPACITY_WORKER_SECRET;
+  // A fast demo credential must never authorize ingest or its enrollment relay,
+  // even when an operator accidentally reuses it in a gateway configuration.
+  if(capacitySecret&&rows.some(row=>row.secret===capacitySecret||row.apiToken===capacitySecret))throw new Error();
   for(const row of rows){const url=new URL(row.apiUrl);
    if(url.username||url.password||url.search||url.hash||!['http:','https:'].includes(url.protocol))throw new Error();
    if(url.protocol==='http:'&&!['127.0.0.1','localhost','[::1]','traccar','host.docker.internal'].includes(url.hostname))throw new Error();

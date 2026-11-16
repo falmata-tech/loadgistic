@@ -52,12 +52,11 @@ const button=(tree,message)=>control(tree,'button',props=>treeNodes(props.childr
 test('web dirty source keeps its original revision through an explicit reread; Cancel adopts current server state',async()=>{
  const saves=[],h=harness(async()=>response(workspace(1))),markDirty=()=>{};
  let vehicle={id:'truck',selection:{source:'GPS',precisionKm:20,revision:'r1',deviceId:'device',manualPoint:null}},props=()=>({vehicle,busy:false,markDirty,save:async(action,input)=>{saves.push({action,input});return false;}});
- let tree=h.render('SourceForm',props());control(tree,'label',p=>treeNodes(p.children).some(n=>n.props?.message==='Manually entered')).props.children.find(n=>n.type==='input').props.onChange();
- tree=h.render('SourceForm',props());control(tree,'ManualTruckLocation',()=>true).props.onChange({lat:40.015,lng:-105.27});
+ let tree=h.render('SourceForm',props());control(tree,'label',p=>treeNodes(p.children).some(n=>n.props?.message==='Driver’s phone')).props.children.find(n=>n.type==='input').props.onChange();
  tree=h.render('SourceForm',props());control(tree,'select',()=>true).props.onChange({target:{value:'5'}});
  vehicle={...vehicle,selection:{...vehicle.selection,revision:'r2',precisionKm:10}};tree=h.render('SourceForm',props());
- assert.equal(control(tree,'select',()=>true).props.value,5);assert.deepEqual(control(tree,'ManualTruckLocation',()=>true).props.point,{lat:40.015,lng:-105.27});
- await tree.props.onSubmit({preventDefault(){}});assert.equal(saves[0].input.expectedRevision,'r1');assert.equal(saves[0].input.manualLongitude,-105.27);
+ assert.equal(control(tree,'select',()=>true).props.value,5);assert.equal(control(tree,'ManualTruckLocation',()=>true),undefined);
+ await tree.props.onSubmit({preventDefault(){}});assert.equal(saves[0].input.expectedRevision,'r1');assert.equal(saves[0].input.source,'MOBILE');assert.equal(saves[0].input.manualLongitude,undefined);
  button(tree,'Cancel').props.onClick();h.render('SourceForm',props());tree=h.render('SourceForm',props());assert.equal(control(tree,'select',()=>true).props.value,10);assert.equal(control(tree,'ManualTruckLocation',()=>true),undefined);
  control(tree,'select',()=>true).props.onChange({target:{value:'5'}});tree=h.render('SourceForm',props());await tree.props.onSubmit({preventDefault(){}});assert.equal(saves[1].input.expectedRevision,'r2');h.close();
 });
@@ -144,4 +143,12 @@ test('web simulated command activity distinguishes Sending from sent, confirmed,
   const expected={REQUESTED:'Waiting to send',DISPATCHING:'Sending…',DISPATCHED:'Sent · waiting for device',ACKNOWLEDGED:'Device confirmed',FAILED:'Failed',EXPIRED:'Expired',UNKNOWN:'Delivery not confirmed'}[state];
   assert.ok(treeNodes(tree).some(node=>node.props?.message===expected),state);h.close();
  }
+});
+
+
+test('web legacy Manual is read-only until an allowed source is deliberately selected',async()=>{
+ const saves=[],h=harness(async()=>response(workspace(1))),vehicle={id:'truck',selection:{source:'MANUAL',precisionKm:5,revision:'r1',deviceId:null,manualPoint:{latitude:40,longitude:-105}}},props={vehicle,busy:false,markDirty:()=>{},save:async(action,input)=>{saves.push({action,input});return false;}};
+ let tree=h.render('SourceForm',props);assert.equal(control(tree,'ManualTruckLocation',()=>true),undefined);assert.equal(control(tree,'label',p=>treeNodes(p.children).some(n=>n.props?.message==='Manually entered')),undefined);
+ assert.equal(control(tree,'input',p=>p.checked),undefined);control(tree,'select',()=>true).props.onChange({target:{value:'10'}});tree=h.render('SourceForm',props);assert.equal(button(tree,'Save location source').props.disabled,true);await tree.props.onSubmit({preventDefault(){}});assert.deepEqual(saves,[]);
+ control(tree,'label',p=>treeNodes(p.children).some(n=>n.props?.message==='Driver’s phone')).props.children.find(n=>n.type==='input').props.onChange();tree=h.render('SourceForm',props);await tree.props.onSubmit({preventDefault(){}});assert.deepEqual(saves,[{action:'SOURCE',input:{vehicleId:'truck',source:'MOBILE',precisionKm:10,expectedRevision:'r1'}}]);h.close();
 });

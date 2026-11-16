@@ -33,7 +33,7 @@ export const platformAbout = Object.freeze({
     ],action:'Transporter login',href:'/login'},
     {id:'company',label:'Transport companies',heading:'Keep the whole fleet in view.',facts:[
       ['Run the fleet in one place', 'Manage vehicle and driver assignments, capacity and location sources in one workspace.'],
-      ['Add GPS on your terms', 'Ask us to connect a compatible tracker, then assign it to a vehicle. Manual and phone locations remain available.'],
+      ['Add GPS on your terms', 'Ask us to connect a compatible tracker, then assign it to a vehicle. Phone location is also available.'],
       ['Give customers a clear view', 'Choose which vehicles each connected customer can see, and share Tracking after the work is agreed.'],
     ],action:'Transporter login',href:'/login'},
   ],

@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as searchContract from '../src/lib/transporter-search.js';
 import * as filterPresentation from '../src/lib/capacity-filter-presentation.ts';
+import {capacityVehicleIdentity,currentCapacitySelection} from '../src/lib/capacity-map-loading.js';
 const {CAPACITY_FILTER_PRESENTATION}=filterPresentation;
 
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];
@@ -25,7 +26,7 @@ function harness(name){
  const imports={react:{__esModule:true,default:react},'react/jsx-runtime':{jsx:node,jsxs:node,Fragment:'Fragment'},'next/link':{__esModule:true,default:'Link'},'next/form':{__esModule:true,default:'form'},'lucide-react':simple,
   '@/components/localization':{Text:'Text',Localized:'Localized'},'./localization':{Text:'Text',Localized:'Localized'},'./content-safety':{useBlockedProviders:()=>({blocked:[]})},
   '@/lib/transporter-search.js':searchContract,'@/lib/capacity-filter-presentation':filterPresentation,'./transporter-search.module.css':{__esModule:true,default:simple},
-  '@/lib/capacity-map-loading.js':{loadCapacityMapWindow:()=>{throw Error('Unexpected map fetch');},reconcileCapacityMapWindow:()=>{throw Error('Unexpected map reconciliation');}},
+  '@/lib/capacity-map-loading.js':{capacityVehicleIdentity,currentCapacitySelection,loadCapacityMapWindow:()=>{throw Error('Unexpected map fetch');},reconcileCapacityMapWindow:()=>{throw Error('Unexpected map reconciliation');}},
   '@/lib/location-privacy.js':{BUSINESS_SEARCH_PRIVACY_KM:20,obscureCoordinate:()=>{throw Error('Unexpected location');},isValidCoordinate:()=>true},
   './capacity-configuration-picker':{CapacityConfigurationPicker:'Configuration'},'./capacity-multi-options':{CapacityMultiOptions:'Options'},'./ethiopia-place-input':{EthiopiaPlaceInput:'Place'},
   './public-capacity-map':{PublicCapacityMap:'Map'},'./map-truck-details':{MapTruckDetails:'Details'},'./loading-state':{LoadingIndicator:'Loading'},

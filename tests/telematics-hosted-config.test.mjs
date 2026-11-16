@@ -23,3 +23,13 @@ test('offline hosted template preflight checks separate identities and safe dest
   {LOADGISTIC_GATEWAY_URL:'https://user@example.invalid/api/telematics/gateway'}
  ])assert.throws(()=>assertHostedGatewayEnvironment({...good,...patch}),/HOSTED_GATEWAY_CONFIG_INVALID/);
 });
+
+test('independent deployment preflights do not need the other project credentials',()=>{
+ const real=Object.fromEntries(Object.entries(good).filter(([key])=>!key.startsWith('SYNTHETIC_')));
+ const synthetic=Object.fromEntries(Object.entries(good).filter(([key])=>key.startsWith('SYNTHETIC_')||key==='LOADGISTIC_GATEWAY_URL'));
+ assert.deepEqual(assertHostedGatewayEnvironment(real,'real'),{realGateway:true,syntheticGateway:false,commandsEnabled:false});
+ assert.deepEqual(assertHostedGatewayEnvironment(synthetic,'synthetic'),{realGateway:false,syntheticGateway:true,commandsEnabled:false});
+ assert.throws(()=>assertHostedGatewayEnvironment(real,'synthetic'),/HOSTED_GATEWAY_CONFIG_INVALID/);
+ assert.throws(()=>assertHostedGatewayEnvironment(synthetic,'real'),/HOSTED_GATEWAY_CONFIG_INVALID/);
+ assert.throws(()=>assertHostedGatewayEnvironment(good,'unknown'),/HOSTED_GATEWAY_CONFIG_INVALID/);
+});

@@ -74,8 +74,11 @@ test('private GT06 socket sends only exact fictional login and reserved position
   {connectFactory:options=>{address=options;queueMicrotask(()=>socket.emit('connect'));return socket;}});
  const gps=await connection;
  assert.deepEqual(address,{host:'synthetic-traccar',port:5023});
- await gps.sendFix({latitude:9.031,longitude:38.748,observedAt:'2026-10-22T12:00:00Z'});
- assert.deepEqual(socket.packets.map(packet=>packet[3]),[1,0x10]);
+ await gps.sendFix({latitude:9.031,longitude:38.748,observedAt:'2026-10-22T12:00:00Z',speedKph:0,course:0});
+ await gps.sendFix({latitude:9.031,longitude:38.748,observedAt:'2026-10-22T12:01:00Z',speedKph:20,course:90});
+ assert.deepEqual(socket.packets.map(packet=>packet[3]),[1,0x10,0x10]);
+ assert.equal(socket.packets[1][19],0);assert.equal(socket.packets[1].readUInt16BE(20)&0x3ff,0);
+ assert.equal(socket.packets[2][19],20);assert.equal(socket.packets[2].readUInt16BE(20)&0x3ff,90);
  socket.emit('data',gt06Packet(0x80));
  assert.equal(socket.destroyed,true);
  await assert.rejects(gps.sendFix({latitude:9.031,longitude:38.748,observedAt:'2026-10-22T12:01:00Z'}),
@@ -95,8 +98,9 @@ test('private GT06 login times out without an ACK and closes its socket',async()
 });
 
 test('hosted worker makes an offline loopback GT06 login and reserved-position roundtrip',async t=>{
- const types=[],events=[];let acceptPosition;
+ const types=[],events=[];let acceptPosition,acceptBoth;
  const position=new Promise(resolve=>{acceptPosition=resolve;});
+ const bothPositions=new Promise(resolve=>{acceptBoth=resolve;});
  const server=net.createServer(socket=>{
   let pending=Buffer.alloc(0);
   socket.on('data',chunk=>{
@@ -108,7 +112,7 @@ test('hosted worker makes an offline loopback GT06 login and reserved-position r
     assert.equal(frame.readUInt16BE(size-4),crc16X25(frame.subarray(2,size-4)));
     types.push(frame[3]);
     if(frame[3]===1)socket.write(gt06Packet(1));
-    if(frame[3]===0x10){events.push('packet');acceptPosition();}
+    if(frame[3]===0x10){events.push('packet');acceptPosition();if(types.filter(type=>type===0x10).length===2)acceptBoth();}
    }
   });
  });
@@ -135,8 +139,9 @@ test('hosted worker makes an offline loopback GT06 login and reserved-position r
    openGps:(imei,{signal})=>openPrivateGt06(imei,{signal,
     connectFactory:options=>{assert.deepEqual(options,{host:'synthetic-traccar',port:5023});
      return net.createConnection({host:'127.0.0.1',port});}})});
-  assert.equal(result.status,'STOPPED');assert.equal(result.ticks,1);
-  assert.deepEqual(types,[1,0x10]);
+  await Promise.race([bothPositions,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(Error('SECOND_LOOPBACK_PACKET_TIMEOUT')),5000);timer.unref();})]);
+  assert.equal(result.status,'STOPPED');assert.equal(result.ticks,2);
+  assert.deepEqual(types,[1,0x10,0x10]);
   assert.ok(events.indexOf('GPS')<events.indexOf('packet'));
   assert.ok(events.indexOf('packet')<events.indexOf('STOP'));
  }finally{server.close();}
@@ -154,8 +159,8 @@ test('one target reserves before GT06 send and stops only its returned generatio
  };
  const result=await runHostedMotionTarget('company-truck',{client,seconds:60,now:()=>clock,
   sleep:async ms=>{clock+=ms;},openGps:async()=>({sendFix:async()=>{order.push('PACKET');},close:()=>{order.push('CLOSE');}})});
- assert.deepEqual(result,{target:'company-truck',status:'STOPPED',ticks:1});
- assert.deepEqual(order,['STATUS','START','GPS','PACKET','CLOSE','STOP']);
+ assert.deepEqual(result,{target:'company-truck',status:'STOPPED',ticks:2,scenario:{scenarioId:'company-truck-stationary-v1',scenarioVersion:'2026-11-12.1',purpose:'PROTOCOL_LOCAL',step:'STATIONARY'}});
+ assert.deepEqual(order,['STATUS','START','GPS','PACKET','GPS','PACKET','CLOSE','STOP']);
 });
 
 test('REAL and live foreign lease pause without opening a GPS socket or starting',async()=>{
@@ -166,6 +171,53 @@ test('REAL and live foreign lease pause without opening a GPS socket or starting
   assert.ok(['REAL','BUSY'].includes(result.status));assert.deepEqual(commands,['STATUS']);
  }
  assert.equal(opened,0);
+});
+
+test('expired lease reacquires a new generation and stale cleanup cannot stop its successor',async()=>{
+ const staleId=randomUUID(),leaseId=randomUUID(),successorId=randomUUID(),commands=[];let clock=60000;
+ let authority={state:'RUNNING',source:'MOBILE',leaseId:staleId,epoch:5,expiresAt:new Date(59000).toISOString()};
+ const result=await runHostedMotionTarget('personal-truck',{seconds:60,now:()=>clock,sleep:async ms=>{clock+=ms;},
+  client:async command=>{
+   commands.push(command);
+   if(command.action==='STATUS')return authority;
+   if(command.action==='START'){
+    authority={state:'RUNNING',source:'MOBILE',leaseId,epoch:6,expiresAt:new Date(clock+60000).toISOString()};
+    return authority;
+   }
+   if(command.action==='PHONE'){
+    assert.equal(command.leaseId,leaseId);assert.equal(command.epoch,6);
+    authority={...authority,leaseId:successorId,epoch:7};
+    throw Error('DEMO_REPORT_DENIED');
+   }
+   if(command.action==='STOP'){
+    assert.equal(command.leaseId,leaseId);assert.equal(command.epoch,6);
+    // The database stops only the matching generation; a delayed old STOP is harmless.
+    if(command.leaseId===authority.leaseId&&command.epoch===authority.epoch)authority={state:'OFF'};
+    return authority;
+   }
+   throw Error('Unexpected command');
+  }});
+ assert.equal(result.status,'PAUSED');assert.equal(result.ticks,0);
+ assert.deepEqual(commands.map(command=>command.action),['STATUS','START','PHONE','STOP']);
+ assert.equal(authority.leaseId,successorId);assert.equal(authority.epoch,7);
+ assert.equal(commands.some(command=>command.action==='RESUME'||command.leaseId===staleId),false);
+});
+
+test('ambiguous STOP is not retried or reported as confirmed and the worker keeps its lease generation',async()=>{
+ const leaseId=randomUUID(),commands=[];let clock=0;
+ const result=await runHostedMotionTarget('personal-truck',{seconds:60,now:()=>clock,sleep:async ms=>{clock+=ms;},
+  client:async command=>{
+   commands.push(command);
+   if(command.action==='STATUS')return {state:'OFF'};
+   if(command.action==='START')return {state:'RUNNING',source:'MOBILE',leaseId,epoch:8,expiresAt:new Date(60000).toISOString()};
+   if(command.action==='PHONE')return {recorded:true,source:'MOBILE'};
+   if(command.action==='STOP')throw Error('HOSTED_MOTION_TRANSPORT_UNAVAILABLE');
+   throw Error('Unexpected command');
+  }});
+ assert.equal(result.status,'STOP_UNCONFIRMED');assert.equal(result.ticks,2);
+ assert.equal(result.code,'HOSTED_MOTION_TRANSPORT_UNAVAILABLE');
+ assert.equal(commands.filter(command=>command.action==='STOP').length,1);
+ assert.equal(commands.at(-1).leaseId,leaseId);assert.equal(commands.at(-1).epoch,8);
 });
 
 test('changed source and kill between reservation and packet fail closed',async()=>{
@@ -227,15 +279,38 @@ test('kill denial aborts the remaining cohort and sends no later phone update',a
  assert.equal(cycle.killed,true);assert.equal(phones,0);assert.equal(closed,1);
 });
 
-test('route stays bounded and continuous across worker windows',()=>{
+test('catalog courses stay within unchanged DB bounds, continuous across worker windows, and unavailable stays inert',async()=>{
  const start=1790000000000;
  for(const target of Object.keys(DEMO_MOTION_COHORT)){
+  if(target==='fleet-08'){
+   assert.throws(()=>hostedRouteFix(target,start),/DEMO_MOTION_SCENARIO_UNAVAILABLE/);continue;
+  }
   const a=hostedRouteFix(target,start),b=hostedRouteFix(target,start+1000);
   const base=DEMO_MOTION_COHORT[target];
   for(const fix of [a,b]){
-   assert.ok(fix.latitude>=base.latitude&&fix.latitude<=base.latitude+0.005);
-   assert.ok(fix.longitude>=base.longitude&&fix.longitude<=base.longitude+0.008);
+   assert.ok(Math.abs(fix.latitude-base.latitude)<0.035);
+   assert.ok(Math.abs(fix.longitude-base.longitude)<0.035);
   }
   assert.ok(Math.hypot(a.latitude-b.latitude,a.longitude-b.longitude)<0.0001);
  }
+ const calls=[];
+ const unavailable=await runHostedMotionTarget('fleet-08',{client:async command=>{calls.push(command);throw Error('MUST_NOT_CALL');},openGps:async()=>{throw Error('MUST_NOT_OPEN');}});
+ assert.equal(unavailable.status,'UNAVAILABLE');assert.equal(unavailable.code,'DEMO_MOTION_SCENARIO_UNAVAILABLE');assert.deepEqual(calls,[]);
+});
+
+test('an unavailable road target does not stop another qualified target in the same worker cycle',async()=>{
+ const calls=[],leaseId=randomUUID();let clock=0;
+ const cycle=await runHostedMotionCycle({targets:['fleet-08','personal-truck'],seconds:60,now:()=>clock,
+  sleep:async ms=>{clock+=ms;},openGps:async()=>{throw Error('NO_GPS_SOCKET_EXPECTED');},
+  client:async command=>{
+   calls.push(command);assert.notEqual(command.target,'fleet-08');
+   if(command.action==='STATUS')return {state:'OFF'};
+   if(command.action==='START')return {state:'RUNNING',source:'MOBILE',leaseId,epoch:4,expiresAt:new Date(clock+60000).toISOString()};
+   if(command.action==='PHONE')return {recorded:true,source:'MOBILE'};
+   return {state:'OFF'};
+  }});
+ assert.equal(cycle.killed,false);
+ assert.equal(cycle.results.find(row=>row.target==='fleet-08').status,'UNAVAILABLE');
+ assert.equal(cycle.results.find(row=>row.target==='personal-truck').status,'STOPPED');
+ assert.equal(calls.filter(command=>command.action==='PHONE').length,2);
 });

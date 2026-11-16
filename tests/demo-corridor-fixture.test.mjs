@@ -5,7 +5,7 @@ import {HANDOVER_FIXTURE_VEHICLE_IDS} from '../scripts/fixture-market-policy.mjs
 
 const {tables}=JSON.parse(readFileSync(new URL('../resources/fixtures/managed-market.json',import.meta.url),'utf8'));
 
-test('demo corridor routes belong to real vehicle and driver pairs near their first city',()=>{
+test('demo corridor routes belong to exact current vehicle and driver pairs',()=>{
   const vehicles=new Map(tables.vehicles.map(vehicle=>[vehicle.id,vehicle]));
   const capacities=new Map(tables.capacities.map(capacity=>[capacity.vehicle_id,capacity]));
   const assigned=new Map(tables.driver_vehicle_assignments.filter(row=>row.active&&!row.released_at).map(row=>[row.vehicle_id,row.driver_user_id]));
@@ -27,11 +27,11 @@ test('demo corridor routes belong to real vehicle and driver pairs near their fi
       assert.ok(points.length>=2,signal.id);
       routes++;
     }
-    const first=signal.geometry==='ROUTE'?points[0]:{lat:signal.area_center_lat,lng:signal.area_center_lng};
     const capacity=capacities.get(vehicle.id);
     assert.ok(capacity,signal.id);
-    const approximateKm=Math.hypot((Number(capacity.location_lat)-Number(first.lat))*111,(Number(capacity.location_lng)-Number(first.lng))*111);
-    assert.ok(approximateKm<10,`${signal.id} begins near its vehicle`);
+    assert.equal(capacity.vehicle_id,signal.assigned_vehicle_id,signal.id);
+    assert.equal(capacity.provider_organization_id,signal.organization_id,signal.id);
+    assert.equal(capacity.provider_profile_id,signal.provider_profile_id,signal.id);
   }
   assert.ok(routes>=20,'the demo has many actual corridor routes');
 });

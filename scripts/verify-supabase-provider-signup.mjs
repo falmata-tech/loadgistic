@@ -63,6 +63,54 @@ async function actorSnapshot(actorUserId){
   };
 }
 
+async function assertNormalSignupSimulatorIsolation(actorUserId,providerId){
+  const {data:created,error:createError}=await service.rpc('create_provider_vehicle',{
+    actor_user_id:actorUserId,command:{make:'Signup isolation',model:'Truck',plate:'SIGNUP-SIM-222',cargo_configuration:'Mini Box Truck',use_basis:'OWNED'}
+  });
+  if(createError||!created?.id)throw new Error('SUPABASE_SIGNUP_VERIFY_SIMULATOR_VEHICLE_FAILED');
+  const vehicleId=created.id;
+  const {error:assignError}=await service.rpc('update_fleet_driver_access',{
+    actor_user_id:actorUserId,command:{driver_user_id:actorUserId,vehicle_id:vehicleId,can_manage_capacity:true,can_manage_tracking:true}
+  });
+  if(assignError)throw new Error('SUPABASE_SIGNUP_VERIFY_SIMULATOR_ASSIGNMENT_FAILED');
+  const snapshot=async()=>{
+    const {data:identity,error:identityError}=await service.auth.admin.getUserById(actorUserId);
+    if(identityError||!identity.user||identity.user.app_metadata?.fixture_source==='loadgistic'){
+      throw new Error('SUPABASE_SIGNUP_VERIFY_NORMAL_ACCOUNT_PROVENANCE_FAILED');
+    }
+    const saved={identity:identity.user};
+    for(const [table,column,value] of [
+      ['profiles','id',actorUserId],['provider_profiles','id',providerId],['vehicles','id',vehicleId],
+      ['driver_vehicle_assignments','vehicle_id',vehicleId],['telematics_location_sources','vehicle_id',vehicleId],
+      ['capacities','vehicle_id',vehicleId],['vehicle_driver_locations','vehicle_id',vehicleId],['telematics_positions','vehicle_id',vehicleId]
+    ]){
+      const {data,error}=await service.from(table).select('*').eq(column,value);
+      if(error||!Array.isArray(data))throw new Error('SUPABASE_SIGNUP_VERIFY_SIMULATOR_SNAPSHOT_FAILED');
+      saved[table]=data.sort((first,second)=>String(first.id||first.vehicle_id).localeCompare(String(second.id||second.vehicle_id)));
+    }
+    return JSON.stringify(saved);
+  };
+  for(const forged of [false,true]){
+    if(forged){
+      const {error}=await anon.auth.updateUser({data:{fixture_source:'loadgistic',is_demo:true,fixture_key:'user-driver'}});
+      if(error)throw new Error('SUPABASE_SIGNUP_VERIFY_EDITABLE_DEMO_METADATA_FAILED');
+    }
+    const before=await snapshot();
+    for(const [name,args] of [
+      ['configure_demo_motion_target',{target_vehicle_id:vehicleId}],
+      ['start_demo_motion',{target_vehicle_id:vehicleId,requested_seconds:60,explicit_resume:false}],
+      ['reserve_demo_gps_tick',{target_vehicle_id:vehicleId,expected_lease_id:randomUUID(),expected_epoch:1,latitude:9.03,longitude:38.75}],
+      ['report_demo_phone_location',{target_vehicle_id:vehicleId,expected_lease_id:randomUUID(),expected_epoch:1,latitude:9.03,longitude:38.75}]
+    ]){
+      const {error}=await service.rpc(name,args);
+      if(!error||!String(error.message).includes('DEMO_TARGET_DENIED'))throw new Error('SUPABASE_SIGNUP_VERIFY_SIMULATOR_NORMAL_ACCOUNT_ACCEPTED');
+      if(await snapshot()!==before)throw new Error('SUPABASE_SIGNUP_VERIFY_SIMULATOR_CUSTOMER_STATE_CHANGED');
+    }
+    const {data:owners,error:ownerError}=await service.rpc('capacity_owner_documents',{organization_ids:[],provider_ids:[providerId]});
+    if(ownerError||owners?.[0]?.account_is_demo!==false)throw new Error('SUPABASE_SIGNUP_VERIFY_NORMAL_ACCOUNT_DEMO_LABEL_FORGED');
+  }
+}
+
 async function signupEligible(actorUserId){
   const {data,error}=await service.rpc('managed_provider_signup_eligible',{actor_user_id:actorUserId});
   if(error||typeof data!=='boolean')throw new Error('SUPABASE_SIGNUP_VERIFY_ELIGIBILITY_RPC_FAILED');
@@ -237,6 +285,8 @@ try{
     throw new Error('SUPABASE_SIGNUP_VERIFY_DUPLICATE_ALLOWED');
   }
 
+  await assertNormalSignupSimulatorIsolation(otpAuthUserId,provider.id);
+
   const inactiveAdminId=await createConfirmedUser('inactive-admin');
   await updateProfile(inactiveAdminId,{role:'ADMIN',active:false},'inactive-admin');
   await assertRejectedSignup('inactive-admin',inactiveAdminId);
@@ -364,6 +414,9 @@ try{
   if(!anonymousCompletionError)throw new Error('SUPABASE_SIGNUP_VERIFY_ANONYMOUS_COMPLETION_ALLOWED');
 }finally{
   if(applicationId)await service.from('audit_logs').delete().eq('entity_id',applicationId);
+  // The new ordinary vehicle/assignment journey creates its own audit records.
+  // Remove only this verifier's disposable OTP actor before deleting that actor.
+  if(otpAuthUserId)await service.from('audit_logs').delete().eq('actor_user_id',otpAuthUserId);
   if(intentDigests.size)await service.from('provider_signup_intents').delete().in('token_digest',[...intentDigests]);
   for(const organizationId of organizationIds)await service.from('organizations').delete().eq('id',organizationId);
   for(const authUserId of authUserIds)await service.auth.admin.deleteUser(authUserId);
@@ -374,4 +427,4 @@ try{
   }
 }
 
-process.stdout.write('Supabase managed provider email OTP, profile-authority denial, authoritative eligibility/completion RPC, pristine bootstrap, rejection matrix, legacy permission denial, atomic workspace, plan-free access, duplicate denial, and browser denial checks passed.\n');
+process.stdout.write('Supabase managed provider email OTP, profile-authority denial, authoritative eligibility/completion RPC, pristine bootstrap, rejection matrix, legacy permission denial, atomic workspace, plan-free access, duplicate denial, browser denial, and normal-signup/forged-demo simulator isolation checks passed.\n');

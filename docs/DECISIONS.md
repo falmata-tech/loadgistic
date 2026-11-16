@@ -1,10 +1,230 @@
 # Architecture Decisions
 
+## ADR-088 — Demo planning is independent of vehicle size (2026-11-15)
+
+FEAT-CAP-001 / FEAT-MAT-001 / FEAT-SIM-001. The owner explicitly removes the
+small-vehicle/local-only assumption. Give every configuration the same authored
+city, regional and longer Route/Area choices. Preserve actual Empty/Partial and
+load facts; remove the import rule forcing larger configurations to Empty/100%.
+An explicit record-bound discovery manifest preserves existing fixture sharing
+and location precision without making either depend on size.
+
+Planning is separate from a captured location and from fictional movement
+courses. The source-only refresh verifies real canonical settlements and refuses
+unknown points before writing. Exact simulator, private and handover inputs stay
+reserved until their scenarios are separately changed. Matching eligibility,
+direction, coherent endpoint/area AND predicates and publication permissions do
+not change. Local correction snapshots and locks exact synthetic rows, refuses
+scope/row drift and preserves unrelated fields and history. Hosted data changes
+require their own reviewed target, backup, rehearsal and scoped rollback.
+
+The full gate exposed six additional exact corridor evidence records outside
+the13 reserved vehicles and city-Area examples using their center as a vertex.
+Preserve every catalog evidence record and the profile scenario's exact page/
+Preferred baseline, then validate the complete catalog before writing. Areas use
+three through five actual other settlements strictly around their center, with
+an honest covering radius; insufficient verified geometry yields a Route example.
+Seven other public fleet descriptions follow their saved Preferred plan. These
+are authored fixture choices, never rules limiting an owner's service distance.
+
+Initial local readback before that correction:130 capacity plans,27 Preferred plans and16 restored Partial
+signals; among113 smaller vehicles,31 routes under40km,27 over100km and25 Areas.
+Distances are point-path sums, not measured road mileage. The real API passes
+five matching and15 denial checks. Browser/Expo review and full release gates
+remain separate; this is not evidence of hosted installation.
+
+## ADR-087 — Bind the existing hosted pilot without restoring old authority (2026-11-15)
+
+FEAT-SIM-001 / FEAT-SEC-001 / NR-82/83/84. Local fixture UUIDs do not name the
+existing production-pilot records. Migration227 atomically maps only unused
+private simulator catalogs and ten pinned function bodies to that namespace.
+It refuses active/previously-used controls, mixed identities, catalog/body drift,
+changed eligible owners/drivers and co-owners. Function owners, execution ACLs
+and security configuration are preserved. A database without pilot records is
+unchanged. Engine-command demo authority remains unchanged.
+
+NR-86 hardens this exact PILOT mode: synthetic enrollment has one authoritative
+helper rather than an inherited alternative OR branch; only the reviewed direct
+transport, profile and protocol identity qualify. A separate owner-only scope
+helper locks the exact organization and memberships before profile/device/vehicle
+locks in the first callable binding, preparation and public provisioning boundary.
+Four measured two-session races prove both ownership orderings; direct
+co-owner/wrong/missing-protocol denials preserve enrollment state. The LOCAL
+branch and ordinary real-device path are unchanged; no broad shared-lock rewrite.
+
+Seven existing scopes qualify; fleet-03/06/08 are excluded because their old
+fleet authority is no longer current. Capacity owner/sharing drift pauses the
+affected target. Preparation creates virtual bindings while leaving controls off
+and source choice, consent, public facts and saved observations untouched.
+The signed worker validates the bounded database-selected target list before
+work. An isolated rollback test models the namespace, restores all original
+constraints/triggers before assertions, tests refusals, saves seven direct
+reports, applies three Capacity phases, rejects replay and stops without deleting
+positions. The Capacity activation guard requires the old local-only Tracking
+example absent and both reserved Tracking lanes disarmed. Other Tracking function
+bodies, ACLs and all existing notification/outbox checks remain unchanged;
+forbidden notification insertion and Tracking arming refuse with unchanged queues.
+No hosted write or activation is established. Rollback stops/disables both lanes
+and restores the previous application artifact if needed, preserving pilot
+bindings/constraints/history. Reversing those data bindings is a separate review.
+
+## ADR-086 — Netlify-only fictional movement (2026-11-15)
+
+Owner cost constraint, later November15: use only a few hours daily. Set both
+native demo schedules to09:00–11:00 Africa/Addis_Ababa (06:00–08:00 UTC), with
+runtime server-time checks at dispatch/background/application boundaries.
+Motion stops scheduling its next report at closing; an accepted Capacity
+transaction may finish. Outside hours no new automatic work starts, while saved
+facts and age labels remain. The prior32.622-second window extrapolates to
+326.22 movement credits per30days at this duty cycle, before other usage; this
+is no hard account spending limit. Keep auto-recharge off and purchases separate.
+No schema, source choice, consent, customer workflow or discovery coverage changes.
+
+Status: owner selected; adapter and migration226 locally implemented. Hosted
+installation, exact-source full qualification and activation remain pending.
+BASE-DEP-001 / FEAT-SIM-001 / FEAT-GPS-001 / FEAT-SEC-001 / NR-82/83/84.
+
+Keep the existing Capacity scheduler and add a separate minute motion dispatcher
+with a bounded background window. Supabase owns window arbitration, saved due
+times and leases; the application derives approved geometry and capture time.
+Workers cannot select coordinates, identity, source or observation time. Preserve
+the30-second minimum, five-second capture guard, sole-owner/driver/source proof,
+Manual refusal, REAL takeover and existing obscured public/private projection.
+Direct positions carry private NETLIFY_DEMO provenance; the public Demo label
+does not claim hardware or a decoded GT06 packet. Real tracker hosting remains
+separate and no VM is required for this selected fictional demo.
+
+Default-off site/project-pinned functions use the existing distinct motion HMAC,
+separate from Capacity/gateway/session credentials. Same-site Functions settings
+are not physical secret isolation. A service-only stopped-state preparer creates
+only exact virtual fixture bindings, preserving source choices and consent.
+The direct lane retains bounded gateway-scoped30-day retention. Stop waits on
+accepted transactions, revokes its window/leases and preserves history. Rollback
+disables the new controls and restores the previous app artifact if necessary.
+
+Two local handler/database windows save18 updates each with zero failures and
+leave normal Capacity unchanged. The final32.622-second window is a local timing
+receipt; it does not certify Netlify runtime, full source CI or a free hosting
+allowance. Review the actual account plan and continuous compute estimate before
+activation, then apply existing owner-reviewed SQL/config/backup/restore gates.
+
+## November14 — Capacity links follow the current vehicle publication
+
+FEAT-CAP-001 / NR-81: a linked Capacity ID identifies a vehicle's current
+authorized offer, rather than permanently selecting one append-only publication.
+The repository adapter performs at most two indexed identity reads when a link
+ID is present, then passes only the resolved ID into the existing audience and
+filter projection. Identity reads disclose no rows and cannot grant access.
+Missing history stays restrictive; read failures stop before the projection.
+Ordinary map requests have no additional identity reads. No schema, grants,
+provider enforcement, scheduler or saved history changes.
+
+Web and Expo selections, open detail panels and initial selection camera fitting
+use the stable vehicle identity across publication replacements. Current DTOs
+still own every displayed fact. A completed authorized omission clears selection;
+background pause, generation cancellation, pagination and bounded retry remain.
+This repairs the actual local80→60 publication failure, not a new manual refresh
+step or an activation of simulated movement. Hosted rollout retains its gates.
+
 Current account-only Capacity sharing is specified in [FEAT-CON-001](../specs/features/FEAT-CON-001.md)
 and [FEAT-SHR-001](../specs/features/FEAT-SHR-001.md). Earlier decisions below
 record the designs accepted at their dates; their email-only Capacity and
 platform-Brokerage clauses were superseded on October 24. Public-link Tracking
 still uses its own email authorization.
+
+## ADR-085 — Netlify Capacity scheduling and isolated development (2026-11-14)
+
+Status: source and selected disposable-database qualification complete; hosted
+runtime, actual candidate UI and full release qualification pending. Native
+runs43561193938 and43614507599 establish the selected SQL and Capacity/profile
+concurrency evidence recorded in [PROGRESS](PROGRESS.md).
+BASE-DEP-001 / FEAT-SIM-001. No hosted simulator activation or development
+database creation is established by this decision.
+
+Use a separate native Netlify scheduled function for the fast Capacity lane.
+Every minute it submits one signed, bounded request for at most two due actors
+to the existing durable controller. The controller retains approved demo-only
+bindings, sole-owner and human-takeover checks, leases, idempotency, phase order
+and a minimum120-second per-target interval after completion. Expected healthy
+per-actor activity is120–180seconds; actual scheduler/database evidence remains
+required. No sleeps, persistent loop, backdating or catch-up batches are added.
+The optional one-actor/30-second container is an alternative: explicitly stop it
+before enabling Netlify. A site environment flag cannot prove another host stopped.
+
+The function is default-off with its own enable/kill flags and pinned production
+site/origin checks. It uses only the Capacity-purpose HMAC key and endpoint;
+Netlify's same-site Functions environment does not physically isolate each
+function's secrets. Independently hosted containers retain their narrow injected
+environment. Slow world/profile/team/sharing and reserved Tracking lanes retain
+their separate controls and qualification; enabling global dispatch does not
+authorize those lanes. Raw GPS TCP/Traccar and synthetic movement remain separate
+services, credentials and hosting, independent of this HTTP Capacity adapter.
+
+Run normal Next.js/Expo processes against an isolated managed Supabase development
+branch when the full local container stack is unavailable. The guarded bootstrap
+accepts operator-verified nondefault, data-less branch metadata and development
+keys, performs read-only checks, and exclusively creates a private environment.
+It does not seed data, configure email or qualify schema/browser workflows.
+Keep production credentials out and retain loopback-only fixture guards.
+
+Use the explicit `simulator-db` operations diagnostic on a native GitHub runner
+for fresh migrations221–225, inert controls, security checks, strict browser
+fixture preflight and rollback SQL/isolated GPS clone regressions. Its
+`diagnose/simulator-db/**` push lane does not replace full PR/main CI, actual
+desktop/phone/Expo review, concurrency proof or release/backup gates. Stop the
+unsuccessful nested-VM workaround; Docker startup alone is not app acceptance.
+Rollback leaves both scheduler switches off or restores the prior application
+artifact; no schema change is introduced by this adapter.
+
+## ADR-084 — Curated scenario catalog and coherent demo activity (2026-11-13)
+
+Status: owner-directed reconciliation in progress, FEAT-SIM-001/004 and
+FEAT-GPS-001. The owner requires comprehensive predefined business states and
+believable routes rather than arbitrary generated field combinations.
+
+Use versioned server-owned scenarios, explicit eligibility/preconditions and
+ordered events. Select only compatible predefined values; preserve the chosen
+scenario/seed/step so a run can be replayed. Related changes use existing atomic
+domain commands; independent location, capacity and profile events have separate
+cadences. Several demo actors may advance in bounded batches without sharing a
+global transaction or overwriting every field at once.
+
+Approve entire ordered corridor sequences. Known city names alone are not route
+validation. Moving synthetic fixes need qualified road geometry and source/hash
+evidence, bounded travel/dwell and continuous progress. Do not call city-center
+lines or the earlier offset rectangles road-following movement. An explicitly
+stationary reporting scenario is distinct; unqualified movement fails closed.
+Keep trusted operator demo enrollment, source consent, real-data takeover,
+privacy, normal-account denials and emergency stops at the write boundaries.
+
+The existing deterministic capacity fixture is a starting point, not proof of
+comprehensive behavior. New percentage states must reach the normal command,
+database timestamp and UI before being called implemented. See the
+[scenario design contract](operations/SCENARIO_SIMULATOR_DESIGN.md). Catalog,
+local acceptance and production activation remain separate checkpoints.
+
+## ADR-083 — Phone/GPS updates and isolated demo services (2026-11-13)
+
+Status: owner-directed implementation and verification in progress;
+FEAT-GPS-001 / FEAT-SIM-001 / FEAT-CAP-001 / FEAT-MOB-001. No new hosted
+service or simulator activation is established by this decision.
+
+New locations come from an explicitly selected phone or GPS source. Retire manual
+point mutation at UI, application and database boundaries while preserving dated
+history, current-driver ownership, privacy radii and independently agreed Tracking.
+Never relabel a manual point, manufacture phone consent or silently choose GPS.
+
+Keep the real tracker gateway and recurring marketplace simulator independently
+deployable, with separate stores, credentials and controls. An operator-owned
+demo provenance marker plus exact current bindings is required at every simulated
+write; normal signup and editable metadata cannot grant it. Relevant projections
+show trusted demo classification independently of the latest sensor source.
+
+Qualify protocol input, saved state, authorized projection and changing UI, including
+restarts, stale/replayed input and genuine-account denial. A running container or
+polling page is not proof of a deployed GPS feed, push realtime or native Android
+permission/background behavior. Hosting/cost/access and physical-device evidence
+remain separate from source implementation and local synthetic tests.
 
 ## ADR-082 — Share the minute scheduler without combining work authority (2026-11-11)
 

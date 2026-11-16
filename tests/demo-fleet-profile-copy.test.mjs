@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
+import {refreshDemoFleetPlanningCopy} from '../scripts/fixture-capacity-plans.mjs';
 
 const {tables}=JSON.parse(readFileSync(new URL('../resources/fixtures/managed-market.json',import.meta.url)));
 const fleets=Array.from({length:8},(_,index)=>`org-public-fleet-0${index+1}`);
@@ -11,6 +12,23 @@ const pages=fleets.map(id=>{
  const routes=tables.profile_routes.filter(row=>row.organization_id===id);
  assert.ok(organization&&page&&vehicles.length&&routes.length,id);
  return {organization,page,vehicles,routes};
+});
+
+test('fleet planning copy preserves the authored profile scenario and requires a saved plan',()=>{
+ const refreshed=refreshDemoFleetPlanningCopy(tables);
+ assert.deepEqual(refreshed,tables,'saved source descriptions are idempotent');
+ for(const [table,rows] of Object.entries(tables))if(table!=='company_pages')assert.equal(refreshed[table],rows,table);
+ const changedPlan={...tables,profile_routes:tables.profile_routes.map(route=>route.organization_id===fleets[1]?{...route,origin:'Adama, Ethiopia',destination:'Assosa, Ethiopia'}:route)};
+ const next=refreshDemoFleetPlanningCopy(changedPlan);
+ for(let i=0;i<tables.company_pages.length;i++){
+  const before=tables.company_pages[i],after=next.company_pages[i];
+  for(const [field,value] of Object.entries(before))if(!['headline','about'].includes(field))assert.deepEqual(after[field],value,field);
+  if(!fleets.includes(before.organization_id))assert.equal(after,before);
+ }
+ assert.equal(next.company_pages.find(row=>row.organization_id===fleets[0]),tables.company_pages.find(row=>row.organization_id===fleets[0]));
+ const page=next.company_pages.find(row=>row.organization_id===fleets[1]);assert.match(page.headline,/Assosa/);assert.match(page.about,/Assosa/);
+ assert.throws(()=>refreshDemoFleetPlanningCopy({...tables,profile_routes:tables.profile_routes.filter(route=>route.organization_id!==fleets[0])}),/DEMO_FLEET_PLAN_COPY_BINDING_MISSING/);
+ assert.throws(()=>refreshDemoFleetPlanningCopy({...tables,company_pages:tables.company_pages.map(row=>row.organization_id===fleets[0]?{...row,headline:'Changed authored baseline'}:row)}),/DEMO_PROFILE_BASELINE_DRIFT/);
 });
 
 test('eight public demo fleets have concise, distinct copy supported by their routes and vehicles',()=>{

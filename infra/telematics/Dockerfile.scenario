@@ -1,0 +1,7 @@
+FROM node:22.22.0-alpine
+WORKDIR /app
+COPY package.json /app/package.json
+COPY src/lib/demo-world-worker-auth.js /app/src/lib/demo-world-worker-auth.js
+COPY infra/telematics/scenario-worker.mjs /app/infra/telematics/scenario-worker.mjs
+USER node
+CMD ["node", "/app/infra/telematics/scenario-worker.mjs", "--run"]

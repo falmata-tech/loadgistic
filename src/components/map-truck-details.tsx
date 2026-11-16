@@ -14,7 +14,7 @@ import {TruckAuthorityBadges,type TruckAuthority} from './truck-authority';
 import {BusinessCargoSpacePhoto} from './cargo-space-photo-panel';
 
 type TruckDetails = {
-  provider_name: string; provider_handle: string; provider_organization_id?: string | null;
+  provider_name: string; provider_handle: string; provider_organization_id?: string | null; account_is_demo?:boolean;
   vehicle_make?: string; vehicle_model?: string; cargo_configuration?: string;
   status: string; sharing_mode?: string; assigned_driver_first_name?: string; assigned_driver_phone?: string | null;
   accepts_full_load?: boolean | number; accepts_partial_load?: boolean | number;
@@ -46,7 +46,7 @@ export function MapTruckDetails({truck,privatePhoto}:{truck:TruckDetails;private
     <div className="truck-inspection-people">
       <div className="truck-inspection-person transporter">
         <Building2 aria-hidden="true"/>
-        <div><small><Text message="Transport Provider"/></small><strong>{truck.provider_name}</strong></div>
+        <div><small><Text message="Transport Provider"/></small><strong>{truck.provider_name}</strong>{truck.account_is_demo===true?<small><Text message="Demo account"/></small>:null}</div>
         <div className="truck-inspection-person-actions"><Link className="truck-inspection-action profile" href={`/@${truck.provider_handle}`}><Text message="Profile"/><span aria-hidden="true">↗</span></Link>{!truck.assigned_driver_phone&&truck.contact_phone?<a className="truck-inspection-action call" href={`tel:${truck.contact_phone}`}><Phone aria-hidden="true"/><Text message="Call"/></a>:null}</div>
       </div>
       <div className={`truck-inspection-person driver ${identity.mapPerson}`}>

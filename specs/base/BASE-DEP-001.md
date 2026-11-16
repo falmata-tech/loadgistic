@@ -272,8 +272,176 @@ And missing or unavailable managed configuration fails closed with a bounded non
 Given Loadgistic source, local setup, browser tests, fixture generation, scale checks, and deployment artifacts\
 When repository boundaries are validated\
 Then no executable source imports `node:sqlite` or opens a local database file\
-And local development and automated workflows use the isolated Supabase PostgreSQL/Auth/Storage project\
+And development uses isolated Supabase PostgreSQL/Auth/Storage through either a local stack or a separately provisioned managed development branch\
+And the existing fixture/reset, Mailpit and automated database harness retain their exact local-target checks and run on supported local Docker or native GitHub runners\
 And disposable scale data is created and rolled back in PostgreSQL rather than a second persistence engine.
+
+### Scenario: managed development bootstrap does not require local Docker
+
+Given an operator has separately provisioned and independently read a nondefault data-less development branch under the exact Loadgistic production parent\
+When the Node22 managed-development bootstrap receives its exact branch manifest and protected development-only key file\
+Then it requires matching parent, project ref, branch UUID and name, rejects known production targets and refuses mismatched legacy key claims\
+And two bounded nonredirecting GETs verify the development publishable and server keys against that exact Auth/Data API host\
+And explicit environment creation uses exclusive mode0600 creation, preserves existing files and symlink targets, and generates distinct local secrets without printing keys\
+And the resulting configuration uses the Node web API on3100 with workers/push disabled and no configured application-mail adapter; Expo's existing Node24 preview uses8084\
+And bootstrap performs no database or provider write, fixture import, account creation, demo enrollment, policy acceptance, hosted email configuration or service activation\
+And every seed request fails before credential reads or requests, with existing local importer/audit guards unchanged\
+And the report explicitly leaves data freshness, migrations, email and browser acceptance unverified rather than claiming a seeded or releasable environment.
+
+Evidence: `scripts/configure-managed-dev-supabase.mjs` and
+`tests/managed-dev-supabase-setup.test.mjs`; [ADR-085](../../docs/DECISIONS.md)
+and [local setup](../../docs/LOCAL_SETUP.md) describe the operational boundary.
+The operator manifest records provider metadata; it does not enforce remote
+permissions or prove continued emptiness. No managed resource was created in
+this checkpoint after its cost confirmation expired. Rollback removes the new
+bootstrap source and any exact task-created local environment after preserving
+existing preview work; it does not delete or reset a hosted branch. Full SQL,
+email, application workflow and release checks remain separate.
+
+### Scenario: a separate managed development fixture setup preserves target isolation
+
+Given a task-owned data-less development branch has passed exact provider-metadata,
+migration and independent private-control inspection\
+When the separate review-fixture preparer receives its protected development keys\
+Then its default mode checks Auth, the named core business tables, catalog2 and
+the seven existing private Storage bucket definitions and empty roots without fixture writes\
+And explicit apply additionally requires the exact development project ref and a
+new exclusive mode0600 private receipt\
+And it creates only three existing marked demo actors/two deterministic trucks and
+one ordinary signup/truck, preserving the full-set fixture catalog/sharing transforms\
+And real registration, assignment, content-policy and publication commands establish
+the current lifecycle, with no borrowed verification, reviews, subscriptions or mail\
+And capacities retain dated locations and NULL percentage-report provenance;
+setup never manufactures a new phone/GPS report or consent\
+And matching migration-created places/buckets remain intact; existing identities,
+business rows, Storage objects/prefixes or drift refuse before writes\
+And partial failure preserves a private STOPPED_REVIEW_REQUIRED receipt and never
+retries, resets, deletes or imports the full local fixture world\
+And the preparer reports workersActivated=false and independentControlsInspected=false,
+without pretending its service key can inspect owner-only controls.
+
+Evidence: `scripts/prepare-managed-dev-review-fixtures.mjs` and its negative tests.
+The operator must first inspect all independent controls through the authorized
+read-only provider connection on the exact development branch. Existing control
+ACLs, bootstrap's refused `--seed` and all loopback-only fixture guards stay intact.
+This is preparation, not a provider creation, mail/OTP qualification or browser
+acceptance. A supported shared localhost/preview connection must be established
+before paying for a development resource solely for interactive review.
+
+### Scenario: simulator concurrency evidence uses real native transactions
+
+Given the exact native GitHub runner owns the isolated loadgistic-local container
+and loadgistic_telematics_ci clone with final224/225 function bodies and private ACLs\
+When the bounded concurrency verifier runs after the existing rollback SQL suites\
+Then separate real sessions prove stop-first, owner-first, expiry-after-wait and
+executor-first behavior for Capacity and provider-profile work\
+And profile checks both independent stop controls and an ordinary competing profile save\
+And observed lock waits identify the actual blocking session, exact denials retain
+complete private state fingerprints, and no deadlock/timeout is accepted as success\
+And two accepted commits have bounded intended effects and disabled DONE replays
+do not refresh source, consent, audiences, grants or history\
+And successful evidence requires all ten races, twelve waits, ten denials, two
+accepted writes and two read-only replays\
+And the existing clone lifecycle discards and recreates that disposable database
+before later suites, preserving immutable receipts rather than editing them\
+And fixed typed stages/counts are the only output; missing native identity,
+installed-definition drift, private-output overflow or a partial matrix fails.
+
+Evidence: `scripts/verify-demo-world-concurrency-local.mjs`, its transport/guard
+tests and both existing CI workflows. NR-83/84 remain runtime qualification items
+until the exact native diagnostic passes. No hosted execution or full release
+verdict is granted by this test lane.
+
+### Scenario: pilot owner races preserve the exact disposable database baseline
+
+Given the explicitly opted-in local pilot or native CI clone is owned by this task\
+When the bounded pilot owner race verifier runs\
+Then Docker context precedence is resolved before accepting a Unix endpoint and
+every daemon/session command pins that endpoint and the same immutable container ID\
+And an unsupported or mismatched server/client version refuses before fixture writes\
+And PostgreSQL15 archive restoration retains the exact existing GraphQL wrapper,
+extension membership and deferred ACL sequence or the qualified unchanged-initial-ACL
+path below; PostgreSQL17 uses direct restoration\
+And four real races identify four blocker waits, accept one provisioning and one
+report operation, and deny two later operations per lane without changed state\
+And successful evidence requires the protected baseline restored with matching
+fingerprints; failure/cancellation retains private evidence and clone cleanup.
+
+Contracts: the opt-in names only `loadgistic_pilot_ci` or
+`loadgistic_telematics_ci`; it never authorizes the primary or a hosted database.
+Observe typed stages/counts and restore status only. Rollback restores the owned
+clone from its protected archive; normal CI also retains its always-cleanup step.
+Evidence: `verify-demo-pilot-owner-concurrency-local.mjs`, clone restore/target
+negative tests and both existing CI workflows. FEAT-SIM-001 / NR-86.
+
+### Scenario: a second PostgreSQL15 dump may omit an unchanged extension ACL
+
+Given the exact GraphQL wrapper remains owned by supabase_admin in pg_graphql\
+When a PostgreSQL15 archive contains no exact or related wrapper ACL entry\
+Then omission is accepted only with exactly one correctly keyed extension
+initial-privilege record whose ACL hash equals the current non-NULL ACL hash\
+And missing, malformed, duplicate, unknown or mismatched metadata refuses\
+And before any committed owner-race fixture, only its verified disposable clone
+proves the same owner's fresh function ACL in graphql_public using a bounded
+transaction which always rolls back and never executes the dummy function\
+And read-only capture on the unchanged primary never creates a probe\
+And restoration checks the newly created wrapper's owner and complete definition
+immediately, requiring exact current ACL equality before extension enrollment
+when no deferred ACL exists\
+And final owner, definition, ACL and membership equality remain mandatory, with
+initial-privilege equality also required for the omitted-ACL path\
+And the original single-entry deferred-ACL path and PostgreSQL17 direct path remain.
+
+Observe only fixed archive modes, bounded entry-count buckets and proof states;
+definitions, ACLs, role hashes, SQL and archives stay private. Unknown or duplicate
+related TOC entries never become permission to omit grants. Failed proof stops
+before fixture installation; restore mismatch remains failure under existing
+cleanup and timeout bounds. Rollback restores the previous helper and runner,
+never weakens ACL checks or changes a hosted catalog. Contracts: BASE-DEP-001 /
+FEAT-SIM-001 / NR-86; focused clone and actual-entry fake-process tests qualify
+source logic. A separate isolated PG15 dummy probe establishes ACL-elision
+semantics. Focused Supabase run[43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+at e169fef then passes the actual zero-entry creation proof, four races/four
+waits, baseline restoration and both cleanup steps. Primary verification is
+explicitly not performed; complete final PR/release gates remain separate.
+
+### Scenario: pilot race preflight failures remain diagnosable without private logs
+
+Given the exact opted-in disposable clone fails a preflight or restore check\
+When the verifier emits its final failed receipt\
+Then the receipt retains a fixed allowlisted stage, failure code and error category\
+And distinct Docker, database identity, client-version and local restore-role checks
+remain distinguishable before any backup or fixture write\
+And unknown messages, paths, account IDs, raw SQL and connection details remain private\
+And failure stays a failed result with zero fabricated races and unchanged cleanup,
+security and three-minute CI bounds.
+
+Contracts: diagnostics grant no target or restore authority. Exact stage/code
+vocabulary and static PostgreSQL error categories are public; raw process stderr
+and archives retain their existing private evidence paths. Unknown errors use
+the unclassified code/category, never their text. No automatic retry is added.
+Evidence: `pilot-owner-race-diagnostics.test.mjs` exercises the real runner with
+fake Docker commands and proves PG-major, role/authentication and unknown-text
+refusals occur before backup/setup/drop operations. FEAT-SIM-001 / NR-86.
+
+### Scenario: pilot race archive clients authenticate only inside the verified local container
+
+Given the exact opted-in disposable clone is in the pinned local container\
+When the owner-race verifier runs a supabase_admin query, backup or restoration\
+Then one fixed shell wrapper requires its existing POSTGRES_PASSWORD and exports
+it as PGPASSWORD only inside that container before executing validated positional arguments\
+And the role remains exactly supabase_admin and the database remains the named clone\
+And a missing password refuses before any client starts, without role fallback\
+And the secret is never read back to the host, printed or placed in argv\
+And strict current-user/version checks, restore fingerprints and existing bounds remain.
+
+Contracts: this repairs local child-process authentication, not database roles,
+passwords, configuration or hosted authority. The receipt marks primary database
+verification as not performed; exact clone arguments do not constitute measured
+primary equality. Evidence: `pilot-owner-race-auth.test.mjs` runs the real wrapper
+with fake clients for query/dump/restore, including missing credentials and shell
+metacharacters; `pilot-owner-race-diagnostics.test.mjs` retains actual-entry
+refusals and verifies every SQL database argument is the exact clone. FEAT-SIM-001 / NR-86.
 
 ### Scenario: schema rollout
 
@@ -576,6 +744,22 @@ Evidence: `scripts/ci-operations-proof.mjs`, its negative tests and
 `.github/workflows/operations-proof.yml`. Rollback removes the focused tool and
 diagnostic fields; it does not remove the underlying proof/privacy assertions.
 
+### Scenario: simulator database diagnosis uses native GitHub runner services
+
+Given candidate Phone/GPS and demo-simulator changes need a bounded database qualification without the stopped nested development VM\
+When the Operations proof workflow is manually selected with `case=simulator-db` or receives a push to `diagnose/simulator-db/**`\
+Then its dedicated native Linux runner starts the isolated local Supabase stack and requires migrations221–226, inert controls and the curated catalog before fixtures\
+And ordinary PostGIS/catalog and Data API denial checks, strict one-pass fixture preflight, Phone/GPS-only writes and durable simulator/owner-isolation SQL cases remain enforced\
+And its disposable GPS clone preserves the existing server-matched PostgreSQL and exact target/cleanup guards\
+And this branch prefix does not also run the unrelated browser-proof repetitions, copy hosted credentials, enroll production accounts or publish the application\
+And checked source, finite command/job budgets and cleanup failures retain their real result\
+And a passing focused run qualifies only those database boundaries; the complete same-commit CI matrix, actual application review, native-device evidence and production gates still apply.
+
+Evidence: `.github/workflows/operations-proof.yml` and
+`tests/ci-operations-proof.test.mjs`. Source/contract checks do not establish that
+this runner actually passed. Rollback removes the dedicated diagnostic selection
+without weakening the main CI matrix, target checks or security assertions.
+
 ### Scenario: accessibility scans wait for the final workspace route
 
 Given the managed fleet-owner fixture does not drive a vehicle\
@@ -615,7 +799,7 @@ When any one job fails, is cancelled or is skipped\
 Then `release-ready` fails even if the remaining jobs pass\
 And a deployable artifact is never inferred from one successful job or an earlier commit.
 
-The current `feat/mobile-app` and `release/**` branches start CI on push;
+The current `main` and `release/**` branches start CI on push;
 other feature branches require a pull request or an explicit dispatch of their
 exact source commit. Evidence: `.github/workflows/ci.yml` and
 `tests/ci-browser-gate.test.mjs`.

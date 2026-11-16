@@ -10,6 +10,7 @@ import {capacitySharingLabel} from '../../../src/lib/capacity-sharing.js';
 import {translateMessage} from '../../../src/lib/i18n/core.js';
 import {localizedUpdateLabel} from '../../../src/lib/i18n/update-label.js';
 import {nativeMessages} from '../src/localization/messages.ts';
+import {gpsMessages} from '../../../src/lib/i18n/gps-messages.ts';
 const React={createElement:(type,props,...children)=>({type,props:{...props,children},children:children.flat(Infinity)}),Fragment:'Fragment'};
 const style=node=>Object.assign({},...[node.props.style].flat());
 function nodes(root,ancestors=[]){
@@ -22,7 +23,7 @@ function nodes(root,ancestors=[]){
 const text=tree=>nodes(tree).filter(node=>'text'in node).map(node=>node.text).join(' ');
 function fixture(extra={}){return parseCapacityPage({items:[{id:'public-signal',status:'PARTIAL',assigned_driver_first_name:'Public first name',assigned_driver_portrait_url:'/api/public/driver-portraits/00000000-0000-4000-8000-000000000001',provider_name:'Public provider',provider_handle:'public-provider',vehicle_make:'Public truck',cargo_configuration:'Pickup truck',assigned_driver_phone:'+251922809000',accepts_partial_load:true,...extra}],hasMore:false}).items[0];}
 function components({expanded=null,locale='en'}={}){
- const messages=locale==='en'?{}:{...JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale]},calls=[],changes=[],translated=[];
+ const messages=locale==='en'?{}:{...JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale],...gpsMessages[locale]},calls=[],changes=[],translated=[];
  const t=(message,values={})=>{translated.push(message);return translateMessage(messages,message,values);};
  const dependencies={React,useState:initial=>[initial===null?expanded:initial,value=>changes.push(value)],useLanguage:()=>({t}),Image:'Image',Pressable:'Pressable',Text:'Text',View:'View',Link:'Link',Linking:{openURL:async url=>{calls.push(url);}},AppIcon:'AppIcon',PublicCardImage:'PublicCardImage',TruckAuthorityBadges:'TruckAuthorityBadges',ErrorText:'ErrorText',StyleSheet:{create:value=>value},palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526875'},apiOrigin:'http://127.0.0.1:3100',vehicleConfigurationImage:()=>'/truck.png',capacityStatusPresentation:{PARTIAL:{text:'#805c00'}},capacityLoadLabel,capacitySharingLabel,externalDestination,localizedUpdateLabel};
  const path='../src/components/capacity-truck-details.tsx',source=ts.createSourceFile(path,readFileSync(new URL(path,import.meta.url),'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),stripped=ts.factory.updateSourceFile(source,source.statements.filter(node=>!ts.isImportDeclaration(node))),compiled=ts.transpileModule(ts.createPrinter().printFile(stripped),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={};
@@ -40,6 +41,18 @@ test('phone details keep separate public identities, portrait, profile destinati
  const portrait=all.find(node=>node.type==='PublicCardImage');assert.equal(portrait.props.path,truck.portrait);assert.equal(portrait.props.identity,'person');
  assert.deepEqual(all.find(node=>node.type==='Link').props.href,{pathname:'/transporter',params:{handle:'public-provider'}});assert.ok(text(tree).includes('Confirm availability directly.'));
  assert.ok(text(c.CapacityTruckDetails({truck:fixture({assigned_driver_phone:''})})).includes('Phone not published'));
+});
+test('provider details identify only a trusted Demo account without inferring synthetic location',()=>{
+ const c=components();
+ assert.ok(text(c.CapacityTruckDetails({truck:fixture({account_is_demo:true,location_is_demo:false})})).includes('Demo account'));
+ for(const account_is_demo of [false,undefined,'true',1]){
+  assert.equal(text(c.CapacityTruckDetails({truck:fixture({account_is_demo,location_is_demo:true})})).includes('Demo account'),false);
+ }
+ for(const locale of ['am','om']){
+  const translated=components({locale}),label=translated.t('Demo account');
+  assert.notEqual(label,'Demo account');
+  assert.ok(text(translated.CapacityTruckDetails({truck:fixture({account_is_demo:true})})).includes(label));
+ }
 });
 test('partial space estimate appears only with report provenance and translates on the phone',()=>{
  const legacy=fixture({available_percent:50,available_percent_reported_at:null});

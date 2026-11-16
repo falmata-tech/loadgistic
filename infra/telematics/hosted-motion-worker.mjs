@@ -3,14 +3,14 @@ import {randomUUID} from 'node:crypto';
 import {setTimeout as delay} from 'node:timers/promises';
 import {pathToFileURL} from 'node:url';
 import {DEMO_MOTION_COHORT} from '../../src/lib/demo-motion-cohort.js';
-import {HOSTED_DEMO_MOTION_PATH,hostedDemoMotionSignature} from '../../src/lib/demo-motion-hosted-signature.mjs';
+import {HOSTED_DEMO_MOTION_PATH,hostedDemoMotionSignature,assertMotionSecretIsolation} from '../../src/lib/demo-motion-hosted-signature.mjs';
 import {crc16X25,gpsPacket,loginPacket} from '../../scripts/telematics/simulator.mjs';
 import {hostedRouteFix} from './hosted-motion-route.mjs';
 
 export const HOSTED_MOTION_TARGETS=Object.freeze(Object.keys(DEMO_MOTION_COHORT));
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const hex=/^[a-f0-9]{64}$/;
-const CYCLE_SECONDS=300,TICK_MS=60000;
+const CYCLE_SECONDS=300,TICK_MS=30000;
 
 function exactOrigin(raw){
  const url=new URL(String(raw||''));
@@ -31,9 +31,8 @@ export function assertHostedMotionWorkerEnvironment(env){
   const project=exactOrigin(env.LOADGISTIC_HOSTED_MOTION_SUPABASE_URL);
   if(!new URL(project).hostname.endsWith('.supabase.co'))throw Error('HOSTED_MOTION_CONFIG_DENIED');
   const secret=env.HOSTED_DEMO_MOTION_SECRET;
-  if(!hex.test(secret||'')||[env.DEMO_WORLD_WORKER_SECRET,env.GATEWAY_SECRET,
-   env.SYNTHETIC_GATEWAY_SECRET,env.SUPABASE_SERVICE_ROLE_KEY].includes(secret))
-   throw Error('HOSTED_MOTION_CONFIG_DENIED');
+  if(!hex.test(secret||''))throw Error('HOSTED_MOTION_CONFIG_DENIED');
+  assertMotionSecretIsolation(env,secret,'HOSTED_DEMO_MOTION_SECRET');
   return {enabled:true,origin,project,secret,siteId:env.LOADGISTIC_HOSTED_MOTION_SITE_ID,
    gpsHost:'synthetic-traccar',gpsPort:5023};
  }catch{throw Error('HOSTED_MOTION_CONFIG_DENIED');}
@@ -125,7 +124,7 @@ export function openPrivateGt06(imei,{connectFactory=net.createConnection,signal
       const abortWrite=()=>{close();finishWrite(true);};
       const writeTimer=setTimeout(()=>{close();finishWrite(true);},5000);
       signal?.addEventListener('abort',abortWrite,{once:true});
-      try{socket.write(gpsPacket({...fix,speedKph:20,ignition:true},serial++,new Date(fix.observedAt)),finishWrite);}
+      try{socket.write(gpsPacket({...fix,speedKph:fix.speedKph??0,course:fix.course??0,ignition:true},serial++,new Date(fix.observedAt)),finishWrite);}
       catch{finishWrite(true);}
      }),close});
     }else {fail('HOSTED_MOTION_GPS_PROTOCOL_DENIED');return;}
@@ -161,8 +160,11 @@ export async function runHostedMotionTarget(target,{client,openGps=openPrivateGt
  sleep=(ms,signal)=>delay(ms,undefined,{signal}),signal,seconds=CYCLE_SECONDS,onFailure=()=>{}}={}){
  if(!HOSTED_MOTION_TARGETS.includes(target)||typeof client!=='function'||!Number.isInteger(seconds)||seconds<60||seconds>900)
   throw Error('HOSTED_MOTION_TARGET_DENIED');
- let lease,gps,started=0,ticks=0,status='STOPPED',code;
+ let lease,gps,started=0,ticks=0,status='STOPPED',code,scenario;
  try{
+  // Unqualified movement cannot configure, lease or open any protocol socket.
+  const first=hostedRouteFix(target,now());
+  scenario={scenarioId:first.scenarioId,scenarioVersion:first.scenarioVersion,purpose:first.purpose,step:first.step};
   const current=await client({action:'STATUS',target},{signal});
   const state=validStatus(current);
   if(state==='REAL')return {target,status:'REAL',ticks};
@@ -189,13 +191,14 @@ export async function runHostedMotionTarget(target,{client,openGps=openPrivateGt
    const wait=Math.max(0,due-now());if(wait)await sleep(wait,signal);
    if(signal?.aborted||now()>=deadline)break;
    const fix=hostedRouteFix(target,now());
+   scenario={scenarioId:fix.scenarioId,scenarioVersion:fix.scenarioVersion,purpose:fix.purpose,step:fix.step};
    const authority={target,leaseId:lease.leaseId,epoch:lease.epoch,latitude:fix.latitude,longitude:fix.longitude};
    if(gps){
     const saved=await client({action:'GPS',...authority},{signal});
     if(!saved||!Number.isFinite(Date.parse(saved.observedAt||''))||!Number.isFinite(saved.latitude)
      ||!Number.isFinite(saved.longitude))throw Error('HOSTED_MOTION_RESPONSE_DENIED');
     if(signal?.aborted)break;
-    await gps.sendFix(saved);
+    await gps.sendFix({...saved,speedKph:fix.speedKph,course:fix.course});
    }else{
     const saved=await client({action:'PHONE',...authority},{signal});
     if(!saved||saved.recorded!==true||saved.source!=='MOBILE')throw Error('HOSTED_MOTION_RESPONSE_DENIED');
@@ -207,7 +210,7 @@ export async function runHostedMotionTarget(target,{client,openGps=openPrivateGt
   if(!signal?.aborted&&now()<deadline)await sleep(deadline-now(),signal);
   status='STOPPED';
  }catch(error){
-  code=resultCode(error);status=signal?.aborted?'STOPPED':'PAUSED';
+  code=resultCode(error);status=code==='DEMO_MOTION_SCENARIO_UNAVAILABLE'?'UNAVAILABLE':signal?.aborted?'STOPPED':'PAUSED';
   if(status==='PAUSED')onFailure(code);
  }finally{
   gps?.close();
@@ -216,7 +219,7 @@ export async function runHostedMotionTarget(target,{client,openGps=openPrivateGt
    catch(error){if(status!=='PAUSED'){status='STOP_UNCONFIRMED';code=resultCode(error);onFailure(code);}}
   }
  }
- return {target,status,ticks,...(code?{code}:{})};
+ return {target,status,ticks,...(scenario?{scenario}:{}),...(code?{code}:{})};
 }
 
 export async function runHostedMotionCycle({client,openGps=openPrivateGt06,signal,targets=HOSTED_MOTION_TARGETS,
@@ -254,16 +257,22 @@ async function main(){
  }
  const client=hostedMotionClient(config);
  while(!controller.signal.aborted){
+  const cycleStarted=Date.now();
   const cycle=await runHostedMotionCycle({client,signal:controller.signal});
-  const counts=Object.fromEntries(['STOPPED','PAUSED','BUSY','REAL','STOP_UNCONFIRMED'].map(state=>
+  const counts=Object.fromEntries(['STOPPED','PAUSED','BUSY','REAL','STOP_UNCONFIRMED','UNAVAILABLE'].map(state=>
    [state,cycle.results.filter(row=>row.status===state).length]));
-  console.log(JSON.stringify({event:'hosted_motion_cycle',counts,killed:cycle.killed}));
+  const steps=Object.fromEntries(['STATIONARY','DWELL_START','OUTBOUND','DWELL_END','RETURNING'].map(step=>
+   [step,cycle.results.filter(row=>row.scenario?.step===step).length]));
+  console.log(JSON.stringify({event:'hosted_motion_cycle',counts,steps,killed:cycle.killed}));
   if(cycle.killed){
    // Stay inert until an operator recreates the container. Docker's restart
    // policy must not hammer an app whose kill/auth control just refused us.
    await new Promise(resolve=>controller.signal.addEventListener('abort',resolve,{once:true}));break;
   }
-  try{await delay(30000,undefined,{signal:controller.signal});}catch{break;}
+  // Renew completed five-minute windows without an artificial extra 30s gap.
+  // Fast BUSY/REAL/failure-only cycles still poll at most once every 30 seconds.
+  const retryDelay=Math.max(0,TICK_MS-(Date.now()-cycleStarted));
+  try{if(retryDelay)await delay(retryDelay,undefined,{signal:controller.signal});}catch{break;}
  }
 }
 

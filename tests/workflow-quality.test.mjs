@@ -51,6 +51,21 @@ test('workflow static gate stays in local quality and before expensive CI setup'
   assert.equal(validation.match(/run: npm run check\n/g)?.length,1);
 });
 
+test('both simulator CI paths run current-owner races only on the disposable clone and retain cleanup',()=>{
+ for(const file of ['.github/workflows/ci.yml','.github/workflows/operations-proof.yml']){
+  const workflow=readFileSync(file,'utf8');
+  const fixture=workflow.indexOf('      - name: Verify exact existing pilot bindings');
+  const races=workflow.indexOf('      - name: Verify pilot provisioning and motion serialize current co-owner changes');
+  const cleanup=workflow.indexOf('      - name: Remove disposable GPS test database',races);
+  assert.ok(fixture>=0&&races>fixture&&cleanup>races,file);
+  const step=workflow.slice(races,workflow.indexOf('      - name:',races+16));
+  assert.match(step,/LOADGISTIC_TEST_DATABASE: loadgistic_telematics_ci/);
+  assert.match(step,/LOADGISTIC_PILOT_OWNER_RACE_CONFIRM: loadgistic_telematics_ci/);
+  assert.match(step,/timeout --signal=TERM --kill-after=10s 3m node scripts\/verify-demo-pilot-owner-concurrency-local\.mjs/);
+  assert.match(workflow.slice(cleanup,workflow.indexOf('      - name:',cleanup+16)),/always\(\).*steps\.simulator_clone\.outcome/);
+ }
+});
+
 test('the pinned linter accepts a valid workflow and rejects broken job dependencies',()=>{
   const executable=path.resolve('.local','tools','actionlint',actionlintVersion,`${process.platform}-${process.arch}`,'actionlint');
   const workflow=needs=>`name: fixture\non: push\njobs:\n  check:\n    runs-on: ubuntu-latest\n${needs}    steps:\n      - run: echo fixture\n`;

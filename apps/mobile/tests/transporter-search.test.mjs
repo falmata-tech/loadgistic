@@ -172,7 +172,7 @@ test('private foreground pause discards prior results before the same session re
 
 test('leaving a retained Capacity screen cancels delayed interest and resumes only when focused',async()=>{
  const view=harness();try{
-  let tree=view.render();await settle();tree=view.render();open(tree);tree=view.render();edit(tree,'Adama');tree=view.render();view.blur();tree=view.render();view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,0,'an open drawer on a hidden route must not start a query');view.focus();tree=view.render();view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,1);assert.equal(view.mapLoads.length,1,'route focus affects only search interest');
+  let tree=view.render();await settle();tree=view.render();open(tree);tree=view.render();edit(tree,'Adama');tree=view.render();view.blur();tree=view.render();view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,0,'an open drawer on a hidden route must not start a query');view.focus();tree=view.render();view.clock.advance(500);tree=view.render();assert.equal(view.requests.length,1);assert.equal(view.mapLoads.length,2,'returning to the visible map refreshes its current authorized vehicles once');
  }finally{view.close();}
 });
 

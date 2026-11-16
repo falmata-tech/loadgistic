@@ -12,18 +12,33 @@ const webUrl='http://127.0.0.1:3100';
 
 /** Keep the protected gateway credential in the child environment, never argv. */
 export function localWebEnvironment(environment,gatewayJson,demoManifest){
- const configurations=loadGatewayConfigurations(gatewayJson);
+ const configurations=loadGatewayConfigurations(gatewayJson,environment);
  if(configurations.length!==1)throw Error('LOCAL_WEB_CONFIG_REFUSED');
+ const mode=environment.LOADGISTIC_LOCAL_GATEWAY_API_MODE===undefined?'direct':environment.LOADGISTIC_LOCAL_GATEWAY_API_MODE;
+ if(!['direct','relay'].includes(mode))throw Error('LOCAL_WEB_CONFIG_REFUSED');
  if(!demoManifest||demoManifest.purpose!=='local-fictional-gps'||demoManifest.gatewayId!==configurations[0].id)
   throw Error('LOCAL_WEB_CONFIG_REFUSED');
  const gateway=new URL(configurations[0].apiUrl);
  if(gateway.protocol!=='http:'||!['127.0.0.1','localhost','[::1]'].includes(gateway.hostname)
-  ||gateway.port!=='18082'||gateway.pathname!=='/api/'||gateway.username||gateway.password||gateway.search||gateway.hash)
+  ||gateway.port!==(mode==='relay'?'28083':'18082')||gateway.pathname!=='/api/'||gateway.username||gateway.password||gateway.search||gateway.hash)
   throw Error('LOCAL_WEB_CONFIG_REFUSED');
  const childEnvironment={...environment,TELEMATICS_GATEWAYS_JSON:gatewayJson,
   TELEMATICS_DEMO_GATEWAY_ID:configurations[0].id,TELEMATICS_DEFAULT_GATEWAY_ID:'',
   TELEMATICS_LOCAL_SYNTHETIC_ONLY:'true',NEXT_DIST_DIR:environment.NEXT_DIST_DIR||'.next-dev'};
  localDemoMotionConfiguration(childEnvironment,webUrl+DEMO_MOTION_PATH);
+ if(mode==='relay'){
+  const token=configurations[0].apiToken;
+  const credentials=['LOADGISTIC_DEMO_MOTION_SECRET','HOSTED_DEMO_MOTION_SECRET',
+   'DEMO_CAPACITY_WORKER_SECRET','DEMO_WORLD_WORKER_SECRET','SESSION_SECRET',
+   'SUPABASE_SERVICE_ROLE_KEY','SUPABASE_SEED_SERVICE_ROLE_KEY',
+   'GATEWAY_SECRET','SYNTHETIC_GATEWAY_SECRET','GATEWAY_PRIVACY_SECRET','SYNTHETIC_GATEWAY_PRIVACY_SECRET'];
+  // localDemoMotionConfiguration has already validated the configured privacy
+  // array. Reuse its credential shape without accepting an unvalidated object.
+  const privacy=JSON.parse(childEnvironment.TELEMATICS_PRIVACY_GATEWAYS_JSON||'[]');
+  if(!/^[a-f0-9]{64}$/.test(token)||token===configurations[0].secret
+   ||credentials.some(key=>childEnvironment[key]===token)||privacy.some(row=>row.secret===token))
+   throw Error('LOCAL_WEB_CONFIG_REFUSED');
+ }
  return childEnvironment;
 }
 

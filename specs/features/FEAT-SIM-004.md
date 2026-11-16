@@ -11,6 +11,33 @@ rollout: Install the inert schema only after a disposable fixture-clone rehearsa
 
 # Provider duty example
 
+## Current rollout hold — November13
+
+Keep this lane disabled. The installed historical implementation below requires
+Manual, which no longer qualifies for a new location write. A replacement must
+preserve an already selected actual phone/GPS source and its saved timestamp and
+provenance through Off Duty/Restore; it may neither select Manual nor refresh a
+location as a side effect. Its exact current owner and driver must carry trusted
+operator-controlled demo provenance, independent of the account-level Demo label.
+
+The current service reports `HELD` / `MANUAL_LOCATION_RETIRED` and reads pending,
+exhausted and previous completion facts without claiming, replaying, executing or
+clearing a job, even if its old database control is accidentally enabled. Other
+qualified lanes may continue. Zero accepted/completed counts describe the hold;
+they do not claim that the pending duty work was completed.
+
+Given an ordinary signup or a replacement owner/driver claims demo fixture flags
+in editable metadata\
+When either duty phase is attempted\
+Then it is refused at the database boundary with unchanged vehicle, assignment,
+source, location, Capacity, sharing and receipt state.
+
+Given the exact synthetic target has no supported current phone/GPS authority\
+When an operator considers activating this lane\
+Then activation stays disabled; no point, consent or fake source conversion is
+created to satisfy the scenario. Historical local Manual preparation is not an
+allowed migration or recovery. Hosted control readback on November13 is disabled.
+
 Status: source, disposable-clone regression, local installation and one bounded
 catch-up Off Duty/Restore demonstration verified. Both local controls are off
 again. Natural scheduled dispatch and hosted installation remain pending.

@@ -179,6 +179,16 @@ test('restricted web employees keep a map with duty/location actions and no capa
  assert.equal(find(tree,'button',node=>node.props['aria-label']==='Off Duty').props.disabled,false);assert.equal(find(tree,'CapacityLocationMap').props.routePoints.length,2);
 });
 
+test('legacy Manual remains labelled history and cannot resume duty without a new allowed source',()=>{
+ const view=runtime(),screen=view.compile('src/components/driver-capacity-home.tsx',{useRouter:()=>({refresh(){}}),useTranslation:()=>({t:value=>value}),StatusPill:'StatusPill',capacityLocationSource,selectedCapacityLocation,locationSourceLabel,relativeTime:()=> 'Earlier'}).DriverCapacityHome;
+ const vehicle={id:'truck',make:'Make',model:'Model',platform_number:'TRUCK',assigned_driver:{id:'employee'},duty_configuration_available:true,location_selection:{source:'MANUAL'}};
+ const tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY',location_source:'MANUAL_ADMIN',location_lat:40,location_lng:-105,location_precision_km:5,location_updated_at:'2026-10-15'}],corridors:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
+ assert.equal(find(tree,'button',node=>node.props['aria-label']==='Available').props.disabled,true);
+ assert.ok(find(tree,'Text',node=>node.props.message==='Manually entered'));
+ assert.equal(find(tree,'input',node=>node.props.name==='locationSource').props.value,'');
+ assert.ok(find(tree,'Localized',node=>node.props.as==='button'&&node.props['aria-label']==='Edit capacity location'));
+});
+
 test('web Account never places another employee’s documents under the owner’s personal details',async()=>{
  const view=runtime(),user={id:'owner',active:true,role:'TRANSPORTER',organization_id:'company',owns_provider_account:true,can_manage_fleet:true,drives_truck:true};
  const screen=view.compile('src/app/app/more/page.tsx',{requireUser:async()=>user,getWorkspaceAccess:async()=>({granted:true}),providerWorkspaceCapabilities,getDriverPortraitWorkspace:async()=>null,getVerificationCenter:async()=>({subjects:[{subject_type:'DRIVER',subject_id:'owner'},{subject_type:'DRIVER',subject_id:'employee'}],requests:[]}),createSupabaseServerClient:async()=>({auth:{getUser:async()=>({data:{user:{}}})}}),accountDeactivationBlockers:async()=>[],PageHeader:'PageHeader',Flash:'Flash',UserRound:'UserRound',AccountDetailsForm:'AccountDetailsForm',SubjectDocuments:'SubjectDocuments',ProviderProfileWorkspace:'ProviderProfileWorkspace',AccountSecurityControls:'AccountSecurityControls',AccountDeletionForm:'AccountDeletionForm',LogoutButton:'LogoutButton',WorkspaceTaskDialog:'WorkspaceTaskDialog',Localized:'Localized',Building2:'Building2',FileCheck:'FileCheck',FileCheck2:'FileCheck2',Camera:'Camera',DriverPortraitEditor:'DriverPortraitEditor',ShieldCheck:'ShieldCheck',ChevronRight:'ChevronRight',ArrowLeft:'ArrowLeft',Pencil:'Pencil'}).default;

@@ -9,6 +9,45 @@ observability: [public_workspace_navigation, public_capacity_query, public_track
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
 ---
 
+## Visible Capacity freshness — November13 owner direction
+
+Given a visitor or authorized private viewer has an active Capacity map\
+When new saved phone/GPS or capacity reports become available\
+Then the visible feed checks every15seconds without a new user action\
+And hidden tabs stop polling/cursor work and return with one fresh request\
+And a slow paginated window is allowed to finish; a timer cannot repeatedly
+abort it or reduce its complete results. Each page has a30-second deadline,
+with normal retry on a later visible tick.
+
+Given a new eligible signal replaces the selected Capacity record for the same
+existing public vehicle identity\
+When the authorized page returns that replacement\
+Then the selected details follow its new values and record ID without a
+duplicate old marker, changing the current viewport or adding another click.
+
+Given a completed viewport omits the selected vehicle signal\
+When the client makes at most one automated exact-truck read using the same
+authorized feed and filters, without viewport/cursor, within10seconds\
+Then a fresh eligible result preserves the selected popup outside the viewport\
+And a200 response without that row removes the old signal and selection\
+And private failed/malformed/denied revalidation cannot preserve the cached row;
+public transient failure may retain its honestly dated prior report and error\
+And a deliberate new selection cancels the old selection task and immediately
+requests the latest scope, never applying the old task's result to it.
+
+Given a private feed or exact lookup returns401,403 or404\
+When that response still belongs to the current request generation/audience\
+Then cached private vehicles and selection are cleared for account, business and
+retained private routes\
+And an old response cannot erase or restore a new authorized scope. Normal200
+omission of an individually revoked grant is also a denial of that selected row.
+
+These are read/polling changes. They do not change real phone capture intervals,
+source consent, privacy radii or server-side grants and do not claim push Realtime.
+Actual local Chrome/Expo, database and installed-device qualification remain
+separate from the focused request-effect regressions in
+`tests/capacity-feed-refresh.test.mjs` (NR-81).
+
 ## Account-centered provider discovery — October 25 change in progress
 
 Given a public or authorized private Transport Provider search\

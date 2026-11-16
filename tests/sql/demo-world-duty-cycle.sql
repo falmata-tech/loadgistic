@@ -1,15 +1,29 @@
--- FEAT-SIM-004. Run only on a disposable, fixture-loaded local clone with 198.
+-- FEAT-SIM-004. Run on a disposable fixture clone after migrations221/223.
 -- All mutations, including Auth/Featured denial fixtures, roll back below.
 begin;
 set local statement_timeout='45s';
+create function pg_temp.duty_state() returns jsonb language sql stable as $$
+ select jsonb_build_object(
+  'capacities',(select jsonb_agg(to_jsonb(c) order by c.id) from public.capacities c where c.vehicle_id='626ff53a-3c93-44c7-8afb-b175a84403c1'),
+  'source',(select to_jsonb(s) from public.telematics_location_sources s where s.vehicle_id='626ff53a-3c93-44c7-8afb-b175a84403c1'),
+  'locations',(select jsonb_agg(to_jsonb(l) order by l.vehicle_id) from public.vehicle_driver_locations l where l.vehicle_id='626ff53a-3c93-44c7-8afb-b175a84403c1'),
+  'assignments',(select jsonb_agg(to_jsonb(a) order by a.id) from public.driver_vehicle_assignments a where a.vehicle_id='626ff53a-3c93-44c7-8afb-b175a84403c1'),
+  'sharing',(select to_jsonb(s) from public.vehicle_capacity_sharing s where s.vehicle_id='626ff53a-3c93-44c7-8afb-b175a84403c1'),
+  'grants',(select jsonb_agg(to_jsonb(g) order by g.id) from public.business_capacity_grants g where g.vehicle_id='626ff53a-3c93-44c7-8afb-b175a84403c1'),
+  'featured',(select jsonb_agg(to_jsonb(s) order by s.id) from public.featured_provider_slots s),
+  'control',(select to_jsonb(c) from public.demo_world_duty_control c where c.id=1),
+  'world_control',(select to_jsonb(c) from public.demo_world_control c where c.id=1),
+  'jobs',(select jsonb_agg(to_jsonb(j) order by j.id) from public.demo_world_duty_jobs j),
+  'receipts',(select jsonb_agg(to_jsonb(r) order by r.job_id) from public.demo_world_duty_receipts r)
+ )
+$$;
 do $test$
 declare target_vehicle uuid:='626ff53a-3c93-44c7-8afb-b175a84403c1';
  owner_id uuid;driver_id uuid;first_job bigint;first_token uuid;second_job bigint;second_token uuid;
  before_count bigint;before_featured bigint;before_assignment bigint;before_source timestamptz;
- before_capacity uuid;off_capacity uuid;restored_capacity uuid;baseline_route jsonb;
- result jsonb;denied boolean;baseline_failure text;source_result jsonb;test_workspace uuid:=gen_random_uuid();
+ before_capacity uuid;off_capacity uuid;before_state jsonb;attempt integer;
+ result jsonb;denied boolean;baseline_failure text;test_workspace uuid:=gen_random_uuid();
  old_capacity public.capacities%rowtype;old_source public.telematics_location_sources%rowtype;
- manual_lat double precision;manual_lng double precision;
 begin
  if current_database() not in ('loadgistic_demo_duty_198_ci','loadgistic_telematics_ci')
   then raise exception 'ISOLATED_DUTY_TEST_DATABASE_REQUIRED';end if;
@@ -34,21 +48,29 @@ begin
   or exists(select 1 from public.capacity_access_grants g where g.vehicle_id=target_vehicle and g.revoked_at is null)
   or exists(select 1 from public.business_capacity_grants g where g.vehicle_id=target_vehicle and g.revoked_at is null)
   then raise exception 'DUTY_UNPREPARED_FIXTURE_DRIFT';end if;
- select latitude,longitude into manual_lat,manual_lng from public.place_catalog
-  where id=old_capacity.current_route_points_json->0->>'place_ref';
- if manual_lat is null or manual_lng is null then raise exception 'DUTY_PLACE_NOT_FOUND';end if;
- source_result:=public.select_telematics_location_source(owner_id,jsonb_build_object(
+ before_state:=pg_temp.duty_state();
+ denied:=false;
+ begin perform public.select_telematics_location_source(owner_id,jsonb_build_object(
   'vehicleId',target_vehicle,'source','MANUAL','precisionKm',10,
   'expectedRevision',coalesce(old_source.revision,'1970-01-01'::timestamptz),
-  'manualLatitude',manual_lat,'manualLongitude',manual_lng));
- if source_result->>'source'<>'MANUAL' then raise exception 'DUTY_MANUAL_PREPARATION_FAILED';end if;
- perform public.publish_provider_capacity(owner_id,jsonb_build_object(
-  'vehicle_id',target_vehicle,'status','EMPTY','visibility','OPEN','sharing_mode','PUBLIC',
-  'accepted_loads','FTL','availability_geometry','ROUTE','location_source','PRESERVE_DRIVER',
-  'current_route_places',old_capacity.current_route_points_json,
-  'accepts_multi_pick',coalesce(old_capacity.accepts_multi_pick,false),
-  'accepts_multi_drop',coalesce(old_capacity.accepts_multi_drop,false)));
- select id,current_route_points_json into before_capacity,baseline_route
+  'manualLatitude',old_capacity.location_lat,'manualLongitude',old_capacity.location_lng));
+ exception when others then denied:=sqlerrm='INVALID_TELEMATICS_INPUT';end;
+ if not denied or pg_temp.duty_state() is distinct from before_state
+  then raise exception 'DUTY_RETIRED_MANUAL_PREPARATION_ACCEPTED';end if;
+ -- A dated legacy fixture keeps every independent actor/source/safety guard
+ -- reachable. It preserves the old point/radius/time and uses no Manual RPC.
+ if old_capacity.location_lat is null or old_capacity.location_lng is null
+  or old_capacity.location_updated_at is null or old_capacity.location_precision_km not in(1,3,5,10,20)
+  then raise exception 'DUTY_LEGACY_FIXTURE_LOCATION_MISSING';end if;
+ insert into public.telematics_location_sources(vehicle_id,source,precision_km,selected_by,
+  selected_at,revision,manual_latitude,manual_longitude)
+ values(target_vehicle,'MANUAL',old_capacity.location_precision_km,owner_id,
+  old_capacity.location_updated_at,old_capacity.location_updated_at,old_capacity.location_lat,old_capacity.location_lng)
+ on conflict(vehicle_id) do update set source=excluded.source,precision_km=excluded.precision_km,
+  selected_by=excluded.selected_by,selected_at=excluded.selected_at,revision=excluded.revision,
+  manual_latitude=excluded.manual_latitude,manual_longitude=excluded.manual_longitude;
+ update public.capacities set location_source='MANUAL_ADMIN' where id=old_capacity.id;
+ select id into before_capacity
  from public.capacities where vehicle_id=target_vehicle order by updated_at desc,id desc limit 1;
  if before_capacity is null or
    (select location_source from public.capacities where id=before_capacity)<>'MANUAL_ADMIN'
@@ -61,15 +83,42 @@ begin
  update public.demo_world_duty_control set enabled=true,
   activated_at=((clock_timestamp() at time zone 'UTC')::date-1)::timestamp at time zone 'UTC'
    +interval '10 hours' where id=1;
- select job_id,lease_token into first_job,first_token from public.demo_world_claim_duty(gen_random_uuid());
+ before_state:=pg_temp.duty_state();
+ if exists(select 1 from public.demo_world_claim_duty(gen_random_uuid()))
+  or pg_temp.duty_state() is distinct from before_state
+  then raise exception 'DUTY_HELD_CLAIM_CHANGED_STATE';end if;
+ -- Lease-shaped rollback fixtures exercise executor guards while production
+ -- claims stay held. No worker can create or claim these jobs through the hold.
+ insert into public.demo_world_duty_jobs(simulation_day,phase,scheduled_at,state,
+  lease_token,leased_by,lease_expires_at,attempts)
+ values((clock_timestamp() at time zone 'UTC')::date-1,'OFF_DUTY',
+  (((clock_timestamp() at time zone 'UTC')::date-1)::timestamp+interval '10 hours 30 minutes') at time zone 'UTC',
+  'LEASED',gen_random_uuid(),gen_random_uuid(),clock_timestamp()+interval '2 minutes',1)
+ returning id,lease_token into first_job,first_token;
+ insert into public.demo_world_duty_jobs(simulation_day,phase,scheduled_at,state,
+  lease_token,leased_by,lease_expires_at,attempts)
+ values((clock_timestamp() at time zone 'UTC')::date-1,'RESTORE',
+  (((clock_timestamp() at time zone 'UTC')::date-1)::timestamp+interval '10 hours 50 minutes') at time zone 'UTC',
+  'LEASED',gen_random_uuid(),gen_random_uuid(),clock_timestamp()+interval '2 minutes',1)
+ returning id,lease_token into second_job,second_token;
  if first_job is null or (select phase from public.demo_world_duty_jobs where id=first_job)<>'OFF_DUTY'
   then raise exception 'DUTY_FIRST_PHASE_NOT_CLAIMED';end if;
  if exists(select 1 from public.demo_world_claim_duty(gen_random_uuid()))
   then raise exception 'DUTY_OVERLAPPING_CLAIM';end if;
  denied:=false;
+ begin perform public.demo_world_execute_duty(second_job,second_token);
+ exception when others then denied:=sqlerrm='DEMO_DUTY_ORDER_REFUSED';end;
+ if not denied then raise exception 'DUTY_RESTORE_PASSED_UNFINISHED_FIRST_PHASE';end if;
+ denied:=false;
  begin perform public.demo_world_execute_duty(first_job,gen_random_uuid());
  exception when others then denied:=sqlerrm='DEMO_DUTY_LEASE_REFUSED';end;
  if not denied then raise exception 'DUTY_WRONG_LEASE_ACCEPTED';end if;
+ denied:=false;
+ begin
+  update public.demo_world_duty_jobs set lease_expires_at=clock_timestamp()-interval '1 second' where id=first_job;
+  perform public.demo_world_execute_duty(first_job,first_token);
+ exception when others then denied:=sqlerrm='DEMO_DUTY_LEASE_REFUSED';end;
+ if not denied then raise exception 'DUTY_EXPIRED_LEASE_ACCEPTED';end if;
  denied:=false;
  begin
   update auth.users set raw_app_meta_data=raw_app_meta_data-'fixture_source' where id=owner_id;
@@ -133,48 +182,56 @@ begin
  if (select count(*) from public.capacities where vehicle_id=target_vehicle)<>before_count
   or (select count(*) from public.demo_world_duty_receipts)<>0
   then raise exception 'DUTY_DENIAL_LEFT_WRITES';end if;
+ before_state:=pg_temp.duty_state();
+ for attempt in 1..2 loop
+  denied:=false;
+  begin perform public.demo_world_execute_duty(first_job,first_token);
+  exception when others then denied:=sqlerrm='DEMO_MANUAL_LANE_HELD';end;
+  if not denied or pg_temp.duty_state() is distinct from before_state
+   then raise exception 'DUTY_OFF_HOLD_CHANGED_STATE';end if;
+ end loop;
+ if public.demo_world_duty_status()->>'last_completed_phase' is not null
+  then raise exception 'DUTY_HELD_JOB_REPORTED_COMPLETED';end if;
+
+ -- Seed a completed old phase for replay and Restore guards. Off Duty uses no
+ -- location input; this ordinary Capacity command never selects/refreshes Manual.
+ off_capacity:=public.publish_provider_capacity(owner_id,jsonb_build_object(
+  'vehicle_id',target_vehicle,'status','OFF_DUTY','visibility','OPEN','sharing_mode','PUBLIC'));
+ insert into public.demo_world_duty_receipts(job_id,simulation_day,phase,actor_id,driver_id,
+  vehicle_id,baseline_capacity_id,before_capacity_id,after_capacity_id,source_revision)
+ select first_job,job.simulation_day,'OFF_DUTY',owner_id,driver_id,target_vehicle,
+  before_capacity,before_capacity,off_capacity,before_source
+ from public.demo_world_duty_jobs job where job.id=first_job;
+ update public.demo_world_duty_jobs set state='DONE',leased_by=null,lease_expires_at=null,
+  completed_at=clock_timestamp() where id=first_job;
+ before_state:=pg_temp.duty_state();
  result:=public.demo_world_execute_duty(first_job,first_token);
- if result->>'result'<>'APPLIED' or result->>'phase'<>'OFF_DUTY'
-  then raise exception 'DUTY_OFF_RESULT_DRIFT';end if;
- select after_capacity_id into off_capacity from public.demo_world_duty_receipts where job_id=first_job;
- if (select status from public.capacities where id=off_capacity)<>'OFF_DUTY'
-  or (select count(*) from public.capacities where vehicle_id=target_vehicle)<>before_count+1
-  then raise exception 'DUTY_OFF_NOT_SAVED';end if;
- if public.demo_world_execute_duty(first_job,first_token)->>'result'<>'REPLAYED'
-  or (select count(*) from public.capacities where vehicle_id=target_vehicle)<>before_count+1
-  then raise exception 'DUTY_OFF_REPLAY_WROTE';end if;
- select job_id,lease_token into second_job,second_token from public.demo_world_claim_duty(gen_random_uuid());
- if second_job is null or (select phase from public.demo_world_duty_jobs where id=second_job)<>'RESTORE'
-  then raise exception 'DUTY_RESTORE_NOT_CLAIMED';end if;
+ if result->>'result'<>'REPLAYED' or result->>'phase'<>'OFF_DUTY'
+  or pg_temp.duty_state() is distinct from before_state
+  then raise exception 'DUTY_HISTORICAL_OFF_REPLAY_CHANGED_STATE';end if;
  denied:=false;
  begin
   update public.capacities set updated_by=driver_id where id=off_capacity;
   perform public.demo_world_execute_duty(second_job,second_token);
  exception when others then denied:=sqlerrm='DEMO_DUTY_RESTORE_DRIFT';end;
  if not denied then raise exception 'DUTY_FOREIGN_OFF_SIGNAL_ACCEPTED';end if;
- -- A normal Capacity insert failure must roll back the job transition and receipt.
- execute format('alter table public.capacities add constraint duty_restore_block '
-  ||'check (vehicle_id <> %L::uuid or status <> ''EMPTY'') not valid',target_vehicle);
- denied:=false;
- begin perform public.demo_world_execute_duty(second_job,second_token);
- exception when check_violation then denied:=true;end;
- if not denied or exists(select 1 from public.demo_world_duty_receipts where job_id=second_job)
-  or (select state from public.demo_world_duty_jobs where id=second_job)<>'LEASED'
-  or (select count(*) from public.capacities where vehicle_id=target_vehicle)<>before_count+1
-  or (select id from public.capacities where vehicle_id=target_vehicle
-      order by updated_at desc,id desc limit 1)<>off_capacity
-  then raise exception 'DUTY_FAILED_SAVE_LEFT_PARTIAL_STATE';end if;
- alter table public.capacities drop constraint duty_restore_block;
- result:=public.demo_world_execute_duty(second_job,second_token);
- if result->>'result'<>'APPLIED' or result->>'phase'<>'RESTORE'
-  then raise exception 'DUTY_RESTORE_RESULT_DRIFT';end if;
- select after_capacity_id into restored_capacity from public.demo_world_duty_receipts where job_id=second_job;
- if (select status from public.capacities where id=restored_capacity)<>'EMPTY'
-  or (select location_source from public.capacities where id=restored_capacity)<>'MANUAL_ADMIN'
-  or public.demo_world_route_refs((select current_route_points_json from public.capacities where id=restored_capacity))
-   is distinct from public.demo_world_route_refs(baseline_route)
-  or public.demo_world_execute_duty(second_job,second_token)->>'result'<>'REPLAYED'
-  or (select count(*) from public.capacities where vehicle_id=target_vehicle)<>before_count+2
+ before_state:=pg_temp.duty_state();
+ for attempt in 1..2 loop
+  denied:=false;
+  begin perform public.demo_world_execute_duty(second_job,second_token);
+  exception when others then denied:=sqlerrm='DEMO_MANUAL_LANE_HELD';end;
+  if not denied or pg_temp.duty_state() is distinct from before_state
+   or exists(select 1 from public.demo_world_duty_receipts where job_id=second_job)
+   or (select state from public.demo_world_duty_jobs where id=second_job)<>'LEASED'
+   or (select id from public.capacities where vehicle_id=target_vehicle
+       order by updated_at desc,id desc limit 1)<>off_capacity
+   then raise exception 'DUTY_RESTORE_HOLD_CHANGED_PENDING_JOB_OR_STATE';end if;
+ end loop;
+ before_state:=pg_temp.duty_state();
+ if exists(select 1 from public.demo_world_claim_duty(gen_random_uuid()))
+  or pg_temp.duty_state() is distinct from before_state
+  then raise exception 'DUTY_HELD_BACKLOG_CLAIM_CHANGED_STATE';end if;
+ if (select count(*) from public.capacities where vehicle_id=target_vehicle)<>before_count+1
   or (select count(*) from public.featured_provider_slots)<>before_featured
   or (select count(*) from public.driver_vehicle_assignments where vehicle_id=target_vehicle and active)<>before_assignment
   or (select revision from public.telematics_location_sources where vehicle_id=target_vehicle)<>before_source
@@ -182,7 +239,7 @@ begin
     where g.vehicle_id=target_vehicle and g.revoked_at is null)
   or exists(select 1 from public.business_capacity_grants g
     where g.vehicle_id=target_vehicle and g.revoked_at is null)
-  then raise exception 'DUTY_RESTORE_OR_REPLAY_DRIFT';end if;
+  then raise exception 'DUTY_HOLD_OR_HISTORICAL_REPLAY_DRIFT';end if;
  denied:=false;
  begin update public.demo_world_duty_receipts set applied_at=clock_timestamp() where job_id=first_job;
  exception when others then denied:=sqlerrm='DEMO_WORLD_RECEIPT_IMMUTABLE';end;

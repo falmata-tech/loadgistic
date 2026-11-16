@@ -48,7 +48,9 @@
       "fixture_capacity_key": "cap-partial",
       "baseline_status": "PARTIAL",
       "expected_sharing_mode": "PRIVATE",
-      "mutable": true
+      "mutable": true,
+      "baseline_available_percent": null,
+      "start_offset_seconds": 0
     },
     {
       "key": "public-independent-partial",
@@ -73,7 +75,9 @@
       "fixture_capacity_key": "cap-public-113",
       "baseline_status": "PARTIAL",
       "expected_sharing_mode": "PUBLIC",
-      "mutable": true
+      "mutable": true,
+      "baseline_available_percent": null,
+      "start_offset_seconds": 30
     },
     {
       "key": "fleet-02-partial",
@@ -82,7 +86,9 @@
       "fixture_capacity_key": "cap-public-117",
       "baseline_status": "PARTIAL",
       "expected_sharing_mode": "BOTH",
-      "mutable": true
+      "mutable": true,
+      "baseline_available_percent": null,
+      "start_offset_seconds": 60
     },
     {
       "key": "fleet-04-partial",
@@ -96,7 +102,9 @@
         "builtin:wukro",
         "builtin:adigrat"
       ],
-      "mutable": true
+      "mutable": true,
+      "baseline_available_percent": null,
+      "start_offset_seconds": 90
     },
     {
       "key": "fleet-06-partial",
@@ -105,153 +113,171 @@
       "fixture_capacity_key": "cap-public-179",
       "baseline_status": "PARTIAL",
       "expected_sharing_mode": "BOTH",
-      "mutable": true
+      "mutable": true,
+      "baseline_available_percent": null,
+      "start_offset_seconds": 120
     }
   ],
   "scenarios": [
     {
-      "key": "capacity-signal-cycle",
-      "command": "capacity.set_status",
-      "daily_slots_utc": [
-        480,
-        840
-      ],
-      "transitions": [
+      "key": "independent-partial-capacity-episode",
+      "target_key": "independent-partial",
+      "phases": [
         {
-          "target_key": "independent-partial",
-          "from": "PARTIAL",
-          "to": "EMPTY"
+          "step_index": 0,
+          "offset_seconds": 0,
+          "status": "PARTIAL",
+          "available_percent": 80
         },
         {
-          "target_key": "independent-partial",
-          "from": "EMPTY",
-          "to": "PARTIAL"
+          "step_index": 1,
+          "offset_seconds": 120,
+          "status": "PARTIAL",
+          "available_percent": 60
+        },
+        {
+          "step_index": 2,
+          "offset_seconds": 240,
+          "status": "PARTIAL",
+          "available_percent": 30
+        },
+        {
+          "step_index": 3,
+          "offset_seconds": 360,
+          "status": "EMPTY",
+          "available_percent": 100
         }
-      ]
+      ],
+      "command": "capacity.publish_phase"
     },
     {
-      "key": "fleet-02-signal-cycle",
-      "command": "capacity.set_status",
-      "daily_slots_utc": [
-        510,
-        870
-      ],
-      "transitions": [
+      "key": "fleet-01-partial-capacity-episode",
+      "target_key": "fleet-01-partial",
+      "phases": [
         {
-          "target_key": "fleet-02-partial",
-          "from": "PARTIAL",
-          "to": "EMPTY"
+          "step_index": 0,
+          "offset_seconds": 0,
+          "status": "PARTIAL",
+          "available_percent": 80
         },
         {
-          "target_key": "fleet-02-partial",
-          "from": "EMPTY",
-          "to": "PARTIAL"
+          "step_index": 1,
+          "offset_seconds": 120,
+          "status": "PARTIAL",
+          "available_percent": 60
+        },
+        {
+          "step_index": 2,
+          "offset_seconds": 240,
+          "status": "PARTIAL",
+          "available_percent": 30
+        },
+        {
+          "step_index": 3,
+          "offset_seconds": 360,
+          "status": "EMPTY",
+          "available_percent": 100
         }
-      ]
+      ],
+      "command": "capacity.publish_phase"
     },
     {
-      "key": "fleet-04-signal-cycle",
-      "command": "capacity.set_status",
-      "daily_slots_utc": [
-        525,
-        885
-      ],
-      "transitions": [
+      "key": "fleet-02-partial-capacity-episode",
+      "target_key": "fleet-02-partial",
+      "phases": [
         {
-          "target_key": "fleet-04-partial",
-          "from": "PARTIAL",
-          "to": "EMPTY"
+          "step_index": 0,
+          "offset_seconds": 0,
+          "status": "PARTIAL",
+          "available_percent": 80
         },
         {
-          "target_key": "fleet-04-partial",
-          "from": "EMPTY",
-          "to": "PARTIAL"
+          "step_index": 1,
+          "offset_seconds": 120,
+          "status": "PARTIAL",
+          "available_percent": 60
+        },
+        {
+          "step_index": 2,
+          "offset_seconds": 240,
+          "status": "PARTIAL",
+          "available_percent": 30
+        },
+        {
+          "step_index": 3,
+          "offset_seconds": 360,
+          "status": "EMPTY",
+          "available_percent": 100
         }
-      ]
+      ],
+      "command": "capacity.publish_phase"
     },
     {
-      "key": "fleet-06-signal-cycle",
-      "command": "capacity.set_status",
-      "daily_slots_utc": [
-        540,
-        900
-      ],
-      "transitions": [
+      "key": "fleet-04-partial-capacity-episode",
+      "target_key": "fleet-04-partial",
+      "phases": [
         {
-          "target_key": "fleet-06-partial",
-          "from": "PARTIAL",
-          "to": "EMPTY"
+          "step_index": 0,
+          "offset_seconds": 0,
+          "status": "PARTIAL",
+          "available_percent": 80
         },
         {
-          "target_key": "fleet-06-partial",
-          "from": "EMPTY",
-          "to": "PARTIAL"
+          "step_index": 1,
+          "offset_seconds": 120,
+          "status": "PARTIAL",
+          "available_percent": 60
+        },
+        {
+          "step_index": 2,
+          "offset_seconds": 240,
+          "status": "PARTIAL",
+          "available_percent": 30
+        },
+        {
+          "step_index": 3,
+          "offset_seconds": 360,
+          "status": "EMPTY",
+          "available_percent": 100
         }
-      ]
+      ],
+      "route_toggle_every_cycles": 2,
+      "command": "capacity.publish_phase"
     },
     {
-      "key": "fleet-01-signal-cycle",
-      "command": "capacity.set_status",
-      "daily_slots_utc": [
-        495,
-        855
-      ],
-      "transitions": [
+      "key": "fleet-06-partial-capacity-episode",
+      "target_key": "fleet-06-partial",
+      "phases": [
         {
-          "target_key": "fleet-01-partial",
-          "from": "PARTIAL",
-          "to": "EMPTY"
+          "step_index": 0,
+          "offset_seconds": 0,
+          "status": "PARTIAL",
+          "available_percent": 80
         },
         {
-          "target_key": "fleet-01-partial",
-          "from": "EMPTY",
-          "to": "PARTIAL"
-        }
-      ]
-    },
-    {
-      "key": "fleet-01-load-preference",
-      "command": "capacity.set_load_preference",
-      "daily_slots_utc": [
-        555,
-        840
-      ],
-      "transitions": [
-        {
-          "target_key": "fleet-01-partial",
-          "when_status": "EMPTY",
-          "from": "PTL",
-          "to": "BOTH"
+          "step_index": 1,
+          "offset_seconds": 120,
+          "status": "PARTIAL",
+          "available_percent": 60
         },
         {
-          "target_key": "fleet-01-partial",
-          "when_status": "EMPTY",
-          "from": "BOTH",
-          "to": "PTL"
-        }
-      ]
-    },
-    {
-      "key": "fleet-04-route",
-      "command": "capacity.set_route",
-      "daily_slots_utc": [
-        600,
-        870
-      ],
-      "transitions": [
-        {
-          "target_key": "fleet-04-partial",
-          "when_status": "EMPTY",
-          "from": "BASELINE",
-          "to": "ALTERNATE"
+          "step_index": 2,
+          "offset_seconds": 240,
+          "status": "PARTIAL",
+          "available_percent": 30
         },
         {
-          "target_key": "fleet-04-partial",
-          "when_status": "EMPTY",
-          "from": "ALTERNATE",
-          "to": "BASELINE"
+          "step_index": 3,
+          "offset_seconds": 360,
+          "status": "EMPTY",
+          "available_percent": 100
         }
-      ]
+      ],
+      "command": "capacity.publish_phase"
     }
-  ]
+  ],
+  "catalog_version": 2,
+  "mode": "RELATIVE_EPISODES",
+  "step_seconds": 120,
+  "cycle_seconds": 480
 }

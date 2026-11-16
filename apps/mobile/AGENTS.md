@@ -55,8 +55,13 @@ Docs: https://docs.expo.dev/eas/index.md
 - Android SDK, Java, adb, Gradle caches and Expo login are shared resources.
   Prefer command-scoped environment variables. Do not change global package
   versions, SDK defaults, shell profiles or saved accounts without explicit scope.
-- Use Loadgistic_Pixel_API_35 only, and specify its verified serial on every adb
-  device command. Never choose an implicit first device or another app's emulator.
+- On the owner's original Mac, use Loadgistic_Pixel_API_35 only and specify its
+  verified serial on every adb device command. The November13 owner request also
+  permits preparing a task-owned managed Android VM; before starting it, agree
+  the account, exact APK and bounded budget. Verify its exact instance UUID and
+  ADB serial, then use that serial on every device command. Never choose an
+  implicit first device, another app's emulator or the owner's physical phone.
+  Managed-device preparation does not authorize a new owner-phone session.
 - Verify port ownership before starting Metro. Do not stop another app's process,
   emulator, adb server or Gradle daemon. No killall, broad pkill, adb kill-server,
   global cache deletion or indiscriminate port cleanup.
@@ -74,9 +79,11 @@ Docs: https://docs.expo.dev/eas/index.md
 - Distinguish a Metro-dependent development client from a standalone phone APK.
   Record compiled, installed, device-tested, owner-approved and distributed
   separately. Follow root AGENTS.md's October22 instruction: the agent performs
-  actual visual/workflow review before extensive release gates. Native-only
-  behavior still requires an authorized phone session; self-review grants no
-  signing, distribution or production authority.
+  actual visual/workflow review before extensive release gates. Use an exact
+  installed native build on the authorized task-owned virtual device for Android
+  permission/lifecycle checks; physical hardware/OEM behavior still requires a
+  separately authorized phone session. Self-review grants no signing,
+  distribution or production authority.
 - A browser adapter may omit a native import graph. Typecheck and Expo-web success
   do not prove Android startup. Shared native contracts must be dependency-free;
   keep server registration/validation adapters out of phone routing imports.

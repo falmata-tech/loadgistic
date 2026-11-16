@@ -1,7 +1,11 @@
 -- FEAT-SIM-001. Rollback-only check on a disposable, fixture-loaded clone.
--- Migrations 195 and 197 are inert; bind the one checked-in synthetic page.
+-- Migrations 195/197 are inert; 225 isolates the one checked-in synthetic page.
 begin;
 set local statement_timeout='90s';
+do $$begin
+ if current_database() not in('loadgistic_demo_world_185_ci','loadgistic_telematics_ci')
+  then raise exception 'ISOLATED_DEMO_TEST_DATABASE_REQUIRED';end if;
+end $$;
 create function pg_temp.assert_profile(ok boolean,label text) returns void
 language plpgsql as $$begin if ok is not true then raise exception '%',label;end if;end$$;
 create function pg_temp.expect_profile_denial(statement text,code text) returns void
@@ -15,12 +19,63 @@ begin
  raise exception 'EXPECTED_DEMO_PROFILE_DENIAL:%',code;
 end $$;
 
+-- A private rollback-test projection; compare full rows without printing any
+-- Auth, contact or location values. Include the new ordinary owner even before
+-- its membership exists so fixture rollback itself can also be verified.
+create function pg_temp.profile_isolation_state(normal_actor uuid,approved_actor uuid)
+returns jsonb language sql volatile as $state$
+ with actors as(
+  select normal_actor as id union select approved_actor
+  union select user_id from public.organization_members
+   where organization_id='c36022ff-bf3e-432d-ae96-93d1537cf79e'::uuid
+ ), vehicles as(
+  select id from public.vehicles
+   where organization_id='c36022ff-bf3e-432d-ae96-93d1537cf79e'::uuid
+    or provider_profile_id in(select id from public.provider_profiles where user_id in(select id from actors))
+ ), rows as(
+  select 'auth' as kind,to_jsonb(r) as value from auth.users r where id in(select id from actors)
+  union all select 'sessions',to_jsonb(r) from auth.sessions r where user_id in(select id from actors)
+  union all select 'profiles',to_jsonb(r) from public.profiles r where id in(select id from actors)
+  union all select 'providers',to_jsonb(r) from public.provider_profiles r where user_id in(select id from actors)
+  union all select 'members',to_jsonb(r) from public.organization_members r
+   where organization_id='c36022ff-bf3e-432d-ae96-93d1537cf79e'::uuid or user_id in(select id from actors)
+  union all select 'organization',to_jsonb(r) from public.organizations r where id='c36022ff-bf3e-432d-ae96-93d1537cf79e'::uuid
+  union all select 'pages',to_jsonb(r) from public.company_pages r where organization_id='c36022ff-bf3e-432d-ae96-93d1537cf79e'::uuid
+  union all select 'vehicles',to_jsonb(r) from public.vehicles r where id in(select id from vehicles)
+  union all select 'assignments',to_jsonb(r) from public.driver_vehicle_assignments r where vehicle_id in(select id from vehicles)
+  union all select 'capacities',to_jsonb(r) from public.capacities r where vehicle_id in(select id from vehicles)
+  union all select 'sources',to_jsonb(r) from public.telematics_location_sources r where vehicle_id in(select id from vehicles)
+  union all select 'driver_locations',to_jsonb(r) from public.vehicle_driver_locations r where vehicle_id in(select id from vehicles)
+  union all select 'gps_positions',to_jsonb(r) from public.telematics_positions r where vehicle_id in(select id from vehicles)
+  union all select 'phone_bindings',to_jsonb(r) from public.phone_location_bindings r where vehicle_id in(select id from vehicles)
+  union all select 'gps_assignments',to_jsonb(r) from public.telematics_device_assignments r where vehicle_id in(select id from vehicles)
+  union all select 'sharing',to_jsonb(r) from public.vehicle_capacity_sharing r where vehicle_id in(select id from vehicles)
+  union all select 'grants',to_jsonb(r) from public.business_capacity_grants r where vehicle_id in(select id from vehicles)
+  union all select 'motion_targets',to_jsonb(r) from public.demo_motion_targets r where vehicle_id in(select id from vehicles)
+  union all select 'world_control',to_jsonb(r) from public.demo_world_control r
+  union all select 'profile_control',to_jsonb(r) from public.demo_world_profile_control r
+  union all select 'profile_target',to_jsonb(r) from public.demo_world_profile_target r
+  union all select 'profile_jobs',to_jsonb(r) from public.demo_world_profile_jobs r
+  union all select 'profile_receipts',to_jsonb(r) from public.demo_world_profile_receipts r
+  union all select 'capacity_jobs',to_jsonb(r) from public.demo_world_steps r where target_key in(
+   select target_key from public.demo_world_targets where vehicle_id in(select id from vehicles))
+  union all select 'capacity_receipts',to_jsonb(r) from public.demo_world_receipts r where vehicle_id in(select id from vehicles)
+  union all select 'email',to_jsonb(r) from public.email_deliveries r
+  union all select 'access_email',to_jsonb(r) from public.access_email_deliveries r
+  union all select 'push',to_jsonb(r) from public.native_push_outbox r
+  union all select 'audit',to_jsonb(r) from public.audit_logs r
+   where organization_id='c36022ff-bf3e-432d-ae96-93d1537cf79e'::uuid or actor_user_id in(select id from actors)
+ )
+ select coalesce(jsonb_agg(jsonb_build_object('kind',kind,'row',value) order by kind,value::text),'[]'::jsonb) from rows
+$state$;
+
 do $scenario$
 #variable_conflict use_variable
 declare actor_id uuid;foreign_actor uuid;page_id uuid:='06b2d2f0-9914-4543-853b-72381b4999da';
  first_job bigint;first_lease uuid;second_job bigint;second_lease uuid;
  result jsonb;before_page jsonb;actor_meta jsonb;source_value text;capacity_id uuid;
  before_email_count bigint;before_access_count bigint;before_push_count bigint;
+ ordinary_coowner uuid:=gen_random_uuid();before_owner_state jsonb;before_coowner_state jsonb;forged boolean;
 begin
  perform pg_temp.assert_profile(
   (select enabled=false from public.demo_world_profile_control where id=1)
@@ -91,6 +146,33 @@ begin
   'select public.demo_world_execute_profile(%s,%L)',first_job,first_lease),
   'DEMO_PROFILE_ACTOR_REFUSED');
  update auth.users set raw_app_meta_data=actor_meta where id=actor_id;
+ -- Adding an ordinary current owner AFTER claim invalidates simulated writes.
+ -- Client-controlled fixture metadata cannot restore operator eligibility.
+ before_owner_state:=pg_temp.profile_isolation_state(ordinary_coowner,actor_id);
+ begin
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+   values(ordinary_coowner,ordinary_coowner::text||'@example.invalid',clock_timestamp(),
+    '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb);
+  update public.profiles set role='TRANSPORTER',active=true where id=ordinary_coowner;
+  insert into public.organization_members(user_id,organization_id,membership_role)
+   values(ordinary_coowner,'c36022ff-bf3e-432d-ae96-93d1537cf79e','OWNER');
+  foreach forged in array array[false,true] loop
+   if forged then update auth.users set raw_user_meta_data=jsonb_build_object(
+    'fixture_source','loadgistic','is_demo',true,'fixture_key','user-public-fleet-01') where id=ordinary_coowner;end if;
+   perform pg_temp.assert_profile(exists(select 1 from auth.users account join public.profiles profile on profile.id=account.id
+    where account.id=ordinary_coowner and account.raw_app_meta_data->>'fixture_source' is null
+     and profile.active and profile.role='TRANSPORTER'),'PROFILE_ORDINARY_COOWNER_FIXTURE_INVALID');
+   before_coowner_state:=pg_temp.profile_isolation_state(ordinary_coowner,actor_id);
+   perform pg_temp.expect_profile_denial(format(
+    'select public.demo_world_execute_profile(%s,%L)',first_job,first_lease),'DEMO_PROFILE_ACTOR_REFUSED');
+   perform pg_temp.assert_profile(pg_temp.profile_isolation_state(ordinary_coowner,actor_id)=before_coowner_state,
+    'PROFILE_COOWNER_DENIAL_CHANGED_STATE');
+  end loop;
+  raise exception using errcode='P2251',message='rollback ordinary profile co-owner fixture';
+ exception when sqlstate 'P2251' then null;
+ end;
+ perform pg_temp.assert_profile(pg_temp.profile_isolation_state(ordinary_coowner,actor_id)=before_owner_state,
+  'PROFILE_COOWNER_FIXTURE_ROLLBACK_FAILED');
  update public.company_pages set about='Drifted synthetic page' where id=page_id;
  perform pg_temp.expect_profile_denial(format(
   'select public.demo_world_execute_profile(%s,%L)',first_job,first_lease),
@@ -107,6 +189,28 @@ begin
  perform pg_temp.assert_profile(result->>'result'='REPLAYED'
   and (select count(*)=1 from public.demo_world_profile_receipts),
   'PROFILE_SHOW_REPLAY_WRITTEN');
+ -- A valid immutable DONE replay remains read-only with both controls disabled
+ -- and an ordinary co-owner. Owner/control checks apply only to new mutations.
+ before_owner_state:=pg_temp.profile_isolation_state(ordinary_coowner,actor_id);
+ begin
+  update public.demo_world_control set enabled=false where id=1;
+  update public.demo_world_profile_control set enabled=false where id=1;
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+   values(ordinary_coowner,ordinary_coowner::text||'@example.invalid',clock_timestamp(),
+    '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb);
+  update public.profiles set role='TRANSPORTER',active=true where id=ordinary_coowner;
+  insert into public.organization_members(user_id,organization_id,membership_role)
+   values(ordinary_coowner,'c36022ff-bf3e-432d-ae96-93d1537cf79e','OWNER');
+  before_coowner_state:=pg_temp.profile_isolation_state(ordinary_coowner,actor_id);
+  result:=public.demo_world_execute_profile(first_job,first_lease);
+  perform pg_temp.assert_profile(result->>'result'='REPLAYED'
+   and pg_temp.profile_isolation_state(ordinary_coowner,actor_id)=before_coowner_state,
+   'PROFILE_DISABLED_DONE_REPLAY_CHANGED_STATE');
+  raise exception using errcode='P2252',message='rollback disabled DONE replay fixture';
+ exception when sqlstate 'P2252' then null;
+ end;
+ perform pg_temp.assert_profile(pg_temp.profile_isolation_state(ordinary_coowner,actor_id)=before_owner_state,
+  'PROFILE_DISABLED_REPLAY_FIXTURE_ROLLBACK_FAILED');
  select job_id,lease_token into second_job,second_lease
  from public.demo_world_claim_profile(gen_random_uuid());
  perform pg_temp.assert_profile(second_job is not null and

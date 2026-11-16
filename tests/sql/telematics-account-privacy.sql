@@ -26,8 +26,10 @@ begin
   'protocol','gt06','protocolDeviceId',imei,'label','Synthetic privacy tracker','synthetic',true,'modelProfile','SYNTHETIC_GT06',
   case when as_company then 'ownerOrganizationId' else 'ownerProviderProfileId' end,anchor));device:=(result->>'id')::uuid;
  perform assign_telematics_device(owner_id,jsonb_build_object('deviceId',device,'vehicleId',truck,'expectedRevision',result->>'revision'));
- perform select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',20,
-  'manualLatitude',9.031,'manualLongitude',38.748,'expectedRevision','1970-01-01T00:00:00Z'));
+ -- Explicit retained history in this owned rollback fixture, not a new app update.
+ stamp:=clock_timestamp();
+ insert into telematics_location_sources(vehicle_id,source,precision_km,selected_by,selected_at,revision,manual_latitude,manual_longitude)
+ values(truck,'MANUAL',20,owner_id,stamp,stamp,9.031,38.748);
  stamp:=clock_timestamp();position:=jsonb_build_object('eventKey','privacy:'||device,'gatewayDeviceId',hardware_id,'protocol','gt06','protocolDeviceId',imei,
   'observedAt',stamp,'receivedAt',stamp,'valid',true,'latitude',9.031,'longitude',38.748,'speedKph',0,'course',0,'attributes',jsonb_build_object('ignition',false));
  perform ingest_telematics_position(ingest_digest,position);

@@ -4,6 +4,7 @@ import {spawnSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
 import {LANGUAGES,supportedLocale,translateMessage,translateFeedback} from '../src/lib/i18n/core.js';
 import {localizedUpdateLabel} from '../src/lib/i18n/update-label.js';
+import {loadEffectiveWebCatalogs} from '../scripts/lib/effective-i18n-catalogs.mjs';
 
 test('language preference is allowlisted and defaults to English',()=>{
  assert.deepEqual(LANGUAGES.map(l=>l.code),['en','am','om']);
@@ -48,8 +49,9 @@ test('capacity and location freshness labels keep the selected language at all a
   }
  }
 });
-test('all translated catalogs have matching keys and named placeholders',()=>{
- const catalogs=LANGUAGES.filter(l=>l.code!=='en').map(l=>JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${l.code}.json`,import.meta.url))));
+test('all translated catalogs have matching keys and named placeholders',async()=>{
+ const effective=await loadEffectiveWebCatalogs();
+ const catalogs=LANGUAGES.filter(l=>l.code!=='en').map(l=>effective[l.code]);
  const keys=Object.keys(catalogs[0]).sort();assert.ok(keys.length>200);
  const variables=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
  for(const catalog of catalogs){assert.deepEqual(Object.keys(catalog).sort(),keys);for(const [key,value] of Object.entries(catalog)){assert.equal(typeof value,'string');assert.ok(value.trim(),key);assert.deepEqual(variables(value),variables(key),key);}}

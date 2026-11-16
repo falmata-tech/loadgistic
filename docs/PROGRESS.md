@@ -1,13 +1,897 @@
 # Current work and release status
 
-Updated 2026-11-13 UTC. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-15. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active follow-up — exact bare mailbox policy
+## Active hosting request — November15 (CST)
+
+Current checkpoint: local3100 and the six capped essential services remain
+available; the last container snapshot is736MiB combined. Mixed planning,
+matching/privacy and actual desktop/phone/Expo reviews pass. Complete local
+`npm run quality` at e169fef exits0:1,594 tests pass, zero failures/skips,
+63.714s unit duration, followed by TypeScript. The focused PG15/Supabase run
+[43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+at that exact source passes security, all Capacity/Manual suites, pilot bindings,
+four races/four blocker waits and baseline restoration. Clone removal and
+Supabase cleanup pass. Primary verification is explicitly not performed.
+The final PR source still needs its full browser/build/release matrix; PR39
+remains draft and production remains unchanged. The follow-ups and this
+evidence checkpoint are being prepared for its next source push.
+
+The owner approved the limited hosted planning audit. Its private review packet
+proposes120 Capacity/19 assigned Preferred plans, preserving seven newer
+publications, seven prior rows, ten unassigned plans,13 reserved vehicles and11
+catalog evidence rows. Fourteen hosted canonical-coordinate differences are
+resolved; two invalid Area proposals are excluded. Two signature/MD5-only reads
+match the locally installed consumers exactly and qualify latest selection
+without returning hosted function bodies. The broader body read remains rejected.
+No hosted data/configuration write occurred. Private review-only forward,
+inverse and read-only verification SQL are being prepared offline; they are
+unexecuted and unrehearsed. The84-reference canonical guard uses the documented
+1e-6-degree tolerance, not exact-byte coordinate capture. Operation-specific
+backup, isolated restore, rehearsal and owner execution remain separate gates.
+Netlify previewf67 builds/archives pass; its runtime remains unqualified because
+the scoped preview handler reports SUPABASE_NOT_CONFIGURED.
+
+### Qualification history and retained failures
+
+Pushed draftPR39 candidatef67db02. Exact CI43754634231 passes the combined
+pilot rollback-only SQL (step41) but its new owner-race runner fails in about
+0.2s before any race, acceptance, denial or blocker wait. The console receipt
+does not retain the private failure stage/code, so no PG15 SQL/restore cause
+is established. Clone removal and Supabase stop both pass. Mobile boundaries
+and Operations proof43754634230 pass; downstream browser/container/Featured
+qualification is skipped/blocked, not green. Diagnose the preflight and retain
+typed failure evidence before another complete CI.
+The diagnostic-only repair now emits strictly allowlisted stage/code/category
+for each preflight boundary, with no raw message, path, account ID or SQL.
+Fake-Docker CLI checks prove failure precedes backup/setup/drop. All27 focused
+checks pass in11.616s; specs/source/workflow pass (124 scripts,13.454s). Guards,
+restore sequencing and time limits are unchanged. Its focused disposable CI
+lane is next; this is diagnostic preparation, not a repair of an established
+PG15 cause or a green replacement for the failed run.
+Diagnostic commit120cb7d was pushed only to the focused simulator branch.
+Operations43755913195 stops earlier in `demo-world-atomic-handover`: the held
+Manual-lane assertion gets DEMO_HANDOVER_CAPACITY_REFUSED because cap-public-103
+now legitimately imports as PARTIAL/Route after removal of size-based forced
+Empty status. Migration187's retained Empty baseline guard runs before223's
+hold. Pilot steps27/28 are skipped; the original preflight cause is still
+unknown. Both cleanup steps pass. Repair the rollback-only fixture's explicit
+Empty baseline for the hold test, preserving separate Partial refusal and
+unchanged-state evidence; do not restore a category rule or weaken validators.
+The repair is confined to the two rollback-only handover suites and their
+fixture contract tests. It proves the actual Partial refusal first, then stages
+only two exact historical Empty/100% rows for the separate held-lane/replay
+checks. Audit and Featured-day facts join the denial snapshot. All26 focused
+checks pass in884.8ms and source/diff checks pass. Read-only inspection of the
+owned PG17 clone confirms installed guard order and ACLs, controls off and no
+handover jobs/receipts, but its retained historical B record is still Empty.
+No clone is created or altered and no SQL replay is claimed against that stale
+fixture; the next fresh focused CI must exercise the actual repaired SQL.
+Fresh d9b1db2 Operations43757362926 passes the repaired Manual suite21 and
+pilot rollback-only SQL27. Owner-race28 now identifies the actual pre-race
+failure: PREFLIGHT_RESTORE_ROLE / PILOT_RACE_PROCESS_FAILED /
+authentication-failed. The strict client/server major check already passes;
+no transport/version repair is indicated. The in-container supabase_admin
+process lacks its local password. Both cleanup steps pass. Prepare the same
+checked local credential for every admin query/dump/restore without exposing it
+or changing roles; preserve all target, version, backup and timeout guards.
+The same-role repair now wraps every connected admin query/dump/restore in
+one validated in-container command. Its existing POSTGRES_PASSWORD becomes
+PGPASSWORD only there; no password reaches host memory, argv or logs. Missing
+credentials refuse before a client starts. All31 focused checks pass in6.209s,
+including real-shell fake-client quoting/negative checks; independent review and
+spec/source/workflow checks pass (124 scripts,11.906s). One authorized read-only
+PG17 query confirms exact clone/current role through the actual wrapper, with
+no data write. It does not prove the pending PG15 authentication/race/restore.
+The old unmeasured primaryUnchanged claim is replaced with an explicit
+primaryVerification:not-performed; exact clone arguments remain tested.
+Focused ea43c73 run43758528135 passes Manual/pilot SQL and admin authentication,
+then refuses BACKUP_ARCHIVE_VALIDATE / PILOT_RACE_GRAPHQL_ACL_REQUIRED before
+fixture writes or races. The exact-match ACL entry count is not1; that diagnostic
+alone does not establish zero versus unknown/duplicate shape. Both cleanup
+steps pass. An independent empty PG15.8 probe using a cached official image,
+network disabled, capped resources and fresh temporary data completes in8.847s
+and is removed. It confirms extension enrollment records current initial ACLs
+and a second dump can omit an unchanged ACL. It also proves a counterexample:
+matching current/initial ACLs alone does not ensure fresh CREATE permissions.
+The pending narrow repair must pin owner/current/initial metadata, refuse any
+unknown/duplicate shape, prove same-role/schema recreation on the disposable
+clone before fixture commits, and verify ACL/owner before enrollment plus final
+body/ACL/membership equality. Keep primary capture read-only. The generic
+plpgsql dummy probe is not full Supabase restoration qualification.
+The completed helper keeps primary capture read-only, requires exact owner and
+initial-ACL facts for the zero-entry shape, and runs a harmless same-schema/role
+creation proof only on the verified disposable clone before fixture commits.
+It checks recreated owner/body/zero-mode ACL before enrollment and full equality
+afterward. All41 focused checks pass; an actual cached PG15.8/pg_graphql probe
+passes one-entry restore, zero-entry redump/proof/restore, default-drift and
+wrong-database refusals with zero leftover probe functions/fixture commits.
+Receipt `pg15-helper-integration-20261115-a/receipt.private.json` SHA256
+2f3c84dff7e9d9f4d07f6537f00d79c17c097f23474663240526d43d11885d00 binds
+helper SHAe1a7ac31730010a18928983f3654513d99c0d3214ef25f0f9629d29fb9011827.
+The owned container/fresh data are removed. Proof-attempt status distinguishes
+an attempted refusal from a probe never run. Fresh focused e169fef run43765684621
+then passes the actual Supabase scenario: step21 Capacity/catalog/Manual/owner
+suites, step27 rollback-only pilot bindings and step28 four races/four actual
+waits, one accepted provision/report each and two denied provision/report each.
+The zero-entry archive creation proof matches and baselineRestored is true;
+primaryVerification remains not-performed. Both cleanup steps pass. This clears
+the focused PG15 blocker; the full final PR matrix remains a separate gate.
+
+Netlify builds the exactf67 preview6afa0cf4576519d1f022ab30 successfully in99s.
+Its installed postBuild guard checks all11 final function ZIPs: root layout and
+nodeBundlerNone true, privateEntries0; one edge function is also deployed.
+Actual Chrome public entry shows server exception digest2221522590. The scoped
+preview Next handler log identifies SUPABASE_NOT_CONFIGURED. Packaging passes;
+preview runtime is unqualified. Production-only credentials were not copied or
+configuration changed. The deploy list still shows production520328b at
+6af6ac945eb1cff1d55e577c. No production publication or simulator activation.
+Three completed task-created review tabs were then closed, including the two
+local pages Chrome labelled1.8GB/2.8GB; unrelated tabs/apps remain open. The
+kept local3100 server returns200/ok with the expected local Supabase adapters
+in836ms after cleanup. This is observed cleanup/health, not an OS-memory delta
+or a resolved explanation for earlier latency.
+
+Local gate components now pass:45 specs/42 features,774 source files,124
+workflow scripts, all1,572 unit/contract cases (zero skips,303.865s), TypeScript,
+nine focused keyboard cases and two desktop/phone keyboard E2E cases without
+retries (97.567s). The complete quality attempt passed its checks/tests but
+exited2 on two new component typing errors; the correction follows existing
+React-shim conventions. A saved transpiled-runtime AST comparison is identical
+before/after, TypeScript then exits0 and the nine keyboard cases pass in4.704s.
+Reuse unchanged runtime/E2E evidence; exact-source CI must still run its complete
+quality command, PG15 database scenario, build and browser matrix before this
+candidate is release-qualified. No hosted write or activation is included.
+
+The first full local gate found17 failures (1,550/1,567 tests passed, zero skips,
+335.802s; specs/source/workflow passed with124 scripts). Do not treat the earlier
+focused pass count as full qualification. Failures group into obsolete small/
+observed-location proximity assertions, real Area centers used as boundary
+vertices, six rewritten Capacity rows serving as exact simulator catalog
+evidence, and stale public fleet route copy. Source repair preserves all11
+catalog evidence rows/20 phases, uses actual enclosing settlement rings with
+honest radius and Route fallback, retains canonical observed locations, and
+derives seven public fleet descriptions from their saved Preferred plan while
+preserving the exact profile scenario page/Preferred baseline. All33 focused
+repair cases pass in8.245s, including Area, market/fixture/copy and complete
+catalog/planner checks. A fresh LOCAL-only correction then rehearsed24 Capacity,
+five Preferred and seven page updates with four actual denials and exact clone
+rollback. The namespace guard was corrected to the shared trusted pilot marker
+before application; the clone test temporarily counted one actual marker,
+denied it and restored zero. SQL7c0392963d39b2df7326448788ca37aa6f16a85fa880b22943c494207dfd3a72
+was applied once with a durable intent. Independent readback confirms all36
+rows, unchanged availability/unrelated facts and untouched other rows, catalog11,
+current drivers,85 positions, one receipt and both controls off. Receipt
+`planning-repair-apply-v3-1794769211428-receipt.private.json` remains private;
+the exact inverse is prepared, not applied. The actual browser/Expo review is
+complete; final matching and local gate components pass, with CI pending. During the
+review, Gateway401 returned31.5ms and the database had no observed lock wait.
+Those facts did not identify the intermittent local API delay's cause.
+One controlled owned Next restart then preserved cache/env/data, stopped the
+optional Expo preview and recovered the expected local adapter. Startup took
+10.5s; API compilation15.6s and root26.5s. The one correct-capacity API check
+returns200/one exact record in2.840s. This is unconfirmed dev-request/HMR-state
+recovery, not a proven SQL/cancellation repair. Actual Pixel9 review now shows
+the corrected Adama Area's Wenji/Welenchiti/Mojo boundary and preserved age.
+A native Profile click opened the external call-app prompt; it was cancelled
+before FaceTime opened. Actual keyboard focus/activation then opened Profile.
+Desktop and Pixel9 Chrome review at3100 verified the selected HyundaiH-1's
+saved Area, enclosing polygon, all three boundary labels, age and Vehicle
+details, followed the actual Profile link, checked its corrected headline and
+About text at both widths, and returned to the saved map selection. Earlier
+unchanged long-van, keyboard/canonical-filter and anonymous private-data checks
+remain separately recorded; these observations do not claim native-device QA.
+The single-worker Expo web preview at8084 verified the same saved Area and
+Vehicle details on Pixel9, the corrected Profile description, reload and return
+to the selected map record. Its first profile request took15.158s during an
+11.2s endpoint compile and showed the visible timeout. An AX click did not send
+a request; focusing Try again with Tab and pressing Return did, recovering in
+8.086s. Reload then completed in16.197s without another retry. Existing four
+development warnings remain. The owned Expo listener was verified and stopped
+after review; Next3100 remains running. The subsequent bounded API replay passed
+three cases before a15s request timeout. A bounded capture observed one active
+PostgREST query, no blockers or lock waits; it did not establish the cause.
+With Expo stopped and the database idle, one controlled complete replay passes
+all20 cases in57.754s: five real saved-plan matches and15 reverse/conflicting
+AND/status/private/anonymous denials. Receipt
+`planning-api-final-v3-1794771186245-receipt.private.json` binds the final saved
+snapshot and applied repair. The partial failure receipt remains separate;
+neither timeout nor assertion was relaxed, and no SQL repair is claimed.
+Final saved-snapshot counts for configurations named Mini, van, Pickup or Light
+are112 vehicles:87 Routes/25 Areas,30 routes under40km and27 over100km. Preferred
+plans are21 Routes/nine Areas. These exact installed-snapshot counts supersede
+the earlier source-derived113/88/31 counts below; distances are point-path sums,
+not measured road mileage. All saved statuses remain unchanged by the final
+planning/copy-only correction.
+No hosted correction is applied. Automatic approval review rejected per-record
+hosted planning/mapping access and a manifest-joined aggregate; the separate
+hosted audit is restricted to cohort-level aggregate queries without that
+manifest. Exact hosted correction preparation is blocked by that access scope.
+
+The follow-up to28acf38 contains the independently reviewed ownership, planning
+and keyboard repairs below. At this recorded pre-push checkpoint, bbcc3dd is the
+remote draftPR39 head. Its CI43730171962
+finished with failures in browser shards2/4 (`fleet-onboarding.spec.ts`, desktop
+line523/declaration422, and `tracking-route-map.spec.ts`); the other shards and
+validation/mobile/container/Featured checks passed. Operations proof43730171992
+passed. Preserve these failures and diagnose the exact cases before another CI.
+
+Local follow-up preparation adds atomic migration227 for the existing
+production-pilot namespace, a pure binding plan and a bounded server-selected
+movement target list. It excludes fleet-03/06/08, which currently belong to
+independent providers rather than their originally authored fleet scopes;
+eligibility does not restore old owners. Actual rollback-only SQL now passes on
+the owned `loadgistic_pilot_ci` clone: unchanged public/auth/source/consent facts,
+ten function metadata checks, seven exact virtual devices and reports,
+three excluded targets, owner/driver/co-owner/body-drift refusals, replay denial,
+source-choice preservation and unchanged engine authority. Controls stop and
+history is retained before rollback. The combined rehearsal also applies three
+actual Capacity phases. It discovered the global activation guard's old local
+Tracking prerequisite; read-only hosted inspection confirms that example absent
+and both reservations disarmed. The exact pilot-only activation mode preserves
+all other Tracking functions and existing outbox checks, denies arming/forbidden
+notifications and leaves every notification queue unchanged. Both CI workflows register this bounded
+isolated test. No hosted migration, setting, source or control was changed.
+
+The owner's additional request is realistic planning diversity independent of
+the simulator: all smaller vehicles are ordinary transport vehicles and need a
+mix of local and longer routes/areas and actual Empty/Partial signals. Audit
+confirms every mini/van/pickup/light-truck route in the credential-free fixture
+is under40km, with no route over100km. The old geographic generator selected a
+`DELIVERY` catalog by size and the importer forced larger vehicles to Empty/100%.
+Local source now removes those category rules. An explicit143-record discovery
+manifest preserves existing sharing and location privacy independently of size;
+saved availability/load facts are retained. Geographic helper choices now mix
+city/local/regional plans for every configuration. Exact authored simulator and
+handover/private fixtures are reserved inputs, not size restrictions. Their GPS
+courses remain separate from the commercial plan.
+
+The source-fixture refresh command is preview-only unless `--write` is passed.
+Its first preview refused unresolved Chamuk before writing; selection now uses
+the existing verified settlement catalog without inventing substitute points.
+The refreshed source is idempotent. A protected snapshot and exact157-row patch
+were rehearsed with rollback on the clone, then applied only to local marked
+synthetic records:130 capacity plans,27 Preferred plans and16 Partial signals
+previously overwritten by the larger-vehicle rule. Scope/current-row drift is a
+hard refusal. All other fields,13 reserved plans, privacy, location capture
+times and simulator history are preserved (85 positions and one Capacity
+receipt remain; both lanes disabled). The exact157-row restore is also rehearsed
+in the isolated clone and verifies full original-row equality before rollback.
+
+Saved local smaller-vehicle distribution:113 vehicles,88 Routes/25 Areas;
+31 routes under40km and27 over100km, compared with104 under40km and none over100km
+before. These are point-path sums, not road-mileage claims. Twenty actual local
+API requests pass five route/area matches and15 reverse-direction, conflicting
+AND/status, private-data and anonymous account denials. All103 required canonical
+planning references exist in the running local place catalog. Forty-four focused
+fixture/matching/adapter/binding/diagnostic tests pass; spec/source/workflow checks
+pass with122 operational scripts, actionlint1.7.12 and ShellCheck0.11.0. The
+original fixture bytes and exact before/after receipts remain private.
+
+Independent review then found two new PILOT qualification blockers (NR-86):
+an inherited fleet-provision OR alternative bypassed the new co-owner helper,
+and motion's old KEY SHARE/count proof did not serialize a concurrent co-owner.
+The corrected227 keeps old alternatives restricted to LOCAL provenance, takes
+strong exact-org/member locks before profile/device/vehicle locks at each first
+callable boundary, and permits new pilot synthetic devices only on the reviewed
+direct transport/profile/protocol identity. Ordinary real enrollment is unchanged.
+Final combined SQL and six focused binding tests pass, including direct public
+co-owner/wrong/missing-protocol refusals with unchanged device/audit facts.
+Four real races/observed blocker waits pass: one provision and one report accept
+before the waiting co-owner; owner-first and subsequent operations deny twice
+per lane without changing saved state. The owned clone baseline is restored and
+verified. Both CI paths register the guarded race runner and cancellation cleanup;
+workflow validation passes123 scripts. These ownership proofs apply to PILOT,
+not the unchanged LOCAL branch. No hosted operation occurred.
+
+Final runner review found and fixed two additional qualification gaps before a
+push: CI uses PostgreSQL15 rather than the Mac's17, and `DOCKER_CONTEXT` overrides
+`DOCKER_HOST`. The runner now pins the effective Unix endpoint and immutable
+container ID, supports matching15/17 clients and shares the existing exact PG15
+GraphQL wrapper/deferred-ACL restore path. Twenty-two guard/restore-order tests
+and workflow validation for124 scripts pass. The single actual PG17 rerun
+records all four races/four waits and expected accepted/denied counts, but its
+baseline restore status is false (`.local/pilot-owner-races-MZNVQg`). Diagnosis
+finds the generic30s subprocess limit was incorrectly used for a full catalog
+restore; no SQL error/fingerprint mismatch is established. The correction reuses
+the existing clone helper's120s catalog-restore limit for that operation only;
+security/lease bounds and the three-minute CI wrapper remain. The owned clone's
+targeted saved fingerprint check now passes with no changed fields and no active
+restore session (`.local/pilot-restore-check-Fr0OS6/receipt.json`). The primary
+remains untouched. Retain the failed four-race receipt and separate targeted
+restore proof; integrated PostgreSQL15 runtime qualification remains for CI.
+
+The three cases named by CI's failed shards pass unchanged against the local
+services in2.5minutes, including both driving-provider signup/publish/cleanup
+paths and authorized/revoked Tracking proof. The CI-only causes remain unproven;
+new allowlisted stage/code/status diagnostics retain the next failure without
+customer data, relaxed timeouts or dropped assertions. Their focused replay
+passes all three in1.8minutes; the pre-keyboard TypeScript check also passes.
+The first actual Chrome attempt was blocked by `cgWindowNotFound`; the owner's
+subsequent go-ahead allowed review to resume. Actual desktop and Pixel9
+412×924 views show the van's five-stop Addis Ababa→Assosa plan, separate honest
+location/capacity ages, the Area example's five real boundary settlements,
+vehicle details, reload retention and the anonymous private-view sign-in boundary.
+Screenshots and interactions are captured in the native-CUA conversation; no
+call, account, source or location update was submitted.
+
+Review also reproduced a real keyboard bug: Arrow Down/Enter submitted the
+surrounding form before selecting a suggestion. The shared place input now has
+active-option/ARIA state, keyboard selection, Escape recovery and stale-result
+clearing, preserving pointer selection and layout. Nine focused component
+tests and both desktop/phone E2E pass (42.5s), using the actual first catalog
+identity rather than assuming a built-in ID. Actual desktop Chrome selection,
+Escape/reopen and explicit apply pass with persisted canonical query values.
+The actual Pixel9 keyboard journey also passes: both canonical places remain
+selected in the open form, Escape/reopen works, and explicit Show vehicles saves
+the query and shows the matching van. One earlier unfiltered map request returned
+503; the subsequent filtered request and saved result recovered. A clean
+incognito comparison did not reproduce the normal-profile AbortError messages;
+catches and a detached-observer counterfactual do not justify an application
+suppression/fix, and no particular observer is attributed. The503 cause is
+unconfirmed: the route collapses multiple backend failures to this status.
+Actual Expo web on8084/Pixel9 passes long-route and Area selection, all five
+route stops/boundary settlements, vehicle details, truthful source/age/privacy,
+close/return paths and Area selection after reload. Its existing four development
+warnings remain visible; this is not native background/device qualification.
+The initial unbounded-worker
+process was blank at87.2% CPU/8.9% memory; the verified owned process was stopped
+and restarted using the documented single-worker command, without cache/reset
+or dependency changes. The initial single-worker bundle took121.2s during high
+system load; a later warm bundle took0.867s. Once settled, the owned process
+measured496468KiB RSS/0.4% CPU. It was then stopped and8084 confirmed closed.
+The local web server stays on3100. Final actual Chrome review also focuses the
+empty Area combobox and verifies that one Escape closes the filter dialog and
+returns focus to Filter. That full quality attempt's failures and follow-up are
+recorded above; current full replay/release gates remain pending.
+The web/API is healthy and the six capped Docker containers measure764MiB in
+this warm sample. No new push/CI or release is claimed before the actual review. Hosted demo
+data and production remain unchanged.
+
+Read-only Netlify review now confirms the existing credit-based Pro plan and
+disabled auto-recharge; exact balance/usage stays in private local receipts.
+The owner requested only a few demo hours daily with very limited credit use.
+The candidate now bounds both native schedulers to09:00–11:00 Addis Ababa
+(06:00–08:00 UTC), rechecks hours in dispatch/background/application code and
+ends motion's next due report at the closing boundary. Saved records, privacy,
+age labels and current controller history remain intact. Thirty-four focused
+schedule/adapter/controller and relay checks pass without skips. The full replay
+passes all1,539 tests without failures/skips in170.063s, plus spec/source/workflow
+checks and TypeScript. Its first run retained one unchanged relay subprocess
+timeout at the existing one-second bound; the focused replay passes unchanged.
+An intervening restricted-shell run denied local sockets and is infrastructure
+evidence, not an application regression. Exact-source CI is next; no deployment.
+The final workflow supplement also passes with pinned ShellCheck0.11.0 present
+(117 operational scripts, actionlint1.7.12); the first full replay's PATH lacked
+that optional shell analyzer. No gate or timeout was weakened.
+
+Before this hours revision, exact36ba420 passed all16 required PR jobs in
+CI43698414595 and separate Operations proof43698414651. Actual Netlify preview
+6af97855d4747cfd94e846bf at that head deployed11 functions, verified all11 final
+ZIPs with zero private entries and passed scanning2,314files. It is preview
+packaging evidence, not a production runtime or the revised schedule artifact.
+The source-unchanged combined local run accepted one Capacity phase alongside
+18 motion updates. An open actual Chrome map then received three fresh source
+observations through normal polling with selection, panel and camera preserved.
+These later receipts and exact hashes are linked in draftPR39 and private local
+checkpoints without invalidating the qualified source through a status-only push.
+
+Current hosted read-only inspection: Loadgistic is ACTIVE_HEALTHY, Supabase Pro,
+ledger220, no registered gateway/device/position or motion target, no Capacity
+steps; both controls are disabled and never activated. Logical database size is
+43,183,251bytes, not a disk-volume/WAL quota measurement. Existing two security
+WARN categories remain visible; no advisor/configuration repair is claimed.
+Production still publishes520328b. The owner-requested Docker Desktop restart
+completed successfully. All six essential local containers resumed; Storage
+became healthy after startup without a reset or another restart. Existing caps
+persisted: database1.5CPU/1.5GiB, other services0.5CPU/512MiB each. One settled
+sample totals about565MiB container memory. Local3100 health returns ok against
+the retained Supabase records. Local external-auth/email/scanner production
+readiness blockers remain expected; this is development readiness only.
+
+Read-only hosted cohort preflight finds zero matches for the candidate's ten
+local fixture vehicle IDs and zero identities marked with its `loadgistic`
+fixture source. This is not hidden by RLS: the inspected role bypasses RLS and
+sees146 vehicles. The separately approved production-pilot namespace contains
+152 marked identities; all ten deterministically mapped pilot vehicles exist,
+but fleet-03/06/08 fail the candidate's exact active-owner provenance predicate.
+All ten have no explicit source selection. Pilot fleet-02/06 remain PUBLIC,
+where the authored Capacity targets require BOTH; the current statuses also
+need exact scenario bootstrap review. The installed five Capacity target IDs
+match no hosted vehicle. No names/emails were used to grant authority, and no
+hosted identity, target, assignment, sharing or source was changed. Deployment
+and activation require a tested exact pilot binding/eligibility plan in addition
+to the existing backup, security, CI and owner operation review.
+
+Native Chrome hands-on review now reaches the local app after Docker recovery:
+at `http://127.0.0.1:3100/`, open Search, find BlueLine, choose Show vehicles on
+map, select its GPS Demo marker, read Vehicle and Approximate location, close
+the dialogs, switch to Pixel9 emulation412×924, open location, reload and reopen
+the same saved GPS Demo attribution. Desktop and phone screenshots are retained
+in the computer-use conversation; controls and dialog content fit, and normal
+desktop view is restored with the server running. No call, consent, source or
+record mutation was made. Earlier automated private/permission/native receipts
+remain separate; this hands-on session does not cover signed-in Phone or Expo.
+One initial navigation/HMR session exposed an unhandled AbortError pointing to
+the feed's request-abort cleanup. The existing loader catches cancellation;
+after reload, console has zero messages and the saved map task succeeds, but the
+original cause is not established. Keep this finding open for a bounded actual
+navigation reproduction; do not claim a repair or suppress ordinary errors.
+All30 existing feed refresh/cancellation/denial/recovery hook tests pass unchanged;
+they do not substitute for reproducing this actual Chrome observation.
+
+The owner selected the Netlify-only demo simulator. Capacity and fictional
+GPS/Phone movement are one experience with separate guarded commands and controls.
+The new minute scheduler dispatches one bounded background window; the existing
+Supabase database owns the window, due times, leases and accepted history.
+No VM or running Traccar service is required for this selected demo. Real tracker
+reception and GT06 decoder qualification remain separate. Direct events carry
+private `NETLIFY_DEMO` provenance and the existing public Demo label.
+
+Migration226 and the signed adapter are implemented locally, default-off.
+Two actual local handler/database rehearsals each saved18 updates (16 GPS and
+two Phone), with zero failures; the one course lacking qualified geometry refused.
+The final window took32.622seconds with Traccar stopped. Other Capacity records
+were unchanged and cleanup restored disabled controls, stopped leases and an
+empty active window. These receipts exercise real SQL and handlers with injected
+local configuration, not the Netlify provider runtime or production API adapter.
+Rollback-only provisioning and window/permission/replay/stop SQL suites pass;
+fresh setup preserves every existing source choice, including Manual, and creates
+no consent. Twenty focused adapter/auth/workflow checks pass without skips.
+Actual Chrome automation passes four desktop/phone checks: saved GPS reaches the
+public map with Demo source attribution and survives reload; the private Phone
+target stays absent publicly, rejects anonymous account access and remains
+visible with its saved Phone source to its authorized driver. No source or
+capture timestamp changes during these reads. Initial cold compilation exhausted
+the test budget and one original test incorrectly expected this private target
+publicly; both failures are preserved. A local unfiltered RPC diagnostic then
+returns15 rows in722ms without an SQL error; the earlier server error's cause
+remains unconfirmed. Chrome computer controls separately time out twice, so
+hands-on review was not claimed from those automation/images. The later native
+Chrome Netlify plan and preview readback is recorded above.
+Two additional desktop/phone checks wait for the private map's actual Leaflet
+geometry and loaded tiles before capturing it; both pass. The strict native
+translation audit passes796/796 fixed messages and the actual one-worker Android
+Hermes/source-map export completes. Existing unchanged mobile426-test/type/lint
+receipts at e21853c remain applicable; no signing, install or Play release occurred.
+Migration226's four final local function bodies match source, its local ledger
+is reconciled and the unchanged installed-database security gate passes.
+Real two-session window/stop testing passes three races with three actual
+PostgreSQL blocker waits. Rollback SQL also checks direct-only retention scope.
+
+The initial full quality run passes1,535/1,536 with zero skips; the unchanged
+mail-parser five-second process guard times out at5.047s. Its one isolated replay
+passes in1.750s without increasing the budget. Preserve the failed full receipt;
+it is not a green full gate. The controlled full replay then passes all1,536
+tests with zero failures/skips in188.403s, including the parser in1.620s, plus
+spec/source/workflow checks and TypeScript. Heavy Android/browser work had
+finished; CPU contention is a hypothesis for the earlier timeout, not a proven
+cause. Exact-source GitHub CI, hands-on review, account-plan readback and the
+reviewed production SQL/configuration/backup/restore remain pending. See the updated
+[hosting plan](operations/DEMO-GPS-HOSTING.md). No hosted write or purchase occurred.
+
+The following protocol-stack rehearsal is an alternative transport's historical
+evidence, not proof that direct Netlify events passed a decoder:
+
+At e21853c, all three existing bridge/movement/Capacity container images build
+on this ARM64 Mac; disconnected worker-image preflights remain disabled.
+The46 hosting/topology/protocol/credential checks pass with zero skips.
+A credential-free47-entry source archive and immutable local build receipts
+are in `.local/simulator-host-20261115/`; x86 artifacts and hosted runtime are
+unqualified. The separate local project `loadgistic-telematics-review-20261115`
+preserves the old gateway volumes. Its actual fictional GT06 round trip passes
+decoding, a synthetic Locate acknowledgement and durable outbox checks. Existing
+guarded provisioning registers only ten fixed fictional devices. An explicit
+synthetic personal-driver command selects Phone; other exact targets select GPS.
+
+A two-target120-second local run saved fresh GPS through the bridge/application
+database and public Capacity API with Demo provenance intact. It paused after
+one tick per target with `DEMO_MOTION_REPORT_DENIED`; HTTP409 requests took
+8–9seconds against the unchanged5-second capture guard. That timing is consistent
+with queuing but actual capture age was not logged, so the cause is not conclusively
+established. A warm controlled replay completes four GPS and four Phone ticks,
+stops normally, and readback confirms both leases OFF. This is a bounded local
+receipt, not sustained hosted timing, all ten targets or hands-on map acceptance.
+The first premature bootstrap and protocol invocation are retained; zero gateway
+users were confirmed before the readiness retry. The local guide now waits for
+health before bootstrap. No production SQL/settings/merge/deployment, host
+resource or payment was made. Existing full release and owner authority gates
+remain required.
+
+## Active Mac continuation — November14 (CST)
+
+The owner resumed local development and asked to reduce local resource use,
+then continue unfinished work. Candidate checkout `.local/scenario-dev` uses
+`feat/scenario-local-review` from remote handoff0df8590. The original checkout,
+its generated metadata/user settings and old local database history are preserved.
+The old local stack had completed simulator history and enabled controls, so it
+was stopped without deletion. Fresh local project `loadgistic-review-20261114`
+owns the normal5532x ports and has the exact migrations through225, security
+gate and verified synthetic fixtures. Its controls remain disabled/unarmed.
+No paid development branch, hosted mutation, merge, deployment or activation occurred.
+
+Only six essential local containers run, with per-service CPU/memory limits;
+web3100 uses Node22.16.0 and its own Turbopack root. Expo8084 uses Node24.18.1
+and one Metro worker, stopped after review. Old inactive Next caches freed
+about2.8GB; the original11GB mobile install remains preserved and the candidate
+installed its exact lock in about634MB. See [LOCAL_SETUP](LOCAL_SETUP.md) and
+the candidate's ignored `.local/README.md` for restart and return instructions.
+
+Actual Chrome/database review found the selected publication stayed at80%
+after a real60% save. The link kept the old Capacity ID and map detail/camera
+state used that changing ID. The local repair resolves the current same-vehicle
+publication before the unchanged authorized projection and preserves the open
+panel/camera using vehicle identity. Exact lookup still checks supplied vehicle
+identity, all filters and current permissions. No schema or grant change.
+
+Focused helper/feed checks pass34/34. Chrome phone and later diagnostic desktop
+pass real80→60, original-link reload and private removal; Expo390×844 passes the
+same flow. The public Demo label was inspected in actual Chrome using the saved
+Sheger fixture. The strict browser fixture preflight passes one/zero-skips.
+Screenshots and sanitized evidence are under the candidate's ignored
+`.local/review-evidence/`. Initial desktop waits, a private-removal timeout,
+Storage startup failure and the failed first quality gate are preserved.
+These isolated passes do not diagnose those earlier runtime failures or qualify
+repeated reliability or installed Android.
+
+The first quality run found the macOS native-runner expectation and temporary
+path fixture issues, two missing renderer-helper bindings, and sandbox-blocked
+loopback relay/GT06 tests. Fixture repairs retain native target refusal and all
+security assertions;25 targeted checks pass. The full `npm run quality` now passes
+with Node22, Python3.14 and authorized loopback access:1,525 tests, zero failures
+or skips, plus spec/source/workflow and root TypeScript. Unit runtime364.764s.
+Mobile Node24 types/lint and426 tests pass with zero failures/skips. The final
+web replay passes both desktop and phone with zero retries (33.5s/32.1s).
+A separate390×844 broker-owner/staff journey passes current private publication,
+old-link API readback, exact grant revocation and clearing both open selections;
+anonymous account reads return401 and public discovery stays empty. Its first
+workflow assertions passed but provider teardown failed on an audit-log foreign
+key. Exact remnants were removed after scope checks; corrected teardown and the
+complete replay pass47.6s. Readback restores154 users/143 vehicles/9 organizations
+and zero task-owned provider remnants; world/motion/Tracking remain off/unarmed.
+Receipts and the guarded local harness are in `.local/review-evidence/` and
+`.local/private-refresh.spec.ts`; the maintained public regression is
+`tests/e2e/capacity-live-refresh.spec.ts`. Metro remains stopped, web3100 running.
+
+The next local source-control checks exposed two different issues. The web
+fixture stored a legacy Manual choice without a historical report; its map
+correctly says Not set while the editor retains that choice. Its assertion now
+checks exact saved source/revision after Cancel and reload. Expo's installed web
+renderer omitted checked state for the source and accuracy radios; explicit
+ARIA checked/disabled state now supplements native state without changing
+appearance, consent, API or saved-source rules (NR-21/37).
+
+Maintained actual Chrome tests pass the web Manual→Phone journey48.2s,
+Expo390×844 journey31.7s and desktop first private phone fix23.6s, zero retries
+or skips. Both source-switch tests deny browser location first, prove zero
+source/report writes and unchanged database facts, then grant the synthetic
+browser fix and complete the real save/reload. Provider override and unassigned
+vehicle denials remain covered. Expo also checks accuracy-only edit/Close,
+mutually exclusive accessible state and restored saved Phone source. Web's six
+and mobile's11 focused tests pass; full mobile426/426 passes19.654s, with types
+and lint. Root spec/source/workflow and TypeScript pass. The earlier1,525-test
+root quality receipt covers the preceding checkpoint; it is not a new exact-source
+full gate for this small mobile accessibility repair.
+
+Sanitized logs and failed first runs are retained in `.local/location-review/`.
+The source/denial/saved phone screenshots were inspected. Native Chrome control
+opened the local Expo sign-in page but selected the existing user process instead
+of the separate headed test browser; the browser access host was unavailable.
+The diagnostic headed journey passed automatically after its review pauses were
+released with explicit **not reviewed** receipts. That is not completed hands-on
+desktop/phone editor review. Actual Android permissions/background movement,
+configured GPS ingest and private Expo permission transitions remain unqualified.
+Scoped cleanup restores154 users/143 vehicles/9 organizations; world/motion and
+Tracking controls remain off/unarmed. Metro8084 is stopped; web3100 is running.
+
+Next: finish hands-on source editor review when the correct browser process is
+available, configured GPS/native-only journeys, private Expo permission
+transitions and the full exact-source candidate CI.
+Hosted/device/activation gates remain separate and unfinished. No production
+build, package, merge or publication is claimed by this local checkpoint.
+
+## Preserved owner handoff instruction — November14
+
+The owner has stopped environment setup and requested that all existing changes
+and continuation details be committed/pushed for another agent. Start with the
+current [CLOUD_HANDOFF](CLOUD_HANDOFF.md); the old handoff is archived separately.
+No resource/cost prompt, environment recovery, merge, deployment or activation
+is part of this handoff. Current executable checkpoint is28afe43f; subsequent
+commits through this handoff only reconcile documentation. All implementation
+changes are already on `feat/scenario-driven-demo-signals` on GitHub.
+
+## Verified implementation checkpoint — isolated fixtures and native concurrency
+
+The owner approved continuing with Netlify Capacity scheduling and an isolated
+managed development backend, subject to safety. New source adds a bounded
+development fixture preparer and real two-session Capacity/profile qualification.
+The complete local quality gate passes1518/1518 tests with zero failures/skips,
+plus spec/source/workflow/type checks. Exact-source native
+[run43614507599](https://github.com/falmata-tech/loadgistic/actions/runs/43614507599)
+passed on attempt1 at28afe43f. Its real database receipt confirms10 races,
+12 observed waits,10 exact denials,2 accepted commits and2 disabled read-only
+replays. Clone recreation, subsequent normal-signup isolation, final cleanup and
+Supabase shutdown all passed. This qualifies the selected NR-83/84 Capacity/
+profile races and competing ordinary-profile save. Full PR/main CI, actual app
+review and hosted installation remain separate; immutable history was not edited.
+
+The fixture preparer checks exact branch metadata/keys, Auth and named core-table
+emptiness, seven expected private Storage buckets/empty roots and readable
+catalog status. Explicit apply needs the exact development ref and a new private
+receipt, creates only three marked demo actors/two trucks plus one normal signup/
+truck, and uses current lifecycle commands. It resets/deletes nothing and
+activates no worker. Owner-only independent controls remain a separate read-only
+provider inspection before apply; the service key's ACLs are preserved. Focused
+Node22 tests and independent review pass. No hosted fixture setup occurred.
+
+The latest native branch-cost confirmation expired. Supabase's exact organization
+quote is $0.01344/hour before other usage charges; no development branch was
+created and no cost was approved. Do not repeatedly renew the confirmation or
+incur cost for an interactive review before a usable preview route is established.
+
+Connected user Chrome is available. A ready task-owned localhost probe was
+unreachable from that browser, a separate executor command and the Cloud desktop
+browser. Both probe servers were stopped. The approval policy rejected a
+host-level socket-capability check because sandbox escalation is disabled. No
+preview/port-forward/request-changes tool is currently exposed. A shared localhost
+or supported preview connection is required for agent-led web/Expo review; do
+not bypass the restriction through another UI shell or arbitrary tunnel.
+Existing Expo session restoration can support downstream synthetic workflow review
+without mail, but is not OTP delivery or native-device acceptance. Paid branch
+provisioning alone does not resolve preview connectivity. Production/main remain
+520328b and all new simulator work remains unmerged/unactivated. Fresh read-only
+production inspection found219 migration entries through220, none of221–225,
+all eight simulator controls off/unarmed (motion kill on), and zero registered
+gateways/devices/positions. Security advisors remain0ERROR,2 knownWARN and1INFO
+category covering110 private tables; no finding or gate was suppressed.
+
+## Preserved development checkpoint — Netlify and native database diagnostics
+
+The earlier pre-concurrency feature checkpoint is saved on
+[`feat/scenario-driven-demo-signals`](https://github.com/falmata-tech/loadgistic/tree/feat/scenario-driven-demo-signals)
+at implementation checkpoint `2b5751133d2060702558d569b4413ef86d87664f`, including
+the Netlify/development adapters and duty-authorization repair described here.
+That checkpoint was superseded by implementation28afe43f and its1518-test/native
+concurrency qualification above; do not treat later implementation changes as
+documentation-only. The original three local commits remain on
+`checkpoint/scenario-local-e226`. No feature PR, full CI run, merge, deployment
+or simulator activation has occurred. The verified published baseline remains
+520328b below.
+
+The preferred fast Capacity scheduler is now a default-off Netlify minute
+function, with a bounded two-due-actor request through the existing guarded
+controller. Per-actor phases remain at least120seconds after actual completion;
+healthy spacing is expected120–180seconds, and foreground UI reads every15seconds.
+The one-actor/30-second dedicated container remains an alternative, never a second
+active scheduler. Synthetic GPS/phone movement stays a separate service. Source
+and focused tests do not establish hosted timing or successful database writes.
+
+Normal Next.js/Expo development can use an isolated managed Supabase branch,
+without Docker here. The bootstrap validates exact branch metadata and development
+keys, makes two read-only API checks, and exclusively creates a private environment;
+it does not seed fixtures, configure email or qualify migrations/browser flows.
+Only production projects were found. The native development-branch cost confirmation
+expired; no branch/resource was created and no cost was accepted. The latest
+continuation above records the renewed confirmation and connectivity checks.
+Do not use production service credentials or weaken the local-only fixture guards.
+
+The explicit `simulator-db` operations diagnostic runs the disposable Supabase
+stack on a native GitHub runner via `diagnose/simulator-db/**`. It applies fresh
+migrations221–225, checks inert controls and security, runs the strict browser
+fixture preflight and targeted rollback SQL/isolated GPS clone regressions. Its
+exact-source [run43560119545](https://github.com/falmata-tech/loadgistic/actions/runs/43560119545)
+passed native startup, all five migrations, security/inert controls, synthetic
+fixtures, Data API denial and strict browser fixture preflight (one pass, zero
+skips). The first SQL suite then found a real source-dependent cross-account duty
+denial mismatch; NR-85 records the repair: migration221 now checks active assigned-vehicle
+scope before source-dependent work at all three duty entries, retaining the
+expected denial and existing lock order. Its SQL matrix expands to36 negative
+cases with installation/demo snapshots. Clone cleanup had also assumed creation
+started and failed its client-version guard; both workflows now check whether
+creation was attempted, retaining partial-create cleanup. Supabase shutdown
+passed. Later SQL suites did not run in that first diagnostic. Corrected-source
+[run43561193938](https://github.com/falmata-tech/loadgistic/actions/runs/43561193938)
+completed successfully on attempt1 at2b575113 in about five minutes. All six
+Phone/GPS SQL suites, eleven durable/catalog/paused/profile/Tracking suites,
+isolated GPS fixtures and the normal-signup isolation suite passed, together
+with startup, migrations/security, strict browser fixture preflight and both
+clone and Supabase cleanup. These diagnostics do not replace full PR/main CI,
+other unqualified concurrency boundaries or agent-led actual app review. The
+selected Capacity/profile two-session checks passed later in43614507599, as
+recorded above. See ADR-085 and local setup.
+
+The local container stack remains unavailable in this Cloud workspace. The
+checkout-local Docker29.9.3 client is installed; a fresh direct check still
+returns permission denied at the standard Docker API socket, and Unix-socket
+creation returns `EPERM`. Installing the client does not provide an accessible
+daemon. The stopped QEMU workaround proved Engine/hello-world and a separate empty
+Docker/containerd store, but never a ready application stack. Its offline import
+ended with `unexpected EOF` after three image references loaded; the VM/controller
+subsequently stopped holding the disk and the queued diagnostic never ran. The
+termination cause is unconfirmed. All fourteen exported Storage layer sizes/digests
+match their pinned source, and original/partial stores are preserved. Do not resume
+this workaround or treat it as a prerequisite for the app/Netlify work above.
+
+Focused source checks currently pass for the new Netlify adapter, managed branch
+bootstrap and diagnostic workflow. The first full unit gate found eleven
+failures: an outdated feed mock, a retired Manual-copy assertion and audit/test
+catalogs that omitted translations already loaded at runtime. Focused repairs
+preserve semantic and localization assertions. The complete `npm run quality`
+rerun passes1498/1498 tests, zero failures/skips, specs/source/workflow analysis
+and type checks. Independent source review found no material issue in the duty
+repair. The selected native SQL regression and the later Capacity/profile
+two-session matrix now pass as recorded above. Other required concurrency,
+agent-led desktop/phone/Expo review, infrastructure operation,
+exact production rollout and installed-device acceptance remain separate and
+unqualified. Candidate migrations221–225 have not been applied
+to production. Production settings and the SMTP verification pause remain intact.
+
+## Active priority — GPS gateway and signal simulators
+
+The owner's next priority is the GPS gateway and separate dedicated capacity and
+location signal simulator services, with periodic phone/GPS verification across
+the backend, database, Realtime and UI, followed by a tested production rollout.
+This work is in progress. Source now removes new Manual location controls on web
+and native while retaining honest, dated legacy reads. Backend retirement,
+trusted Demo account projection, normal-signup isolation and explicit holds for
+Manual-dependent simulator lanes are being qualified together. Real and synthetic
+GPS projects have separate deployment manifests and private readiness checks;
+the bounded hosted enrollment connection is implemented but not runtime-qualified. These source
+changes are unmerged and not deployed. The verified PR37 baseline below does not
+qualify this feature or its service runtime.
+
+The local candidate is on `feat/scenario-driven-demo-signals`, based on the
+unchanged published520328b. Its131 focused simulator/provenance/auth/worker tests
+pass with zero skips; source/spec/whitespace checks pass. Pending migrations221–225
+retire new Manual writes, project trusted Demo account provenance, hold historical
+Manual-dependent lanes, install the fast catalog and close demo organization
+ownership gaps. Ordinary co-owners, human edits and REAL source takeover refuse
+further simulation. Fast/profile control locks preserve in-flight save ordering;
+these source checks do not prove actual concurrent database behavior. No new SQL,
+service, secret or activation has been applied to production. The selected native
+SQL/normal-signup cases and the selected ten native Capacity/profile races now
+pass. Actual changed images/UI, other lanes' concurrency where required and
+infrastructure/device operation remain to be qualified.
+
+The dedicated movement worker and workflow simulator are currently disabled in
+production; read-only inspection found no registered gateways, devices or saved
+GPS positions. Existing historical phone/manual reports do not prove a running
+GPS service or recurring simulator. Public Capacity currently uses 60-second
+visible-page polling, not push Realtime. Hosted operation and physical tracker
+acceptance remain separate, outstanding evidence.
+
+The owner's subsequent instruction makes visible early-user activity the
+priority: the candidate targets 30-second synthetic source reports, authored
+Capacity phases about every two to three minutes per demo vehicle with staggered actors,
+and 15-second foreground feed reads. Actual phone capture/background intervals
+are unchanged. A separate Capacity-only Netlify function replaces dependence on the
+15-minute dispatcher for this fast lane. Its minute schedule advances at most two
+due actors. The optional30-second container advances only one and must be stopped
+before Netlify is enabled. Neither path catches up missed phases or saves all five
+actors together after an outage. Slow profile/team/sharing lanes keep their separate cadence
+and activation prerequisites. Jobs must resume one valid next step after interruption,
+without bursts, skipped prerequisites or backdated observation times.
+
+The [scenario design contract](operations/SCENARIO_SIMULATOR_DESIGN.md) and ADR-084
+define versioned approved routes/states, rather than arbitrary city combinations
+or random field values. Offline source verification produced seven local mapped
+road courses, two explicit stationary Radius cases and one unavailable course
+which stays blocked. These are synthetic protocol courses, not full regional
+market journeys. [Road catalog provenance](../resources/fixtures/demo-road-catalog.README.md)
+records the source hashes, geometry and privacy limits. Runtime/SQL/UI and hosted
+acceptance remain pending; these data checks do not establish active movement.
+
+## Native Android testing — APK complete, device session pending
+
+The owner requested an agent-controlled Android VM/managed device for actual
+mobile workflow and parity review. The [Android device runbook](operations/ANDROID_DEVICE_TESTING.md)
+prepares one Genymotion Android15 ARM64 device in connected Chrome, with a
+60-minute provider stop limit. Current advertised usage is $0.06/device-minute
+($3.60 before tax for 60 minutes); the proposed $5 usage ceiling/account setup
+has not been approved or purchased. No cloud device, API credential or
+managed-device upload was created. The completed test APK has been saved for
+handoff; it has not been installed or launched on a device.
+
+Offline CNG and a fresh Android Hermes export passed for `com.loadgistic.app`
+1.2.0/code10. The final native input freeze includes the 15-second feed lifecycle
+and stable-vehicle selection changes. Current mobile gates pass 426 tests with
+zero failures/skips, clean types/lint, 796 translations and the 3,751-module export.
+The isolated full JDK 21/SDK 36/NDK/CMake/Gradle 9.3.1 toolchain is installed and
+verified. The bounded, single-worker ARM64 standalone build used a
+new disposable local test signer; no existing owner key was used. The completed
+non-debuggable release-variant APK is 59,110,117 bytes, SHA256
+`a7f4e3609e3be8ea9eaa1f4ff0aed8581aea99ecd3d7c2a734279600a1c7b441`.
+Packaged-bundle/source-map and native config/asset/lock checks establish executable
+input equivalence with `4b7af44b772d92b7c56024613fba7b1a766340aa`; its creation
+base 520328b/dirty-input freeze remains a separate receipt. Static qualification
+verifies the signature, ARM64-only ABI, minSDK 24/targetSDK 36, all 8 required/zero
+forbidden permission checks and 16KB ELF/ZIP alignment. This test signer does not
+make the APK Play-ready. MapLibre Native 11.5.0 and attributed OpenStreetMap tiles
+are configured; rendered maps and GMS/FCM operation still need device evidence.
+
+The first build failed after 654 seconds while resolving AndroidX AAR dependencies:
+official Google Maven HEAD requests returned403, before an application compilation failure was
+established. Fresh same-URL HEAD/GET and Java TLS/proxy diagnostics returned200.
+A second attempt exposed a task-local Ninja wrapper defect, corrected and tested
+against actual ARM64 CMake/restat commands. The third attempt compiled native
+libraries, app Java/Kotlin, Hermes, resources and dex, then reached its1200-second
+limit during required release lint analysis. Its cache and distinct failure
+receipts are retained; the original403 origin remains unconfirmed. The approved
+600-second incremental continuation completed in 238.851 seconds with all required
+release lint, signing, packaging and assembly checks retained. Build-process
+shutdown and cache-lock receipts released the native resource window; current
+database runtime status belongs to its ignored resume/active receipts. Native
+startup, permission/background-location and notification acceptance remain outstanding.
+
+Current phone Capacity checks each60seconds but captures only when Home is
+focused/foreground and 10 minutes are due. Agreed Tracking has a separate native
+background service requesting 10-minute fixes. Native tests must verify those
+actual boundaries, database observation/receipt times, privacy and web/native
+updates rather than claiming continuous reporting from the interval constant.
+
+Connected Chrome inspected the existing published PR37 provider market at
+390×844: mobile navigation, the filter sheet, applying Empty vehicle and clearing
+it worked; viewport override was reset afterward. This was a read-only inspection
+in the owner's existing account, with no account/location/capacity mutation. It
+qualifies that older phone-web surface only, not the changed local UI or native
+Android. Current local visual/workflow review still depends on the new stack.
+
+## Verified delivery baseline — PR37 published
+
+[PR37's final qualification and production receipts](https://github.com/falmata-tech/loadgistic/pull/37)
+supersede the preparation checkpoints below. PR37 merged as
+`520328bd61c70a7d278fd183c6a25ffde248ab7a`; its PR CI43358107986 and separate
+[main CI43374713806](https://github.com/falmata-tech/loadgistic/actions/runs/43374713806)
+each passed all 16 required jobs. [Source workflow43378172030](https://github.com/falmata-tech/loadgistic/actions/runs/43378172030)
+advanced production and confirmed the ref at that exact SHA. The automatic
+[Production deployment6af6ac945eb1cff1d55e577c](https://app.netlify.com/projects/loadgistic-473/deploys/6af6ac945eb1cff1d55e577c)
+is Published: source verification, mailbox_fields=2, all 8 final function ZIPs and
+secret scanning passed. Canonical/immutable health, images and public Chrome
+tasks passed; `6af4f16a16aab2cef815c573` remains the rollback target.
+
+PR37 also records later unchanged-source local quality: 1,377 root and 424 mobile
+tests passed, alongside types, lint, translations and the web production build.
+Those results do not relabel older timings or establish fresh authenticated,
+private-file or physical-phone acceptance.
+
+Local Docker has since progressed beyond the rootless-host limitation:
+task-owned QEMU 10.0.13 / Alpine 3.24.4 runs Engine 29.9.3 through mTLS; a no-certificate
+request is denied and the official hello-world container exits 0. Full local
+Supabase/Auth/Storage/mail, fixtures and browser qualification remain pending.
+Current process status is recorded in the ignored runtime resume/active receipts,
+not in a permanent session number. Captured container events correct the earlier
+startup inference: Realtime's schema/seed/health job exited0; the next
+Storage1.67.20 setup container exited255. PostgreSQL's137 came from subsequent
+CLI cleanup, with no observed OOM event. A network-disabled, built-in-only Node
+probe in the cached Storage image also exits255 with
+`exec /usr/local/bin/node: input/output error`, before application/database code.
+All 14 raw image layers pass compressed SHA/CRC and uncompressed DiffID checks.
+Their resolved musl loader is 666,216 bytes, while the original and never-started
+container materializations contain a regular zero-byte loader. This establishes
+a local image/cache materialization discrepancy; physical I/O damage and an
+application defect are not established. Supported public-image export and an
+isolated fresh Docker/dedicated-containerd recovery are being prepared; recovery
+has not completed. Migrations 221–225, local SQL/UI acceptance and production
+activation remain pending. No candidate migrations or fixtures have run. Fresh
+read-only hosted
+inspection confirms ledger219/max220 and all eight installed-function pins used
+by the candidate. The existing advisor categories remain unchanged.
+Use the [restricted local Docker setup](operations/RESTRICTED_LOCAL_DOCKER.md)
+for that separate dependency; container startup is not full application readiness.
+
+The owner paused Google verification for the proposed
+`loadgistic.support@gmail.com` sender migration. Existing production SMTP/Auth
+settings, credentials and mailbox scan policy remain unchanged. The separate
+strict advisor monitor still lacks its scoped credential; its two known WARNs
+remain visible. Google-key hardening and native/device acceptance remain separate
+open work. Reuse the completed source-bound receipts above when resuming.
+
+## Historical mailbox checkpoint — before PR37 qualification
 
 [PR36](https://github.com/falmata-tech/loadgistic/pull/36) merged normally as
 ab899497befdcf5e699cb436de41c4bdb449fb63/tree5f86efd9a3a6104d73956def8ab03f33ef41668c.

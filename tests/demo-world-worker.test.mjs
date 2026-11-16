@@ -25,6 +25,7 @@ const environment={
 };
 const health={database_enabled:true,pending_count:3,oldest_due_age_seconds:420,exhausted_count:0,
   handover_accepted:0,handover_completed:0,handover_pending_count:0,
+  handover_state:'HELD',handover_hold_reason:'MANUAL_LOCATION_RETIRED',
   handover_last_completed_day:null,handover_next_scheduled_day:'2026-10-26',
   business_share_accepted:0,business_share_completed:0,business_share_replayed:0,
   business_share_enabled:false,business_share_target_bound:false,
@@ -39,6 +40,7 @@ const health={database_enabled:true,pending_count:3,oldest_due_age_seconds:420,e
   team_pending_count:0,team_exhausted_count:0,
   team_last_completed_phase:null,
   duty_accepted:0,duty_completed:0,duty_replayed:0,duty_enabled:false,
+  duty_state:'HELD',duty_hold_reason:'MANUAL_LOCATION_RETIRED',
   duty_pending_count:0,duty_exhausted_count:0,duty_last_completed_phase:null};
 
 function signedRequest(path,purpose,body='',override={}){
@@ -160,11 +162,11 @@ test('background rejects unsigned, stale, wrong-site and wrong-method invocation
 
 test('authorized background runs only a bounded signed API batch and logs counts',async()=>{
   let capture;
-  const response={ok:true,json:async()=>({accepted:5,completed:3,skipped:1,failed:1,...health,privateEmail:'never logged'})};
+  const response={ok:true,json:async()=>({accepted:0,completed:0,skipped:0,failed:0,...health,privateEmail:'never logged'})};
   const batch=await runDemoWorldBatch({environment,now,fetchImpl:async(url,options)=>{
     capture={url,options};return response;
   }});
-  assert.deepEqual(batch,{enabled:true,accepted:5,completed:3,skipped:1,failed:1,...health});
+  assert.deepEqual(batch,{enabled:true,accepted:0,completed:0,skipped:0,failed:0,...health});
   assert.equal(capture.url.href,`${origin}${DEMO_WORLD_ADVANCE_PATH}`);
   assert.equal(capture.options.method,'POST');
   assert.equal(capture.options.redirect,'error');
@@ -179,27 +181,34 @@ test('authorized background runs only a bounded signed API batch and logs counts
   ));
   assert.equal(captured.result.status,204);
   assert.equal(await captured.result.text(),'');
-  assert.deepEqual(captured.logs,[JSON.stringify({event:'demo-world-background',ok:true,
-    accepted:5,completed:3,skipped:1,failed:1,...health})]);
+  assert.deepEqual(captured.logs.map(value=>JSON.parse(value)),[{event:'demo-world-background',ok:true,
+    accepted:0,completed:0,skipped:0,failed:0,...health}]);
 });
 
 test('invalid results and API failures reveal no target or error details',async()=>{
   const invalid=[
     {accepted:6,completed:6,skipped:0,failed:0,...health},
     {accepted:2,completed:1,skipped:0,failed:0,...health},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,pending_count:-1},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,database_enabled:'true'},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,handover_accepted:2},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,handover_completed:1},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,business_share_accepted:2},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,business_share_completed:1},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,business_share_last_completed_phase:'UNKNOWN'},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,profile_accepted:2},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,profile_completed:1},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,profile_last_completed_phase:'UNKNOWN'},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,team_accepted:2},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,team_completed:1},
-    {accepted:1,completed:1,skipped:0,failed:0,...health,team_last_completed_phase:'UNKNOWN'}
+    {accepted:0,completed:0,skipped:0,failed:0,...health,pending_count:-1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,database_enabled:'true'},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,handover_accepted:2},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,handover_completed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,handover_accepted:1,handover_completed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,handover_state:'RUNNING'},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,handover_hold_reason:'private arbitrary reason'},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,duty_accepted:1,duty_completed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,duty_replayed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,duty_state:'RUNNING'},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,duty_hold_reason:undefined},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,business_share_accepted:2},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,business_share_completed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,business_share_last_completed_phase:'UNKNOWN'},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,profile_accepted:2},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,profile_completed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,profile_last_completed_phase:'UNKNOWN'},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,team_accepted:2},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,team_completed:1},
+    {accepted:0,completed:0,skipped:0,failed:0,...health,team_last_completed_phase:'UNKNOWN'}
   ];
   for(const value of invalid){
     await assert.rejects(()=>runDemoWorldBatch({environment,now,fetchImpl:async()=>({ok:true,json:async()=>value})}),/DEMO_WORLD_(?:SUMMARY|HEALTH)_INVALID/);

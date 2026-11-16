@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {DEFAULT_FEATURED_SCHEDULE_CONFIG,validateFeaturedScheduleConfig} from '../src/lib/expo-broadcast.js';
+import discovery from '../resources/fixtures/managed-market-discovery.json' with {type:'json'};
 
 export function managedFixtureFeaturedSchedule(targetCount){
   const config={...DEFAULT_FEATURED_SCHEDULE_CONFIG,targetCount};
@@ -8,18 +9,8 @@ export function managedFixtureFeaturedSchedule(targetCount){
     schedule_mode:'AUTO',schedule_config_json:config};
 }
 
-export const SMALL_LOCAL_VEHICLE_CONFIGURATIONS=new Set([
-  'Courier car','Courier motorcycle','Cargo van','Pickup truck','Pickup stake body',
-  'Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck'
-]);
-
 export const TRACTOR_TRAILER_CONFIGURATIONS=Object.freeze([
   'Tractor + Container Trailer','Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer'
-]);
-
-export const LONG_HAUL_VEHICLE_CONFIGURATIONS=new Set([
-  'Medium Stake Body Truck','Medium Box Truck','Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer',
-  ...TRACTOR_TRAILER_CONFIGURATIONS
 ]);
 
 function stableScore(value){
@@ -106,22 +97,15 @@ export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){
   });
 }
 
-export function applyManagedFixtureMarketPolicy(capacities,vehicles,{localEmptyPublicCount=50,localPartialPublicCount=35}={}){
-  const vehicleById=new Map(vehicles.map(vehicle=>[vehicle.id,vehicle]));
-  const isLongHaul=capacity=>LONG_HAUL_VEHICLE_CONFIGURATIONS.has(vehicleById.get(capacity.vehicle_id)?.cargo_configuration);
-  const localEmptyPublic=stableTake(capacities.filter(capacity=>!isLongHaul(capacity)
-    &&String(capacity.market_status||capacity.status)==='EMPTY'),localEmptyPublicCount);
-  const localPartialPublic=stableTake(capacities.filter(capacity=>!isLongHaul(capacity)
-    &&String(capacity.market_status||capacity.status)==='PARTIAL'),localPartialPublicCount);
-
+export function applyManagedFixtureMarketPolicy(capacities,_vehicles=[]){
+  const choices=new Map(discovery.capacity_choices.map(row=>[row.capacity_id,row]));
   return capacities.map(capacity=>{
-    if(isLongHaul(capacity)){
-      return {...capacity,status:'EMPTY',market_status:'EMPTY',available_percent:100,visibility:'OPEN',
-        accepts_full_load:1,accepts_partial_load:1,planned_space_status:null};
-    }
-    const publiclyVisible=localEmptyPublic.has(capacity.id)||localPartialPublic.has(capacity.id);
-    const locationPrecisionKm=Math.max(1,Math.min(5,Number(capacity.location_precision_km)||3));
-    return {...capacity,visibility:publiclyVisible?'OPEN':'PRIVATE',location_precision_km:locationPrecisionKm};
+    const choice=choices.get(capacity.id);
+    if(choice&&choice.vehicle_id!==capacity.vehicle_id)throw Error('MANAGED_FIXTURE_DISCOVERY_BINDING_DRIFT');
+    // These are saved fixture choices, not a category-dependent publishing rule.
+    // In particular, do not turn a larger truck into Empty/100% or infer loads.
+    return {...capacity,visibility:choice?.visibility||(capacity.visibility==='OPEN'?'OPEN':'PRIVATE'),
+      location_precision_km:choice?.location_precision_km??capacity.location_precision_km};
   });
 }
 

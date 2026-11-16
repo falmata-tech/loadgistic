@@ -29,6 +29,23 @@ test('public and private capacity label the actual assigned person Driver withou
  }
 });
 
+test('public and private Capacity use only the bounded trusted account provenance field',async()=>{
+ for(const audience of ['public','private'])for(const marker of [true,false,undefined,'true',1]){
+  const row={id:'capacity',vehicle_id:vehicleId,provider_profile_id:providerId,status:'EMPTY',assigned_driver_first_name:'Assigned',updated_at:'2026-10-14T00:00:00Z',location_updated_at:'2026-10-14T00:00:00Z',
+   account_is_demo:true,location_is_demo:true,user_metadata:{is_demo:true,fixture_source:'loadgistic'}};
+  await withResponses(call=>{
+   if(call.path==='/rest/v1/rpc/public_capacity_page'||call.path==='/rest/v1/rpc/account_capacity_filtered_page')return [{payload:row}];
+   if(call.path==='/rest/v1/rpc/capacity_owner_documents')return [{subject_id:providerId,subject_type:'PROVIDER_PROFILE',documents:[],account_is_demo:marker}];
+   assert.fail('Unexpected projection query');
+  },async calls=>{
+   const page=audience==='public'?await listSupabasePublicCapacityCursor():await listSupabaseAccountCapacity(ownerId,'a'.repeat(64));
+   assert.equal(page.items[0].account_is_demo,marker===true);
+   assert.equal(page.items[0].location_is_demo,true,'saved fix provenance is independent');
+   assert.equal(calls.length,2,'reuse the existing bounded owner read');
+  });
+ }
+});
+
 test('public profile trucks without current capacity use actual employee/owner document subjects and the same neutral label',async()=>{
  for(const kind of ['ORGANIZATION','PROVIDER_PROFILE']){
   const company=kind==='ORGANIZATION',assigned=company?ownerId:driverId,documents=[{...reviewed('IDENTITY'),subject_type:kind,subject_id:providerId},{...reviewed('DRIVER_IDENTITY'),subject_type:'DRIVER',subject_id:assigned},{...reviewed('VEHICLE_OWNERSHIP'),subject_type:'VEHICLE',subject_id:vehicleId}];

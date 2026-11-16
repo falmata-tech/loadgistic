@@ -1,5 +1,312 @@
 # Security failures we must not repeat
 
+## NR-86 — Pilot remapping reuses an incomplete synthetic owner boundary
+
+November15 independent review of unreleased227 at local28acf38 found two
+source defects before hosted installation. Its exact new provisioning helper
+could refuse an added normal co-owner while an inherited OR fleet-allowlist
+branch still admitted that marked owner through the public provisioning entry.
+The remapped motion bindings also counted sole ownership under an organization
+`FOR KEY SHARE` lock, compatible with a concurrent co-owner FK insertion; a
+late count alone did not establish transactionally stable authority (NR-83).
+The race is initially a source inference, not evidence of a hosted write.
+
+Owner: telematics database maintainer. Next action: make the exact pilot helper
+the sole new pilot synthetic-enrollment authority, constrain its transport and
+take organization/membership locks before profile/device/vehicle locks at each
+callable boundary. Test public provisioning with a normal co-owner and wrong
+transport using unchanged device/audit snapshots, preserve ordinary real-device
+enrollment, then run real two-session owner-first/report-first clone races.
+Keep this finding open until those actual waits/denials, the isolated combined
+scenario, security checks and exact-source gates pass. No hosted migration,
+device enrollment, source choice or activation has occurred.
+
+Local repair now pins ten existing functions, leaves the old LOCAL provisioning
+alternatives confined to their old provenance, makes exact PILOT authority the
+only new synthetic path and restricts it to the direct Netlify protocol/profile.
+An owner-only helper takes the exact organization `FOR UPDATE` and memberships
+`FOR SHARE` before existing profile/device/vehicle locks. All new helpers are
+revoked from PUBLIC/anon/authenticated/service_role. The retained real-device
+path and synthetic engine authority remain unchanged.
+
+Measured local proof: four races and four actual `pg_blocking_pids` waits in
+`.local/pilot-owner-races-9vEhAP/receipt.json`. Provision-first and report-first
+each accept once while co-owner insertion waits; owner-first and subsequent
+calls with that co-owner deny (two provision and two report denials), preserving
+saved state. The named clone is backed up, restored and fingerprint-verified.
+The final rollback-only SQL also passes direct public co-owner/wrong-transport/
+missing-protocol refusals with unchanged device/audit facts, ordinary real-device
+enrollment, seven movement reports, three Capacity phases and notification
+denials. Six focused binding tests pass; both CI paths now register the guarded
+race runner and retain cancellation cleanup. Exact-source full gates remain
+pending. This qualification is PILOT-only; the LOCAL branch remains unchanged.
+
+The final pinned-Docker runner repeats all four races/four waits with the expected
+counts, but its full restore exceeded a generic30s subprocess bound. No SQL
+failure or changed fingerprint is established. Targeted recovery proof confirms
+all saved fingerprints match, no restore session remains and the primary is
+unchanged (`.local/pilot-restore-check-Fr0OS6/receipt.json`). Full catalog restores
+now share the existing clone helper's120s allowance, with typed stage/code
+diagnostics; security/lease/parser bounds and the three-minute CI wrapper stay
+unchanged. Do not relabel the failed integrated receipt successful. PostgreSQL15
+runtime, complete current-source CI and hosted review remain outstanding.
+
+Exact-sourcef67 CI43754634231 passes the combined pilot rollback-only SQL but
+the new race runner exits in about0.2s with zero races/waits/accepted/denied
+counts. Cleanup succeeds. Its failure stage/code exists only in ignored private
+evidence and is absent from the console receipt; no preflight cause or PG15 SQL
+defect is established. Owner: telematics database maintainer. Next action:
+retain only allowlisted stage/code evidence in the public receipt, negatively
+test unknown-message/path/identity exclusion, then use the focused disposable
+lane to identify and repair the actual failure before another full CI. Do not
+upload private captures, relax target/security bounds or relabel this result.
+The diagnostic-only follow-up implements exact stage/code/category allowlists
+and separate preflight labels. All27 focused target/restore/diagnostic checks
+pass in11.616s, including real-runner fake-Docker refusals before backup/setup/
+drop and unknown-message/path/identity exclusion. Static workflow checks pass.
+Actual cause identification and fixed PG15 execution still require the focused
+disposable run; this finding remains open.
+The next fresh focused run43757362926/d9b1db2 passes the repaired Manual suite
+and pilot SQL; its race verifier now reports PREFLIGHT_RESTORE_ROLE /
+PILOT_RACE_PROCESS_FAILED / authentication-failed, before any backup or race.
+The matching-version guard passes. This identifies missing authentication for
+the same local supabase_admin role, not an ownership denial or PG-major defect.
+Owner: telematics database maintainer. Next action: supply its existing local
+container password to all admin query/dump/restore children without host/argv/
+log disclosure, role fallback or wider target authority, then qualify the full
+focused race/restore. Cleanup passes. The old primaryUnchanged:true receipt was
+a declaration without a primary snapshot; do not cite it as measured equality.
+Remove or explicitly mark that unmeasured claim rather than adding primary
+database access only to support a diagnostic field.
+The same-role credential wrapper is prepared for all connected admin clients;
+it uses only the existing verified-container password internally and refuses
+missing credentials without fallback.31 focused tests and independent review
+pass, including real-shell private-output/metacharacter checks and exact-clone
+arguments. One read-only PG17 clone identity probe passes. The primary receipt
+now explicitly says verification was not performed. Fresh PG15 race/restore
+execution remains required; no hosted change is claimed.
+Focused ea43c73 authentication succeeds, then the archive guard refuses before
+fixture writes. A separate empty PG15.8 probe (8.847s, removed) confirms legitimate
+ACL omission after extension re-enrollment and a counterexample to hash-only
+eligibility: fresh CREATE may use different defaults. Owner: telematics database
+maintainer. Next action: retain exact owner/current/initial metadata and archive
+shape checks; require a disposable-clone-only rollback creation proof before
+fixture commits, immediate recreated owner/ACL checks before ADD and final full
+identity/membership equality. Missing metadata, unknown/duplicate ACLs and default
+drift must still refuse. Do not mutate the unchanged primary, install catalog
+repairs or treat the generic dummy probe as complete Supabase restoration proof.
+The bounded extension is prepared with those guards and41 focused passes. The
+actual frozen helper also passes a12.489s isolated PG15.8/pg_graphql one-entry
+restore followed by zero-entry proof/restore, with owner/body/ACL/membership and
+zero initial-state equality. Default drift and the actual wrong-database server
+guard refuse; no probe functions or fixture commits remain, and the owned empty
+container is removed. Primary capture remains read-only.
+Focused Supabase run[43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+at e169fef5531cc74b3d365c301083ea69b57d753f now passes Capacity/Manual suites21,
+pilot bindings27 and owner races28: four races/four waits, one accepted provision
+and report each, two denied provision and report each, baseline restored with
+matching fingerprints. INITIAL_WRAPPER_ACL has zero exact/related ACL entries,
+one matching initial row, expected owner and creationProof:MATCHED. Clone removal29
+and Supabase stop30 pass. Primary verification remains explicitly not-performed.
+This clears the focused PG15 failure; NR-86 remains open for complete required
+CI and hosted review. No hosted migration or activation occurred.
+
+## NR-85 — Duty denial depends on an unauthorized vehicle's location source
+
+November14 native diagnostic run43560119545 at e9c9a616 started the full isolated
+Supabase stack, applied migrations221–225 and passed security, fixture and strict
+browser preflight checks. Its first Phone/GPS SQL regression then observed
+`INVALID_VEHICLE` for a foreign retained Manual vehicle but `FORBIDDEN` for a
+foreign default-Phone vehicle. Both requests were denied; the differing result
+still exposes source-dependent information across an account boundary.
+
+Trace: the retained phone157 duty wrapper calls real-device-use attribution for
+Phone/default/absent targets before the base command's assigned-vehicle check;
+Manual skips that call. Migration221's source-readiness check in the base leaf
+does not correct this earlier wrapper ordering. No production probe or accepted
+unauthorized write is established by this disposable test.
+
+Source repair in unreleased migration221 establishes the authorized active
+assigned-vehicle boundary before source-dependent work at all three public and
+retained duty entry points. It adds read-only checks, preserving existing
+owner/device/vehicle lock order and the leaf's locked authority recheck. Uniform
+foreign/absent denial, exact current-driver authority, ordinary Off Duty behavior
+and unchanged source/Capacity/phone/assignment/Tracking state remain required.
+Owner: location/duty database maintainer. The rollback SQL expands to36 requests
+across three entry points, three target states, both duty directions and forged/
+absent phone proofs, with installation/binding/receipt/demo/Tracking lease
+snapshots. The denial enum is unchanged. Focused source tests and independent
+review pass. Exact-source native run43561193938 at2b575113 then passed all six
+Phone/GPS SQL suites, including this matrix, plus the selected simulator suites
+and both cleanup steps. This qualifies the disposable database repair; actual
+concurrency, full release gates and hosted installation remain separate.
+
+The diagnostic separately attempted clone cleanup before its PostgreSQL client
+or clone existed. Both diagnostic and main CI now gate cleanup on clone creation
+having been attempted, retaining partial-create/cancelled cleanup and all
+existing target/client guards. Negative workflow checks pass. This secondary
+failure must not replace the original SQL error or become a reason to rerun
+the same unchanged source.
+
+## NR-84 — A simulator stop flag is checked without locking the control transaction
+
+November13 source review found that the fast Capacity executor checked its
+enabled control through an unlocked query. An operator could commit disabling it
+while a previously checked transaction was still publishing. This is a concurrency
+gap inferred from the source, not a measured production mutation after stopping.
+
+Repair: migration224 takes the control row `FOR SHARE` before the job lock,
+matching claim's control-before-job ordering. Migration225 likewise locks the
+global then profile control before the profile job. Disabling waits for accepted
+in-flight writes; subsequent writes refuse. Valid DONE replay remains read-only
+when disabled, and elapsed lock waits cannot revive an expired lease. Owner:
+simulator database maintainer. The durable/fast/profile SQL suites retain replay
+and unchanged-state regressions. Native run43614507599 at28afe43f passed the real
+two-session Capacity/profile lock/wait matrix, including stop-first and
+executor-first order, expired leases after waits and disabled read-only replay.
+Its receipt is10 races/12 waits/10 denials/2 accepted writes/2 replays, with
+successful clone recreation and cleanup. No hosted control was activated or
+changed by this repair.
+
+These are specific Capacity/profile controls, alongside motion's separate kill
+protocol. Business sharing has its own independent control; no single database
+flag is claimed to stop every lane. Team, business sharing and reserved Tracking
+remain outside initial activation until their exact stopping, cohort and
+concurrent-ownership boundaries are qualified. Their unactivated source is not
+evidence of a production incident or permission to enable them.
+
+November15 Netlify direct-demo extension: migration226 locks the motion control
+before its durable window and existing owner/device/vehicle/target commands.
+Rollback SQL covers duplicate/stale windows, due-time bursts, replay, stop and
+sticky REAL state. An actual isolated Mac two-session rehearsal records three
+races and three observed PostgreSQL blocker waits: duplicate claim refuses,
+disable waits for an accepted claim then clears its window, and stop-first
+denies a waiting claim. The first harness omitted the existing activation-time
+prerequisite and failed before a claim; corrected replay passes and restores
+disabled controls. These local receipts do not qualify hosted operation.
+
+## NR-83 — A marked owner remains after a normal co-owner joins a demo account
+
+November13 source review found that the fast Capacity controller required its
+approved actor to remain an OWNER but did not exclude an added unmarked co-owner.
+The account provenance reader would correctly stop labelling that organization
+as Demo, while the writer could still mutate its shared vehicle. The final
+profile executor from197 has the analogous owner-existence check. This is a
+source boundary defect; no affected hosted account or mutation was observed.
+
+Repair: migration224 requires exactly one current organization OWNER, equal to
+the approved actor, before Capacity publication. Organization/member locks keep
+that proof valid through the write, with owner-before-vehicle order preserving
+phone/GPS arbitration. Migration225 adds the equivalent profile proof after its
+existing page lock, using NOWAIT organization/member locks to refuse contention
+without a new page/organization lock cycle. It also narrows both reserved
+Tracking readiness helpers to one current marked owner, preserving private ACLs,
+unarmed controls and historical replay.
+
+Negative coverage: `tests/sql/demo-world-fast-catalog.sql` adds a normal co-owner
+and requires refusal with unchanged saved state, alongside REAL/live-phone
+takeover negatives. The profile and two existing Tracking reservation suites
+cover normal/forged co-owners, denied changes, preserved replay and rollback.
+Owner: simulator database maintainer. The selected rollback suites passed in
+run43561193938; run43614507599 at28afe43f additionally passed real Capacity/
+profile co-owner races with unchanged denied state and insertion waiting for an
+accepted transaction. Reserved Tracking remains unarmed and retains its separate
+concurrent-ownership/activation gates. Do not infer write eligibility from a remaining marked member or a
+cached Demo label.
+
+November15 direct-demo provisioning and report SQL also reject an added normal
+co-owner and preserve denied position state. Fresh virtual-gateway preparation
+validates all ten existing owner/driver scopes before creating bindings, refuses
+conflicting gateways and preserves every source choice, including Manual. Tests:
+`tests/sql/netlify-demo-provision.sql` and `tests/sql/netlify-demo-motion.sql`.
+
+## NR-82 — A narrow worker key can inherit another configured credential's authority
+
+November13 source review found asymmetric credential separation while adding the
+fast Capacity worker. Its signer rejected equality with the motion key, but the
+motion receiver did not reject the newly configured Capacity key. Gateway ingest,
+privacy and enrollment-relay configuration also accepted that key if an operator
+reused it. Different HMAC messages prevent replay of a signature; they do not
+prevent a holder of a reused key from creating another valid signature or bearer
+request. This is a source/configuration defect, not an observed hosted compromise.
+
+Control: Capacity/world/motion adapters reject reuse of their known configured
+keys; the new Capacity authority is checked by its signer and other receiving
+lanes. Gateway/privacy parsers reject the configured
+Capacity key as their HMAC secret; gateway configuration also rejects it as the
+relay API token. Distinct existing gateway/privacy inputs and raw-only callers
+retain their contracts. The fast container receives only its own key and refuses
+broader credentials. Never log key values while checking equality.
+
+Negative checks: `tests/demo-capacity-gateway-isolation.test.mjs` covers ingest,
+privacy and bearer collisions, unsafe second entries, distinct credentials,
+missing fast configuration and malformed existing inputs. Fast/world and motion
+configuration tests cover the other receiving lanes. Owner: simulator and GPS
+authentication maintainers. Next: complete exact-source gates and actual local
+API/controller qualification; hosted secret creation and activation are pending.
+
+November15 Netlify direct-demo requests retain this separation and bind their
+HMAC to the exact origin, purpose path, body, nonce and fresh timestamp. Adapter
+tests reject preview/development, another site/project, cross-purpose signatures,
+credential collisions and caller-selected geometry/identity/source/time before
+storage. The Next receiver still requires production NODE_ENV; native Functions
+may omit that build-time variable but retain exact runtime site/project/origin
+and production-only secret scopes. Provider settings have not been installed.
+
+## NR-81 — Capacity refresh retains a revoked or replaced selected signal
+
+November14 Mac continuation reproduced a missing end-to-end case: a selected
+public link naming the old Capacity ID retained80% after an actual60%
+publication, then lost selection. The API returned the new saved value; source
+tracing found the old ID remained a restrictive filter, and web/native detail
+panels and cameras also used that changing ID as their identity.
+
+Local repair resolves an existing link to the latest publication of the same
+vehicle using bounded server-only identity reads, then calls the unchanged
+public/account/business authorized projection with all original filters. Missing
+history never widens the query. Identity rows are not serialized, lookup failures
+remain errors, and an ID grants no authority. Exact selected revalidation accepts
+a new ID only for its already-known vehicle. Both maps retain the current panel
+and camera for that vehicle and refresh panel content from the new record.
+The local Chrome desktop/phone and Expo phone workflow demonstrates80→60,
+original-link reload and removal after private sharing; normal synthetic actors
+remain unlabelled as Demo. Root/helper regressions retain wrong-vehicle,
+malformed, stale-scope and read-failure denials. Earlier desktop readiness and
+privacy-refresh timeouts are retained as failed observations; a later diagnostic
+pass does not establish repeated-run reliability. A separate local phone-web
+broker-owner/staff check subsequently passed the real private replacement,
+old-link account API readback and exact grant revocation, with both selections
+cleared and public/anonymous denial retained. First teardown failed on an owned
+audit-log foreign key; scoped recovery and corrected full teardown pass, with
+the fixture baseline restored. Private Expo permission transitions, installed
+Android and full candidate CI remain pending.
+
+Source review of `public-capacity-feed.tsx` found that private401/403 cleared
+cached vehicles only for business-workspace URLs. Account and retained private
+feed paths kept prior items on denial. A completed200 viewport also used
+`preserveSelectedMapTruck`, retaining an omitted selected row indefinitely. The
+account/business adapters return normal200 filtered pages when an individual
+vehicle grant is removed; that omission does not require a whole-feed403.
+The same selected-record cache could leave an old marker/details after a normal
+publication inserted a new Capacity ID for the existing vehicle.
+
+Owner: Capacity feed/UI. Repair: all current private401/403/404 responses clear
+items/selection. A selected signal missing from a completed window receives one
+bounded same-feed exact-truck read, preserving filters and authorization while
+removing viewport/cursor. Missing or failed private revalidation drops its cache.
+Fresh eligible replacements follow the supplied vehicle identity; old request
+generations cannot clear or restore newer scopes. Deliberate selection changes
+cancel and immediately supersede the old selection task. No grants are added.
+
+Negative coverage executes the real web/native request effects with synthetic
+transport in `tests/capacity-feed-refresh.test.mjs`: each private route/status,
+200 omission, stalled/malformed exact read, stale denial, changed selection,
+publication ID replacement, hidden/background pause and slow cursor completion.
+`tests/capacity-map-loading.test.mjs` retains complete-window coverage. These
+tests and source review are not a production exposure claim. Actual local
+database grant/revoke, desktop/phone Chrome/Expo and installed Android review
+remain pending with the parent qualification; no hosted rollout is recorded here.
+
 ## NR-80 — A formatted mailbox fixture passes tests but rejects production
 
 PR36 merged as ab899497befdcf5e699cb436de41c4bdb449fb63 after all16 exact PR jobs
@@ -25,6 +332,15 @@ source/CI gates, SMTP values/scopes and rollback unchanged. Negative/entry tests
 tests/netlify-delivery.test.mjs. Owner: release maintainer. Next: exact PR/main,
 actual production mailbox_fields=2/source/ZIP markers, published ID and runtime.
 
+Qualification completed in [PR37](https://github.com/falmata-tech/loadgistic/pull/37):
+its qualified PR and separate merged `520328b` main runs each passed all 16 jobs;
+source workflow43378172030 advanced production and confirmed the ref. Production
+`6af6ac945eb1cff1d55e577c` passed
+mailbox_fields=2, source, 8 final ZIP, scanning and postpublication runtime checks.
+The preceding Next statement is the preserved prequalification checkpoint;
+retain the negative controls for future changes. The requested support-sender
+migration is paused and has not changed these values or provider settings.
+
 ## NR-79 — Disposable CI startup collides with a host port before migrations
 
 Main63cbb86/run43344733398 failed Featured team permission setup,
@@ -45,6 +361,12 @@ existing startup privacy/retry cases. Actual hosted qualification is required.
 Owner: workflow maintainer. Next: one focused isolated run, then full PR/main CI
 and the actual guarded production handoff. BASE-DEP-001 owns rollback: no hosted
 or owner-machine sysctl changes; discard the ephemeral runner normally.
+
+Qualification completed: the focused startup run, PR36's PR/main runs and
+[PR37's final PR/main and publication receipts](https://github.com/falmata-tech/loadgistic/pull/37)
+passed the reservation/startup boundary. The preceding Next statement is
+historical. This establishes the installed prevention and delivery outcome;
+the original conflicting port and binding actor remain unknown.
 
 ## NR-78 — Local admin diagnostics never reach the CI failure record
 
@@ -1152,6 +1474,19 @@ The Expo preview additionally requires explicit aria-checked alongside native
 accessibilityState; actual checkbox and decoded-image tests prove the visible
 control instead of inferring it from a component-state test.
 
+November14 local continuation reproduced the same renderer boundary in
+`driver-location-editor.tsx`: its source and privacy-radius radios had native
+checked state but no browser `aria-checked` under the installed
+react-native-web0.21.3. The existing real Expo regression failed on the unselected
+Phone choice after successful email-code sign-in. Explicit checked/disabled ARIA
+state now supplements the native state. The regression retains that assertion,
+checks mutually exclusive accuracy choices, and proves a radius-only edit/Close
+leaves the saved Manual choice and location unchanged. Permission-denial/retry
+also checks zero source/report writes and exact saved readback before consent.
+Owner: mobile location maintainer. Evidence is in the isolated Mac candidate's
+`.local/location-review/`; hands-on review and installed Android remain separate
+from automated Chrome/Expo evidence.
+
 Evidence: capacity-filter values/HTTP/SSR tests, SQL capacity-multiple-options,
 web/native component checks and all14 focused browser cases. Owner: capacity/API
 and native UI maintainer. Local verification complete; owner visual review,
@@ -1986,6 +2321,14 @@ browser CI and the matched web/Android rollout; physical-phone acceptance stays
 distinct from browser and emulator evidence.
 
 ## NR-21 — Workflow contracts change but their browser fixtures remain obsolete
+
+November14 local continuation: the legacy Manual web fixture inserted a saved
+source choice but no historical location report. Its reload assertion expected
+the map to label a report that did not exist. The current saved projection and
+actual editor correctly retain Manual while the map says Not set. The repaired
+assertion checks that distinction and exact unchanged source/revision after
+Cancel; the restricted map retains its read-only hint. Do not invent a reported
+point or alter the current projection to satisfy a source-only fixture.
 
 **Cause:** Mandatory truck ownership, named sharing contacts, delivery dates,
 photo proofs and recipient approval changed while older browser fixtures still

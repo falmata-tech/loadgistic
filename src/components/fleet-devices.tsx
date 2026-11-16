@@ -2,10 +2,9 @@
 import React from 'react';
 import Link from 'next/link';
 import {Satellite,Smartphone,Pencil,RefreshCw,ArrowLeft,ArrowRight,Truck} from 'lucide-react';
-import {parseFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint,type FleetDeviceWorkspace,type FleetDevice,type FleetLocation,type FleetPhone} from '@/lib/telematics-workspace';
+import {parseFleetDeviceWorkspace,type FleetDeviceWorkspace,type FleetDevice,type FleetLocation,type FleetPhone} from '@/lib/telematics-workspace';
 import {commandStateLabel,telematicsAlarmLabel} from '@/lib/telematics-copy.js';
 import {Text,FeedbackText,useTranslation} from './localization';
-import {ManualTruckLocation} from './manual-truck-location';
 import styles from './fleet-devices.module.css';
 import {CapacityEditDialog} from './capacity-edit-dialog';
 import {nextCapacityPrivacyRadius} from '@/lib/location-privacy.js';
@@ -102,19 +101,20 @@ function PhoneSourceSummary({phone}:{phone?:FleetPhone|null}){
  return <div className={styles.phoneSummary} data-testid="private-phone-summary"><div className={styles.phoneStatus}><i className={phone.connected?styles.online:styles.offline} aria-hidden="true"/><strong><Text message={phone.connected?'Phone link active':'Phone link inactive'}/></strong></div><dl className={styles.phoneIdentity}><div><dt><Text message="Phone ID"/></dt><dd><code>{phone.installationId}</code></dd></div><div><dt><Text message="Last report"/></dt><dd>{phone.lastObservedAt?<time dateTime={phone.lastObservedAt}>{new Date(phone.lastObservedAt).toLocaleString(locale)}</time>:t('Not reported yet')}</dd></div></dl><dl className={styles.phoneMetrics}><div><dt><Text message="Phone location accuracy"/></dt><dd>{number(phone.accuracyMeters,'m')}</dd></div><div><dt><Text message="Speed"/></dt><dd>{number(phone.speedKph,'km/h')}</dd></div><div><dt><Text message="Heading"/></dt><dd>{number(phone.headingDegrees,'°')}</dd></div></dl></div>;
 }
 function SourceForm({vehicle,busy,save,markDirty,onSaved,onCancel,showTitle=true}:{vehicle:FleetLocation;busy:boolean;save:Save;markDirty:(key:string,value:boolean)=>void;onSaved?:()=>void;onCancel?:()=>void;showTitle?:boolean}){
- const {t}=useTranslation(),[source,setSource]=React.useState(vehicle.selection.source),[precision,setPrecision]=React.useState(nextCapacityPrivacyRadius(vehicle.selection.precisionKm)),[point,setPoint]=React.useState(()=>fleetManualPoint(vehicle)),[dirty,setDirty]=React.useState(vehicle.selection.precisionKm>20);
+ const {t}=useTranslation(),[source,setSource]=React.useState(vehicle.selection.source),[precision,setPrecision]=React.useState(nextCapacityPrivacyRadius(vehicle.selection.precisionKm)),[dirty,setDirty]=React.useState(vehicle.selection.precisionKm>20);
  const base=React.useRef(vehicle);
- React.useEffect(()=>{if(!dirty){base.current=vehicle;setSource(vehicle.selection.source);setPrecision(nextCapacityPrivacyRadius(vehicle.selection.precisionKm));setPoint(fleetManualPoint(vehicle));}},[vehicle.selection.revision,dirty]);
- function draft(nextSource:typeof source,nextPrecision:number,nextPoint:typeof point){setSource(nextSource);setPrecision(nextPrecision);setPoint(nextPoint);setDirty(nextSource!==base.current.selection.source||nextPrecision!==base.current.selection.precisionKm||!sameFleetManualPoint(nextPoint,fleetManualPoint(base.current)));}
+ React.useEffect(()=>{if(!dirty){base.current=vehicle;setSource(vehicle.selection.source);setPrecision(nextCapacityPrivacyRadius(vehicle.selection.precisionKm));}},[vehicle.selection.revision,dirty]);
+ function draft(nextSource:typeof source,nextPrecision:number){setSource(nextSource);setPrecision(nextPrecision);setDirty(nextSource!==base.current.selection.source||nextPrecision!==base.current.selection.precisionKm);}
  React.useEffect(()=>{markDirty('source-'+vehicle.id,dirty);return()=>markDirty('source-'+vehicle.id,false);},[dirty,vehicle.id,markDirty]);
- const choices=[{id:'GPS',Icon:Satellite,message:'GPS device'},{id:'MOBILE',Icon:Smartphone,message:'Driver’s phone'},{id:'MANUAL',Icon:Pencil,message:'Manually entered'}] as const;
- return <form className={styles.form} onSubmit={async event=>{event.preventDefault();if(await save('SOURCE',{vehicleId:vehicle.id,source,precisionKm:precision,expectedRevision:base.current.selection.revision,...(source==='MANUAL'&&point?{manualLatitude:point.lat,manualLongitude:point.lng}:{})})){setDirty(false);onSaved?.();}}}>
-  {showTitle?<h3 style={{fontSize:'1rem',margin:0}}><Text message="Location source"/></h3>:null}<div className={styles.sourceChoices}>{choices.map(({id,Icon,message})=><label key={id}><input type="radio" name={`source-${vehicle.id}`} checked={source===id} onChange={()=>draft(id,precision,point)} disabled={busy||id==='GPS'&&!vehicle.selection.deviceId}/><Icon size={18}/><Text message={message}/></label>)}</div>
-  {source==='MANUAL'?<ManualTruckLocation point={point} disabled={busy} onChange={value=>{if(!busy)draft(source,precision,value);}}/>:null}
+ const choices=[{id:'GPS',Icon:Satellite,message:'GPS device'},{id:'MOBILE',Icon:Smartphone,message:'Driver’s phone'}] as const;
+ const allowed=source==='MOBILE'||source==='GPS'&&Boolean(vehicle.selection.deviceId);
+ return <form className={styles.form} onSubmit={async event=>{event.preventDefault();if(busy||!dirty||!allowed)return;if(await save('SOURCE',{vehicleId:vehicle.id,source,precisionKm:precision,expectedRevision:base.current.selection.revision})){setDirty(false);onSaved?.();}}}>
+  {showTitle?<h3 style={{fontSize:'1rem',margin:0}}><Text message="Location source"/></h3>:null}<div className={styles.sourceChoices}>{choices.map(({id,Icon,message})=><label key={id}><input type="radio" name={`source-${vehicle.id}`} checked={source===id} onChange={()=>draft(id,precision)} disabled={busy||id==='GPS'&&!vehicle.selection.deviceId}/><Icon size={18}/><Text message={message}/></label>)}</div>
+  {source==='MANUAL'?<p className={styles.note}><Text message="Manual locations are read-only. Choose a location source to resume updates."/></p>:null}
   {vehicle.selection.precisionKm>20?<p className={styles.note}><Text message="Last saved radius: {radius} km." values={{radius:vehicle.selection.precisionKm}}/></p>:null}
-  <label><Text message="Shared location accuracy"/><select aria-label={t('Shared location accuracy')} value={precision} onChange={event=>draft(source,Number(event.target.value),point)} disabled={busy}>{[1,3,5,10,20].map(radius=><option key={radius} value={radius}>{radius} km</option>)}</select></label>
+  <label><Text message="Shared location accuracy"/><select aria-label={t('Shared location accuracy')} value={precision} onChange={event=>draft(source,Number(event.target.value))} disabled={busy}>{[1,3,5,10,20].map(radius=><option key={radius} value={radius}>{radius} km</option>)}</select></label>
   <p className={styles.note}><Text message="The capacity map shows an approximate area, not the exact GPS point."/></p>
   {vehicle.published?.source&&vehicle.published.source!==vehicle.selection.source?<p className={styles.note}><Text message="Waiting for a report from the selected source. The map still shows the previous report."/></p>:null}
-  <div><button className="button small" disabled={busy||!dirty||source==='MANUAL'&&!point}><Text message="Save location source"/></button>{dirty||onCancel?<button type="button" className="button secondary small" disabled={busy} onClick={()=>{setSource(vehicle.selection.source);setPrecision(nextCapacityPrivacyRadius(vehicle.selection.precisionKm));setPoint(fleetManualPoint(vehicle));setDirty(false);onCancel?.();}}><Text message="Cancel"/></button>:null}</div>
+  <div><button className="button small" disabled={busy||!dirty||!allowed}><Text message="Save location source"/></button>{dirty||onCancel?<button type="button" className="button secondary small" disabled={busy} onClick={()=>{setSource(vehicle.selection.source);setPrecision(nextCapacityPrivacyRadius(vehicle.selection.precisionKm));setDirty(false);onCancel?.();}}><Text message="Cancel"/></button>:null}</div>
  </form>;
 }

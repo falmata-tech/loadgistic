@@ -72,7 +72,7 @@ export function projectMobileCapacity(workspace: unknown, actorId: string, role:
         configuration:text(row.cargo_configuration),
         id: text(row.id), label: [row.make, row.model].filter(Boolean).join(' '), plate: text(row.plate),
         driver: text(driver.name), driverId:text(driver.id), canLocate: capacityLocationSource(selection)==='MOBILE' && isCurrentDriver,
-        canSetManualLocation:isCurrentDriver,canSetPhoneLocation:isCurrentDriver,
+        canSetManualLocation:false,canSetPhoneLocation:isCurrentDriver,
         regularServices:regularService({corridors:list(data.corridors).map(object).filter(signal=>signal.vehicle_id===row.id&&signal.driver_user_id===driver.id)}).slice(0,1),
         dutyConfigured: row.duty_configuration_available === true,
         location:chosen,

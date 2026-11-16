@@ -5,10 +5,12 @@ import {bodyDigest,gatewayTokenDigest} from './telematics-gateway-auth.js';
 export const PRIVACY_BODY_LIMIT=16384;
 export const PRIVACY_PATH='/api/telematics/privacy';
 const configuration=z.object({id:z.string().uuid(),secret:z.string().min(32).max(256)}).strict();
-export function loadPrivacyConfigurations(raw=process.env.TELEMATICS_PRIVACY_GATEWAYS_JSON){
+export function loadPrivacyConfigurations(raw=process.env.TELEMATICS_PRIVACY_GATEWAYS_JSON,environment=process.env){
  try{
   const rows=z.array(configuration).max(10).parse(JSON.parse(raw||'[]'));
   if(new Set(rows.map(row=>row.id)).size!==rows.length)throw new Error();
+  const capacitySecret=environment?.DEMO_CAPACITY_WORKER_SECRET;
+  if(capacitySecret&&rows.some(row=>row.secret===capacitySecret))throw new Error();
   return rows;
  }catch{throw new Error('PRIVACY_GATEWAY_UNAVAILABLE');}
 }

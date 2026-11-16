@@ -60,6 +60,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  const data=useMemo(()=>capacityMapData(items.filter(item=>!ownIds.has(item.id))),[items,ownIds]);
  const ownData=useMemo(()=>capacityMapData(items.filter(item=>ownIds.has(item.id))),[items,ownIds]);
  const selectedId=selected?.id;
+ const selectedIdentity=selected?.vehicleId||selectedId;
  const [fanScope,setFanScope]=useState({data,ownData,selectedId});
  if(fanScope.data!==data||fanScope.ownData!==ownData||fanScope.selectedId!==selectedId){
   setFanScope({data,ownData,selectedId});
@@ -73,7 +74,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
   if(ready)await visibleQuery.current?.refresh();
  },[ready]);
  useEffect(()=>{if(ready&&!loading&&!selected&&!fitted.current&&cameraIntent.current?.canCenterInitially()){camera.current?.jumpTo({center:[initialCamera.longitude,initialCamera.latitude],zoom:initialCamera.zoom});fitted.current=true;}},[initialCamera,loading,ready,selected]);
- if(info&&info.id!==selected?.id)setInfo(null);
+ if(info&&info.id!==selectedIdentity)setInfo(null);
  const lastSelected=useRef<string|undefined>(undefined);
  useEffect(()=>{
   if(!selected){
@@ -81,13 +82,13 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
    if(previousView.current){const view=previousView.current;previousView.current=null;camera.current?.jumpTo({...view,padding:{top:0,right:0,bottom:0,left:0}});}
    return;
   }
-  if(ready&&selected.id!==lastSelected.current){
+  if(ready&&selectedIdentity!==lastSelected.current){
    if(!previousView.current)previousView.current={center:[...latestView.current.center],zoom:latestView.current.zoom,bearing:latestView.current.bearing,pitch:latestView.current.pitch};
    fitted.current=true;const bounds=signalBounds([selected]);
    if(bounds)camera.current?.fitBounds(bounds,{padding:{top:65,right:130,bottom:80,left:48},duration:300});
-   lastSelected.current=selected.id;
+   lastSelected.current=selectedIdentity;
   }
- },[selected,ready]);
+ },[selected,ready,selectedIdentity]);
  const paths=useMemo(()=>selected?signalPaths(selected,zoom):[],[selected,zoom]);
  const pathData=useMemo<FeatureCollection<LineString>>(()=>({type:'FeatureCollection',features:paths.map(path=>({type:'Feature',properties:{kind:path.kind,index:paths.indexOf(path)},geometry:{type:'LineString',coordinates:path.points}}))}),[paths]);
  const displayPoints=focusedMarkers(visible,selected?.id,selected?markerLocation(selected):null);
@@ -97,7 +98,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  const fanData:FeatureCollection<LineString>={type:'FeatureCollection',features:fan&&!selected?fan.members.map(member=>({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[member.coordinate,member.display]}})):[]};
  const showPoint=async(point:VisiblePoint)=>{
   cameraIntent.current?.gesture();
-  if(selected){setInfo({id:selected.id,kind:'truck',index:-1});return;}
+  if(selected){setInfo({id:selectedIdentity!,kind:'truck',index:-1});return;}
   if(point.cluster===null){const item=items.find(item=>item.id===point.itemId);if(item){setFan(null);setInfo(null);onSelect(item);}return;}
   if(!point.status)return;
   const intent=cameraIntent.current;if(!intent)return;
@@ -138,7 +139,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
   }
   latestView.current=view;
  };
- const active=info?.id===selected?.id?info:null;
+ const active=info?.id===selectedIdentity?info:null;
  const detailFrame=active?.kind==='truck'?capacityDetailFrame(modalFrame,windowSize):modalFrame;
  const measureModal=useCallback(()=>host.current?.measureInWindow((left,top,width,height)=>{if(width&&height)setModalFrame({left,top,width,height});}),[]);
  useEffect(()=>{if(active)measureModal();},[active,measureModal,windowSize.width,windowSize.height]);
@@ -153,7 +154,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  return <View ref={host} collapsable={false} onLayout={measureModal} onTouchStart={()=>cameraIntent.current?.gesture()} onPointerDown={()=>cameraIntent.current?.gesture()} style={styles.map}>
  <Map ref={map} style={styles.map} mapStyle={mapStyle} attribution onPress={()=>setFan(null)} onDidFailLoadingMap={()=>setError('The map could not load. Check your connection.')} onDidFinishLoadingMap={()=>{setReady(true);setError('');}} onDidFinishRenderingFrame={()=>void refreshVisible()} onRegionIsChanging={event=>{observeView(event.nativeEvent,event.nativeEvent.userInteraction);visibleQuery.current?.moving();}} onRegionDidChange={event=>{observeView(event.nativeEvent,event.nativeEvent.userInteraction);setZoom(event.nativeEvent.zoom);visibleQuery.current?.settled();}}>
  <Camera ref={camera} initialViewState={{center:[initialCamera.longitude,initialCamera.latitude],zoom:initialCamera.zoom}} maxZoom={20}/>
- <GeoJSONSource id="selected-signals" data={pathData} onPress={event=>{event.stopPropagation();const feature=event.nativeEvent.features[0];const kind=feature?.properties?.kind as InfoKind;if(selected&&kind in colors)setInfo({id:selected.id,kind,index:Number(feature?.properties?.index)||0});}}>
+ <GeoJSONSource id="selected-signals" data={pathData} onPress={event=>{event.stopPropagation();const feature=event.nativeEvent.features[0];const kind=feature?.properties?.kind as InfoKind;if(selected&&kind in colors)setInfo({id:selectedIdentity!,kind,index:Number(feature?.properties?.index)||0});}}>
  <Layer id="location-outline" type="line" filter={['==',['get','kind'],'location']} paint={{'line-color':colors.location,'line-width':4,'line-dasharray':[2,2]}}/>
  <Layer id="current-route" type="line" filter={['==',['get','kind'],'current']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':color('current'),'line-width':5}}/>
  <Layer id="regular-route" type="line" filter={['==',['get','kind'],'regular']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':'#c06620','line-width':4,'line-dasharray':[1,2]}}/>
@@ -207,7 +208,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
    <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred corridor')}</Text></View>
   </ScrollView>}
  </View>}
- {!!selected&&<ScrollView style={[styles.infoControls,{top:topInset,bottom:bottomInset}]} contentContainerStyle={{gap:6}} showsVerticalScrollIndicator={false}>{choices.map(choice=><Pressable key={`${choice.kind}:${choice.index}`} accessibilityRole="button" accessibilityLabel={t(label(choice.kind))} accessibilityState={{selected:active?.kind===choice.kind}} onPress={()=>setInfo({id:selected.id,...choice})} style={[styles.infoControl,{borderLeftColor:color(choice.kind)},active?.kind===choice.kind&&{backgroundColor:palette.blueSoft,borderColor:color(choice.kind)}]}><Text style={styles.controlLabel}>{t(shortLabel(choice.kind))}</Text><Text style={{fontSize:18,fontWeight:'700',color:color(choice.kind)}}>…</Text></Pressable>)}</ScrollView>}
+ {!!selected&&<ScrollView style={[styles.infoControls,{top:topInset,bottom:bottomInset}]} contentContainerStyle={{gap:6}} showsVerticalScrollIndicator={false}>{choices.map(choice=><Pressable key={`${choice.kind}:${choice.index}`} accessibilityRole="button" accessibilityLabel={t(label(choice.kind))} accessibilityState={{selected:active?.kind===choice.kind}} onPress={()=>setInfo({id:selectedIdentity!,...choice})} style={[styles.infoControl,{borderLeftColor:color(choice.kind)},active?.kind===choice.kind&&{backgroundColor:palette.blueSoft,borderColor:color(choice.kind)}]}><Text style={styles.controlLabel}>{t(shortLabel(choice.kind))}</Text><Text style={{fontSize:18,fontWeight:'700',color:color(choice.kind)}}>…</Text></Pressable>)}</ScrollView>}
  {/* Android resolves overlapping native marker rectangles before React handlers. */}
  {!!selected&&<Pressable accessibilityRole="button" accessibilityLabel={t('Back to map')} onPress={()=>{setInfo(null);onDeselect();}} style={[styles.selectionExit,{position:'absolute',left:12,top:topInset}]}><Text style={{fontSize:28,color:'#155eef'}}>×</Text></Pressable>}
  {!!error&&<Text accessibilityRole="alert" style={[styles.error,{top:topInset+(selected?50:0),right:selected?122:16}]}>{error}</Text>}

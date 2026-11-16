@@ -42,6 +42,17 @@ test('actual saved demo location provenance survives the native projection witho
  }
  assert.equal(parse({fixture_source:'loadgistic',demo_mode:'RUNNING'}).locationIsDemo,false,'synthetic identity/source settings are not fix provenance');
 });
+test('Demo account accepts only trusted exact boolean independently of location provenance',()=>{
+ const parse=extra=>parseCapacityPage({items:[row('demo',extra)],hasMore:false}).items[0];
+ for(const account_is_demo of [true,false,undefined,null,'true',1,{},[]]){
+  const item=parse({account_is_demo,location_is_demo:true,app_metadata:{fixture_source:'loadgistic'},fixture_key:'private-fixture',demo_epoch:'private-epoch'});
+  assert.equal(item.accountIsDemo,account_is_demo===true);assert.equal(item.locationIsDemo,true);
+  for(const key of ['app_metadata','fixture_key','demo_epoch','account_is_demo'])assert.equal(Object.hasOwn(item,key),false,key);
+ }
+ const realFix=parse({account_is_demo:true,location_is_demo:false,location_source:'DEVICE_OBSCURED'});
+ assert.equal(realFix.accountIsDemo,true);assert.equal(realFix.locationIsDemo,false);assert.equal(realFix.locationSource,'MOBILE');
+ assert.equal(parse({user_metadata:{is_demo:true,fixture_source:'loadgistic'}}).accountIsDemo,false);
+});
 test('search is encoded; insecure external endpoints and embedded credentials fail', () => {
  assert.equal(new URL(capacityUrl('https://loadgistic.com', 'A&B')).searchParams.get('q'), 'A&B');
  assert.throws(() => capacityUrl('http://example.com', ''));

@@ -5,6 +5,7 @@ import {randomUUID} from 'node:crypto';
 import ts from 'typescript';
 import {adminDemoIntake,adminDeviceProvisionCommand,adminDeviceRegistrationCommand} from '../src/lib/telematics-admin-provision.js';
 import {isDemoAdminSpare,gpsDeviceDisplayLabel} from '../src/lib/demo-admin-spare.js';
+import {selectLocationSchema} from '../src/lib/telematics-contract.js';
 
 test('saved Demo spare has a stable display name when its vehicle assignment changes',()=>{
  const spare={imei:'990000000000013',synthetic:true,label:'Demo GPS for Truck 02'};
@@ -20,7 +21,7 @@ function loadReadback({record,query,cohort={'company-truck':{imei:'9900000000000
  new Function('require','exports',code)(name=>{
   if(name==='./supabase-adapter.js')return {createSupabaseAdminClient:()=>client||({from:()=>query})};
   if(name==='./platform-admin/supabase.js')return {getAdminOperationRecord:record};
-  if(name==='./telematics-contract.js')return {deviceCommandSchema:{parse:value=>value}};
+  if(name==='./telematics-contract.js')return {deviceCommandSchema:{parse:value=>value},selectLocationSchema};
   if(name==='./telematics-gateway-auth.js')return {};
   if(name==='./demo-motion-cohort.js')return {DEMO_MOTION_COHORT:cohort};
   if(name==='./demo-admin-spare.js')return {DEMO_ADMIN_SPARE:{vehicleId:randomUUID(),imei:'990000000000013',label:'Demo GPS for Truck 02'},isDemoAdminSpare};
@@ -28,6 +29,16 @@ function loadReadback({record,query,cohort={'company-truck':{imei:'9900000000000
  },exports);
  return exports[method];
 }
+
+test('retired Manual commands never reach the database, while Phone and GPS keep their exact actor and revision',async()=>{
+ const calls=[],actor={id:randomUUID()},command={vehicleId:randomUUID(),source:'MOBILE',precisionKm:10,expectedRevision:'2026-11-13T12:00:00Z'};
+ const select=loadReadback({method:'selectVehicleLocationSource',client:{async rpc(name,args){calls.push({name,args});return {data:{source:args.command.source},error:null};}}});
+ for(const changed of [{source:'MANUAL'},{manualLatitude:9,manualLongitude:38},{source:'GPS',manualLatitude:null},
+  {approximateLatitude:9,approximateLongitude:38}])assert.throws(()=>select(actor,{...command,...changed}));
+ assert.deepEqual(calls,[]);
+ for(const source of ['MOBILE','GPS'])assert.deepEqual(await select(actor,{...command,source}),{source});
+ assert.deepEqual(calls,['MOBILE','GPS'].map(source=>({name:'select_telematics_location_source',args:{actor_user_id:actor.id,command:{...command,source}}})));
+});
 
 test('Admin spare command and engine step-up are refused without revealing the device to another provider',async()=>{
  const id=randomUUID(),calls=[];let stored={imei:'990000000000013',synthetic:true};

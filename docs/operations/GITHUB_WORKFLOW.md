@@ -6,6 +6,22 @@ a merge. Start with current [PROGRESS](../PROGRESS.md), not historical PR result
 
 ## Current delivery checkpoint, November 13 UTC
 
+[PR37's final receipts](https://github.com/falmata-tech/loadgistic/pull/37) establish
+the completed delivery baseline. Its qualified PR and separate merged `520328b`
+main runs each passed all 16 jobs. Source workflow43378172030 advanced production
+and confirmed the ref at that SHA. Actual Production deployment
+`6af6ac945eb1cff1d55e577c` was Published after scanning, all 8 final ZIP checks and
+runtime verification passed. Deployment `6af4f16a16aab2cef815c573` remains rollback.
+Netlify uses production as the production branch, tracks main alone additionally
+for non-production builds/previews, and retains auto-publish ON and private
+Production scopes. This baseline does not qualify the next GPS/simulator work;
+see [active progress](../PROGRESS.md) for pending work and the paused sender change.
+The strict advisor monitor still lacks its scoped credential and retains its
+known WARN findings. Reuse the exact-source results rather than rerunning
+resolved release preparation merely because an older checkpoint says pending.
+
+## Historical mailbox checkpoint — before PR37 qualification
+
 PR36 subsequently merged asab899497 after its16 exact PR jobs passed; separate
 main CI43352081887 also passed all16 on attempt1. Source workflow43355866914
 created/read back production atab899497. The real Git webhook launched production
@@ -44,6 +60,8 @@ desktop plus three phone tasks with zero skips/retries. Subsequent documentation
 reconciliation leaves these executable inputs unchanged. The exact PR/main and
 production publication remain independent prerequisites; final release receipts
 are recorded in the PR after those actions, not inferred from this focused run.
+
+## Current diagnostic lane and monitoring
 
 For fixed admin-queue diagnosis before opening a PR, diagnose/admin-queues/**
 pushes run only the existing isolated focused workflow. It uses read-only

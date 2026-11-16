@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {loadCapacityMapWindow,preserveSelectedMapTruck,reconcileCapacityMapWindow} from '../src/lib/capacity-map-loading.js';
+import {loadCapacityMapWindow,preserveSelectedMapTruck,reconcileCapacityMapWindow,currentCapacitySelection} from '../src/lib/capacity-map-loading.js';
 
 test('viewport pages load automatically in sequence without dropping results beyond 140',async()=>{
   const cursors=[];let result;let active=0;
@@ -56,4 +56,16 @@ test('refresh keeps all loaded trucks through partial pages, then prunes only at
  assert.deepEqual(visible,[{id:'selected'},{id:'a',version:2},{id:'b'}]);
  assert.deepEqual(reconcileCapacityMapWindow(visible,[],null,true),[]);
  assert.deepEqual(reconcileCapacityMapWindow(visible,[],null,false),visible);
+});
+
+test('new authorized publications replace old vehicle markers and selected details on web/native',()=>{
+ for(const vehicleField of ['vehicle_id','vehicleId']){
+  const old={id:'old',[vehicleField]:'vehicle',percent:20},current={id:'new',[vehicleField]:'vehicle',percent:80},other={id:'other',[vehicleField]:'different'};
+  assert.deepEqual(reconcileCapacityMapWindow([old,other],[current],'old',false),[other,current]);
+  assert.deepEqual(reconcileCapacityMapWindow([old,other],[current],'old',true),[current]);
+  assert.equal(currentCapacitySelection(old,[other,current]),current);
+  assert.equal(currentCapacitySelection(old,[other]),null);
+ }
+ assert.equal(currentCapacitySelection({id:'old',provider:'same'},[{id:'new',provider:'same'}]),null,'provider/name similarity cannot invent vehicle identity');
+ assert.equal(currentCapacitySelection({id:'old',vehicle_id:'vehicle'},[{id:'a',vehicle_id:'vehicle'},{id:'b',vehicle_id:'vehicle'}]),null,'ambiguous returned offers cannot choose a replacement');
 });

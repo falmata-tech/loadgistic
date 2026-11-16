@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import axe from 'axe-core';
 import {parseWorkflowEvidence} from './lib/browser-workflow-evidence.mjs';
+import {focusedCase,parseFocusedBrowserEvidence} from './lib/focused-browser-evidence.mjs';
 
 const root=path.resolve(fileURLToPath(new URL('..',import.meta.url)));
 const manifest=JSON.parse(readFileSync(path.join(root,'tests/e2e/ci-allowed-skips.json'),'utf8'));
@@ -268,9 +269,19 @@ export function failedBrowserCaseDiagnostics(report){
   const portrait=portraitReplacementFailure(result,file,test.title);
   const operationsProof=operationsProofFailure(result,file,test.title);
   const evidence=workflowEvidence(result,file,test.title,test.project);
+  const focused=[];
+  const identity=focusedCase(test.title);
+  if(identity?.file===file)for(const output of Array.isArray(result?.stdout)?result.stdout.slice(0,64):[]){
+   if(typeof output?.text!=='string'||output.text.length>8192)continue;
+   for(const line of output.text.split(/\r?\n/).slice(0,16)){
+    if(!line.startsWith('CI_BROWSER_FOCUSED_EVIDENCE '))continue;
+    const value=parseFocusedBrowserEvidence(line.slice('CI_BROWSER_FOCUSED_EVIDENCE '.length));
+    if(value?.project===test.project&&value?.file===file&&value?.scenario===identity.scenario&&focused.length<2)focused.push(value);
+   }
+  }
   diagnostics.push({file,project:projects.has(test.project)?test.project:'unknown',
    category:test.status==='flaky'?'FLAKY':result?resultCategories.get(result.status)||'UNKNOWN_RESULT':'RESULT_UNAVAILABLE',
-   line:evidence?.line??operationsProof?.failureLine??failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
+   line:evidence?.line??focused[0]?.line??operationsProof?.failureLine??failureLine(result,file),declarationLine:sourceLine(test.declarationLine),...(focused.length?{focused}:{}),...(layout.length?{layout}:{}),...(a11y?{a11y}:{}),
    ...(authenticatedA11y?{authenticatedA11y}:{}),...(workflow?{workflow}:{}),...(portrait?{portrait}:{}),...(operationsProof?{operationsProof}:{}),...(evidence?{workflowEvidence:evidence}:{})});
   if(diagnostics.length===20)break;
  }

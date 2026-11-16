@@ -88,12 +88,12 @@
     },
     {
       "file": "driver-manual-capacity-location.spec.ts",
-      "title": "assigned driver chooses a manual Capacity point, sees its source, and can return to phone",
+      "title": "assigned driver reads a legacy Manual source, cannot edit it, and deliberately resumes phone updates",
       "project": "mobile-chromium"
     },
     {
       "file": "driver-manual-mobile-preview.spec.ts",
-      "title": "assigned driver updates the Expo Capacity map manually, then switches back to phone",
+      "title": "assigned driver sees read-only legacy Manual in Expo and deliberately resumes phone updates",
       "project": "mobile-chromium"
     },
     {
@@ -288,12 +288,12 @@
     },
     {
       "file": "telematics-fleet.spec.ts",
-      "title": "fictional GPS fleet source saves worldwide manual coordinates, restores GPS and preserves owner/employee controls on web and Expo",
+      "title": "fictional GPS fleet rejects Manual writes, switches phone and restores GPS with owner/employee controls on web and Expo",
       "project": "desktop-chromium"
     },
     {
       "file": "telematics-fleet.spec.ts",
-      "title": "fictional GPS fleet source saves worldwide manual coordinates, restores GPS and preserves owner/employee controls on web and Expo",
+      "title": "fictional GPS fleet rejects Manual writes, switches phone and restores GPS with owner/employee controls on web and Expo",
       "project": "mobile-chromium"
     },
     {
@@ -308,12 +308,12 @@
     },
     {
       "file": "telematics-fleet.spec.ts",
-      "title": "saved Manual location reopens and changes accuracy without replacing its point on web and Expo",
+      "title": "saved Phone source reopens, changes privacy radius and cancels safely on web and Expo",
       "project": "desktop-chromium"
     },
     {
       "file": "telematics-fleet.spec.ts",
-      "title": "saved Manual location reopens and changes accuracy without replacing its point on web and Expo",
+      "title": "saved Phone source reopens, changes privacy radius and cancels safely on web and Expo",
       "project": "mobile-chromium"
     },
     {

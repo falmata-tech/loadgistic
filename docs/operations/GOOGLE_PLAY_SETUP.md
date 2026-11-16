@@ -1,10 +1,15 @@
 # Loadgistic Google Play setup
 
+For the November14 **local native-QA1.2.0/code10 APK**, see the
+[native device-testing runbook](ANDROID_DEVICE_TESTING.md). It uses a newly
+generated disposable debug certificate and is not Play-ready or uploaded.
+The signed-code9 and dated track records below remain separate evidence.
+
 Updated October21, 2026. Verified owner marketvision.tech@gmail.com, developer
 `5256539403314542898`, app `4974969611761012361`, package `com.loadgistic.app`.
 [Console dashboard](https://play.google.com/console/u/2/developers/5256539403314542898/app/4974969611761012361/app-dashboard).
 
-## Current test candidate — 1.1.1 / code 9
+## Recorded signed test candidate — 1.1.1 / code 9 (October21)
 
 The exact signed APK/AAB are built and verified for source `cad46f1`, CI
 `39528806968`, schema181. APK SHA256 is

@@ -1,3 +1,40 @@
+## Native Android test APK — November 14
+
+The standalone ARM64 **1.2.0/code 10** local test APK is built and statically
+qualified: 59,110,117 bytes, SHA256
+`a7f4e3609e3be8ea9eaa1f4ff0aed8581aea99ecd3d7c2a734279600a1c7b441`.
+It is a non-debuggable release variant with bundled Hermes, signed only with a
+new disposable local debug certificate. It is not upload-key-signed or Play-ready.
+All required release lint/sign/package checks completed in the final238.851s
+incremental build; earlier transport, task-wrapper and bounded-timeout receipts
+remain preserved rather than relabelled.
+
+Fresh frozen-source gates pass426/426 mobile tests, clean types/lint,
+796/796 translations and Android export. Actual packaged-bundle/source-map and
+native config/asset/lock checks establish executable-input equivalence with
+`4b7af44b772d92b7c56024613fba7b1a766340aa`:287 repository inputs,3,591 mapped
+dependency sources and40 route inputs match; the six edited server-auth modules
+are absent from the native graph. Creation base520328b/dirty freeze
+`1896956c78fa1c16312b34986670613e737858fcf32cfddd723aa2468802c314`
+remains separate from that equivalence result.
+
+Compiled permissions meet all8 required/zero forbidden checks (34 merged
+declarations, including notification badges/network/boot and biometric support).
+All25 ARM64 ELF libraries and ZIP native alignment pass16KB structural checks.
+MapLibre Native11.5.0 uses attributed OpenStreetMap raster tiles and needs no
+Google Maps renderer key; both Google Maps key metadata entries are absent as
+expected. Firebase resources/service and consent-controlled auto-init defaults
+are present. Android installation/startup, rendered maps, OS permissions,
+background reporting, GMS/FCM delivery and physical/OEM behavior remain untested.
+
+The [native testing runbook](operations/ANDROID_DEVICE_TESTING.md) records the
+immutable local APK, checks and bounded Genymotion proposal. Aggregate receipt:
+`.local/native-device-20261113/final-candidate/qualification/artifact-readiness.json`.
+Successful daemon shutdown/cache-lock checks release the VM window. No owner key,
+Google provider change, account/token creation, APK upload, device start, purchase
+or new owner-phone session occurred. The proposed one-device60min/$5-before-tax
+trial still needs its specific account/budget/upload agreement.
+
 ## October 20 physical Android testing arrangement
 
 The owner can connect an Android phone through wireless debugging when a

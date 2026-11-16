@@ -49,8 +49,11 @@ begin
  viewer_view:=provider_guest_tracking_for_recipient(shipment,viewer_digest);
  if exists(select 1 from jsonb_array_elements(viewer_view->'events') e where(e->>'has_proof')::boolean) then raise exception 'VIEWER_PROOF_METADATA_LEAK';end if;
 
- result:=select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',20,'expectedRevision',revision,'manualLatitude',9.03,'manualLongitude',38.74));
- revision:=result->>'revision';owner_view:=provider_guest_tracking_for_recipient(shipment,owner_digest);
+ -- Seed only this rollback fixture's retained pre-policy Capacity source.
+ stamp:=clock_timestamp();
+ insert into telematics_location_sources(vehicle_id,source,precision_km,selected_by,selected_at,revision,manual_latitude,manual_longitude)
+ values(truck,'MANUAL',20,owner_id,stamp,stamp,9.03,38.74);
+ revision:=stamp::text;owner_view:=provider_guest_tracking_for_recipient(shipment,owner_digest);
  if owner_view->'current_location'->>'location_source' is distinct from 'DEVICE_OBSCURED'
   or owner_view->'current_location'->>'location_precision_km' is distinct from '10' then raise exception 'MANUAL_CAPACITY_REPLACED_AGREED_PHONE_TRACKING';end if;
  if owner_view->'current_location'->>'location_lat'='9.03' or owner_view->'current_location'->>'location_lng'='38.74' then raise exception 'RAW_MANUAL_POINT_LEAK';end if;
@@ -99,8 +102,14 @@ begin
  result:=select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','GPS','precisionKm',10,'expectedRevision',revision));
  if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'->>'location_source' is distinct from 'TELEMATICS' then raise exception 'CAPACITY_SOURCE_RESET_ACTIVE_GPS_AGREEMENT';end if;
  revision:=result->>'revision';
- perform select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',10,
-  'manualLatitude',9.07,'manualLongitude',38.79,'expectedRevision',revision));
+ begin
+  perform select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',10,
+   'manualLatitude',9.07,'manualLongitude',38.79,'expectedRevision',revision));
+  raise exception 'RETIRED_MANUAL_SOURCE_ACCEPTED';
+ exception when raise_exception then if sqlerrm<>'INVALID_TELEMATICS_INPUT' then raise;end if;end;
+ if (select s.revision from telematics_location_sources s where s.vehicle_id=truck) is distinct from revision::timestamptz
+  or (select s.source from telematics_location_sources s where s.vehicle_id=truck)<>'GPS'
+  then raise exception 'RETIRED_MANUAL_COMMAND_CHANGED_GPS_SOURCE';end if;
  if provider_guest_tracking_for_recipient(gps_shipment,owner_digest)->'current_location'->>'location_source' is distinct from 'TELEMATICS'
   then raise exception 'MANUAL_CAPACITY_REPLACED_ACTIVE_GPS_AGREEMENT';end if;
  update provider_shipments set operational_status='CANCELLED' where id=gps_shipment;

@@ -127,7 +127,18 @@ begin
  if public.telematics_effective_location(replacement) is not null then raise exception 'OLD_FIX_FOLLOWED_MOVED_DEVICE';end if;
  result:=ingest_telematics_position(digest,fix||jsonb_build_object('eventKey','test:old-epoch'));
  if exists(select 1 from telematics_positions where event_key='test:old-epoch' and vehicle_id is not null) then raise exception 'OLD_EPOCH_FIX_REASSIGNED';end if;
- result:=select_telematics_location_source(owner_id,jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',20,'manualLatitude',51.5,'manualLongitude',-0.1,'expectedRevision',selection_revision));
+ perform pg_temp.gps_denied(format('select select_telematics_location_source(%L,%L::jsonb)',owner_id,
+  jsonb_build_object('vehicleId',truck,'source','MANUAL','precisionKm',20,'manualLatitude',51.5,'manualLongitude',-0.1,'expectedRevision',selection_revision)),'INVALID_TELEMATICS_INPUT');
+ -- Retained pre-policy history is seeded directly in this rollback fixture.
+ stamp:=clock_timestamp();
+ insert into telematics_location_sources(vehicle_id,source,precision_km,selected_by,selected_at,revision,manual_latitude,manual_longitude)
+ values(truck,'MANUAL',20,owner_id,stamp,stamp,51.5,-0.1)
+ on conflict(vehicle_id) do update set source=excluded.source,precision_km=excluded.precision_km,
+  selected_by=excluded.selected_by,selected_at=excluded.selected_at,revision=excluded.revision,
+  manual_latitude=excluded.manual_latitude,manual_longitude=excluded.manual_longitude;
+ fix:=telematics_effective_location(truck);
+ update capacities set location_lat=(fix->>'latitude')::double precision,location_lng=(fix->>'longitude')::double precision,
+  location_precision_km=(fix->>'precisionKm')::integer,location_source='MANUAL_ADMIN',location_updated_at=stamp where id=capacity_id;
  select item->'selection'->'manualPoint' into rows from jsonb_array_elements(telematics_workspace(owner_id,1)->'vehicles') item where item->>'id'=truck::text;
  if rows is distinct from '{"latitude":51.5,"longitude":-0.1}'::jsonb then raise exception 'SAVED_PRIVATE_MANUAL_POINT_MISSING';end if;
  if exists(select 1 from jsonb_array_elements(telematics_workspace(other_owner,1)->'vehicles') item where item->>'id'=truck::text)

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,writeFileSync,rmSync,readFileSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,writeFileSync,rmSync,readFileSync,realpathSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {tmpdir} from 'node:os';
@@ -30,7 +30,7 @@ function fixture(change,root,directory=path.join(root,'.netlify/functions')){
  return directory;
 }
 function inspect(change){
- const root=mkdtempSync(path.join(tmpdir(),'loadgistic-bundle-SENTINEL-'));
+ const root=mkdtempSync(path.join(realpathSync(tmpdir()),'loadgistic-bundle-SENTINEL-'));
  try{
   const directory=fixture(change,root),result=spawnSync('python3',[script,directory,root],{encoding:'utf8'});
   assert.equal(result.stderr,'');assert.doesNotMatch(result.stdout,/SENTINEL|\.env|\/tmp|nextConfig|appDir/);
@@ -38,7 +38,7 @@ function inspect(change){
  }finally{rmSync(root,{recursive:true,force:true});}
 }
 test('actual deploy-ready ZIP inspection verifies root layout, imports, integrity and digests without extraction',()=>{
- const {status,value}=inspect();assert.equal(status,0);assert.equal(value.passed,true);assert.equal(value.nodeBundlerNone,true);
+ const {status,value}=inspect();assert.equal(status,0,JSON.stringify(value));assert.equal(value.passed,true);assert.equal(value.nodeBundlerNone,true);
  assert.equal(value.privateEntries,0);assert.equal(value.bundles.length,1);assert.equal(value.bundles[0].kind,'NEXT_SERVER');
  assert.match(value.bundles[0].sha256,/^[a-f0-9]{64}$/);assert.equal(value.bundles[0].entries,7);
 });
@@ -48,7 +48,7 @@ test('unsafe packages stop with fixed reasons instead of private archive paths o
  }
 });
 test('missing or corrupt ZIP input fails closed without error text',()=>{
- const root=mkdtempSync(path.join(tmpdir(),'loadgistic-bundle-SENTINEL-'));
+ const root=mkdtempSync(path.join(realpathSync(tmpdir()),'loadgistic-bundle-SENTINEL-'));
  try{
   let result=spawnSync('python3',[script,root,root],{encoding:'utf8'});assert.deepEqual(JSON.parse(result.stdout),{passed:false,code:'BUNDLE_COUNT_INVALID'});
   const directory=fixture(undefined,root);writeFileSync(path.join(directory,server+'.zip'),'SENTINEL');
@@ -63,7 +63,7 @@ test('provider hook runs after bundling and fails the build when verification is
 });
 
 test('the provider callback verifies actual ZIP bytes before reporting success',()=>{
- const root=mkdtempSync(path.join(tmpdir(),'loadgistic-bundle-SENTINEL-'));
+ const root=mkdtempSync(path.join(realpathSync(tmpdir()),'loadgistic-bundle-SENTINEL-'));
  try{
   const directory=fixture(undefined,root),plugin=path.resolve('netlify/plugins/verify-function-bundles/index.js');
   const code=`require(${JSON.stringify(plugin)}).onPostBuild({constants:{FUNCTIONS_DIST:${JSON.stringify(directory)}},utils:{build:{failBuild:()=>{throw Error('CHECK_FAILED')}}}})`;
@@ -74,8 +74,8 @@ test('the provider callback verifies actual ZIP bytes before reporting success',
 });
 
 test('the explicit provider bundle directory may live outside the source checkout',()=>{
- const root=mkdtempSync(path.join(tmpdir(),'loadgistic-site-SENTINEL-'));
- const output=mkdtempSync(path.join(tmpdir(),'loadgistic-functions-SENTINEL-'));
+ const root=mkdtempSync(path.join(realpathSync(tmpdir()),'loadgistic-site-SENTINEL-'));
+ const output=mkdtempSync(path.join(realpathSync(tmpdir()),'loadgistic-functions-SENTINEL-'));
  try{
   fixture(undefined,root,output);
   const result=spawnSync('python3',[script,output,root],{encoding:'utf8'});

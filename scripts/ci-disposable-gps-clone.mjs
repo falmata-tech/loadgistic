@@ -1,8 +1,10 @@
 // CI-only dump/restore pipeline. Keep raw PostgreSQL stderr in memory and emit
 // only fixed error categories: it can contain object names or connection data.
 import {spawn} from 'node:child_process';
+import {randomUUID} from 'node:crypto';
 
 const STDERR_LIMIT = 8192;
+export const GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS=120000;
 
 export function checkedLocalGpsPassword(status) {
   let url;
@@ -32,18 +34,122 @@ export function checkedMatchingPgMajor(clientMajor, serverMajor) {
   return clientMajor;
 }
 
-// Supabase PostgreSQL 15's pg_graphql archive grants access to this
-// extension-owned wrapper before pg_restore has recreated the wrapper. Defer
-// this single ACL; every other catalog entry still restores with stop-on-error.
-export function splitPgGraphqlAclToc(toc) {
+function graphqlArchiveParts(toc,snapshot){
+  if(typeof toc!=='string')throw Error('GPS CI expected one Supabase pg_graphql wrapper ACL');
   const lines = toc.split(/\r?\n/);
   const pattern = /^\d+; \d+ \d+ ACL graphql_public FUNCTION graphql\("operationName" text, query text, variables jsonb, extensions jsonb\) supabase_admin$/;
   const deferred = lines.filter((line) => pattern.test(line));
-  if (deferred.length !== 1) throw new Error('GPS CI expected one Supabase pg_graphql wrapper ACL');
+  // Refuse changed signatures, quoting, owners and unexpected object labels,
+  // rather than treating an unrecognized wrapper ACL as an omitted ACL.
+  const related=lines.filter(line=>!/^\s*;/.test(line)&&/\bACL\b/.test(line)
+    &&/(?:^|\s)"?graphql_public"?(?:\s|\.)/.test(line)
+    &&/(?:^|\s|\.)"?graphql"?(?:\s|\(|$)/.test(line));
+  const matchesInitial=snapshot?.initialAclCount===1&&snapshot.initialAclHash===snapshot.identity.split('|')[1];
+  const mode=deferred.length===1&&related.length===1?'DEFERRED_WRAPPER_ACL':
+    deferred.length===0&&related.length===0&&matchesInitial&&snapshot.owner==='supabase_admin'?'INITIAL_WRAPPER_ACL':'REFUSED';
+  const bucket=count=>count===0?'zero':count===1?'one':'multiple';
+  return {lines,pattern,deferred,mode,diagnostic:{mode,exactAclEntries:bucket(deferred.length),relatedAclEntries:bucket(related.length),
+    initialAclRows:bucket(snapshot?.initialAclCount??0),currentMatchesInitial:matchesInitial,expectedOwner:snapshot?.owner==='supabase_admin'}};
+}
+
+// Defer only the known PG15 ACL. A second dump can omit it after extension
+// enrollment recorded these exact current grants as the initial grants.
+export function splitPgGraphqlAclToc(toc,graphqlSnapshot=null) {
+  if(graphqlSnapshot!==null)checkedGraphqlSnapshot(graphqlSnapshot);
+  const {lines,pattern,deferred,mode,diagnostic}=graphqlArchiveParts(toc,graphqlSnapshot);
+  if(mode==='REFUSED')throw new Error('GPS CI expected one Supabase pg_graphql wrapper ACL');
   return {
     main: `${lines.filter((line) => !pattern.test(line)).join('\n').trimEnd()}\n`,
-    deferred: `${deferred[0]}\n`,
+    deferred: deferred.length?`${deferred[0]}\n`:null,
+    diagnostic,
   };
+}
+
+const graphqlWrapper='graphql_public.graphql(text,text,jsonb,jsonb)';
+const graphqlIdentitySql=`select md5(pg_get_functiondef(p.oid)) || '|' || md5(coalesce(p.proacl::text,''))
+ from pg_proc p where p.oid=to_regprocedure('${graphqlWrapper}');`;
+const graphqlExtensionSql=`select e.extname from pg_depend d join pg_extension e on e.oid=d.refobjid
+ where d.classid='pg_proc'::regclass and d.objid=to_regprocedure('${graphqlWrapper}') and d.deptype='e';`;
+const graphqlOwnerSql=`select pg_get_userbyid(proowner) from pg_proc where oid=to_regprocedure('${graphqlWrapper}');`;
+const graphqlInitialSql=`select jsonb_build_object('owner',pg_get_userbyid(p.proowner),
+ 'initialAclCount',(select count(*) from pg_init_privs i where i.classoid='pg_proc'::regclass and i.objoid=p.oid),
+ 'initialAclHash',(select md5(min(i.initprivs::text)) from pg_init_privs i where i.classoid='pg_proc'::regclass and i.objoid=p.oid and i.objsubid=0 and i.privtype='e'))
+ from pg_proc p where p.oid=to_regprocedure('${graphqlWrapper}');`;
+function checkedGraphqlSnapshot(snapshot){
+ if(snapshot?.extension!=='pg_graphql'||!/^[a-f0-9]{32}\|[a-f0-9]{32}$/.test(snapshot?.identity||'')
+  ||typeof snapshot?.definition!=='string'||!snapshot.definition.startsWith('CREATE OR REPLACE FUNCTION graphql_public.graphql(')
+  ||![0,1].includes(snapshot?.initialAclCount)
+  ||(snapshot.initialAclCount===0?snapshot.initialAclHash!==null:!/^[a-f0-9]{32}$/.test(snapshot.initialAclHash||'')))
+  throw Error('GPS CI invalid pg_graphql restore snapshot');
+ if(snapshot.owner!=='supabase_admin')throw Error('GPS CI GraphQL wrapper owner mismatch');
+ return snapshot;
+}
+function graphqlInitialFacts(value){
+ try{const parsed=JSON.parse(value);if(parsed&&typeof parsed==='object')return {owner:parsed.owner,initialAclCount:parsed.initialAclCount,initialAclHash:parsed.initialAclHash};}catch{}
+ throw Error('GPS CI invalid pg_graphql restore snapshot');
+}
+
+// Capture before a disposable source is dropped, or from the unchanged local
+// primary used by normal CI cloning. No credentials or customer rows are read.
+export async function captureGpsCloneGraphql({major,query}){
+ checkedMatchingPgMajor(major,major);
+ if(major!==15)return null;
+ return checkedGraphqlSnapshot({extension:await query(graphqlExtensionSql),identity:await query(graphqlIdentitySql),
+  definition:await query(`select pg_get_functiondef('${graphqlWrapper}'::regprocedure);`),
+  ...graphqlInitialFacts(await query(graphqlInitialSql))});
+}
+
+// This probe is deliberately separate from read-only source capture: the normal
+// cloner must never create a probe in the unchanged primary. Only the owner-race
+// runner calls it on an already verified disposable clone, before fixture writes.
+export async function proveGpsCloneGraphqlCreation({database,graphqlSnapshot,query}){
+ if(!['loadgistic_pilot_ci','loadgistic_telematics_ci'].includes(database))throw Error('GPS CI disposable GraphQL probe database required');
+ const source=checkedGraphqlSnapshot(graphqlSnapshot),name='loadgistic_acl_probe_'+randomUUID().replaceAll('-','');
+ const result=await query(`begin;set local statement_timeout='5s';set local lock_timeout='2s';
+ do $guard$ begin if current_database()<>'${database}' or current_user<>'supabase_admin' then raise exception 'GPS_CLONE_DISPOSABLE_REQUIRED';end if;end $guard$;
+ create function graphql_public.${name}() returns jsonb language sql as 'select null::jsonb';
+ select md5(coalesce(proacl::text,''))||'|'||pg_get_userbyid(proowner) from pg_proc where oid='graphql_public.${name}()'::regprocedure;
+ rollback;`);
+ if(result!==source.identity.split('|')[1]+'|supabase_admin')throw Error('GPS CI fresh GraphQL wrapper ACL differs from source');
+ return true;
+}
+
+export function gpsCloneGraphqlArchiveDiagnostic({major,graphqlSnapshot,toc}){
+ checkedMatchingPgMajor(major,major);if(major===17)return null;
+ return graphqlArchiveParts(toc,checkedGraphqlSnapshot(graphqlSnapshot)).diagnostic;
+}
+
+export function checkedGpsCloneArchive({major,graphqlSnapshot,toc}){
+ checkedMatchingPgMajor(major,major);
+ if(major===17)return null;
+ checkedGraphqlSnapshot(graphqlSnapshot);
+ return splitPgGraphqlAclToc(toc,graphqlSnapshot);
+}
+
+// Both clone creation and same-clone baseline restoration use this exact PG15
+// sequence. Callbacks own their checked local connection and private archive.
+export async function restoreGpsCloneArchive({major,graphqlSnapshot,readToc,restoreArchive,targetQuery}){
+ checkedMatchingPgMajor(major,major);
+ if(major===17){await restoreArchive(null);return;}
+ const source=checkedGraphqlSnapshot(graphqlSnapshot),lists=checkedGpsCloneArchive({major,graphqlSnapshot:source,toc:await readToc()});
+ await restoreArchive(lists.main);
+ if(await targetQuery(`select to_regprocedure('${graphqlWrapper}') is null;`)!=='t')
+  throw Error('GPS CI expected PostgreSQL15 GraphQL wrapper restore gap changed');
+ await targetQuery(source.definition+'\n');
+ const createdIdentity=await targetQuery(graphqlIdentitySql);
+ if(await targetQuery(graphqlOwnerSql)!==source.owner)throw Error('GPS CI GraphQL wrapper owner mismatch');
+ if(!/^[a-f0-9]{32}\|[a-f0-9]{32}$/.test(createdIdentity)||createdIdentity.split('|')[0]!==source.identity.split('|')[0]
+  ||(lists.deferred===null&&createdIdentity!==source.identity))throw Error('GPS CI fresh GraphQL wrapper ACL differs from source');
+ await targetQuery(`alter extension pg_graphql add function ${graphqlWrapper};`);
+ if(lists.deferred!==null)await restoreArchive(lists.deferred);
+ if(await targetQuery(graphqlExtensionSql)!=='pg_graphql'||await targetQuery(graphqlIdentitySql)!==source.identity
+  ||await targetQuery(graphqlOwnerSql)!==source.owner)
+  throw Error('GPS CI restored GraphQL wrapper definition or grants differ');
+ if(lists.deferred===null){
+  const initial=graphqlInitialFacts(await targetQuery(graphqlInitialSql));
+  if(initial.owner!==source.owner||initial.initialAclCount!==source.initialAclCount||initial.initialAclHash!==source.initialAclHash)
+   throw Error('GPS CI restored GraphQL initial privileges differ');
+ }
 }
 
 export function postgresErrorCategory(stderr) {

@@ -1,6 +1,9 @@
 import type {Locale,Messages} from './catalogs';
 // Product copy only. Device names, IMEIs and provider text are never translated.
 const rows:readonly (readonly [string,string,string])[]=[
+ ['Demo account','የማሳያ መለያ','Herrega fakkeenyaa'],
+ ['Ask us to connect a compatible tracker, then assign it to a vehicle. Phone location is also available.','ተስማሚ GPS መከታተያ እንድናገናኝ ይጠይቁን፤ ከዚያ ለመኪና ይመድቡት። በስልክ የሚገለጽ ቦታም መጠቀም ይችላሉ።','Meeshaa GPS mijataa akka isiniif walitti hidhnutti nu gaafadhaa; achiis konkolaataa itti ramadaa. Bakka bilbilaan argames fayyadamuu ni dandeessu.'],
+ ['Manual locations are read-only. Choose a location source to resume updates.','በእጅ የተገለጹ ቦታዎችን ማየት ብቻ ይቻላል። የቦታ ማዘመንን ለመቀጠል የቦታ ምንጭ ይምረጡ።','Bakki harkaan galfame dubbisuuf qofa. Odeeffannoo bakka haaromsuu itti fufuuf madda bakka filadhaa.'],
  ['Demo location','የማሳያ ቦታ','Bakka fakkeenyaa'],
  ['GPS devices','የGPS መሣሪያዎች','Meeshaalee GPS'],
  ['GPS device','የGPS መሣሪያ','Meeshaa GPS'],

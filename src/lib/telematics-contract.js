@@ -11,13 +11,11 @@ export const provisionDeviceSchema=z.object({
  label:z.string().trim().min(2).max(100),modelProfile:z.enum(['UNVERIFIED','SYNTHETIC_GT06']).default('UNVERIFIED'),synthetic:z.boolean().default(false)
 }).strict().refine(value=>Boolean(value.ownerOrganizationId)!==Boolean(value.ownerProviderProfileId));
 export const assignDeviceSchema=z.object({deviceId:uuid,vehicleId:uuid.nullable(),expectedRevision:revision}).strict();
-export const selectLocationSchema=z.object({vehicleId:uuid,source:z.enum(['GPS','MOBILE','MANUAL']),expectedRevision:revision,
- precisionKm:z.number().refine(value=>[1,3,5,10,20].includes(value)),
- manualLatitude:z.number().finite().min(-90).max(90).optional(),manualLongitude:z.number().finite().min(-180).max(180).optional()
-}).strict().superRefine((value,ctx)=>{
- if(value.source==='MANUAL'&&(value.manualLatitude===undefined||value.manualLongitude===undefined))ctx.addIssue({code:'custom',message:'MANUAL_LOCATION_REQUIRED'});
- if(value.source!=='MANUAL'&&(value.manualLatitude!==undefined||value.manualLongitude!==undefined))ctx.addIssue({code:'custom',message:'UNSELECTED_MANUAL_LOCATION'});
-});
+// MANUAL remains a historical read value. A stale client cannot save that
+// source, its old coordinates, or an approximate point through this command.
+export const selectLocationSchema=z.object({vehicleId:uuid,source:z.enum(['GPS','MOBILE']),expectedRevision:revision,
+ precisionKm:z.number().refine(value=>[1,3,5,10,20].includes(value))
+}).strict();
 export const deviceCommandSchema=z.object({deviceId:uuid,command:z.enum(TELEMATICS_COMMANDS),
  intervalSeconds:z.number().int().min(30).max(3600).optional(),idempotencyKey:uuid,confirmed:z.boolean().optional(),stepUpId:uuid.optional()
 }).strict().superRefine((value,ctx)=>{

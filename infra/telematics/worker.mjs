@@ -3,6 +3,8 @@ import {randomUUID} from 'node:crypto';
 import {signedHeaders,syntheticCommand,correlatedSyntheticResult} from './bridge-contract.mjs';
 import {processPositionBatch,runBridgeLanes} from './bridge-processing.mjs';
 import {commandsEnabled} from './bridge-command-mode.mjs';
+import {bridgeDatabaseConfiguration,createGatewayHealth,writeGatewayHealth,
+ probeTraccarReadiness,observeGatewayApplication} from './gateway-health.mjs';
 const config={id:process.env.GATEWAY_ID,secret:process.env.GATEWAY_SECRET};
 const endpoint=new URL(process.env.LOADGISTIC_GATEWAY_URL||''),commandMode=commandsEnabled(process.env.GATEWAY_COMMANDS_ENABLED);
 const api=commandMode?new URL(process.env.TRACCAR_API_URL||''):null;
@@ -12,12 +14,20 @@ if(!config.id||!config.secret||config.secret.length<32||endpoint.pathname!=='/ap
 if(commandMode&&(!['https:','http:'].includes(api.protocol)||api.username||api.password||api.search||api.hash
  ||api.protocol==='http:'&&!['127.0.0.1','localhost','traccar','host.docker.internal'].includes(api.hostname)
  ||!process.env.TRACCAR_API_TOKEN||process.env.TRACCAR_API_TOKEN.length<16))throw new Error('GATEWAY_API_CONFIG_INVALID');
-const pool=new pg.Pool({connectionString:process.env.GATEWAY_DATABASE_URL,max:3,connectionTimeoutMillis:5000});
-let stopping=false,round=0;const counts={accepted:0,historical:0,duplicate:0,denied:0,retried:0,acknowledged:0};
+const pool=new pg.Pool(bridgeDatabaseConfiguration(process.env.GATEWAY_DATABASE_URL));
+const health=createGatewayHealth();let pendingHealthWrite=Promise.resolve();
+// Serialize atomic writes and snapshot at execution, so an older async lane
+// cannot overwrite a newer failure with an earlier healthy snapshot.
+function persistHealth(){pendingHealthWrite=pendingHealthWrite.catch(()=>{}).then(()=>writeGatewayHealth(health.snapshot()));return pendingHealthWrite;}
+pool.on('error',()=>{health.unavailable('DATABASE_UNAVAILABLE');persistHealth().catch(()=>{});
+ console.log(JSON.stringify({event:'gateway_unavailable'}));});
+let stopping=false,nextCheckAt=0;const counts={accepted:0,historical:0,duplicate:0,denied:0,retried:0,acknowledged:0};
 async function application(message){
- const body=JSON.stringify(message),response=await fetch(endpoint,{method:'POST',headers:signedHeaders(config,body),body,redirect:'error',signal:AbortSignal.timeout(10000)});
- if(!response.ok)throw new Error('INGEST_UNAVAILABLE');
- const value=await response.json();if(value.ok!==true)throw new Error('INGEST_UNAVAILABLE');return value.data;
+ try{return await observeGatewayApplication(async()=>{
+  const body=JSON.stringify(message),response=await fetch(endpoint,{method:'POST',headers:signedHeaders(config,body),body,redirect:'error',signal:AbortSignal.timeout(10000)});
+  if(!response.ok)throw new Error('INGEST_UNAVAILABLE');
+  const value=await response.json();if(value.ok!==true)throw new Error('INGEST_UNAVAILABLE');return value.data;
+ },health);}catch{await persistHealth();throw new Error('INGEST_UNAVAILABLE');}
 }
 async function leaseRows(results){
  const lease=randomUUID();
@@ -76,14 +86,23 @@ async function dispatch(){
  }
 }
 async function maintenance(){
+ const version=health.beginCheck();
+ await probeTraccarReadiness(process.env.TRACCAR_READINESS_URL||'http://traccar:8082/api/server');
  await application({action:'PRUNE'});
  await pool.query("delete from loadgistic_bridge.outbox where id in(select id from loadgistic_bridge.outbox where delivered_at<now()-interval '7 days' order by id limit 1000)");
  const {rows}=await pool.query("select count(*)::integer pending,coalesce(extract(epoch from(now()-min(created_at))),0)::integer lag_seconds from loadgistic_bridge.outbox where delivered_at is null");
- console.log(JSON.stringify({event:'gateway_health',...counts,...rows[0]})); // No identifiers, payloads, credentials or raw coordinates.
+ health.checked(rows[0],version);
+ console.log(JSON.stringify({...health.snapshot(),...counts})); // No identifiers, payloads, credentials or raw coordinates.
 }
 process.on('SIGTERM',()=>{stopping=true;});process.on('SIGINT',()=>{stopping=true;});
 await runBridgeLanes({shouldStop:()=>stopping,
  priorityCycle:async()=>{if(commandMode){await deliverResults();await dispatch();await deliverResults();}},
- telemetryCycle:async()=>{await deliverPositions();if(round++%30===0)await maintenance();},
+ telemetryCycle:async()=>{
+  try{
+   if(Date.now()>=nextCheckAt){await maintenance();nextCheckAt=Date.now()+60000;}
+   await deliverPositions();health.cycled();
+  }catch(error){health.unavailable(error?.message);throw error;}
+  finally{await persistHealth();}
+ },
  onError:()=>console.log(JSON.stringify({event:'gateway_unavailable'}))});
-await pool.end();
+health.unavailable('CYCLE_UNAVAILABLE');await persistHealth();await pool.end();

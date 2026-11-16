@@ -22,9 +22,29 @@ export async function loadCapacityMapWindow({requestPage,onPage,signal}){
   }
 }
 
+/** Existing authorized web/native projections name the same stable vehicle differently. */
+export function capacityVehicleIdentity(item){
+  const value=item?.vehicle_id||item?.vehicleId;
+  return typeof value==='string'&&value?value:null;
+}
+
+/** Follow a newly published signal only through its supplied stable vehicle identity.
+ * @template {{id:string}} T @param {T|undefined|null} selected @param {T[]} incoming
+ */
+export function currentCapacitySelection(selected,incoming){
+  if(!selected)return null;
+  const exact=incoming.find(item=>item.id===selected.id);
+  if(exact)return exact;
+  const vehicle=capacityVehicleIdentity(selected);
+  const replacements=vehicle?incoming.filter(item=>capacityVehicleIdentity(item)===vehicle):[];
+  return replacements.length===1?replacements[0]:null;
+}
+
 /** @template {{id:string}} T @param {T[]} previous @param {T[]} incoming @param {string|null} selectedId */
 export function preserveSelectedMapTruck(previous,incoming,selectedId){
   const selected=previous.find(item=>item.id===selectedId);
+  const vehicle=capacityVehicleIdentity(selected);
+  if(vehicle&&incoming.some(item=>capacityVehicleIdentity(item)===vehicle))return incoming;
   return selected&&!incoming.some(item=>item.id===selectedId)?[selected,...incoming]:incoming;
 }
 
@@ -35,7 +55,9 @@ export function preserveSelectedMapTruck(previous,incoming,selectedId){
  */
 export function reconcileCapacityMapWindow(previous,incoming,selectedId,complete){
   if(complete)return preserveSelectedMapTruck(previous,incoming,selectedId);
-  const merged=new Map(previous.map(item=>[item.id,item]));
+  const vehicles=new Set(incoming.map(capacityVehicleIdentity).filter(Boolean));
+  const ids=new Set(incoming.map(item=>item.id));
+  const merged=new Map(previous.filter(item=>!vehicles.has(capacityVehicleIdentity(item))||ids.has(item.id)).map(item=>[item.id,item]));
   for(const item of incoming)merged.set(item.id,item);
   return [...merged.values()];
 }

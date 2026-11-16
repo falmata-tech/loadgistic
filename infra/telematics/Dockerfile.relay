@@ -1,0 +1,7 @@
+FROM node:22.22.0-alpine
+WORKDIR /app
+COPY package.json ./
+COPY infra/telematics/enrollment-relay.mjs ./infra/telematics/
+COPY src/lib/demo-motion-cohort.js src/lib/demo-admin-spare.js ./src/lib/
+USER node
+CMD ["node", "/app/infra/telematics/enrollment-relay.mjs"]

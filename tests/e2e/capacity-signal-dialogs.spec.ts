@@ -261,7 +261,7 @@ test('fleet owners edit capacity but cannot substitute their device location',as
   if(await editSource.isVisible()){
     await editSource.click();
     const source=page.getByRole('dialog',{name:'Location source'});
-    await expect(source.getByRole('radio',{name:'Manually entered'})).toBeVisible();
+    await expect(source.getByRole('radio',{name:'Manually entered'})).toHaveCount(0);
     await expect(source.getByRole('radio',{name:'Driver’s phone'})).toBeVisible();
     await source.getByRole('button',{name:'Cancel'}).click();
   }

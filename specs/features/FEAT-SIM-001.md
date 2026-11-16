@@ -4,12 +4,483 @@ title: Isolated demo movement with real-device takeover
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-GPS-001, FEAT-GEO-001, FEAT-CAP-001, FEAT-TRK-001, FEAT-MOB-001, FEAT-IAM-001, FEAT-SEC-001, FEAT-ENT-001]
 problem: Demo trucks need believable GPS and phone movement without overwriting real devices, changing customer data or implying unsupported phone telemetry.
 behavior: Explicit synthetic account/truck/device bindings may produce bounded demo movement through the normal location pipeline. Server-side arbitration pauses simulation when an authenticated real installation takes over, rejects stale queued synthetic reports, and never simulates customer accounts. Private registered phone-installation identities attribute real reports without exposing hardware identifiers. Public/private Capacity and permitted Tracking markers show the actual published source.
-contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor]
+contracts: [DemoLocationBinding, DemoMotionLease, RealLocationInstallation, DeviceTakeover, DemoReportArbitration, PublishedLocationSource, PhoneCapabilityProjection, DemoMotionSupervisor, DemoAccountProvenance, DemoCapacitySchedule, NetlifyDemoMotionWindow, DirectDemoProvenance, VirtualDemoGatewayPreparation, ExactPilotDemoBinding]
 observability: [demo_tick_accepted, demo_tick_paused, demo_target_denied, real_device_takeover, stale_source_report_denied, demo_runner_state, location_installation_revoked]
-rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Owner visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
+rollout: Implement and negatively test local contracts and exact synthetic targets, rehearse additive SQL on an isolated backed-up restore, then demonstrate public/private/Tracking and phone takeover locally. Agent-led local visual review and exact separately approved infrastructure/hosted rollout remain required. No production simulator, credentials, customer write or billing change is authorized by local implementation.
 ---
 
 # Demo movement and device attribution
+
+## Netlify-only demo — November15 owner decision
+
+### Existing hosted pilot bindings — November15 preflight
+
+Local fixture UUIDs and `loadgistic` markers do not identify the separately
+approved `loadgistic-production-pilot-v1` records. Prepare one atomic,
+default-off compatibility migration for that exact existing namespace. It must
+refuse mixed/changed cohorts, active controls, prior simulator history or
+unexpected installed definitions. A database without pilot records retains
+the existing local contracts. Owner production-operation review still applies.
+Migration227 is prepared locally, not applied hosted; the inspected hosted
+ledger remains through220.
+
+Given the exact stopped, never-activated hosted pilot cohort\
+When the reviewed compatibility migration is applied\
+Then only private simulator bindings and known function definitions are mapped
+to the existing pilot UUIDs and trusted application provenance\
+And no account, owner, assignment, source choice, sharing, consent, public
+Capacity or saved location is changed. Synthetic engine-command access stays
+unchanged. Every changed function retains its owner, security configuration and
+execution ACL.
+
+Given fleet-03, fleet-06 or fleet-08 no longer has the originally authored fleet
+owner scope\
+When the Netlify demo is prepared\
+Then those three are excluded from gateway enrollment and signed window work;
+the seven currently qualifying targets still require exact sole-owner,
+driver, vehicle and namespace checks on every command. A changed eligible
+owner, added co-owner, normal identity or conflicting device refuses atomically.
+
+Given a Capacity target whose sharing or owner scope differs from the catalog\
+When private pilot bindings are prepared\
+Then that target remains paused instead of widening sharing or restoring an
+old owner. Other lanes remain disabled. The receiver and database still own
+all mutations; a returned window target list is bounded to known names and
+cannot enroll or authorize caller-selected vehicles.
+
+Given a normal co-owner is added to an otherwise exact pilot fleet\
+When any public provisioning entry point or synthetic movement command runs\
+Then no inherited alternative allowlist branch may bypass the exact sole-owner
+proof, and rejected enrollment leaves devices, assignments and audit state
+unchanged. New pilot synthetic enrollment is limited to the reviewed direct
+Netlify transport; ordinary real-device enrollment retains its own authority.
+
+Given ownership changes concurrently with pilot preparation or a movement report\
+When the first transaction locks the owner scope\
+Then an owner-first committed change denies the later synthetic write without
+changing its published facts, while a report-first transaction serializes the
+co-owner change behind its accepted write\
+And stronger owner/membership locks are acquired before profile, device and
+vehicle locks, with actual two-session waits and both orderings recorded.
+Sequential counts or denial tests alone do not qualify this race boundary.
+
+Given the existing pilot has no old local Tracking example and both separately
+reserved Tracking lanes are disarmed\
+When its Capacity control is enabled alongside direct movement\
+Then the Capacity activation preflight permits only that bounded pilot mode;
+the missing local Tracking example is not fabricated or enrolled\
+And an existing local Tracking record, armed reservation, pending outbox or
+changed manifest still refuses activation\
+And all Tracking notification interceptors and arming guards remain unchanged;
+attempting a forbidden notification fails with unchanged queues. The combined
+rollback-only rehearsal must save actual Capacity and motion results, then stop
+both controls without deleting history.
+
+Operational rollback stops both native schedulers and external alternatives,
+sets Capacity disabled and motion disabled/kill-on/netlify-disabled, verifies
+no active window/lease, and restores the prior application artifact if needed.
+Retain pilot mappings, constraints, devices and history; reverting the namespace
+after reports exist is a separate reviewed data operation.
+
+Changed contracts: ExactPilotDemoBinding and bounded server-selected window
+targets. Observability remains aggregate eligibility/paused/report counts.
+Rollout requires rollback-only pilot fixtures, denial/recovery checks, combined
+local rehearsal, exact-source CI, protected hosted backup/restore/rehearsal and
+review of the exact SQL and activation fields. Rollback first stops both
+schedulers and any external alternatives, disables Capacity and motion
+(kill-on/netlify-disabled), verifies no active window/lease, and retains pilot
+mappings, constraints, devices, public facts and history. Restore a prior
+application artifact if needed; namespace or definition reversion is a separate
+owner-reviewed operation and must not recreate an authorization bypass.
+
+Focused local Supabase qualification at e169fef in
+[run43765684621](https://github.com/falmata-tech/loadgistic/actions/runs/43765684621)
+passes the combined pilot bindings, four actual owner races/four waits,
+baseline restoration and disposable cleanup (NR-86 / BASE-DEP-001). Primary
+verification is explicitly not performed. This does not install hosted227,
+change the inspected hosted ledger ending at220 or waive the rollout gates.
+
+### Limited daily operation — November15 owner cost constraint
+
+The owner requested a few hours per day with very limited credit usage. Use a
+two-hour daily window,09:00 inclusive to11:00 exclusive Africa/Addis_Ababa
+(06:00–08:00 UTC). Both native cron schedules use `* 6-7 * * *`. Dispatchers,
+the motion background window and application receivers recheck server time;
+caller timestamps cannot extend operating hours. No new dependency, provider
+extension or schema change is needed. Saved records and age labels stay visible.
+
+Given a disabled lane, a delayed/manual invocation outside operating hours or
+the exact11:00 closing boundary\
+When the Netlify simulator is invoked\
+Then no new batch/window/report is dispatched or opens storage outside hours\
+And an already accepted Capacity transaction may finish, while a motion window
+never sleeps into another report beyond closing time. Existing kill controls
+remain authoritative and no source, consent, history or REAL state is reset.
+
+Given the next day's window opens\
+When the existing controls and approved current actor/source state still qualify\
+Then due work resumes from its durable state without catch-up, backdating or
+resetting publication history. Operational pauses longer than existing backlog
+limits still require their existing review; hours do not bypass those limits.
+
+Observability remains bounded report/denial counts; ordinary off-hours wake-ups
+are inert. Reverting hours requires a reviewed source change and leaves existing
+enable/kill gates intact. At the prior32.622-second local timing,120 windows/day
+estimate326.22 movement credits per30days, versus3,914.64 at24hours. The55-second
+application ceiling estimates550 background credits; API, Capacity, bandwidth
+and other team use are additional. This is no account spending guarantee.
+
+The owner selected a Netlify-only demo simulator using existing Supabase state.
+This replaces the hosted demo's Traccar transport, not real tracker reception or
+local GT06 decoder qualification. Direct synthetic events must be recorded as
+`NETLIFY_DEMO`; they are never evidence of a decoded protocol packet or hardware.
+
+Given the exact approved synthetic targets, current sole owners and assignments\
+When the default-off Netlify scheduler starts an authenticated bounded window\
+Then the server computes movement from the unchanged reviewed road catalog,
+preserves the thirty-second due time and shares only the existing obscured
+public/private projection\
+And the unavailable course stays unavailable; normal accounts, Manual choices,
+real-device takeover and changed ownership/source/assignment remain denied.
+
+Given duplicate invocations, delayed retries, a stopped control or an old window\
+When another report is requested\
+Then durable window ownership, nonce, source generation and report due time
+prevent duplicate, backdated, catch-up or post-stop writes\
+And restart uses current wall-clock positions and saved state rather than reset
+progress. A native retry cannot replay an expired signed invocation.
+
+Given the protocol bridge is absent\
+When a Netlify window claims the direct-demo lane\
+Then existing gateway-scoped thirty-day retention still runs with its bounded
+one-thousand-row batches and an indexed gateway/creation-time lookup\
+And ordinary protocol/real gateways are not selected for this maintenance.
+
+Given a gateway reserved for direct Netlify demo delivery\
+When the ordinary gateway ingest endpoint receives a report for it\
+Then it refuses; only the narrow service-only Netlify command may enter the
+existing guarded ingest pipeline and mark direct-event provenance\
+And real/protocol gateways retain their current ingest contract.
+
+Given stopped controls and the exact existing fictional owner/driver records\
+When the service-only virtual-gateway preparer is invoked by a current admin\
+Then it validates all ten bindings before creation and preserves source choices,
+Manual data and consent\
+And conflicting existing gateway bindings, co-ownership and non-admin callers
+refuse without partial setup. Repeating the same setup is idempotent.
+
+Given a valid signed worker report\
+When the application derives its catalog point and capture time\
+Then caller-selected geometry/identity/source/time fields refuse before storage\
+And a capture older than five seconds after database lock waits refuses without
+refreshing saved location time.
+
+Changed contracts: NetlifyDemoMotionWindow, direct synthetic transport provenance
+and a private service-only command. Existing Capacity scheduling, routes, UI,
+privacy radii and physical command authority are unchanged. Observability is
+sanitized window/report counts and delivery kind, never coordinates or secrets.
+Rollout requires local SQL denial/recovery tests, actual app readback, exact-source
+full gates, measured Netlify compute and owner review of exact fields/SQL and
+backup/restore evidence. Rollback disables the new app/database controls and
+retains all history; switching transport never silently replaces gateway data.
+
+## Curated scenarios — November13 owner clarification
+
+### Frequent Capacity episodes — catalog2
+
+November14 runtime reconciliation replaces the earlier container-only hosting
+plan. The dated local observations below retain their original scope; neither
+the minute adapter nor its passing tests establish hosted operation.
+
+The five existing mutable targets use twenty authored phases: Partial 80% →
+Partial 60% → Partial 30% → Empty 100%, then repeat. Each next phase becomes due
+120 seconds after the previous actual completion. Initial offsets 0/30/60/90/120
+seconds spread the five actors; the nominal cycle is eight minutes. The preferred
+Netlify scheduled function checks once per minute with a two-actor total budget.
+Expected healthy per-target spacing is 120–180 seconds after completion; actual
+provider scheduling and execution may take longer. The optional standalone
+container checks every 30 seconds with a one-actor budget, normally 120–150
+seconds per target. These schedulers are mutually exclusive. Full, Off Duty,
+arbitrary percentages and new targets are not added. Fleet-04 may toggle its
+approved planned corridor only in
+an Empty phase on odd cycles, about sixteen nominal minutes between changes.
+
+Given a new target's first phase has a fully unreported legacy estimate\
+When the exact current demo actor publishes the authored 80% value\
+Then the normal command creates real report time, actor and driver provenance.
+Any already reported human value, including 80%, refuses first bootstrap. Later
+phases require the immediate epoch/cycle/phase receipt and its exact current
+Capacity ID. A same-percentage human republication also pauses that target.
+
+Given the service has been unavailable while the current state and last receipt
+remain unchanged\
+When it resumes\
+Then it executes at most one next phase per target, with the actual normal save
+and completion times\
+And the following phase cannot run before that actual completion plus 120 seconds.
+The original nominal due time remains audit data; there is no catch-up burst,
+skipped phase, synthetic backdating or automatic 180-second timeout of a valid
+scenario. A changed state refuses instead of silently resetting the actor.
+
+Given all five actors are overdue after delayed activation or an outage\
+When the selected Capacity scheduler resumes\
+Then a minute Netlify invocation requests at most two oldest eligible actors,
+or an optional container tick requests at most one\
+And each actor advances only one valid next phase, preserving cross-actor
+activity instead of draining all overdue work together\
+And a paused invalid actor or another actor's live retry lease cannot starve
+independent eligible actors. The signed controller API accepts integer limits
+from 1 to 5; the Netlify adapter uses 2 and the container uses 1. Each rejects a
+response above its own budget. Neither loops to catch up, skips a phase or
+backdates a save. Foreground web/native feeds read every 15 seconds while active;
+this remains polling and does not guarantee instantaneous presentation.
+
+Each controller receipt records catalog version, target/scenario, epoch, cycle,
+phase, nominal scheduled time, operational due time, actual applied/completed
+times and saved Capacity ID. Replay reads the historical report without refreshing
+it. The unified database controller persists activation/epoch and receipt state;
+restart does not create a new episode or accept a mutation clock override.
+
+The legacy direct `executeDemoCapacityPlan` writer and local CLI `start`,
+`advance`, `advance-through` and other write verbs are retired. They refuse with
+`DEMO_WORLD_DIRECT_APPLY_RETIRED` before reading caller identity, credentials,
+checkpoint or receipts, and cannot fall back to a normal publish RPC. Local
+`plan` and `status` are read-only inspections; existing history remains intact.
+Local and hosted simulator services use the same `advanceDemoCapacity` database
+controller and migration 224 write boundary, including REAL/source takeover
+checks. Ordinary human Capacity product commands retain their existing rules.
+
+Given any caller, including an operator-marked account with a valid authored
+phase and old local receipts\
+When it attempts the retired direct writer or CLI write verb\
+Then the request refuses before Auth/client access or any saved-state change.
+Only actual API/database controller checks qualify simulator writes; mocked
+legacy adapter success is not acceptance evidence. Historical direct-apply
+observations below retain their original dates and are not a current write path.
+
+Catalog2 upgrade requires disabled, never-activated scheduling with no legacy
+jobs, or a separate explicit reconciliation. It never silently rewrites running
+work or completed history. Local SQL, API and visible UI qualification remain
+separate from the source and pure checks.
+
+The preferred `netlify/functions/demo-capacity.mjs` adapter uses native
+`* * * * *` scheduling and a 20-second HTTP deadline within Netlify's
+30-second scheduled-function runtime. It requires explicit
+`LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED=true` and
+`LOADGISTIC_DEMO_CAPACITY_NETLIFY_KILL_SWITCH=false`, the existing global
+world enable/kill gates and the exact production site/origin. Missing flags
+leave it off. It signs only the Capacity endpoint with
+`DEMO_CAPACITY_WORKER_SECRET`, reads a bounded response and logs whitelisted
+counts/health. It opens no database or GPS connection. The function's same-site
+environment may contain other app settings; this is purpose-limited code and
+receiving authorization, not physical process/secret isolation.
+
+The optional fast process remains a standalone `compose.scenario.yml` project
+with the opt-in `hosted-demo-scenarios` profile. It has only outbound HTTPS,
+its exact site/origin and narrow Capacity key; it receives no
+world/motion/gateway/database credential and needs no GPS configuration. Enable
+defaults false, kill defaults true, and its private heartbeat exposes no listener.
+The Netlify adapter refuses a configured enabled container flag, but cannot
+detect another host's environment: rollout must actually stop and verify that
+external worker before switching schedulers. The app and minute Capacity
+scheduler do not require local Docker or a provisioned raw GPS host.
+
+The separate slow 15-minute world route never claims or executes fast Capacity
+jobs. Its profile/team/sharing controls remain disabled for initial Capacity
+activation; enabling a shared HTTP gate does not authorize enabling those lanes.
+Historical Manual-dependent duty/handover remain held. Motion keeps separate
+flags, key, source worker and hosting. Source checks and signed adapter/controller
+tests do not qualify installed SQL, scheduled provider execution or visible UI.
+
+Given the minute adapter lacks an enable/kill/site gate, uses a preview or wrong
+origin, has a colliding key, or has the container enable flag configured\
+When it is invoked\
+Then it performs no Capacity request. With valid gates, it makes one bounded
+signed request for at most two actors and never calls a slow, motion or GPS lane.
+
+Given an independently hosted Capacity container may still be running\
+When changing scheduler deployment\
+Then the operator stops and verifies that process before enabling its replacement;
+a same-site environment check is not evidence that another host is stopped.
+
+Focused adapter checks: `tests/demo-capacity-netlify.test.mjs`,
+`tests/demo-capacity-advance.test.mjs` and `tests/demo-world-worker.test.mjs`.
+Published cadence, current-schema persistence, concurrency, saved projections
+and desktop/phone/Expo workflow acceptance remain separate rollout evidence.
+
+Given either the slow world key or the fast Capacity key signs another lane,
+status/admin or motion purpose\
+When the request reaches its protected boundary\
+Then cryptographic authorization refuses it before storage. A fast container
+with any broader credential configured refuses startup. A 401/403 or disabled
+database leaves it inert rather than hammering the app; transient delivery errors
+retain normal lease-expiry retry without permanently pausing a coherent target.
+
+Given a future reviewed operator activation uses an exact fictional phone/GPS
+cohort target and its existing normal owner/source provisioning command\
+When the operator explicitly selects a 1 km privacy radius to observe the approved
+local road course crossing privacy cells\
+Then that selection is limited to the trusted demo target and remains a separately
+recorded activation choice. The running worker cannot lower or override a radius,
+change phone consent, enroll a normal account, or reverse REAL takeover. Existing
+20/40 km demo choices remain until such an explicit reviewed selection; later user
+source/privacy choices remain authoritative. This production activation plan is
+pending; no radius or hosted configuration was changed by this source work.
+
+The simulator chooses only server-owned, versioned scenarios with explicit
+target bindings, ordered approved place references, capacity transitions and
+reporting times. It generates no random cities, coordinates, route order or
+percentages. An optional deterministic seed may choose an approved scenario;
+it cannot synthesize new values or bypass its current-state prerequisites.
+
+Given a proposed corridor contains individually valid places in an unapproved
+sequence, repeats a stop, changes a catalog coordinate, or belongs to another
+target\
+When the catalog or planner validates it\
+Then validation refuses it before any command. A place appearing somewhere in
+the fixture is not evidence that an arbitrary city sequence is approved.
+
+Given several exact demo targets have due scenarios\
+When a bounded worker batch runs\
+Then each target advances only its own explicit predecessor state under its
+existing lease and immutable receipt\
+And independent due targets may advance in the same batch without resetting all
+accounts, replacing unrelated routes, or rewriting every vehicle on every tick.
+
+Given an explicit capacity estimate has no catalog phase and normal-command
+report provenance\
+When a capacity state changes\
+Then no percentage is invented or relabelled as a fresh report. Historical
+fixture values with no reported timestamp remain unreported.
+
+An approved marketplace city corridor is not a surveyed driving trace.
+Settlement centers and straight city segments cannot supply road-following GPS
+interpolation. Motion must use approved captured stop fixes or a sourced road
+trace with realistic timing; absent evidence stays unavailable. Area-only
+scenarios remain stationary. Real phone/GPS takeover and the exact demo-account
+boundary remain authoritative for every report.
+
+### Reviewed local motion courses
+
+The checked-in road catalog version `2026-11-12.1` defines seven `ROAD_LEG`
+courses using consecutive source-verified OSM way nodes, two explicitly authored
+`STATIONARY` area scenarios and one `UNAVAILABLE` course. Its purpose is
+`PROTOCOL_LOCAL`: these bounded local tests are not progress along the vehicle's
+planned regional Capacity corridor. The phone's Addis local course does not
+claim a Sebeta → Alem Gena journey. Preserve the saved Capacity plan separately.
+
+Given the approved road catalog and exact target\
+When a worker reports\
+Then its wall-clock scenario follows only the ordered road segments at 20 km/h,
+dwells 60 seconds at each end and reverses continuously without teleporting\
+And qualified phone/GPS reporting uses a 30 second cadence; lease renewal does not
+add a fixed post-cycle delay, while fast paused/failure cycles remain rate bounded\
+And stationary/dwell GPS packets report zero speed and heading; moving packets
+derive heading from their source segment. Phone reports gain no hardware fields.
+
+Given a signed GPS/phone request has an arbitrary point inside the old database
+box, a valid road point at the wrong scenario time, or capture time over 5 seconds
+from the trusted server clock\
+When the Next application boundary checks it\
+Then it refuses before opening storage. Valid reports must match the catalog at
+the signed capture time within 1 metre for quantization/serialization, then retain
+the existing database cohort, source, lease, nonce and takeover checks.
+
+Given the unavailable fleet08 course or changed catalog/source/geometry evidence\
+When a worker reaches that target\
+Then it sends no configure/start command, opens no socket and takes no lease;
+qualified independent targets can continue. No stationary fallback is inferred.
+
+The artifact is pinned by canonical hash in the shared runtime. Source node IDs,
+way version, extract date/hash and ODbL attribution remain in the catalog; changed
+coordinates with a recomputed local geometry hash still fail the reviewed pin.
+Server report logs and worker receipts include scenario ID/version/step and the
+local protocol purpose, never precise coordinates, contacts or device secrets.
+Focused offline tests do not establish actual database, browser, native or hosted
+operation, which remain separate qualification steps.
+
+## Current demo-account boundary — November 13
+
+This decision supersedes historical Manual preparations and source-changing
+handover examples below. New periodic locations come only from the selected
+phone or GPS pipeline. A simulator never selects Manual, invents phone consent,
+or converts an old point into a fresh phone/GPS report. The existing duty and
+handover lanes remain disabled until their normal commands preserve an actual
+supported phone/GPS source and satisfy the revised source contract.
+
+The application service does not claim or execute either held lane, even if an
+old database control is enabled. It preserves pending/exhausted counts and last
+completion facts, reports zero accepted/completed/replayed work plus operator
+state `HELD` and reason `MANUAL_LOCATION_RETIRED`, and continues other qualified
+lanes. Held work is neither silently completed nor discarded. The background
+summary validates and records that exact bounded state/reason without private
+job or lease data. Direct database execution remains subject to the retirement
+boundary as well as existing token, ordering and current-actor checks.
+
+Only operator-controlled Auth `app_metadata.fixture_source=loadgistic` establishes
+demo-account provenance. Exact scenario/cohort identity, active current owner and
+driver assignment, source binding, generation and enabled service controls remain
+separate mandatory write checks. Email, account name, inactivity, editable
+`user_metadata`, client flags and a public Demo label confer no authority.
+
+Given an account created through normal signup, including one whose editable
+metadata claims `fixture_source=loadgistic`, `is_demo=true` or an existing fixture
+key\
+When a simulator configure, lease, GPS/phone report or workflow command is tried\
+Then the server/database boundary refuses it\
+And the account, vehicle, assignment, selected source, Capacity history, location
+history, grants and simulator receipts are unchanged.
+
+Given an exact demo vehicle is transferred or its current driver is replaced by
+a normal account, even if that account forges editable fixture metadata\
+When an already running simulator attempts its next write\
+Then current authority is rechecked and the write is refused without affecting
+the new owner/driver or restoring the former assignment.
+
+Given an ordinary account becomes an additional owner of the exact demo
+organization\
+When a Capacity or provider-profile simulation phase attempts to mutate that
+shared organization or its vehicles, or a reserved synthetic Tracking actor is
+armed or used\
+Then it refuses because the approved actor is no longer the sole current owner\
+And normal account, membership, profile/page, vehicle, Capacity, source/location
+state and simulator receipts remain unchanged by the refused operation. The
+former owner's trusted marker cannot authorize simulation of a shared customer
+organization.
+
+Given an already authorized public/private Capacity row\
+When account provenance is projected for web or native details\
+Then `account_is_demo` is an exact boolean derived from the current provider
+owner's trusted operator marker through a bounded service-only read\
+And Demo account remains distinct from per-fix Demo location: neither flag
+changes the actual saved GPS/phone source, location age, permissions or consent\
+And the response contains no Auth metadata, fixture key, installation identifier
+or simulator control/lease field. Missing/non-boolean provenance is false.
+
+The Capacity scheduler, slow workflow dispatcher/background worker and dedicated
+motion worker retain distinct purpose keys and stop controls. Netlify functions
+share the site's runtime environment; independent container credential isolation
+is a separate deployment property. Real GPS and synthetic GPS remain isolated.
+A production activation requires an exact
+operator-provisioned cohort and sustained ingestion/database/UI evidence;
+installed schema and a healthy container alone do not establish operation.
+
+Focused contracts: `tests/sql/demo-account-isolation.sql` checks rollback-only
+normal/forged account writes and current-owner transfer isolation;
+`scripts/verify-supabase-provider-signup.mjs` checks the actual local email-OTP
+signup plus customer-editable metadata forgery through Auth;
+`tests/demo-account-provenance.test.mjs`,
+`tests/provider-driver-presentation.test.mjs`, and the native public Capacity/detail
+tests check exact boolean projection and separate account/fix labels.
+`tests/telematics-hosted-motion-worker.test.mjs` covers expired lease reacquisition,
+stale generation cleanup, sticky REAL takeover and unconfirmed stop reporting.
+The November13 source changes still need the actual local SQL/signup runs and
+desktop/phone/Expo task review before they qualify for release.
+
+Rollback disables the relevant control and worker, invalidates matching leases,
+and retains history/receipts. It never restores an old owner, clears REAL takeover
+or bulk-converts customer sources. Observability reports bounded accepted,
+rejected, expired and takeover counts without coordinates or private identities.
 
 Status: implemented in the backed-up local preview, October18; focused SQL,
 runner and source-projection checks pass. Actual GPS protocol ingestion saved
@@ -44,7 +515,7 @@ lifecycle verification remain separate; no production simulator is enabled.
 - GPS/phone movement follows a bounded plausible fixture route and interval.
   Both simulated GPS packets and phone reports are sent no more frequently than
   once every 30 seconds, so demo movement does not flood the app or database.
-  Manual remains a dated static point, not a continuously moving fake phone.
+  Existing Manual history remains dated/static; new Manual writes are retired.
 - Published source badge is small/top-left on the truck circle on public/private
   Capacity and Tracking, web/phone/Expo. It derives from the saved fix, not a
   requested source awaiting its first report. Identifiers/telemetry remain private.
@@ -201,15 +672,16 @@ workflows.
   external support message, tracker command or other third-party action. Only the
   tracking owner and explicitly authorized synthetic staff receive a moving
   location; status-only recipients receive route/status only.
-- Production simulation, if separately approved, uses its own scheduled
-  dispatcher and background worker, separate from both the regular managed
-  operations worker and GPS bridge. The short schedule only dispatches; a
-  bounded background worker claims a small durable batch using idempotent leases,
-  a separate HMAC, server-side demo manifest, kill switch, safe retries and
-  sanitized metrics. It has no unauthenticated or caller-selected command,
-  GPS gateway credential or device-control capability. The existing local-only
-  GPS runner remains local-only; production is never enabled by weakening its
-  environment guard.
+- Production simulation, if separately approved, uses the independent minute
+  Capacity function for at most two due actors and the separate 15-minute
+  dispatcher/background worker for qualified slow lanes. Initial activation
+  leaves slow controls disabled and Manual-dependent lanes held. The optional
+  one-actor/30-second Capacity container replaces the minute function rather than
+  running beside it. Both call the same durable controller using idempotent
+  leases, a separate HMAC, exact demo manifest, kill control and sanitized metrics.
+  The Capacity adapter has no caller-selected target or command and never calls
+  GPS/device-control endpoints; same-site Netlify environment variables are not
+  physically isolated. The local-only GPS runner retains its environment guard.
 
 ### Provider-profile scenario — local cycle verified
 
@@ -218,6 +690,23 @@ and About text through the normal `update_provider_profile_page` command at
 09:00 UTC, then restore the recorded baseline at 15:00 UTC. The scenario has
 its own default-off control as well as the global kill switch. It does not edit
 contacts, handles, vehicles, Capacity, documents or notifications.
+
+Current owner isolation additionally requires that the already approved demo
+actor is the organization's sole current OWNER. Migration 225 applies this guard
+to the final version197 executor and both reserved Tracking actor-readiness
+functions, preserving receipts, valid historical replay and private grants.
+Adding an ordinary co-owner after a profile claim refuses the save without
+changing the raw page/account/vehicle state, job or receipt. The owner-isolation
+source and rollback-only tests still require actual isolated SQL qualification;
+the older cycle observations below do not prove this new boundary.
+
+The executor also holds controls in global → profile → job order before a new
+save. A disable update waits for an accepted in-flight save; later saves refuse.
+Valid completed replay stays read-only and available with disabled controls.
+The lease clock is refreshed after lock waits and immediately before the normal
+save. An operator changing both controls in one transaction uses global then
+profile order; single-control stops remain valid. Actual two-session stop,
+owner-change and ordinary-profile-write concurrency requires isolated testing.
 
 Given the exact synthetic owner, page, current baseline and enabled controls\
 When a due SHOW_DEMO or RESTORE phase is claimed\

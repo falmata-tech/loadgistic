@@ -2,6 +2,7 @@ import {test,expect} from './browser-test';
 import {auditDeleteVehicles,auditLogin,auditProof,auditProvider,auditTrackingOwnerLogin,checked,localAuditService} from './audit-helpers';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+import {focusedBrowserEvidence} from '../../scripts/lib/focused-browser-evidence.mjs';
 test.use({trace:'off',screenshot:'off'});
 
 async function paintedBasemap(map:any){
@@ -71,6 +72,7 @@ test('Tracking keeps the saved route on its map without a location and hides ter
 test('Tracking proof modal fetches authorized images and rechecks revoked access when reopened',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(150000);
   const service=localAuditService();let actor:any;let vehicleId='';let shipmentId='';let proof:any;let guest:any;
+  let workflowStage='FIXTURE';const started=Date.now();
   try{
     actor=await auditProvider(service,'proof-modal');
     vehicleId=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Toyota',model:'Proof modal',plate:`TEST-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
@@ -81,24 +83,37 @@ test('Tracking proof modal fetches authorized images and rechecks revoked access
     shipmentId=(await createProviderShipment(actor,{vehicleId,originPlaceRef:await city('addis ababa'),passingPlaceRef:await city('adama'),destinationPlaceRef:await city('dire dawa'),expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),cargoSummary:'Synthetic proof modal',customerEmail:email,trackingMode:'STATUS_ONLY'})).id;
     proof=await auditProof(service,shipmentId);
     const event=checked(await service.from('provider_shipment_events').insert({shipment_id:shipmentId,status:'LOADING',event_type:'STATUS',note:'Synthetic loading photo',proof_storage_path:proof.path,proof_original_name:proof.originalName,proof_mime_type:proof.mimeType,created_by:actor.id}).select('id').single());
+    workflowStage='PROVIDER_SIGN_IN';
     await auditLogin(page,actor.email);await page.goto(`/app/provider-shipments/${shipmentId}`,{waitUntil:'domcontentloaded'});
     const open=page.getByRole('button',{name:'Open proof',exact:true});await expect(open).toBeEnabled();
+    workflowStage='PROVIDER_PROOF_OPEN';
     await open.click();const modal=page.getByRole('dialog',{name:'Shipment proof'});
     await expect(modal).toBeVisible();await expect(modal.getByRole('img',{name:'Shipment proof photo'})).toBeVisible();
     expect(await modal.getByRole('img').getAttribute('src')).toMatch(/^blob:/);
+    workflowStage='PROVIDER_PROOF_CLOSE';
     await page.keyboard.press('Escape');await expect(modal).toHaveCount(0);await expect(open).toBeFocused();
     guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.249'}});
+    workflowStage='OWNER_SIGN_IN';
     const owner=await guest.newPage();await auditTrackingOwnerLogin(owner,email);
+    workflowStage='OWNER_PROOF_OPEN';
     await owner.getByRole('button',{name:'Open proof',exact:true}).click();
     await expect(owner.getByRole('dialog').getByRole('img',{name:'Shipment proof photo'})).toBeVisible();
+    workflowStage='OWNER_PROOF_CLOSE';
     await owner.getByRole('button',{name:'Close proof'}).click();
+    workflowStage='REVOKE';
     checked(await service.from('provider_tracking_recipients').update({revoked_at:new Date().toISOString()}).eq('shipment_id',shipmentId).eq('recipient_email',email));
     expect((await guest.request.get(`/api/provider-shipments/${shipmentId}/proofs/${event.id}`)).status()).toBe(404);
+    workflowStage='REOPEN_DENIED';
     await owner.getByRole('button',{name:'Open proof',exact:true}).click();
     await expect(owner.getByRole('dialog').getByRole('alert')).toContainText('Proof is unavailable or access has expired.');
     await expect(owner.getByRole('dialog').getByRole('img')).toHaveCount(0);
     await owner.screenshot({path:info.outputPath('tracking-proof-denied.png')});
+    workflowStage='CLOSE_DENIED';
     await owner.getByRole('button',{name:'Close proof'}).click();
+    workflowStage='COMPLETE';
+  }catch(error){
+    console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(focusedBrowserEvidence({title:info.title,project:info.project.name,stage:workflowStage,error,elapsedMs:Date.now()-started})));
+    throw error;
   }finally{
     // Playwright may already have closed the browser after a timeout. Keep the
     // original workflow failure; database and file cleanup below still fail hard.

@@ -16,6 +16,10 @@ infra/telematics
 infra/telematics/*
 !infra/telematics/hosted-motion-route.mjs
 !infra/telematics/hosted-motion-worker.mjs
+!infra/telematics/scenario-worker.mjs
+!infra/telematics/enrollment-relay.mjs
+!src/lib/demo-motion-scenario.mjs
+!resources/fixtures/demo-road-catalog.json
 test-results
 playwright-report
 reference-files

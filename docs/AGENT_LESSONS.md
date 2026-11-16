@@ -8,6 +8,81 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+November15 fixture preparation: inspect data generators as well as search
+predicates before blaming matching. The old demo generator assigned only city
+routes to small configurations and forced larger ones to Empty/100%. Preserve
+record-bound sharing/privacy independently, vary authored planning facts and
+prove actual API positive/negative matches. Never refresh location timestamps
+or reset simulator history to make a planning correction look current.
+
+Rollback-only namespace tests must use a named guarded disposable database.
+When constructing a historical fixture copy, drain deferred foreign-key events
+before restoring trigger settings, restore every original constraint/trigger
+state before migration assertions, and roll back the complete test. A fixture
+construction bypass is never part of the migration or a production procedure.
+The corrected pilot SQL passes in seconds and leaves the primary database's
+85 position records and one Capacity receipt intact. Preserve failing receipts;
+do not relax immutable-history triggers in the migration to satisfy setup.
+
+Demo ownership and stopping (NR-83/84): an approved actor remaining a member
+does not prove that every current owner is synthetic. Recheck the exact current
+ownership boundary before each simulator command, including slower profile and
+reserved workflow lanes. A stop flag read without a transaction lock can race a
+write; retain one control/job lock order, preserve read-only historical replay,
+and qualify stopping with two real database sessions. Static guards and unrun
+SQL regressions do not establish actual takeover or stop behavior.
+
+Worker credential isolation (NR-82): a distinct HMAC purpose prevents signature
+replay, but a reused secret still grants its holder the other lane's authority.
+Reject known configured key equality at each receiving boundary as well as its
+signer. Include relay bearer tokens and unsafe later configuration entries; keep
+distinct existing credentials working. Check only equality and sanitized outcomes,
+never print secrets. Source/configuration findings do not establish a hosted
+incident or prove that an unactivated service has been qualified.
+
+Capacity freshness (NR-81): a faster timer does not reauthorize cached selected
+records. Test whole-feed denials and normal200 omission after a single grant is
+revoked. Preserve an outside-viewport popup only after the existing exact-truck
+authorized read; never infer a grant from a cached row. Use supplied stable vehicle
+identity to follow a new Capacity ID, remove old markers and reject stale scope
+responses. Timer refresh must wait for actual cursor work, stop in background and
+recover after a bounded deadline; a callback that merely increments state is not
+the network request's lifetime. Keep actual Chrome/database/native qualification
+separate from hook/transport tests.
+
+November14 continuation: a test that injects a replacement row bypasses the real
+link filter. Exercise a real publication with its original deep link, reload it,
+and then remove its eligibility. Keep the open panel and camera stable through
+the same vehicle's new publication, but refresh its facts and remove it after an
+authorized omission. The Chrome/Expo run exposed both the old-ID filter and
+panel reset. New imported helpers also belong in renderer fixtures. For portable
+tooling tests, canonicalize temporary fixture paths on macOS and prove native-only
+commands refuse unsupported hosts before spawning. Use the installed Python3.11+
+and loopback socket permission for their actual integration tests; do not skip or
+weaken those checks. Failed initial local gate evidence remains preserved.
+Synthetic teardown must remove only its own audit references before deleting
+the referenced provider organization. Preserve the original workflow failure if
+cleanup also fails, record exact remaining IDs privately, and verify the fixture
+baseline after scoped recovery rather than counting assertions alone as a pass.
+
+Source choices are not location reports (NR-21): a retained Manual selection
+without a saved report must not make the map invent a point or report label.
+Check the saved selection/revision separately from the published projection.
+Native accessibility state also does not prove browser semantics (NR-37): keep
+the real Expo checked-state assertion and supply supported explicit ARIA state
+alongside native state. Prove Cancel and denied capture preserve saved facts,
+then retry with real local API/database readback. An inaccessible separate Chrome
+process is a hands-on-review limit, not a passing review receipt.
+
+November15 validation: preserve the five-second mail-parser process guard. A
+full local run timed out at5.047s while computer-control work was also active;
+the unchanged isolated check passed in1.750s, and the controlled full replay
+passed1,536 tests without skips in188.403s (parser1.620s). Contention remains a
+hypothesis, not a proven cause. Finish heavy Chrome/Hermes work before the full
+gate, retain failed receipts and do not increase a security budget to label a
+failed suite green. Reuse unchanged native test/type/lint evidence and run only
+the missing strict audit/export before the candidate's first CI push.
+
 Accessibility audit readiness: a URL prefix, an old shell and absent skeletons
 do not prove that an App Router redirect has completed. October25 main CI
 40237550136 reported `CONTEXT_DESTROYED` for fleet Home; both local Chrome sizes
@@ -132,14 +207,96 @@ rules or blanket approval gates. A recurring script should have explicit inputs,
 target checks, bounded failure and meaningful negative tests; a disposable
 one-time operation does not automatically need a permanent utility.
 
-The first measured static run parsed104 scripts and linted the workflows in
+Historical tooling checkpoint, preserving its original counts and timings:
+the first measured static run parsed104 scripts and linted the workflows in
 7.917s. A second run with project-local ShellCheck0.11.0 passed shell analysis
 and the same104 script checks in7.317s. All40 focused tooling/runner checks pass,
 including malformed workflow/script rejection and parse-without-execution.
-These are local results. The complete source audit and1028-test local quality
-gate now pass; exact-source CI and release remain unfinished.
+These were local results. The complete source audit and1028-test local quality
+gate passed while exact-source CI and release were still unfinished at that
+checkpoint. [PR37's final receipts](https://github.com/falmata-tech/loadgistic/pull/37)
+subsequently establish the merged `520328b` delivery baseline, all 16 PR/main jobs
+and actual automatic production publication. Use [current progress](PROGRESS.md)
+for the next implementation task; do not repeat resolved preparation from this
+historical paragraph or relabel its older measurements.
 
 ## Overall setup assessment
+
+November15 fixture follow-up: a full1,567-case run retained17 failures after a
+focused planning pass. Updating the size/local-only policy requires checking old
+geography consumers too: six exact corridor evidence rows were outside the13
+mutable-target reservations, and a profile-history scenario pins its page and
+Preferred baseline. Preserve the complete authored input graph, not just target
+vehicles. A city used as its own Area vertex is not an enclosing boundary; use
+actual surrounding settlements and validate again after canonical resolution.
+The repaired focused33-case run passes in8.245s; local data correction, actual
+affected review and the full replay remain separate evidence. Do not push a new
+CI while a known fixture finding is unresolved or report progress from the log
+tail without first checking its failure summary.
+
+The next complete attempt passed all1,572 cases but TypeScript rejected a new
+generic React hook call and an inferred callback parameter under the existing
+offline React shim. Follow the repo's argument-assertion/explicit-parameter
+convention instead of weakening types. After the two type-only corrections,
+TypeScript and nine focused keyboard cases pass; a saved comparison proves
+the transpiled runtime AST unchanged. Preserve the failed combined receipt,
+reuse unchanged runtime/browser evidence, and require complete exact-source CI
+rather than calling the failed local command green.
+
+The first installed PG15 race-runner attempt failed in0.2s before any race, but
+kept its only stage/code in an ignored private file. Private captures excluded
+from artifacts cannot be the sole CI diagnostic. Emit fixed allowlisted stage,
+code and category values in the final receipt; test the real CLI with fake
+processes to prove unknown text remains private and preflight fails before
+backup/setup/drop. The diagnostic-only27-case check passes in11.616s; use the
+focused disposable lane to identify the cause before another full CI. Never
+infer a SQL-version defect from zero race counts or upload private evidence.
+The focused120cb7d lane then stopped before pilot setup: atomic handover's
+held-lane test inherited cap-public-103 as Empty from the removed size-based
+importer override. Its actual saved Partial state correctly triggered the older
+capacity guard first. Author the exact rollback-only Empty precondition when
+testing the later hold, and retain a distinct Partial/no-state-change denial.
+Fixture repair must not reinstate the size rule or reinterpret the earlier
+refusal as a failure of Manual-lane protection.
+After that fixture repair, the typed diagnostic identifies local supabase_admin
+authentication before any race; the strict major check passes. Use the existing
+password only within the verified container for every connected admin client,
+with fixed role/clone arguments and no fallback or host/argv/log disclosure.
+The31-case check passes in6.209s and the real read-only PG17 wrapper query passes;
+fresh PG15 race/restore proof remains separate. Replace a hardcoded unchanged
+claim with explicit not-performed verification rather than reporting a
+declaration as an observed primary snapshot.
+The next archive refusal is a distinct PG15 behavior: re-enrolling an extension
+function records its current ACL as initial, so a second pg_dump may omit an
+unchanged ACL. A matching current/initial hash is insufficient when current
+CREATE defaults differ. An empty12.489s actual pg_graphql/helper probe verifies
+both restore shapes and counterexamples. Pin owner/metadata and archive shape,
+prove same-role/schema recreation on the disposable clone before fixture commits,
+and check recreated ACL before enrollment plus final equality. Keep primary
+capture read-only, retain the one-entry flow and refuse drift/unknown shapes.
+The41-case focused check passes in5.209s; full Supabase races/restoration still
+need CI. Mark a failed proof ATTEMPTED rather than NOT_PERFORMED when it ran.
+
+The final phone keyboard E2E reached the correct canonical filter request, but
+Next's route response took5,657ms while the URL assertion allowed5,000ms. The
+submit handler closes the dialog before navigation commits; a closed dialog is
+not evidence of a completed route transition. Await the existing navigation for
+the exact selected references alongside Show vehicles, then retain the normal
+five-second assertion and90-second test budget. This is test sequencing, not a
+product change or a claim to have identified the latency's cause; preserve the
+failed receipt and compare the actual submitted query before retrying.
+
+November15 local review: keep optional Expo on the documented one-worker command
+and stop it after review. An accidentally unbounded-worker preview was blank at
+87.2% CPU/8.9% memory. A single-worker restart without resets completed the first
+bundle in121.2s under high whole-Mac load, then a warm bundle in0.867s and settled
+at0.4% CPU/496468KiB RSS. Stopping the verified owned PID closed8084 while3100
+remained available. This is measured local recovery, not proof that worker count
+caused the original hang or permission to stop other projects/system indexers.
+Normal-profile cancellation stacks also did not identify an application defect:
+app promises caught aborts, a detached-observer counterfactual reproduced the
+uncaught branch, and clean-incognito cancellation tasks did not. Do not add global
+suppression or disable cancellation without identifying the escaping promise.
 
 This is ongoing engineering housekeeping, not only a response to the October20
 incident. Review the relevant area when work exposes friction; do not rerun a
@@ -155,7 +312,7 @@ actual checked-in setup, not a certification of every feature or hosted setting.
 | Scripts/DevOps | The new workflow static check runs before expensive CI setup; existing runner negative tests remain required. | Add behavior/failure coverage when an operational command changes. Parse success is not execution success. |
 | Dependencies | The existing weekly Dependabot configuration covered root npm and Actions. Mobile npm was missing and is now included, with bounded PR volume. | It takes effect from the repository's default branch, subject to GitHub enablement. Review Expo/RN compatibility before accepting updates; no automatic major upgrade or merge. CI already audits root dependencies and reviews mobile runtime findings. |
 | Agent context | Repo-scoped skills under `.agents/skills` are selected by task and do not alter other apps or global agent configuration. The Loadgistic UI/localization skill was added October21. | Use the UI skill only for visible experience work, keep bodies short and references conditional, and confirm the active client discovers the new skill before claiming its automatic selection. No token-cost reduction is measured. |
-| Shipping | Required same-source release jobs, immutable packages, Android profiles and approval records exist. | Prove reuse rather than rebuilding unchanged payloads; refresh short-lived prerequisites last. Current release remains unpromoted. |
+| Shipping | Required same-source release jobs, immutable packages, Android profiles and approval records exist. | Prove reuse rather than rebuilding unchanged payloads; refresh short-lived prerequisites last. The initially unpromoted release was subsequently qualified and published in [PR37](https://github.com/falmata-tech/loadgistic/pull/37); new work retains its own gates. |
 | Security/recovery | Local database/ACL/RLS, target checks, protected backups and rehearsal procedures exist. | Verify actual production controls and recovery evidence for the selected operation; a document or local check does not install provider enforcement. |
 | Operations | Health checks and launch/operations documentation exist. | Confirm alert ownership, escalation and hosted monitoring evidence separately; this housekeeping did not install or certify monitoring. Prefer existing provider/free capabilities before another paid service. |
 

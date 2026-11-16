@@ -3,13 +3,24 @@ id: FEAT-SIM-003
 title: Honest fresh heavy-vehicle demo signal
 related_ids: [BASE-BE-001, BASE-DEP-001, FEAT-SIM-001, FEAT-CAP-001, FEAT-FTR-001, FEAT-GEO-001, FEAT-SEC-001]
 problem: The existing exact synthetic heavy/trailer examples were honestly old and all Empty, so a first-time broker could not see a current Partial heavy/trailer choice.
-behavior: Finite, local-only operations let two exact fixture-marked driving owners choose manual Capacity points and republish their existing Open routes: O10 remains Empty and O09 becomes Partial. The normal commands produce real timestamps. No Auth identity, vehicle, assignment, Featured selection, private grant, Tracking or GPS record is created or changed.
+behavior: Preserve the historical finite local O10 Empty and O09 Partial corrections without replaying their Manual writes. Any future refresh requires trusted operator demo provenance, exact current authority and the existing selected phone/GPS pipeline, with honest timestamps and unchanged unrelated history.
 contracts: [FreshHeavyRefreshTarget, DriverManualLocationSelection, ProviderCapacitySignal, FreshHeavyRefreshReceipt]
 observability: [fresh_heavy_refresh_preflight, fresh_heavy_manual_saved, fresh_heavy_capacity_saved, fresh_heavy_refresh_verified]
 rollout: Rehearse exact commands on an isolated restored local clone; back up the shared preview, recheck the current synthetic actor and all no-change guards, then apply once during a coordinated local-only window. Hosted rollout requires a separate exact review. This spec grants no hosted or customer mutation.
 ---
 
 # One current heavy/trailer example
+
+## Historical operation — no replay after November13
+
+The owner has retired new Manual location updates. The finite Manual operations
+and receipts below are historical evidence, not commands to run again. No worker
+or recovery may replay them or relabel their saved points as phone/GPS reports.
+Any future refresh must use the existing selected phone/GPS pipeline, trusted
+operator demo provenance and an exact current actor/vehicle/assignment check.
+Ordinary signup and forged editable demo metadata must be refused with unchanged
+account, source, location and Capacity history. Demo account and per-fix Demo
+location remain distinct labels with their actual timestamps and source.
 
 Status: both O10 Empty and O09 Partial were locally exercised on 2026-10-22;
 hosted data was not changed. This is
