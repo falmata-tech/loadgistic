@@ -1071,3 +1071,207 @@ when verification ends. This sends no email and changes no customer records,
 credentials or hosted settings; it grants no general service-key authority.
 The protected approval receipt and exact candidate verification plan are retained
 locally. Publication still requires every release gate above.
+
+## November 16 CST exact synthetic readiness repair and release — repair applied, release gates pending
+
+After reviewing the three missing policy acceptances and two missing synthetic
+fleet authority prerequisites, the owner instructed: “ok fix them..again they are
+demo data if you edit them there is no issue so fix it and deploy it”. This is
+explicit assisted-execution authority for this reviewed Loadgistic repair and
+release, not a change to the standing owner-only rule outside this task. Target:
+Supabase project `tpwyyzoqijjmbvsmmvcm`, Netlify site
+`dbb0fcec-9ec9-4511-9737-db0e32849af5`, reviewed source
+`c3f900c00b16f9c10a90add74470c7093aa13f99`.
+
+Data scope is limited to the three exact existing production-pilot synthetic
+actors and the two reviewed trucks in `fleet-01` and `fleet-04`. Use normal
+`accept_content_policy` commands for policy version `2026-10-09`; use the normal
+submission, review-context and authority-confirmation commands for the two
+explicitly fictional demo ownership documents. Preserve normal current
+timestamps, generated request/review IDs, permissions and audit records. The
+documents and review notes must state that they are fictional demo evidence and
+assert no real ownership or operating authority. Actual private Storage
+upload/download byte proof is required separately from database command proof.
+
+The reviewed private preparation is
+`.local/release-c3f900c-demo-readiness/synthetic-readiness-repair-plan.private.json`
+SHA256 `ec83aa236df2bc97d4343cb1baf122194588d8517d152a4e7b6343b41a10c1b7`,
+with forward SQL SHA256
+`62be3640deac694a800a487f9df501b5ff7a0c1b6cff9e074f4414ac46f03ba0`
+and specification SHA256
+`bd1034445d4a5a8086385678d123cd87f48e00d757c380c8d52e55e220f0fb78`.
+Execution must bind the reviewed immutable artifacts to fresh exact actor,
+vehicle, provider, document, target and existing-state readbacks. Stop on drift
+or ambiguous results; do not automatically repeat mutations or erase history.
+
+This instruction does not authorize changes to other synthetic or real-user
+records, blanket trust, staff permissions, fabricated real review/consent,
+credential escalation, Auth/SMTP settings, billing, unrelated provider settings,
+network access, role/ownership bypass or catalog edits. Existing separately
+reviewed rollout/configuration scopes retain their own boundaries. Reuse
+unchanged exact-source CI, A+C and native recovery evidence where applicable;
+fresh backup/recovery, changed-fixture rehearsal, security, runtime and monitored
+publication checks remain required. Original failed source-B evidence and
+protected baseline metadata remain unchanged.
+
+The November 16 `10:22:50 UTC` advisor observation reports zero ERROR, two WARN
+and one INFO group. The existing caller-scoped SECURITY DEFINER and disabled
+leaked-password-protection findings remain visible; the service-only RLS-table
+information is not a new warning. The strict advisor monitor remains failed.
+The demo-fix instruction alone granted no security-warning waiver and did not
+reuse a consumed prior-release exception or change a check threshold. The later
+explicit two-warning disposition below is separate. The authorization itself
+did not establish completed execution; the actual repair is recorded below.
+Publication, activation and runtime verification remain pending.
+
+### Actual exact synthetic repair — November 16 CST
+
+The exact repair was applied once using forward-v2 SQL SHA256
+`d2544e5e425c93c4b56ac78e0a145a5378c1ce0ce58a173a88b4de65ac061681`.
+V2 changes only the transaction-local deparse search path around the eight
+unchanged function fingerprints, then restores the application path before
+normal commands. It does not relax a fingerprint, permission or data guard.
+The protected execution intent SHA256
+`93c5122a858193bc9ea9649c43e1c174fea198a17af4cd43e598cf2c39a49dca`
+binds that SQL, the original fresh capture, native restore, complete V15
+rehearsal and actual private Storage byte proof. No backup timestamp was changed.
+
+Actual receipt SHA256
+`b645480e7c87dc4d211fe5fe8bfb848fe24288548f95c67d7fb70ed6da5a9957`
+records exactly three policy acceptances, two normal verification requests, two
+fictional demo authority facts and nine normal audit rows, with generated IDs
+and all existing protected rows unchanged. The two private PDFs were actually
+uploaded/downloaded through Chrome, each 944 bytes with exact manifest digests;
+public unauthenticated reads were denied. Storage proof SHA256
+`f2c8bfca437512bb308d8961adb868bb01e6f0bed459499ec2c283359326d75d`
+records no overwritten file, bucket/permission change or extracted/logged
+credential value.
+
+Independent readback-v2 SHA256
+`29d4f902d72244c1767f6b920e88643ff7b5d523c2e93b7284f84b0f35633723`
+uses the actual database clock `2026-11-16 11:33:33.995828 UTC` and confirms
+three policy actors ready, two current exact authority facts, both fleets able
+to publish, ledger220, stopped Capacity/motion controls and zero running targets.
+The existing application deployment and simulator activation are unchanged.
+Private execution/readback evidence is retained under
+`.local/release-c3f900c-demo-readiness/`.
+
+The same owner instruction covers the existing exact reviewed 139-record demo
+planning adjustment (120 Capacity and 19 assigned Preferred plans) as part of
+this c3 release. Its frozen target/digest/drift, backup/recovery and rollback
+boundaries remain mandatory. The hosted adjustment is now committed as recorded
+below; the later authorized merge and disabled environment installation are
+recorded separately. Migrations221–227, application publication and activation
+remain pending. The local V15 rehearsal passed the original-source native gate,
+the explicit repair delta and repaired-baseline C/B sequence; it does not relabel
+the original failed source-B result. The completed data repair does not itself
+establish production readiness; the later explicit warning disposition is
+recorded below.
+
+### Current two-warning disposition — this c3 release only
+
+After the exact current findings and remaining gates were disclosed, the owner
+replied: “Allow these two warnings for this release only”. This permits only
+`authenticated_security_definer_function_executable` for the intentional
+caller-own-account `public.current_user_projection` function and
+`auth_leaked_password_protection` for the currently disabled leaked-password
+protection to remain visible during this reviewed c3 release on the project and
+site above. It is a new explicit release-only disposition, not reuse of an old
+exception or approval of a different SECURITY DEFINER function.
+
+Zero ERROR findings and every other target, digest, CI, backup/recovery,
+catalogue, RLS/ACL, runtime and monitored publication gate remain required. Any
+additional or different WARN, ERROR or failed independent gate stops the
+dependent action. Keep the strict advisor check failed and its WARN threshold
+unchanged; do not mute findings or label this allowance a passing monitor.
+The service-only RLS-table INFO group is not an additional warning.
+
+This disposition permits the already reviewed necessary release steps under the
+existing scoped authority without repeated owner confirmation. It grants no
+Auth-setting change, credential escalation, provider bypass or unrelated
+deployment authority. It ends with this single verified application release;
+the standing owner-only rule and unresolved security follow-ups remain in force
+afterward. Actual remaining rollout steps are still recorded separately.
+
+Fresh advisor evidence observed at `2026-11-16T14:25:49.859Z` confirms zero ERROR,
+exactly these two WARN findings (one each), and 110 informational service-only
+RLS-without-policy findings. Advisor proof SHA256:
+`95e4785860232b37560c56f619080e98a8feebde4b6c6632cfe0bf8d0a62e0d9`.
+The protected current disposition receipt at
+`.local/release-c3f900c-demo-readiness/current-security-disposition.private.json`
+has SHA256 `b17e1d4e17980b49a9f3ebdfe9d6978c78c7c17339cc73c02695273854f74851`.
+It preserves the actual owner reply/reference with an unknown reply timestamp;
+its recording time is not a new consent date. Backup timestamps and operation,
+before-state and execution freshness requirements remain unchanged.
+
+### Actual 139 planning commit and remaining execution boundary
+
+The exact frozen 139-record planning forward completed through COMMIT.
+Independent readback is `ALL_PROPOSED_CONFIRM_RECEIPT`: 0 baseline, 139 proposed,
+0 drift, with all 143 vehicle-context, 31 protected-row, 84 canonical-place and
+2 consumer guards matched. Hosted target fingerprint:
+`a21f26aa1c467bce1cefa8cb694c5c4e5bbb570840deba6a7ccb43c690a0ba91`.
+Private intent SHA256
+`0588572d6c584d3c06a25c920ca25ac11298562569bccedc079baf6ce177c258`
+and qualified commit receipt SHA256
+`667288754ceebab23aa40a5a8e58611e41573773f6d161f72bd0b6943b844077`
+are retained as `production-139-planning-{execution-intent,commit-qualified}.private.json`
+under `.local/release-c3f900c-demo-readiness/`. Qualification combines client
+completion through COMMIT with independent readback; the read-only query alone
+does not prove COMMIT. Do not replay the forward on this proposed state.
+
+Automatic approval review rejected installation of the 18 persistent Netlify
+production configuration fields before process launch, stating that exact
+configuration mutation and current owner-admin execution were not explicit
+enough under the repository owner-only rule. Zero fields changed, and no merge,
+deployment or activation occurred. The owner then explicitly replied “Authorize
+this exact one-time staged release” for review packet SHA256
+`7caecb6b6cf20b7d6ac87c76ecd66249342ede703d19d8560d9977faa9793b9e`.
+Actual approval reference:
+`request_user_input_async/call_e787ba7570924cba9ee5b02e3bd902b9/0`;
+actual reply time is unknown and must not be inferred from recording or operation
+preparation time. This is exact one-time current-administrator assistance for
+the packet's scoped publication hold, 18 disabled Production/Functions fields,
+reviewed PR39 merge/build, migrations221–227, seven-source stopped setup,
+qualified candidate publication, eight activation fields/new deployment and two
+controller rows, and verified hold removal. It grants no broader provider,
+Auth, billing, credential, privilege or repository-protection change. Current
+identity/before-state, immutable artifact, backup/recovery, CI, security,
+runtime and rollback gates remain mandatory; the approval itself proves no
+execution or deployment. The earlier automatic-review rejection remains part of
+the record. The owner's exact two-warning disposition remains effective and is
+not being requested again.
+
+The later authorized install completed all 18 exact disabled
+Production/Functions fields, with receipt SHA256
+`17bc4626388b24afd2940f6b6a10f707979b4b9b83a8c8126c1089b8e505529f`
+under `.local/simulator-host-20261115/netlify-c3f900c-config-install-disabled-YHE2F8/`.
+It records staged configuration only: no database control change or deployment.
+PR39 merged as `6ee0109cab52ff852a41b043d95bbfb4b3720099`, preserving the exact
+c3 tree. Main CI43892022196 attempt1 failed one independent invalid-filter
+browser assertion; 13 jobs passed and the two dependent gates failed. The
+production-source workflow43896533348 was skipped. Actual Chrome hold receipt SHA256
+`f12d20b2894b146fe4b3944c1c79164c8c6286c6b6ac221066ba8cc5307d9d27`
+binds the still-published old deployment `6af6ac945eb1cff1d55e577c` and source
+`520328bd61c70a7d278fd183c6a25ffde248ab7a`. Candidate source/tree, final ZIP/scanner and runtime checks
+remain prerequisites to schema cutover/publication. These completed steps do
+not establish a new publication or simulator activation.
+
+
+### Failed main gate and bounded repair preparation — November 16 CST
+
+The failed desktop invalid-filter assertion also reproduced locally. Actual
+Chrome showed automatic refresh removing the invalid-query error state; no
+passing repair or new source qualification is claimed. No failed-job rerun,
+production schema cutover, publication or simulator activation is authorized by
+a passing historical c3 check or by documenting this failure. Saved139 planning,
+the 18 disabled fields and the held old520 deployment remain retained; schema
+is still220 and controls remain OFF.
+
+The exact staged approval above remains evidence for its c3-bound scope and
+completed operations. It does not automatically expand to different repair
+source. Before rollout resumes, record the repaired immutable source/digest,
+applicable owner authority and all required local/visual/CI/package/runtime
+results. Do not invent an owner reply time or a new approval from preparation.
+The two named WARNs remain allowed only for this release, with the strict check
+failed and unchanged; this does not excuse the independent browser failure.

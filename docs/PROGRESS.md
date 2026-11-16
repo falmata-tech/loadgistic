@@ -1,15 +1,256 @@
 # Current work and release status
 
-Updated 2026-11-15. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-16. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active hosting request — November15 (CST)
+## Active hosting request — November15–16 (CST)
 
-Current checkpoint: local3100 and the six capped essential services remain
+Current next step: qualify the known-error regression correction in
+[PR40](https://github.com/falmata-tech/loadgistic/pull/40), then resume the
+remaining rollout. CI43949429970 on67e8 isolated the desktop failure to the test's
+aggregate visible-text snapshot at VIEWPORT_TICK: alert true, loading false,
+Review visible, zero invalid requests, both action labels present and textEqual
+false. Artifact14269237267 SHA256
+`4a9456c8d9b010de522cce3f9e4423297b0503408fba64787d07301934240913`
+retains typed observations only. The actual text difference was not retained;
+layout whitespace is an inference, not an established cause. The regression now
+requires the known visible error message and error class, with separately
+visible/enabled Review filters. Zero-invalid-request, explicit correction,
+automatic refresh and repeated-key HTTP400 checks remain unchanged. Both
+desktop and phone corrected cases passed locally in20.0s without retries.
+The six parser/privacy tests passed in257ms, including the new boolean-only
+error-presence observation. Full local quality on this correction passed1,598
+tests, zero failures/skips, plus TypeScript/spec/source/workflow checks in89.129s
+overall (74.479s tests). Log SHA256
+`b5b8d68b8a8949054abd76bef94f80d8d1232746a096f16be7a81fa4edf68ae0`.
+Production component bytes are unchanged.
+
+That run's attempt1 stopped at the public PGDG signing-key curl with TLS EOF,
+exit55; a diagnosed failed-jobs-only retry cleared validation. Attempt2's shard4
+then stopped before tests on local DATABASE55322 port conflict; its process
+owner is unconfirmed and no recovery/fix is inferred. The failed runs are
+retained. Earlier2eb CI43931141327 attempts1–2 failed grouped mobile assertions
+without individual diagnostics; their retry is consumed and no waiver applied.
+
+CI uses the maintained development Turbopack server, not a production build.
+The local Webpack fallback differed because its dependency symlink pointed
+outside the worktree. An APFS copy-on-write clone of the same locked installed
+dependencies took6.107s, with zero downloads or version changes. The maintained
+Turbopack runner on loopback3101/local55321 then passed the exact mobile case in
+15.2s, with alert true, no loading, unchanged normalized text, recovery visible
+and zero invalid requests. This does not establish the remote failure's cause.
+The related file then passed all six desktop/phone cases on the same Turbopack
+runner in1.2 minutes, one worker and no retries. The six focused parser/privacy
+tests passed in280ms. The verified owned temporary3101 runner was stopped;
+the reviewed3100 development server remains available. No database reset,
+broad fixture rewrite or production mutation was needed for this diagnosis.
+The owned3100 process now uses the standard Turbopack command against local55321:
+Ready3.7s, health200/ok and invalid-filter error/Review rendered. Six local
+containers used786.37MiB with sampled CPU0.29%, within4096MiB combined caps;
+process RSS/CPU were sandbox-blocked and are not inferred. Resource receipt
+SHA256 `f370fa5480fda38c9d69d3b88c7cacc901311d99208079136029b33937fe192a`.
+The diagnostic source's full local quality subsequently passed:1,598 tests,
+zero failures/skips, TypeScript/spec/source/workflow checks,100.700s overall
+(84.098s tests). The first sandboxed run's11 EPERM socket failures and one
+socket skip are retained; all13 affected file/loopback cases passed focused
+execution, followed by this complete passing run with required loopback enabled.
+Log SHA256 `13913e44a845c0f647c50e73e4c37273684d3a863e1b6b854e33a74f498254b5`.
+Local ShellCheck remains unavailable; required CI still covers shell analysis.
+The owner's requested VS Code integrated browser replaced shared Chrome for
+actual desktop and iPhone12Pro390×844 review: invalid reapply, phone Cancel,
+explicit Mini Box Truck correction, matching map results and reload all passed.
+Native screenshots are retained in the conversation; private review receipt
+SHA256 `1872c95aa55d21ea18189be88fb2a050a51f5b96f6642c8081f25e29708802df`
+records observed steps and the physical-phone/unchanged-Expo limits. Full local
+quality passed: 1,594 tests, zero failures/skips, 192.368 seconds, plus TypeScript,
+specification, source and workflow checks on Node22 with two test workers.
+Local ShellCheck was not installed; shell analysis is not newly claimed locally
+and remains part of the required fresh CI.
+Local request-effect tests pass 30/30. Related browser coverage is
+qualified by the four original passes, the diagnosed two-case desktop replay
+(2/2 in 18.0 seconds), and the final phone regression (1/1 in 10.1 seconds);
+the earlier failures remain recorded below. Earlier Chrome focus contention
+and VS Code control timeouts remain recorded; neither was treated as a passing
+review. Production remains old520
+held/published, schema220, all simulator controls off, with139 planning fixes
+saved and18 disabled configuration fields installed. No new candidate is
+merged or deployed yet. PR40 remains draft; its new web source is distinct from
+the completed c3-bound staging operations.
+
+Current November 16 CST checkpoint: the owner-authorized exact synthetic readiness
+repair is applied on project `tpwyyzoqijjmbvsmmvcm` using reviewed forward-v2 SQL
+SHA256 `d2544e5e425c93c4b56ac78e0a145a5378c1ce0ce58a173a88b4de65ac061681`.
+Normal commands added three current-policy acceptances, two verification
+requests, two explicitly fictional demo ownership facts and nine audit rows.
+Existing protected rows, Auth/profiles, roles and normal permission checks remain
+unchanged. Actual repair receipt SHA256:
+`b645480e7c87dc4d211fe5fe8bfb848fe24288548f95c67d7fb70ed6da5a9957`.
+
+Root's actual Chrome upload/download verified both private 944-byte fictional
+PDFs against their manifest digests; unauthenticated public reads were denied,
+with no overwrite, bucket/permission change or credential-value logging. Storage
+proof SHA256 `f2c8bfca437512bb308d8961adb868bb01e6f0bed459499ec2c283359326d75d`.
+The independent database-clock readback at `2026-11-16 11:33:33.995828 UTC`
+confirms three policy actors ready, two current exact facts, both fleets able
+to publish, ledger220, stopped Capacity/motion controls and zero running targets.
+Readback-v2 SHA256:
+`29d4f902d72244c1767f6b920e88643ff7b5d523c2e93b7284f84b0f35633723`.
+Evidence is under `.local/release-c3f900c-demo-readiness/`; the readback does not
+refresh the backup timestamp.
+
+The fresh native restore and complete V15 local repair → 139 planning → 221–227
+→ B rehearsal passed; receipt SHA256
+`e4e13881aad70c67e1542a5d480d6de2aa96e360ebeeaea6302632e7c14420cf`.
+Original source admission preceded repair; repaired-state qualification uses its
+own explicit baseline. Unchanged c3 CI and V11 A+C qualification are reused,
+and the earlier unprepared-source failures remain retained. Hosted139 planning
+now completed COMMIT using the frozen forward SQL; independent readback is
+`ALL_PROPOSED_CONFIRM_RECEIPT`: 0 baseline / 139 proposed / 0 drift, with the
+143 vehicle-context, 31 protected-row, 84 canonical-place and 2 consumer guards
+unchanged. Qualified receipt SHA256:
+`667288754ceebab23aa40a5a8e58611e41573773f6d161f72bd0b6943b844077`;
+confirmed target fingerprint:
+`a21f26aa1c467bce1cefa8cb694c5c4e5bbb570840deba6a7ccb43c690a0ba91`.
+Do not replay the forward on the proposed state. Migrations221–227, main
+CI, candidate qualification/publication, activation and natural-cron/runtime
+verification remain pending. The owner then
+explicitly replied “Allow these two warnings for this release only”: intentional
+caller-own-account `current_user_projection` SECURITY DEFINER access and disabled
+leaked-password protection. Keep both visible and the strict advisor check
+failed; no additional/different WARN, ERROR or other failed gate is allowed.
+This scoped disposition does not change any threshold or waive backup, security,
+catalogue, runtime or CI requirements. All 16 same-source c3 CI jobs are freshly
+confirmed passing; unchanged qualification is reused.
+The advisor observation at `2026-11-16T14:25:49.859Z` confirms zero ERROR,
+exactly the allowed two WARN findings (one each) and 110 service-only INFO
+findings. Current disposition receipt SHA256:
+`b17e1d4e17980b49a9f3ebdfe9d6978c78c7c17339cc73c02695273854f74851`.
+Owner reply time is unknown and was not invented from receipt recording time;
+backup and operation freshness are not extended.
+
+Automatic approval review rejected the attempted 18-field Netlify configuration
+installation before process launch because exact production configuration and
+current owner-admin execution authority was not explicit enough under the
+repository rule. Zero configuration fields changed; no merge, deployment or
+activation occurred. The owner subsequently replied “Authorize this exact
+one-time staged release” to review packet SHA256
+`7caecb6b6cf20b7d6ac87c76ecd66249342ede703d19d8560d9977faa9793b9e`
+under `.local/release-c3f900c-demo-readiness/`; actual reply reference:
+`request_user_input_async/call_e787ba7570924cba9ee5b02e3bd902b9/0`.
+Actual reply time is unknown. This authorizes only that exact staged scope and
+preserves every current-state, artifact, security, CI, runtime and rollback gate;
+it does not establish execution or deployment. The two existing warnings remain
+allowed for this release; that disposition is not being requested again.
+
+The subsequent authorized install succeeded: 18/18 exact disabled
+Production/Functions fields, 92 provider requests, 17,239 ms. Receipt SHA256
+`17bc4626388b24afd2940f6b6a10f707979b4b9b83a8c8126c1089b8e505529f`
+records staged configuration only, no deployment or database change. PR39 is
+merged as `6ee0109cab52ff852a41b043d95bbfb4b3720099`; its tree is exactly the
+reviewed c3 tree `994a573167bd9d6e137a0265255d0325abe15b91`. Main
+CI43892022196 attempt1 failed: 13 jobs passed, one independent browser case
+failed, and the dependent `e2e`/`release-ready` gates failed. Production-source
+workflow43896533348 was skipped; no automatic promotion occurred.
+The actual Chrome publication hold remains on old deployment
+`6af6ac945eb1cff1d55e577c` / source `520328bd61c70a7d278fd183c6a25ffde248ab7a`.
+Production schema cutover waits for the immutable Production candidate's
+source, final ZIP, scanner and runtime qualification. No publication or
+simulator activation is claimed.
+
+The independent failure is desktop `capacity-multiple-options.spec.ts:81`:
+after reapplying an invalid filter, `capacity-feed-state` must retain
+`role="alert"`. All seven other browser shards passed. The exact local case
+reproduced the failure: 14 polls over the five-second assertion found the
+loading overlay with no role. Actual Chrome then showed the invalid-query
+alert returning after reapply but disappearing again on automatic refresh
+(15 seconds). This is observed product behavior, not a timeout-only CI flake;
+its exact cause and repair qualification are still pending. The typed CI
+artifact retained no actual role, DOM or case duration; the local evidence
+supplies those separate observations. See NR-37.
+
+A bounded fix is prepared from the merge commit in a separate worktree: keep
+the initial invalid-query denial through viewport loads and automatic refresh,
+then resume normal fetching only after valid correction. The existing negative
+workflow now checks those boundaries and successful correction/refresh.
+The existing 30 focused request-effect tests passed in 4.048 seconds on pinned
+Node22.16.0 with zero skips. The strengthened desktop negative then passed in
+29.6 seconds without retries after its new text assertion was corrected to use
+`useInnerText: true`; no product behavior was changed for that assertion.
+The related six-case file completed with four passes and two failures. An unchanged
+valid desktop case missed its five-second URL assertion while the local server
+completed the matching request in 5,517 ms: observed cold development SSR delay,
+not evidence of a changed valid-query path. The new desktop polling assertion
+also timed out after a successful 1,462 ms correction; its waiter could miss an
+in-flight initial request. The file reported 1.4 hours across an observed
+15:43→17:15 UTC wall-clock gap; the gap's cause is unconfirmed. The test now
+settles the initial corrected response before requiring a distinct periodic
+response, and cleanup preserves the original failure. A two-case-only desktop
+replay passed in18.0 seconds; the final phone regression passed in10.1 seconds.
+No assertion, denial or timeout was weakened; there was no full-file replay.
+The verified local server is `http://127.0.0.1:3100` against local55321 services,
+on Node22 with supported Webpack development mode after Turbopack rejected the
+dependency symlink; no 1.5 GB dependency copy or extra product/platform change.
+The owner made Chrome available, but competing automation switched focus again
+during a click. Root stopped; a CargoChatter draft checkbox may have changed and
+no request was submitted. Exclusive Chrome access was requested again. Actual
+desktop/phone review, full gates and deployment remain unproved.
+
+The exact c3 approval and its completed operations remain recorded; they do not
+by themselves qualify different repair
+source. Bind the repaired immutable source to applicable authority and required
+local/visual/CI/package/runtime gates before resuming rollout. Latest confirmed
+production state remains: saved139 planning, the 18 disabled configuration
+fields, old520 held/published, schema220, and simulator controls OFF. The two
+release-only WARN allowances stay visible; they do not waive this failed gate.
+
+### Earlier checkpoints retained (historical)
+
+Earlier November 15 CST checkpoint (historical): c3f900c PR CI43766471670 passes all
+16 jobs, including 538 browser passes and 70 reviewed skips. Reuse this unchanged
+source evidence. The preserved encrypted capture and native
+isolated restore pass. V11 A+C planning/schema rehearsal passed in 138,609 ms;
+GPS B startup failed with 472 stderr bytes and an unknown SQLSTATE. That is not
+a completed GPS journey or an established product defect. The V12 diagnostic
+is review-only and unexecuted. Production remains unchanged; release gates and
+owner-only production authority remain in force.
+
+Next action recorded then: diagnose the fixed B startup operation before another long replay. Reuse
+an available identity-verified isolated database and unchanged passing receipts;
+otherwise prepare a small reproducible fixture. Prove one GPS report through
+saved database state, the actual map and stop, then Phone privacy and Capacity,
+before the cohort. See [the delivery loop](AGENT_LESSONS.md#practical-delivery-loop-for-this-project)
+and existing NR-61/76; this is working guidance, not new automated enforcement.
+
+November 16 CST: LOCAL combined B v2 passed in 93,748 ms with a real 90,680 ms
+Capacity wait: seven normal source choices and seven reports, six GPS positions,
+obscured Phone, three Capacity first phases and replay/foreign/wrong-transport/
+Tracking/stop denials; protected consent/notification hashes match. Generic GPS
+(18.285 s) and Phone (7.218 s) passed. Protected receipt SHA256:
+`aecc78582a0775969be37f158221f0f6d5f54bfd4b18cd0b6b7522d25a7327be`.
+LOCAL baseline: 225 history entries/head 226, with a hash-verified transactional 227
+function overlay and no ledger writes; PostGIS public differs from archive extensions.
+V11 A+C/native restore and c3 CI are reused; archive B and hosted activation remain unproved.
+V12 native restore and positive C passed. Source B passed seven reports, six GPS
+positions, Phone privacy and 12 denials, then Capacity failed `POLICY_REQUIRED`.
+A three-second focused repeat on the same initialized container matched the
+stderr hash and identified normal `require_content_policy` → publish → Capacity
+executor calls. No PostGIS cause is established. The original source-B FAIL is
+retained; local fixtures already had consent. Synthetic readiness is under audit,
+with no hosted consent backfill, guard bypass, later B success or hosted write.
+Local modeled policy preparation then reached `PROVIDER_VERIFICATION_REQUIRED`.
+Read-only readiness: one independent target has 1 Live/`allowsDiscovery=true`;
+two fleets have 9 and 8 Live/`allowsDiscovery=false`, with no qualifying current
+ownership or financed licence facts. All three lack policy acceptance; no fake reviews/backfill.
+Before/after catalog and table hashes match, excluding only sequence `lastValue`/
+`isCalled`; sequence definitions, owners and ACLs remained compared. B FAIL stands.
+The exact ID/nonce-owned diagnostic container was removed and absence verified
+before expiry; six normal Loadgistic services remain. Production is unchanged.
+
+Earlier November 15 checkpoint (historical): local3100 and the six capped essential services remain
 available; the last container snapshot is736MiB combined. Mixed planning,
 matching/privacy and actual desktop/phone/Expo reviews pass. Complete local
 `npm run quality` at e169fef exits0:1,594 tests pass, zero failures/skips,

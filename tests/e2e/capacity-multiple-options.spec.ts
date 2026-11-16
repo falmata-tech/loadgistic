@@ -2,6 +2,7 @@ import {test,expect} from './browser-test';
 import {chooseCapacityOptions,chooseTruckConfiguration,openCapacityFilterDialog} from './capacity-drawer-helper';
 import type {Page} from 'playwright-core';
 import {writeFileSync} from 'node:fs';
+import {focusedBrowserEvidence} from '../../scripts/lib/focused-browser-evidence.mjs';
 
 const configurations=['Cargo van','Mini Box Truck'];
 const selection=(page:Page,key:string)=>page.locator(`.capacity-filter-dialog input[type="hidden"][name="${key}"]`);
@@ -70,20 +71,77 @@ test('multiple configurations form a union while other option groups intersect u
 });
 
 test('invalid multi-option deep links stay denied until an explicit filter correction',async({page},info)=>{
- test.setTimeout(60_000);await page.goto('/?vehicleCategory=Cargo%20van,unsupported');
- await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');await page.getByRole('button',{name:'Review filters',exact:true}).click();
- const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
- const invalidBeforeApply=page.url();
- await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
- // The invalid query closes the drawer and displays its error state. Reopen
- // that state rather than depending on whether React reused the dialog node.
- await expect(dialog).toBeHidden();
- await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
- await page.getByRole('button',{name:'Review filters',exact:true}).click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await expect(selection(page,'vehicleCategory')).toHaveValue('Mini Box Truck');
- const correctedAt=Date.now();
- await Promise.all([page.waitForURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck',{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
- writeFileSync(info.outputPath('filter-correction-navigation.json'),JSON.stringify({scope:'LOCAL_BROWSER',elapsedMs:Date.now()-correctedAt,correctedCategory:true}),{mode:0o600});
- await expect(page).toHaveURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30_000});
- await page.goto('/?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck');await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','alert');
- expect((await page.request.get('/api/public/capacity?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck')).status()).toBe(400);
+ const startedAt=Date.now();
+ test.setTimeout(60_000);await page.clock.install();
+ let invalidRequests=0,releaseFailure:()=>void=()=>{};
+ const failedRefresh=new Promise<void>(resolve=>{releaseFailure=resolve;});
+ // A mistaken background retry would remain pending, then fail. Neither
+ // transition may clear the known filter error or its correction action.
+ await page.route('**/api/public/capacity?**',async route=>{
+  if(!new URL(route.request().url()).searchParams.get('vehicleCategory')?.includes('unsupported'))return route.continue();
+  invalidRequests++;await failedRefresh;
+  await route.fulfill({status:400,json:{error:'Invalid capacity filter.'}}).catch(()=>{});
+ });
+ try{
+  await page.goto('/?vehicleCategory=Cargo%20van,unsupported');
+  const state=page.getByTestId('capacity-feed-state'),review=page.getByRole('button',{name:'Review filters',exact:true});
+  const filterError='Check your search and vehicle filters.';
+  await expect(state).toHaveAttribute('role','alert');
+  await expect(state).toContainText(filterError,{useInnerText:true});
+  const invalidMessage=await state.innerText();
+  async function expectKnownFilterError(stage:'VIEWPORT_TICK'|'INVALID_REAPPLY'){
+   try{
+    await expect(state,'invalid query retains its alert').toHaveAttribute('role','alert');
+    await expect(state,'invalid query retains its error state').toHaveClass(/\berror\b/);
+    // The alert also contains a separate action. Check the known message rather
+    // than snapshotting layout-generated separators around that action.
+    await expect(state,'invalid query retains the known visible error').toContainText(filterError,{useInnerText:true});
+    await expect(review,'invalid query retains Review filters').toBeVisible();
+    await expect(review,'invalid query keeps Review filters usable').toBeEnabled();
+   }catch(error){
+    const observations=await state.evaluateAll((elements,{expectedText,errorText})=>{
+     const element=elements[0] as HTMLElement|undefined,button=element?.querySelector('button');
+     const normalize=(value:string)=>value.replace(/\s+/g,' ').trim();
+     return {alert:elements.length===1&&element?.getAttribute('role')==='alert',loading:elements.some(item=>item.classList.contains('loading')),
+      textEqual:element?normalize(element.innerText)===normalize(expectedText):false,
+      errorPresent:element?normalize(element.innerText).includes(normalize(errorText)):false,
+      initialLabelPresent:expectedText.includes('Review filters'),currentLabelPresent:element?.innerText.includes('Review filters')??false,
+      fontZero:button?Number.parseFloat(getComputedStyle(button).fontSize)===0:false};
+    },{expectedText:invalidMessage,errorText:filterError}).catch(()=>({}));
+    const evidence=focusedBrowserEvidence({title:info.title,project:info.project.name,stage,error,elapsedMs:Date.now()-startedAt,
+     observations:{...observations,reviewVisible:await review.isVisible().catch(()=>false),invalidRequests}});
+    if(evidence)console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(evidence));
+    throw error;
+   }
+  }
+  await expect(review).toBeVisible();await expect(page.locator('.leaflet-container')).toBeVisible();
+  await page.locator('.leaflet-control-zoom-in').click();await page.clock.fastForward(16_000);
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  await expectKnownFilterError('VIEWPORT_TICK');
+  expect(invalidRequests).toBe(0);
+  await review.click();
+  const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
+  const invalidBeforeApply=page.url();
+  await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
+  await expect(dialog).toBeHidden();await page.clock.fastForward(16_000);
+  await expectKnownFilterError('INVALID_REAPPLY');
+  expect(invalidRequests).toBe(0);releaseFailure();
+  await review.click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await expect(selection(page,'vehicleCategory')).toHaveValue('Mini Box Truck');
+  const waitForCorrectedResponse=()=>page.waitForResponse(response=>{
+   const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('vehicleCategory')==='Mini Box Truck'&&response.ok();
+  });
+  const initialCorrectedResponse=waitForCorrectedResponse();
+  const correctedAt=Date.now();
+  await Promise.all([page.waitForURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck',{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
+  writeFileSync(info.outputPath('filter-correction-navigation.json'),JSON.stringify({scope:'LOCAL_BROWSER',elapsedMs:Date.now()-correctedAt,correctedCategory:true}),{mode:0o600});
+  expect(await (await initialCorrectedResponse).finished()).toBeNull();
+  await expect(page).toHaveURL(url=>url.searchParams.get('vehicleCategory')==='Mini Box Truck');await expect(state).toHaveCount(0,{timeout:30_000});
+  // Settle the initial viewport request before testing a separate polling tick.
+  // Otherwise the tick may correctly skip a request that is still in flight.
+  const correctedRefresh=waitForCorrectedResponse();
+  await page.clock.runFor(16_000);expect(await (await correctedRefresh).finished()).toBeNull();await expect(state).toHaveCount(0,{timeout:30_000});
+  expect(invalidRequests).toBe(0);
+  await page.goto('/?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck');await expect(state).toHaveAttribute('role','alert');
+  expect((await page.request.get('/api/public/capacity?vehicleCategory=Cargo%20van&vehicleCategory=Mini%20Box%20Truck')).status()).toBe(400);
+ }finally{releaseFailure();await page.unroute('**/api/public/capacity?**').catch(()=>{});}
 });

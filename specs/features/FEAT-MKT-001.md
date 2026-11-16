@@ -198,6 +198,19 @@ And an existing single-option URL/client remains compatible\
 And invalid, unsupported or excessive selections cannot silently broaden results\
 And canonical multi-option queries preserve pagination and cache isolation.
 
+Given an initial Capacity deep link is rejected for invalid filter selections\
+When the map viewport changes, a visible polling tick occurs, or the same invalid selections are applied again\
+Then the known filter error and Review filters action remain visible without a viewport or periodic Capacity request\
+And a delayed failed refresh cannot replace that error with loading or hide its recovery action\
+When the visitor explicitly applies valid filter selections\
+Then the corrected query loads its matching results and normal automatic viewport and fifteen-second refresh resumes.
+
+This fail-closed recovery preserves the existing controls and valid-query
+coverage, selection and retry behavior (NR-37 / NR-81). The existing invalid
+multi-option browser regression covers viewport/timer stability and explicit
+valid correction; rollout uses the normal reviewed web artifact, with no data or
+API contract change. Application rollback restores the prior client behavior.
+
 Given a visitor filters public or authorized private Capacity by location source\
 When one or more of GPS device, phone or manual update are selected\
 Then a truck qualifies when its published capacity location source matches any selected source\
