@@ -22,3 +22,66 @@ test('browser artifacts retain bounded primary and cleanup evidence bound to the
  result.stdout[0].text='CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify({...evidence(),scenario:'TRACKING_PROOF'});assert.equal(failedBrowserCaseDiagnostics(report)[0].focused,undefined);
  assert.doesNotMatch(JSON.stringify(diagnostic),/PRIVATE|@|stdout|message|stack/);
 });
+
+const capacityTitle='invalid multi-option deep links stay denied until an explicit filter correction';
+const capacityFile='capacity-multiple-options.spec.ts';
+const observations={alert:true,loading:false,textEqual:false,reviewVisible:true,initialLabelPresent:true,currentLabelPresent:false,fontZero:true,invalidRequests:0};
+const capacityEvidence=(overrides={})=>focusedBrowserEvidence({title:capacityTitle,project:'mobile-chromium',stage:'VIEWPORT_TICK',elapsedMs:16000,
+ error:{name:'AssertionError',message:'PRIVATE contact@example.test',stack:`Error: PRIVATE\n    at /repo/tests/e2e/${capacityFile}:90:5`},observations,...overrides});
+
+test('invalid Capacity evidence retains only exact typed observations without changing failure identity',()=>{
+ const value=capacityEvidence();
+ assert.deepEqual(value,{file:capacityFile,scenario:'INVALID_CAPACITY_FILTER',project:'mobile-chromium',stage:'VIEWPORT_TICK',
+  errorClass:'AssertionError',errorCode:null,errorStatus:null,elapsedMs:16000,line:90,...observations});
+ const input={...observations,file:'PRIVATE',scenario:'TRACKING_PROOF',project:'desktop-chromium',stage:'PRIVATE',line:999,token:'PRIVATE',url:'/private',headers:{authorization:'PRIVATE'}};
+ Object.defineProperty(input,'rawText',{get(){throw Error('RAW_FIELD_MUST_NOT_BE_READ');}});
+ assert.deepEqual(capacityEvidence({observations:input}),value);
+ assert.deepEqual(parseFocusedBrowserEvidence({...value,body:'PRIVATE',message:'PRIVATE',stack:'PRIVATE',rawText:'PRIVATE',url:'https://private.test',token:'PRIVATE'}),value);
+ assert.doesNotMatch(JSON.stringify(value),/PRIVATE|@|\/repo|message|stack|token|url|headers|rawText/);
+});
+
+test('Capacity observation types and request count bounds are never coerced',()=>{
+ for(const key of Object.keys(observations).filter(key=>key!=='invalidRequests')){
+  for(const invalid of [undefined,null,'true','false',0,1,{},[]]){
+   assert.equal(Object.hasOwn(capacityEvidence({observations:{[key]:invalid}}),key),false);
+   assert.equal(Object.hasOwn(parseFocusedBrowserEvidence({...capacityEvidence(),[key]:invalid}),key),false);
+  }
+ }
+ for(const count of [0,1000])assert.equal(capacityEvidence({observations:{invalidRequests:count}}).invalidRequests,count);
+ for(const invalid of [undefined,null,-1,1001,.5,NaN,Infinity,'0',{},[]]){
+  assert.equal(Object.hasOwn(capacityEvidence({observations:{invalidRequests:invalid}}),'invalidRequests'),false);
+  assert.equal(Object.hasOwn(parseFocusedBrowserEvidence({...capacityEvidence(),invalidRequests:invalid}),'invalidRequests'),false);
+ }
+ for(const invalid of [null,'PRIVATE',[],1])assert.deepEqual(capacityEvidence({observations:invalid}),capacityEvidence({observations:{}}));
+ const inherited=Object.create(observations);assert.deepEqual(capacityEvidence({observations:inherited}),capacityEvidence({observations:{}}));
+});
+
+test('Capacity observations stay scoped to the fixed case, file, stages and browser projects',()=>{
+ const value=capacityEvidence();
+ for(const changes of [{file:'constructor'},{file}, {scenario:'TRACKING_PROOF'},{stage:'PRIVATE'},{stage:'COMPLETE'},{project:'PRIVATE'}]){
+  assert.equal(parseFocusedBrowserEvidence({...value,...changes}),null);
+ }
+ assert.equal(capacityEvidence({title:'PRIVATE'}),null);
+ for(const stage of ['VIEWPORT_TICK','INVALID_REAPPLY'])for(const project of ['desktop-chromium','mobile-chromium']){
+  const current=capacityEvidence({stage,project});assert.equal(current.stage,stage);assert.equal(current.project,project);assert.equal(current.line,90);
+ }
+ assert.deepEqual(parseFocusedBrowserEvidence({...evidence(),...observations}),evidence());
+ assert.deepEqual(focusedBrowserEvidence({title,project:'desktop-chromium',stage:'CLEANUP_DELETE_AUTH',elapsedMs:42000,
+  error:{name:'AuthApiError',code:'unexpected_failure',status:500,stack:'Error\n    at /repo/tests/e2e/fleet-onboarding.spec.ts:527:5'},observations}),evidence());
+ for(const invalid of ['PRIVATE',' '.repeat(5000)])assert.equal(parseFocusedBrowserEvidence(invalid),null);
+});
+
+test('failed Capacity artifacts retain sanitized observations only for the matching case and project',()=>{
+ const value=capacityEvidence();
+ const result={status:'failed',stdout:[{text:'CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify({...value,rawText:'PRIVATE',token:'PRIVATE',headers:{cookie:'PRIVATE'}})+'\n'}]};
+ const report={suites:[{specs:[{file:capacityFile,title:capacityTitle,line:72,tests:[{projectName:'mobile-chromium',status:'unexpected',results:[result]}]}]}]};
+ const diagnostic=failedBrowserCaseDiagnostics(report)[0];
+ assert.equal(diagnostic.line,90);assert.deepEqual(diagnostic.focused,[value]);
+ assert.doesNotMatch(JSON.stringify(diagnostic),/PRIVATE|@|stdout|message|stack|rawText|token|cookie|headers/);
+ result.stdout[0].text='CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify({...value,project:'desktop-chromium'});
+ assert.equal(failedBrowserCaseDiagnostics(report)[0].focused,undefined);
+ result.stdout[0].text='CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify({...value,scenario:'TRACKING_PROOF'});
+ assert.equal(failedBrowserCaseDiagnostics(report)[0].focused,undefined);
+ result.stdout[0].text='CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(value);
+ report.suites[0].specs[0].title='PRIVATE';assert.equal(failedBrowserCaseDiagnostics(report)[0].focused,undefined);
+});

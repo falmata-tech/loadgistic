@@ -104,6 +104,14 @@ Keep each replay's output directory distinct so a passing Playwright run cannot
 erase its earlier failure screenshots. When multiple HTTP assertions share one
 line, split them and use bounded numeric diagnostics; never weaken retired-image
 404 or replacement-image200/privacy requirements to remove a CI failure.
+For a browser failure that passes locally, compare the maintained server command
+before another retry: this CI uses development Turbopack, while a dependency
+symlink outside the checkout forced a local Webpack fallback. Reuse identical
+locked dependencies as a real APFS copy-on-write directory instead of downloading
+them or changing the runner. The November16 clone took6.107s; the exact mobile
+case then passed in15.2s, leaving the remote assertion cause unconfirmed. Emit
+the existing allowlisted typed evidence on failure and separate grouped
+assertions; do not replace a missing diagnostic with another blind rerun.
 
 | What went wrong | Required prevention | Detailed record |
 | --- | --- | --- |

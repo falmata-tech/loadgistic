@@ -9,8 +9,35 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15–16 (CST)
 
-Current next step: commit and open the reviewed invalid-filter repair, then
-qualify its exact-source PR CI before the remaining authorized rollout.
+Current next step: diagnose the remaining mobile assertion in
+[PR40](https://github.com/falmata-tech/loadgistic/pull/40), then qualify its
+exact repaired source before the remaining rollout. Commit `2eb6d74` passed
+13 independent CI jobs, but mobile browser shard5 failed in run43931141327
+attempts1 and2; the single failed-jobs-only retry is consumed. Its three grouped
+assertions retained only line90, without the individual condition. No second
+retry is being used. Existing typed diagnostics now distinguish alert, loading,
+text equality, recovery visibility and bounded request count without retaining
+DOM, text, URLs, identities or credentials; original assertions remain intact.
+
+CI uses the maintained development Turbopack server, not a production build.
+The local Webpack fallback differed because its dependency symlink pointed
+outside the worktree. An APFS copy-on-write clone of the same locked installed
+dependencies took6.107s, with zero downloads or version changes. The maintained
+Turbopack runner on loopback3101/local55321 then passed the exact mobile case in
+15.2s, with alert true, no loading, unchanged normalized text, recovery visible
+and zero invalid requests. This does not establish the remote failure's cause.
+The related file then passed all six desktop/phone cases on the same Turbopack
+runner in1.2 minutes, one worker and no retries. The six focused parser/privacy
+tests passed in280ms. The verified owned temporary3101 runner was stopped;
+the reviewed3100 development server remains available. No database reset,
+broad fixture rewrite or production mutation was needed for this diagnosis.
+The diagnostic source's full local quality subsequently passed:1,598 tests,
+zero failures/skips, TypeScript/spec/source/workflow checks,100.700s overall
+(84.098s tests). The first sandboxed run's11 EPERM socket failures and one
+socket skip are retained; all13 affected file/loopback cases passed focused
+execution, followed by this complete passing run with required loopback enabled.
+Log SHA256 `13913e44a845c0f647c50e73e4c37273684d3a863e1b6b854e33a74f498254b5`.
+Local ShellCheck remains unavailable; required CI still covers shell analysis.
 The owner's requested VS Code integrated browser replaced shared Chrome for
 actual desktop and iPhone12Pro390×844 review: invalid reapply, phone Cancel,
 explicit Mini Box Truck correction, matching map results and reload all passed.
@@ -29,7 +56,8 @@ and VS Code control timeouts remain recorded; neither was treated as a passing
 review. Production remains old520
 held/published, schema220, all simulator controls off, with139 planning fixes
 saved and18 disabled configuration fields installed. No new candidate is
-merged or deployed yet; exact commit/PR identity is recorded after creation.
+merged or deployed yet. PR40 remains draft; its new web source is distinct from
+the completed c3-bound staging operations.
 
 Current November 16 CST checkpoint: the owner-authorized exact synthetic readiness
 repair is applied on project `tpwyyzoqijjmbvsmmvcm` using reviewed forward-v2 SQL

@@ -2,6 +2,7 @@ import {test,expect} from './browser-test';
 import {chooseCapacityOptions,chooseTruckConfiguration,openCapacityFilterDialog} from './capacity-drawer-helper';
 import type {Page} from 'playwright-core';
 import {writeFileSync} from 'node:fs';
+import {focusedBrowserEvidence} from '../../scripts/lib/focused-browser-evidence.mjs';
 
 const configurations=['Cargo van','Mini Box Truck'];
 const selection=(page:Page,key:string)=>page.locator(`.capacity-filter-dialog input[type="hidden"][name="${key}"]`);
@@ -70,6 +71,7 @@ test('multiple configurations form a union while other option groups intersect u
 });
 
 test('invalid multi-option deep links stay denied until an explicit filter correction',async({page},info)=>{
+ const startedAt=Date.now();
  test.setTimeout(60_000);await page.clock.install();
  let invalidRequests=0,releaseFailure:()=>void=()=>{};
  const failedRefresh=new Promise<void>(resolve=>{releaseFailure=resolve;});
@@ -84,17 +86,37 @@ test('invalid multi-option deep links stay denied until an explicit filter corre
   await page.goto('/?vehicleCategory=Cargo%20van,unsupported');
   const state=page.getByTestId('capacity-feed-state'),review=page.getByRole('button',{name:'Review filters',exact:true});
   await expect(state).toHaveAttribute('role','alert');const invalidMessage=await state.innerText();
+  async function expectKnownFilterError(stage:'VIEWPORT_TICK'|'INVALID_REAPPLY'){
+   try{
+    await expect(state,'invalid query retains its alert').toHaveAttribute('role','alert');
+    await expect(state,'invalid query retains the same visible error').toHaveText(invalidMessage,{useInnerText:true});
+    await expect(review,'invalid query retains Review filters').toBeVisible();
+   }catch(error){
+    const observations=await state.evaluateAll((elements,expectedText)=>{
+     const element=elements[0] as HTMLElement|undefined,button=element?.querySelector('button');
+     const normalize=(value:string)=>value.replace(/\s+/g,' ').trim();
+     return {alert:elements.length===1&&element?.getAttribute('role')==='alert',loading:elements.some(item=>item.classList.contains('loading')),
+      textEqual:element?normalize(element.innerText)===normalize(expectedText):false,
+      initialLabelPresent:expectedText.includes('Review filters'),currentLabelPresent:element?.innerText.includes('Review filters')??false,
+      fontZero:button?Number.parseFloat(getComputedStyle(button).fontSize)===0:false};
+    },invalidMessage).catch(()=>({}));
+    const evidence=focusedBrowserEvidence({title:info.title,project:info.project.name,stage,error,elapsedMs:Date.now()-startedAt,
+     observations:{...observations,reviewVisible:await review.isVisible().catch(()=>false),invalidRequests}});
+    if(evidence)console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(evidence));
+    throw error;
+   }
+  }
   await expect(review).toBeVisible();await expect(page.locator('.leaflet-container')).toBeVisible();
   await page.locator('.leaflet-control-zoom-in').click();await page.clock.fastForward(16_000);
   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
-  await expect(state).toHaveAttribute('role','alert');await expect(state).toHaveText(invalidMessage,{useInnerText:true});await expect(review).toBeVisible();
+  await expectKnownFilterError('VIEWPORT_TICK');
   expect(invalidRequests).toBe(0);
   await review.click();
   const dialog=page.getByRole('dialog',{name:'Vehicle filters',exact:true});await expect(selection(page,'vehicleCategory')).toHaveValue('Cargo van,unsupported');
   const invalidBeforeApply=page.url();
   await Promise.all([page.waitForURL(url=>url.href!==invalidBeforeApply,{waitUntil:'domcontentloaded'}),dialog.getByRole('button',{name:'Show vehicles',exact:true}).click()]);
   await expect(dialog).toBeHidden();await page.clock.fastForward(16_000);
-  await expect(state).toHaveAttribute('role','alert');await expect(state).toHaveText(invalidMessage,{useInnerText:true});await expect(review).toBeVisible();
+  await expectKnownFilterError('INVALID_REAPPLY');
   expect(invalidRequests).toBe(0);releaseFailure();
   await review.click();await chooseTruckConfiguration(dialog,'Mini Box Truck');await expect(selection(page,'vehicleCategory')).toHaveValue('Mini Box Truck');
   const waitForCorrectedResponse=()=>page.waitForResponse(response=>{
