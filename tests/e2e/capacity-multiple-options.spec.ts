@@ -85,21 +85,29 @@ test('invalid multi-option deep links stay denied until an explicit filter corre
  try{
   await page.goto('/?vehicleCategory=Cargo%20van,unsupported');
   const state=page.getByTestId('capacity-feed-state'),review=page.getByRole('button',{name:'Review filters',exact:true});
-  await expect(state).toHaveAttribute('role','alert');const invalidMessage=await state.innerText();
+  const filterError='Check your search and vehicle filters.';
+  await expect(state).toHaveAttribute('role','alert');
+  await expect(state).toContainText(filterError,{useInnerText:true});
+  const invalidMessage=await state.innerText();
   async function expectKnownFilterError(stage:'VIEWPORT_TICK'|'INVALID_REAPPLY'){
    try{
     await expect(state,'invalid query retains its alert').toHaveAttribute('role','alert');
-    await expect(state,'invalid query retains the same visible error').toHaveText(invalidMessage,{useInnerText:true});
+    await expect(state,'invalid query retains its error state').toHaveClass(/\berror\b/);
+    // The alert also contains a separate action. Check the known message rather
+    // than snapshotting layout-generated separators around that action.
+    await expect(state,'invalid query retains the known visible error').toContainText(filterError,{useInnerText:true});
     await expect(review,'invalid query retains Review filters').toBeVisible();
+    await expect(review,'invalid query keeps Review filters usable').toBeEnabled();
    }catch(error){
-    const observations=await state.evaluateAll((elements,expectedText)=>{
+    const observations=await state.evaluateAll((elements,{expectedText,errorText})=>{
      const element=elements[0] as HTMLElement|undefined,button=element?.querySelector('button');
      const normalize=(value:string)=>value.replace(/\s+/g,' ').trim();
      return {alert:elements.length===1&&element?.getAttribute('role')==='alert',loading:elements.some(item=>item.classList.contains('loading')),
       textEqual:element?normalize(element.innerText)===normalize(expectedText):false,
+      errorPresent:element?normalize(element.innerText).includes(normalize(errorText)):false,
       initialLabelPresent:expectedText.includes('Review filters'),currentLabelPresent:element?.innerText.includes('Review filters')??false,
       fontZero:button?Number.parseFloat(getComputedStyle(button).fontSize)===0:false};
-    },invalidMessage).catch(()=>({}));
+    },{expectedText:invalidMessage,errorText:filterError}).catch(()=>({}));
     const evidence=focusedBrowserEvidence({title:info.title,project:info.project.name,stage,error,elapsedMs:Date.now()-startedAt,
      observations:{...observations,reviewVisible:await review.isVisible().catch(()=>false),invalidRequests}});
     if(evidence)console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(evidence));

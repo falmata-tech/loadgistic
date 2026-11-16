@@ -15,7 +15,7 @@ const stages={
 const classes=new Set(['Error','TimeoutError','AssertionError','TypeError','ReferenceError','AbortError','AuthApiError','AuthUnknownError','AuthRetryableFetchError']);
 const codes=new Set(['unexpected_failure','database_error','user_not_found','request_timeout','over_request_rate_limit','not_admin',
  '23503','23505','23514','42501','55P03','57014','40001','40P01','P0001','XX000']);
-const capacityBooleanFields=['alert','loading','textEqual','reviewVisible','initialLabelPresent','currentLabelPresent','fontZero'];
+const capacityBooleanFields=['alert','loading','textEqual','errorPresent','reviewVisible','initialLabelPresent','currentLabelPresent','fontZero'];
 function capacityObservations(value){
  const observed={};
  if(!value||typeof value!=='object'||Array.isArray(value))return observed;

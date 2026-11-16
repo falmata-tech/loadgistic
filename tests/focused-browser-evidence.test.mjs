@@ -25,7 +25,7 @@ test('browser artifacts retain bounded primary and cleanup evidence bound to the
 
 const capacityTitle='invalid multi-option deep links stay denied until an explicit filter correction';
 const capacityFile='capacity-multiple-options.spec.ts';
-const observations={alert:true,loading:false,textEqual:false,reviewVisible:true,initialLabelPresent:true,currentLabelPresent:false,fontZero:true,invalidRequests:0};
+const observations={alert:true,loading:false,textEqual:false,errorPresent:true,reviewVisible:true,initialLabelPresent:true,currentLabelPresent:false,fontZero:true,invalidRequests:0};
 const capacityEvidence=(overrides={})=>focusedBrowserEvidence({title:capacityTitle,project:'mobile-chromium',stage:'VIEWPORT_TICK',elapsedMs:16000,
  error:{name:'AssertionError',message:'PRIVATE contact@example.test',stack:`Error: PRIVATE\n    at /repo/tests/e2e/${capacityFile}:90:5`},observations,...overrides});
 

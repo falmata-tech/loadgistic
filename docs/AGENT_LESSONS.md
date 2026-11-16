@@ -112,6 +112,14 @@ them or changing the runner. The November16 clone took6.107s; the exact mobile
 case then passed in15.2s, leaving the remote assertion cause unconfirmed. Emit
 the existing allowlisted typed evidence on failure and separate grouped
 assertions; do not replace a missing diagnostic with another blind rerun.
+The subsequent typed CI observation isolated aggregate alert-text equality:
+alert/recovery/no-request guards passed, while the whole container snapshot
+differed. Verify the known visible error message, its state and the named usable
+recovery control separately; a container that also holds an action is not one
+copy contract. Preserve denial, automatic refresh, explicit correction and
+HTTP400 checks. The actual remote text difference was not retained, so whitespace
+is a hypothesis, not proof. Corrected desktop/phone cases passed in20.0s without
+retries; no production component or timeout change was needed.
 
 | What went wrong | Required prevention | Detailed record |
 | --- | --- | --- |

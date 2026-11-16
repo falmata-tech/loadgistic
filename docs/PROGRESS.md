@@ -9,15 +9,32 @@ the source, hosted schema, web publication and installed Android are separate.
 
 ## Active hosting request — November15–16 (CST)
 
-Current next step: diagnose the remaining mobile assertion in
-[PR40](https://github.com/falmata-tech/loadgistic/pull/40), then qualify its
-exact repaired source before the remaining rollout. Commit `2eb6d74` passed
-13 independent CI jobs, but mobile browser shard5 failed in run43931141327
-attempts1 and2; the single failed-jobs-only retry is consumed. Its three grouped
-assertions retained only line90, without the individual condition. No second
-retry is being used. Existing typed diagnostics now distinguish alert, loading,
-text equality, recovery visibility and bounded request count without retaining
-DOM, text, URLs, identities or credentials; original assertions remain intact.
+Current next step: qualify the known-error regression correction in
+[PR40](https://github.com/falmata-tech/loadgistic/pull/40), then resume the
+remaining rollout. CI43949429970 on67e8 isolated the desktop failure to the test's
+aggregate visible-text snapshot at VIEWPORT_TICK: alert true, loading false,
+Review visible, zero invalid requests, both action labels present and textEqual
+false. Artifact14269237267 SHA256
+`4a9456c8d9b010de522cce3f9e4423297b0503408fba64787d07301934240913`
+retains typed observations only. The actual text difference was not retained;
+layout whitespace is an inference, not an established cause. The regression now
+requires the known visible error message and error class, with separately
+visible/enabled Review filters. Zero-invalid-request, explicit correction,
+automatic refresh and repeated-key HTTP400 checks remain unchanged. Both
+desktop and phone corrected cases passed locally in20.0s without retries.
+The six parser/privacy tests passed in257ms, including the new boolean-only
+error-presence observation. Full local quality on this correction passed1,598
+tests, zero failures/skips, plus TypeScript/spec/source/workflow checks in89.129s
+overall (74.479s tests). Log SHA256
+`b5b8d68b8a8949054abd76bef94f80d8d1232746a096f16be7a81fa4edf68ae0`.
+Production component bytes are unchanged.
+
+That run's attempt1 stopped at the public PGDG signing-key curl with TLS EOF,
+exit55; a diagnosed failed-jobs-only retry cleared validation. Attempt2's shard4
+then stopped before tests on local DATABASE55322 port conflict; its process
+owner is unconfirmed and no recovery/fix is inferred. The failed runs are
+retained. Earlier2eb CI43931141327 attempts1–2 failed grouped mobile assertions
+without individual diagnostics; their retry is consumed and no waiver applied.
 
 CI uses the maintained development Turbopack server, not a production build.
 The local Webpack fallback differed because its dependency symlink pointed
@@ -31,6 +48,11 @@ runner in1.2 minutes, one worker and no retries. The six focused parser/privacy
 tests passed in280ms. The verified owned temporary3101 runner was stopped;
 the reviewed3100 development server remains available. No database reset,
 broad fixture rewrite or production mutation was needed for this diagnosis.
+The owned3100 process now uses the standard Turbopack command against local55321:
+Ready3.7s, health200/ok and invalid-filter error/Review rendered. Six local
+containers used786.37MiB with sampled CPU0.29%, within4096MiB combined caps;
+process RSS/CPU were sandbox-blocked and are not inferred. Resource receipt
+SHA256 `f370fa5480fda38c9d69d3b88c7cacc901311d99208079136029b33937fe192a`.
 The diagnostic source's full local quality subsequently passed:1,598 tests,
 zero failures/skips, TypeScript/spec/source/workflow checks,100.700s overall
 (84.098s tests). The first sandboxed run's11 EPERM socket failures and one
