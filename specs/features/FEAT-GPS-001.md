@@ -11,6 +11,41 @@ rollout: Prepare additive RLS-enabled private schema and pinned isolated server 
 
 # Fleet GPS integration and location signals
 
+## November17 — two current location sources
+
+Owner direction supersedes the historical Manual presentation below. GPS and
+Phone are the only current product source types; retained Manual values are
+historical storage, not another current source, search choice or map position.
+
+Given a saved legacy Manual selection or published report\
+When a current web, Expo, fleet/editor, public, account or business projection is read\
+Then its retired source becomes unselected and its Manual current-point fields
+are absent, without relabelling its coordinates as GPS or Phone\
+And underlying records, revisions, saved timestamps, assignments, consent,
+Tracking agreements and history are preserved\
+And opening, changing a draft accuracy or cancelling cannot select Phone/GPS.
+
+Given a stale client supplies Manual or mixed GPS/Manual search values\
+When any current Capacity filter boundary parses them\
+Then it refuses the retired value before reading a broader set of results\
+And the normal explicit filter correction remains usable on desktop and phone.
+
+Given an assigned driver's existing saved choice prevents an owner source change\
+When that owner reads the unselected-source editor\
+Then the same permission remains denied and a neutral source-change capability
+and short instruction identify the assigned driver's next action\
+And the current driver can deliberately choose Phone through the existing
+permission, capture, optimistic revision, save and retry flow.
+
+Changed contracts: LocationSourceProjection and Capacity source filters expose
+only GPS/MOBILE, with null for unselected; current Manual coordinates are not
+public discovery or near/viewport anchors. No new source-write API is needed:
+221 already refuses those writes. Observability retains existing query errors,
+source-change denials and revision outcomes without raw coordinates. Rollout
+uses the new client compatibility projections and additive guarded SQL; old
+history is retained and rollback never invents a source or restores Manual writes.
+Permission/source tests and actual web/Expo tasks must pass before completion.
+
 ## November 13 direction — implementation in progress
 
 The owner now requires phone/GPS-only updates and independently operated real

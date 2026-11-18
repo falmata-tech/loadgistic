@@ -90,6 +90,18 @@ begin
 end $fixture$;
 
 
+-- The old215 reference intentionally preserves its original Manual output.
+-- Only its expected228 current-point fields change; compare every other field,
+-- order, error and cursor exactly. Stored legacy fixtures remain unchanged.
+create function pg_temp.expected_location228(input_rows jsonb) returns jsonb language sql immutable as $$
+ select case when $1 is null then null else (
+  select coalesce(jsonb_agg(case when item->>'location_source'='MANUAL_ADMIN' then
+   item||'{"location_source":null,"location_lat":null,"location_lng":null,"location_area":null}'::jsonb
+   else item end order by ordinal),'[]'::jsonb)
+  from jsonb_array_elements($1) with ordinality original_row(item,ordinal)
+ ) end;
+$$;
+
 do $parity215$
 declare ids jsonb;selected_handle text;cursor_stamp timestamptz;cursor_id uuid;
  field text;value jsonb;query jsonb;entry record;mode integer;page_size integer;
@@ -104,7 +116,7 @@ begin
  create temporary table discovery215_cases(name text,query jsonb,expected_count integer,expected_error boolean default false) on commit drop;
  insert into discovery215_cases(name,query,expected_count) values
   ('absent','{}',4),('null query',null,0),
-  ('source manual','{"location_source":"MANUAL"}',3),('source mobile','{"location_source":"MOBILE"}',1),
+  ('source mobile','{"location_source":"MOBILE"}',1),
   ('source gps','{"location_source":"GPS"}',0),
   ('blocked empty array','{"blocked_handles":[]}',4),
   ('blocked present',jsonb_build_object('blocked_handles',jsonb_build_array(selected_handle)),3),
@@ -121,7 +133,7 @@ begin
     values(field||':'||value::text,jsonb_build_object(field,value),case when field='viewport' then null else 4 end);
   end loop;
  end loop;
- insert into discovery215_cases(name,query,expected_error) values('invalid source','{"location_source":"INVALID215"}',true);
+ insert into discovery215_cases(name,query,expected_error) values('invalid source','{"location_source":"INVALID215"}',true),('retired manual source','{"location_source":"MANUAL"}',true);
  for entry in select * from discovery215_cases loop
   query:=entry.query||jsonb_build_object('vehicle_ids',ids);
   for mode in 0..1 loop
@@ -146,7 +158,7 @@ begin
       or item->>'status'='EMPTY' and item->>'available_percent' is distinct from '100'
       or item->>'status'='PARTIAL' and item->>'available_percent' is not null
    ) then raise exception 'DISCOVERY215_REPORTED_SPACE_PROJECTION_DRIFT: % / %',entry.name,mode;end if;
-   if old_rows is distinct from (case when new_rows is null then null else (
+   if pg_temp.expected_location228(old_rows) is distinct from (case when new_rows is null then null else (
      select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal),'[]')
      from jsonb_array_elements(new_rows) with ordinality current_row(item,ordinal)
    ) end) or old_state is distinct from new_state or old_error is distinct from new_error
@@ -165,7 +177,7 @@ begin
    select coalesce(jsonb_agg(payload order by ordinal),'[]') into new_rows
     from public.public_capacity_page(query,case when mode=1 then cursor_stamp end,
      case when mode=1 then cursor_id end,page_size) with ordinality result(payload,ordinal);
-   if old_rows is distinct from (
+   if pg_temp.expected_location228(old_rows) is distinct from (
      select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal),'[]')
      from jsonb_array_elements(new_rows) with ordinality current_row(item,ordinal)
    ) or jsonb_array_length(new_rows) is distinct from (case when mode=0 then 4 else 3 end)

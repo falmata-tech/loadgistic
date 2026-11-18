@@ -19,7 +19,7 @@ export function useAccountQuery<T>(path: string) {
       const data = await request(path) as T;
       if (generation === sequence.current) {setState({ key, data, error: '', loading: false });return true;}
     } catch (error) {
-      const denied=error instanceof ApiError&&[401,403,404].includes(error.status);
+      const denied=error instanceof ApiError&&[401,403,404,410].includes(error.status);
       if (generation === sequence.current) setState(previous => ({ key, data: !denied&&previous.key === key ? previous.data : null, error: error instanceof Error ? error.message : 'Could not load. Please try again.', loading: false }));
     }
     return false;

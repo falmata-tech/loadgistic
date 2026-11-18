@@ -10,12 +10,14 @@ import { trackingLocationResult } from '../../../../src/lib/tracking-location-co
 import { TRACKING_JOURNEY } from '../../../../src/lib/tracking-progress.js';
 import { useAccount } from '../session/provider';
 import { useAccountQuery } from '../hooks/account-query';
-import { statusLabel, type TrackingDetail } from '../api/tracking';
+import { currentTrackingLocation, statusLabel, type TrackingDetail } from '../api/tracking';
 import { captureCapacityLocation } from '../location/capture';
 import { privacyRadii } from '../location/privacy';
 import { Page, Title, Copy, Card, Field, Button, ErrorText, palette, LoadingSpinner } from '../components/ui';
 import { Choices } from '../components/choices';
 import {TrackingWorkspace} from '../components/tracking-workspace';
+import {TrackingPartnerForm} from '../components/tracking-partner-form';
+import {TrackingShipmentLinks} from '../components/tracking-session-manager';
 import {TrackingDemoLabel} from '../components/tracking-demo-label';
 import {demoTrackingLabel,isDemoTrackingShipment} from '../../../../src/lib/demo-tracking-identity.js';
 export default function ShipmentDetail() {
@@ -25,7 +27,8 @@ export default function ShipmentDetail() {
  if (!account.session) return <Redirect href="/account" />;
  return query.data?<View style={{flex:1}}><Shipment key={account.session.user.id+id} data={query.data} reload={query.reload}/><ErrorText message={query.error}/></View>:<Page><ErrorText message={query.error}/>{!query.error&&<LoadingSpinner accessibilityLabel="Loading shipment"/>}<Button secondary message="Refresh shipment" onPress={()=>void query.reload()} busy={query.loading}/></Page>;
 }
-function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promise<void> }) {
+function Shipment({ data:receivedData, reload }: { data: TrackingDetail; reload: () => Promise<void> }) {
+ const data={...receivedData,location:currentTrackingLocation(receivedData.location)};
  const {t}=useLanguage();
  const proof = useFileSelection();
  const account = useAccount(), [selected, setSelected] = useState(''), [note, setNote] = useState(''),[appealReason,setAppealReason]=useState('');
@@ -90,11 +93,11 @@ function Shipment({ data, reload }: { data: TrackingDetail; reload: () => Promis
    {feedbackAt === 'LOCATION' && feedback}
   </Card>}
   <Card><Title message="Shipment details"/><Copy>{data.cargo}</Copy>{!!data.pickupDate&&<Copy>{t('Pickup: {date}',{date:data.pickupDate})}</Copy>}{!!data.deliveryDate&&<Copy>{t('Delivery: {date}',{date:data.deliveryDate})}</Copy>}</Card>
-  <Card><Title message="Shipment owner"/><Copy message="The shipment owner manages who can follow this shipment."/>
+  {data.canAddPartner?<TrackingPartnerForm shipmentId={data.id} reload={reload}/>:<Card><Title message="Shipment owner"/><Copy message="The shipment owner manages who can follow this shipment."/>
    {data.recipients.filter(person=>person.owner).map(person=><View key={person.id}><Copy>{person.email}</Copy></View>)}
    {data.deliveries.some(item=>item.status!=='SENT')&&<Copy message="The shipment owner's email is still awaiting delivery."/>}
-  </Card>
+  </Card>}
   {data.canRecover && <AppLink href={{ pathname: '/shipment-manage', params: { id: data.id } }} style={{ paddingVertical: 14, color: palette.blue }} message="Manage shipment"/>}
-  <Card><Title message={"Update history"}/>{data.events.map(event => <View key={event.id} style={{ gap: 4, paddingVertical: 8 }}><Copy>{t(statusLabel(event.status))} · {new Date(event.createdAt).toLocaleString()}</Copy>{isDemoTrackingShipment(data.id)&&<TrackingDemoLabel kind="event"/>}{!!event.note && <Copy>{event.note}</Copy>}{event.hasProof && <PrivateFile label={t(isDemoTrackingShipment(data.id)?demoTrackingLabel('proof'):'View photo proof')} load={() => account.request(`/api/mobile/shipments/${data.id}/proof/${event.id}`)} />}</View>)}</Card>
+  <TrackingShipmentLinks shipmentId={data.id}/><Card><Title message={"Update history"}/>{data.events.map(event => <View key={event.id} style={{ gap: 4, paddingVertical: 8 }}><Copy>{t(statusLabel(event.status))} · {new Date(event.createdAt).toLocaleString()}</Copy>{isDemoTrackingShipment(data.id)&&<TrackingDemoLabel kind="event"/>}{!!event.note && <Copy>{event.note}</Copy>}{event.hasProof && <PrivateFile label={t(isDemoTrackingShipment(data.id)?demoTrackingLabel('proof'):'View photo proof')} load={() => account.request(`/api/mobile/shipments/${data.id}/proof/${event.id}`)} />}</View>)}</Card>
  </TrackingWorkspace>;
 }

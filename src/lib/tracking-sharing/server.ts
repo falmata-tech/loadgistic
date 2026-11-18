@@ -1,5 +1,4 @@
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
-import {providerTrackingRecipientDigest} from '../security.js';
 import {businessTrackingListSchema,businessTrackingProjection,ownerSharingCommand,ownerSharingSchema,TrackingSharingError,type OwnerVerification} from './domain';
 
 export interface TrackingSharingRpcPort{rpc(name:string,args:Record<string,unknown>):PromiseLike<{data:unknown;error:{message:string}|null}>}
@@ -13,7 +12,7 @@ export function trackingSharingService(port:TrackingSharingRpcPort=createSupabas
   async owner(shipmentId:string,proof:OwnerVerification){return sharing(await rpc('tracking_owner_sharing',{target_shipment_id:shipmentId,...verification(proof)}),shipmentId);},
   async command(shipmentId:string,proof:OwnerVerification,input:unknown){
    const parsed=ownerSharingCommand.safeParse(input);if(!parsed.success)throw new TrackingSharingError('INVALID_TRACKING_RECIPIENTS');
-   const command=parsed.data.action==='ADD_VIEWER'?{...parsed.data,email:parsed.data.email.toLowerCase(),digest:providerTrackingRecipientDigest(parsed.data.email.toLowerCase())}:parsed.data;
+   const command=parsed.data;
    return sharing(await rpc('tracking_owner_sharing_command',{target_shipment_id:shipmentId,...verification(proof),command}),shipmentId);
   },
   async attach(actorId:string,workspaceId:string,shipmentId:string,proof:OwnerVerification,expectedRevision:number){

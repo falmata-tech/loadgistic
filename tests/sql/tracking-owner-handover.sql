@@ -1,4 +1,27 @@
 begin;
+-- Retained pre229 viewer history only. The live ADD_VIEWER command is denied.
+create function pg_temp.seed_legacy_tracking_viewer(target_shipment_id uuid,target_email text,target_digest text,target_name text)returns uuid language plpgsql as $$
+declare actual_owner uuid;viewer uuid;
+begin
+ select r.id into strict actual_owner from public.provider_tracking_recipients r where r.shipment_id=target_shipment_id and r.recipient_role='OWNER'and r.revoked_at is null;
+ insert into public.provider_tracking_recipients(shipment_id,recipient_role,recipient_email,recipient_email_digest,display_name,shared_by_recipient_id)
+ values(target_shipment_id,'TRACKING_PARTY',target_email,target_digest,target_name,actual_owner)returning id into viewer;
+ insert into public.tracking_sharing_controls(shipment_id,owner_recipient_id,revision)values(target_shipment_id,actual_owner,1)
+ on conflict(shipment_id)do update set revision=public.tracking_sharing_controls.revision+1;
+ return viewer;
+end$$;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['handover-owner@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 do $test$
 <<fixture>>
 declare owner_id uuid;driver_id uuid:=gen_random_uuid();other_driver uuid;org_id uuid;truck_id uuid;shipment_id uuid;admin_id uuid;
@@ -24,11 +47,9 @@ begin
  proof:='{"path":"supabase://shipment-proof/synthetic-handover.jpg","original_name":"proof.jpg","mime_type":"image/jpeg"}';
  foreach mode_value in array array['OWNER','STAFF','RELEASED','DISMISSED'] loop
   shipment_id:=gen_random_uuid();perform create_provider_tracking_with_recipients(owner_id,command||jsonb_build_object('tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex'),'id',shipment_id,'code','LGX-'||upper(substr(replace(shipment_id::text,'-',''),1,8))));
-  -- The transporter chooses one owner; that verified owner invites a status-only viewer.
+  -- The provider chooses a registered owner; only retained pre229 viewer history is seeded.
   data:=tracking_owner_sharing(shipment_id,digest_owner,clock_timestamp());
-  perform tracking_owner_sharing_command(shipment_id,digest_owner,clock_timestamp(),jsonb_build_object(
-   'action','ADD_VIEWER','expectedRevision',(data->>'revision')::integer,'name','Synthetic receiver',
-   'email','handover-viewer@example.invalid','digest',digest_viewer));
+  perform pg_temp.seed_legacy_tracking_viewer(shipment_id,'handover-viewer@example.invalid',digest_viewer,'Synthetic receiver');
   -- Mode is immutable even through direct owner/service update paths.
   begin update provider_shipments set tracking_mode='STATUS_ONLY' where id=shipment_id;raise exception 'TRACKING_MODE_MUTABLE';exception when raise_exception then if sqlerrm<>'TRACKING_MODE_LOCKED' then raise;end if;end;
   data:=update_provider_tracking_location(driver_id,shipment_id,'{"area":"Around current device area","lat":41,"lng":-87,"precision_km":10,"source":"DEVICE_OBSCURED"}');

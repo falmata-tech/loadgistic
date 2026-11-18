@@ -1,5 +1,17 @@
 -- FEAT-IAM/PRV-001: synthetic local identity fixtures, every write rolls back.
 begin;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['identity-tracking@example.test']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 create function pg_temp.assert_identity(ok boolean,message text) returns void language plpgsql as $$
 begin if not coalesce(ok,false) then raise exception '%',message;end if;end $$;
 create function pg_temp.identity_denied(statement text,expected text) returns void language plpgsql as $$

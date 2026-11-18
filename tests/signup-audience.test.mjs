@@ -7,5 +7,6 @@ test('signup choice is only a bounded handoff hint, not a role or arbitrary retu
   assert.equal(signupAudience('BUSINESS'),'BUSINESS');
   for(const value of ['ADMIN','SUPPORT','DRIVER','https://outside.example',''])assert.equal(signupAudience(value),'EXISTING');
   assert.equal(signupEntry('shared-capacity'),'shared-capacity');
-  for(const value of ['https://outside.example','/admin',''])assert.equal(signupEntry(value),'');
+  assert.equal(signupEntry('tracking'),'tracking');
+  for(const value of ['https://outside.example','//outside.example','/app/tracking','/admin','tracking?next=/admin',['tracking'],''])assert.equal(signupEntry(value),'');
 });

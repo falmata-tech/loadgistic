@@ -6,6 +6,7 @@ import http from 'node:http';
 import {Readable,Writable,PassThrough} from 'node:stream';
 import ts from 'typescript';
 import {ApiError,readApiResponse} from '../src/api/response.ts';
+import {trackingSessionApiPathAllowed} from '../../../src/lib/mobile/tracking-session-path.js';
 import {cargoPhotoApiPathAllowed} from '../src/api/cargo-space-photo-path.ts';
 import {businessApiPathAllowed,businessApiArrayResponse} from '../../../src/lib/mobile/business-api-path.js';
 
@@ -41,6 +42,7 @@ function nativeHttp(fetch){
  const ports={'./response':{ApiError,readApiResponse},'react-native':{Platform:{OS:'web'}},
   './public-capacity':{capacityUrl:base=>new URL('/api/public/capacity',base).href},
   './cargo-space-photo-path':{cargoPhotoApiPathAllowed},
+  '../../../../src/lib/mobile/tracking-session-path.js':{trackingSessionApiPathAllowed},
   '../../../../src/lib/mobile/business-api-path.js':{businessApiPathAllowed,businessApiArrayResponse}};
  const exports={};new Function('require','exports','__DEV__','window','fetch',source)(name=>{assert.ok(name in ports,'Unexpected dependency '+name);return ports[name];},exports,true,{location:{origin:'http://local.test'}},fetch);
  return exports;
@@ -73,4 +75,15 @@ test('actual Metro middleware forwards canonical Tracking paths only to loopback
   }
   const before=calls.length;for(const {path} of requests){let status;proxy.localPreviewProxy(()=>assert.fail('canonical path must be recognized'))({url:path,headers:{host:'foreign.test'}},{writeHead:value=>{status=value;},end(){}});assert.equal(status,403);}assert.equal(calls.length,before,'foreign hosts never create an upstream request');
  }finally{http.request=original;}
+});
+
+test('native Tracking session transport isolates guest headers and limits DELETE to reviewed endpoints',async()=>{
+ const calls=[],{apiRequest}=nativeHttp(async(url,options)=>{calls.push({url,options});return Response.json({ok:true,data:{}});});
+ await apiRequest('/api/tracking/access',{body:{linkToken:'a'.repeat(43),code:'ABCDEFGH'}});
+ await apiRequest(`/api/tracking/sessions/${shipment}`,{trackingGrant:'synthetic.grant'});
+ assert.equal(calls.at(-1).options.headers['x-loadgistic-tracking-grant'],'synthetic.grant');assert.equal(calls.at(-1).options.headers.Authorization,undefined);
+ await apiRequest(`/api/tracking/sessions/${shipment}/links?linkId=${event}`,{token:'synthetic-owner-token',method:'DELETE',body:{workspaceId:workspace}});assert.equal(calls.at(-1).options.method,'DELETE');
+ const count=calls.length;
+ for(const [path,options]of [[`/api/tracking/sessions/${shipment}/approve`,{trackingGrant:'synthetic.grant',body:{}}],[`/api/tracking/sessions/${shipment}/proof/${event}`,{trackingGrant:'synthetic.grant'}],[`/api/tracking/sessions/${shipment}`,{trackingGrant:'synthetic.grant',token:'synthetic-owner-token'}],['/api/mobile/shipments',{method:'DELETE'}],['/api/tracking/otp',{body:{email:'local@example.test'}}]])await assert.rejects(apiRequest(path,options),/Invalid API path/);
+ assert.equal(calls.length,count);
 });

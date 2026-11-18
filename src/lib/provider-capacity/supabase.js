@@ -83,9 +83,9 @@ export async function getAuthorizedVehicleLocationSelections(client,vehicleIds){
     if(error)throw managedError('SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED',error);
     for(const row of data||[]){
       if(!allowed.has(row.vehicle_id))continue;
-      if(!['GPS','MOBILE','MANUAL'].includes(row.source)||![1,3,5,10,20,40].includes(row.precision_km)
+      if(!['GPS','MOBILE','MANUAL','MANUAL_ADMIN'].includes(row.source)||![1,3,5,10,20,40].includes(row.precision_km)
         ||!Number.isFinite(Date.parse(row.selected_at))||!Number.isFinite(Date.parse(row.revision)))throw new Error('SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED');
-      selections.set(row.vehicle_id,{source:row.source,selectedAt:row.selected_at,precisionKm:row.precision_km,revision:row.revision});
+      selections.set(row.vehicle_id,{source:['GPS','MOBILE'].includes(row.source)?row.source:null,selectedAt:row.selected_at,precisionKm:row.precision_km,revision:row.revision});
     }
   }
   return selections;

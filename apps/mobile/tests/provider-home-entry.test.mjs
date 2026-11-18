@@ -107,7 +107,8 @@ test('actual ordinary root entry opens work while valid public intent opens Mark
 });
 
 test('actual private entry retains guest/business access boundaries without a provider redirect loop',()=>{
- for(const [session,href] of [[null,'/account?from=capacity'],[provider(),'/account?tab=capacity'],[{...provider(),access:{granted:false}},'/']]){
+ const guest=runtime({session:null,params:{view:'private'}}),privateTree=guest.render(guest.compile('../src/screens/capacity.tsx').default,{},false);assert.equal(privateTree.type.name,'Capacity');assert.equal(privateTree.props.initialMode,'private');assert.equal(privateTree.props.showModeSwitch,true);assert.equal(privateTree.props.business,undefined);assert.deepEqual(guest.calls,[]);
+ for(const [session,href] of [[provider(),'/account?tab=capacity'],[{...provider(),access:{granted:false}},'/']]){
   const view=runtime({session,params:{view:'private'}}),screen=view.compile('../src/screens/capacity.tsx').default;
   assert.equal(view.render(screen,{},false).props.href,href);
   if(href==='/'){delete view.params.view;assert.equal(view.render(screen,{},false).type.name,'Capacity');}
@@ -212,3 +213,11 @@ test('actual sign-in routes providers to default work while preserving invitatio
   assert.deepEqual(view.calls,target?[{method:'replace',href:target}]:[]);
  }
 });
+
+ test('personal account Home and Tracking list do not force a business or grant provider/create controls',()=>{
+  for(const role of ['SHIPPER','RECEIVER']){
+   const session={state:'ACTIVE',user:{id:'synthetic-personal',role,platformRole:role,providerWorkspaceAvailable:false,selectedBusinessWorkspace:null,ownsProviderAccount:false,canManageFleet:false,drivesTruck:false,currentDriverId:null,currentDrivenVehicleId:null,businessWorkspaces:[]},access:{granted:true,status:'ACCOUNT_ACCESS'}};
+   const view=runtime({session}),account=view.compile('../src/screens/account.tsx').default;assert.equal(view.render(account,{},false).props.href,'/business-tracking');
+   const tracking=view.compile('../src/screens/business-tracking.tsx',{BusinessTrackingSessions:'BusinessTrackingSessions'}).default,tree=view.render(tracking);assert.equal(find(tree,'Redirect'),undefined);const list=find(tree,'BusinessTrackingSessions');assert.ok(list);assert.equal(list.props.workspaceId,undefined);assert.notEqual(list.props.canCreate,true);assert.deepEqual(list.props.businesses,[]);
+  }
+ });

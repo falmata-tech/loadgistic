@@ -15,6 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ scope:
  try {
   const params = await context.params, scope = visitorScope(params.scope), action = params.action;
   if(scope==='capacity')throw new MobileError(410,'ACCOUNT_REQUIRED','Sign in to view Shared capacity.');
+  if(scope==='tracking')throw new MobileError(410,'TRACKING_LINK_REQUIRED','Open the shipment’s current tracking link and enter its code.');
   if (!['request', 'verify', 'renew'].includes(action)) throw new MobileError(404, 'NOT_FOUND', 'Not found.');
   if (action === 'renew') {
    const session = await requireVisitor(request, scope);

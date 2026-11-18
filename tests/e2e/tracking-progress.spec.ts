@@ -1,3 +1,4 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures} from './tracking-session-fixtures';
 import {auditOpenTrackingProgress} from './audit-helpers';
 import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect} from './browser-test';
@@ -6,7 +7,7 @@ import {translateMessage} from '../../src/lib/i18n/core.js';
 import {localAuditService,checked,auditProvider,auditTrackingOwnerLogin} from './audit-helpers';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+
 import {cleanupFixtureProofs} from './tracking-proof-cleanup.mjs';
 
 test('Tracking shows saved progress, explicit pending choice and problem recovery on desktop and phone',async({page,browser}:{page:any;browser:any},info:any)=>{
@@ -77,10 +78,10 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
       await page.locator(`input[name=nextStatus][value=${status}]`).check();await save(label,status);
     }
     await expect(panel.locator('input[name=nextStatus][value=COMPLETED]')).toHaveCount(0);
-    guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const owner=await guest.newPage();await auditTrackingOwnerLogin(owner,`progress-${actor.suffix}@example.test`);
-    const approval=owner.waitForResponse((response:any)=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/tracking/${shipmentId}/approve`);
+    guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const owner=await guest.newPage();const ownerSession=await auditTrackingOwnerLogin(owner,`progress-${actor.suffix}@example.test`,shipmentId);
+    const approval=owner.waitForResponse((response:any)=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/tracking/sessions/${ownerSession.id}/approve`);
     await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();
-    const approved=await approval;expect(approved.status()).toBe(303);await approved.finished();
+    const approved=await approval;expect(approved.status()).toBe(200);await approved.finished();
     expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).single()).operational_status).toBe('COMPLETED');
     await page.reload();
     await expect(page.getByRole('region',{name:'Shipment progress'})).toContainText('Complete');await expect(panel).toHaveCount(0);await expect(page.locator('.tracking-journey li')).toHaveCount(0);await expect(page.getByRole('heading',{name:'Status timeline'})).toBeVisible();expect(await page.locator('time').count()).toBeGreaterThan(0);
@@ -93,3 +94,6 @@ test('Tracking shows saved progress, explicit pending choice and problem recover
     if(actor){checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));}
   }
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

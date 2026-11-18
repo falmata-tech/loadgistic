@@ -34,39 +34,25 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
 }
 
 export async function hasTrackingGrant(shipmentId: string) {
-  const store = await cookies();
-  const payload = verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  return payload?.sub === `tracking:${shipmentId}`;
+  return false;
 }
 
-export async function getProviderTrackingGrant(shipmentId?:string) {
-  if(shipmentId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shipmentId))return null;
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  const emailSession=parseTrackingSession(payload);
-  if(emailSession)return {...emailSession,shipmentId:shipmentId||null};
+type RetiredTrackingGrant={recipientDigest:string;startedAt:number;expiresAt:number;shipmentId:string|null};
+/** Old anonymous email grants never become per-load link grants. */
+export async function getProviderTrackingGrant(shipmentId?:string):Promise<RetiredTrackingGrant|null> {
   return null;
 }
 
-export async function getTrackingEmailSession(){
-  const store=await cookies();
-  return parseTrackingSession(verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value));
+export async function getTrackingEmailSession():Promise<Omit<RetiredTrackingGrant,'shipmentId'>|null>{
+  return null;
 }
 
 export async function setTrackingEmailSession(recipientDigest:string,startedAt=Date.now()){
-  const seconds=trackingSessionSeconds(startedAt);
-  if(seconds<=0)throw new Error('TRACKING_SESSION_EXPIRED');
-  const store=await cookies();
-  const token=createSessionToken(trackingSessionSubject(recipientDigest,startedAt),seconds);
-  store.set(TRACKING_GRANT_COOKIE,token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:seconds});
-  return {expiresAt:Number(verifySessionToken(token).exp)*1000};
+  throw new Error('TRACKING_LINK_REQUIRED');
 }
 
 export async function setProviderTrackingGrant(shipmentId:string,recipientDigest:string) {
-  const store=await cookies();
-  store.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipmentId}:${recipientDigest}`,TRACKING_IDLE_SECONDS),{
-    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:TRACKING_IDLE_SECONDS
-  });
+  throw new Error('TRACKING_LINK_REQUIRED');
 }
 
 export async function clearProviderTrackingGrant() {
@@ -77,9 +63,7 @@ export async function clearProviderTrackingGrant() {
 }
 
 export async function hasProviderReviewGrant(shipmentId:string) {
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(REVIEW_GRANT_COOKIE)?.value);
-  return payload?.sub===`provider-review:${shipmentId}`;
+  return false;
 }
 
 export async function clearSharedCapacitySession() {

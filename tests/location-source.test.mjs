@@ -1,11 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {locationSourceKind,locationSourceLabel,locationSourceSvg} from '../src/lib/location-source.js';
-test('published provenance distinguishes GPS, driver phone and manual entry',()=>{
+test('published provenance distinguishes GPS and driver phone without relabeling retired sources',()=>{
   assert.equal(locationSourceKind('TELEMATICS'),'GPS');
   assert.equal(locationSourceKind('DEVICE_OBSCURED'),'MOBILE');
-  assert.equal(locationSourceKind('MANUAL_ADMIN'),'MANUAL');
-  assert.equal(locationSourceLabel('MANUAL_ADMIN'),'Manually entered');
+  for(const retired of ['MANUAL','MANUAL_ADMIN']){assert.equal(locationSourceKind(retired),null);assert.equal(locationSourceLabel(retired),'');assert.equal(locationSourceSvg(retired),'');}
   assert.notEqual(locationSourceSvg('GPS'),locationSourceSvg('MOBILE'));
 });
 test('unknown or requested sources do not invent a verified GPS origin or markup',()=>{

@@ -332,6 +332,29 @@ capture read-only, retain the one-entry flow and refuse drift/unknown shapes.
 The41-case focused check passes in5.209s; full Supabase races/restoration still
 need CI. Mark a failed proof ATTEMPTED rather than NOT_PERFORMED when it ran.
 
+November17: a disposable PG17 clone lost extension-table RLS/platform grants,
+although the shared local source passed the strict catalog check. Source and
+fresh-extension initial ACLs differed; never infer effective security from a
+successful dump/restore or rewrite `pg_init_privs`. The existing local owner
+bootstrap restored only the source grants/RLS; all8,500 reference rows and744
+PostGIS functions stayed identical. Clone strict checks and actual browser-role
+denial/service transform passed. The maintained clone now checks source security
+before creation, applies that owner bootstrap only to its fixed disposable DB,
+then verifies effective security before tests. Five focused cases pass in145ms;
+the canonical owner-step/strict verification took5.743s (210ms/447ms) without
+ownership changes. Independent static review passed; fresh maintained CI clone
+creation remains separate. Preserve the original clone failure as history.
+
+Connected Tracking needs actual SQL-to-service wire checks, not just successful
+Pending sessions or mocked fields. The broker journey returned503 after SQL
+connected because its shipment projection omitted the required saved timestamp.
+A rollback reproduction isolated the missing `updated_at`. New SQL wire checks
+cover all seven required fields/types and the actual saved value for provider,
+owner and guest reads: old projection failed in430ms; core/read/privacy passed
+after the one-field fix. The local overlay preserved owners/ACLs/data/ledger.
+Keep strict port rejection and the original503 evidence. That bounded failed
+journey stopped in25s with cleanup passing; the earlier label failure is separate.
+
 The final phone keyboard E2E reached the correct canonical filter request, but
 Next's route response took5,657ms while the URL assertion allowed5,000ms. The
 submit handler closes the dialog before navigation commits; a closed dialog is

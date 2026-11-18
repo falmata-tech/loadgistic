@@ -1,15 +1,145 @@
 ---
 id: FEAT-TRK-001
-title: Authorized-party tracking, email verification and retention
+title: Per-load tracking sessions, expiring links and codes
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-IAM-001, FEAT-SHP-001, FEAT-REV-001, FEAT-GEO-001]
-problem: Every party explicitly authorized for an agreed shipment needs a simple, private tracking handoff without creating a Loadgistic account or relying on a reusable code alone.
-behavior: The current local FEAT-ENT-001 implementation starts Tracking after an offline agreement with one shipment-owner email and a stable Tracking reference. The verified owner may invite route/status viewers and explicitly authorize business staff to see location; ordinary viewers never receive vehicle position. Email access uses one OTP and a five-minute session. One idempotent completion summary reaches the owner, guest access expires 30 days after completion, and provider history remains. Hosted rollout remains pending; earlier multi-recipient provider workflows below are historical.
-contracts: [CustomerTrackingCode, TrackingCodeSecret, TrackingCodeDigest, TrackingRecipient, TrackingEmailOtp, BrowserTrackingGrant, CustomerSafeTrackingView, TrackingLocationConsent, TrackingLocationSnapshot, TrackingIdleTimeout, TrackingAccessEmailPort, CompletionEmailPort, EmailDelivery, GuestRetentionPolicy, ProofFilePort, ManagedTrackingRepository]
-observability: [tracking_recipient_added, tracking_recipient_revoked, tracking_otp_requested, tracking_otp_verified, tracking_unlock_success, tracking_unlock_denial, tracking_idle_expiry, tracking_location_saved, tracking_location_denied, completion_email_queued, completion_email_sent, completion_email_failed, completion_email_retry, guest_access_expired]
-rollout: Require one server-only Tracking code secret before Production creates its first Tracking row, keep only keyed digests in persistence, and send one owner delivery with bounded retries. The empty hosted project may cut over without a data migration; a later Tracking-secret rotation requires an explicit code-reissue migration or a compatibility key window. Keep guest access disabled in production until sender configuration, private storage, scanning, retention cleanup and monitoring are verified.
+problem: A broker needs to share one agreed load’s private progress with customers or another workflow without attaching anonymous access to email.
+behavior: November17 replaces email-wide guest access with a per-load expiring link AND separate code. Authorized brokers or shippers can create Pending provider sessions or share existing authorized shipments. Normal authenticated provider acceptance connects an eligible truck. Actual account owners and current authorized workspace members retain account shipment lists; implementation and qualification are in progress.
+contracts: [TrackingSession, TrackingSessionLink, SingleSessionGrant, PendingProviderConnection, TrackingSessionWorkspace, CustomerSafeTrackingView, TrackingLocationConsent, ManagedTrackingRepository]
+observability: [tracking_session_created, tracking_session_connected, tracking_link_issued, tracking_link_revoked, tracking_link_access_denied, tracking_location_denied]
+rollout: Qualify228 and229 locally with permission, state-transition, file, web and native workflow checks, then exact owner-reviewed hosted source and SQL release gates. Never deploy an older guest client over new no-email records; rollback disables new access while retaining history.
 ---
 
 # Guest tracking
+
+## November17 owner decision — supersedes anonymous email access
+
+Implementation and release qualification are in progress. Linked base IDs remain
+BASE-FE-001, BASE-BE-001 and BASE-DEP-001, with FEAT-IAM/SHP/ENT/GPS/MOB-001.
+
+Given a current shipper/broker member with Tracking permission\
+When they create a session for agreed work with three distinct catalogue cities\
+Then it belongs to that workspace and starts Pending provider with no location\
+And only an authenticated provider passing normal truck/assignment/route/lifecycle
+checks can connect its truck; no email identity or provider authority is invented.
+
+Given an actor has explicit shipment-sharing authority\
+When they issue a session link\
+Then an independent random URL token and separate random code are shown once\
+And only separate keyed digests are persisted\
+And expiry defaults to seven days, is bounded to thirty days, and is revocable\
+And a view-only actor cannot issue a more powerful link.
+
+Given a guest opens a unique link\
+When the separate code is absent or incorrect, or access is expired/revoked\
+Then no route, status, contact, vehicle or position is disclosed\
+And successful access grants only that session for at most five minutes\
+And each read rechecks digests, expiry, revocation and location consent\
+And the guest cannot list shipments, read proofs, approve, review, mutate or share\
+And only explicitly permitted obscured GPS/Phone location is returned; pending,
+terminal, wrong-assignment/source-epoch and retired Manual points remain absent.
+
+Given an old email OTP endpoint, email-wide grant or stored native email session\
+When it is used after cutover\
+Then it cannot create/renew guest access or enumerate shipments\
+And signed-in shippers retain only explicit current account/workspace access\
+And normal account email verification remains unchanged.
+
+Changed contracts: TrackingSession, TrackingSessionLink, SingleSessionGrant,
+PendingProviderConnection, workspace lists and web/native guest entry/read/logout.
+Logs contain fixed events/counts only, never raw link/code/cookie/location/contact.
+Private responses are no-store/noindex; link pages use no-referrer; rate limits
+precede lookup. New anonymous Tracking never queues email. Rollout requires229
+local permission/transition SQL, focused web/native tests, actual desktop/phone/
+Expo review and full release gates. Exact hosted source/SQL/backup/rollback review
+remains required. Rollback disables new links while retaining history; it must
+not reopen email-wide guest access over no-email sessions. Earlier email contracts
+below are historical wherever they conflict with this owner decision.
+
+### One partner and either starting order — November 17
+
+Given a provider with normal Tracking authority and an eligible assigned vehicle,
+when they start before choosing their customer, then save the operational shipment
+with its route and history and no customer identity. Only that provider scope may
+subsequently choose one registered shipper **or** broker. The designation is atomic.
+A failed request, simultaneous second choice, old unbound historical record,
+terminal shipment or guest credential cannot change the designated account.
+
+Given the broker creates a session first, when the authorized provider connects,
+then both starting orders use the normal provider shipment detail, status commands,
+assigned-driver restrictions, corrections and proof workflows. The broker retains
+customer-side handover authority and can issue an expiring link and separate code
+for customers following the load outside Loadgistic. Possession of these credentials
+never creates a second partner, grants private proof or joins a business workspace.
+
+The database records the provider actor, shipment and attachment event. Keep the
+target email and guest credentials out of audit details. Roll out behind the
+matching web and mobile contracts after qualification. Rolling back the clients
+preserves existing records and access history.
+
+### November17 database boundaries — migration229 qualification
+
+Given a current workspace OWNER or ADMIN with Tracking permission\
+When they save a pending session and issue its separate link/code\
+Then PostgreSQL snapshots three distinct catalogue cities and requires the normal content policy\
+And it stores only independently keyed digests, seven-day default/thirty-day maximum expiry and revocation metadata\
+And a foreign tenant, deactivated member or view-only staff member cannot create or share it; rejection leaves rows and audit unchanged.
+
+Given both valid credentials for one pending session\
+When an authenticated provider explicitly connects an authorized assigned truck\
+Then the existing actor, truck, assignment, city-route and lifecycle guards run atomically\
+And the actual confirmed workspace owner is retained as account provenance\
+And a second connection, a foreign truck, a revoked link or a sample/real boundary mismatch fails without creating a shipment\
+And no fabricated email, recipient, identity, assignment or location report is inserted.
+
+Given a provider starts Tracking for an existing registered customer\
+When the normal creation command succeeds\
+Then its real confirmed customer account ID is bound before later email changes\
+And the existing owner/party and proof-backed completion authority remains\
+And no new Tracking-access email is queued; an unknown or inactive owner is rejected\
+And account lists use that actual ID or an explicitly authorized workspace, never a guest address.
+
+Given historical Tracking without an additive session\
+When ownership has no valid captured account ID in its existing business attachment\
+Then a current matching email cannot claim the shipment or populate a personal list\
+And only a currently valid captured attachment with a real catalogue route is admitted once\
+And unknown history stays unbound; a normal authorized provider may share it without inventing a customer owner.
+
+Given a valid link/code pair\
+When its session is read\
+Then the single-session projection contains no proof reference, contact, recipient or account authority\
+And location requires the link permission, provider consent and current obscured GPS/Phone resolver together\
+And pending, terminal, invalid source/assignment, expired or revoked access cannot expose a current point\
+And an ordinary staff reader cannot acquire owner location or issue a location-bearing link.
+
+Given an authenticated actual customer owner or current broker workspace OWNER\
+When they open a proof, approve unloading or review a delivered provider\
+Then exact session/event ownership, both mandatory proofs, normal lifecycle, current content-policy acceptance and one-review constraints remain enforced\
+And an unrelated event, foreign account, ordinary staff member, provider self-review or guest cannot obtain those rights\
+And new no-email completion does not invent a delivery address or enqueue mail to NULL.
+
+Given a registered customer owner approves a proof-backed unloading\
+When the normal completion command commits\
+Then a successful approval response schedules the existing bounded shipment-email
+dispatcher after commit, while denied or unavailable responses schedule no delivery\
+And the owner's normal completion notification links to `/login?from=tracking` and says
+to sign in to their account, without an anonymous email grant, guest code or review secret\
+And delivery failure leaves the committed completion and retryable outbox intact.
+
+The account notification retains only the existing authorized shipment summary
+and safe status timeline. It does not send a location, actor ID or proof path.
+Local Mailpit browser review must follow the actual message destination; injected
+template/route tests alone do not establish external delivery. Rollback can
+restore the previous notification hook/template without undoing shipment history;
+it must not reopen retired guest-email access or repeat an ambiguous approval.
+
+Observability and rollout: `tests/sql/tracking-session-links.sql` must prove these
+saved outcomes and unchanged-state denials on the verified isolated local target.
+Private tables use RLS and no browser/direct service table grants; only guarded
+server RPCs are exposed. Existing email OTP issue/verify/list/read RPC execution
+is removed from the service adapter boundary while authenticated lifecycle
+helpers and historical records remain. NR-18/59 tenant and fixture boundaries
+and NR-36 explicit failure/recovery checks apply. These are required checks,
+not a claim that229 or the new UI is deployed or fully qualified.
 
 ### October18 approved source and recipient transition — implementation in progress
 

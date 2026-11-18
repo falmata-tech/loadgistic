@@ -1,12 +1,14 @@
+import {createRegisteredTrackingShipment as createProviderShipment} from './tracking-session-fixtures';
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {auditProvider,auditProof,auditDeleteVehicles,checked,localAuditService} from './audit-helpers';
+import {issueNativeTrackingLink,openNativeTrackingLink,nativeTrackingAccountLogin,registerNativeTrackingCleanup,cleanupNativeTrackingFixtures} from './native-tracking-fixtures';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+
 
 // Actual Expo browser UI + local API/Auth/Storage; not installed Android evidence.
-// Keep email codes and tokens out of automatic traces and failure captures.
+// Keep account codes and one-load credentials out of automatic traces and failure captures.
 test.use({trace:'off',screenshot:'off'});
 const preview='http://localhost:8084';
 type PreviewInfo={project:{name:string};outputPath:(name:string)=>string};
@@ -21,7 +23,8 @@ async function fixture(prefix:string,mode='STATUS_ONLY'){
   if(vehicle){checked(await service.from('audit_logs').delete().eq('entity_id',vehicle));checked(await auditDeleteVehicles(service,'id',vehicle));}
   checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
  };
- try{
+ registerNativeTrackingCleanup(cleanup);
+ {
   checked(await service.from('company_pages').update({published:true,contact_phone:'+251900000000',show_contact_phone:true}).eq('provider_profile_id',actor.provider_profile_id));
   vehicle=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Native map',model:'Synthetic truck',plate:`NMAP-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
   expect(checked(await service.rpc('set_provider_driving_mode',{actor_user_id:actor.id,requested_drives_truck:true}))).toBe(true);
@@ -29,8 +32,8 @@ async function fixture(prefix:string,mode='STATUS_ONLY'){
   const city=async(name:string)=>checked(await service.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id;
   const routeRefs={originPlaceRef:await city('addis ababa'),passingPlaceRef:await city('adama'),destinationPlaceRef:await city('dire dawa')};
   shipment=(await createProviderShipment(actor,{vehicleId:vehicle,...routeRefs,expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),cargoSummary:'Synthetic native Tracking map',customerEmail:email,trackingMode:mode})).id;
-  return{service,actor,email,vehicle,routeRefs,shipment,cleanup,async attachProof(){proof=await auditProof(service,shipment);return proof;}};
- }catch(error){await cleanup();throw error;}
+  return{service,actor,email,vehicle,routeRefs,shipment,async attachProof(){proof=await auditProof(service,shipment);return proof;}};
+ }
 }
 async function providerLogin(page:Page,email:string){
  await page.goto(preview+'/account');await page.getByLabel('Email',{exact:true}).fill(email);
@@ -39,21 +42,16 @@ async function providerLogin(page:Page,email:string){
  await page.getByRole('button',{name:'Sign in',exact:true}).last().click();
  await expect(page.getByRole('button',{name:'Home',exact:true})).toBeVisible({timeout:30000});
 }
-async function visitorLogin(page:Page,email:string,shipmentId:string){
- await page.goto(preview+'/about');await page.getByRole('tab',{name:'Track',exact:true}).click();
- await page.getByLabel('Your email',{exact:true}).fill(email);const since=Date.now();
- await page.getByRole('button',{name:'Send email code',exact:true}).click();
- await page.getByLabel('Email verification code',{exact:true}).fill(await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code'));
- await page.getByRole('button',{name:'Open private access',exact:true}).click();
- const loaded=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/mobile/visitor/tracking/shipments/${shipmentId}`&&response.request().method()==='GET');
- await page.getByRole('link',{name:'View updates',exact:true}).click();expect((await loaded).status()).toBe(200);
+async function visitorLogin(page:Page,email:string,shipmentId:string,allowLocation=false){
+ const access=await issueNativeTrackingLink(page,email,shipmentId,allowLocation);
+ const session=await openNativeTrackingLink(page,access.link);expect(session.id).toBe(access.sessionId);return access;
 }
 test('Expo provider Tracking separates current status, route map, update, and vehicle details',async({page}:{page:Page},info:PreviewInfo)=>{
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(150000);
  const data=await fixture('native-map-provider');
  let authorization='';
  page.on('request',request=>{if(new URL(request.url()).pathname.startsWith('/api/mobile/')&&request.headers().authorization)authorization=request.headers().authorization;});
- try{
+ {
   await providerLogin(page,data.actor.email);
   const legacy={vehicleId:data.vehicle,originPlaceRef:data.routeRefs.originPlaceRef,destinationPlaceRef:data.routeRefs.destinationPlaceRef,cargoSummary:'Synthetic older client route',customerEmail:data.email,expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),trackingMode:'STATUS_ONLY'};
   const unauthorized=await page.request.post(preview+'/api/mobile/shipments',{data:legacy});expect(unauthorized.status()).toBe(401);
@@ -80,40 +78,49 @@ test('Expo provider Tracking separates current status, route map, update, and ve
   await dialog.getByRole('link',{name:'Profile',exact:true}).click();await expect(page).toHaveURL(/\/transporter\?/);await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.goBack();await expect(page.getByTestId('tracking-provider-workspace')).toBeVisible();await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.screenshot({path:info.outputPath('native-tracking-route-only.png')});
- }finally{await data.cleanup();}
+ }
 });
-test('Expo phone verified Tracking shows only reported radius and opens private photo proof with revocation denial',async({page}:{page:Page},info:PreviewInfo)=>{
+test('Expo phone link shows only the reported radius; private proof requires the registered owner and rechecks revocation',async({page}:{page:Page},info:PreviewInfo)=>{
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(150000);
  const data=await fixture('native-map-viewer','LOCATION_AND_STATUS');
- try{
+ {
   const proof=await data.attachProof();
   checked(await data.service.from('provider_shipments').update({operational_status:'LOADING'}).eq('id',data.shipment));
   checked(await data.service.from('provider_shipment_events').insert([{shipment_id:data.shipment,status:'LOADING',event_type:'STATUS',note:'Synthetic private loading photo',proof_storage_path:proof.path,proof_original_name:proof.originalName,proof_mime_type:proof.mimeType,created_by:data.actor.id},{shipment_id:data.shipment,status:'LOADING',event_type:'LOCATION',note:'Synthetic obscured center',location_area:'Synthetic reported area',location_lat:9.02,location_lng:38.76,location_precision_km:3,location_source:'DEVICE_OBSCURED',created_by:data.actor.id}]));
-  await visitorLogin(page,data.email,data.shipment);
-  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toBeVisible();
+  await visitorLogin(page,data.email,data.shipment,true);
+  await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});await expect(page.locator('[data-marker-id="tracking-reported-area"]')).toBeVisible();
   await expect(page.getByText('Approximate location · Within 3 km',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
-  const proofAction=page.getByRole('button',{name:'View photo proof',exact:true});
-  const proofLoaded=page.waitForResponse(response=>new URL(response.url()).pathname.startsWith(`/api/mobile/visitor/tracking/shipments/${data.shipment}/proof/`)&&response.request().method()==='GET');
+  await expect(page.getByRole('button',{name:'Open proof',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Approve unloading',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Publish review',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Close Tracking',exact:true}).click();
+  await nativeTrackingAccountLogin(page,data.email);
+  const listed=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/sessions'&&response.request().method()==='GET');
+  await page.goto(preview+'/business-tracking');const list=await (await listed).json();expect(list.ok).toBe(true);
+  const sessions=list.data.sessions.filter((session:any)=>session.shipmentId===data.shipment);expect(sessions).toHaveLength(1);const sessionId=sessions[0].id;
+  await page.getByRole('button',{name:`${sessions[0].reference} · ${sessions[0].cargoSummary}`,exact:true}).click();
+  const proofAction=page.getByRole('button',{name:'Open proof',exact:true});await expect(proofAction).toBeVisible();
+  const proofLoaded=page.waitForResponse(response=>new URL(response.url()).pathname.startsWith(`/api/tracking/sessions/${sessionId}/proof/`)&&response.request().method()==='GET');
   await proofAction.click();expect((await proofLoaded).status()).toBe(200);
   await expect(page.getByRole('img',{name:'Submitted document',exact:true})).toBeVisible();
   await page.screenshot({path:info.outputPath('native-tracking-private-proof.png')});
   await page.getByRole('button',{name:'Close document',exact:true}).click();
-  checked(await data.service.from('provider_tracking_recipients').update({revoked_at:new Date().toISOString()}).eq('shipment_id',data.shipment));
-  const proofDenied=page.waitForResponse(response=>new URL(response.url()).pathname.startsWith(`/api/mobile/visitor/tracking/shipments/${data.shipment}/proof/`)&&response.request().method()==='GET');
-  await proofAction.click();expect((await proofDenied).status()).toBe(404);await expect(page.getByText('This file is not available.',{exact:true})).toBeVisible();await expect(page.getByRole('img',{name:'Submitted document',exact:true})).toHaveCount(0);
+  checked(await data.service.from('provider_tracking_recipients').update({revoked_at:new Date().toISOString()}).eq('shipment_id',data.shipment).eq('recipient_role','OWNER'));
+  const proofDenied=page.waitForResponse(response=>new URL(response.url()).pathname.startsWith(`/api/tracking/sessions/${sessionId}/proof/`)&&response.request().method()==='GET');
+  await proofAction.click();expect((await proofDenied).status()).toBe(404);await expect(page.getByText('This shipment is not available.',{exact:true})).toBeVisible();await expect(page.getByRole('img',{name:'Submitted document',exact:true})).toHaveCount(0);
   await page.screenshot({path:info.outputPath('native-tracking-proof-denied.png')});
- }finally{await data.cleanup();}
+ }
 });
 
 test('Expo phone Tracking fits the first reported area and preserves the camera on later refreshes',async({page}:{page:Page},info:PreviewInfo)=>{
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(150000);
  const data=await fixture('native-map-first-area','LOCATION_AND_STATUS');
- try{
-  await visitorLogin(page,data.email,data.shipment);
+ {
+  const access=await visitorLogin(page,data.email,data.shipment,true);
   const map=page.getByTestId('tracking-native-map-workspace').locator('.maplibregl-map');
   await expect(page.locator('[data-marker-id^="tracking-city-"]')).toHaveCount(3,{timeout:30000});
-  await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toHaveCount(0);
+  await expect(page.locator('[data-marker-id="tracking-reported-area"]')).toHaveCount(0);
   const canvas=await map.locator('canvas').elementHandle();expect(canvas).not.toBeNull();
   // An authorized synthetic obscured area, deliberately outside the original city frame.
   const reported=async(latitude:number,longitude:number)=>checked(await data.service.from('provider_shipment_events').insert({shipment_id:data.shipment,status:'CREATED',event_type:'LOCATION',location_area:'Synthetic reported area',location_lat:latitude,location_lng:longitude,location_precision_km:3,location_source:'DEVICE_OBSCURED',created_by:data.actor.id}));
@@ -122,7 +129,7 @@ test('Expo phone Tracking fits the first reported area and preserves the camera 
   await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
   await expect(page.getByText('Approximate location · Within 3 km',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close shipment progress',exact:true}).click();
-  const truck=page.locator('[data-marker-id="tracking-reported-truck"]');
+  const truck=page.locator('[data-marker-id="tracking-reported-area"]');
   await expect.poll(async()=>{
    const [frame,marker]=await Promise.all([map.boundingBox(),truck.boundingBox()]);
    if(!frame||!marker)return false;
@@ -133,11 +140,13 @@ test('Expo phone Tracking fits the first reported area and preserves the camera 
   const city=page.locator('[data-marker-id="tracking-city-0"]'),before=await city.boundingBox();expect(before).not.toBeNull();
   await reported(30.1,31.1);
   await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
-  const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/mobile/visitor/tracking/shipments/${data.shipment}`&&response.status()===200);
+  const refreshed=page.waitForResponse(response=>new URL(response.url()).pathname===`/api/tracking/sessions/${access.sessionId}`&&response.status()===200);
   await page.getByRole('button',{name:'Refresh updates',exact:true}).click();await refreshed;
   await page.getByRole('button',{name:'Close shipment progress',exact:true}).click();
   const after=await city.boundingBox();expect(after).not.toBeNull();
   expect(Math.abs(after!.x-before!.x)).toBeLessThan(1);expect(Math.abs(after!.y-before!.y)).toBeLessThan(1);
   expect(await canvas!.evaluate(element=>element.isConnected)).toBe(true);
- }finally{await data.cleanup();}
+ }
 });
+
+test.afterEach(async({page})=>{await cleanupNativeTrackingFixtures(page);});

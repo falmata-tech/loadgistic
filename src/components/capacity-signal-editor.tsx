@@ -27,7 +27,7 @@ function PlaceSequenceEditor({items,setItems,name,refName,min,label}:{items:Edit
   </div>;
 }
 
-export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,savedManualSource=false,onBusyChange,onSaved,onCancel}:{section:'CAPACITY'|'SHARING';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;savedManualSource?:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
+export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,onBusyChange,onSaved,onCancel}:{section:'CAPACITY'|'SHARING';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
   const {t}=useTranslation();
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
   const [sharingMode,setSharingMode]=React.useState(capacitySharingMode(current?.sharing_mode,current?.visibility));
@@ -51,7 +51,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
   const needsCoverage=!current?.availability_geometry||current.status==='OFF_DUTY';
   const showCoverage=onDuty&&(section==='CAPACITY'||needsCoverage);
   const needsLocation=onDuty&&allowDeviceLocation&&!location;
-  const waitingForDriverLocation=onDuty&&!allowDeviceLocation&&!location&&!savedManualSource;
+  const waitingForDriverLocation=onDuty&&!allowDeviceLocation&&!location;
   const draftLocation=captured||location;
   const invalidCoverage=showCoverage&&(geometry==='ROUTE'?routePoints.some((point:EditablePlace)=>!point.place_ref):!areaCenter.place_ref||areaBoundary.some((point:EditablePlace)=>!point.place_ref));
 

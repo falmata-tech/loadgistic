@@ -1,5 +1,36 @@
 # Architecture Decisions
 
+## ADR-089 — Per-load links and codes replace anonymous email Tracking (2026-11-17)
+
+FEAT-TRK/SHP/ENT/IAM/MOB-001 / BASE-FE/BE/DEP-001. The owner requires BOTH an
+expiring unique URL and a separate generated code. Brokers can create Pending
+provider sessions or share existing authorized shipments. Pending sessions have
+no vehicle position and are private agreed-work preparation, never demand posts.
+Only normal authenticated provider/driver acceptance connects an eligible truck.
+
+Migration229 adds private sessions and hash-only revocable links. Tokens and
+codes are independent random credentials with separate keyed digests. Link life
+defaults to7days, bounded30days; unlock grants only that session for at most
+5minutes, with saved expiry/revocation/consent rechecked on every read. Guest
+grants carry no proof, approval, review, sharing or account ownership. Anonymous
+email OTP/lookup and old email-wide grants are retired; account sign-in stays.
+
+Actual registered customer owners and authorized business members retain account
+shipment lists. A provider can select one registered shipper or broker at creation, or add that
+single partner later under migration230. Only new explicitly unpartnered records
+accept that command. It locks the shipment/session, binds the account ID once and
+preserves operational history. A broker's customer follows the guest link on an
+external record. Broker-first connection opens the same provider shipment detail,
+with the same assignment, location and status permissions. Neither starting order
+queues anonymous Tracking mail. Broker sessions retain actual account owner
+IDs and separate proof-backed authenticated approval/review. No fake email,
+recipient digest or customer account satisfies a historical command.
+
+NR-13/36/61/76 require actual desktop/phone/Expo tasks, denial checks, current
+installed definitions and bounded diagnosed fixture repair. Qualify228+229 locally
+before exact hosted source/SQL/backup/rollback review. Rollback disables new link
+use while retaining history; old clients cannot reopen anonymous email access.
+
 ## ADR-088 — Demo planning is independent of vehicle size (2026-11-15)
 
 FEAT-CAP-001 / FEAT-MAT-001 / FEAT-SIM-001. The owner explicitly removes the

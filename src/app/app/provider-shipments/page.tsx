@@ -10,6 +10,7 @@ import { getProviderTrackingWorkspace } from '@/lib/provider-tracking.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { StatusPill } from '@/components/status-pill';
+import {ConnectTracking} from '@/components/connect-tracking';
 
 export default async function ProviderShipmentsPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
   const user=await requireUser();
@@ -21,6 +22,7 @@ export default async function ProviderShipmentsPage({searchParams}:{searchParams
   const shipments=workspace.shipments||[];
   const mayCreate=trackingAllowed;
   return <div className="page"><PageHeader icon={ClipboardList} title={<Text message="Tracking"/>} subtitle={<Text message="Keep brokers and customers informed with private shipment updates."/>} action={mayCreate?<Link className="button" href="/app/provider-shipments/new"><CirclePlus aria-hidden="true"/><Text message="Start Tracking"/></Link>:undefined}/><Flash error={query.error} success={query.success}/>
+    {mayCreate&&workspace.vehicles?.length?<ConnectTracking vehicles={workspace.vehicles}/>:null}
     <div className="tracking-list provider-shipment-list">{shipments.map((shipment:any)=><Link href={`/app/provider-shipments/${shipment.id}`} className="tracking-row" key={shipment.id}>
       <div className="tracking-row-icon"><PackageCheck aria-hidden="true"/></div>
       <div><strong>{shipment.code}</strong>{isDemoTrackingShipment(shipment.id)?<DemoTrackingLabel/>:null}<div className="meta">{shipment.cargo_summary}</div></div>

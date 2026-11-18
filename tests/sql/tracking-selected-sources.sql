@@ -1,5 +1,28 @@
 -- FEAT-TRK/ENT/SIM-001. Own isolated actors, ordinary commands, rollback only.
 begin;
+-- Retained pre229 viewer history only. The live ADD_VIEWER command is denied.
+create function pg_temp.seed_legacy_tracking_viewer(target_shipment_id uuid,target_email text,target_digest text,target_name text)returns uuid language plpgsql as $$
+declare actual_owner uuid;viewer uuid;
+begin
+ select r.id into strict actual_owner from public.provider_tracking_recipients r where r.shipment_id=target_shipment_id and r.recipient_role='OWNER'and r.revoked_at is null;
+ insert into public.provider_tracking_recipients(shipment_id,recipient_role,recipient_email,recipient_email_digest,display_name,shared_by_recipient_id)
+ values(target_shipment_id,'TRACKING_PARTY',target_email,target_digest,target_name,actual_owner)returning id into viewer;
+ insert into public.tracking_sharing_controls(shipment_id,owner_recipient_id,revision)values(target_shipment_id,actual_owner,1)
+ on conflict(shipment_id)do update set revision=public.tracking_sharing_controls.revision+1;
+ return viewer;
+end$$;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['gps-owner@example.invalid','source-owner@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 do $test$
 declare owner_id uuid:=gen_random_uuid();admin_id uuid:=gen_random_uuid();provider_id uuid:=gen_random_uuid();
  truck uuid;shipment uuid:=gen_random_uuid();gps_shipment uuid:=gen_random_uuid();gateway uuid:=gen_random_uuid();device uuid;assignment uuid;
@@ -22,13 +45,8 @@ begin
   'cargo_summary','Synthetic selected-source regression','customer_email','source-owner@example.invalid','customer_email_digest',owner_digest,
   'tracking_mode','LOCATION_AND_STATUS','expected_delivery_date',(current_date+2)::text,
   'tracking_code_hash',encode(gen_random_bytes(32),'hex'),'review_code_hash',encode(gen_random_bytes(32),'hex')));
- if to_regprocedure('public.tracking_owner_sharing_command(uuid,text,timestamptz,jsonb,uuid)') is not null then
-  -- After the sharing transition, only the freshly verified shipment owner
-  -- invites viewers. Keep this resolver regression valid on either side of it.
-  perform tracking_owner_sharing_command(shipment,owner_digest,clock_timestamp(),jsonb_build_object('action','ADD_VIEWER','expectedRevision',0,'name','Synthetic viewer','email','source-viewer@example.invalid','digest',viewer_digest));
- else
-  perform add_provider_tracking_recipient(owner_id,shipment,'source-viewer@example.invalid',viewer_digest);
- end if;
+ -- Only retained pre229 viewer history feeds the old private resolver checks.
+ perform pg_temp.seed_legacy_tracking_viewer(shipment,'source-viewer@example.invalid',viewer_digest,'Synthetic viewer');
  -- The first agreement has its own phone source. A current obscured fix must
  -- survive later Capacity source changes without mutating the agreement epoch.
  stamp:=clock_timestamp();

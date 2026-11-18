@@ -10,7 +10,8 @@ import { apiOrigin,apiRequest } from '../api/http';
 import {discoveryParams,filterCount,parseDiscovery,peopleSearchFilters,profileTruckFilters,initialCapacityIdentity,type TruckFilters,type DiscoveryResult,type ProfileResult} from '../api/discovery';
 import { DiscoveryFilters } from '../components/discovery-filters';
 import { ResultsDrawer } from '../components/results-drawer';
-import {Copy,LoadingSpinner,Page,palette} from '../components/ui';
+import {Title,Copy,LoadingSpinner,Page,palette} from '../components/ui';
+import {AppLink} from '../components/app-link';
 import {useAccount} from '../session/provider';
 import {hasProviderHome,providerHomeHref,providerMarketContext} from '../navigation/destinations';
 import { VEHICLE_CONFIGURATIONS } from '../../../../src/lib/vehicle-configurations';
@@ -88,9 +89,8 @@ export default function App() {
   }:undefined,[privateView,workspace,session,auth.request]);
   if(auth.busy)return <Page><LoadingSpinner accessibilityLabel="Restoring your account"/></Page>;
   if(hasProviderHome(session))return <Redirect href={providerHomeHref(session,params)}/>;
-  if(privateView&&!session)return <Redirect href="/account?from=capacity"/>;
   if(privateView&&['TRANSPORTER','DRIVER'].includes(session?.user.role||''))return <Redirect href="/"/>;
-  if(privateView&&!business)return <Page><Copy message="Vehicles shared with you are not available for this account."/></Page>;
+  if(privateView&&session&&!business)return <Page><Copy message="Vehicles shared with you are not available for this account."/></Page>;
   const initialQuery = typeof params.q === 'string' ? params.q : '';
   const initialMode=privateView?'private':'open';
   const initialFilters=initialCapacityIdentity(params);
@@ -117,10 +117,9 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   const mode=initialMode;
   const changeMode=(next:'open'|'private')=>{
     if(next===mode)return;
-    if(next==='private'&&!session){router.push('/account?from=capacity');return;}
     router.replace(next==='private'?'/?view=private':'/');
   };
-  const sharedIdentity = visitor.snapshot.capacity?.startedAt, sharedReady = Boolean(business||account||visitor.ready && visitor.snapshot.foreground && sharedIdentity);
+  const signedOutPrivate=mode==='private'&&!session,sharedIdentity = visitor.snapshot.capacity?.startedAt, sharedReady = !signedOutPrivate&&Boolean(business||account||visitor.ready && visitor.snapshot.foreground && sharedIdentity);
   const [query, setQuery] = useState(''), [revision, setRevision] = useState(0);
   const [refreshTick,setRefreshTick]=useState(0);
   const pendingCapacityRequest=useRef<AbortController|null>(null);
@@ -203,7 +202,8 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   return <View style={styles.screen}>
     {showModeSwitch&&<><View style={styles.intro}><Text accessibilityRole="header" style={styles.title}>{t(capacityIntroduction.title)}</Text></View>
     <View style={{ flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, padding: 3, gap: 4, borderWidth: 1, borderColor: palette.border, borderRadius: 9, backgroundColor: '#f3f5f8' }}>{([['open', 'Openly shared'], ['private', 'Privately shared with you']] as const).map(([value, label]) => <Pressable key={value} accessibilityRole="tab" aria-selected={mode === value} accessibilityState={{ selected: mode === value }} onPress={() => changeMode(value)} style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: mode === value ? '#cbd5e1' : 'transparent', borderRadius: 7, padding: 6, justifyContent: 'center', backgroundColor: mode === value ? '#eaf1ff' : 'transparent' }}><Text style={{ color: mode === value ? palette.blue : palette.muted,fontSize:11, fontWeight: mode === value ? '700' : '600', textAlign: 'center' }}>{t(label)}</Text></Pressable>)}</View></>}
-    <View testID="capacity-map-workspace" style={styles.map}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} ownSignalIds={ownSignalIds} selected={selected} loading={loading} topInset={controlsHeight+20} bottomInset={bottomInset} privatePhotoWorkspaceId={mode==='private'?business?.workspaceId:undefined} onSelect={selectMapSignal} onDeselect={clearSelection} />
+    <View testID="capacity-map-workspace" style={styles.map}><CapacityMap key={requestKey} items={mode === 'private' && !sharedReady ? emptySignals : items} ownSignalIds={ownSignalIds} selected={signedOutPrivate?null:selected} loading={loading} topInset={controlsHeight+20} bottomInset={bottomInset} privatePhotoWorkspaceId={mode==='private'?business?.workspaceId:undefined} onSelect={selectMapSignal} onDeselect={clearSelection} />
+      {signedOutPrivate&&<View pointerEvents="box-none" style={{position:'absolute',top:0,left:16,right:16,bottom:0,justifyContent:'center',alignItems:'center'}}><View style={{width:'100%',maxWidth:380,padding:20,gap:14,borderRadius:16,borderWidth:1,borderColor:palette.border,backgroundColor:'#fff'}}><Title message="Privately shared with you"/><Copy message="Sign in to see vehicles shared with your account."/><AppLink href="/account?from=capacity" message="Sign in" style={styles.entryLink}/><AppLink href="/signup?from=capacity&setup=business" message="Sign up" style={[styles.entryLink,styles.secondaryEntryLink]}/></View></View>}
       {canLoad&&<View onLayout={event=>setControlsHeight(event.nativeEvent.layout.height)} style={{position:'absolute',top:12,left:12,right:12,flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel={t('Search transporters')} accessibilityState={{expanded:drawer}} onPress={()=>{if(selected)setSelected(null);if(drawer)closeSearch();else setDrawer(true);}} style={styles.mapButton}><AppIcon name="search" size={19} color={palette.blue}/><Text style={styles.link}>{t('Search')}</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel={t('Vehicle filters')} onPress={()=>setFiltersOpen(true)} style={styles.mapButton}><AppIcon name="filters" size={19} color={palette.blue}/><Text style={styles.link}>{t('Filter')}{filterCount(peopleSearchFilters(filters))?` (${filterCount(peopleSearchFilters(filters))})`:''}</Text></Pressable></View>}
       {drawer&&canLoad&&<ResultsDrawer top={controlsHeight+20} bottom={bottomInset} onClosing={search.cancel} onClose={closeSearch}><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{padding:14,gap:14}}><View style={styles.search}><View style={styles.inputFrame}><TextInput accessibilityLabel={t('Search transporters')} placeholder={t('Account name, manager or @handle')} placeholderTextColor="#526875" value={input} maxLength={120} onChangeText={search.changeInput} onSubmitEditing={submitSearch} returnKeyType="search" style={styles.input}/><Pressable accessibilityRole="button" accessibilityLabel={t('Clear search')} onPress={search.clear} style={styles.inputClear}><AppIcon name="close" color="#155eef" size={19}/></Pressable></View><Pressable accessibilityRole="button" accessibilityLabel={t('Search')} accessibilityState={{disabled:!validSearch}} disabled={!validSearch} onPress={submitSearch} style={[styles.button,!validSearch&&{opacity:0.55}]}><AppIcon name="search" color="#fff"/></Pressable></View>{!validSearch?<Text style={styles.copy}>{t(input.trim()?'Enter at least two characters.':'Search by account name, manager, @handle or city.')}</Text>:profileState?<DiscoveryResults result={profileResult} loading={profileState.loading} error={profileState.error} onPage={search.onPage} onRetry={search.retry} onMap={showProfile}/>:<LoadingBar label="Finding transporters"/>}</ScrollView></ResultsDrawer>}
       {loading && <View style={styles.loading}><LoadingBar label="Loading vehicle availability"/></View>}
@@ -215,6 +215,7 @@ function Capacity({initialQuery,initialMode,initialFilters,business,account,ownS
   </View>;
 }
 const styles = StyleSheet.create({
+  entryLink:{alignSelf:'stretch',minHeight:50,padding:14,borderRadius:10,backgroundColor:palette.blue,color:'#fff',fontSize:16,lineHeight:22,fontWeight:'700',textAlign:'center'},secondaryEntryLink:{backgroundColor:'#fff',color:palette.blue,borderWidth:1.5,borderColor:palette.border},
   screen: { flex: 1, backgroundColor: '#fff' }, header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, gap: 9 }, logo: { width: 36, height: 36 }, brand: { fontSize: 24, fontWeight: '700', color: '#155eef' },
   intro: { paddingHorizontal: 16, paddingTop:8, paddingBottom: 8 }, title: { fontSize: 18, fontWeight: '700', color: '#0b1d3a', flexShrink: 1 }, copy: { fontSize: 12, lineHeight: 17, color: palette.muted, marginTop: 4 },
   search: { flexDirection: 'row',gap:8 }, inputFrame:{flex:1,minWidth:0,flexDirection:'row',borderWidth:1,borderColor:'#cbd5e1',borderRadius:12}, input: { flex: 1,minWidth:0,color:'#0b1d3a',fontSize:16,paddingHorizontal:10,minHeight:48 }, inputClear:{minHeight:48,minWidth:44,alignItems:'center',justifyContent:'center'}, button: { minHeight:48,minWidth:48,backgroundColor:'#155eef',borderRadius:12,alignItems:'center',justifyContent:'center' }, buttonText: { color: '#fff', fontWeight: '700' }, clear: { minHeight: 48, minWidth: 48, padding: 10, justifyContent: 'center' }, link: { flexShrink:1, color: '#155eef', fontWeight: '700' },

@@ -14,23 +14,23 @@ function statusLabel(value){
 function trackingMessage(payload){
   const started=payload.template==='tracking-started';
   const shipment=payload.shipment||{};
-  const access=started?payload.tracking:payload.review;
+  const access=started?payload.tracking:payload.account;
   const title=started?'Your Loadgistic tracking access':'Your Loadgistic delivery record';
   const intro=started
     ?`${text(shipment.providerName)||'Your transporter'} started a private Tracking session for your shipment.`
     :`${text(shipment.providerName)||'Your transporter'} marked your shipment complete.`;
   const accessGuidance=started
     ?'Open the link and verify this email with one six-digit code. From Tracking, you can share route and status updates with others. They will not see the vehicle’s current location.'
-    :'Open Tracking with this email to view your delivery record and leave a review. If you are already verified, no new code is needed.';
+    :'Sign in to your Loadgistic account to view your delivery record and leave a review.';
   const timeline=!started&&Array.isArray(shipment.events)
     ?shipment.events.map(event=>`${statusLabel(event.status)} · ${text(event.created_at)}${event.note?` · ${text(event.note)}`:''}`)
     :[];
   const lines=[intro,line('Tracking reference',shipment.code),line('From',shipment.origin),line('To',shipment.destination),line('Cargo',shipment.cargoSummary)];
   if(timeline.length)lines.push('Status timeline:',...timeline.map(item=>`- ${item}`));
-  lines.push('',accessGuidance,started?'Open Tracking':'Open Tracking and review the transporter',text(access?.url));
+  lines.push('',accessGuidance,started?'Open Tracking':'Open your shipments',text(access?.url));
   const html=[`<p>${escapeHtml(intro)}</p>`,htmlLine('Tracking reference',shipment.code),htmlLine('From',shipment.origin),htmlLine('To',shipment.destination),htmlLine('Cargo',shipment.cargoSummary)];
   if(timeline.length)html.push(`<h2 style="font-size:18px">Status timeline</h2><ul>${timeline.map(item=>`<li>${escapeHtml(item)}</li>`).join('')}</ul>`);
-  html.push(`<p>${escapeHtml(accessGuidance)}</p>`,`<p><a href="${escapeHtml(access?.url)}" style="color:#155eef;font-weight:700">${started?'Open Tracking':'Open Tracking and review the transporter'}</a></p>`);
+  html.push(`<p>${escapeHtml(accessGuidance)}</p>`,`<p><a href="${escapeHtml(access?.url)}" style="color:#155eef;font-weight:700">${started?'Open Tracking':'Open your shipments'}</a></p>`);
   return {...payload,subject:title,text:lines.filter(value=>value!==null).join('\n'),html:emailHtml(title,html)};
 }
 

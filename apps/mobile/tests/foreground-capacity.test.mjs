@@ -6,7 +6,7 @@ import {backgroundLocationDue} from '../src/location/background-state.ts';
 const now=2_000_000, truck={id:'assigned',canLocate:true,selectedLocationSource:'MOBILE',current:{status:'EMPTY'},location:{updatedAt:'',radius:20}};
 test('capacity movement refresh requires assigned on-duty driver and ten-minute cadence',()=>{
  assert.equal(foregroundCapacityDue(truck,0,now),true);
- for(const change of [{canLocate:false},{selectedLocationSource:'MANUAL'},{selectedLocationSource:'GPS'},{current:null},{current:{status:'OFF_DUTY'}},{current:{status:'UNKNOWN'}},{location:{radius:20,updatedAt:new Date(now-599999).toISOString()}}]) assert.equal(foregroundCapacityDue({...truck,...change},0,now),false);
+ for(const change of [{canLocate:false},{selectedLocationSource:null},{selectedLocationSource:'INFERRED'},{selectedLocationSource:'MANUAL'},{selectedLocationSource:'GPS'},{current:null},{current:{status:'OFF_DUTY'}},{current:{status:'UNKNOWN'}},{location:{radius:20,updatedAt:new Date(now-599999).toISOString()}}]) assert.equal(foregroundCapacityDue({...truck,...change},0,now),false);
  assert.equal(foregroundCapacityDue(truck,now-599999,now),false);
  assert.equal(foregroundCapacityDue({...truck,current:{status:'PARTIAL'}},now-600000,now),true);
 });

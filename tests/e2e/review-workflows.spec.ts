@@ -1,10 +1,11 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures} from './tracking-session-fixtures';
 import {auditDeleteVehicles} from './audit-helpers';
 import {chooseDate} from './date-picker-helper';
 import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {localAuditService,auditProvider,auditFleetProvider,auditLogin,auditProof,auditTrackingOwnerLogin,checked} from './audit-helpers';
-import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
+import {updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 import {updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {localSupportLogin} from './provider-support-helper';
 import type {Page,BrowserContext} from 'playwright-core';
@@ -173,7 +174,7 @@ test('rating decisions preserve publication rules, require authority and retain 
       await updateProviderShipmentStatus(actor,shipment.id,'IN_TRANSIT','Synthetic transit');
       await updateProviderShipmentStatus(actor,shipment.id,'UNLOADING','Synthetic unloading',proof);
       const ownerContext=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});
-      try{const owner=await ownerContext.newPage();await auditTrackingOwnerLogin(owner,ownerEmail);const approval=owner.waitForResponse((response:any)=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/tracking/${shipment.id}/approve`);await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();const approved=await approval;expect(approved.status()).toBe(303);await approved.finished();}finally{await ownerContext.close();}
+      try{const owner=await ownerContext.newPage();const ownerSession=await auditTrackingOwnerLogin(owner,ownerEmail,shipment.id);const approval=owner.waitForResponse((response:any)=>response.request().method()==='POST'&&new URL(response.url()).pathname===`/api/tracking/sessions/${ownerSession.id}/approve`);await owner.getByRole('button',{name:'Approve unloading',exact:true}).click();const approved=await approval;expect(approved.status()).toBe(200);await approved.finished();}finally{await ownerContext.close();}
       const reviewId=randomUUID();ids.push(reviewId);checked(await service.from('provider_reviews').insert({id:reviewId,shipment_id:shipment.id,provider_profile_id:actor.provider_profile_id,rating:2,note:'Synthetic review evidence',status:'PUBLISHED',dispute_status:'PENDING',dispute_reason:'Please inspect this synthetic review.'}));
       await deniedReview(page,`/api/admin/ratings/${reviewId}`,{status:resolution,reviewNote:'Provider cannot moderate.'});
       expect(checked(await service.from('provider_reviews').select('status,dispute_status').eq('id',reviewId).single())).toMatchObject({status:'PUBLISHED',dispute_status:'PENDING'});
@@ -344,3 +345,6 @@ test('independent content holds survive rating decisions and revoked Trust canno
     if(cleanupFailures)throw Error('REVIEW_MODERATION_CONFLICT_FAILED: EXACT_CLEANUP');
   }
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

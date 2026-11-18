@@ -8,6 +8,9 @@ import {demoOperatingHoursOpen} from '../../src/lib/demo-operating-hours.mjs';
 const FUNCTION_PATH='/.netlify/functions/demo-capacity';
 const RESPONSE_LIMIT_BYTES=8192;
 const CAPACITY_LIMIT=2;
+const knownFailures=new Set(['DEMO_CAPACITY_ORIGIN_INVALID','DEMO_CAPACITY_SECRET_UNAVAILABLE',
+  'DEMO_WORLD_ORIGIN_UNAVAILABLE','DEMO_WORLD_SIGNING_SECRET_UNAVAILABLE','DEMO_WORLD_TARGET_INVALID',
+  'DEMO_WORLD_SIGNATURE_INPUT_INVALID','DEMO_CAPACITY_ADVANCE_FAILED','DEMO_CAPACITY_RESPONSE_INVALID']);
 
 function enabled(environment){
   return environment.LOADGISTIC_DEMO_CAPACITY_NETLIFY_ENABLED==='true'
@@ -55,44 +58,60 @@ function boundedSummary(value){
 }
 
 /** Wake the durable controller once for at most two due actors; it owns writes. */
-export async function runDemoCapacity({invocationUrl,environment=process.env,fetchImpl=fetch,now=Date.now()}={}){
+export async function runDemoCapacity({invocationUrl,environment=process.env,fetchImpl=fetch,now=Date.now(),onPhase=()=>{}}={}){
+  onPhase('CONFIGURATION');
   if(!enabled(environment)||!demoOperatingHoursOpen(now))return {enabled:false};
+  onPhase('INVOCATION');
   let incoming;
   try{incoming=new URL(String(invocationUrl||''));}catch{throw Error('DEMO_CAPACITY_ORIGIN_INVALID');}
   if(incoming.origin!==demoWorldOrigin(environment)||incoming.pathname!==FUNCTION_PATH
     ||incoming.username||incoming.password||incoming.search||incoming.hash)
     throw Error('DEMO_CAPACITY_ORIGIN_INVALID');
+  onPhase('SIGNATURE');
   if(!/^[a-f0-9]{64}$/.test(environment.DEMO_CAPACITY_WORKER_SECRET||''))
     throw Error('DEMO_CAPACITY_SECRET_UNAVAILABLE');
   const target=new URL(DEMO_CAPACITY_ADVANCE_PATH,incoming.origin),timestamp=String(now);
   const body=JSON.stringify({limit:CAPACITY_LIMIT});
+  const signature=createDemoWorldSignature({timestamp,url:target.href,purpose:'capacity-advance',body},environment);
+  onPhase('REQUEST');
   const response=await fetchImpl(target,{
     method:'POST',body,redirect:'error',credentials:'omit',
     headers:{
       'content-type':'application/json',
       [DEMO_WORLD_TIMESTAMP_HEADER]:timestamp,
-      [DEMO_WORLD_SIGNATURE_HEADER]:createDemoWorldSignature({
-        timestamp,url:target.href,purpose:'capacity-advance',body
-      },environment)
+      [DEMO_WORLD_SIGNATURE_HEADER]:signature
     },
     signal:AbortSignal.timeout(20_000)
   });
-  if(!response.ok)throw Error('DEMO_CAPACITY_ADVANCE_FAILED');
+  if(!response.ok)throw Object.assign(Error('DEMO_CAPACITY_ADVANCE_FAILED'),{httpStatus:response.status});
+  onPhase('RESPONSE');
   return {enabled:true,...boundedSummary(await boundedJson(response))};
 }
 
-export async function executeDemoCapacity(request,options={}){
+async function executeCapacity(request,{environment=process.env,fetchImpl=fetch,now=Date.now()}={},scheduled=false){
+  let phase='CONFIGURATION';
   try{
-    const result=await runDemoCapacity({invocationUrl:request?.url,...options});
+    // A native schedule is not a web invocation. Its synthetic Request URL is
+    // not an authority or a dispatch destination; the exact runtime site is.
+    if(scheduled&&(!enabled(environment)||!demoOperatingHoursOpen(now)))return new Response(null,{status:204});
+    if(scheduled){phase='INVOCATION';request={url:new URL(FUNCTION_PATH,demoWorldOrigin(environment)).href};}
+    const result=await runDemoCapacity({invocationUrl:request?.url,environment,fetchImpl,now,onPhase:value=>{phase=value;}});
     if(result.enabled)console.info(JSON.stringify({event:'demo-capacity-scheduled',ok:result.failed===0,...result}));
     return new Response(null,{status:204});
-  }catch{
-    console.error(JSON.stringify({event:'demo-capacity-scheduled',ok:false,error:'ADVANCE_FAILED'}));
+  }catch(error){
+    const code=knownFailures.has(error?.message)?error.message:phase==='REQUEST'&&error?.name==='TimeoutError'?'REQUEST_TIMEOUT'
+      :phase==='REQUEST'&&error?.name==='AbortError'?'REQUEST_ABORTED':'UNCLASSIFIED';
+    const httpStatus=code==='DEMO_CAPACITY_ADVANCE_FAILED'&&Number.isSafeInteger(error.httpStatus)
+      &&error.httpStatus>=100&&error.httpStatus<=599?error.httpStatus:null;
+    console.error(JSON.stringify({event:'demo-capacity-scheduled',ok:false,error:'ADVANCE_FAILED',phase,code,httpStatus}));
     return new Response(null,{status:500});
   }
 }
 
-export default async function(request){return executeDemoCapacity(request);}
+// Retain the strict HTTP-shaped helper for its existing contract/tests.
+export async function executeDemoCapacity(request,options={}){return executeCapacity(request,options);}
+export async function executeScheduledDemoCapacity(request,options={}){return executeCapacity(request,options,true);}
+export default async function(request){return executeScheduledDemoCapacity(request);}
 
 // Native cron has minute resolution. No long-lived loop, backdating or catch-up.
 // UTC 06:00–07:59 = daily 09:00–10:59 Addis Ababa; runtime also checks hours.

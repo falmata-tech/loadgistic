@@ -1,5 +1,17 @@
 -- FEAT-GPS-001 / FEAT-TRK-001. Own synthetic identities; every write rolls back.
 begin;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['source-owner@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 create function pg_temp.expect_location_denial(statement text,expected text) returns void language plpgsql as $$
 declare denied boolean:=false;
 begin
@@ -75,7 +87,7 @@ begin
  perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',driver_id,'vehicle_id',vehicle_id,
   'can_manage_capacity',false,'can_manage_tracking',true));
  editor:=capacity_location_editor(driver_id,vehicle_id);
- if editor->>'source'<>'MOBILE' or editor->>'canSetManualLocation'<>'false' or editor->>'canSetPhoneLocation'<>'true' or editor->>'revision' is null or editor->'manualPoint'<>'null'::jsonb then raise exception 'DRIVER_EDITOR_INITIAL_STATE';end if;
+ if editor->>'source'<>'MOBILE' or editor->>'canChangeLocationSource'<>'true' or editor->>'canSetPhoneLocation'<>'true' or editor->>'revision' is null or editor ? 'manualPoint' or editor ? 'canSetManualLocation' then raise exception 'DRIVER_EDITOR_INITIAL_STATE';end if;
  perform pg_temp.expect_location_denial(format('select capacity_location_editor(%L,%L)',other_id,vehicle_id),'NOT_FOUND');
  perform pg_temp.expect_location_denial(format('select select_telematics_location_source(%L,%L::jsonb)',driver_id,
   jsonb_build_object('vehicleId',vehicle_id,'source','GPS','precisionKm',10,'expectedRevision',editor->>'revision')),'FORBIDDEN');
@@ -92,10 +104,11 @@ begin
  if pg_temp.location_snapshot(vehicle_id) is distinct from before_state then raise exception 'RETIRED_MANUAL_COMMAND_CHANGED_SAVED_STATE';end if;
  result:=pg_temp.seed_legacy_manual(driver_id,vehicle_id,9.03,38.74);
  editor:=capacity_location_editor(driver_id,vehicle_id);
- if editor->'manualPoint' is distinct from '{"latitude":9.03,"longitude":38.74}'::jsonb
-  or editor->>'revision'<>result->>'revision' then raise exception 'DRIVER_MANUAL_EDITOR_RELOAD';end if;
+ if editor->>'source' is not null or editor ? 'manualPoint' or editor ? 'canSetManualLocation'
+  or editor->>'canChangeLocationSource'<>'true' or editor->>'revision'<>result->>'revision'
+  then raise exception 'RETIRED_SOURCE_DRIVER_EDITOR_RELOAD';end if;
  if not exists(select 1 from jsonb_array_elements(telematics_workspace(owner_id,1)->'vehicles') v
-  where v->>'id'=vehicle_id::text and v->'selection'->>'driverSelectedManual'='true')
+  where v->>'id'=vehicle_id::text and v->'selection'->>'canChangeLocationSource'='false')
   then raise exception 'OWNER_DRIVER_MANUAL_LOCK_NOT_SHOWN';end if;
  if not exists(select 1 from capacities c where c.vehicle_id=vehicle_id and c.location_source='MANUAL_ADMIN'
   and c.location_lat is not null and c.location_lng is not null)
@@ -144,7 +157,9 @@ begin
  end loop;
  if apply_telematics_capacity_location(vehicle_id) then raise exception 'LEGACY_MANUAL_REPORT_MATERIALIZED_AGAIN';end if;
  if pg_temp.location_snapshot(vehicle_id) is distinct from before_state then raise exception 'LEGACY_MANUAL_REFRESH_CHANGED_SAVED_STATE';end if;
- if capacity_location_editor(owner_id,vehicle_id)->'manualPoint' is distinct from editor->'manualPoint' then raise exception 'OWNER_PRIVATE_EDITOR_MISSING';end if;
+ if capacity_location_editor(owner_id,vehicle_id)->>'source' is not null
+  or capacity_location_editor(owner_id,vehicle_id)->>'canChangeLocationSource'<>'false'
+  or capacity_location_editor(owner_id,vehicle_id) ? 'manualPoint' then raise exception 'OWNER_NEUTRAL_DRIVER_LOCK_MISSING';end if;
  select array_agg(id order by id) into cities from(select id from place_catalog order by id limit 3) p;
  perform create_provider_tracking_with_recipients(owner_id,jsonb_build_object('id',shipment_id,'code','LGX-'||upper(substr(replace(shipment_id::text,'-',''),1,8)),
   'vehicle_id',vehicle_id,'origin_place_ref',cities[1],'passing_place_ref',cities[2],'destination_place_ref',cities[3],
@@ -178,7 +193,7 @@ begin
   'precisionKm',10,'expectedRevision',editor->>'revision'));
  if result->>'source'<>'MOBILE' then raise exception 'DRIVER_CANNOT_RESUME_PHONE_CAPACITY';end if;
  if exists(select 1 from jsonb_array_elements(telematics_workspace(owner_id,1)->'vehicles') v
-  where v->>'id'=vehicle_id::text and v->'selection'->>'driverSelectedManual'='true')
+  where v->>'id'=vehicle_id::text and v->'selection'->>'canChangeLocationSource'='false')
   then raise exception 'OWNER_DRIVER_MANUAL_LOCK_STALE';end if;
  editor:=capacity_location_editor(driver_id,vehicle_id);
  result:=pg_temp.seed_legacy_manual(driver_id,vehicle_id,9.04,38.75);
@@ -192,9 +207,9 @@ begin
   or telematics_effective_location(vehicle_id) is not null
   then raise exception 'FORMER_DRIVER_MANUAL_POINT_REUSED';end if;
  editor:=capacity_location_editor(replacement_id,vehicle_id);
- if editor->'manualPoint' is distinct from 'null'::jsonb then raise exception 'FORMER_DRIVER_EXACT_POINT_EXPOSED';end if;
+ if editor ? 'manualPoint' or editor->>'source' is not null or editor->>'canChangeLocationSource'<>'true' then raise exception 'FORMER_DRIVER_EXACT_POINT_EXPOSED';end if;
  if exists(select 1 from jsonb_array_elements(telematics_workspace(owner_id,1)->'vehicles') v
-  where v->>'id'=vehicle_id::text and v->'selection'->>'driverSelectedManual'='true')
+  where v->>'id'=vehicle_id::text and v->'selection'->>'canChangeLocationSource'='false')
   then raise exception 'FORMER_DRIVER_LOCK_PERSISTED';end if;
  perform pg_temp.expect_location_denial(format('select select_telematics_location_source(%L,%L::jsonb)',driver_id,
   jsonb_build_object('vehicleId',vehicle_id,'source','MOBILE','precisionKm',10,'expectedRevision',result->>'revision')),'NOT_FOUND');

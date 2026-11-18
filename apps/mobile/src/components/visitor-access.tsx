@@ -6,7 +6,12 @@ import type { VisitorScope } from '../session/visitor-controller';
 import { Button, Card, Copy, ErrorText, Field, Title, LoadingSpinner } from './ui';
 import {useLanguage} from '../localization/provider';
 import {useAccount} from '../session/provider';
+import {TrackingLinkAccess} from '../screens/visitor-tracking';
 export function VisitorAccess({ scope, children }: PropsWithChildren<{ scope: VisitorScope }>) {
+ if(scope==='tracking')return <TrackingLinkAccess/>;
+ return <LegacyCapacityAccess scope={scope}>{children}</LegacyCapacityAccess>;
+}
+function LegacyCapacityAccess({scope,children}:PropsWithChildren<{scope:VisitorScope}>){
  const visitor = useVisitor(), [error, setError] = useState('');
  if (!visitor.ready) return <LoadingSpinner accessibilityLabel="Checking saved email access" />;
  if (!visitor.snapshot.foreground) return <Copy message={"Private access is paused while the app is in the background."}/>;

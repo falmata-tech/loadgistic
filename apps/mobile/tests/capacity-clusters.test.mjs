@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {capacityMapData,renderedCapacityPoints,capacityMarkerOffsets} from '../src/map/capacity-clusters.ts';
 import {parseCapacityPage} from '../src/api/public-capacity.ts';
 import {focusedMarkers} from '../src/map/focused-markers.ts';
-const row=(id,status,full,shared)=>({id,status,assigned_driver_first_name:'Driver',location_lat:9,location_lng:38,accepts_full_load:full,accepts_partial_load:shared});
+const row=(id,status,full,shared)=>({id,status,assigned_driver_first_name:'Driver',location_source:'GPS',location_lat:9,location_lng:38,accepts_full_load:full,accepts_partial_load:shared});
 test('overlapping Empty and Partial trucks are partitioned before clustering with honest accepted-load flags',()=>{
  const items=parseCapacityPage({hasMore:false,items:[row('full','EMPTY',true,false),row('shared','EMPTY',false,true),row('either','EMPTY',true,true),row('partial','PARTIAL',false,true),row('unknown','EMPTY'),row('off','OFF_DUTY',true,true)]}).items;
  assert.deepEqual(items.map(item=>item.acceptedLoads),['FTL','PTL','BOTH','PTL',null]);

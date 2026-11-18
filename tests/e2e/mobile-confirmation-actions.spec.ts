@@ -1,3 +1,5 @@
+import {createRegisteredTrackingShipment as createProviderShipment} from './tracking-session-fixtures';
+import {registerNativeTrackingCleanup,cleanupNativeTrackingFixtures} from './native-tracking-fixtures';
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {randomUUID} from 'node:crypto';
@@ -8,7 +10,7 @@ import {localMailpitNumericCode} from './mailpit-helper';
 import {addFleetDriver,inviteFleetDriver} from '../../src/lib/fleet-driver-management';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {setProviderVehiclePublication} from '../../src/lib/provider-authority.js';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+
 
 test.use({trace:'off',screenshot:'off'});
 const preview='http://localhost:8084';
@@ -49,9 +51,20 @@ test('Expo confirmations cancel safely and persist fleet, sharing and Tracking c
  test.setTimeout(180_000);await context.setExtraHTTPHeaders({'x-forwarded-for':'127.0.0.229'});
  const db=localAuditService(),nonce=randomUUID(),actor=await auditFleetProvider(db,'native-confirm');
  const owned={ownerId:actor.id,organizationId:actor.organization_id,driverId:'',vehicleId:'',invitationId:'',shipmentId:'',grantId:'',brokerId:'',brokerWorkspaceId:'',connectionId:''};
- const mutations:string[]=[],errors:string[]=[],checks:Record<string,boolean>={};let stage='SETUP',cleanup=false,primaryError:unknown=null,cleanupError:unknown=null;
+ const mutations:string[]=[],errors:string[]=[],checks:Record<string,boolean>={};let stage='SETUP',cleanup=false,primaryError:unknown=null;
  const evidence=()=>writeFileSync(info.outputPath('confirmation-evidence.json'),JSON.stringify({stage,checks,cleanup,pageErrors:errors.length,hostedChanges:false},null,2)+'\n',{mode:0o600});
  const manifest=()=>writeFileSync(info.outputPath('confirmation-owned-fixtures.json'),JSON.stringify(owned,null,2)+'\n',{mode:0o600});manifest();
+ registerNativeTrackingCleanup(async()=>{
+  if(owned.shipmentId){checked(await db.from('provider_tracking_recoveries').delete().eq('shipment_id',owned.shipmentId));checked(await db.from('access_email_deliveries').delete().eq('entity_id',owned.shipmentId));checked(await db.from('audit_logs').delete().eq('entity_id',owned.shipmentId));checked(await db.from('provider_shipments').delete().eq('id',owned.shipmentId));}
+  if(owned.brokerWorkspaceId)removeLocalBrokerFixture(owned.brokerWorkspaceId,owned.connectionId);
+  if(owned.vehicleId){checked(await db.from('audit_logs').delete().eq('entity_id',owned.vehicleId));checked(await auditDeleteVehicles(db,'id',owned.vehicleId));}
+  if(owned.brokerId){checked(await db.from('audit_logs').delete().eq('actor_user_id',owned.brokerId));await removeSyntheticUser(db,owned.brokerId);}
+  checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));
+  if(owned.driverId){checked(await db.from('audit_logs').delete().eq('entity_id',owned.driverId));await removeSyntheticUser(db,owned.driverId);}
+  if(owned.invitationId)checked(await db.from('fleet_driver_invitations').delete().eq('id',owned.invitationId).eq('invited_by',actor.id));
+  await removeSyntheticUser(db,actor.id);checked(await db.from('organizations').delete().eq('id',actor.organization_id));
+  cleanup=true;evidence();
+ });
  page.on('pageerror',error=>errors.push(error.name));
  page.on('request',request=>{if(request.method()!=='POST')return;const path=new URL(request.url()).pathname;
   if(!['/api/mobile/fleet','/api/mobile/network','/api/account-vehicle-shares'].includes(path)&&!path.startsWith('/api/mobile/shipments/'))return;
@@ -119,6 +132,11 @@ test('Expo confirmations cancel safely and persist fleet, sharing and Tracking c
   await decide(()=>contact.locator('..').getByRole('button',{name:'Remove',exact:true}).click(),'Remove capacity access?','Keep access','Remove access',async()=>!!checked(await db.from('account_capacity_grants').select('revoked_at').eq('id',owned.grantId).single()).revoked_at,'REVOKE');
   await expect(contact).toHaveCount(0);
   stage='TRACKING_RECIPIENT';evidence();await openWorkspacePage(page,'/shipment-detail?id='+owned.shipmentId,'/api/mobile/shipments/'+owned.shipmentId);await expect(page.getByTestId('tracking-provider-workspace')).toBeVisible();
+  // Provider sharing is a deliberate link action, never an email guest invite.
+  const sharing=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/sessions/from-shipment'&&response.request().method()==='POST');
+  await page.getByRole('button',{name:'Share Tracking link',exact:true}).click();const shared=await sharing;expect(shared.status()).toBe(200);expect((await shared.json()).ok).toBe(true);
+  await expect(page.getByRole('button',{name:'Create Tracking link',exact:true})).toBeVisible();
+  await expect(page.getByLabel('Viewer email',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/^Remove access for /})).toHaveCount(0);
   const recipients=checked(await db.from('provider_tracking_recipients').select('recipient_role,revoked_at').eq('shipment_id',owned.shipmentId));expect(recipients).toEqual([{recipient_role:'OWNER',revoked_at:null}]);checks.PROVIDER_RECIPIENT_REMOVAL_ABSENT=true;
   expect(checked(await db.from('provider_tracking_recipients').select('id').eq('shipment_id',owned.shipmentId).eq('recipient_role','OWNER').is('revoked_at',null))).toHaveLength(1);
@@ -129,22 +147,7 @@ test('Expo confirmations cancel safely and persist fleet, sharing and Tracking c
   expect(checked(await db.from('provider_shipment_events').select('id').eq('shipment_id',owned.shipmentId)).length).toBeGreaterThan(0);
   expect(errors).toEqual([]);stage='COMPLETE';evidence();
  }catch(error){primaryError=error;evidence();}
- finally{
-  try{
-  await page.goto('about:blank');
-  // Reserve cleanup time even if a wrong/stalled browser route used the test
-  // budget. It is bounded and never changes the acceptance assertions.
-  test.setTimeout(info.timeout+45_000);
-  if(owned.shipmentId){checked(await db.from('provider_tracking_recoveries').delete().eq('shipment_id',owned.shipmentId));checked(await db.from('access_email_deliveries').delete().eq('entity_id',owned.shipmentId));checked(await db.from('audit_logs').delete().eq('entity_id',owned.shipmentId));checked(await db.from('provider_shipments').delete().eq('id',owned.shipmentId));}
-  if(owned.brokerWorkspaceId)removeLocalBrokerFixture(owned.brokerWorkspaceId,owned.connectionId);
-  if(owned.vehicleId){checked(await db.from('audit_logs').delete().eq('entity_id',owned.vehicleId));checked(await auditDeleteVehicles(db,'id',owned.vehicleId));}
-  if(owned.brokerId){checked(await db.from('audit_logs').delete().eq('actor_user_id',owned.brokerId));await removeSyntheticUser(db,owned.brokerId);}
-  checked(await db.from('audit_logs').delete().eq('actor_user_id',actor.id));
-  if(owned.driverId){checked(await db.from('audit_logs').delete().eq('entity_id',owned.driverId));await removeSyntheticUser(db,owned.driverId);}
-  if(owned.invitationId)checked(await db.from('fleet_driver_invitations').delete().eq('id',owned.invitationId).eq('invited_by',actor.id));
-  await removeSyntheticUser(db,actor.id);checked(await db.from('organizations').delete().eq('id',actor.organization_id));
-  cleanup=true;evidence();
-  }catch(error){cleanupError=error;}
- }
- if(primaryError||cleanupError)throw new AggregateError([primaryError,cleanupError].filter(Boolean),'MOBILE_CONFIRMATION_FAILED: '+stage);
+ if(primaryError)throw new AggregateError([primaryError],'MOBILE_CONFIRMATION_FAILED: '+stage);
 });
+
+test.afterEach(async({page})=>{await cleanupNativeTrackingFixtures(page);});

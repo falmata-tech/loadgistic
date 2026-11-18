@@ -20,6 +20,8 @@ import {TrackingLocationMap} from '@/components/tracking-location-map';
 import {trackingMapData} from '@/components/tracking-map-data';
 import {providerWorkspaceCapabilities} from '@/lib/provider-workspace.js';
 import {WorkspaceTaskDialog} from '@/components/workspace-task-dialog';
+import {TrackingPartnerForm} from '@/components/tracking-partner-form';
+import {TrackingShipmentLinks} from '@/components/tracking-session-manager';
 import styles from '@/components/tracking-record.module.css';
 
 export default async function ProviderShipmentPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<Record<string,string|undefined>>}){
@@ -51,7 +53,7 @@ export default async function ProviderShipmentPage({params,searchParams}:{params
       </dl>
     </Localized>
     <div className={styles.record}><section className={styles.section}><header><h2><CalendarClock aria-hidden="true"/><Text message="Status timeline"/></h2></header><ol className={styles.timeline}>{shipment.events.map((event:any)=><li key={event.id}><div><strong><Text message={displayStatus(event.status)}/></strong>{demo?<DemoTrackingLabel kind="event"/>:null}<p>{event.note||<Text message="Status updated"/>}</p>{event.has_proof?<TrackingProofLink shipmentId={shipment.id} eventId={event.id}/>:null}<time dateTime={event.created_at}>{new Date(event.created_at).toLocaleString()}</time></div></li>)}</ol></section>
-      <aside className={styles.aside}><TrackingPartyCard shipment={shipment}/>
+      <aside className={styles.aside}>{shipment.can_add_partner?<TrackingPartnerForm shipmentId={id}/>:<TrackingPartyCard shipment={shipment}/>}<TrackingShipmentLinks shipmentId={id}/>
       {shipment.email_deliveries?.length?<section className="card"><h3><Text message="Customer email"/></h3>{shipment.email_deliveries.map((delivery:any,index:number)=><p key={`${delivery.delivery_kind}-${delivery.party_role}-${index}`}><strong>{delivery.delivery_kind==='TRACKING_ACCESS'?<Text message="Tracking access"/>:<Text message="Completion record"/>}:</strong> {delivery.status.toLowerCase()}{delivery.attempts?` · ${delivery.attempts} attempt${delivery.attempts===1?'':'s'}`:''}</p>)}</section>:null}
       {shipment.review?<section className="card provider-review-card"><h3><Star aria-hidden="true"/><Text message="Customer owner review"/></h3><strong>{'★'.repeat(shipment.review.rating)}{'☆'.repeat(5-shipment.review.rating)}</strong><p>{shipment.review.note||'No written comment.'}</p><span className="status blue"><Text message="Published"/></span>{shipment.review.dispute_status==='PENDING'?<p className="permission-note warning"><Text message="Dispute pending. The rating stays visible and counted during review."/></p>:shipment.review.rating<=3?<WorkspaceTaskDialog title="Dispute this review" triggerLabel="Dispute this review" icon={<ShieldAlert aria-hidden="true"/>}><form action={`/api/provider-reviews/${shipment.review.id}/dispute`} method="post" className="stack"><input type="hidden" name="shipmentId" value={shipment.id}/><div className="form-group"><label htmlFor="review-dispute"><Text message="Reason"/></label><textarea id="review-dispute" name="reason" minLength={5} maxLength={1000} required/></div><button className="button"><Text message="Submit dispute"/></button></form></WorkspaceTaskDialog>:null}</section>:null}</aside>
     </div>
@@ -64,7 +66,5 @@ function TrackingPartyCard({shipment}:{shipment:any}){
   return <section className={`card ${styles.party}`}><h3><UserRoundCheck aria-hidden="true"/><Text message="Shipment owner"/></h3>
     {owner?<p><strong>{owner.recipient_email}</strong></p>:null}
     <p className="meta"><Text message="The shipment owner manages who can follow this shipment."/></p>
-    {shipment.tracking_access_code?<p><Link2 aria-hidden="true"/> <Link href={shipment.tracking_path}><Text message="Open public Track page"/></Link></p>:<p className="meta"><Text message="Guest access has expired."/></p>}
-    {shipment.guest_expires_at?<p className="meta"><Text message="Guest access expires "/>{new Date(shipment.guest_expires_at).toLocaleString()}.</p>:null}
   </section>;
 }

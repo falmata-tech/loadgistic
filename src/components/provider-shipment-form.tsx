@@ -7,11 +7,12 @@ import {browserRequest} from '@/lib/browser-request';
 import {Text,Localized,useTranslation} from '@/components/localization';
 import React from 'react';
 import Link from 'next/link';
-import { CalendarDays, Check, Clipboard, KeyRound, Link2, LoaderCircle, LocateFixed, Mail, MapPin, PackageCheck, Route, ShieldCheck, Truck } from 'lucide-react';
+import { CalendarDays, Check, KeyRound, LoaderCircle, LocateFixed, Mail, MapPin, PackageCheck, Route, Truck } from 'lucide-react';
 import { EthiopiaPlaceInput } from './ethiopia-place-input';
+import {TrackingShipmentLinks} from './tracking-session-manager';
 
 type Vehicle={id:string;platform_number:string;make:string;model:string;cargo_configuration?:string;category?:string};
-type Created={id:string;code:string;trackingCode:string;trackingPath:string};
+type Created={id:string;code:string};
 
 export function ProviderShipmentForm({vehicles,lockVehicleSelection=false}:{vehicles:Vehicle[];lockVehicleSelection?:boolean}){
   const {t}=useTranslation();const pending=React.useRef(false);
@@ -19,32 +20,21 @@ export function ProviderShipmentForm({vehicles,lockVehicleSelection=false}:{vehi
   const [created,setCreated]=React.useState(null as Created|null);
   const [error,setError]=React.useState('');
   const [submitting,setSubmitting]=React.useState(false);
-  const [copied,setCopied]=React.useState('');
 
   async function submit(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault();if(pending.current||uncertain)return;pending.current=true;setError('');setSubmitting(true);
     try{
       const {response,data:body}=await browserRequest<Created&{error?:string}>('/api/provider-shipments',{method:'POST',body:new FormData(event.currentTarget)});
       if(!response.ok){if(response.status>=500)setUncertain(true);setError(body.error||'Could not start Tracking.');return;}
-      if(!body||![body.id,body.code,body.trackingCode,body.trackingPath].every(value=>typeof value==='string'&&value.trim()))throw new Error('UNCERTAIN_TRACKING_RESPONSE');
+      if(!body||![body.id,body.code].every(value=>typeof value==='string'&&value.trim()))throw new Error('UNCERTAIN_TRACKING_RESPONSE');
       setCreated(body);
     }catch{setUncertain(true);setError('We could not confirm whether Tracking was created. Check your Tracking list before starting it again.');}
     finally{pending.current=false;setSubmitting(false);}
   }
 
-  async function copy(label:string,value:string){
-    await navigator.clipboard.writeText(value);
-    setCopied(label);
-    window.setTimeout(()=>setCopied(''),1800);
-  }
-
   if(created)return <section className="tracking-code-reveal" aria-live="polite">
-    <div className="tracking-code-reveal-heading"><span><Check aria-hidden="true"/></span><div><p className="eyebrow"><Text message="Tracking started"/></p><h1>{created.code}</h1><p><Text message="The shipment owner will receive the tracking link by email."/></p></div></div>
-    <div className="party-code-grid single">
-
-      <article><div><Link2 aria-hidden="true"/><strong><Text message="Tracking link"/></strong></div><code>{created.trackingPath}</code><button type="button" className="button secondary" onClick={()=>copy('link',`${window.location.origin}${created.trackingPath}`)}>{copied==='link'?<Check aria-hidden="true"/>:<Clipboard aria-hidden="true"/>}{copied==='link'?<Text message="Copied"/>:<Text message="Copy link"/>}</button></article>
-    </div>
-    <div className="permission-note"><ShieldCheck aria-hidden="true"/><div><strong><Text message="Email-verified access"/></strong><span><Text message="The shipment owner opens the link and verifies their email."/></span></div></div>
+    <div className="tracking-code-reveal-heading"><span><Check aria-hidden="true"/></span><div><p className="eyebrow"><Text message="Tracking started"/></p><h1>{created.code}</h1></div></div>
+    <TrackingShipmentLinks shipmentId={created.id}/>
     <Link className="button" href={`/app/provider-shipments/${created.id}`}><Text message="Open Tracking"/></Link>
   </section>;
 
@@ -59,11 +49,11 @@ export function ProviderShipmentForm({vehicles,lockVehicleSelection=false}:{vehi
       <div className="form-group"><label htmlFor="shipment-origin"><MapPin aria-hidden="true"/><Text message="Origin"/></label><EthiopiaPlaceInput id="shipment-origin" name="origin" placeRefName="originPlaceRef" required placeholder="Search origin"/></div>
       <div className="form-group"><label htmlFor="shipment-passing"><MapPin aria-hidden="true"/><Text message="Passing through city"/></label><EthiopiaPlaceInput id="shipment-passing" name="passing" placeRefName="passingPlaceRef" required placeholder="Search passing-through city"/></div>
       <div className="form-group"><label htmlFor="shipment-destination"><MapPin aria-hidden="true"/><Text message="Destination"/></label><EthiopiaPlaceInput id="shipment-destination" name="destination" placeRefName="destinationPlaceRef" required placeholder="Search destination"/></div>
-      <div className="form-group"><label htmlFor="expected-pickup"><CalendarDays aria-hidden="true"/><Text message="Expected pickup "/><span className="meta"><Text message="(optional)"/></span></label><DatePicker id="expected-pickup" name="expectedPickupDate" /></div>
-      <div className="form-group"><label htmlFor="expected-delivery"><CalendarDays aria-hidden="true"/><Text message="Expected delivery "/></label><DatePicker id="expected-delivery" name="expectedDeliveryDate" required label="Expected delivery"/></div>
+      <div className="form-group"><label htmlFor="expected-pickup"><CalendarDays aria-hidden="true"/><Text message="Expected pickup"/><span className="meta"><Text message="(optional)"/></span></label><DatePicker id="expected-pickup" name="expectedPickupDate" /></div>
+      <div className="form-group"><label htmlFor="expected-delivery"><CalendarDays aria-hidden="true"/><Text message="Expected delivery"/></label><DatePicker id="expected-delivery" name="expectedDeliveryDate" required label="Expected delivery"/></div>
     </div></section>
-    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2><Text message="Shipment owner"/></h2><p className="meta"><Text message="The shipment owner approves unloading and chooses who else can follow the updates."/></p></div></div><div className="form-grid">
-      <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/><Text message="Shipment owner email"/></label><input id="customer-email" name="customerEmail" type="email" required autoComplete="off"/></div>
+    <section><div className="section-heading-icon"><Mail aria-hidden="true"/><div><h2><Text message="Shipment owner"/></h2><p className="meta"><Text message="Choose one shipper or broker now, or add their account later."/></p></div></div><div className="form-grid">
+      <div className="form-group full"><label htmlFor="customer-email"><Mail aria-hidden="true"/><Text message="Shipper or broker account email"/></label><input id="customer-email" name="customerEmail" type="email" autoComplete="off"/></div>
     </div></section>
     <fieldset className="tracking-mode-choice"><legend><LocateFixed aria-hidden="true"/><Text message="Updates shared with the customer"/></legend><label><input type="radio" name="trackingMode" value="STATUS_ONLY" defaultChecked/><span><strong><Text message="Status only"/></strong><small><Text message="Shares the shipment timeline without Driver location."/></small></span></label><label><input type="radio" name="trackingMode" value="LOCATION_AND_STATUS"/><span><strong><Text message="Status and approximate location"/></strong><small><Text message="The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment."/></small></span></label></fieldset>
     <button className="button" disabled={submitting||uncertain||!vehicles.length}>{submitting?<LoaderCircle className="spin" aria-hidden="true"/>:<KeyRound aria-hidden="true"/>}{submitting?<Text message="Starting Tracking…"/>:<Text message="Start Tracking"/>}</button>

@@ -179,13 +179,13 @@ test('web map exposes location-source choices in open and shared filters without
    let tree=view.render({...feedProps,apiPath,searchPath,query:{locationSource:'GPS,MOBILE'}});
    const source=find(tree,'Options',node=>node.props.name==='locationSource');
    assert.ok(source);assert.equal(source.props.value,'GPS,MOBILE');
-   assert.deepEqual(source.props.options,[['GPS','GPS device'],['MOBILE','Driver’s phone'],['MANUAL','Manually entered']]);
+   assert.deepEqual(source.props.options,[['GPS','GPS device'],['MOBILE','Driver’s phone']]);
    assert.equal(find(tree,'Options',node=>node.props.name==='loadType'),undefined);
    assert.equal(find(tree,'Link',node=>text(node).trim()==='Clear').props.href,searchPath);
    const trigger=find(tree,'Localized',node=>String(node.props.className).includes('capacity-filter-trigger'));
    assert.equal(trigger.props['aria-label'],'Vehicle filters');assert.equal(text(trigger).trim(),'Filter 1');
-   source.props.onChange('MANUAL');tree=view.render();
-   assert.equal(find(tree,'Options',node=>node.props.name==='locationSource').props.value,'MANUAL');
+   source.props.onChange('MOBILE');tree=view.render();
+   assert.equal(find(tree,'Options',node=>node.props.name==='locationSource').props.value,'MOBILE');
   }finally{view.close();}
  }
 });

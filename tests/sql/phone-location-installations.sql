@@ -1,5 +1,17 @@
 -- Isolated transaction: never operate against a hosted project.
 begin;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['phone-status@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 do $test$
 declare actor uuid:=gen_random_uuid();other_actor uuid:=gen_random_uuid();provider uuid:=gen_random_uuid();vehicle uuid;first uuid:=gen_random_uuid();second uuid:=gen_random_uuid();foreign_installation uuid:=gen_random_uuid();session_id uuid:=gen_random_uuid();other_session_id uuid:=gen_random_uuid();
  secret text:=encode(gen_random_bytes(32),'hex');second_secret text:=encode(gen_random_bytes(32),'hex');binding jsonb;other_binding jsonb;proof jsonb;result jsonb;stamp timestamptz;

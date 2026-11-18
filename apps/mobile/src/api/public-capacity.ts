@@ -14,7 +14,7 @@ export type CapacitySignal = {
   acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
   availablePercent:number|null;availablePercentReportedAt:string;
   latitude: number | null; longitude: number | null;
-  capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|'MANUAL'|null;locationIsDemo?:boolean;
+  capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|null;locationIsDemo?:boolean;
   geometry:'ROUTE'|'RADIUS'|null; currentVisible:boolean; currentPoints:SignalPoint[];
   precisionKm:number; regular:RegularSignal[];
 };
@@ -61,7 +61,9 @@ export function parseCapacityPage(value: unknown): CapacityPage {
     if (row.status !== 'EMPTY' && row.status !== 'PARTIAL') continue;
     const id = text(row.id), driver = text(row.assigned_driver_first_name);
     if (!id || !driver) continue;
-    const latitude=coordinate(row.location_lat,90),longitude=coordinate(row.location_lng,180);
+    const locationSource=locationSourceKind(row.location_source),retired=row.location_source==='MANUAL'||row.location_source==='MANUAL_ADMIN';
+    if(row.location_source!=null&&!retired&&!locationSource)throw new Error('Invalid capacity response');
+    const latitude=locationSource?coordinate(row.location_lat,90):null,longitude=locationSource?coordinate(row.location_lng,180):null;
     const currentVisible=row.current_signal_geometry_visible!==false;
     items.push({ ...(row.authority?{authority:publicTruckAuthority(row.authority)}:{}),id,vehicleId:/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text(row.vehicle_id))?text(row.vehicle_id):'', driver,portrait:publicAsset(row.assigned_driver_portrait_url), provider: text(row.provider_name), handle: text(row.provider_handle),
       driverPhone:publicPhone(row.assigned_driver_phone),providerPhone:publicPhone(row.contact_phone),driverKind:text(row.driver_kind_label)||'Driver',
@@ -72,10 +74,10 @@ export function parseCapacityPage(value: unknown): CapacityPage {
       availablePercent:row.available_percent_reported_at&&typeof row.available_percent==='number'&&Number.isInteger(row.available_percent)&&row.available_percent>=1&&row.available_percent<=99?row.available_percent:null,
       availablePercentReportedAt:publicDate(row.available_percent_reported_at),
       latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,
-      capacityAge: text(row.capacity_updated_label), locationAge: text(row.location_updated_label),locationSource:locationSourceKind(row.location_source),
+      capacityAge: text(row.capacity_updated_label), locationAge:locationSource?text(row.location_updated_label):'',locationSource,
       configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':row.availability_geometry==='RADIUS'?'RADIUS':null,
       currentVisible,
-      currentPoints:points(row.availability_geometry==='ROUTE'?row.current_route_points:row.capacity_area_boundary),
+      currentPoints:currentVisible?points(row.availability_geometry==='ROUTE'?row.current_route_points:row.capacity_area_boundary):[],
       precisionKm:typeof row.location_precision_km==='number'&&Number.isFinite(row.location_precision_km)&&row.location_precision_km>0?row.location_precision_km:20,
       regular:Array.isArray(row.recurring_corridors)?row.recurring_corridors.slice(0,1).flatMap(raw=>{
        if(!raw||typeof raw!=='object')return[];const recurring=raw as Record<string,unknown>;

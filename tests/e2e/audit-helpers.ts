@@ -100,14 +100,17 @@ export async function auditProof(service:any,shipmentId:string){
  return {path:`supabase://shipment-proof/${path}`,originalName:'synthetic-proof.png',mimeType:'image/png'};
 }
 
-export async function auditTrackingOwnerLogin(page:any,email:string){
- const {localMailpitNumericCode}=await import('./mailpit-helper');
- // The unlock form is usable before the decorative basemap tiles finish.
- await page.goto('/track',{waitUntil:'domcontentloaded'});await page.getByLabel('Email',{exact:true}).fill(email);
- const since=Date.now();await page.getByRole('button',{name:'Email me a code',exact:true}).click();
- await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code'));
- await page.getByRole('button',{name:'Open tracking',exact:true}).click();
- await expect(page.getByText('Private shipment tracking',{exact:true})).toBeVisible({timeout:30000});
+export async function auditTrackingOwnerLogin(page:any,email:string,shipmentId?:string){
+ // Registered account ownership is independent of a guest link/code. Use the
+ // ordinary local account helper, then bind the returned session to one load.
+ await auditLogin(page,email,'/app/tracking');
+ const response=await page.request.get('/api/tracking/sessions?page=1');expect(response.status()).toBe(200);
+ const result=await response.json();expect(result.ok).toBe(true);
+ const sessions=(result.data?.sessions||[]).filter((session:{shipmentId:string})=>!shipmentId||session.shipmentId===shipmentId);
+ if(sessions.length!==1||!sessions[0].id)throw Error('EXACT_TRACKING_OWNER_SESSION_REQUIRED');
+ await page.goto(`/app/tracking/${sessions[0].id}`,{waitUntil:'domcontentloaded'});
+ await expect(page.getByRole('heading',{name:sessions[0].reference,exact:true}).first()).toBeVisible({timeout:30000});
+ return sessions[0];
 }
 
 export async function auditFleetDriver(service:any,owner:any,vehicleId:string){

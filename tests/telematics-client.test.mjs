@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseFleetDeviceWorkspace,readFleetDeviceWorkspace,fleetManualPoint,sameFleetManualPoint} from '../src/lib/telematics-workspace.ts';
+import {parseFleetDeviceWorkspace,readFleetDeviceWorkspace,parseDriverLocationSelection} from '../src/lib/telematics-workspace.ts';
 const id='00000000-0000-4000-8000-000000000001',stamp='2026-10-15T12:00:00Z';
 const device={id,label:'Owner GPS',imei:'990000000000001',protocol:'gt06',protocolDeviceId:'990000000000001',gatewayDeviceId:1,modelProfile:'UNVERIFIED',synthetic:false,active:true,revision:stamp,vehicleId:null,lastSeenAt:stamp,connection:'ONLINE',capabilities:[],position:{latitude:9,longitude:38,speedKph:0,course:null,ignition:false,battery:90,observedAt:stamp,receivedAt:stamp}};
 const workspace=()=>({canManage:true,page:1,pageSize:20,total:1,pageCount:1,devices:[structuredClone(device)],vehicles:[{id,label:'Truck',selection:{source:'GPS',deviceId:id,revision:stamp,precisionKm:20,selectedAt:stamp},published:{source:'MOBILE',updatedAt:stamp}}],commands:[]});
@@ -19,24 +19,22 @@ test('unknown command capability is never offered to an owner',()=>{
  const input=workspace();input.devices[0].capabilities=['RAW_COMMAND','DELETE_CUSTOMER'];
  assert.deepEqual(parseFleetDeviceWorkspace(input).devices[0].capabilities,[]);
 });
-test('saved private manual point survives accuracy-only edits and Cancel comparisons',()=>{
- const input=workspace();input.vehicles[0].selection.source='MANUAL';
- input.vehicles[0].selection.manualPoint={latitude:40.015,longitude:-105.27,internalSecret:'discard'};
- const vehicle=parseFleetDeviceWorkspace(input).vehicles[0],point=fleetManualPoint(vehicle);
- assert.deepEqual(point,{lat:40.015,lng:-105.27});
- assert.equal(sameFleetManualPoint(point,fleetManualPoint(vehicle)),true);
- assert.equal(sameFleetManualPoint({...point,lng:-105.28},fleetManualPoint(vehicle)),false);
- assert.equal(sameFleetManualPoint(null,point),false);
- assert.equal(sameFleetManualPoint(null,null),true);
- assert.equal(vehicle.selection.manualPoint.internalSecret,undefined);
- vehicle.selection.precisionKm=5;
- assert.deepEqual(fleetManualPoint(vehicle),point);
- for(const change of [p=>p.latitude=91,p=>p.longitude=-181,p=>p.longitude=NaN]){
-  const value=structuredClone(input);change(value.vehicles[0].selection.manualPoint);
-  assert.equal(readFleetDeviceWorkspace(value),null);
+test('retired wire selections become unselected without a point or permission override',()=>{
+ for(const retired of ['MANUAL','MANUAL_ADMIN']){
+  const input=workspace(),selection=input.vehicles[0].selection;
+  Object.assign(selection,{source:retired,manualPoint:{latitude:40.015,longitude:-105.27,secret:'private'},driverSelectedManual:true});
+  const result=parseFleetDeviceWorkspace(input).vehicles[0];
+  assert.deepEqual(result.selection,{source:null,deviceId:id,revision:stamp,precisionKm:20,selectedAt:stamp,canChangeLocationSource:false});
+  assert.equal(JSON.stringify(result).includes('private'),false);assert.equal('manualPoint' in result.selection,false);assert.equal('driverSelectedManual' in result.selection,false);
  }
- input.vehicles[0].selection.source='GPS';
- assert.equal(readFleetDeviceWorkspace(input),null);
+ const input=workspace();input.vehicles[0].selection.manualPoint={latitude:9,longitude:38};assert.equal(readFleetDeviceWorkspace(input),null);
+ for(const value of ['false',null,1]){const malformed=workspace();malformed.vehicles[0].selection.canChangeLocationSource=value;assert.equal(readFleetDeviceWorkspace(malformed),null);}
+});
+test('driver selection preserves real revisions and capabilities while rejecting malformed new contracts',()=>{
+ const input={vehicleId:id,source:'MANUAL',manualPoint:{latitude:9,longitude:38},precisionKm:5,revision:stamp,canSetPhoneLocation:true};
+ assert.deepEqual(parseDriverLocationSelection(input,id),{vehicleId:id,source:null,precisionKm:5,revision:stamp,canSetPhoneLocation:true,canChangeLocationSource:true});
+ assert.equal(parseDriverLocationSelection({...input,source:null,manualPoint:null,canChangeLocationSource:false},id).canChangeLocationSource,false);
+ for(const change of [{source:'INFERRED'},{source:'GPS'},{precisionKm:'5'},{precisionKm:0},{revision:'bad'},{vehicleId:'foreign'},{canSetPhoneLocation:'true'},{canChangeLocationSource:'false'}])assert.throws(()=>parseDriverLocationSelection({...input,...change},id),/Location details changed/);
 });
 
 test('private phone source summary preserves actual nullable observations without hardware capabilities',()=>{

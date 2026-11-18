@@ -1,9 +1,9 @@
 import type {ApproximateFix} from './privacy';
 
 export const capacityLocationInterval = 10 * 60 * 1000;
-type LocatedTruck = { id: string; canLocate: boolean; selectedLocationSource?: 'GPS'|'MOBILE'|'MANUAL'; current: {status: string} | null; location: {updatedAt: string; radius: number} | null };
+type LocatedTruck = { id: string; canLocate: boolean; selectedLocationSource?: 'GPS'|'MOBILE'|null; current: {status: string} | null; location: {updatedAt: string; radius: number} | null };
 export function foregroundCapacityDue(truck: LocatedTruck, lastAttempt: number, now = Date.now()) {
-  return truck.canLocate && truck.selectedLocationSource !== 'MANUAL' && truck.selectedLocationSource !== 'GPS' && !!truck.current && ['EMPTY', 'PARTIAL'].includes(truck.current.status)
+  return truck.canLocate && (truck.selectedLocationSource===undefined||truck.selectedLocationSource==='MOBILE') && !!truck.current && ['EMPTY', 'PARTIAL'].includes(truck.current.status)
     && now - Math.max(lastAttempt, Date.parse(truck.location?.updatedAt || '') || 0) >= capacityLocationInterval;
 }
 

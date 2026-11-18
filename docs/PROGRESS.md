@@ -1,13 +1,151 @@
 # Current work and release status
 
-Updated 2026-11-16. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-17. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active hosting request — November15–16 (CST)
+## Active owner checklist — November17
+
+See the [production workflow review](PRODUCTION_WORKFLOW_REVIEW.md) for all 78 web page entries, 36 Expo screens, role boundaries and outstanding launch checks. Migration 230 implements one registered partner,
+chosen at provider start or added later. Its rollback-only SQL check and local
+installation passed. Both initiation orders passed phone-web workflows, including
+late attachment through completion/review and the broker-first provider's normal
+operational controls. The connected provider saved Going to pickup and both broker and guest timelines reflected it. Customer followers use the expiring link and separate code.
+The driver-to-guest phone-web check also passed for two saved privacy radii, cooldown and retry. Web quality passed all 1,681 tests and mobile passed all 462 tests. See the review for the unresolved provider-invitation boundary before rollout.
+
+Worktree: `.local/gps-phone-courier`, branch `feat/gps-phone-courier`, from the
+independently checked current remote main `906a51f1`. Preserve the existing dirty
+checkouts and completed simulator hosting setup. Runtime acceptance remains
+failed and visible below. This checklist includes the
+owner's location, vehicle, loading, complete-feature, mobile-parity and Play
+readiness requests. Check an item only after its relevant evidence passes.
+
+1. [x] Establish current source, installed contracts and existing assets.
+   Migration221 already refuses new Manual writes. Courier car is already a
+   supported shared web/native/filter configuration; its real image exists.
+   The bounded hosted demo audit found12 correctly configured Live cars and an
+   actual Courier car public query returned200 with a matching result. Avoid a
+   fictitious restoration or gratuitous data rewrite.
+2. [ ] Finish GPS/Phone-only product behavior across web, Expo, API, filters and
+   current database projections. Suppress retired Manual current points, retain
+   historical rows/revisions, and preserve existing driver-choice permissions.
+3. [ ] Verify Courier car selection/image/discovery on both clients and type
+   coverage in actual demo results. All17 types exist in fresh local fixtures;
+   a separately bounded hosted subset lacks motorcycle. Prepare only any
+   justified exact synthetic-data change; preserve simulator bindings/plans.
+4. [ ] Audit and repair loading states across web and mobile. Keep the map/page
+   footprint and footer position stable, with accessible placeholders and real
+   loading, empty, failure/retry and permission-denied states. Preserve the
+   existing automatic loading and complete discovery behavior.
+5. [ ] Replace email-based guest Tracking with per-shipment/session expiring
+   unique URLs and generated tracking codes. Account shippers retain their
+   authorized shipment list; brokers share links manually. Retire anonymous
+   email lookup rather than leaving it as an alternate access path. Link/code
+   access requires BOTH link and code (owner confirmed). Brokers may create
+   Pending provider sessions or share existing authorized shipments. Migration229
+   and web/native paths are implemented and in local workflow qualification. Preserve provider/source
+   consent, current role scope, grant expiry/revocation and proof-file privacy.
+6. [ ] Build and execute the feature/role and web-to-mobile parity checklist:
+   Owner addition: a signed-out visitor choosing the private map stays on that
+   selected tab with a centered Sign in/Sign up invitation in the map area;
+   authentication opens only after an explicit button click. Keep private data
+   unfetched. The web entry passed maintained desktop/phone browser checks and
+   agent-led desktop/phone review at3101: the invitation stays centered over a
+   record-free map, the footer stays below it, and only the selected account
+   button opens authentication. Actual desktop Sign up and phone Sign in
+   destinations were verified. Expo390x844 actual review found plain links;
+   these were corrected to50px primary/secondary actions, rebuilt and reviewed.
+   Actual Sign up and Sign in destinations pass there too. Native OS/device
+   qualification remains separate from the Expo browser preview.
+   The maintained Expo390/320 case passes in13.9s, including the unchanged map
+   height, selected tab, empty marker set, zero private-data requests,44px minimum
+   actions and browser-history return. This private-entry task is complete locally.
+   public discovery/profiles/Featured; identity/account security; provider/driver
+   Fleet, GPS/Phone, Capacity, routes/areas, sharing and network; customer
+   business access; Tracking/recipients/events/private proof; documents,
+   notifications and Support. Admin/platform staff management remains web-only.
+   Fix demonstrated failures together, rather than asserting that rendering or
+   a unit-test total proves all workflows.
+7. [ ] Complete focused permission/state/SQL tests, actual desktop/phone/Expo
+   task reviews, full root quality and maintained E2E gates, and mobile types,
+   lint, tests, strict translations and Android export. Verify the simulator's
+   first natural06–08UTC run and subsequent idle/stop behavior from actual
+   hosted records; the first window has now elapsed and actual aggregates show ZERO accepted GPS/Phone/Capacity activity despite enabled controls. This runtime failure is being diagnosed from provider scheduling/logs, not treated as success. Do not replay its completed
+   migrations/setup/settings/controllers or manufacture clock/ingestion proof.
+8. [ ] Prepare the exact Android/Play release candidate and readiness evidence:
+   current source/version/package/signing provenance, native permissions and
+   device workflows, store declarations/assets and release requirements.
+   Record actual device/external-provider checks separately from Expo web.
+   Publishing, hosted writes and signing retain their exact owner authority.
+
+Current evidence:228+229 initially passed29 SQL files and are installed locally;
+the connected Tracking response then exposed a missing saved `updated_at` field.
+The exact projection correction passed an observed RED→GREEN wire check, session
+core, source privacy and proof-access checks, with unchanged permissions, other
+functions, retained rows and migration ledger. The repaired broker-to-provider
+desktop browser journey passed in26.9s: pending creation, separate link/code,
+provider consent/assignment, guest refresh/reload, no guest proof/owner actions,
+and exact owned-fixture cleanup. Original failed logs remain visible. A separate
+slow preview returned200 in9.187s; its test now awaits the exact response before
+checking the saved screen, rather than racing a5s visibility assertion.
+Current root access/port checks pass19 cases; actual label repair passes6 cases.
+The preceding full local quality passed1,656 tests with zero failures/skips (tests87.956s),
+TypeScript,45 specifications,798 source files and the pinned workflow check.
+ShellCheck is still absent locally; no new local shell-analysis claim is made.
+Log SHA256 `fc310ab69cc40b7a31c9543afc70b88df905620338a01180d9c1878272dd6870`.
+The original1,655-test run's21 obsolete fixture/assertion failures remain retained
+at log SHA256 `33f0d2e4dbb8229af00b7752f102df3c6e4e570fff4dc27139c5fe244aeeb5a0`;
+all were diagnosed and passed focused repairs before this replay. Browser skip
+counts/conditions remain unchanged; only four reviewed titles were updated.
+The broker-to-provider phone workflow also passes32.0s with persisted state and
+exact cleanup. Native OS behavior, complete feature-matrix tasks and release
+qualification remain open; these local checks do not imply publication.
+The subsequent boundary review found two retained ownership gaps. Migration229
+now uses the captured account ID for business owner elevation and historical
+session binding. Only valid historical controls with an actual captured owner ID
+can enter the account list; unknown history remains unbound. Actual RED→GREEN
+SQL, seven focused route/source checks and independent review pass. Shared local
+overlays admitted zero historical rows and preserved all permissions and the
+ledger. The initial migration lock now has a measured5.006s lock timeout.
+Completion now directs registered owners through the fixed Tracking account
+entry and schedules the existing bounded delivery after committed approval.
+Its53 focused checks pass. Desktop completion/proof-backed approval/inbox/review,
+route/terminal privacy, link revocation and proof-modal revocation pass; the
+latest phone/Expo cases and updated full quality/build are being completed.
+The original revocation assertion failed because a bare status text shared its
+element with a recovery button; both were present. Its corrected semantic status
+and reachable recovery checks pass. A later connection reset coincided with the
+local Next process being replaced; no product or resource cause is inferred.
+Proof loading returned200 in5.297s and now awaits the exact response before its
+image assertion. All original failed logs remain retained.
+
+Android production JavaScript export passed in97.993s with stable inputs:
+Hermes98,31 assets and source maps. This is not an APK/AAB or native-device proof.
+The fresh dependency qualification remains FAILED:39 audit findings, including
+one new high-severity `picomatch` advisory, GHSA-fc5q-39xc-vjpf. No patched version
+is published; no package, lockfile, policy or exception was changed. Zero modules
+from that tooling package appear in the actual Android map. That is a scoped
+observation, not a waiver or Play/release approval. Private export evidence:
+`.local/android-export-20261117-4d26dddf/qualification.private.json`.
+
+The shared local catalog security check passes. One isolated dump clone lost
+extension-member RLS/ACL; its separate failure and documented owner-bootstrap
+repair are retained. No hosted mutation is implied.228 originally passed7 suites with
+history/ACL/owner preservation;160 focused source/UI checks passed. Loading8
+desktop/phone E2E passed in2.2minutes (delay/503/retry/empty/recovery, map identity
+and footer geometry retained). Actual agent-led browser/Expo task review remains
+separate. The superseded3100 process is stopped; candidate review runs at
+http://127.0.0.1:3101 against local55321 with a1536MB Node heap. Step5 follows
+ADR-089. The feature/mobile matrix is in MOBILE_IMPLEMENTATION.md.
+Heavy tests and browser work stay serial
+on this Mac. The existing pinned workflow tool and same-lockfile APFS dependency
+clone are reused. No production mutation or new publication is part of these
+local edits. New source-specific release evidence must qualify the result.
+
+## Historical hosting request — November15–16 (CST)
 
 Current next step: qualify the known-error regression correction in
 [PR40](https://github.com/falmata-tech/loadgistic/pull/40), then resume the

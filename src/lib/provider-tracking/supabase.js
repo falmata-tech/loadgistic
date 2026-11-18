@@ -15,6 +15,7 @@ import {
 } from '../security.js';
 
 const TRACKING_ERRORS=[
+  'TRACKING_REGISTERED_OWNER_REQUIRED','TRACKING_EMAIL_SHARING_RETIRED','TRACKING_LINK_REQUIRED',
   'PHONE_LOCATION_UNAVAILABLE','INVALID_PHONE_LOCATION','TRACKING_OWNER_SHARES_ACCESS',
   'TRACKING_MODE_LOCKED','TRACKING_OWNER_APPROVAL_REQUIRED','TRACKING_HANDOVER_PROOF_REQUIRED','TRACKING_LOADING_PROOF_REQUIRED','TRACKING_SESSION_EXPIRED','TRACKING_APPROVAL_FORBIDDEN','TRACKING_NOT_READY_FOR_APPROVAL','TRACKING_APPEAL_NOT_READY','TRACKING_APPEAL_REASON_REQUIRED','TRACKING_INVESTIGATION_REQUIRED','TRACKING_APPEAL_CLOSED','TRACKING_STAFF_RELEASE_REQUIRED','TRACKING_DELIVERY_DATE_REQUIRED','TRACKING_DELIVERY_DATE_LOCKED',
 
@@ -56,12 +57,12 @@ export async function createSupabaseProviderShipment(user,input){
   const code=randomCode('LGX');
   const ownerCode=trackingAccessCode(id);
   const reviewCode=reviewAccessCode(id);
-  const ownerEmail=normalizePrivateContactEmail(input.customerEmail);
+  const ownerEmail=String(input.customerEmail??'').trim()?normalizePrivateContactEmail(input.customerEmail):null;
   const additionalEmails=[...new Set((Array.isArray(input.additionalRecipientEmails)?input.additionalRecipientEmails:[])
     .map(normalizePrivateContactEmail))].filter(email=>email!==ownerEmail);
   if(additionalEmails.length)throw new Error('TRACKING_OWNER_SHARES_ACCESS');
   const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('create_provider_tracking_with_recipients',{
+  const {data,error}=await client.rpc(ownerEmail?'create_provider_tracking_with_recipients':'start_tracking_without_partner',{
     actor_user_id:user.id,
     command:{
       id,code,vehicle_id:String(input.vehicleId||''),
@@ -69,18 +70,17 @@ export async function createSupabaseProviderShipment(user,input){
       passing_place_ref:String(input.passingPlaceRef||''),
       destination_place_ref:String(input.destinationPlaceRef||''),
       cargo_summary:String(input.cargoSummary||''),
-      customer_email:ownerEmail,
-      customer_email_digest:providerTrackingRecipientDigest(ownerEmail),
+
       expected_pickup_date:String(input.expectedPickupDate||''),
       expected_delivery_date:String(input.expectedDeliveryDate||''),
       tracking_mode:String(input.trackingMode||'STATUS_ONLY'),
-      tracking_code_hash:hashProviderTrackingCode(ownerCode),
-      review_code_hash:hashProviderTrackingCode(reviewCode)
+      ...(ownerEmail?{customer_email:ownerEmail,customer_email_digest:providerTrackingRecipientDigest(ownerEmail),
+        tracking_code_hash:hashProviderTrackingCode(ownerCode),review_code_hash:hashProviderTrackingCode(reviewCode)}:{})
     }
   });
   if(error)throw trackingError('SUPABASE_PROVIDER_TRACKING_CREATE_FAILED',error);
   const created=payload(data)||{};
-  return {id:created.id||id,code:created.code||code,trackingCode:ownerCode,trackingPath:'/track'};
+  return {id:created.id||id,code:created.code||code};
 }
 
 export async function listSupabaseProviderShipments(user,options={}){
@@ -102,9 +102,7 @@ export async function getSupabaseProviderShipment(user,id){
   if(recipientError)throw trackingError('SUPABASE_PROVIDER_TRACKING_DETAIL_FAILED',recipientError);
   return {
     ...shipment,
-    tracking_recipients:(recipientRows||[]).map(payload),
-    tracking_access_code:shipment.guest_access_active?trackingAccessCode(shipment.id):null,
-    tracking_path:'/track'
+    tracking_recipients:(recipientRows||[]).map(payload)
   };
 }
 

@@ -11,7 +11,7 @@ export function TrackingProgressPanel({status,recordedStatuses,children}:{status
   const {t}=useTranslation();const [open,setOpen]=React.useState(false),[ready,setReady]=React.useState(false),panelId=React.useId();
   React.useEffect(()=>setReady(true),[]);
   const next=trackingNextStatuses(status),nextJourney=next.filter((step:string)=>step!=='ISSUE');
-  const nextMessage=status==='UNLOADING'?'Waiting for shipment owner approval':status==='ISSUE'?'Choose where the shipment resumes.':['COMPLETED','CANCELLED'].includes(status)?'No further status update is needed.':nextJourney.map((step:string)=>t(trackingStatusLabels[step]||step)).join(' · ');
+  const nextMessage=status==='UNLOADING'?'Waiting for shipment owner approval':status==='ISSUE'?'Waiting for a provider update.':['COMPLETED','CANCELLED'].includes(status)?'No further status update is needed.':nextJourney.map((step:string)=>t(trackingStatusLabels[step]||step)).join(' · ');
   return <div className={`tracking-progress-float ${open?'is-open':''}`}>
     <button type="button" className="tracking-progress-toggle" disabled={!ready} aria-label={t('Shipment progress')} aria-expanded={open} aria-controls={panelId} onClick={()=>setOpen((value:boolean)=>!value)}>
       <Route aria-hidden="true"/><span><small><Text message="Shipment progress"/></small><strong><Text message={trackingStatusLabels[status]||status}/></strong></span>{open?<ChevronDown aria-hidden="true"/>:<ChevronUp aria-hidden="true"/>}
@@ -20,10 +20,10 @@ export function TrackingProgressPanel({status,recordedStatuses,children}:{status
       <dl className="tracking-progress-state"><div><dt><Text message="Current"/></dt><dd><Text message={trackingStatusLabels[status]||status}/></dd></div><div className="tracking-progress-next"><dt><Text message="Next"/></dt><dd>{nextJourney.length&&status!=='ISSUE'?nextMessage:<Text message={nextMessage}/>}</dd></div></dl>
       {children||<><h2><Text message="All shipment steps"/></h2><ol className="tracking-journey tracking-readonly-journey" aria-label={t('Shipment progress')}>
         {TRACKING_JOURNEY.map((step:string,index:number)=>{
-          const state=trackingProgress(step,status,recordedStatuses,next);
+          const state=trackingProgress(step,status,recordedStatuses,next,false);
           return <li key={step} aria-current={state==='Current'?'step':undefined} data-state={state}><div className={`tracking-step ${state==='Completed'?'complete':state==='Current'?'current':'pending'}`}><span className="tracking-step-number" aria-hidden="true">{state==='Completed'?<Check/>:index+1}</span><span className="tracking-step-copy"><strong><Text message={trackingStatusLabels[step]}/></strong><span className="tracking-step-state"><Text message={state}/></span></span></div></li>;
         })}
-      </ol>{status==='ISSUE'?<p className="permission-note warning"><Text message="Problem reported. Choose where the shipment resumes."/></p>:null}</>}
+      </ol></>}
     </div>
   </div>;
 }

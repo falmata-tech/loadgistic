@@ -9,25 +9,29 @@ import { Page, Title, Copy, Field, Button, ErrorText, palette, LoadingSpinner } 
 import {AppIcon} from '../components/app-icon';
 import {TrackingWorkspace} from '../components/tracking-workspace';
 import {TrackingSharing} from '../components/tracking-sharing';
+import {BusinessTrackingSessions} from '../components/tracking-session-manager';
 import {PrivateFile} from '../components/private-file';
 import {Choices} from '../components/choices';
 import {AppLink} from '../components/app-link';
 import {TrackingDemoLabel} from '../components/tracking-demo-label';
 import {isDemoTrackingShipment,demoTrackingLabel} from '../../../../src/lib/demo-tracking-identity.js';
 import {statusLabel} from '../api/tracking';
+import {hasPersonalTrackingAccount} from '../navigation/destinations';
 import {parseBusinessTrackingList,parseBusinessTrackingDetail,type BusinessTrackingList,type BusinessTrackingDetail} from '../api/business-workspaces';
 export default function BusinessTracking(){
+ const {view}=useLocalSearchParams<{view?:string}>();
  const account=useAccount(),workspace=account.session?.user.selectedBusinessWorkspace;
  if(account.busy)return <Page><LoadingSpinner/></Page>;
  if(!account.session)return <Redirect href="/account"/>;
- if(account.session.user.role!=='CUSTOMER'||!workspace)return <Redirect href="/workspaces"/>;
+ if(account.session.user.role!=='CUSTOMER'&&!hasPersonalTrackingAccount(account.session))return <Redirect href="/workspaces"/>;
+ if(!workspace||view==='personal')return <Page><Title message="Tracking"/><BusinessTrackingSessions businesses={account.session.user.businessWorkspaces?.filter(item=>item.permissions.tracking&&item.permissions.team)||[]}/></Page>;
  if(!workspace.permissions.tracking)return <Page><Copy message="Your team access does not include that page. Contact your workspace admin."/></Page>;
- return <Shipments key={`${account.session.user.id}:${workspace.id}:${workspace.membershipRevision}`} workspaceId={workspace.id}/>;
+ return <Shipments key={`${account.session.user.id}:${workspace.id}:${workspace.membershipRevision}`} workspaceId={workspace.id} canCreate={workspace.permissions.team}/>;
 }
-function Shipments({workspaceId}:{workspaceId:string}){
+function Shipments({workspaceId,canCreate}:{workspaceId:string;canCreate:boolean}){
  const {t}=useLanguage(),[page,setPage]=useState(1),query=useAccountQuery<BusinessTrackingList>(`/api/business-workspaces/${workspaceId}/tracking?page=${page}`);
  let data:BusinessTrackingList|null=null;let invalid='';try{if(query.data)data=parseBusinessTrackingList(query.data,workspaceId);}catch{invalid=t('Could not load shipment updates. Please try again.');}
- return <Page><Title message="Tracking"/>
+ return <Page><Title message="Tracking"/><AppLink href={{pathname:'/business-tracking',params:{view:'personal'}}} message="Shipments shared with my account"/><BusinessTrackingSessions workspaceId={workspaceId} canCreate={canCreate}/>
   <ErrorText message={query.error||invalid}/>{query.loading&&<LoadingSpinner/>}{!!(query.error||invalid)&&<Button secondary message="Refresh updates" onPress={()=>{void query.reload();}}/>}
   {data?.shipments.map(shipment=><Pressable key={shipment.id} accessibilityRole="button" onPress={()=>router.push({pathname:'/business-shipment',params:{id:shipment.id}})} style={{paddingVertical:17,borderBottomWidth:1,borderColor:palette.border,gap:7}}><View style={{flexDirection:'row',gap:10,alignItems:'center'}}><AppIcon name="route" color={palette.blue}/><Text style={{flex:1,fontSize:16,fontWeight:'700',color:palette.ink}}>{shipment.origin} → {shipment.destination}</Text><AppIcon name="next"/></View>{isDemoTrackingShipment(shipment.id)&&<TrackingDemoLabel/>}<Text style={{fontSize:13,fontWeight:'600',color:palette.blue}}>{t(statusLabel(shipment.status))}</Text><Text style={{fontSize:14,lineHeight:20,color:palette.muted}}>{shipment.cargo}</Text></Pressable>)}
   {data&&!data.total&&<><Copy message="No shipments shared yet"/><Copy message="When a shipment owner shares tracking with your workspace, it will appear here."/></>}

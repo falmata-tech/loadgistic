@@ -5,6 +5,7 @@ import ts from 'typescript';
 import {workspaceCapabilities} from '../apps/mobile/src/navigation/destinations.ts';
 import {aboutDestination,accountSections,hasWorkspace,activeDestination,isWorkspace,navigationTarget,phoneDestinations,publicDestinations,workspaceDestinations,workspaceRoleLabel} from '../apps/mobile/src/navigation/destinations.ts';
 import {fleetDriverEditorKey} from '../apps/mobile/src/navigation/current-driving-pair.ts';
+import {currentCapacityLocation} from '../apps/mobile/src/api/capacity.ts';
 import {providerHomeTab,providerHomeTabs,providerWorkspaceCapabilities} from '../src/lib/provider-workspace.js';
 import {paginateResults} from '../src/lib/pagination.js';
 import {capacityLocationSource,selectedCapacityLocation} from '../src/lib/capacity-location-selection.js';
@@ -179,14 +180,19 @@ test('restricted web employees keep a map with duty/location actions and no capa
  assert.equal(find(tree,'button',node=>node.props['aria-label']==='Off Duty').props.disabled,false);assert.equal(find(tree,'CapacityLocationMap').props.routePoints.length,2);
 });
 
-test('legacy Manual remains labelled history and cannot resume duty without a new allowed source',()=>{
+test('retired Manual is unselected, hides its point and cannot resume duty without GPS or Phone',()=>{
  const view=runtime(),screen=view.compile('src/components/driver-capacity-home.tsx',{useRouter:()=>({refresh(){}}),useTranslation:()=>({t:value=>value}),StatusPill:'StatusPill',capacityLocationSource,selectedCapacityLocation,locationSourceLabel,relativeTime:()=> 'Earlier'}).DriverCapacityHome;
- const vehicle={id:'truck',make:'Make',model:'Model',platform_number:'TRUCK',assigned_driver:{id:'employee'},duty_configuration_available:true,location_selection:{source:'MANUAL'}};
- const tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY',location_source:'MANUAL_ADMIN',location_lat:40,location_lng:-105,location_precision_km:5,location_updated_at:'2026-10-15'}],corridors:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
- assert.equal(find(tree,'button',node=>node.props['aria-label']==='Available').props.disabled,true);
- assert.ok(find(tree,'Text',node=>node.props.message==='Manually entered'));
- assert.equal(find(tree,'input',node=>node.props.name==='locationSource').props.value,'');
- assert.ok(find(tree,'Localized',node=>node.props.as==='button'&&node.props['aria-label']==='Edit capacity location'));
+ for(const source of ['MANUAL','MANUAL_ADMIN',null]){
+  const vehicle={id:'truck',make:'Make',model:'Model',platform_number:'TRUCK',assigned_driver:{id:'employee'},duty_configuration_available:true,location_selection:{source}};
+  const tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY',location_source:'MANUAL_ADMIN',location_lat:40,location_lng:-105,location_precision_km:5,location_updated_at:'2026-10-15'}],corridors:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
+  assert.equal(find(tree,'button',node=>node.props['aria-label']==='Available').props.disabled,true);
+  assert.equal(find(tree,'Text',node=>node.props.message==='Manually entered'),undefined);
+  assert.ok(find(tree,'Text',node=>node.props.message==='Choose GPS or Phone'));
+  assert.equal(find(tree,'CapacityLocationMap'),undefined);assert.deepEqual(find(tree,'PublicCapacityMap').props.items,[]);
+  for(const name of ['locationSource','locationArea','approximateLat','approximateLng','locationPrecisionKm'])assert.equal(find(tree,'input',node=>node.props.name===name).props.value,'');
+  assert.ok(find(tree,'Localized',node=>node.props.as==='button'&&node.props['aria-label']==='Edit capacity location'));
+  assert.equal(vehicle.location_selection.source,source,'presentation preserves the historical selection');
+ }
 });
 
 test('web Account never places another employee’s documents under the owner’s personal details',async()=>{
@@ -205,7 +211,7 @@ test('native Account keeps both provider and own-driver documents together witho
 
 test('employed My truck exposes its scoped documents and returns to Home for driving actions',()=>{
  const view=runtime(),session={state:'ACTIVE',user:{id:'employee',role:'DRIVER',ownsProviderAccount:false,canManageFleet:false,drivesTruck:true,operatingModel:'COMPANY_DRIVER'},access:{granted:true}};
- const screen=view.compile('apps/mobile/src/screens/manage-capacity.tsx',{useAccount:()=>({session}),useAccountQuery:()=>({data:{vehicles:[{id:'assigned',label:'Assigned truck',plate:'PLATE',driver:'Employee',current:{status:'OFF_DUTY'},location:null}],canPublish:false},error:'',reload:async()=>{},reloadConfirmed:async()=>true}),AppLink:'AppLink'}).default;
+ const screen=view.compile('apps/mobile/src/screens/manage-capacity.tsx',{currentCapacityLocation,useAccount:()=>({session}),useAccountQuery:()=>({data:{vehicles:[{id:'assigned',label:'Assigned truck',plate:'PLATE',driver:'Employee',current:{status:'OFF_DUTY'},selectedLocationSource:'MOBILE',publishedLocationSource:null,location:null}],canPublish:false},error:'',reload:async()=>{},reloadConfirmed:async()=>true}),AppLink:'AppLink'}).default;
  const tree=view.render(screen);assert.equal(find(tree,'AppLink').props.href,'/account');assert.equal(find(tree,'Button',node=>node.props.message==='Save planned capacity'),undefined);assert.deepEqual(find(tree,'Documents').props.scope,{kind:'ENTITY',subjectKind:'VEHICLE',id:'assigned'});
 });
 

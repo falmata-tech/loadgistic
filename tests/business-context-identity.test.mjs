@@ -22,8 +22,8 @@ test('verified business selection changes effective context while retaining prov
 });
 test('profile role alone or a stale/foreign selection never opens customer workspace',()=>{
  const base={...provider,role:'SHIPPER',organization_id:null};
- const user=withBusinessContext(base,{...context,selectedWorkspaceId:null});assert.equal(getManagedWorkspaceAccess(user).granted,false);
- assert.equal(mobileAccountState(user,actor),'ONBOARDING');assert.equal(isTransportSupportMember(user),false);
+ const user=withBusinessContext(base,{...context,selectedWorkspaceId:null});assert.equal(getManagedWorkspaceAccess(user).status,'ACCOUNT_ACCESS');assert.equal(managedBusinessContext(user),null);
+ assert.equal(mobileAccountState(user,actor),'ACTIVE');assert.equal(isTransportSupportMember(user),false);
  assert.throws(()=>withBusinessContext(base,{...context,actorId:other}),/MANAGED_BUSINESS_CONTEXT_FAILED/);
  assert.throws(()=>withBusinessContext(base,{...context,workspaces:[]}),/MANAGED_BUSINESS_CONTEXT_FAILED/);
  assert.throws(()=>withBusinessContext(base,{...context,workspaces:[{...business,actorId:other}]}),/MANAGED_BUSINESS_CONTEXT_FAILED/);

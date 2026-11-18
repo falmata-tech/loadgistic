@@ -22,19 +22,24 @@ const raw=()=>({workspaceId:other,isOwner:false,shipment:{id,code:'LGX-SYNTHETIC
  can_view_location:false,can_approve:false,can_review:false,can_share:false,current_location:null,
  route:[{placeRef:'one',label:'Origin',coordinate:[38,9]},{placeRef:'two',label:'Destination',coordinate:[39,10]}],
  events:[{id:staff,status:'LOADING',has_proof:false,note:'Loading saved',created_at:'2026-10-18T12:00:00Z'}]}});
-test('only named status viewers and explicit revocable staff grants are accepted as owner commands',()=>{
- const command={action:'ADD_VIEWER',expectedRevision:0,name:'Dispatch desk',email:'desk@example.test'};
+test('owner commands retain revocation and explicit staff grants while retiring email invitations',()=>{
+ const command={action:'REVOKE_VIEWER',expectedRevision:0,recipientId:staff};
  assert.equal(domain.ownerSharingCommand.safeParse(command).success,true);
  for(const extra of [{actorId:id},{digest:'f'.repeat(64)},{verifiedAt:Date.now()},{owner:true},{canViewLocation:true},{name:'\n'},{expectedRevision:-1}])assert.equal(domain.ownerSharingCommand.safeParse({...command,...extra}).success,false);
  assert.equal(domain.ownerSharingCommand.safeParse({action:'ALLOW_LOCATION',expectedRevision:1,userId:staff}).success,true);
+ assert.equal(domain.ownerSharingCommand.safeParse({action:'REMOVE_LOCATION',expectedRevision:1,userId:staff}).success,true);
+ assert.equal(domain.ownerSharingCommand.safeParse({action:'DETACH_BUSINESS',expectedRevision:1}).success,true);
+ assert.equal(domain.ownerSharingCommand.safeParse({action:'ADD_VIEWER',expectedRevision:0,name:'Dispatch desk',email:'desk@example.test'}).success,false);
  assert.equal(domain.ownerSharingCommand.safeParse({action:'ATTACH_BUSINESS',expectedRevision:1,workspaceId:other}).success,false,'attachment requires a separate authenticated member operation');
  assert.equal(domain.attachTrackingBusiness.safeParse({expectedRevision:1,ownerVerification:'signed-visitor-token',actorId:id}).success,false);
 });
-test('sharing adapter derives digests and receives freshness only from the inbound verification port',async()=>{
+test('sharing adapter rejects retired email invitations before RPC and preserves verified revocation and Team attachment',async()=>{
  const calls=[],service=trackingSharingService({rpc:async(name,args)=>{calls.push({name,args});return{data:sharing,error:null};}}),proof={digest:'a'.repeat(64),startedAt:Date.parse('2026-10-18T12:00:00Z')};
- await service.command(id,proof,{action:'ADD_VIEWER',expectedRevision:0,name:'Receiver',email:'Person@Example.test'});
+ await assert.rejects(service.command(id,proof,{action:'ADD_VIEWER',expectedRevision:0,name:'Receiver',email:'Person@Example.test'}),/INVALID_TRACKING_RECIPIENTS/);assert.equal(calls.length,0);
+ await service.command(id,proof,{action:'REVOKE_VIEWER',expectedRevision:0,recipientId:staff});
  const value=calls[0];assert.equal(value.name,'tracking_owner_sharing_command');assert.equal(value.args.recipient_digest,proof.digest);assert.equal(value.args.verified_at,'2026-10-18T12:00:00.000Z');
- assert.equal(value.args.command.email,'person@example.test');assert.equal(value.args.command.digest,providerTrackingRecipientDigest('person@example.test'));assert.equal('actor_user_id'in value.args,false);
+ assert.deepEqual(value.args.command,{action:'REVOKE_VIEWER',expectedRevision:0,recipientId:staff});assert.equal('actor_user_id'in value.args,false);
+ assert.doesNotMatch(JSON.stringify(calls),/person@example\.test|Person@Example\.test|"email"/);
  await assert.rejects(service.command(id,proof,{action:'ADD_VIEWER',expectedRevision:1,name:'Receiver',email:'person@example.test',digest:'forged'}),/INVALID_TRACKING_RECIPIENTS/);assert.equal(calls.length,1);
  await service.attach(staff,other,id,proof,1);assert.equal(calls[1].args.actor_user_id,staff);assert.deepEqual(calls[1].args.command,{action:'ATTACH_BUSINESS',workspaceId:other,expectedRevision:1});
 });
@@ -114,11 +119,14 @@ test('business detail minimizes private data and rejects a hidden position or de
  for(const patch of [{current_location:{location_lat:1,location_lng:2}},{can_approve:true},{can_share:true},{recipient_role:'OWNER'}])assert.throws(()=>domain.businessTrackingProjection({...raw(),shipment:{...raw().shipment,...patch}},other,id),/TRACKING_UNAVAILABLE/);
  assert.throws(()=>domain.businessTrackingProjection(raw(),id,id),/TRACKING_UNAVAILABLE/);
 });
-test('explicit position keeps the actual source, radius and time without granting proof or approval',()=>{
- const value=raw();value.shipment.can_view_location=true;value.shipment.current_location={location_lat:9.1,location_lng:38.1,location_area:'Approximate location',location_precision_km:10,location_source:'MANUAL_ADMIN',updated_at:'2026-10-18T12:00:00Z',installationId:'PRIVATE'};
- const result=domain.businessTrackingProjection(value,other,id);
- assert.equal(result.shipment.current_location.location_source,'MANUAL');assert.equal(result.shipment.current_location.location_precision_km,10);assert.equal(result.shipment.current_location.updated_at,'2026-10-18T12:00:00Z');
- assert.equal(result.shipment.can_approve,false);assert.equal(result.shipment.can_share,false);assert.equal(JSON.stringify(result).includes('PRIVATE'),false);
+test('explicit GPS or Phone position retains radius/time/privacy while retired points remain absent',()=>{
+ for(const [source,canonical] of [['TELEMATICS','GPS'],['DEVICE_OBSCURED','MOBILE']]){
+  const value=raw();value.shipment.can_view_location=true;value.shipment.current_location={location_lat:9.1,location_lng:38.1,location_area:'Approximate location',location_precision_km:10,location_source:source,updated_at:'2026-10-18T12:00:00Z',installationId:'PRIVATE'};
+  const result=domain.businessTrackingProjection(value,other,id);
+  assert.equal(result.shipment.current_location.location_source,canonical);assert.equal(result.shipment.current_location.location_precision_km,10);assert.equal(result.shipment.current_location.updated_at,'2026-10-18T12:00:00Z');
+  assert.equal(result.shipment.can_approve,false);assert.equal(result.shipment.can_share,false);assert.equal(JSON.stringify(result).includes('PRIVATE'),false);
+  for(const retired of ['MANUAL','MANUAL_ADMIN','UNKNOWN'])assert.equal(domain.businessTrackingProjection({...value,shipment:{...value.shipment,current_location:{...value.shipment.current_location,location_source:retired}}},other,id).shipment.current_location,null);
+ }
 });
 test('provider creation and recipient commands cannot expand the one-owner audience',()=>{
  const input={vehicleId:id,originPlaceRef:'one',passingPlaceRef:'two',destinationPlaceRef:'three',cargoSummary:'Cargo',customerEmail:'owner@example.test',trackingMode:'STATUS_ONLY',expectedDeliveryDate:'2026-10-20'};

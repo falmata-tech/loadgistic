@@ -5,6 +5,7 @@ import ts from 'typescript';
 import * as mapLoading from '../src/lib/capacity-map-loading.js';
 import {initialCapacityQueryShape} from '../src/lib/capacity-filter-presentation.ts';
 import {capacityRefreshResult,currentCapacitySelection} from '../apps/mobile/src/map/capacity-refresh.ts';
+import {parseSession} from '../apps/mobile/src/session/contract.ts';
 
 const settle=async()=>{for(let index=0;index<20;index++)await Promise.resolve();};
 const row=(id,vehicle='vehicle-a',percent=20)=>({id,vehicle_id:vehicle,vehicleId:vehicle,status:'PARTIAL',available_percent:percent,availablePercent:percent});
@@ -146,7 +147,8 @@ test('old audience responses cannot clear or restore a newer authorized feed',as
  const h=web({apiPath:'/api/business-workspaces/old/capacity'});try{h.http.setIgnoreAbort(true);h.render().loadWindow();const old=h.http.requests[0];h.render({apiPath:'/api/business-workspaces/new/capacity'}).loadWindow();const current=h.http.requests[1];assert.equal(old.signal.aborted,true);current.reply(page([row('new-scope')]));await settle();old.reply({},403);await settle();const state=h.render();assert.deepEqual(state.items.map(item=>item.id),['new-scope']);assert.equal(state.error,'');}finally{h.close();}
 });
 
-function native(){
+const nativeAccount=parseSession({accessToken:'synthetic.access',refreshToken:'synthetic.refresh',expiresAt:1800000000000,state:'ACTIVE',access:{granted:true,status:'FREE_ACCESS'},user:{id:'16000000-0000-4000-8000-000000000001',name:'Synthetic provider',email:'synthetic@example.test',role:'TRANSPORTER',platformRole:'TRANSPORTER',providerWorkspaceAvailable:true,businessWorkspaceEligible:true,businessWorkspaces:[],businessInvitations:[],selectedBusinessWorkspace:null,providerAccountName:'Synthetic provider',organizationName:null,businessName:null,operatingModel:'FLEET_TRANSPORTER',ownsProviderAccount:true,canManageFleet:true,drivesTruck:false,currentDriverId:null,currentDrivenVehicleId:null}});
+function native({session=null,legacyCapacityGrant=false}={}){
  const runtime=hooks(),time=clock(),http=transport(),appListeners=new Set();let focus=true;
  const AppState={currentState:'active',addEventListener:(_name,fn)=>{appListeners.add(fn);return{remove:()=>appListeners.delete(fn)};}};
  const useFocusEffect=callback=>runtime.react.useEffect(()=>focus?callback():undefined,[callback,focus]);
@@ -155,8 +157,8 @@ function native(){
  new Function('useCallback','useFocusEffect','AppState','setInterval','clearInterval','exports',hookCode)(runtime.react.useCallback,useFocusEffect,AppState,time.setInterval,time.clearInterval,hookExports);
  class ApiError extends Error{constructor(status){super('Request failed');this.status=status;}}
  const loader=(signal,onPage)=>mapLoading.loadCapacityMapWindow({signal,onPage:items=>onPage(items),requestPage:async cursor=>{const response=await http.fetch(`https://local.test/capacity?cursor=${cursor||''}`,{signal});if(!response.ok)throw new ApiError(response.status);return response.json();}});
- const visitor={ready:true,snapshot:{foreground:true,capacity:null},controller:{}},blocked=[];
- const ports={...runtime.react,useFocusEffect,useLanguage:()=>({t:value=>value}),useAccount:()=>({session:null}),useVisitor:()=>visitor,useBlockedProviders:()=>({blocked}),
+ const visitor={ready:true,snapshot:{foreground:true,capacity:legacyCapacityGrant?{startedAt:1}:null},controller:{}},blocked=[];
+ const ports={...runtime.react,useFocusEffect,useLanguage:()=>({t:value=>value}),useAccount:()=>({session}),useVisitor:()=>visitor,useBlockedProviders:()=>({blocked}),
   useForegroundRefresh:hookExports.useForegroundRefresh,emptySignals:[],capacityRefreshResult,currentCapacitySelection,
   useTransporterSearch:()=>({input:'',cancel(){},state:null}),transporterSearchQuery:()=>null,
   BackHandler:{addEventListener:()=>({remove(){}})},loadCapacity:(_origin,_query,signal,onPage)=>loader(signal,onPage),loadSharedCapacity:(_query,signal,onPage)=>loader(signal,onPage),
@@ -180,11 +182,15 @@ test('native deep links retain the authorized replacement vehicle across later p
 });
 
 test('native background/blur pauses requests; resume reads once and privacy denial cannot retain a popup',async()=>{
- const h=native();try{let state=h.render({initialMode:'private',account:{scopeKey:'actor',request:async()=>{}}});h.http.requests[0].reply(page([row('old')]));await settle();state=h.render();state.selectMapSignal(state.items[0]);h.render();h.app('background');h.time.advance(45000);h.render();assert.equal(h.http.requests.length,1);h.app('active');h.render();assert.equal(h.http.requests.length,2);h.app('active');h.render();assert.equal(h.http.requests.length,2);h.http.requests[1].reply({},403);await settle();state=h.render();assert.deepEqual(state.items,[]);assert.equal(state.selected,null);h.focus(false);h.render();h.time.advance(45000);h.render();assert.equal(h.http.requests.length,2);h.focus(true);h.render();assert.equal(h.http.requests.length,3);}finally{h.close();}
+ const h=native({session:nativeAccount});try{let state=h.render({initialMode:'private',account:{scopeKey:nativeAccount.user.id,request:async()=>{}}});assert.equal(h.http.requests.length,1);h.http.requests[0].reply(page([row('old')]));await settle();state=h.render();state.selectMapSignal(state.items[0]);h.render();h.app('background');h.time.advance(45000);h.render();assert.equal(h.http.requests.length,1);h.app('active');h.render();assert.equal(h.http.requests.length,2);h.app('active');h.render();assert.equal(h.http.requests.length,2);h.http.requests[1].reply({},403);await settle();state=h.render();assert.deepEqual(state.items,[]);assert.equal(state.selected,null);h.focus(false);h.render();h.time.advance(45000);h.render();assert.equal(h.http.requests.length,2);h.focus(true);h.render();assert.equal(h.http.requests.length,3);}finally{h.close();}
 });
 
 test('native background cancels a cursor chain before further pages and a200 private omission clears selection',async()=>{
- const h=native();try{let state=h.render({initialMode:'private',account:{scopeKey:'actor',request:async()=>{}}});const old=h.http.requests[0];h.app('background');assert.equal(old.signal.aborted,true);old.reply(page([row('late')],'next'));await settle();h.time.advance(45000);h.render();assert.equal(h.http.requests.length,1);h.app('active');h.render();assert.equal(h.http.requests.length,2);h.http.requests[1].reply(page([row('old')]));await settle();state=h.render();state.selectMapSignal(state.items[0]);h.render();h.time.advance(15000);h.render();h.http.requests[2].reply(page([]));await settle();state=h.render();assert.equal(state.selected,null);assert.deepEqual(state.items,[]);}finally{h.close();}
+ const h=native({session:nativeAccount});try{let state=h.render({initialMode:'private',account:{scopeKey:nativeAccount.user.id,request:async()=>{}}});assert.equal(h.http.requests.length,1);const old=h.http.requests[0];h.app('background');assert.equal(old.signal.aborted,true);old.reply(page([row('late')],'next'));await settle();h.time.advance(45000);h.render();assert.equal(h.http.requests.length,1);h.app('active');h.render();assert.equal(h.http.requests.length,2);h.http.requests[1].reply(page([row('old')]));await settle();state=h.render();state.selectMapSignal(state.items[0]);h.render();h.time.advance(15000);h.render();h.http.requests[2].reply(page([]));await settle();state=h.render();assert.equal(state.selected,null);assert.deepEqual(state.items,[]);}finally{h.close();}
+});
+
+test('signed-out native Private mode cannot fetch from a stale account context or old visitor grant',async()=>{
+ const h=native({legacyCapacityGrant:true});try{let state=h.render({initialMode:'private',account:{scopeKey:nativeAccount.user.id,request:async()=>{}}});assert.deepEqual(state.items,[]);assert.equal(state.selected,null);assert.equal(h.http.requests.length,0);h.time.advance(45000);h.app('background');h.app('active');h.focus(false);h.render();h.focus(true);state=h.render();await settle();assert.equal(h.http.requests.length,0);assert.deepEqual(state.items,[]);assert.equal(state.selected,null);}finally{h.close();}
 });
 
 test('native timed-out read recovers on a later tick and stale failed scope cannot erase new results',async()=>{

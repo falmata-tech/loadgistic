@@ -1,5 +1,16 @@
 -- FEAT-ENT/TRK/SIM-001. Own synthetic transaction; no hosted/customer records.
 begin;
+-- Retained pre229 viewer history only. The live ADD_VIEWER command is denied.
+create function pg_temp.seed_legacy_tracking_viewer(target_shipment_id uuid,target_email text,target_digest text,target_name text)returns uuid language plpgsql as $$
+declare actual_owner uuid;viewer uuid;
+begin
+ select r.id into strict actual_owner from public.provider_tracking_recipients r where r.shipment_id=target_shipment_id and r.recipient_role='OWNER'and r.revoked_at is null;
+ insert into public.provider_tracking_recipients(shipment_id,recipient_role,recipient_email,recipient_email_digest,display_name,shared_by_recipient_id)
+ values(target_shipment_id,'TRACKING_PARTY',target_email,target_digest,target_name,actual_owner)returning id into viewer;
+ insert into public.tracking_sharing_controls(shipment_id,owner_recipient_id,revision)values(target_shipment_id,actual_owner,1)
+ on conflict(shipment_id)do update set revision=public.tracking_sharing_controls.revision+1;
+ return viewer;
+end$$;
 create function pg_temp.tracking_assert(ok boolean,label text) returns void language plpgsql as $$begin if ok is not true then raise exception '%',label;end if;end$$;
 create function pg_temp.tracking_denied(statement text,code text) returns void language plpgsql as $$
 begin begin execute statement;exception when others then if position(code in sqlerrm)>0 then return;end if;raise;end;raise exception 'EXPECTED_TRACKING_DENIAL:%',code;end$$;
@@ -31,10 +42,12 @@ begin
  perform pg_temp.tracking_denied(format('select add_provider_tracking_recipient(%L,%L,%L,%L)',provider_actor,shipment,'viewer@example.test',viewer_digest),'TRACKING_OWNER_SHARES_ACCESS');
  perform pg_temp.tracking_denied(format('select tracking_owner_sharing(%L,%L,%L)',shipment,owner_digest,verified-interval '5 minutes'),'TRACKING_SESSION_EXPIRED');
  perform pg_temp.tracking_denied(format('select tracking_owner_sharing(%L,%L,%L)',shipment,staff_digest,verified),'TRACKING_APPROVAL_FORBIDDEN');
- result:=tracking_owner_sharing_command(shipment,owner_digest,verified,jsonb_build_object('action','ADD_VIEWER','expectedRevision',revision,'name','Receiver desk','email','viewer@example.test','digest',viewer_digest));
+ perform pg_temp.tracking_denied(format('select tracking_owner_sharing_command(%L,%L,%L,%L)',shipment,owner_digest,verified,jsonb_build_object('action','ADD_VIEWER','expectedRevision',revision,'name','Receiver desk','email','viewer@example.test','digest',viewer_digest)::text),'TRACKING_EMAIL_SHARING_RETIRED');
+ perform pg_temp.seed_legacy_tracking_viewer(shipment,'viewer@example.test',viewer_digest,'Receiver desk');
+ result:=tracking_owner_sharing(shipment,owner_digest,verified);
  revision:=(result->>'revision')::integer;viewer:=(result->'viewers'->0->>'id')::uuid;
  perform pg_temp.tracking_assert((select created_by is null and shared_by_recipient_id=owner_recipient from provider_tracking_recipients where id=viewer),'OWNER_VIEWER_ATTRIBUTED_TO_FAKE_PROFILE');
- perform pg_temp.tracking_assert((select count(*)=1 from email_deliveries where shipment_id=shipment and recipient_email='viewer@example.test' and delivery_kind='TRACKING_ACCESS'),'VIEWER_EMAIL_NOT_QUEUED');
+ perform pg_temp.tracking_assert((select count(*)=0 from email_deliveries where shipment_id=shipment and delivery_kind='TRACKING_ACCESS'),'RETIRED_VIEWER_EMAIL_QUEUED');
  perform pg_temp.tracking_denied(format('select tracking_owner_sharing_command(%L,%L,%L,%L)',shipment,owner_digest,verified,jsonb_build_object('action','DETACH_BUSINESS','expectedRevision',0)::text),'TRACKING_SHARING_CHANGED');
  -- Tracking has its own dated phone position. Later Capacity source changes
  -- must not turn a manual Capacity point into a live shipment location.
@@ -100,6 +113,6 @@ begin
  perform pg_temp.tracking_assert(not has_function_privilege('anon','tracking_owner_sharing_command(uuid,text,timestamptz,jsonb,uuid)','EXECUTE')
   and not has_function_privilege('authenticated','business_tracking_detail(uuid,uuid,uuid)','EXECUTE')
   and not has_function_privilege('service_role','apply_registered_tracking_phone_point(uuid,uuid,uuid,timestamptz,jsonb)','EXECUTE'),'TRACKING_INTERNAL_RPC_EXPOSED');
- raise notice 'PASS: single owner, email audit/outbox, five-minute freshness, viewer minimization/revocation, explicit team sharing/location, admin denial, membership revision and real phone coherence';
+ raise notice 'PASS: registered owner, retired email-sharing denial, retained viewer privacy/revocation, account team/location, membership revision and real phone coherence';
 end $test$;
 rollback;

@@ -1,5 +1,5 @@
 import type {Featured} from './public-content.ts';
-import type {TrackingSummary,TrackingPublicTruck,TrackingRoutePoint} from './tracking.ts';
+import {currentTrackingLocation,type TrackingSummary,type TrackingPublicTruck,type TrackingRoutePoint,type TrackingLocation} from './tracking.ts';
 
 type Row=Record<string,unknown>;
 const row=(value:unknown):value is Row=>Boolean(value)&&typeof value==='object'&&!Array.isArray(value);
@@ -12,7 +12,7 @@ export type TrackingPage={items:TrackingSummary[];total:number;page:number;pageC
 export type VisitorShipment=TrackingSummary&{provider:string;mode:string;canReview:boolean;canApprove:boolean;canShare?:boolean;canViewLocation?:boolean;
  route:TrackingRoutePoint[];publicTruck:TrackingPublicTruck|null;
  events:{id:string;status:string;note:string;hasProof:boolean;createdAt:string}[];
- location:{latitude:number;longitude:number;area:string;radius:number;updatedAt:string}|null;
+ location:TrackingLocation|null;
  review:{rating:number;note:string}|null};
 
 /** Validate before render: a successful HTTP status is not a data contract. */
@@ -44,5 +44,5 @@ export function parseVisitorShipment(value:unknown):VisitorShipment{
  if(!row(value)||!summary(value)||!strings(value,['provider','mode'])||!routed||!publicTruck||typeof value.canReview!=='boolean'
   ||typeof value.canApprove!=='boolean'||value.canShare!==undefined&&typeof value.canShare!=='boolean'||value.canViewLocation!==undefined&&typeof value.canViewLocation!=='boolean'||value.canViewLocation===false&&location!==null||!list(value.events,event)||!located||!reviewed)
   throw Error('Could not load shipment updates. Please try again.');
- return value as VisitorShipment;
+ return {...value,location:currentTrackingLocation(location as TrackingLocation|null)} as VisitorShipment;
 }

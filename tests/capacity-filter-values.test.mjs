@@ -7,7 +7,8 @@ test('canonical group values retain scalars and deduplicate sorted bounded selec
  assert.equal(capacityFilterValue('vehicleCategory',['Pickup truck','Cargo van','Pickup truck']),'Cargo van,Pickup truck');
  assert.equal(capacityFilterValue('status',[]),'');assert.equal(parseCapacityFilterValues('', 'status'),null);
  assert.equal(parseCapacityFilterValues('EMPTY','status'),'EMPTY');
- assert.deepEqual(capacityFilterValues('locationSource',' manual,GPS,mobile,GPS '),['GPS','MANUAL','MOBILE']);
+ assert.deepEqual(capacityFilterValues('locationSource',' mobile,GPS,mobile,GPS '),['GPS','MOBILE']);
+ for(const retired of ['MANUAL','GPS,MANUAL','MANUAL_ADMIN'])assert.throws(()=>capacityFilterValues('locationSource',retired),/INVALID_CAPACITY_FILTER/);
  for(const [key,value]of [['status','EMPTY,FULL'],['vehicleCategory','Cargo van,Unknown'],['loadType','FTL,'],['freshness',true],['locationSource','GPS,DEVICE_OBSCURED'],['locationSource','GPS,'],['status',['EMPTY',null]],['status','EMPTY,'.repeat(40)],['status','x'.repeat(2049)],['status',' '.repeat(2049)],['unknown','EMPTY']])assert.throws(()=>capacityFilterValues(key,value),/INVALID_CAPACITY_FILTER/);
 });
 test('HTTP group parsing rejects repeated keys and only the sole incompatible full/partial pair',()=>{

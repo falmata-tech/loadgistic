@@ -1,5 +1,56 @@
 # Security failures we must not repeat
 
+## NR-87 — A matching email is not captured account ownership
+
+November17 independent review of the unreleased per-load Tracking integration
+found an authorization defect in the new actual-account Team access/Attach glue.
+It read an authorized session, then treated a match between the caller's verified
+email and a legacy OWNER recipient as owner authority. Read permission can belong
+to ordinary teammates; after an email is reassigned, the matching address does
+not establish equality with the session's captured actual owner user ID. This
+was found in local source before rollout; no hosted exploitation is established.
+
+Owner: Tracking application/database maintainer. Required negative check: an
+active read-capable teammate with the old owner's reassigned email cannot manage
+Team access or attach the shipment, and cannot change sharing/audit state. Actual
+registered-owner positives must still work. The local repair requires a database
+capability based on captured owner_user_id and current owner validity before any
+legacy recipient-digest helper. Guest link grants never supply this capability.
+
+Next action: qualify the exact229 capability and the HTTP caller-ID check together,
+exercise real actual-owner attachment and recycled-email denial, then required
+browser/full gates. Keep this finding open until those checks pass. Merely adding
+this entry or a client-side visibility rule does not install the server control.
+
+November17 final boundary review also found retained business detail/page,
+proof, approval/review and sharing paths trusting the old email-based `isOwner`
+envelope. Migration229 now changes only that authoritative owner predicate to
+the captured account ID and exact active OWNER recipient. Historical business
+share activation and explicit staff location grants remain unchanged. The new
+SQL negative failed against the old installed predicate, then session core,
+owner delegation and proof checks passed in6.276s; the exact local one-function
+overlay preserved owners, ACLs, data and ledger. Five focused HTTP regressions
+passed in1.054s: a non-owner envelope retains safe reads while denying all OWNER,
+proof, approval/review and Team ports; actual-owner and current-action checks
+remain. These are local/source checks, not a hosted repair or completed browser
+acceptance. Keep the original finding and follow-up release gates visible.
+
+The same review found that linking history without a session still guessed its
+owner from the current matching email. That fallback now requires the exact
+existing captured attachment user ID, active OWNER recipient and current share.
+Unknown history remains owner-unbound; normal provider authority cannot invent
+a customer identity. The one-time229 admission uses only those valid captured
+attachments with real route points, preserves existing sessions, and excludes
+foreign, revoked, expired and cancelled history. Native negatives failed against
+the old fallback, then passed with known-owner personal-list and owner-null
+provider positives in8.303s. The source/body binding and five focused HTTP checks
+pass. Historical rows without proven account provenance remain a stated limit,
+not an email-based backfill or a claim that all old personal shipments migrated.
+The guarded local overlay admitted zero rows: there were zero eligible captured
+historical attachments on that selected database. This measured result does not
+establish a hosted count. Source, permission, data and ledger readbacks passed;
+the original failures and required browser/full release checks remain separate.
+
 ## NR-86 — Pilot remapping reuses an incomplete synthetic owner boundary
 
 November15 independent review of unreleased227 at local28acf38 found two

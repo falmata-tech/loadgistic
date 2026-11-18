@@ -50,7 +50,7 @@ test('Capacity basemap fills its space above the footer without retired transpor
   }
 });
 
-test('unverified Tracking entry keeps an empty basemap behind its working email form',async({page,context},info)=>{
+test('locked Tracking keeps an empty basemap behind its working link and code form',async({page,context},info)=>{
   test.setTimeout(90_000);
   await context.setExtraHTTPHeaders({'x-forwarded-for':info.project.name.includes('mobile')?'127.0.0.246':'127.0.0.245'});
   const privateRequests:string[]=[];
@@ -61,32 +61,28 @@ test('unverified Tracking entry keeps an empty basemap behind its working email 
     await page.goto('/track');await basemapReady(page,'.tracking-entry-map .leaflet-container');
     await expect(page.getByRole('heading',{name:'Follow your shipment',exact:true})).toBeVisible();
     await expect(page.locator('.tracking-entry-map .leaflet-marker-pane>*,.tracking-entry-map .leaflet-overlay-pane>*')).toHaveCount(0);
-    await expect(page.getByLabel('6-digit email code')).toHaveCount(0);
+    await expect(page.getByLabel('Email',{exact:true})).toHaveCount(0);await expect(page.getByLabel('6-digit email code')).toHaveCount(0);
     await expect.poll(()=>page.evaluate(()=>{
       const map=document.querySelector('.tracking-entry-map')!.getBoundingClientRect(),form=document.querySelector('.tracking-unlock-panel')!.getBoundingClientRect();
       const footer=document.querySelector('.site-copyright')!.getBoundingClientRect();
       const nav=document.querySelector('.public-mobile-nav')!.getBoundingClientRect();
       return {mapBehindForm:map.left<=form.left&&map.right>=form.right&&map.top<=form.top&&map.bottom>=form.bottom,fillsAvailableSpace:map.bottom<=footer.top+1&&footer.top-map.bottom<=10,footerClear:innerWidth>760?footer.bottom<=innerHeight+1:footer.bottom<=nav.top+1,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
     })).toEqual({mapBehindForm:true,fillsAvailableSpace:true,footerClear:true,noOverflow:true});
-    await page.getByLabel('Email',{exact:true}).fill(`entry-layout-${info.project.name}@example.test`);
+    await page.getByLabel('Tracking link',{exact:true}).fill('https://loadgistic.com/track/'+'a'.repeat(43));await page.getByLabel('Tracking code',{exact:true}).fill('ABCD-EF23');
     await clearTouchTargets(page,'.tracking-entry-map .leaflet-control-zoom a,.tracking-entry-map .leaflet-control-attribution a,.public-mobile-nav a');
-    await page.getByRole('button',{name:'Email me a code',exact:true}).click({trial:true});
+    await page.getByRole('button',{name:'Open tracking',exact:true}).click({trial:true});
     await page.screenshot({path:info.outputPath(`tracking-entry-basemap-${width}.png`),scale:'css'});
   }
-  const otp=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/otp'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Email me a code',exact:true}).click();expect((await otp).ok()).toBe(true);
-  await expect(page.getByLabel('6-digit email code')).toBeVisible();
-  await page.getByLabel('6-digit email code').fill('111111');
-  const verify=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/unlock'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Open tracking',exact:true}).click();expect((await verify).status()).toBe(401);
+  const unlock=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
+  await page.getByRole('button',{name:'Open tracking',exact:true}).click();expect((await unlock).status()).toBe(401);
   await expect(page.locator('.tracking-unlock-panel [role=alert]')).toBeVisible();await basemapReady(page,'.tracking-entry-map .leaflet-container');
   if(phone){
     // A reduced visual viewport exercises the same bounded form scroll used with a keyboard.
-    await page.setViewportSize({width:390,height:480});await page.getByLabel('6-digit email code').focus();
+    await page.setViewportSize({width:390,height:480});await page.getByLabel('Tracking code',{exact:true}).focus();
     await page.getByRole('button',{name:'Open tracking',exact:true}).scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Open tracking',exact:true}).click({trial:true});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight)).toBe(true);
     await page.screenshot({path:info.outputPath('tracking-entry-short-viewport.png'),scale:'css'});
   }
-  await page.getByRole('button',{name:'Change email',exact:true}).scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Change email',exact:true}).click();
-  await expect(page.getByLabel('Email',{exact:true})).toBeVisible();expect(privateRequests).toEqual([]);
+  await page.getByLabel('Tracking code',{exact:true}).fill('ABCD-EF24');
+  await expect(page.getByLabel('Tracking link',{exact:true})).toBeEditable();await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();expect(privateRequests).toEqual([]);
 });

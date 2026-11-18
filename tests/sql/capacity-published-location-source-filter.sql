@@ -1,5 +1,5 @@
 -- FEAT-MKT-001 / FEAT-CAP-001: synthetic provider and authorized viewers only;
--- all fixture writes roll back. Existing GPS/phone/manual publication commands
+-- all fixture writes roll back. Existing GPS/phone publication commands and retired-Manual denials
 -- are exercised separately by telematics.sql.
 begin;
 create function pg_temp.assert_source(ok boolean,label text) returns void language plpgsql as $$
@@ -8,7 +8,7 @@ do $test$
 declare provider_id uuid:=gen_random_uuid();viewer_id uuid:=gen_random_uuid();foreign_id uuid:=gen_random_uuid();
  profile_id uuid:=gen_random_uuid();truck uuid;capacity_id uuid;workspace uuid;foreign_workspace uuid;connection_id uuid;
  origin_ref text;destination_ref text;digest text:=encode(gen_random_bytes(32),'hex');
- query jsonb;payload jsonb;source_name text;selected text;other_source text;
+ query jsonb;payload jsonb;source_name text;selected text;other_source text;legacy_before jsonb;legacy_time timestamptz;
 begin
  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
   (provider_id,provider_id||'@example.invalid',now(),'{}'),
@@ -38,8 +38,8 @@ begin
 
  -- The published source, rather than the selected device or driver intent, is
  -- the searchable fact. This local-only update isolates each source predicate.
- foreach source_name in array array['DEVICE_OBSCURED','TELEMATICS','MANUAL_ADMIN'] loop
-  selected:=case source_name when 'DEVICE_OBSCURED' then 'MOBILE' when 'TELEMATICS' then 'GPS' else 'MANUAL' end;
+ foreach source_name in array array['DEVICE_OBSCURED','TELEMATICS'] loop
+  selected:=case source_name when 'DEVICE_OBSCURED' then 'MOBILE' when 'TELEMATICS' then 'GPS' end;
   other_source:=case selected when 'GPS' then 'MOBILE' else 'GPS' end;
   update capacities set location_source=source_name where id=capacity_id;
   query:=jsonb_build_object('capacity_id',capacity_id,'location_source',selected,'status','EMPTY','vehicle_category','Mini Box Truck');
@@ -47,15 +47,15 @@ begin
   perform pg_temp.assert_source(payload->>'id'=capacity_id::text and payload->>'location_source'=source_name,'PUBLIC_SOURCE_MATCH_'||selected);
   perform pg_temp.assert_source((select count(*)=1 from capacity_search_public_rows(query,null,null,14)),'PUBLIC_SEARCH_SOURCE_MATCH_'||selected);
   perform pg_temp.assert_source((select count(*)=0 from public_capacity_page(query||jsonb_build_object('location_source',other_source),null,null,14)),'PUBLIC_SOURCE_MISMATCH_'||selected);
-  perform pg_temp.assert_source((select count(*)=1 from public_capacity_page(query||jsonb_build_object('location_source','GPS,MOBILE,MANUAL'),null,null,14)),'PUBLIC_SOURCE_OR_'||selected);
+  perform pg_temp.assert_source((select count(*)=1 from public_capacity_page(query||jsonb_build_object('location_source','GPS,MOBILE'),null,null,14)),'PUBLIC_SOURCE_OR_'||selected);
   perform pg_temp.assert_source((select count(*)=0 from public_capacity_page(query||jsonb_build_object('status','PARTIAL'),null,null,14)),'PUBLIC_GROUP_AND_'||selected);
   perform pg_temp.assert_source((select count(*)=1 from public_capacity_page(jsonb_build_object('capacity_id',capacity_id),null,null,14)),'PUBLIC_EMPTY_SOURCE_CHANGED_'||selected);
   perform pg_temp.assert_source(payload::text not like '%installation_id%' and payload::text not like '%imei%' and payload::text not like '%speedKph%','PUBLIC_SOURCE_LEAK_'||selected);
  end loop;
 
  perform set_provider_capacity_sharing(provider_id,truck,'PRIVATE');
- foreach source_name in array array['DEVICE_OBSCURED','TELEMATICS','MANUAL_ADMIN'] loop
-  selected:=case source_name when 'DEVICE_OBSCURED' then 'MOBILE' when 'TELEMATICS' then 'GPS' else 'MANUAL' end;
+ foreach source_name in array array['DEVICE_OBSCURED','TELEMATICS'] loop
+  selected:=case source_name when 'DEVICE_OBSCURED' then 'MOBILE' when 'TELEMATICS' then 'GPS' end;
   other_source:=case selected when 'GPS' then 'MOBILE' else 'GPS' end;
   update capacities set location_source=source_name where id=capacity_id;
   query:=jsonb_build_object('capacity_id',capacity_id,'location_source',selected,'status','EMPTY');
@@ -69,12 +69,42 @@ begin
   perform pg_temp.assert_source((select count(*)=0 from business_capacity_filtered_page(viewer_id,workspace,null,null,14,query||jsonb_build_object('location_source',other_source))),'BUSINESS_SOURCE_MISMATCH_'||selected);
   perform pg_temp.assert_source(payload::text not like '%installation_id%' and payload::text not like '%imei%' and payload::text not like '%speedKph%','PRIVATE_SOURCE_LEAK_'||selected);
  end loop;
+ -- A retained pre-policy point is history, not an unlabeled current position.
+ -- The capacity plan remains readable; no storage mutation or GPS/Phone relabel.
+ perform set_provider_capacity_sharing(provider_id,truck,'BOTH');
+ legacy_time:=clock_timestamp()-interval '2 days';
+ update capacities set location_source='MANUAL_ADMIN',location_lat=51.5,location_lng=-0.1,
+  location_area='Historical approximate area',location_updated_at=legacy_time where id=capacity_id;
+ select to_jsonb(c) into legacy_before from capacities c where c.id=capacity_id;
+ query:=jsonb_build_object('capacity_id',capacity_id);
+ select p.payload into payload from public_capacity_page(query,null,null,14) p;
+ perform pg_temp.assert_source(payload->>'id'=capacity_id::text and payload->>'location_source' is null
+  and payload->>'location_lat' is null and payload->>'location_lng' is null and payload->>'location_area' is null
+  and (payload->>'location_updated_at')::timestamptz=legacy_time,'RETIRED_PUBLIC_POINT_OR_SOURCE_EXPOSED');
+ select p.payload into payload from capacity_search_public_rows(query,null,null,14) p;
+ perform pg_temp.assert_source(payload->>'id'=capacity_id::text and payload->>'location_source' is null and payload->>'location_lat' is null and payload->>'location_lng' is null,'RETIRED_SEARCH_POINT_EXPOSED');
+ select p.payload into payload from account_capacity_filtered_page(viewer_id,digest,null,null,14,query) p;
+ perform pg_temp.assert_source(payload->>'id'=capacity_id::text and payload->>'location_source' is null and payload->>'location_lat' is null and payload->>'location_lng' is null,'RETIRED_ACCOUNT_POINT_EXPOSED');
+ select p.payload into payload from business_capacity_filtered_page(viewer_id,workspace,null,null,14,query) p;
+ perform pg_temp.assert_source(payload->>'id'=capacity_id::text and payload->>'location_source' is null and payload->>'location_lat' is null and payload->>'location_lng' is null,'RETIRED_BUSINESS_POINT_EXPOSED');
+ select c into payload from jsonb_array_elements(provider_capacity_workspace(provider_id)->'capacities') c where c->>'id'=capacity_id::text;
+ perform pg_temp.assert_source(payload->>'id'=capacity_id::text and payload->>'location_source' is null and payload->>'location_lat' is null and payload->>'location_lng' is null,'RETIRED_OWNER_POINT_EXPOSED');
+ perform pg_temp.assert_source((select count(*)=0 from public_capacity_page(query||'{"location_source":"GPS,MOBILE"}'::jsonb,null,null,14)),'LEGACY_POINT_RELABELLED_LIVE_SOURCE');
+ perform pg_temp.assert_source((select count(*)=0 from public_capacity_page(query||'{"near_lat":51.5,"near_lng":-0.1,"near_radius_km":5}'::jsonb,null,null,14)),'RETIRED_POINT_USED_FOR_NEAR_FILTER');
+ query:=query||'{"viewport":[-0.12,51.48,-0.08,51.52]}'::jsonb;
+ perform pg_temp.assert_source((select count(*)=0 from public_capacity_page(query,null,null,14)),'RETIRED_POINT_USED_FOR_VIEWPORT');
+ perform pg_temp.assert_source((select count(*)=0 from public_capacity_clusters(query,null,null,14)),'RETIRED_POINT_USED_FOR_CLUSTER');
+ perform pg_temp.assert_source(legacy_before=(select to_jsonb(c) from capacities c where c.id=capacity_id),'LEGACY_HISTORY_MUTATED_BY_PROJECTION');
+ foreach selected in array array['MANUAL','GPS,MANUAL','MOBILE,MANUAL'] loop
+  begin perform public_capacity_page(jsonb_build_object('location_source',selected),null,null,14);raise exception 'RETIRED_SOURCE_FILTER_ALLOWED';
+  exception when raise_exception then if sqlerrm<>'INVALID_CAPACITY_FILTER' then raise;end if;end;
+ end loop;
  perform pg_temp.assert_source(not capacity_published_source_matches('{}'::jsonb,'{"location_source":"GPS"}')
   and capacity_published_source_matches('{}'::jsonb,'{}'::jsonb),'UNKNOWN_SOURCE_NOT_GUESSED');
  begin perform public_capacity_page('{"location_source":"GPS,UNKNOWN"}'::jsonb,null,null,14);raise exception 'INVALID_SOURCE_ALLOWED';
  exception when raise_exception then if sqlerrm<>'INVALID_CAPACITY_FILTER' then raise;end if;end;
  perform pg_temp.assert_source(not has_function_privilege('anon','public.capacity_published_source_matches(jsonb,jsonb)','EXECUTE')
   and not has_function_privilege('authenticated','public.capacity_published_source_matches(jsonb,jsonb)','EXECUTE'),'SOURCE_HELPER_PUBLIC');
- raise notice 'PASS: published GPS/phone/manual filters in public and registered-account maps; source OR/group AND, grants, paging, privacy and invalid values';
+ raise notice 'PASS: GPS/phone-only filters, retired current points hidden with raw history retained in public and registered-account maps; source OR/group AND, grants, paging, privacy and invalid values';
 end $test$;
 rollback;

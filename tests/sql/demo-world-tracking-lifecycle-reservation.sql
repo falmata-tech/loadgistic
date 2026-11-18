@@ -1,3 +1,6 @@
+--229: current registered creation queues no access email. Explicit retained
+-- pre229 sink/recipient inputs below test historical containment/resume only;
+-- reserved lanes remain unarmed outside this rollback fixture, not newly qualified.
 -- FEAT-SIM-001 / NR-83. Run after 225 on an isolated fixture clone. This exercises
 -- only ordinary creation and notification interception, never proof or approval.
 begin;
@@ -133,6 +136,16 @@ begin
       'public.demo_world_tracking_lifecycle_scope()', 'EXECUTE') then
     raise exception 'DEMO_TRACKING_RESERVATION_EXPOSED';
   end if;
+  -- Current creation requires actual confirmed fixture customer accounts.
+  declare fixture_email text;fixture_id uuid;
+  begin
+   foreach fixture_email in array array['demo.lifecycle.owner@example.test','outside@example.test']loop
+    if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+    fixture_id:=gen_random_uuid();
+    insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+    update public.profiles set role='SHIPPER',active=true,full_name='Synthetic reserved customer'where id=fixture_id;
+   end loop;
+  end;
   select actor.id into strict owner_id
   from auth.users actor join public.profiles profile on profile.id = actor.id
   where actor.raw_app_meta_data->>'fixture_source' = 'loadgistic'
@@ -282,6 +295,11 @@ begin
     raise exception 'FORGED_OWNER_CREATED_DEMO_SHIPMENT';
   end if;
   created := public.create_provider_tracking_with_recipients(owner_id, command);
+  if exists(select 1 from public.demo_world_tracking_notification_sink where shipment_id=target_id and event_kind='TRACKING_ACCESS')then raise exception 'RETIRED_CREATION_ACCESS_EMAIL_QUEUED';end if;
+  -- Synthetic retained pre229 receipt input for unchanged legacy recovery
+  -- guards, not a new delivery observation or a current worker success claim.
+  insert into public.demo_world_tracking_notification_sink(source_kind,source_key,shipment_id,event_kind,recipient_role)
+  values('EMAIL','tracking-access:'||target_id::text,target_id,'TRACKING_ACCESS','OWNER');
   if created->>'id' <> target_id::text
     or not public.demo_world_tracking_lifecycle_scope()
     or not exists (

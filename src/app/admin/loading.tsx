@@ -1,2 +1,2 @@
 import {SurfaceSkeleton} from '@/components/loading-state';
-export default function AdminLoading(){return <div className="page"><SurfaceSkeleton label="Loading administration"/></div>;}
+export default function AdminLoading(){return <div className="page workspace-route-loading"><SurfaceSkeleton label="Loading administration"/></div>;}

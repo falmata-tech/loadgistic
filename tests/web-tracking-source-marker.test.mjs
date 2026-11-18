@@ -4,14 +4,15 @@ const styles={badge:'source-badge'},markerStyles={marker:'marker',frame:'circle'
 const {trackingMarkerContent}=load('src/components/tracking-location-map-leaflet.tsx',{'react/jsx-runtime':{},'@/components/localization':{},react:{},'react-leaflet':{},leaflet:{},'@/components/base-map-tiles':{},'@/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/vehicle-configurations/mini-box-truck.jpg'},'@/lib/location-source.js':source,'./location-source-badge.module.css':{__esModule:true,default:styles},'./tracking-location-map.module.css':{__esModule:true,default:markerStyles}});
 const {trackingMapData}=load('src/components/tracking-map-data.ts',{'@/lib/tracking-map.js':trackingMap});
 test('Tracking marker uses a circle and source badge only for real recognized provenance',()=>{
- for(const kind of ['GPS','MOBILE','MANUAL']){const html=trackingMarkerContent('Box Truck',kind);assert.match(html,/class="circle"/);assert.match(html,/class="source-badge"/);assert.ok(html.includes(source.locationSourceSvg(kind)));assert.ok(html.includes(source.locationSourceLabel(kind)));}
- for(const kind of [null,undefined,'GPS_PENDING','<svg onload=alert(1)>']){const html=trackingMarkerContent('Box Truck',kind);assert.equal(html.includes('source-badge'),false);assert.equal(html.includes('onload'),false);}
+ for(const kind of ['GPS','MOBILE']){const html=trackingMarkerContent('Box Truck',kind);assert.match(html,/class="circle"/);assert.match(html,/class="source-badge"/);assert.ok(html.includes(source.locationSourceSvg(kind)));assert.ok(html.includes(source.locationSourceLabel(kind)));}
+ for(const kind of [null,undefined,'MANUAL','MANUAL_ADMIN','GPS_PENDING','<svg onload=alert(1)>']){const html=trackingMarkerContent('Box Truck',kind);assert.equal(html.includes('source-badge'),false);assert.equal(html.includes('onload'),false);}
  assert.equal(trackingMarkerContent('Box Truck','GPS',()=>'<script>"&').includes('<script>'),false);
 });
 test('Tracking map projection preserves only allowlisted source on an authorized obscured fix',()=>{
  const fix={location_area:'Area',location_lat:9,location_lng:38,location_precision_km:10,updated_at:'2026-10-18T12:00:00Z',imei:'PRIVATE_IMEI',speed:22,device_id:'PRIVATE_DEVICE',raw_latitude:9.123456};
  const base={tracking_mode:'LOCATION_AND_STATUS',operational_status:'IN_TRANSIT',current_location:fix};
- for(const [raw,kind]of [['TELEMATICS','GPS'],['DEVICE_OBSCURED','MOBILE'],['MANUAL_ADMIN','MANUAL']]){const data=trackingMapData({...base,current_location:{...fix,location_source:raw}});assert.equal(data.location.source,kind);assert.equal(JSON.stringify(data).includes('PRIVATE_'),false);assert.equal('raw_latitude'in data.location,false);}
+ for(const [raw,kind]of [['TELEMATICS','GPS'],['DEVICE_OBSCURED','MOBILE']]){const data=trackingMapData({...base,current_location:{...fix,location_source:raw}});assert.equal(data.location.source,kind);assert.equal(JSON.stringify(data).includes('PRIVATE_'),false);assert.equal('raw_latitude'in data.location,false);}
+ for(const location_source of ['MANUAL','MANUAL_ADMIN','UNKNOWN'])assert.equal(trackingMapData({...base,current_location:{...fix,location_source}}).location,null);
  assert.equal('source'in trackingMapData(base).location,false);
  assert.equal(trackingMapData({...base,can_view_location:false}).location,null);assert.equal(trackingMapData({...base,can_view_location:false}).trackingMode,'STATUS_ONLY');
  assert.equal(trackingMapData({...base,current_location:{...fix,location_source:'TELEMATICS',is_demo:true}}).location.demo,true);

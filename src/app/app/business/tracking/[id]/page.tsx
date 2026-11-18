@@ -6,6 +6,7 @@ import {StatusPill} from '@/components/status-pill';
 import {PageHeader} from '@/components/page-header';
 import {TrackingLocationMap} from '@/components/tracking-location-map';
 import {TrackingSharing} from '@/components/tracking-sharing';
+import {TrackingShipmentLinks} from '@/components/tracking-session-manager';
 import {TrackingProofLink} from '@/components/tracking-proof-link';
 import {BusinessTrackingOwnerActions} from '@/components/business-tracking-owner-actions';
 import {DemoTrackingLabel} from '@/components/demo-tracking-label';
@@ -37,6 +38,7 @@ export default async function BusinessTrackingDetailPage({params}:{params:Promis
   <TrackingLocationMap shipment={map}/>
   <section className={`provider-shipment-summary ${styles.summary}`}><header className={styles.summaryHeader}><div><small><Text message="Cargo"/></small><h2>{text(shipment.cargo_summary)}</h2></div><StatusPill status={text(shipment.operational_status)}/></header>
    {detail.isOwner?<div className="button-row"><TrackingSharing shipmentId={id} endpoint={`/api/business-workspaces/${workspace.id}/tracking/${id}/sharing`}/></div>:null}
+   {detail.isOwner?<TrackingShipmentLinks shipmentId={id} workspaceId={workspace.id}/>:null}
   </section>
   <section className={styles.section}><header><h2><CalendarClock aria-hidden="true"/><Text message="Status timeline"/></h2></header><ol className={styles.timeline}>{events.map(event=><li key={text(event.id)}><div><strong><Text message={displayStatus(text(event.status))}/></strong>{demo?<DemoTrackingLabel kind="event"/>:null}{text(event.note)?<p>{text(event.note)}</p>:null}{event.has_proof===true&&owner?<TrackingProofLink shipmentId={id} eventId={text(event.id)} endpoint={`/api/business-workspaces/${workspace.id}/tracking/${id}/proof/${text(event.id)}`}/>:null}<time dateTime={text(event.created_at)}>{new Date(text(event.created_at)).toLocaleString()}</time></div></li>)}</ol></section>
   {owner?<BusinessTrackingOwnerActions endpoint={`/api/business-workspaces/${workspace.id}/tracking/${id}/actions`} canApprove={owner.can_approve===true} canReview={owner.can_review===true} review={typeof record(owner.review).rating==='number'?{rating:Number(record(owner.review).rating),note:text(record(owner.review).note)}:null}/>:null}

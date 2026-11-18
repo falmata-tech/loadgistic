@@ -3,7 +3,6 @@ import {guestTrackingDetail,trackingSummary} from '../mobile/tracking-contract';
 
 const id=z.string().uuid(),revision=z.number().int().min(0).max(2147483646);
 export const ownerSharingCommand=z.discriminatedUnion('action',[
- z.object({action:z.literal('ADD_VIEWER'),expectedRevision:revision,name:z.string().trim().min(1).max(80).refine(value=>!/[\u0000-\u001f\u007f]/.test(value)),email:z.string().trim().email().max(254)}).strict(),
  z.object({action:z.literal('REVOKE_VIEWER'),expectedRevision:revision,recipientId:id}).strict(),
  z.object({action:z.literal('DETACH_BUSINESS'),expectedRevision:revision}).strict(),
  z.object({action:z.literal('ALLOW_LOCATION'),expectedRevision:revision,userId:id}).strict(),

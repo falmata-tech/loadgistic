@@ -11,6 +11,15 @@ rollout: Hide and block demand creation and Shipment Board routes, purge fake lo
 
 # Provider-created execution
 
+### November17 Tracking cutover — implementation in progress
+
+FEAT-TRK-001 / ADR-089 supersede anonymous owner-email access below. Provider
+creation keeps normal actor/assignment/route/lifecycle checks but requires an
+actual registered customer owner and queues no Tracking access email. A shipper/
+broker session can precede normal authenticated provider connection. Anonymous
+viewers need an expiring per-session link AND code, with no proof/approval/review
+authority; actual account owners retain those separate protected tasks.
+
 ### Scenario: provider creates tracking after agreement
 
 Given a signed-in fleet transporter, self-managed Driver, or assigned company Driver has agreed terms outside Loadgistic\

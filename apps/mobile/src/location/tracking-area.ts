@@ -1,7 +1,9 @@
+import {currentTrackingLocation} from '../api/tracking.ts';
 import type { Feature, Polygon } from 'geojson';
 import {isValidCoordinate} from '../../../../src/lib/location-privacy.js';
-export type TrackingArea = { latitude: number; longitude: number; radius: number; area: string; updatedAt: string; source?:'GPS'|'MOBILE'|'MANUAL'|null;demo?:true };
+export type TrackingArea = { latitude: number; longitude: number; radius: number; area: string; updatedAt: string; source?:'GPS'|'MOBILE'|null;demo?:true };
 export function trackingAreaGeometry(location: TrackingArea): Feature<Polygon> | null {
+ if(!currentTrackingLocation(location))return null;
  const { latitude, longitude, radius } = location;
  if (!isValidCoordinate(latitude,longitude) || !Number.isFinite(radius) || ![1, 3, 5, 10, 20, 40].includes(radius)) return null;
  const lat = latitude * Math.PI / 180, lng = longitude * Math.PI / 180, distance = radius / 6371;

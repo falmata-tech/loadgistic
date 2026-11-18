@@ -69,8 +69,8 @@ Given a provider or currently assigned driver edits a vehicle location\
 When the source editor opens on web or Expo\
 Then new updates offer Phone (`MOBILE`) and, under existing fleet permissions,
 an assigned GPS device only; no map-point or coordinate-entry action is offered\
-And a saved legacy `MANUAL` source/report remains honestly labelled Manually
-entered, with its saved age and privacy radius retained for historical reading\
+And a saved legacy `MANUAL` source/report is retained internally as history;
+current product projections show an unselected source and no Manual position\
 And opening it, changing only its radius, or cancelling never converts it to
 Phone/GPS or grants location consent. Manual writes are refused at the server.
 
@@ -81,6 +81,11 @@ denial leaves the saved source/location unchanged\
 And source revision, current assignment and driver-choice ownership remain
 authoritative. Configured GPS selection retains existing owner permissions.
 Capacity source edits never alter an active Tracking agreement's saved source.
+
+November17 owner direction also removes Manual from the source filter itself.
+Public/account/business projections and map cluster anchors must not expose an
+unlabelled old Manual point. Planned routes/areas and saved availability remain
+independent facts; they must not be fabricated into a current GPS/Phone fix.
 
 Qualification requires focused denial/retry/revision tests plus real local
 desktop/phone web and Expo save/readback. Native OS permission and movement

@@ -46,7 +46,7 @@ export function parseBusinessTrackingDetail(value:unknown,workspaceId:string,shi
  if(data.workspaceId!==workspaceId||shipment.id!==shipmentId||typeof data.isOwner!=='boolean'||typeof data.canViewLocation!=='boolean'
   ||!data.isOwner&&(shipment.canApprove||shipment.canReview||shipment.canShare||shipment.events.some(event=>event.hasProof)||shipment.review!==null)
   ||data.canViewLocation===false&&shipment.location!==null)throw invalid();
- return data as unknown as BusinessTrackingDetail;
+ return {...data,location:shipment.location} as unknown as BusinessTrackingDetail;
 }
 export async function loadBusinessCapacity(workspaceId:string,signal:AbortSignal,onPage:(items:CapacitySignal[])=>void,request:(path:string)=>Promise<unknown>,filters:TruckFilters={}):Promise<void>{
  let cursor='';const seen=new Set<string>(),items=new Map<string,CapacitySignal>();

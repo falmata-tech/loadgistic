@@ -3,7 +3,7 @@ export const CAPACITY_FILTER_CHOICES=Object.freeze({
  vehicleCategory:Object.freeze(['Courier motorcycle','Courier car','Cargo van','Pickup truck','Pickup stake body','Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck','Light Stake Body Truck','Light Box Truck','Medium Stake Body Truck','Medium Box Truck','Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer','Tractor + Container Trailer','Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer']),
  status:Object.freeze(['EMPTY','PARTIAL']),loadType:Object.freeze(['FTL','PTL']),
  stopOption:Object.freeze(['MULTI_PICK','MULTI_DROP']),freshness:Object.freeze(['FRESH','UPDATE_NEEDED']),
- locationSource:Object.freeze(['GPS','MOBILE','MANUAL'])
+ locationSource:Object.freeze(['GPS','MOBILE'])
 });
 const fail=()=>{throw new Error('INVALID_CAPACITY_FILTER');};
 function minimumAvailablePercent(value){

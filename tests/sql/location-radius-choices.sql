@@ -1,5 +1,17 @@
 -- FEAT-ENT/CAP/TRK-001. New synthetic actors; explicit dated legacy fixtures.
 begin;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['radius-owner@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 create function pg_temp.radius_assert(ok boolean,label text) returns void language plpgsql as $$begin if ok is not true then raise exception '%',label;end if;end$$;
 create function pg_temp.radius_denied(statement text,code text) returns void language plpgsql as $$
 begin begin execute statement;exception when others then if position(code in sqlerrm)>0 then return;end if;raise;end;raise exception 'EXPECTED_RADIUS_DENIAL:%',code;end$$;

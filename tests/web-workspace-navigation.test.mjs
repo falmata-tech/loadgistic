@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
+import {getManagedWorkspaceAccess} from '../src/lib/identity/workspace-access.js';
+import {providerWorkspaceCapabilities} from '../src/lib/provider-workspace.js';
 import * as navigation from '../src/components/site-navigation.ts';
 import {
  activeSiteDestination,accountHref,memberDestinations,phonePrimaryDestinations,publicDestinations,visitorDestinations
@@ -9,6 +11,51 @@ import {
 
 const provider={id:'owner',role:'TRANSPORTER',name:'Provider',canManageFleet:true,drivesTruck:true};
 const driver={id:'driver',role:'DRIVER',name:'Driver',canManageFleet:false,drivesTruck:true};
+
+test('active personal shippers and receivers find only their account Tracking and Account without a business grant',()=>{
+ for(const role of ['SHIPPER','RECEIVER']){
+  const user={id:'personal-owner',name:'Synthetic owner',role,platformRole:role,active:true,capacityAllowed:true,trackingAllowed:true,canManageFleet:true};
+  assert.deepEqual(memberDestinations(user).map(item=>item.href),['/app/tracking','/app/more']);
+  assert.deepEqual(phonePrimaryDestinations(user).map(item=>item.href),['/','/app/tracking','/app/more']);
+  assert.equal(activeSiteDestination('/app/tracking/synthetic-session',user),'my-tracking');assert.equal(accountHref(user),'/app/more');
+  for(const forbidden of ['/app/provider-shipments','/app/fleet','/app/network','/app/business/tracking','/admin'])assert.equal(memberDestinations(user).some(item=>item.href===forbidden),false);
+  assert.deepEqual(memberDestinations({...user,active:false}),[]);
+  assert.deepEqual(memberDestinations({...user,platformRole:'ADMIN'}),[]);
+ }
+});
+
+function sourceModule(file,ports){
+ const parsed=ts.createSourceFile(file,readFileSync(file,'utf8'),ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
+ const source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))));
+ const code=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,exports={};
+ const node=(type,props)=>({type,props:props||{}});
+ new Function('require',...Object.keys(ports),'exports',code)(name=>{assert.equal(name,'react/jsx-runtime');return{jsx:node,jsxs:node};},...Object.values(ports),exports);return exports;
+}
+
+test('personal account stays signed in in the actual header and can reach the ordinary policy consent',async()=>{
+ for(const role of ['SHIPPER','RECEIVER']){
+  const user={id:'synthetic-owner',name:'Synthetic owner',role,platform_role:role,active:true},state={current:user};
+  const auth=sourceModule('src/lib/auth.ts',{createSupabaseServerClient:async()=>({auth:{getUser:async()=>({data:{user:{id:user.id}},error:null})}}),getManagedCurrentUser:async()=>state.current,getManagedWorkspaceAccess});
+  assert.equal(await auth.getCurrentUser(),user);
+  const header=sourceModule('src/components/public-header.tsx',{getCurrentUser:auth.getCurrentUser,providerWorkspaceCapabilities,SiteTopbar:'SiteTopbar',PublicMobileNav:'PublicMobileNav'});
+  const actualHeader=await header.PublicHeader();
+  for(const item of nodes(actualHeader).filter(item=>['SiteTopbar','PublicMobileNav'].includes(item.type))){assert.equal(item.props.user.id,user.id);assert.equal(item.props.user.platformRole,role);}
+  const shell=sourceModule('src/components/app-shell.tsx',{providerWorkspaceCapabilities,SiteTopbar:'SiteTopbar',PublicMobileNav:'PublicMobileNav',ContentPolicyConsent:'ContentPolicyConsent',WorkspaceBackButton:'WorkspaceBackButton'});
+  assert.equal(nodes(shell.AppShell({user,children:'Saved shipment'})).filter(item=>item.type==='ContentPolicyConsent'&&item.props.actorId===user.id).length,1);
+  assert.equal(nodes(shell.AppShell({user:{...user,platform_role:'ADMIN'},children:null})).some(item=>item.type==='ContentPolicyConsent'),false);
+  state.current={...user,active:false};assert.equal(await auth.getCurrentUser(),null);
+ }
+});
+
+test('personal ACCOUNT_ACCESS cannot open the Shared Capacity data port without the existing scoped role',async()=>{
+ for(const role of ['SHIPPER','RECEIVER']){
+  let calls=0;const user={id:'synthetic-owner',email:'synthetic-owner@example.test',role,active:true};
+  assert.equal(getManagedWorkspaceAccess(user).status,'ACCOUNT_ACCESS');
+  const route=sourceModule('src/app/api/account-capacity/route.ts',{getCurrentUser:async()=>user,NextResponse:{json:Response.json.bind(Response)},listAccountCapacity:async()=>{calls++;throw Error('PRIVATE_PORT_MUST_NOT_OPEN');}});
+  const response=await route.GET(new Request('https://loadgistic.example/api/account-capacity'));
+  assert.equal(response.status,401);assert.equal(calls,0);assert.match(response.headers.get('cache-control'),/no-store/);
+ }
+});
 
 test('one public shell gains account destinations after sign-in',()=>{
  assert.deepEqual(visitorDestinations.map(item=>[item.label,item.href]),[

@@ -6,6 +6,53 @@ import {randomUUID} from 'node:crypto';
 const STDERR_LIMIT = 8192;
 export const GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS=120000;
 
+// Extension CREATE defaults can lose the source table's RLS/initial grants.
+// Fixed local resource only; use the existing owner bootstrap before SQL tests.
+export const GPS_CLONE_SPATIAL_SECURITY_SQL=`select jsonb_build_object(
+ 'extension',(select e.extname from pg_depend d join pg_extension e on e.oid=d.refobjid where d.classid='pg_class'::regclass and d.objid=to_regclass('public.spatial_ref_sys')and d.deptype='e'),
+ 'version',(select extversion from pg_extension where extname='postgis'),
+ 'schema',(select n.nspname from pg_extension e join pg_namespace n on n.oid=e.extnamespace where e.extname='postgis'),
+ 'owner',(select pg_get_userbyid(relowner)from pg_class where oid=to_regclass('public.spatial_ref_sys')),
+ 'rls',(select relrowsecurity from pg_class where oid=to_regclass('public.spatial_ref_sys')),
+ 'forceRls',(select relforcerowsecurity from pg_class where oid=to_regclass('public.spatial_ref_sys')),
+ 'policyCount',(select count(*)from pg_policy where polrelid=to_regclass('public.spatial_ref_sys')),
+ 'acl',(select jsonb_agg(jsonb_build_array(pg_get_userbyid(a.grantor),case when a.grantee=0 then 'PUBLIC'else pg_get_userbyid(a.grantee)end,a.privilege_type,a.is_grantable)order by a.grantor,a.grantee,a.privilege_type)
+ from pg_class c cross join lateral aclexplode(coalesce(c.relacl,acldefault('r',c.relowner)))a where c.oid=to_regclass('public.spatial_ref_sys')));`;
+
+export function parseGpsCloneSpatialSecurity(value){
+ try{return JSON.parse(value);}catch{throw Error('GPS CI PostGIS security metadata unavailable');}
+}
+function spatialAcl(snapshot,hardened){
+ const fail=()=>{throw Error('GPS CI expected local PostGIS owner security');};
+ if(!snapshot||Object.keys(snapshot).sort().join(',')!=='acl,extension,forceRls,owner,policyCount,rls,schema,version'
+  ||snapshot.extension!=='postgis'||snapshot.schema!=='public'||snapshot.owner!=='supabase_admin'
+  ||!/^3\.\d+\.\d+$/.test(snapshot.version)||typeof snapshot.rls!=='boolean'||snapshot.forceRls!==false
+  ||snapshot.policyCount!==0||!Array.isArray(snapshot.acl))fail();
+ const privileges=['DELETE','INSERT','REFERENCES','SELECT','TRIGGER','TRUNCATE','UPDATE'];
+ if(snapshot.acl.some(a=>Array.isArray(a)&&a[2]==='MAINTAIN'))privileges.push('MAINTAIN');
+ const expected=[];for(const role of ['supabase_admin','postgres','service_role'])for(const privilege of privileges)expected.push(JSON.stringify(['supabase_admin',role,privilege,false]));
+ const actual=snapshot.acl.map(a=>JSON.stringify(a));
+ if(new Set(actual).size!==actual.length||actual.some(a=>!expected.includes(a)))fail();
+ if(hardened&&(snapshot.rls!==true||actual.length!==expected.length))fail();
+ if(!privileges.every(p=>actual.includes(JSON.stringify(['supabase_admin','supabase_admin',p,false]))))fail();
+ return actual.sort().join('|');
+}
+export function checkedGpsCloneSpatialSecurity(source,target=source){
+ const sourceAcl=spatialAcl(source,true),targetAcl=spatialAcl(target,true);
+ if(source.version!==target.version||sourceAcl!==targetAcl)throw Error('GPS CI PostGIS source/clone security mismatch');
+ return true;
+}
+export function gpsCloneSpatialOwnerSql(source,target,ownerSql){
+ spatialAcl(source,true);spatialAcl(target,false);
+ if(source.version!==target.version)throw Error('GPS CI PostGIS source/clone version mismatch');
+ const anchor='alter table public.spatial_ref_sys enable row level security;';
+ if(typeof ownerSql!=='string'||ownerSql.split(anchor).length!==2||!/^begin;$/m.test(ownerSql))throw Error('GPS CI expected existing local owner bootstrap');
+ return ownerSql.replace(/^begin;$/m,`begin;
+do $gps_spatial_clone$begin
+ if current_database()<>'loadgistic_telematics_ci'or current_user<>'supabase_admin'then raise exception 'GPS_CLONE_LOCAL_OWNER_REQUIRED';end if;
+end $gps_spatial_clone$;`).replace(anchor,'grant all privileges on table public.spatial_ref_sys to postgres,service_role;\n'+anchor);
+}
+
 export function checkedLocalGpsPassword(status) {
   let url;
   try {
