@@ -28,7 +28,7 @@ for(const path of ['../src/app/api/public/capacity/route.ts','../src/app/api/cap
   assert.equal(accepted.status,200);assert.equal(api.calls.length,1);
   const filters=api.calls[0].find(value=>value?.status);
   assert.equal(filters.status,'EMPTY,PARTIAL');assert.equal(filters.loadType,'FTL,PTL');assert.equal(filters.vehicleCategory,'Cargo van,Pickup truck');assert.equal(filters.locationSource,'GPS,MOBILE');
-  for(const query of ['status=EMPTY&status=PARTIAL','status=EMPTY,FULL','loadType=FTL&status=PARTIAL','locationSource=GPS,UNKNOWN','locationSource=GPS&locationSource=MOBILE','q=a&q=b'])assert.equal((await api.get(query)).status,400);
+  for(const query of ['status=EMPTY&status=PARTIAL','status=EMPTY,FULL','loadType=FTL&status=PARTIAL','locationSource=GPS,UNKNOWN','locationSource=MANUAL','locationSource=GPS,MANUAL','locationSource=GPS&locationSource=MOBILE','q=a&q=b'])assert.equal((await api.get(query)).status,400);
   assert.equal(api.calls.length,1);
  });
 }

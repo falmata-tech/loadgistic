@@ -18,3 +18,20 @@ test('a failed authorization recheck fails closed, while established completion-
  });
  assert.equal(sent.length,1);assert.equal(sent[0].to,'completed@example.test');assert.equal(sent[0].subject,'Your Loadgistic delivery record');assert.equal(recorded[0].result.sent,false);assert.equal(result.sent,1);
 });
+
+test('registered-owner completion delivery builds the account URL without anonymous Tracking or review credentials',async()=>{
+ const original=process.env.APP_URL;process.env.APP_URL='https://loadgistic.com';
+ try{
+  const sent=[],records=[];let listedLimit;
+  const result=await deliverPendingShipmentEmails(5,{deliveryStatus:()=>({configured:true,provider:'test'}),listDeliveries:async limit=>{listedLimit=limit;return[delivery('completed','COMPLETION')];},
+   readTracking:async()=>{throw Error('COMPLETION_MUST_NOT_USE_GUEST_GRANT');},send:async message=>sent.push(message),recordAttempt:async(...args)=>records.push(args)});
+  assert.equal(listedLimit,5);assert.equal(result.sent,1);assert.equal(sent.length,1);const message=sent[0];
+  assert.deepEqual(message.account,{url:'https://loadgistic.com/login?from=tracking'});
+  for(const key of['tracking','review','access'])assert.equal(Object.hasOwn(message,key),false);
+  assert.match(message.text,/Sign in to your Loadgistic account/);assert.doesNotMatch(message.text,/verify this email|six-digit|no new code|LG-RV-/i);
+  assert.equal(new URL(message.text.trim().split('\n').at(-1)).href,'https://loadgistic.com/login?from=tracking');
+  const hrefs=[...message.html.matchAll(/<a href="([^"]+)"/g)].map(match=>match[1]);assert.deepEqual(hrefs,['https://loadgistic.com/login?from=tracking']);
+  assert.match(message.html,/>Open your shipments<\/a>/);
+  assert.deepEqual(records,[['completed',{sent:true}]]);
+ }finally{if(original===undefined)delete process.env.APP_URL;else process.env.APP_URL=original;}
+});

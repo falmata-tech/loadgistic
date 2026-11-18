@@ -19,6 +19,8 @@ test('capacity networks lead About and both map choices in all three supported l
     const choices=page.locator('.capacity-view-choice');
     await expect(choices.getByRole('link',{name:translated('Openly shared'),exact:true})).toHaveAttribute('aria-current','page');
     await choices.getByRole('link',{name:translated('Privately shared with you'),exact:true}).click();
+    await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
+    await page.getByTestId('private-capacity-entry').locator('a[href="/login?from=shared-capacity"]').click();
     await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
     await expect(page.getByRole('heading',{name:translated('Sign in'),exact:true})).toBeVisible();
     await expect(page.getByText(translated('Sign in to see vehicles shared with your account.'),{exact:true})).toBeVisible();

@@ -27,7 +27,7 @@ test('blurred and superseded queries never commit their late response',async()=>
 });
 
 test('authoritative resource denial clears cached private data while a temporary outage preserves it',async()=>{
- for(const status of[401,403,404,503]){
+ for(const status of[401,403,404,410,503]){
   const view=runtime();view.render();view.focus();await flush();view.setAccount({session:{user:{id:'one'}},request:async()=>{throw new ApiError(status,'FORBIDDEN','Not available');}});let query=view.render();const confirmed=await query.reloadConfirmed();query=view.render();assert.equal(confirmed,false);assert.equal(query.data===null,status!==503);assert.equal(query.error,'Not available');
  }
 });

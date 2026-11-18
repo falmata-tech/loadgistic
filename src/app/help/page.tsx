@@ -1,8 +1,14 @@
-import {Text} from '@/components/localization';
 import Link from 'next/link';
 import {PublicHeader} from '@/components/public-header';
-import {Flash} from '@/components/flash';
-export default async function HelpPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}){
- const query=await searchParams;
- return <><PublicHeader/><main className="public-app-page public-information-workspace"><header className="public-information-heading container"><h1><Text message="Support"/></h1><p><Text message="Transport providers can contact live support from their dashboard."/></p><Link className="button" href="/app/support"><Text message="Open dashboard support"/></Link></header><Flash error={query.error} success={query.success}/><section className="container guest-support-start"><details className="card guest-support-recover"><summary><Text message="View a previous conversation"/></summary><p><Text message="Use the email and recovery code sent when the chat started."/></p><p><Text message="This conversation is read-only."/></p><form action="/api/guest-support/access" method="post"><label><Text message="Email"/><input name="email" type="email" required/></label><label><Text message="Recovery code"/><input name="code" required/></label><button className="button secondary"><Text message="View conversation"/></button></form></details></section></main></>;
+import {Text} from '@/components/localization';
+import {getCurrentUser} from '@/lib/auth';
+
+export default async function HelpPage(){
+ const user=await getCurrentUser({allowLimited:true});
+ const href=user?.role==='ADMIN'?'/admin/support':user?.role==='SUPPORT'?'/support':'/app/support';
+ return <><PublicHeader/><main className="public-app-page public-information-workspace"><header className="public-information-heading container">
+  <h1><Text message="Support"/></h1>
+  <p><Text message="Contact the Loadgistic team from your account."/></p>
+  <Link className="button" href={user?href:'/login?from=support'}><Text message={user?'Open dashboard support':'Sign in'}/></Link>
+ </header></main></>;
 }

@@ -109,7 +109,10 @@ test('driver map movement preserves its map instance and renders only actual pub
  assert.equal(find(moved,item=>item.type==='AppIcon').props.name,'phone');
  assert.equal(find(moved,item=>item.props.testID==='tracking-location-source').props.pointerEvents,'none');
  const manual=view.render({location:{...area(40),source:'MANUAL'},vehicleConfiguration:'Box truck',fill:true});
- assert.equal(find(manual,item=>item.type==='AppIcon').props.name,'manual');
+ assert.equal(find(manual,item=>item.type==='AppIcon'),null);
+ assert.equal(find(manual,item=>item.props.id==='tracking-reported-truck'),null);
+ assert.equal(find(manual,item=>item.props.id==='tracking-area'),null);
+ for(const source of ['MANUAL_ADMIN','INFERRED']){const retired=view.render({location:{...area(40),source},vehicleConfiguration:'Box truck',fill:true});assert.equal(find(retired,item=>item.props.id==='tracking-reported-truck'),null);}
  const unknown=view.render({location:area(40),vehicleConfiguration:'Box truck',fill:true});
  assert.equal(find(unknown,item=>item.type==='AppIcon'),null);
  const hidden=view.render({location:null,vehicleConfiguration:'Box truck',fill:true});
@@ -214,4 +217,15 @@ test('an older rejected Camera command cannot replace a newer corrected-route fi
  reject(new Error('Synthetic stale dispatch failure'));await Promise.resolve();await Promise.resolve();
  view.frame();assert.equal(view.fits.length,2,'a stale failure must not restore older bounds');
  contains(view.fits[1].bounds,[35,6]);
+});
+
+test('guest map shows the saved area center and source without vehicle identity',()=>{
+ const slot=trackingMap({location:{...area(39),source:'MOBILE'},route,truck:null,fill:true});
+ const tree=slot.render(),center=find(tree,node=>node.props.id==='tracking-reported-area');
+ assert.ok(center);assert.deepEqual(Array.from(center.props.lngLat),[39,8]);
+ assert.equal(find(center,node=>node.type==='AppIcon').props.name,'phone');
+ assert.equal(find(tree,node=>node.props.id==='tracking-reported-truck'),null);
+ assert.equal(find(center,node=>node.type==='Image'),null);
+ const missing=slot.render({route,truck:null,location:null,fill:true});
+ assert.equal(find(missing,node=>node.props.id==='tracking-reported-area'),null);
 });

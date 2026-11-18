@@ -6,7 +6,7 @@ const place = z.string().trim().min(1).max(150);
 const date = z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/).default('');
 const email = z.string().trim().email().max(254);
 const trackingCreation = z.object({ vehicleId: z.string().uuid(), originPlaceRef: place, passingPlaceRef:place, destinationPlaceRef: place,
-  cargoSummary: z.string().trim().min(3).max(500), customerEmail: email,
+  cargoSummary: z.string().trim().min(3).max(500), customerEmail: email.or(z.literal('')).optional(),
   additionalRecipientEmails: z.array(email).max(0).optional(), expectedPickupDate: date, expectedDeliveryDate: z.string().refine(value=>Boolean(dateOnly(value))),
   trackingMode: z.enum(['STATUS_ONLY', 'LOCATION_AND_STATUS']),
 }).strict();
@@ -38,7 +38,7 @@ export function trackingDetail(value: unknown, actor: { id: string; role: string
   return { ...trackingSummary(data), mode: text(data.tracking_mode), nextStatuses,
     canLocate: ['DRIVER','TRANSPORTER'].includes(actor.role) && data.assigned_driver_user_id === actor.id,
     pickupDate: text(data.expected_pickup_date), deliveryDate: text(data.expected_delivery_date),
-    canManageRecipients: false,
+    canManageRecipients: false, canAddPartner:data.can_add_partner===true,
     route:trackingRoute(data),publicTruck:trackingPublicTruck(data),location:trackingMapLocation(data),
     appeals: list(data.appeals).map(item=>({id:text(item.id),reason:text(item.reason),status:text(item.status),resolutionNote:text(item.resolution_note)})),
     events: list(data.events).map(item => ({ id: text(item.id), status: text(item.status), note: text(item.note), hasProof: Boolean(item.has_proof), createdAt: text(item.created_at) })),

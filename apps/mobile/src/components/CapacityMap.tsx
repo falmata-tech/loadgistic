@@ -187,7 +187,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
         <Image source={{uri:apiOrigin+vehicleConfigurationImage(item!.configuration)}} resizeMode="contain" style={styles.image}/>
        </View>
        {item!.latitude!==null&&item!.longitude!==null&&locationSourceKind(item!.locationSource)&&<View pointerEvents="none" style={[styles.sourceBadge,{borderColor:locationSourceColor(item!.locationSource)}]}>
-        <AppIcon name={item!.locationSource==='GPS'?'gps':item!.locationSource==='MOBILE'?'phone':'manual'} size={13} color={locationSourceColor(item!.locationSource)}/>
+        <AppIcon name={locationSourceKind(item!.locationSource)==='GPS'?'gps':'phone'} size={13} color={locationSourceColor(item!.locationSource)}/>
        </View>}
        {isOwn&&<View pointerEvents="none" style={styles.ownBadge}><Text style={styles.ownBadgeText}>★</Text></View>}
       </View>}

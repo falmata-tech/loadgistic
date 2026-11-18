@@ -37,7 +37,8 @@ begin
   if (select phone from profiles where id=recipient) is distinct from private_phone then raise exception 'PRIVATE_PHONE_CHANGED';end if;
   if (select email_confirmed_at from auth.users where id=recipient) is not null then raise exception 'EMAIL_AUTOCONFIRMED';end if;
   if exists(select 1 from fleet_driver_invitations where email=email_value and cancelled_at is null) then raise exception 'STALE_INVITE';end if;
-  if (select can_manage_capacity or can_manage_tracking from driver_permissions where user_id=recipient) then raise exception 'BROAD_DEFAULTS';end if;
+  if not exists(select from driver_permissions where user_id=recipient and not can_manage_capacity and can_manage_tracking)
+    then raise exception 'WRONG_NEW_DRIVER_PERMISSIONS';end if;
   perform set_config('request.jwt.claim.sub',recipient::text,true);
   if current_user_projection() is not null then raise exception 'UNVERIFIED_WORKSPACE_ACCESS';end if;
   vehicle_id:=(create_provider_vehicle(owner_id,'{"make":"Isuzu","model":"Test","plate":"UNVERIFIED-123","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}')->>'id')::uuid;

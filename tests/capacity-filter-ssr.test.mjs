@@ -15,7 +15,7 @@ function page({admin=false,actor=null,authError=null,workspaceGranted=true}={}){
   '@/lib/business-capacity/supabase':{listBusinessCapacity:async(_user,_workspace,query)=>{calls.push(query);return{items:[],hasMore:false,nextCursor:null,pageSize:100};}},
   '@/lib/capacity-market.js':{listPublicCapacityCursor:async query=>{calls.push(query);return{items:[]};}},
   '@/lib/auth-flow.js':{localAuthInboxUrl:()=>null},'@/components/public-header':{PublicHeader:'PublicHeader'},
-  '@/components/public-capacity-feed':{PublicCapacityFeed:'Feed'},'@/lib/platform-copy.js':{capacityIntroduction:{}},'@/lib/capacity-filter-values.js':filters,
+  '@/components/public-capacity-feed':{PublicCapacityFeed:'Feed'},'@/components/private-capacity-entry':{PrivateCapacityEntry:'PrivateEntry'},'@/lib/platform-copy.js':{capacityIntroduction:{}},'@/lib/capacity-filter-values.js':filters,
   '@/lib/seo.js':{publicPageMetadata:()=>({})},'next/navigation':{notFound:()=>{throw new Error('SYNTHETIC_NOT_FOUND');},redirect:path=>{throw new Error(`SYNTHETIC_REDIRECT:${path}`);}},
   'lucide-react':{Network:'Network'},'@/components/page-header':{PageHeader:'Header'}
  };
@@ -76,26 +76,27 @@ test('old Space needed links cannot leave an invisible map filter active',async(
  assert.equal(feed.props.query.loadType,undefined);
  assert.equal(feed.props.initial.filterError,undefined);
 });
-test('signed-out private Capacity stays in the same map destination but requires sign-in',async()=>{
- const current=page();
- await assert.rejects(current.render({view:'private',status:'EMPTY'}),/SYNTHETIC_REDIRECT:\/login\?from=shared-capacity/);
- assert.equal(current.calls.length,0);
+test('signed-out private Capacity keeps its account entry without rendering or requesting Capacity rows',async()=>{
+ const current=page(),tree=await current.render({view:'private',status:'EMPTY'});
+ const entries=value=>!value?[]:Array.isArray(value)?value.flatMap(entries):typeof value==='object'?[value,...entries(value.props?.children)]:[];
+ assert.equal(find(tree),undefined);assert.equal(entries(tree).filter(value=>value.type==='PrivateEntry').length,1);
+ assert.equal(current.calls.length,0);assert.equal(current.accessCalls.length,0);assert.deepEqual(current.authCalls,[{allowLimited:true}]);
 });
 test('business Capacity opens the private map and ignores an old Space needed link',async()=>{
  const legacy=businessPage();
- await assert.rejects(legacy.render({status:'PARTIAL',loadType:'FTL',locationSource:'MANUAL,GPS',q:'separate profile search'}),/SYNTHETIC_REDIRECT:\/\?/);
+ await assert.rejects(legacy.render({status:'PARTIAL',loadType:'FTL',locationSource:'MOBILE,GPS',q:'separate profile search'}),/SYNTHETIC_REDIRECT:\/\?/);
  const actor={id:'synthetic-owner',role:'CUSTOMER',active:true,selected_business_workspace:{id:'synthetic-business',membershipRevision:1,permissions:{capacity:true}}};
- const current=page({actor}),feed=find(await current.render({view:'private',status:'PARTIAL',loadType:'FTL',locationSource:'MANUAL,GPS',q:'separate profile search'}));
+ const current=page({actor}),feed=find(await current.render({view:'private',status:'PARTIAL',loadType:'FTL',locationSource:'MOBILE,GPS',q:'separate profile search'}));
  assert.equal(current.calls.length,1);
  assert.equal(current.calls[0].status,'PARTIAL');
- assert.equal(current.calls[0].locationSource,'GPS,MANUAL');
+ assert.equal(current.calls[0].locationSource,'GPS,MOBILE');
  assert.equal(current.calls[0].loadType,undefined);
  assert.equal(current.calls[0].q,'');
  assert.equal(feed.props.query.loadType,undefined);
  assert.equal(feed.props.apiPath,'/api/business-workspaces/synthetic-business/capacity');
 });
 test('SSR repeated arrays and unknown selections remain denied through hydration instead of selecting a first value',async()=>{
- for(const query of [{status:['EMPTY','PARTIAL']},{vehicleCategory:['Cargo van','Mini Box Truck']},{q:['first','second']},{vehicleCategory:'Cargo van,unsupported'}]){
+ for(const query of [{status:['EMPTY','PARTIAL']},{vehicleCategory:['Cargo van','Mini Box Truck']},{q:['first','second']},{vehicleCategory:'Cargo van,unsupported'},{locationSource:'MANUAL'},{locationSource:'GPS,MANUAL'}]){
   const current=page(),feed=find(await current.render(query));assert.equal(current.calls.length,0);assert.ok(feed.props.initial.filterError);
   assert.throws(()=>filters.canonicalCapacityFilters(feed.props.query));
  }

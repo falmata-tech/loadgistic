@@ -27,8 +27,23 @@ Then they can see the recipient account and revoke the grant immediately
 And other accounts' grants, public Capacity, Tracking and audit history remain intact.
 
 Given a signed-out visitor selects Shared with you
-Then the app leads to account sign-in or creation without requesting a Capacity email code
-And the private map and its API return no vehicle data until account authorization succeeds.
+Then the selected Private tab and map area remain visible with a centered
+“Sign in to see vehicles shared with your account.” invitation
+And only choosing Sign in or Sign up opens the corresponding account flow
+And an empty basemap accepts no vehicle records or coordinates, mounts no Capacity
+feed, and calls neither public nor private Capacity data ports
+And the private API returns no vehicle data until account authorization succeeds.
+
+November17 owner UX clarification (BASE-FE-001 / FEAT-UIX-001 / NR-13): the
+anonymous Private view is an explicit account-entry state, not an automatic Auth
+redirect. Existing authorized-account/workspace selection, grant revocation and
+API denials remain unchanged. Preserve map/footer geometry at phone widths,
+ordinary public-tab return, keyboard-reachable actions and English/Amharic/Afaan
+Oromo labels. Observe only selected view, auth navigation and denied request
+status/counts. Rollout changes this page branch and entry surface; rollback can
+restore the former redirect without mutating grants, identity or private records.
+Tests: `tests/private-capacity-entry.test.mjs` and
+`tests/e2e/private-capacity-entry.spec.ts`; actual desktop/phone review is required.
 
 Given an old client or direct service request attempts to create an email Capacity grant,
 request or consume a Capacity OTP, or select Exclusive email sharing

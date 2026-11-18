@@ -5,7 +5,7 @@ begin
  raise exception 'EXPECTED_FEATURED_DENIAL';
 end $$;
 do $test$
-declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;account_org uuid;account_profile uuid;account_vehicle_ids uuid[];day_value date;baseline_invalid integer;
+declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;account_org uuid;account_profile uuid;account_vehicle_ids uuid[];day_value date;baseline_invalid integer;eligible_vehicle uuid;
 begin
  select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  foreach uid in array array[staff_id,other_id] loop
@@ -38,6 +38,17 @@ begin
 
  -- Featured now follows provider accounts across vehicle types. Removing every
  -- eligible vehicle from a scheduled account must flag that account, then recover.
+ -- MANUAL mode can legitimately have an entirely empty week on a fresh database.
+ if not exists(select 1 from featured_provider_slots s join featured_provider_days d on d.id=s.day_id
+   where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6) then
+  select vehicle_id into strict eligible_vehicle from featured_eligible_account_links()
+    where capacity_public_policy_allows(vehicle_id) order by provider_key limit 1;
+  perform save_managed_featured_provider_day(staff_id,jsonb_build_object(
+    'feature_date',(now() at time zone 'Africa/Addis_Ababa')::date+1,'target_count',1,
+    'truck_keys',jsonb_build_array('vehicle:'||eligible_vehicle::text),'schedule_mode','AUTO',
+    'schedule_config',jsonb_build_object('dayStart','22:30','dayEnd','23:59','targetCount',1,
+      'sponsorBreakCount',0,'sponsorBreakMinutes',2),'manual_schedule','[]'::jsonb,'publish',false));
+ end if;
  select s.provider_organization_id,s.provider_profile_id,d.feature_date into account_org,account_profile,day_value
  from featured_provider_slots s join featured_provider_days d on d.id=s.day_id
  where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6

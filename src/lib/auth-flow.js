@@ -26,9 +26,21 @@ export function isNumericEmailOtp(value) {
  * @param {{permissions?:{capacity?:boolean,tracking?:boolean}}|null|undefined} [workspace]
  */
 export function managedWorkspaceDestination(role,workspace=null) {
+  if(['SHIPPER','RECEIVER'].includes(role))return '/app/tracking';
   if(role==='CUSTOMER')return workspace&&!workspace.permissions?.capacity?(workspace.permissions?.tracking?'/app/business/tracking':'/app/business/account'):'/app/business/capacity';
   if(role==='ADMIN')return '/admin';
   return role === 'SUPPORT' ? '/support' : '/app/home';
+}
+
+/**
+ * @param {string} role
+ * @param {{permissions?:{capacity?:boolean,tracking?:boolean}}|null|undefined} workspace
+ * @param {string} entry
+ */
+export function managedAccountLoginDestination(role,workspace=null,entry='') {
+  if(entry==='support')return role==='ADMIN'?'/admin/support':role==='SUPPORT'?'/support':'/app/support';
+  if(entry==='tracking'&&['CUSTOMER','SHIPPER','RECEIVER'].includes(role))return '/app/tracking';
+  return managedWorkspaceDestination(role,workspace);
 }
 
 function localRequestOrigin(requestUrl,environment){

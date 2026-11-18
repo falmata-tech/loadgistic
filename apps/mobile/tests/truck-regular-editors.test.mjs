@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
+import {currentCapacityLocation} from '../src/api/capacity.ts';
 import {workspaceCapabilities} from '../src/navigation/destinations.ts';
 import {currentDrivingTruck} from '../src/navigation/current-driving-pair.ts';
 import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../src/lib/map-initial-camera.js';
@@ -33,7 +34,7 @@ const place=label=>({placeRef:label,label,coordinate:[38.7,9.0]});
 const service=(vehicleId=vehicleA,driverId=driverA)=>({id:vehicleId,vehicleId,driverId,geometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],center:place('Adama'),boundary:[]});
 const native=Object.fromEntries(['ActivityIndicator','Redirect','Page','Title','Copy','Card','Button','ErrorText','Choices','Cities','PlacePicker','View','Text','Pressable','ScrollView','Modal','SafeAreaView','Switch','Image','Field','WorkspaceSection','WorkspaceAction','WorkspaceTaskHeader','WorkspaceFact','TrackingMap','Map','Camera','AppIcon','AppLink','TruckLocationSource','CargoSpacePhoto'].map(name=>[name,name]));
 const t=(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match));
-const common={...native,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
+const common={...native,currentCapacityLocation,locationSourceKind,locationSourceLabel,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
 
 function regular(){
  const view=renderer(),requests=[],paths=[];let data={services:[service(),service(vehicleB,driverB),{...service(),vehicleId:'',driverId:'',id:'legacy'}]},saved=0;
@@ -62,7 +63,7 @@ test('native regular editor never guesses an unscoped route and resets draft sta
 });
 
 test('company-driver Home displays only its authorized pair regular overlay and keeps owner-only editing',()=>{
- const view=renderer(),paths=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service(),service(vehicleB,driverB),{...service(),driverId:driverB}]};
+ const view=renderer(),paths=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service(),service(vehicleB,driverB),{...service(),driverId:driverB}]};
  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:path=>{paths.push(path);return{data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}};},useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
  const tree=view.render(screen);assert.equal(find(tree,'TrackingMap').props.regular.length,1);assert.deepEqual(find(tree,'TrackingMap').props.regular[0].places,service().route);assert.ok(!nodes(tree).some(node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Manage preferred corridor or service area'),'a fleet driver cannot open the owner-only corridor editor');assert.deepEqual(paths,['/api/mobile/capacity']);
 });
@@ -80,7 +81,7 @@ test('driver Home shows saved Planned and Preferred coverage without inventing r
 });
 
 test('Home discards an open regular editor when the active driver assignment changes',()=>{
- const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service()]};
+ const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service()]};
  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'OWNER_OPERATOR',currentDriverId:driverA,currentDrivenVehicleId:vehicleA}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
  let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage preferred corridor or service area').props.onPress();tree=view.render(screen);assert.equal(find(tree,'RegularService').props.expectedDriverId,driverA);assert.equal(find(tree,'Modal').props.visible,true);
  truck.driverId=driverB;tree=view.render(screen);assert.equal(find(tree,'RegularService'),undefined,'a new active pair must not inherit the previous open editor');assert.equal(find(tree,'Modal'),undefined);assert.equal(find(tree,'TrackingMap'),undefined,'a stale session cannot display the new driver’s job as the owner’s own');assert.ok(find(tree,'Copy',node=>node.props.message==='Choose the vehicle you drive under Manage vehicles.'));
@@ -149,12 +150,12 @@ test('saved capacity geometry stays on the owner map and sharing opens only its 
 });
 
 const currentArea=status=>({status,visibility:'PRIVATE',sharingMode:'PRIVATE',updatedAt:'2026-10-26',acceptedLoads:'BOTH',availabilityGeometry:'RADIUS',route:[place('Addis Ababa'),place('Adama')],boundary:[place('Sululta'),place('Bishoftu'),place('Sebeta')],areaCenter:place('Addis Ababa'),acceptsMultiPick:true,acceptsMultiDrop:false});
-function capacityEditor(current,locale='en'){
- const view=renderer(),requests=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',canLocate:false,location:{coordinate:[38.7,9],radius:10,area:'Saved reported point',updatedAt:'2026-10-26'},current};
+function capacityEditor(current,locale='en',changes={}){
+ const view=renderer(),requests=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:10,area:'Saved reported point',updatedAt:'2026-10-26'},current,...changes};
  const catalog=locale==='en'?{}:JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
  const component=view.compile('../src/screens/manage-capacity.tsx',{...common,capacityLoadExplanation,useLanguage:()=>({t:(message,values)=>translateMessage(catalog,message,values)}),RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({request:async(path,body)=>{requests.push({path,body});return{};}}),capacitySharingMode:()=> 'PRIVATE',CAPACITY_SHARING_CHOICES:[['PRIVATE','Private']],CAPACITY_LOAD_CHOICES:[],privacyRadii:[1,3,5,10,20]}).CapacityEditor;
  const props={truck,canPublish:true,section:'CAPACITY',onSaved(){},onCancel(){}};
- return{render:()=>view.render(component,props),requests};
+ return{render:(next={})=>view.render(component,{...props,...next}),requests};
 }
 const currentChoice=(tree,label)=>find(tree,'Pressable',node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityLabel===label);
 
@@ -232,5 +233,31 @@ test('actual CapacityEditor dynamic load explanations translate every accepted l
   assert.notEqual(translated,message,`${locale}: runtime ${acceptedLoads} explanation must not fall back to English`);
   const tree=capacityEditor({...currentArea('EMPTY'),acceptedLoads},locale).render();
   assert.ok(find(tree,'Copy',node=>node.props.children?.includes?.(translated)),`${locale}: actual editor renders the translated ${acceptedLoads} explanation`);
+ }
+});
+
+test('driver Home hides retired current points and offers an explicit source recovery',()=>{
+ for(const publishedLocationSource of ['MANUAL','MANUAL_ADMIN','INFERRED']){
+  const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Driver',label:'Vehicle',plate:'LOCAL',selectedLocationSource:null,publishedLocationSource,canLocate:true,canSetPhoneLocation:true,location:{coordinate:[38.7,9],radius:5,area:'Retired current area',updatedAt:'2026-10-13'},current:null,regularServices:[]};
+  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),DriverLocationEditor:'DriverLocationEditor',RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+  const tree=view.render(screen);assert.equal(find(tree,'TrackingMap'),undefined);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Share vehicle location'),undefined);assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Set vehicle location'));
+  assert.ok(find(tree,'Text',node=>node.props.children.includes('Choose GPS or Phone')));assert.equal(find(tree,'Text',node=>node.props.children.includes('Retired current area')),undefined);
+ }
+});
+
+test('unselected Capacity cannot capture or publish while Off Duty remains usable',async()=>{
+ for(const selectedLocationSource of [null,'MANUAL','MANUAL_ADMIN','INFERRED']){
+  const editor=capacityEditor(currentArea('EMPTY'),'en',{selectedLocationSource,canLocate:true});let tree=editor.render();
+  assert.equal(find(tree,'Button',node=>node.props.message==='Share vehicle location'),undefined);
+  const save=find(tree,'Button',node=>node.props.message==='Save planned capacity');assert.equal(save.props.disabled,true);save.props.onPress();await settle();assert.deepEqual(editor.requests,[]);
+  currentChoice(tree,'Off Duty').props.onPress();tree=editor.render();find(tree,'Button',node=>node.props.message==='Save planned capacity').props.onPress();await settle();assert.equal(editor.requests.length,1);assert.equal(editor.requests[0].body.status,'OFF_DUTY');
+ }
+});
+
+test('retired or unselected duty cannot go Available and still permits an explicit Off Duty command',async()=>{
+ for(const selectedLocationSource of [null,'MANUAL','MANUAL_ADMIN','INFERRED']){
+  const denied=capacityEditor(currentArea('OFF_DUTY'),'en',{selectedLocationSource,dutyConfigured:true,canLocate:true});let tree=denied.render({canPublish:false});
+  const available=find(tree,'Button',node=>node.props.message==='Mark Available');assert.equal(available.props.disabled,true);available.props.onPress();await settle();assert.deepEqual(denied.requests,[]);
+  const allowed=capacityEditor(currentArea('EMPTY'),'en',{selectedLocationSource,dutyConfigured:true,canLocate:true});tree=allowed.render({canPublish:false});find(tree,'Button',node=>node.props.message==='Go Off Duty').props.onPress();await settle();assert.deepEqual(allowed.requests.map(item=>item.body),[{action:'DUTY',vehicleId:vehicleA,onDuty:false}]);
  }
 });

@@ -38,8 +38,24 @@ begin
   where n.nspname='public' and p.prosecdef
     and not exists(select 1 from pg_depend d where d.classid='pg_proc'::regclass and d.objid=p.oid and d.deptype='e')
     and (has_function_privilege('anon',p.oid,'EXECUTE')
-      or (has_function_privilege('authenticated',p.oid,'EXECUTE') and p.oid<>'public.current_user_projection()'::regprocedure));
+      or has_function_privilege('authenticated',p.oid,'EXECUTE'));
   if unsafe is not null then raise exception 'APPLICATION_BROWSER_DEFINER_FORBIDDEN: %',unsafe; end if;
+  if has_function_privilege('anon','public.current_user_projection()','EXECUTE')
+    or has_schema_privilege('anon','loadgistic_identity','USAGE')
+    or has_schema_privilege('authenticated','loadgistic_identity','CREATE')
+    or has_function_privilege('anon','loadgistic_identity.read_own_account()','EXECUTE') then
+    raise exception 'IDENTITY_ACCESS_TOO_BROAD';
+  end if;
+  if exists (
+    select 1 from (
+      select current_setting('pgrst.db_schemas',true) as schemas
+      union all
+      select substr(cfg,length('pgrst.db_schemas=')+1) from pg_db_role_setting
+      cross join lateral unnest(setconfig) cfg
+      where setrole in (0,'authenticator'::regrole::oid) and cfg like 'pgrst.db_schemas=%'
+    ) settings, lateral unnest(string_to_array(settings.schemas,',')) exposed
+    where trim(both '"' from trim(exposed))='loadgistic_identity'
+  ) then raise exception 'PRIVATE_IDENTITY_SCHEMA_EXPOSED'; end if;
   if not has_function_privilege('authenticated','public.current_user_projection()','EXECUTE') then
     raise exception 'AUTHENTICATED_OWN_IDENTITY_REQUIRED';
   end if;

@@ -23,6 +23,15 @@ test('proof UI uses record-scoped links and file route reauthorizes before Stora
   const adapter=read('src/lib/provider-tracking/supabase.js');
   const getter=adapter.slice(adapter.indexOf('export async function readSupabaseProviderTrackingProof'),adapter.indexOf('export async function addSupabaseProviderTrackingRecipient'));
   assert.ok(getter.indexOf("rpc('provider_tracking_proof_file'")<getter.indexOf('readPrivateUpload'));
-  for(const path of ['src/app/app/provider-shipments/[id]/page.tsx','src/app/track/[id]/page.tsx','src/app/admin/operations/[view]/[id]/page.tsx'])assert.match(read(path),/event.has_proof\?<TrackingProofLink/);
+  for(const path of ['src/app/app/provider-shipments/[id]/page.tsx','src/app/admin/operations/[view]/[id]/page.tsx'])assert.match(read(path),/event.has_proof\?<TrackingProofLink/);
+  const accountEndpoint=read('src/app/api/tracking/sessions/[sessionId]/proof/[eventId]/route.ts');
+  assert.match(accountEndpoint,/trackingSessionHttp\(request,'PROOF',await context.params\)/);
+  const http=read('src/lib/tracking-sessions/http.ts');
+  assert.ok(http.indexOf('const actor=await businessActorIdentity(request)')<http.indexOf("if(operation==='PROOF')"));
+  assert.ok(http.indexOf('service.proof(actor.id,sessionId!')<http.indexOf('readPrivateUpload(file.storage_path)'));
+  assert.match(read('src/components/tracking-session-manager.tsx'),/capabilities.canReadProof/);
+  assert.doesNotMatch(read('src/components/tracking-session-guest.tsx'),/TrackingProofLink|hasProof|has_proof/);
+  assert.doesNotMatch(read('src/app/track/[id]/page.tsx'),/TrackingProofLink|event.has_proof/);
+  assert.match(read('src/lib/auth.ts'),/getProviderTrackingGrant\([^)]*\)[^{]*\{\s*return null;/);
   assert.doesNotMatch(read('src/components/tracking-proof-link.tsx'),/storage_path|supabase:\/\//);
 });

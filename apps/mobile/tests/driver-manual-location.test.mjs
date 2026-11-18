@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
+import {parseDriverLocationSelection} from '../../../src/lib/telematics-workspace.ts';
+import {locationSourceKind} from '../../../src/lib/location-source.js';
 
 const vehicleId='11111111-1111-4111-8111-111111111111';
 function harness({selection,request=async()=>({}),capture=async()=>({approximateLat:9.1,approximateLng:38.8,locationPrecisionKm:10,phoneInstallation:{installationId:'local-phone',reportId:'report',observedAt:1000}})}={}){
@@ -10,14 +12,14 @@ function harness({selection,request=async()=>({}),capture=async()=>({approximate
  const React={createElement:(type,props,...children)=>({type,props:{...props,children:children.flat(Infinity)}}),Fragment:'Fragment'};
  const useState=initial=>{const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];};
  const useRef=initial=>{const index=cursor++;return slots[index]||(slots[index]={current:initial});};
- const input={vehicleId,source:'MOBILE',precisionKm:10,revision:'original-revision',manualPoint:null,canSetManualLocation:true,canSetPhoneLocation:true,...selection};
- const ports={React,useState,useRef,useCallback:callback=>callback,AppState:{currentState:'active'},ActivityIndicator:'ActivityIndicator',Pressable:'Pressable',Text:'Text',View:'View',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},AppIcon:'AppIcon',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useLanguage:()=>({t:value=>value}),useAccountQuery:()=>({data:input,error:'',loading:false,reload:async()=>{}}),useAccount:()=>({request:requestPort}),privacyRadii:[1,3,5,10,20],captureCapacityLocation:capture};
+ const input={vehicleId,source:'MOBILE',precisionKm:10,revision:'2026-10-18T12:00:00Z',manualPoint:null,canSetPhoneLocation:true,...selection};
+ const ports={React,parseDriverLocationSelection,locationSourceKind,LoadingSpinner:'LoadingSpinner',useState,useRef,useCallback:callback=>callback,AppState:{currentState:'active'},ActivityIndicator:'ActivityIndicator',Pressable:'Pressable',Text:'Text',View:'View',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},AppIcon:'AppIcon',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useLanguage:()=>({t:value=>value}),useAccountQuery:()=>({data:input,error:'',loading:false,reload:async()=>{}}),useAccount:()=>({request:requestPort}),privacyRadii:[1,3,5,10,20],captureCapacityLocation:capture};
  const path=new URL('../src/components/driver-location-editor.tsx',import.meta.url),parsed=ts.createSourceFile(path.pathname,readFileSync(path,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))))+'\nexport {LocationForm};';
  const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={};
  new Function(...Object.keys(ports),'exports',code)(...Object.values(ports),exports);
  const truck={id:vehicleId,label:'Local vehicle',location:{coordinate:[38.7,9],updatedAt:'2026-10-18T10:00:00Z'}};
- return {render:()=>{cursor=0;return exports.LocationForm({truck,selection:input,onSaved:()=>saved++,onBusy(){},reload:async()=>{}});},calls,saved:()=>saved};
+ return {render:()=>{cursor=0;return exports.LocationForm({truck,selection:parseDriverLocationSelection(input,vehicleId),onSaved:()=>saved++,onBusy(){},reload:async()=>{}});},calls,saved:()=>saved};
 }
 function nodes(tree){if(Array.isArray(tree))return tree.flatMap(nodes);if(!tree||typeof tree!=='object')return[];return[tree,...nodes(tree.props?.children)];}
 function find(tree,type,check=()=>true){const value=nodes(tree).find(node=>(node.type===type||node.type?.name===type)&&check(node));assert.ok(value,`${type} missing`);return value;}
@@ -30,7 +32,7 @@ test('legacy Manual is read-only and requires a deliberate phone choice before a
  assert.equal(find(view,'SourceChoice',node=>node.props.label==='Driver’s phone').props.selected,false);
  const save=find(view,'Button',node=>node.props.message==='Use phone location');assert.equal(save.props.disabled,true);
  save.props.onPress();await settle();assert.equal(captures,0);assert.deepEqual(h.calls,[]);assert.equal(h.saved(),0);
- assert.ok(nodes(view).some(node=>node.type==='Text'&&node.props.children.includes('Manually entered')));
+ assert.ok(nodes(view).some(node=>node.type==='Text'&&node.props.children.includes('Choose GPS or Phone')));
 });
 
 test('denied phone capture preserves the manual source before any source write',async()=>{
@@ -45,7 +47,7 @@ test('switching back to phone shares an obscured fix after selecting the phone s
  const h=harness({selection:{source:'MANUAL',manualPoint:{latitude:9,longitude:38}},capture:async()=>fix});
  let view=h.render();find(view,'SourceChoice',node=>node.props.label==='Driver’s phone').props.onPress();view=h.render();
  find(view,'Button',node=>node.props.message==='Use phone location').props.onPress();await settle();
- assert.equal(h.saved(),1);assert.deepEqual(h.calls,[{path:'/api/mobile/fleet/devices',body:{action:'SOURCE',input:{vehicleId,source:'MOBILE',expectedRevision:'original-revision',precisionKm:10}}},{path:'/api/mobile/capacity',body:{action:'LOCATION',vehicleId,...fix}}]);
+ assert.equal(h.saved(),1);assert.deepEqual(h.calls,[{path:'/api/mobile/fleet/devices',body:{action:'SOURCE',input:{vehicleId,source:'MOBILE',expectedRevision:'2026-10-18T12:00:00Z',precisionKm:10}}},{path:'/api/mobile/capacity',body:{action:'LOCATION',vehicleId,...fix}}]);
  assert.equal(h.calls.some(call=>call.body?.manualLatitude!=null),false,'raw coordinates never accompany the phone report');
 });
 
@@ -62,7 +64,12 @@ test('a failed phone report can retry without replaying the completed source cha
 });
 
 test('driver choice is not offered when current assignment permission is absent',()=>{
- const h=harness({selection:{source:'GPS',canSetManualLocation:false,canSetPhoneLocation:false}}),view=h.render();
+ const h=harness({selection:{source:'GPS',canSetPhoneLocation:false}}),view=h.render();
  assert.equal(nodes(view).some(node=>node.type?.name==='SourceChoice'),false);
  assert.equal(nodes(view).some(node=>node.type==='Button'&&['Update location','Use phone location'].includes(node.props.message)),false);
+});
+
+test('a denied source-change capability cannot capture or write a phone location',()=>{
+ const h=harness({selection:{source:null,canChangeLocationSource:false}}),view=h.render();
+ assert.equal(nodes(view).some(node=>node.type?.name==='SourceChoice'),false);assert.equal(nodes(view).some(node=>node.type==='Button'&&node.props.message==='Use phone location'),false);assert.deepEqual(h.calls,[]);
 });

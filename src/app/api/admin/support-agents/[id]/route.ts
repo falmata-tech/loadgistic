@@ -15,7 +15,6 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
     await updateSupportAgent(user,id,{
       active:checked(form,'active'),
       available:checked(form,'available'),
-      maxOpenConversations:text(form,'maxOpenConversations'),
       canManageCustomers:checked(form,'canManageCustomers'),
       canManageOperations:checked(form,'canManageOperations'),
       canManageTrust:checked(form,'canManageTrust'),

@@ -7,7 +7,7 @@ import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 test.use({channel:'chrome',trace:'off',screenshot:'off',video:'off',actionTimeout:20_000,navigationTimeout:30_000});
 
-test('assigned driver sees read-only legacy Manual in Expo and deliberately resumes phone updates',async({browser},info)=>{
+test('Expo hides a retired selection and saves Phone only after explicit driver permission',async({browser},info)=>{
  test.skip(info.project.name!=='desktop-chromium','One phone-size Chromium context exercises the Expo preview.');
  test.setTimeout(240_000);
  const db=localAuditService(),owner=await auditFleetProvider(db,'driver-manual-expo');
@@ -37,14 +37,20 @@ test('assigned driver sees read-only legacy Manual in Expo and deliberately resu
   await expect(page.getByRole('tab',{name:'My capacity',exact:true})).toHaveAttribute('aria-selected','true');
   await expect(page.getByTestId('driver-home-map')).toBeVisible({timeout:30_000});
   await expect(page.getByText(new RegExp(`EXP-${owner.suffix}`))).toBeVisible({timeout:45_000});
-  await expect(page.getByText('No driver location shared yet')).toBeVisible();
+  await expect(page.getByText('Choose GPS or Phone',{exact:true})).toBeVisible();
 
+  const selectionRead=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/mobile/capacity/manual-location'&&url.searchParams.get('vehicleId')===vehicle.id&&response.request().method()==='GET';});
   await page.getByRole('button',{name:'Set vehicle location',exact:true}).click();
+  const selectionResponse=await selectionRead;expect(selectionResponse.status()).toBe(200);const selectionProjection=await selectionResponse.json();
+  expect(selectionProjection).toMatchObject({source:null,precisionKm:5,canSetPhoneLocation:true,canChangeLocationSource:true});
+  for(const key of ['manualPoint','canSetManualLocation'])expect(Object.hasOwn(selectionProjection,key)).toBe(false);
   await expect(page.getByText('Capacity map location')).toBeVisible();
   await expect(page.getByRole('radio',{name:'Manual capacity location'})).toHaveCount(0);
   await expect(page.getByRole('radio',{name:'Driver’s phone'})).toHaveAttribute('aria-checked','false');
   await expect(page.getByRole('button',{name:'Use phone location'})).toBeDisabled();
-  await expect(page.getByText('Manual locations are read-only. Choose a location source to resume updates.')).toBeVisible();
+  const sourceSummary=page.getByText('Capacity map location',{exact:true}).locator('..');
+  await expect(sourceSummary.getByText('Choose GPS or Phone',{exact:true})).toBeVisible();
+  await expect(page.getByText('Manually entered',{exact:true})).toHaveCount(0);
   await expect(page.getByRole('radio',{name:'5 km',exact:true})).toHaveAttribute('aria-checked','true');
   await page.getByRole('radio',{name:'10 km',exact:true}).click();
   await expect(page.getByRole('radio',{name:'10 km',exact:true})).toHaveAttribute('aria-checked','true');
@@ -102,8 +108,9 @@ test('assigned driver sees read-only legacy Manual in Expo and deliberately resu
   const after=checked(await db.from('telematics_location_sources').select('source,selected_by').eq('vehicle_id',vehicle.id).single());
   expect(after).toMatchObject({source:'MOBILE',selected_by:driver.id});
   await publishProviderCapacity(owner,{vehicleId:vehicle.id,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'PRESERVE_DRIVER',currentRoutePlaces:places.map((place:{id:string;name:string})=>({placeRef:place.id,label:place.name}))});
-  const capacity=checked(await db.from('capacities').select('location_source,location_updated_at').eq('vehicle_id',vehicle.id).order('updated_at',{ascending:false}).limit(1).single());
+  const capacity=checked(await db.from('capacities').select('location_source,location_updated_at,availability_geometry,current_route_points_json').eq('vehicle_id',vehicle.id).order('updated_at',{ascending:false}).limit(1).single());
   expect(capacity.location_source).toBe('DEVICE_OBSCURED');expect(Number.isFinite(Date.parse(capacity.location_updated_at))).toBe(true);
+  expect(capacity.availability_geometry).toBe('ROUTE');expect(capacity.current_route_points_json.map((point:{place_ref:string})=>point.place_ref)).toEqual(places.map(place=>place.id));
   await page.reload();await expect(page.getByText('Driver’s phone')).toBeVisible({timeout:30_000});
   await page.screenshot({path:`${evidence}/expo-driver-phone-restored-phone.png`});
   expect(errors).toEqual([]);

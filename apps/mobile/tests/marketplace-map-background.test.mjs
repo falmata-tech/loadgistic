@@ -7,6 +7,8 @@ import {capacityIntroduction} from '../../../src/lib/platform-copy.js';
 import * as transporterSearch from '../../../src/lib/transporter-search.js';
 import * as capacityRefresh from '../src/map/capacity-refresh.ts';
 import * as navigation from '../src/navigation/destinations.ts';
+import {createTrackingSessionController} from '../src/session/tracking-session-controller.ts';
+import * as refreshPolicy from '../../../src/lib/tracking-refresh-policy.js';
 
 // Execute the real screens and verification handlers with native hosts substituted.
 // These are layout/auth-boundary component checks, not backend or pixel-rendering evidence.
@@ -51,64 +53,59 @@ const native=Object.fromEntries(['ActivityIndicator','View','Text','ScrollView',
 native.StyleSheet={create:value=>value,absoluteFill:{position:'absolute',top:0,left:0,right:0,bottom:0}};
 const settle=async()=>{for(let index=0;index<5;index++)await Promise.resolve();};
 
+const trackingId='16000000-0000-4000-8000-000000000001',shipmentId='16000000-0000-4000-8000-000000000002',linkToken='a'.repeat(43);
+const trackingView=()=>({id:trackingId,reference:'Synthetic load',state:'CONNECTED',revision:0,workspaceId:null,shipmentId,route:[{placeRef:'A',label:'A',coordinate:[38,9]},{placeRef:'B',label:'B',coordinate:[39,10]}],cargoSummary:'Synthetic cargo',pickupDate:'',deliveryDate:'',capabilities:{canIssueLink:false,canRevokeLink:false,canAcceptProvider:false},links:[],tracking:{shipmentId,code:'Reference',status:'IN_TRANSIT',updatedAt:'',trackingMode:'STATUS_ONLY',location:null,events:[]}});
 function trackingEntry(){
- const render=renderer(),requests=[];let queries=0,verifyError='';
- const visitor={ready:true,snapshot:{foreground:true,tracking:null},errors:{},error:'',controller:{
-  verify:async(scope,handoff,code)=>{requests.push({scope,handoff,code});if(verifyError)throw new Error(verifyError);visitor.snapshot.tracking={startedAt:1};},
-  clear:async()=>{visitor.snapshot.tracking=null;},touch:async()=>{}
- }};
- const shared={'react-native':native,'../session/visitor-provider':{useVisitor:()=>visitor},'../localization/provider':language};
- const access=render.compile('../src/components/visitor-access.tsx',{
-  ...shared,'../api/http':{apiRequest:async(path,options)=>{requests.push({path,body:options.body});return{handoff:'synthetic-handoff',message:'Synthetic code sent',verificationRequired:true};}},
-  './ui':ui,'../session/provider':{useAccount:()=>({session:null})}
- });
+ const render=renderer(),requests=[];let failure=false;
+ const port={now:()=>1800000000000,changed(){},request:async(path,options)=>{requests.push({path,options});if(failure)throw Object.assign(Error('Synthetic denied'),{status:401});return path==='/api/tracking/access'&&options?.body?{ok:true,data:{session:trackingView(),grant:'private.grant',expiresAt:new Date(1800000300000).toISOString()}}:{ok:true,data:trackingView()};}};
+ const controller=createTrackingSessionController(port);
  const screen=render.compile('../src/screens/visitor-tracking.tsx',{
-  ...shared,'../components/app-link':{AppLink:'AppLink'},'../components/visitor-access':access,'../components/ui':ui,
-  '../hooks/visitor-query':{useVisitorQuery:()=>{assert.ok(visitor.snapshot.tracking,'private query must remain behind verification');queries++;return{data:{items:[],pageCount:1},loading:false,error:'',reload:async()=>{}};}},
-  '../api/tracking':{statusLabel:value=>value},'../api/runtime-content':{parseTrackingPage:value=>value},
-  '../components/map-platform':{Map:'Map',Camera:'Camera'},'../components/map-style':{mapStyle:{}}
+  'react-native':native,'expo-router':{useLocalSearchParams:()=>({})},'../session/tracking-session-provider':{useTrackingSession:()=>({controller,snapshot:controller.snapshot()})},'../localization/provider':language,
+  '../components/ui':ui,'../api/tracking':{statusLabel:value=>value},'../components/tracking-workspace':{TrackingWorkspace:'TrackingWorkspace'},'../components/tracking-map':{TrackingMap:'TrackingMap'},
+  '../components/map-platform':{Map:'Map',Camera:'Camera'},'../components/map-style':{mapStyle:{}},'../../../../src/lib/tracking-refresh-policy.js':refreshPolicy
  });
- return{visitor,requests,queries:()=>queries,failVerification:message=>{verifyError=message;},render:()=>render.render(screen.default)};
+ return{controller,requests,port,queries:()=>requests.filter(request=>request.path.startsWith('/api/tracking/sessions/')).length,fail:()=>{failure=true;},recover:()=>{failure=false;},render:()=>render.render(screen.default)};
 }
 
-test('unverified Tracking has a full empty basemap behind its existing verification form',()=>{
+test('locked Tracking has a full empty basemap behind the separate link and code controls',()=>{
  const entry=trackingEntry(),tree=entry.render(),map=find(tree,item=>item.type==='Map');
- assert.ok(map,'entry must display the basemap before verification');assert.equal(map.props.attribution,true);
+ assert.ok(map,'entry must display the basemap before authorization');assert.equal(map.props.attribution,true);
  const mapHost=nodes(tree).find(({node})=>node===map).ancestors.at(-1);
  assert.deepEqual(style(mapHost),{position:'absolute',top:0,left:0,right:0,bottom:0});
- assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Your email'));
- assert.ok(find(tree,item=>item.type==='Button'&&item.props.message==='Send email code'));
+ assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking link'));
+ assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking code'));
+ assert.equal(find(tree,item=>item.type==='Field'&&item.props.message==='Your email'),undefined);
  assert.equal(nodes(map).filter(({node})=>node.type==='Marker'||node.type==='GeoJSONSource').length,0);
  assert.equal(entry.queries(),0);assert.equal(entry.requests.length,0);
  const scroll=find(tree,item=>item.type==='ScrollView');assert.equal(scroll.props.keyboardShouldPersistTaps,'handled');
  assert.equal(scroll.props.pointerEvents,'box-none');assert.equal(style(scroll).flexGrow,0);
 });
 
-test('OTP errors and resend remain usable over the empty map without private reads',async()=>{
+test('both credentials and retry remain usable over the empty map without an email or private list request',async()=>{
  const entry=trackingEntry();let tree=entry.render();
- find(tree,item=>item.type==='Field'&&item.props.message==='Your email').props.onChangeText(' synthetic@example.test ');
- tree=entry.render();find(tree,item=>item.type==='Button'&&item.props.message==='Send email code').props.onPress();await settle();
- assert.deepEqual(entry.requests[0],{path:'/api/mobile/visitor/tracking/request',body:{email:'synthetic@example.test'}});
- tree=entry.render();const code=find(tree,item=>item.type==='Field'&&item.props.message==='Email verification code');
- assert.equal(code.props.autoComplete,'one-time-code');code.props.onChangeText('000000');entry.failVerification('Synthetic invalid code');
- tree=entry.render();find(tree,item=>item.type==='Button'&&item.props.message==='Open private access').props.onPress();await settle();
- tree=entry.render();assert.ok(find(tree,item=>item.type==='Map'));
- assert.ok(find(tree,item=>item.type==='ErrorText'&&item.props.message==='Synthetic invalid code'));assert.equal(entry.queries(),0);
- find(tree,item=>item.type==='Button'&&item.props.message==='Use another email or resend').props.onPress();
- tree=entry.render();assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Your email'));
- assert.equal(find(tree,item=>item.type==='Field'&&item.props.message==='Email verification code'),undefined);
- entry.visitor.snapshot.tracking={startedAt:1};tree=entry.render();
- assert.ok(find(tree,item=>item.type==='Page'));assert.equal(find(tree,item=>item.type==='Map'),undefined);
- assert.equal(entry.queries(),1,'authorized list mounts only after the normal grant exists');
+ find(tree,item=>item.type==='Field'&&item.props.message==='Tracking link').props.onChangeText(linkToken);
+ find(tree,item=>item.type==='Field'&&item.props.message==='Tracking code').props.onChangeText('ABCD-EF23');entry.fail();
+ tree=entry.render();find(tree,item=>item.type==='Button'&&item.props.message==='Open tracking').props.onPress();await settle();
+ assert.deepEqual(entry.requests[0],{path:'/api/tracking/access',options:{body:{linkToken,code:'ABCDEF23'}}});
+ tree=entry.render();assert.ok(find(tree,item=>item.type==='Map'));assert.ok(find(tree,item=>item.type==='ErrorText'&&item.props.message==='This Tracking link or code is unavailable. Check both and try again.'));assert.equal(entry.queries(),0);
+ assert.equal(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking code').props.value,'ABCD-EF23');
+ assert.equal(find(tree,item=>item.type==='Button'&&item.props.message==='Open tracking').props.busy,false);
+ entry.recover();find(tree,item=>item.type==='Button'&&item.props.message==='Open tracking').props.onPress();await settle();tree=entry.render();
+ assert.ok(find(tree,item=>item.type==='TrackingWorkspace'));assert.equal(find(tree,item=>item.type==='Map'),undefined);
+ assert.equal(entry.queries(),0,'unlock returns one authorized session rather than mounting an email shipment list');
+ assert.equal(entry.requests.length,2);assert.ok(entry.requests.every(request=>request.path==='/api/tracking/access'));
 });
 
-test('Checking access and background pause keep the empty map and do not query shipments',()=>{
- const entry=trackingEntry();entry.visitor.ready=false;
- assert.ok(find(entry.render(),item=>item.type==='Map'));assert.equal(entry.queries(),0);
- entry.visitor.ready=true;entry.visitor.snapshot.foreground=false;
- const tree=entry.render();assert.ok(find(tree,item=>item.type==='Map'));
+test('checking an exact-session resume and background pause retain the neutral map without private markers',async()=>{
+ const entry=trackingEntry();await entry.controller.open(linkToken,'ABCD-EF23');entry.controller.setForeground(false);
+ let tree=entry.render();assert.ok(find(tree,item=>item.type==='Map'));assert.equal(find(tree,item=>item.type==='TrackingWorkspace'),undefined);
  assert.ok(find(tree,item=>item.type==='Copy'&&item.props.message==='Private access is paused while the app is in the background.'));
  assert.equal(entry.queries(),0);
+ let resolve;entry.port.request=async(path,options)=>{entry.requests.push({path,options});return new Promise(done=>resolve=done);};entry.controller.setForeground(true);tree=entry.render();
+ assert.ok(find(tree,item=>item.type==='Map'));assert.ok(find(tree,item=>item.type==='LoadingSpinner'));assert.equal(find(tree,item=>item.type==='TrackingWorkspace'),undefined);
+ assert.equal(entry.queries(),1);assert.equal(entry.requests.at(-1).path,`/api/tracking/sessions/${trackingId}`);assert.equal(entry.requests.at(-1).options.trackingGrant,'private.grant');
+ assert.equal(nodes(tree).filter(({node})=>node.type==='Marker'||node.type==='GeoJSONSource').length,0);
+ resolve({ok:true,data:trackingView()});await settle();assert.ok(find(entry.render(),item=>item.type==='TrackingWorkspace'));
 });
 
 function capacityScreen(){
@@ -117,7 +114,7 @@ function capacityScreen(){
   'react-native':{...native,Keyboard:{dismiss(){}}},'expo-router':{Link:'Link',useLocalSearchParams:()=>({}),useFocusEffect:()=>{}},
   '../session/chat-alert-provider':{useChatUpdates:()=>({transportUnreadCount:2})},'../hooks/content-blocks':{useBlockedProviders:()=>({blocked:[]})},
   '../localization/provider':language,'../session/visitor-provider':{useVisitor:()=>visitor},'../session/provider':{useAccount:()=>({session:null,busy:false})},'../components/visitor-access':{VisitorAccess:'VisitorAccess'},
-  '../components/app-icon':{AppIcon:'AppIcon'},'../components/CapacityMap':{__esModule:true,default:'CapacityMap'},'../api/http':{apiOrigin:'http://127.0.0.1',apiRequest:async()=>{}},
+  '../components/app-link':{AppLink:'AppLink'},'../components/app-icon':{AppIcon:'AppIcon'},'../components/CapacityMap':{__esModule:true,default:'CapacityMap'},'../api/http':{apiOrigin:'http://127.0.0.1',apiRequest:async()=>{}},
   '../api/discovery':discovery,'../components/discovery-filters':{DiscoveryFilters:'DiscoveryFilters'},'../components/results-drawer':{ResultsDrawer:'ResultsDrawer'},
   '../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},
   '../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},

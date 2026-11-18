@@ -5,9 +5,9 @@ import {Save,Smartphone} from 'lucide-react';
 import {capacityPrivacyRadii,nextCapacityPrivacyRadius} from '@/lib/location-privacy.js';
 import {readDriverLocation,saveDriverLocation,type DriverLocation} from '@/lib/capacity-editor-client';
 import {locationSourceLabel} from '@/lib/location-source.js';
+import {parseDriverLocationSelection,type DriverLocationSelection,type LocationSource} from '@/lib/telematics-workspace';
 import {Text,useTranslation} from './localization';
-type Source='GPS'|'MOBILE'|'MANUAL';
-type SourceSnapshot={vehicleId:string;source:Source;precisionKm:number;revision:string;manualPoint:{latitude:number;longitude:number}|null};
+type SourceSnapshot=DriverLocationSelection;
 type Choice='MOBILE';
 
 async function responseBody(response:Response):Promise<Record<string,unknown>>{
@@ -18,16 +18,6 @@ async function responseBody(response:Response):Promise<Record<string,unknown>>{
 function serverError(body:Record<string,unknown>,fallback:string){
  const error=body.error;
  return typeof error==='string'?error:error&&typeof error==='object'&&typeof (error as {message?:unknown}).message==='string'?(error as {message:string}).message:fallback;
-}
-function parseSnapshot(value:Record<string,unknown>,vehicleId:string):SourceSnapshot{
- const source=value.source,point=value.manualPoint;
- if(value.vehicleId!==vehicleId||!['GPS','MOBILE','MANUAL'].includes(String(source))||![...capacityPrivacyRadii('BOTH'),40].includes(Number(value.precisionKm))||typeof value.revision!=='string'||!Number.isFinite(Date.parse(value.revision)))throw Error('Location details changed. Close and reopen this editor.');
- if(point!==null&&point!==undefined){
-  if(!point||typeof point!=='object'||Array.isArray(point))throw Error('Location details changed. Close and reopen this editor.');
-  const {latitude,longitude}=point as Record<string,unknown>;
-  if(typeof latitude!=='number'||typeof longitude!=='number'||!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)throw Error('Location details changed. Close and reopen this editor.');
- }
- return value as SourceSnapshot;
 }
 async function switchSource(snapshot:SourceSnapshot,mode:Choice,radius:number){
  const response=await fetch('/api/fleet/devices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'SOURCE',input:{vehicleId:snapshot.vehicleId,source:mode,precisionKm:radius,expectedRevision:snapshot.revision}}),signal:AbortSignal.timeout(15000)});
@@ -41,8 +31,9 @@ async function switchSource(snapshot:SourceSnapshot,mode:Choice,radius:number){
 export function DriverCapacityLocationEditor({vehicleId,location,publishedSource,onDuty,onBusyChange,onSaved,onCancel}:{vehicleId:string;location:DriverLocation|null;publishedSource?:string|null;onDuty:boolean;onBusyChange:(busy:boolean)=>void;onSaved:(mode:Choice,location:DriverLocation|null)=>void;onCancel:()=>void}){
  const {t}=useTranslation();
  const [snapshot,setSnapshot]=React.useState(null as SourceSnapshot|null);
- const [mode,setMode]=React.useState('MOBILE' as Source);
+ const [mode,setMode]=React.useState(null as LocationSource);
  const [radius,setRadius]=React.useState(nextCapacityPrivacyRadius(location?.radius));
+ const [loadAttempt,setLoadAttempt]=React.useState(0);
  const [loading,setLoading]=React.useState(true),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
  const submitting=React.useRef(false);
  React.useEffect(()=>{
@@ -51,14 +42,14 @@ export function DriverCapacityLocationEditor({vehicleId,location,publishedSource
    const response=await fetch(`/api/capacity/manual-location?vehicleId=${encodeURIComponent(vehicleId)}`,{cache:'no-store',signal:AbortSignal.any([controller.signal,AbortSignal.timeout(15000)])});
    const body=await responseBody(response);
    if(!response.ok)throw Error(serverError(body,'Could not load this vehicle’s location choice.'));
-   const saved=parseSnapshot(body,vehicleId);if(controller.signal.aborted)return;
+   const saved=parseDriverLocationSelection(body,vehicleId);if(controller.signal.aborted)return;
    setSnapshot(saved);setMode(saved.source);setRadius(nextCapacityPrivacyRadius(saved.precisionKm));
   }catch(reason){if(!controller.signal.aborted)setError(reason instanceof Error?reason.message:'Could not load this vehicle’s location choice.');}
   finally{if(!controller.signal.aborted)setLoading(false);}})();
   return()=>controller.abort();
- },[vehicleId]);
+ },[vehicleId,loadAttempt]);
  async function save(event:React.FormEvent<HTMLFormElement>){
-  event.preventDefault();if(submitting.current||!snapshot||mode!=='MOBILE')return;
+  event.preventDefault();if(submitting.current||!snapshot?.canSetPhoneLocation||!snapshot?.canChangeLocationSource||mode!=='MOBILE')return;
   submitting.current=true;setBusy(true);onBusyChange(true);setError('');
   try{
    // An explicit, obscured phone fix must be saved even while Off Duty so a
@@ -67,32 +58,33 @@ export function DriverCapacityLocationEditor({vehicleId,location,publishedSource
    const captured=await readDriverLocation(radius);
    if(snapshot.source!=='MOBILE'||radius!==snapshot.precisionKm){
     const revision=await switchSource(snapshot,mode,radius);
-    setSnapshot({...snapshot,source:mode,precisionKm:radius,revision,manualPoint:null});
+    setSnapshot({...snapshot,source:mode,precisionKm:radius,revision});
    }
    const saved=await saveDriverLocation(vehicleId,captured);
    onSaved(mode,saved);
   }catch(reason){setError(reason instanceof Error?reason.message:'Could not save this vehicle’s location. Refresh before retrying.');}
   finally{submitting.current=false;setBusy(false);onBusyChange(false);}
  }
- const current=snapshot?.source==='GPS'?'GPS device':snapshot?.source==='MOBILE'?'Driver’s phone':'Manually entered';
+ const current=snapshot?.source==='GPS'?'GPS device':snapshot?.source==='MOBILE'?'Driver’s phone':'Choose GPS or Phone';
  const mapSource=locationSourceLabel(publishedSource);
+ const visibleLocation=mapSource?location:null;
  return <form className="capacity-signal-form" onSubmit={save} data-testid="driver-location-editor">
-  <div className="capacity-signal-dialog-body">
+  <div className="capacity-signal-dialog-body" style={{minHeight:280}} aria-busy={loading}>
    {loading?<p role="status" className="meta"><Text message="Loading location choice…"/></p>:null}
    {snapshot?<>
     <p className="meta"><Text message="Selected source"/>: <strong><Text message={current}/></strong></p>
-    <p className="meta"><Text message="Last map report"/>: {location?<>{mapSource?<><Text message={mapSource}/> · </>:null}{location.updatedAt?new Date(location.updatedAt).toLocaleString():t('Not reported yet')}</>:<Text message="Not reported yet"/>}</p>
-    <fieldset disabled={busy} className="capacity-signal-group"><legend><Text message="Capacity map location"/></legend>
+    <p className="meta"><Text message="Last map report"/>: {visibleLocation?<><Text message={mapSource}/> · {visibleLocation.updatedAt?new Date(visibleLocation.updatedAt).toLocaleString():t('Not reported yet')}</>:<Text message="Not reported yet"/>}</p>
+    <fieldset disabled={busy||!snapshot.canSetPhoneLocation||!snapshot.canChangeLocationSource} className="capacity-signal-group"><legend><Text message="Capacity map location"/></legend>
      <div className="segmented-control capacity-visibility-choices">
-      <button type="button" aria-pressed={mode==='MOBILE'} onClick={()=>setMode('MOBILE')}><Smartphone aria-hidden="true"/><strong><Text message="Use my phone"/></strong></button>
+      {snapshot.canSetPhoneLocation&&snapshot.canChangeLocationSource?<button type="button" aria-pressed={mode==='MOBILE'} onClick={()=>setMode('MOBILE')}><Smartphone aria-hidden="true"/><strong><Text message="Use my phone"/></strong></button>:null}
      </div>
-     {mode==='MANUAL'?<p className="meta"><Text message="Manual locations are read-only. Choose a location source to resume updates."/></p>:mode==='MOBILE'?<p className="meta"><Text message={onDuty?'Phone location updates while Home is open.':'Phone location can be shared when this vehicle is Available.'}/></p>:<p className="meta"><Text message="Choose source"/></p>}
+     {mode==='MOBILE'?<p className="meta"><Text message={onDuty?'Phone location updates while Home is open.':'Phone location can be shared when this vehicle is Available.'}/></p>:null}
      <label htmlFor="driver-capacity-location-radius"><Text message="Shared location accuracy"/><select id="driver-capacity-location-radius" value={radius} onChange={event=>setRadius(Number(event.target.value))}>{capacityPrivacyRadii('BOTH').map(value=><option value={value} key={value}>{value} km</option>)}</select></label>
     </fieldset>
     <p className="meta"><Text message="Capacity shows an approximate area. Active shipment Tracking and the provider’s GPS can continue separately."/></p>
    </>:null}
-   {error?<p className="alert error" role="alert">{t(error)}</p>:null}
+   {error?<><p className="alert error" role="alert">{t(error)}</p>{!snapshot?<button type="button" className="button secondary" disabled={loading} onClick={()=>setLoadAttempt((value:number)=>value+1)}><Text message="Try again"/></button>:null}</>:null}
   </div>
-  <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message="Cancel"/></button><button className="button" disabled={busy||loading||!snapshot||mode!=='MOBILE'}><Save aria-hidden="true"/>{busy?<Text message="Saving…"/>:<Text message="Save location"/>}</button></footer>
+  <footer className="capacity-signal-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message="Cancel"/></button><button className="button" disabled={busy||loading||!snapshot?.canSetPhoneLocation||!snapshot?.canChangeLocationSource||mode!=='MOBILE'}><Save aria-hidden="true"/>{busy?<Text message="Saving…"/>:<Text message="Save location"/>}</button></footer>
  </form>;
 }

@@ -1,7 +1,5 @@
 import {isTransportSupportMember,canSendSupportMessage} from '../support-policy.js';
-import {normalizePrivateContactEmail} from '../domain.js';
 import {removePrivateUpload,readPrivateUpload,storePrivateUpload} from '../private-storage.js';
-import {guestSupportAccessCode,privateContactDigest,verifyPrivateAccessCode} from '../security.js';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {requireTeamCreator} from './team-authorization.js';
 import {supportHistoryCursor,supportMessageWindow} from '../support-history.js';
@@ -103,14 +101,6 @@ export async function createGuestSupportConversation(input,file=/** @type {File|
   throw new Error('PUBLIC_SUPPORT_CLOSED');
 }
 
-export async function verifyGuestSupportAccess(email,code){
-  const normalized=normalizePrivateContactEmail(email);const emailDigest=privateContactDigest(normalized);const client=createSupabaseAdminClient();
-  const {data,error}=await client.rpc('managed_guest_support_access_candidates',{requested_email_digest:emailDigest});
-  if(error)throw managedError('SUPABASE_GUEST_SUPPORT_ACCESS_FAILED',error);
-  const conversation=(data||[]).find(item=>verifyPrivateAccessCode(guestSupportAccessCode(item.conversation_id),code));
-  if(!conversation)throw new Error('GUEST_SUPPORT_ACCESS_DENIED');return {conversationId:conversation.conversation_id,emailDigest};
-}
-
 async function getGuestConversation(actor,conversationId,emailDigest,options={}){
   const before=supportHistoryCursor(options.beforeMessageId);
   const client=createSupabaseAdminClient();const {data,error}=await client.rpc(before?'managed_guest_support_history':'managed_guest_support_conversation',{
@@ -121,7 +111,6 @@ async function getGuestConversation(actor,conversationId,emailDigest,options={})
   if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CONVERSATION_FAILED',error);return supportMessageWindow(data);
 }
 
-export function getGuestSupportConversationForGuest(conversationId,emailDigest,options={}){return getGuestConversation(null,conversationId,emailDigest,options);}
 export function getGuestSupportConversationForTeam(user,conversationId,options={}){return getGuestConversation(user,conversationId,null,options);}
 
 export async function listGuestSupportInbox(user,view='ASSIGNED',options={}){
@@ -150,11 +139,6 @@ export async function closeGuestSupportConversation(user,conversationId){
   if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CLOSE_FAILED',error);
 }
 
-export async function endGuestSupportConversation(conversationId,emailDigest){
-  const client=createSupabaseAdminClient();const {error}=await client.rpc('close_managed_guest_support',{actor_user_id:null,conversation_id:conversationId,requested_email_digest:emailDigest});
-  if(error)throw managedError('SUPABASE_GUEST_SUPPORT_CLOSE_FAILED',error);
-}
-
 export async function readGuestSupportAttachment(actor,conversationId,attachmentId,emailDigest=/** @type {string|null} */(null)){
   const client=createSupabaseAdminClient();const {data,error}=await client.rpc('managed_guest_support_attachment_file',{
     actor_user_id:actor?.id||null,conversation_id:conversationId,attachment_id:attachmentId,requested_email_digest:emailDigest||null
@@ -171,7 +155,7 @@ export async function listSupportAgents(user,options={}){
 }
 
 function agentCommand(input){if(input.canManageBrokerage)throw new Error('PLATFORM_BROKERAGE_RETIRED');return {
-  name:String(input.name||''),email:String(input.email||'').trim().toLowerCase(),max_open_conversations:Number(input.maxOpenConversations)||3,
+  name:String(input.name||''),email:String(input.email||'').trim().toLowerCase(),
   active:Boolean(input.active),available:Boolean(input.available),can_manage_customers:Boolean(input.canManageCustomers),
   can_manage_operations:Boolean(input.canManageOperations),can_manage_trust:Boolean(input.canManageTrust),
   can_manage_billing:Boolean(input.canManageBilling),can_manage_support:Boolean(input.canManageSupport??true),can_manage_brokerage:false,can_manage_featured:Boolean(input.canManageFeatured)

@@ -79,6 +79,7 @@ test('completed provider access enters work Home while business and platform des
   assert.equal(managedWorkspaceDestination('SUPPORT'),'/support');
   assert.equal(managedWorkspaceDestination('ADMIN'),'/admin');
   for(const role of ['DRIVER','TRANSPORTER'])assert.equal(managedWorkspaceDestination(role),'/app/home');
+  for(const role of ['SHIPPER','RECEIVER'])assert.equal(managedWorkspaceDestination(role),'/app/tracking');
   assert.equal(managedWorkspaceDestination('CUSTOMER'),'/app/business/capacity');
   assert.equal(managedWorkspaceDestination('CUSTOMER',{permissions:{capacity:true,tracking:true}}),'/app/business/capacity');
   assert.equal(managedWorkspaceDestination('CUSTOMER',{permissions:{capacity:false,tracking:true}}),'/app/business/tracking');

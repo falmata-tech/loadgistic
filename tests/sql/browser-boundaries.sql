@@ -43,6 +43,7 @@ end $$;
 reset role;
 set local role anon;
 do $$ begin
+  begin perform loadgistic_identity.read_own_account(); raise exception 'ANON_PRIVATE_IDENTITY_ALLOWED'; exception when insufficient_privilege then null; end;
   begin perform public.current_user_projection(); raise exception 'ANON_IDENTITY_ALLOWED'; exception when insufficient_privilege then null; end;
   begin perform id from public.profiles limit 1; raise exception 'ANON_PROFILE_READ_ALLOWED'; exception when insufficient_privilege then null; end;
   begin update public.vehicles set label=label where false; raise exception 'ANON_VEHICLE_WRITE_ALLOWED'; exception when insufficient_privilege then null; end;

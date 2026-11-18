@@ -1,4 +1,6 @@
 import {expect,test} from './browser-test';
+import {existsSync,readFileSync} from 'node:fs';
+import path from 'node:path';
 
 import {auditLogin} from './audit-helpers';
 async function login(page:any,email:string){await auditLogin(page,email);}
@@ -72,8 +74,14 @@ test('provider free access has no payment form or countdown and cannot change pl
 test('map-module loading uses a bounded reduced-motion skeleton',async({page}:{page:any},info:any)=>{
   await page.emulateMedia({reducedMotion:'reduce'});
   let release:()=>void=()=>{};const gate=new Promise<void>(resolve=>{release=resolve;});
+  // Release builds fingerprint the map chunk. Dev builds use its module name.
+  const manifestPath=path.join(process.env.NEXT_DIST_DIR||'.next','react-loadable-manifest.json');
+  const manifest:Record<string,{files:string[]}>=existsSync(manifestPath)?JSON.parse(readFileSync(manifestPath,'utf8')):{};
+  const mapChunks=new Set(Object.entries(manifest).filter(([name])=>name.endsWith(' -> ./public-capacity-map-leaflet'))
+    .flatMap(([,entry])=>entry.files.filter(file=>file.endsWith('.js')).map(file=>'/_next/'+file)));
   await page.route('**/_next/static/**',async(route:any)=>{
-    if(route.request().resourceType()==='script'&&/leaflet/i.test(route.request().url()))await gate;
+    const pathname=new URL(route.request().url()).pathname;
+    if(route.request().resourceType()==='script'&&(mapChunks.has(pathname)||/leaflet/i.test(pathname)))await gate;
     await route.continue();
   });
   try{

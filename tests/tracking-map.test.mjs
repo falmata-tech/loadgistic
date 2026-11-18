@@ -34,11 +34,11 @@ test('truck map summary allowlists public identity and published contacts only',
 test('Tracking source reflects its saved fix and never a pending capacity selection or identifier',()=>{
  const location={location_lat:9,location_lng:38,location_precision_km:10,updated_at:'2026-10-18T12:00:00Z',imei:'PRIVATE-IMEI',device_id:'PRIVATE-DEVICE'};
  const shipment={tracking_mode:'LOCATION_AND_STATUS',operational_status:'IN_TRANSIT',current_location:location,selectedLocationSource:'GPS'};
- for(const [saved,canonical] of [['TELEMATICS','GPS'],['DEVICE_OBSCURED','MOBILE'],['MANUAL_ADMIN','MANUAL']]){
+ for(const [saved,canonical] of [['TELEMATICS','GPS'],['DEVICE_OBSCURED','MOBILE']]){
   const result=trackingMapLocation({...shipment,current_location:{...location,location_source:saved}});
   assert.equal(result.source,canonical);assert.equal(JSON.stringify(result).includes('PRIVATE-'),false);
  }
  assert.equal(Object.hasOwn(trackingMapLocation(shipment),'source'),false);
- assert.equal(Object.hasOwn(trackingMapLocation({...shipment,current_location:{...location,location_source:'UNKNOWN'}}),'source'),false);
+ for(const location_source of ['MANUAL','MANUAL_ADMIN','UNKNOWN'])assert.equal(trackingMapLocation({...shipment,current_location:{...location,location_source}}),null);
  assert.equal(trackingMapLocation({...shipment,can_view_location:false}),null);
 });

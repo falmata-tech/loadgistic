@@ -1,3 +1,4 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures,registeredTrackingOwner,issueTrackingFixtureLink,openTrackingFixtureLink} from './tracking-session-fixtures';
 import {auditOpenTrackingProgress} from './audit-helpers';
 import {chooseDate} from './date-picker-helper';
 import {openCapacityFilters,openCapacityFilterDialog} from './capacity-drawer-helper';
@@ -7,11 +8,11 @@ import {randomInt,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {localMailpitNumericCode} from './mailpit-helper';
 import {localSupportLogin} from './provider-support-helper';
-import {localAuditService,checked,auditLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditFleetProvider,auditDeleteVehicles,auditAssignAndPublishSelfDrivenVehicle} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditTrackingOwnerLogin,auditIdentity,acceptAuditContentPolicy,auditProvider,auditFleetProvider,auditDeleteVehicles,auditAssignAndPublishSelfDrivenVehicle} from './audit-helpers';
 import {addLocalSmokeSponsor,temporarilyHideLocalSponsors} from './sponsor-fixture-helper';
 import {getProviderCapacityWorkspace,addProviderRegularCapacity,publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
-import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
+import {getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
 import {removePrivateUpload} from '../../src/lib/private-storage.js';
 import {removeProviderProfileImage} from '../../src/lib/provider-profile.js';
 
@@ -857,21 +858,21 @@ test('administrator Operations shows provider-owned Tracking and no retired Netw
 
 test('public Tracking submission shows progress and a visible invalid-code result',async({page}:{page:any})=>{
   await page.goto('/track');
-  await page.getByLabel('Email',{exact:true}).fill('unknown.tracking@example.test');
-
-  await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('6-digit email code').fill('000000');
-  await page.getByRole('button',{name:'Open tracking'}).click();
-  await expect(page.getByRole('alert').filter({hasText:/could not be verified/i})).toBeVisible();
-  await expect(page.getByRole('button',{name:'Open tracking'})).toBeEnabled();
+  await expect(page.getByLabel('Email',{exact:true})).toHaveCount(0);
+  await page.getByLabel('Tracking link',{exact:true}).fill('https://loadgistic.com/track/'+'A'.repeat(43));
+  await page.getByLabel('Tracking code',{exact:true}).fill('0000-0000');
+  const denied=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
+  await page.getByRole('button',{name:'Open tracking',exact:true}).click();expect((await denied).status()).toBe(401);
+  await expect(page.locator('.tracking-unlock-panel').getByRole('alert')).toContainText('This Tracking link or code is unavailable. Check both and try again.');
+  await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();
 });
 
-test('provider starts Tracking for one owner, who shares status with a viewer after verifying email',async({page}:{page:any},info:any)=>{
+test('provider starts Tracking for a registered owner, who shares a per-load status link and separate code',async({page}:{page:any},info:any)=>{
   test.setTimeout(180000);
   // Keep synthetic email workflows independent of other tests' client rate
   // buckets without disabling origin or recipient rate limits.
   await page.context().setExtraHTTPHeaders({'x-forwarded-for':info.project.name.startsWith('mobile')?'127.0.0.249':'127.0.0.248'});
-  const service=localAuditService();let provider:any,vehicleId='',shipmentId='',ownerEmail='',trackingPartyEmail='';
+  const service=localAuditService();let provider:any,sharedLink:any,vehicleId='',shipmentId='',ownerEmail='',trackingPartyEmail='';
   let primaryFailure:unknown;
   try{
   await test.step('tracking: prepare synthetic provider and vehicle',async()=>{
@@ -899,17 +900,17 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await choosePlace(page,'Passing through city','Dire',/Dire Dawa, Ethiopia/i);
   await expect(page.locator('input[name="passingPlaceRef"]')).toHaveValue(/\S+/);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
-  ownerEmail=`owner-${provider.suffix}@example.test`;
+  ownerEmail=`owner-${provider.suffix}@example.test`;await registeredTrackingOwner(service,ownerEmail);
   trackingPartyEmail=`dispatch-${provider.suffix}@example.test`;
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
-  await page.getByLabel('Shipment owner email').fill(ownerEmail);
+  await page.getByLabel('Shipper or broker account email').fill(ownerEmail);
   await expect(page.getByLabel('Additional tracking emails')).toHaveCount(0);
   const createResponse=page.waitForResponse((response:any)=>response.url().endsWith('/api/provider-shipments')&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Start Tracking'}).click();
   const created=await createResponse;expect(created.status()).toBe(201);
   shipmentId=(await created.json()).id;
   await expect(page.getByText('Tracking started')).toBeVisible({timeout:10_000});
-  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Share Tracking link',exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Copy code',exact:true})).toHaveCount(0);
   const openTracking=page.getByRole('link',{name:'Open Tracking'});
   const trackingHref=await openTracking.getAttribute('href');
@@ -934,60 +935,19 @@ test('provider starts Tracking for one owner, who shares status with a viewer af
   await expect(page.getByLabel('Photo proof required')).toHaveCount(0);
   await expect(page.getByText('The shipment owner manages who can follow this shipment.')).toBeVisible();
   });
-  await test.step('tracking: owner email access and viewer invitation',async()=>{
-  await page.goto('/track');
-  await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
-
-  const requestedAt=Date.now();
-  const ownerCodeResponse=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/otp'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Email me a code'}).click();
-  expect((await ownerCodeResponse).status()).toBe(200);
-  await expect(page.getByLabel('6-digit email code')).toBeVisible();
-  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
-  await Promise.all([
-    page.waitForURL(/\/track\/[0-9a-f-]{36}$/,{timeout:15_000}),
-    page.getByRole('button',{name:'Open tracking'}).click()
-  ]);
-  await expect(page.getByText('Private shipment tracking')).toBeVisible();
-  await expect(page.getByRole('heading',{name:/Track LGX-/})).toBeVisible();
-  await page.getByRole('button',{name:'Share tracking'}).click();
-  const sharing=page.getByRole('dialog',{name:'Share tracking'});await expect(sharing).toBeVisible();
-  await sharing.getByLabel('Viewer name').fill('Dispatch desk');
-  await sharing.getByLabel('Viewer email').fill(trackingPartyEmail);
-  const invitationAt=Date.now();
-  const invitation=page.waitForResponse((response:any)=>response.url().endsWith(`/api/tracking/${shipmentId}/sharing`)&&response.request().method()==='POST');
-  await sharing.getByRole('button',{name:'Send invitation'}).click();
-  expect((await invitation).status()).toBe(200);
-  await expect(sharing.getByRole('status')).toContainText('Invitation sent');
-  await expect(sharing.getByText('Dispatch desk')).toBeVisible();
-  const viewers=checked(await service.from('provider_tracking_recipients').select('recipient_role,shared_by_recipient_id').eq('shipment_id',shipmentId));
-  expect(viewers).toHaveLength(2);expect(viewers.find((row:any)=>row.recipient_role==='TRACKING_PARTY')?.shared_by_recipient_id).toBeTruthy();
-  await expect.poll(async()=>{
-    const inbox=await (await fetch('http://127.0.0.1:55324/api/v1/messages')).json();
-    return (inbox.messages||[]).some((item:any)=>item.Subject==='Your Loadgistic tracking access'&&Date.parse(item.Created)>=invitationAt-2000&&item.To?.some((to:any)=>to.Address===trackingPartyEmail));
-  },{timeout:15000}).toBe(true);
-  await sharing.getByRole('button',{name:'Close editor'}).click();
+  await test.step('tracking: registered owner issues a per-load status link',async()=>{
+   const session=await auditTrackingOwnerLogin(page,ownerEmail,shipmentId);
+   await expect(page.getByRole('button',{name:'Open proof',exact:true})).toBeVisible();
+   sharedLink=await issueTrackingFixtureLink(page,session.id,false);
+   expect(checked(await service.from('provider_tracking_recipients').select('recipient_role').eq('shipment_id',shipmentId))).toEqual([{recipient_role:'OWNER'}]);
   });
-  await test.step('tracking: viewer email access and restricted detail',async()=>{
-  await page.getByRole('button',{name:'Log out',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Follow your shipment'})).toBeVisible();
-  await page.getByLabel('Email',{exact:true}).fill(trackingPartyEmail);
-
-  const partyRequestedAt=Date.now();
-  const partyCodeResponse=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/otp'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Email me a code'}).click();
-  expect((await partyCodeResponse).status()).toBe(200);
-  await expect(page.getByLabel('6-digit email code')).toBeVisible();
-  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(trackingPartyEmail,partyRequestedAt,'Your Loadgistic tracking sign-in code'));
-  await Promise.all([
-    page.waitForURL(/\/track\/[0-9a-f-]{36}$/,{timeout:15_000}),
-    page.getByRole('button',{name:'Open tracking'}).click()
-  ]);
-  await expect(page.getByText('Private shipment tracking')).toBeVisible();
-  await expect(page.locator('[data-route-stop]')).toHaveCount(3);
-  await expect(page.getByRole('button',{name:'Open proof'})).toHaveCount(0);
-  await expect(page.getByRole('button',{name:'Share tracking'})).toHaveCount(0);
-  expect(checked(await service.from('profiles').select('id').eq('email',trackingPartyEmail))).toHaveLength(0);
+  await test.step('tracking: link guest has restricted per-load detail without an email identity',async()=>{
+   await page.context().clearCookies();const shared=await openTrackingFixtureLink(page,sharedLink);
+   expect(shared.tracking.shipmentId).toBe(shipmentId);expect(shared.tracking.location).toBeNull();
+   await expect(page.locator('[data-route-stop]')).toHaveCount(3);
+   for(const name of['Open proof','Team access','Create Tracking link','Approve unloading','Publish review'])await expect(page.getByRole('button',{name,exact:true})).toHaveCount(0);
+   expect(checked(await service.from('profiles').select('id').eq('email',trackingPartyEmail))).toHaveLength(0);
+   expect(checked(await service.from('access_email_deliveries').select('id').eq('recipient_email',trackingPartyEmail))).toHaveLength(0);
   });
   }catch(error){primaryFailure=error;throw error;
   }finally{
@@ -1025,9 +985,9 @@ test('assigned Driver shares only an approximate location during travel',async({
   await choosePlace(page,'Origin','Addis',/Addis Ababa, Ethiopia/i);
   await choosePlace(page,'Passing through city','Dire',/Dire Dawa, Ethiopia/i);
   await choosePlace(page,'Destination','Adama',/Adama, Ethiopia/i);
-  const ownerEmail=`location.owner.${Date.now()}@example.test`;
+  const ownerEmail=`location.owner.${Date.now()}@example.test`;await registeredTrackingOwner(pair.service,ownerEmail);
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
-  await page.getByLabel('Shipment owner email').fill(ownerEmail);
+  await page.getByLabel('Shipper or broker account email').fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   const started=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/provider-shipments'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Start Tracking'}).click();
@@ -1035,7 +995,7 @@ test('assigned Driver shares only an approximate location during travel',async({
   const shipmentId=(await startResponse.json()).id;expect(shipmentId).toMatch(/^[0-9a-f-]{36}$/);
   try{
   await expect(page.getByText('Tracking started')).toBeVisible();
-  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Share Tracking link',exact:true})).toBeVisible();
   expect(new URL((await page.getByRole('link',{name:'Open Tracking',exact:true}).getAttribute('href'))!,page.url()).pathname.split('/').at(-1)).toBe(shipmentId);
   expect(checked(await pair.service.from('provider_shipments').select('assigned_vehicle_id,assigned_driver_user_id,tracking_mode').eq('id',shipmentId).single())).toEqual({assigned_vehicle_id:pair.vehicleId,assigned_driver_user_id:pair.actorId,tracking_mode:'LOCATION_AND_STATUS'});
   await Promise.all([
@@ -1049,20 +1009,14 @@ test('assigned Driver shares only an approximate location during travel',async({
   await expect(page.getByText('Tracking status updated.')).toBeVisible({timeout:30_000});
   const location=checked(await pair.service.from('provider_shipment_events').select('location_lat,location_lng,location_precision_km').eq('shipment_id',shipmentId).eq('location_source','DEVICE_OBSCURED').order('created_at',{ascending:false}).limit(1).single());
   expect([1,3,5,10,20]).toContain(location.location_precision_km);expect(location.location_lat).not.toBe(9.03);expect(location.location_lng).not.toBe(38.76);
-  await page.goto('/track');
-  await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
-
-  const requestedAt=Date.now();
-  await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
-  const unlock=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/unlock'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Open tracking'}).click();
-  expect((await unlock).status()).toBe(200);
-  await page.waitForURL(new RegExp(`/track/${shipmentId}$`),{timeout:30000});
+  const ownerSession=await auditTrackingOwnerLogin(page,ownerEmail,shipmentId),link=await issueTrackingFixtureLink(page,ownerSession.id,true);
+  await context.clearCookies();const guest=await openTrackingFixtureLink(page,link);
+  expect(guest.tracking.location.source).toBe('MOBILE');expect(guest.tracking.location.radiusKm).toBe(location.location_precision_km);
   const reportedArea=page.locator('.tracking-reported-area');await expect(reportedArea).toContainText('Reported approximate area',{timeout:30000});await expect(reportedArea).toHaveAttribute('data-location-radius-km',String(location.location_precision_km));
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible();
   await expect(page.getByText('Vehicle circle shows an approximate location, not exact GPS.',{exact:true})).toBeVisible();
-  await expect(page.locator('.timeline')).toContainText('Going to pickup');
+  await expect(page.getByRole('heading',{name:'Shipment progress',exact:true})).toBeVisible();
+  await expect(page.getByText('Going to pickup',{exact:true}).first()).toBeVisible();
   }finally{await removeSmokeShipment(pair.service,shipmentId);}
 });
 
@@ -1275,3 +1229,6 @@ test('login page never publishes fixture credentials',async({page}:{page:any})=>
   await expect(page.getByText('@loadgistic.local')).toHaveCount(0);
   await expect(page.getByText('Loadgistic123!',{exact:false})).toHaveCount(0);
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

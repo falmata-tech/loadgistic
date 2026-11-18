@@ -106,7 +106,7 @@ begin
  create temporary table discovery216_cases(name text,query jsonb,expected_count integer,expected_error boolean default false) on commit drop;
  insert into discovery216_cases(name,query,expected_count) values
   ('absent','{}',4),('null query',null,0),
-  ('source manual','{"location_source":"MANUAL"}',3),('source mobile','{"location_source":"MOBILE"}',1),
+  ('source mobile','{"location_source":"MOBILE"}',1),
   ('source gps','{"location_source":"GPS"}',0),
   ('blocked empty array','{"blocked_handles":[]}',4),
   ('blocked present',jsonb_build_object('blocked_handles',jsonb_build_array(selected_handle)),3),
@@ -127,7 +127,7 @@ begin
     values(field||':'||value::text,jsonb_build_object(field,value),case when field='viewport' then null else 4 end);
   end loop;
  end loop;
- insert into discovery216_cases(name,query,expected_error) values('invalid source','{"location_source":"INVALID216"}',true);
+ insert into discovery216_cases(name,query,expected_error) values('invalid source','{"location_source":"INVALID216"}',true),('retired manual source','{"location_source":"MANUAL"}',true);
  insert into discovery216_cases(name,query,expected_count)
   select 'vehicle scope '||ordinal,jsonb_build_object('vehicle_ids',jsonb_build_array(vehicle)),
    case when ordinal<=4 then 1 else 0 end from discovery214_fixture;
@@ -233,7 +233,8 @@ begin
      or current.proconfig is distinct from saved.proconfig or current.proacl is distinct from saved.proacl)
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_matches(jsonb,jsonb)'::regprocedure)<>'7a4ca944e31f1989d522e11d4f1d8f52'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_viewport_matches(jsonb,jsonb)'::regprocedure)<>'973a54d0b2acad2367931f8d7bf033ba'
-  or (select md5(prosrc) from pg_proc where oid='public.capacity_published_source_matches(jsonb,jsonb)'::regprocedure)<>'d381d55a10814355517b351bbd01b9a7'
+  -- 228 removes only the retired Manual product-source mapping.
+  or (select md5(prosrc) from pg_proc where oid='public.capacity_published_source_matches(jsonb,jsonb)'::regprocedure)<>'875b821d5ee961a023f86448faca0d06'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_metadata(jsonb)'::regprocedure)<>'a5f3c9a8a0ebe7c996a4fc829bd9d902'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_metadata_pre_social167(jsonb)'::regprocedure)<>'d3f3b5e8b88c2133a14c5beef5771164'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure)<>'ae6155282f29ad40f599798657b4477a'

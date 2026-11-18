@@ -1,3 +1,4 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures} from './tracking-session-fixtures';
 import {test,expect as baseExpect} from './browser-test';
 import type {Page,Locator} from 'playwright-core';
 import type {TestInfo} from './browser-test';
@@ -9,7 +10,7 @@ import {auditFleetProvider,auditFleetDriver,auditDeleteVehicles,auditOpenTrackin
 import {localSupportLogin} from './provider-support-helper';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
 import {addProviderRegularCapacity,publishProviderCapacity,refreshProviderCapacityLocation} from '../../src/lib/provider-capacity.js';
-import {createProviderShipment,readProviderTrackingProof,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
+import {readProviderTrackingProof, updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 import {emailDeliveryStatus} from '../../src/lib/email-provider.js';
 import {localFleetPublication} from './provider-publication-helper';
 
@@ -232,3 +233,6 @@ test('Operations single-proof boundary preserves acknowledged bytes',async({page
   expect(report.storageBytesMatch).toBe(true);expect(report.pathOwnershipMatches).toBe(true);expect(report.adapterBytesMatch).toBe(true);expect(report.browserStatus).toBe(200);expect(report.paintedBytesMatch).toBe(true);expect(report.apiStatus).toBe(200);expect(report.apiBytesMatch).toBe(true);await page.getByRole('button',{name:'Close proof',exact:true}).click();report.stage='COMPLETE';save();diag.phase('COMPLETE');
  }catch(error){console.log('OPERATIONS_PROOF_BOUNDARY '+JSON.stringify(report));diag.fail(error);}finally{try{await data.cleanup();}catch(error){report.stage='CLEANUP';save();console.log('OPERATIONS_PROOF_BOUNDARY '+JSON.stringify(report));diag.fail(error);}}
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

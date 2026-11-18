@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCapacityPage, capacityUrl, loadCapacity, loadSharedCapacity } from '../src/api/public-capacity.ts';
-const row = (id, extra = {}) => ({ id, status: 'EMPTY', assigned_driver_first_name: 'Driver', location_lat: 9, location_lng: 38, ...extra });
+const row = (id, extra = {}) => ({ id, status: 'EMPTY', assigned_driver_first_name: 'Driver', location_source:'GPS', location_lat: 9, location_lng: 38, ...extra });
 test('only available assigned trucks enter the projection; private contacts stay out', () => {
  const page = parseCapacityPage({ items: [row('a', { contact_email: 'private@example.test' }), row('b', { status: 'FULL' }), row('c', { assigned_driver_first_name: '' })], hasMore: false });
  assert.equal(page.items.length, 1); assert.equal('contact_email' in page.items[0], false);
@@ -31,7 +31,7 @@ test('invalid coordinates stay off map and malformed pagination fails', () => {
 });
 test('actual saved demo location provenance survives the native projection without private identifiers',()=>{
  const parse=extra=>parseCapacityPage({items:[row('demo',{location_source:'TELEMATICS',...extra})],hasMore:false}).items[0];
- for(const location_source of ['TELEMATICS','PHONE_OBSCURED','MANUAL']){
+ for(const location_source of ['TELEMATICS','DEVICE_OBSCURED','GPS','MOBILE']){
   const item=parse({location_source,location_is_demo:true,demo_epoch:'private-epoch',installation_id:'private-installation',imei:'private-device'});
   assert.equal(item.locationIsDemo,true);
   for(const field of ['demo_epoch','installation_id','imei','location_is_demo'])assert.equal(Object.hasOwn(item,field),false,field);
@@ -90,4 +90,12 @@ test('private capacity loads every scoped page and cannot publish after access c
  const abort = new AbortController(); let published = false;
  await assert.rejects(loadSharedCapacity('', abort.signal, () => { published = true; }, async () => { abort.abort(); return { items: [row('a')], hasMore: false }; })); assert.equal(published, false);
  await assert.rejects(loadSharedCapacity('', new AbortController().signal, () => {}, async () => ({ items: [], hasMore: true, nextCursor: 'repeat' })), /finish loading/);
+});
+
+test('retired current points are hidden without removing saved Planned coverage',()=>{
+ for(const location_source of ['MANUAL','MANUAL_ADMIN',null]){
+  const item=parseCapacityPage({items:[row('retired',{location_source,location_is_demo:true,location_updated_label:'old fix',current_route_points:[{lat:9,lng:38},{lat:10,lng:39}],availability_geometry:'ROUTE'})],hasMore:false}).items[0];
+  assert.equal(item.locationSource,null);assert.equal(item.latitude,null);assert.equal(item.longitude,null);assert.equal(item.currentVisible,true);assert.deepEqual(item.currentPoints,[{latitude:9,longitude:38,label:''},{latitude:10,longitude:39,label:''}]);assert.equal(item.locationAge,'');assert.equal(item.locationIsDemo,false);
+ }
+ for(const location_source of ['INFERRED','PHONE_OBSCURED',{},false])assert.throws(()=>parseCapacityPage({items:[row('bad',{location_source})],hasMore:false}),/Invalid capacity response/);
 });

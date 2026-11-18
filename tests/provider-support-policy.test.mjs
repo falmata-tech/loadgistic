@@ -6,6 +6,10 @@ import {sendSupportAttachment} from '../src/lib/support-attachments.js';
 test('provider and verified customer contexts keep software support; roles alone and guests cannot start it',()=>{
  for(const role of ['TRANSPORTER','DRIVER'])assert.equal(isTransportSupportMember({role}),true);
  for(const role of ['SHIPPER','RECEIVER','SUPPORT','ADMIN',undefined])assert.equal(isTransportSupportMember({role}),false);
+ for(const role of ['SHIPPER','RECEIVER']){
+  assert.equal(isTransportSupportMember({id:'registered',active:true,role}),true);
+  assert.equal(isTransportSupportMember({id:'registered',active:false,role}),false);
+ }
  assert.equal(isTransportSupportMember(null),false);
  for(const role of ['TRANSPORTER','DRIVER','SUPPORT','ADMIN'])assert.equal(canSendSupportMessage({role}),true);
 });

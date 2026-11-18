@@ -154,7 +154,11 @@ begin
  perform pg_temp.expect_review_business_denied(format('select public.tracking_owner_sharing_command(%L,%L,%L,%L)',
   review_shipment,owner_digest,clock_timestamp(),jsonb_build_object('action','ADD_VIEWER','expectedRevision',1,
    'name','Ordinary recipient','email','play-business-'||real_owner||'@example.test',
-   'digest',review_tracking_digest)::text),'REVIEW_WORKSPACE_ONLY');
+   'digest',review_tracking_digest)::text),'TRACKING_EMAIL_SHARING_RETIRED');
+ -- Retained-recipient table protection still independently rejects crossing
+ -- sample/real boundaries after the email-sharing command itself is retired.
+ perform pg_temp.expect_review_business_denied(format('insert into public.provider_tracking_recipients(shipment_id,recipient_role,recipient_email,recipient_email_digest,created_by) values(%L,''TRACKING_PARTY'',%L,%L,%L)',
+  review_shipment,'play-business-'||real_owner||'@example.test',review_tracking_digest,review_owner),'REVIEW_WORKSPACE_ONLY');
  perform pg_temp.assert_review_business(public.tracking_business_share_active(review_shipment,review_business)
   and (public.business_tracking_workspace(review_owner,review_business)->>'total')::integer=1
   and (public.business_tracking_detail(review_owner,review_business,review_shipment)->'shipment'->>'can_view_location')='false'

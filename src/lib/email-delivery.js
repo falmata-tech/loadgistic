@@ -8,7 +8,7 @@ import {
 import {buildEmailMessage} from './email-templates.js';
 import {emailDeliveryStatus,sendManagedEmail} from './email-provider.js';
 import {getProviderGuestTracking,listPendingEmailDeliveries,recordEmailDeliveryAttempt} from './provider-tracking.js';
-import {guestSupportAccessCode,providerTrackingOtpCode,reviewAccessCode,trackingAccessCode,providerTrackingRecipientDigest} from './security.js';
+import {guestSupportAccessCode,providerTrackingOtpCode,trackingAccessCode,providerTrackingRecipientDigest} from './security.js';
 
 export function emailDeliveryConfigured(environment=process.env){
   return emailDeliveryStatus(environment).configured;
@@ -58,8 +58,9 @@ export async function deliverPendingShipmentEmails(limit=10,{
         template:delivery.delivery_kind==='TRACKING_ACCESS'?'tracking-started':'tracking-completed',
         to:delivery.recipient_email,
         customerRole:delivery.party_role==='SHIPPER'?'OWNER':'TRACKING_PARTY',
-        tracking:{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)},
-        review:delivery.delivery_kind==='COMPLETION'?{url:publicUrl('/track'),code:reviewAccessCode(delivery.shipment_id)}:undefined,
+        ...(delivery.delivery_kind==='COMPLETION'
+          ?{account:{url:publicUrl('/login?from=tracking')}}
+          :{tracking:{url:publicUrl('/track'),code:trackingAccessCode(delivery.shipment_id)}}),
         shipment:{
           code:delivery.code,providerName:delivery.provider_name,origin:delivery.origin,
           destination:delivery.destination,cargoSummary:delivery.cargo_summary,

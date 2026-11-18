@@ -43,12 +43,6 @@ export function normalizeOptionalCallbackPhone(value) {
   return phone;
 }
 
-export function validateSupportAgentLimit(value) {
-  const limit=Number(value);
-  if (!Number.isInteger(limit)||limit<1||limit>20) throw new Error('INVALID_SUPPORT_AGENT_LIMIT');
-  return limit;
-}
-
 export const SERVICE_MODES = Object.freeze({
   FREIGHT: 'FREIGHT'
 });

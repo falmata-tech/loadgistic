@@ -9,7 +9,6 @@ import { createSupabaseServerClient } from './supabase/server';
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
 export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
 const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
-export const GUEST_SUPPORT_COOKIE = 'lg_guest_support';
 export const TRACKING_IDLE_SECONDS = 5 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
@@ -34,39 +33,25 @@ export async function requireUser(allowedRoles?: string[],options:{allowLimited?
 }
 
 export async function hasTrackingGrant(shipmentId: string) {
-  const store = await cookies();
-  const payload = verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  return payload?.sub === `tracking:${shipmentId}`;
+  return false;
 }
 
-export async function getProviderTrackingGrant(shipmentId?:string) {
-  if(shipmentId&&!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(shipmentId))return null;
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value);
-  const emailSession=parseTrackingSession(payload);
-  if(emailSession)return {...emailSession,shipmentId:shipmentId||null};
+type RetiredTrackingGrant={recipientDigest:string;startedAt:number;expiresAt:number;shipmentId:string|null};
+/** Old anonymous email grants never become per-load link grants. */
+export async function getProviderTrackingGrant(shipmentId?:string):Promise<RetiredTrackingGrant|null> {
   return null;
 }
 
-export async function getTrackingEmailSession(){
-  const store=await cookies();
-  return parseTrackingSession(verifySessionToken(store.get(TRACKING_GRANT_COOKIE)?.value));
+export async function getTrackingEmailSession():Promise<Omit<RetiredTrackingGrant,'shipmentId'>|null>{
+  return null;
 }
 
 export async function setTrackingEmailSession(recipientDigest:string,startedAt=Date.now()){
-  const seconds=trackingSessionSeconds(startedAt);
-  if(seconds<=0)throw new Error('TRACKING_SESSION_EXPIRED');
-  const store=await cookies();
-  const token=createSessionToken(trackingSessionSubject(recipientDigest,startedAt),seconds);
-  store.set(TRACKING_GRANT_COOKIE,token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:seconds});
-  return {expiresAt:Number(verifySessionToken(token).exp)*1000};
+  throw new Error('TRACKING_LINK_REQUIRED');
 }
 
 export async function setProviderTrackingGrant(shipmentId:string,recipientDigest:string) {
-  const store=await cookies();
-  store.set(TRACKING_GRANT_COOKIE,createSessionToken(`provider-tracking:${shipmentId}:${recipientDigest}`,TRACKING_IDLE_SECONDS),{
-    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:TRACKING_IDLE_SECONDS
-  });
+  throw new Error('TRACKING_LINK_REQUIRED');
 }
 
 export async function clearProviderTrackingGrant() {
@@ -77,9 +62,7 @@ export async function clearProviderTrackingGrant() {
 }
 
 export async function hasProviderReviewGrant(shipmentId:string) {
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(REVIEW_GRANT_COOKIE)?.value);
-  return payload?.sub===`provider-review:${shipmentId}`;
+  return false;
 }
 
 export async function clearSharedCapacitySession() {
@@ -87,19 +70,4 @@ export async function clearSharedCapacitySession() {
   store.set(SHARED_CAPACITY_COOKIE,'',{
     httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
   });
-}
-
-export async function setGuestSupportSession(conversationId:string,emailDigest:string) {
-  const store=await cookies();
-  store.set(GUEST_SUPPORT_COOKIE,createSessionToken(`guest-support:${conversationId}:${emailDigest}`,60*60*24*30),{
-    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:60*60*24*30
-  });
-}
-
-export async function getGuestSupportSession(conversationId?:string) {
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(GUEST_SUPPORT_COOKIE)?.value);
-  const match=String(payload?.sub||'').match(/^guest-support:([^:]+):([a-f0-9]{64})$/);
-  if(!match||conversationId&&match[1]!==conversationId)return null;
-  return {conversationId:match[1],emailDigest:match[2]};
 }

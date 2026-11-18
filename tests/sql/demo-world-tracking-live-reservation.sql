@@ -1,3 +1,6 @@
+--229: current registered creation queues no access email. Explicit retained
+-- pre229 sink/recipient inputs below test historical containment/resume only;
+-- reserved lanes remain unarmed outside this rollback fixture, not newly qualified.
 -- FEAT-SIM-001 / NR-83. Run after 225 on an isolated fixture clone. This exercises
 -- only ordinary creation and notification interception, never proof or approval.
 begin;
@@ -102,6 +105,7 @@ declare
   owner_id uuid;
   driver_id uuid;
   owner_recipient uuid;
+  retained_viewer uuid;
   installation_id uuid := gen_random_uuid();
   binding_id uuid := gen_random_uuid();
   command jsonb;
@@ -138,6 +142,16 @@ begin
       'public.demo_world_tracking_live_scope()', 'EXECUTE') then
     raise exception 'DEMO_TRACKING_RESERVATION_EXPOSED';
   end if;
+  -- Current creation requires actual confirmed fixture customer accounts.
+  declare fixture_email text;fixture_id uuid;
+  begin
+   foreach fixture_email in array array['demo.live.owner@example.test','outside@example.test']loop
+    if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+    fixture_id:=gen_random_uuid();
+    insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+    update public.profiles set role='SHIPPER',active=true,full_name='Synthetic reserved customer'where id=fixture_id;
+   end loop;
+  end;
   select actor.id into strict owner_id
   from auth.users actor join public.profiles profile on profile.id = actor.id
   where actor.raw_app_meta_data->>'fixture_source' = 'loadgistic'
@@ -287,6 +301,11 @@ begin
     raise exception 'FORGED_OWNER_CREATED_DEMO_SHIPMENT';
   end if;
   created := public.create_provider_tracking_with_recipients(owner_id, command);
+  if exists(select 1 from public.demo_world_tracking_notification_sink where shipment_id=target_id and event_kind='TRACKING_ACCESS')then raise exception 'RETIRED_CREATION_ACCESS_EMAIL_QUEUED';end if;
+  -- Synthetic retained pre229 receipt input for unchanged legacy recovery
+  -- guards, not a new delivery observation or a current worker success claim.
+  insert into public.demo_world_tracking_notification_sink(source_kind,source_key,shipment_id,event_kind,recipient_role)
+  values('EMAIL','tracking-access:'||target_id::text,target_id,'TRACKING_ACCESS','OWNER');
   if created->>'id' <> target_id::text
     or not public.demo_world_tracking_live_scope()
     or not exists (
@@ -331,11 +350,23 @@ begin
     raise exception 'OWNER_OTP_ESCAPED_PRIVATE_SINK';
   end if;
 
-  perform public.tracking_owner_sharing_command(target_id,
-    repeat('b',64),clock_timestamp(),jsonb_build_object(
-      'action','ADD_VIEWER','expectedRevision',0,
-      'email','demo.live.viewer@example.test',
-      'name','Demo viewer','digest',viewer_digest));
+  denied:=false;
+  begin
+    perform public.tracking_owner_sharing_command(target_id,
+      repeat('b',64),clock_timestamp(),jsonb_build_object(
+        'action','ADD_VIEWER','expectedRevision',0,
+        'email','demo.live.viewer@example.test',
+        'name','Demo viewer','digest',viewer_digest));
+  exception when raise_exception then
+    denied:=sqlerrm='TRACKING_EMAIL_SHARING_RETIRED';
+  end;
+  if not denied then raise exception 'RETIRED_VIEWER_SHARING_ALLOWED';end if;
+  -- Explicit retained pre229 viewer/receipt fixture; no live email command.
+  insert into public.provider_tracking_recipients(shipment_id,recipient_role,recipient_email,recipient_email_digest,display_name,shared_by_recipient_id)
+  values(target_id,'TRACKING_PARTY','demo.live.viewer@example.test',viewer_digest,'Demo viewer',owner_recipient)returning id into retained_viewer;
+  insert into public.tracking_sharing_controls(shipment_id,owner_recipient_id,revision)values(target_id,owner_recipient,1);
+  insert into public.demo_world_tracking_notification_sink(source_kind,source_key,shipment_id,event_kind,recipient_role)
+  values('EMAIL','tracking-access:'||target_id::text||':'||retained_viewer::text,target_id,'TRACKING_ACCESS','TRACKING_PARTY');
   if not public.demo_world_tracking_live_scope()
     or (select count(*) from public.provider_tracking_recipients
       where shipment_id=target_id and recipient_role='TRACKING_PARTY'
@@ -376,7 +407,7 @@ begin
         'email','outside@example.test','name','Outside',
         'digest',repeat('f',64)));
   exception when raise_exception then
-    denied:=sqlerrm='DEMO_TRACKING_SCOPE_CHANGED';
+    denied:=sqlerrm='TRACKING_EMAIL_SHARING_RETIRED';
   end;
   if not denied or exists(select 1 from public.provider_tracking_recipients
       where shipment_id=target_id and recipient_email='outside@example.test') then

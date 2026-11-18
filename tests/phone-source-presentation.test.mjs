@@ -6,7 +6,7 @@ import ts from 'typescript';
 // Exercise the actual Fleet summary renderers with their private server DTO.
 // This does not replace the separate database and browser/native workflow checks.
 const phone={installationId:'00000000-0000-4000-8000-000000000001',connected:true,lastObservedAt:'2026-10-18T12:34:00Z',expiresAt:'2026-10-18T13:04:00Z',accuracyMeters:12.5,speedKph:0,headingDegrees:90};
-const vehicle={id:'truck',label:'Truck',selection:{source:'MOBILE',precisionKm:5,revision:'2026-10-18T12:00:00Z'},phone,published:{source:'GPS',updatedAt:'2026-10-17T12:00:00Z'}};
+const vehicle={id:'truck',label:'Truck',selection:{canChangeLocationSource:true,source:'MOBILE',precisionKm:5,revision:'2026-10-18T12:00:00Z'},phone,published:{source:'GPS',updatedAt:'2026-10-17T12:00:00Z'}};
 function runtime(path){
  let state=[],cursor=0;
  const React={createElement:(type,props,...children)=>({type,props:{...props,children:children.flat(Infinity)}}),useState:initial=>{const index=cursor++;if(!(index in state))state[index]=initial;return[state[index],value=>{state[index]=typeof value==='function'?value(state[index]):value;}];},useEffect(){}};
@@ -44,6 +44,6 @@ for(const [name,path] of [['web','src/components/fleet-devices.tsx'],['mobile','
  test(`${name} Fleet explains an unlinked phone and does not show Phone ID for a GPS/manual source`,()=>{
   const view=runtime(path);let text=copy(view.render(props({...vehicle,phone:null})));
   assert.ok(text.includes('No phone linked'));assert.ok(text.includes('Open the Loadgistic app on the assigned driver’s phone to link it.'));
-  for(const source of ['GPS','MANUAL']){text=copy(view.render(props({...vehicle,selection:{...vehicle.selection,source}})));assert.equal(text.includes(phone.installationId),false);assert.equal(text.includes('Phone link active'),false);}
+  for(const source of ['GPS',null]){text=copy(view.render(props({...vehicle,selection:{...vehicle.selection,source}})));assert.equal(text.includes(phone.installationId),false);assert.equal(text.includes('Phone link active'),false);}
  });
 }

@@ -3737,7 +3737,7 @@ dialog.capacity-info-card::backdrop{background:rgb(23 44 70 / 22%)}
 
 /* FEAT-UIX-001: one normal-flow company footer, with map shells using the space above it. */
 body:has(>.site-copyright){display:flex;flex-direction:column;min-height:100dvh;box-sizing:border-box}
-.site-copyright{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:3px 18px;min-height:38px;padding:7px 20px;border-top:1px solid #d7dfeb;background:#fff;color:#526375;font-size:.73rem;line-height:1.35}
+.site-copyright{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:3px 18px;min-height:38px;margin-top:auto;padding:7px 20px;border-top:1px solid #d7dfeb;background:#fff;color:#526375;font-size:.73rem;line-height:1.35}
 .site-copyright a{color:#155eef;font-weight:750;text-underline-offset:2px}
 .site-copyright a:focus-visible{outline:2px solid #155eef;outline-offset:2px;border-radius:2px}
 body:has(>.site-copyright)>main.public-app-page:not(.public-market-workspace):not(.featured-workspace-page):not(.tracking-entry-workspace){flex:1;min-height:0}
@@ -3886,6 +3886,23 @@ body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>mai
  .tracking-entry-workspace .tracking-unlock-panel>.meta{grid-column:1;grid-row:2;margin:0}
 }
 
+/* Keep both credentials and the submit action in reach on short displays. */
+@media (max-height:600px) and (max-width:760px), (max-height:450px) and (min-width:761px) {
+  .tracking-unlock-panel .page-title { margin:0; font-size:1.35rem; line-height:1.2; }
+  .tracking-unlock-panel .page-subtitle { margin:4px 0 0; font-size:.9rem; line-height:1.3; }
+  .tracking-unlock-panel .auth-primary-form { width:100%; gap:8px; }
+  .tracking-unlock-panel .form-group { margin:0; gap:2px; min-width:0; }
+  .tracking-unlock-panel .form-group input { width:100%; min-width:0; min-height:44px; }
+  .tracking-unlock-panel .meta { margin:0; font-size:.8rem; line-height:1.25; }
+}
+@media (min-width:761px) and (max-height:450px) {
+  .tracking-entry-workspace .tracking-unlock-panel { grid-template-columns:minmax(0,2fr) minmax(0,3fr); }
+  .tracking-unlock-panel .auth-primary-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:center; }
+  .tracking-unlock-panel .auth-primary-form label:only-of-type,
+  .tracking-unlock-panel .form-error { grid-column:1/-1; }
+  .tracking-unlock-panel .auth-primary-action { grid-column:2; min-height:44px; }
+}
+
 /* FEAT-MKT-001: multiple matching options retain the existing filter layout. */
 .capacity-filter-dialog .capacity-option-group{display:flex;flex-direction:column;gap:10px;min-width:0}
 .capacity-filter-dialog .capacity-truck-location-filter>.capacity-option-group{grid-column:1/-1;padding:0;border:0;background:transparent}
@@ -3911,8 +3928,14 @@ body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>mai
 @media(max-width:760px){.provider-fleet-map-action .button{width:100%}}
 
 /* The root boundary is shared by public and private routes. Keep it neutral. */
-.app-route-loading{min-height:100dvh;background:#f3f5f7;padding-top:env(safe-area-inset-top)}
-.app-route-loading>.loading-indicator{position:sticky;top:0}
+.app-route-loading{display:flex;flex:1;flex-direction:column;min-width:0;min-height:0;width:100%;padding:16px;padding-top:max(16px,env(safe-area-inset-top));background:#f3f5f7}
+.app-route-loading>.surface-skeleton,.app-route-loading>.map-workspace-skeleton{flex:1;width:100%;height:auto;min-height:min(65dvh,600px)}
+.workspace-route-loading{display:flex;flex-direction:column;min-height:min(65dvh,600px)}
+.workspace-route-loading>.surface-skeleton{flex:1}
+.capacity-home-page.workspace-route-loading{min-height:0}
+.capacity-home-page.workspace-route-loading>.surface-skeleton{height:100%;min-height:0;border-radius:0}
+.public-information-workspace>.surface-skeleton{width:min(680px,calc(100% - 32px));min-height:min(65dvh,600px);margin-inline:auto}
+@media(max-width:760px){.app-route-loading{padding:8px;padding-top:max(8px,env(safe-area-inset-top))}}
 
 .admin-daily-work{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}.admin-daily-work>.card{margin:0;box-shadow:none}.admin-support-entry{display:flex;align-items:center;gap:14px}.admin-support-entry>svg{color:#155eef;width:28px;height:28px;flex-shrink:0}.admin-support-entry>div{flex:1;min-width:0}.admin-support-entry h2{margin:0;font-size:1rem}.admin-support-entry p{margin:5px 0 0;font-size:.8rem;color:#62727c}.workspace-menu-group{margin-bottom:24px}.workspace-menu-group>h2{font-size:1rem;margin:0 0 12px}.workspace-menu-group .workspace-menu-card{box-shadow:none}
 @media(max-width:900px){.admin-daily-work{grid-template-columns:1fr}.admin-support-entry{flex-wrap:wrap}.admin-support-entry .button{margin-left:42px}}

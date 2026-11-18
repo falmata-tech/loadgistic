@@ -39,8 +39,8 @@ Given a native vehicle or Driver Home location editor opens\
 When it shows saved facts and permitted actions\
 Then it offers Phone and configured GPS under existing role/assignment rules;
 there is no Manual source, map-point picker or latitude/longitude entry action\
-And legacy Manual reports and historical types remain readable with the honest
-Manually entered label. Neither opening nor radius changes select Phone/GPS.
+And legacy Manual storage becomes an unselected current source without a current
+point or a third source label. Neither opening nor radius changes select Phone/GPS.
 
 Given the assigned driver deliberately chooses Phone\
 When Save requests foreground permission and captures an obscured fix\
@@ -53,7 +53,7 @@ radii, driver-choice ownership and independent Tracking source remain intact.
 Given the Phone source and shared-accuracy choices render in Expo web\
 When a choice is selected, changed or disabled\
 Then its accessible checked/disabled state matches the visible choice, including
-the unselected Phone choice on a saved Manual record\
+the unselected Phone choice on a retained legacy record\
 And changing accuracy alone cannot enable Phone sharing or change saved facts.
 Explicit ARIA state supplements the native accessibility state; no API, source
 revision, consent or persistence contract changes. Existing mobile request errors

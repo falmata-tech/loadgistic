@@ -1,5 +1,13 @@
 # Launch readiness
 
+For the current shared web/Android task inventory, test mapping and unresolved
+Tracking access contract, use the November17
+[feature-to-mobile verification matrix](MOBILE_IMPLEMENTATION.md). Actual ordered
+work/results remain in [PROGRESS](PROGRESS.md); installed-binary and release
+authority remain separate. The dated launch assessments below are retained
+history, including superseded email-only Capacity and platform Brokerage
+descriptions; they are not current feature or release-completion evidence.
+
 ## Unpublished audit candidate
 
 The 2026-09-14 candidate and exact migration source digests are in

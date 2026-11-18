@@ -16,6 +16,7 @@ import {TrackingDemoLabel} from '../components/tracking-demo-label';
 import {isDemoTrackingShipment} from '../../../../src/lib/demo-tracking-identity.js';
 import {workspaceCapabilities} from '../navigation/destinations';
 import { PlacePicker, emptyPlace } from '../components/place-picker';
+import {TrackingRequests} from '../components/connect-tracking';
 export default function Shipments() {
  const {t}=useLanguage();
  const account = useAccount(), query = useAccountQuery<TrackingWorkspace>('/api/mobile/shipments');
@@ -25,6 +26,7 @@ export default function Shipments() {
  return <Page><Title message={"Tracking"}/><Copy message={"Keep customers informed after you agree the transport work."}/><ErrorText message={query.error} />
   {!query.data && !query.error && <LoadingSpinner accessibilityLabel="Loading shipments" />}
   <Button secondary message="Refresh shipments" onPress={() => { void query.reload(); }} busy={query.loading} />
+  {query.data?.canManage&&<TrackingRequests/>}
   {query.data?.canManage && !creating && <Button message="Start tracking" onPress={() => setCreating(true)} />}
   {creating && query.data && <CreateTracking workspace={query.data} onClose={() => { setCreating(false); void query.reload(); }} />}
   {query.data && !query.data.canManage && <Copy message={"Your fleet owner can enable Tracking access for you."}/>}
@@ -42,7 +44,7 @@ function CreateTracking({ workspace, onClose }: { workspace: TrackingWorkspace; 
  const [busy, setBusy] = useState(false), [error, setError] = useState(''), [uncertain, setUncertain] = useState(false);
  async function create() {
   if (lock.current || uncertain) return;
-  if (!vehicleId || !origin.placeRef || !passing.placeRef || !destination.placeRef || cargo.trim().length < 3 || !email.trim()) { setError('Choose a vehicle and three cities, then add the cargo and customer email.'); return; }
+  if (!vehicleId || !origin.placeRef || !passing.placeRef || !destination.placeRef || cargo.trim().length < 3) { setError('Choose a vehicle, three cities and cargo.'); return; }
   if(new Set([origin.placeRef,passing.placeRef,destination.placeRef]).size!==3){setError('Choose three distinct cities.');return;}
   if(!dateOnly(delivery)){setError('Choose an expected delivery date.');return;}
   lock.current = true; setBusy(true); setError('');
@@ -57,7 +59,7 @@ function CreateTracking({ workspace, onClose }: { workspace: TrackingWorkspace; 
  return <Card><Title message={"New shipment"}/>{workspace.vehicles.length ? <><Copy message={"Vehicle and assigned driver"}/>{!workspaceCapabilities(account.session).canManageFleet?<Copy>{workspace.vehicles[0]?.label}</Copy>:<Choices value={vehicleId} options={workspace.vehicles} onChange={setVehicle} disabled={busy} />}
   <PlacePicker label="Pickup city" value={origin} onChange={setOrigin} disabled={busy} /><PlacePicker label="Passing through city" value={passing} onChange={setPassing} disabled={busy}/><PlacePicker label="Delivery city" value={destination} onChange={setDestination} disabled={busy} />
   <Field message="Cargo" value={cargo} onChangeText={setCargo} maxLength={500} editable={!busy} />
-  <Field message="Shipment owner email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" editable={!busy} />
+  <Copy message="Choose one shipper or broker now, or add their account later."/><Field message="Shipper or broker account email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" editable={!busy} />
   <DatePicker message="Expected pickup" value={pickup} onChange={setPickup} disabled={busy} /><DatePicker message="Expected delivery" value={delivery} onChange={setDelivery} required disabled={busy} />
   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}><Switch accessibilityLabel="Include approximate location" value={location} onValueChange={setLocation} disabled={busy} /><Copy message={"Include approximate location"}/></View>
   {location?<Copy message="The assigned driver shares an approximate location until unloading is approved. This choice stays with the shipment."/>:<Copy message="Customers see shipment status updates without a location."/>}

@@ -16,7 +16,8 @@ const text=tree=>tree==null||typeof tree==='boolean'?'':typeof tree==='string'||
 const settle=async()=>{for(let index=0;index<10;index++)await Promise.resolve();};
 const payload=(title,page=1)=>({items:[{key:title,kind:'COMPANY',title,handle:'matching-company',description:'Public freight service',city:'Adama',capacityId:'',matchingTrucks:2}],total:24,page,hasMore:page===1,configurations:[]});
 
-function harness({mode='open',verified=true,initialQuery='',blocked=[],business=false,account=false,emptyMap=false,initialFilters,showModeSwitch=false,session=null}={}){
+function harness({mode='open',verified=true,initialQuery='',blocked=[],business=false,account=false,emptyMap=false,initialFilters,showModeSwitch=false,session=undefined}={}){
+ const currentSession=session===undefined?(mode==='private'?{state:'ACTIVE',user:{role:'CUSTOMER'}}:null):session;
  const hooks=[],effects=[];let cursor=0,effectIndex=0,dirty=false,now=0,nextTimer=0,tree,focusCallback,focusCleanup;
  const timers=new Map(),requests=[],mapLoads=[],navigations=[],routerCalls=[],backHandlers=new Set();
  const navigate=(method,href)=>{routerCalls.push({method,href});navigations.push(href);};
@@ -34,12 +35,12 @@ function harness({mode='open',verified=true,initialQuery='',blocked=[],business=
  const loadBusiness=(...args)=>{mapLoads.push(args);args[2](emptyMap?[]:[truck]);return Promise.resolve();};
  const loadAccount=(...args)=>{mapLoads.push(args);args[1](emptyMap?[]:[truck]);return Promise.resolve();};
  const imports={react,'react/jsx-runtime':{jsx:node,jsxs:node},'react-native':native,'expo-router':{Link:'Link',router:{navigate:href=>navigate('navigate',href),push:href=>navigate('push',href),replace:href=>navigate('replace',href)},useLocalSearchParams:()=>({}),useFocusEffect:callback=>react.useEffect(()=>{focusCallback=callback;focusCleanup=callback();return()=>focusCleanup?.();},[callback])},
-  '../session/chat-alert-provider':{useChatUpdates:()=>({transportUnreadCount:0})},'../hooks/content-blocks':{useBlockedProviders:()=>({blocked})},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../session/visitor-provider':{useVisitor:()=>visitor},'../session/provider':{useAccount:()=>({session,busy:false})},
-  '../components/visitor-access':{VisitorAccess:'VisitorAccess'},'../components/app-icon':{AppIcon:'AppIcon'},'../components/CapacityMap':{__esModule:true,default:'CapacityMap'},'../api/http':{apiOrigin:'http://local.test',apiRequest:(path,{signal})=>request(path,signal)},'../api/discovery':discovery,
+  '../session/chat-alert-provider':{useChatUpdates:()=>({transportUnreadCount:0})},'../hooks/content-blocks':{useBlockedProviders:()=>({blocked})},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../session/visitor-provider':{useVisitor:()=>visitor},'../session/provider':{useAccount:()=>({session:currentSession,busy:false})},
+  '../components/app-link':{AppLink:'AppLink'},'../components/visitor-access':{VisitorAccess:'VisitorAccess'},'../components/app-icon':{AppIcon:'AppIcon'},'../components/CapacityMap':{__esModule:true,default:'CapacityMap'},'../api/http':{apiOrigin:'http://local.test',apiRequest:(path,{signal})=>request(path,signal)},'../api/discovery':discovery,
   '../api/business-workspaces':{loadBusinessCapacity:business?loadBusiness:()=>{throw Error('business-only loader used by visitor Capacity');},loadAccountCapacity:account?loadAccount:()=>{throw Error('account-only loader used by visitor Capacity');}},'../api/response':{ApiError:class ApiError extends Error{}},'../hooks/foreground-refresh':{useForegroundRefresh:()=>{}},'../hooks/account-query':{useAccountQuery:()=>({data:null})},
   '../components/discovery-filters':{DiscoveryFilters:'DiscoveryFilters'},'../components/results-drawer':{ResultsDrawer:'ResultsDrawer'},'../../../../src/lib/vehicle-configurations':{VEHICLE_CONFIGURATIONS:[]},'../components/discovery-results':{DiscoveryResults:'DiscoveryResults'},'../components/loading-bar':{LoadingBar:'LoadingBar'},'../../../../src/lib/platform-copy.js':{capacityIntroduction},'../../../../src/lib/transporter-search.js':searchContract,'../api/public-capacity':{loadCapacity:load,loadSharedCapacity:load}
  };
- imports['../components/ui']={palette:{blue:'#155eef',border:'#d7dfeb',borderSoft:'#e5eaf1',muted:'#526375'}};
+ imports['../components/ui']={Title:'Title',Copy:'Copy',palette:{blue:'#155eef',border:'#d7dfeb',borderSoft:'#e5eaf1',muted:'#526375'}};
  imports['../navigation/destinations']=navigation;
  imports['../map/capacity-refresh']=capacityRefresh;
  const source=ts.transpileModule(readFileSync(new URL('../src/screens/capacity.tsx',import.meta.url),'utf8')+'\nexports.TestCapacity=Capacity;',{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -61,9 +62,13 @@ test('guest private Capacity entry preserves public history and does not request
   const tab=label=>find(tree,node=>node.type==='Pressable'&&node.props.accessibilityRole==='tab'&&text(node)===label);
   tab('Openly shared').props.onPress();assert.deepEqual(view.routerCalls,[]);
   tab('Privately shared with you').props.onPress();
-  assert.deepEqual(view.routerCalls,[{method:'push',href:'/account?from=capacity'}],'sign-in must retain the public map behind it for native Back');
+  assert.deepEqual(view.routerCalls,[{method:'replace',href:'/?view=private'}],'selecting Private keeps the map route; only an explicit sign-in action opens authentication');
   assert.equal(view.mapLoads.length,1);assert.equal(view.mapLoads[0][0],'http://local.test');assert.equal(view.requests.length,0);
  }finally{view.close();}
+});
+
+test('signed-out Private map ignores an obsolete visitor grant and shows explicit centered sign-in/sign-up actions',async()=>{
+ const view=harness({mode:'private',session:null,verified:true,showModeSwitch:true});try{let tree=view.render();await settle();tree=view.render();assert.deepEqual(map(tree).props.items,[]);assert.equal(map(tree).props.selected,null);assert.equal(view.mapLoads.length,0);assert.equal(view.requests.length,0);assert.deepEqual(view.routerCalls,[]);const signIn=find(tree,node=>node.type==='AppLink'&&node.props.message==='Sign in'),signUp=find(tree,node=>node.type==='AppLink'&&node.props.message==='Sign up');assert.equal(signIn.props.href,'/account?from=capacity');assert.equal(signUp.props.href,'/signup?from=capacity&setup=business');const style=link=>Object.assign({},...[link.props.style].flat());const primary=style(signIn),secondary=style(signUp);for(const linkStyle of[primary,secondary]){assert.ok(linkStyle.minHeight>=44);assert.equal(linkStyle.alignSelf,'stretch');assert.ok(linkStyle.padding>=12);}assert.equal(primary.backgroundColor,'#155eef');assert.equal(primary.color,'#fff');assert.equal(secondary.backgroundColor,'#fff');assert.equal(secondary.color,'#155eef');assert.ok(secondary.borderWidth>=1);assert.equal(find(tree,node=>node.type==='Pressable'&&node.props.accessibilityRole==='tab'&&text(node)==='Privately shared with you').props['aria-selected'],true);assert.equal(find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Search transporters'),undefined);assert.equal(find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Vehicle filters'),undefined);}finally{view.close();}
 });
 
 test('signed-in Capacity view switches replace the view instead of opening sign-in or duplicating history',async()=>{

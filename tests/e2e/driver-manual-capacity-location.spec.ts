@@ -6,7 +6,7 @@ import {mkdirSync} from 'node:fs';
 
 test.use({trace:'off',video:'off',screenshot:'off',actionTimeout:20_000,navigationTimeout:30_000});
 
-test('assigned driver reads a legacy Manual source, cannot edit it, and deliberately resumes phone updates',async({browser},info)=>{
+test('retired selection stays unselected with owner lock until the assigned driver chooses Phone',async({browser},info)=>{
  test.skip(info.project.name!=='desktop-chromium','One local browser checks the full save and read-back.');
  test.setTimeout(180_000);
  const screenshots='.local/driver-manual-capacity-20261018';mkdirSync(screenshots,{recursive:true});
@@ -24,11 +24,16 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
   logout=await localSupportLogin(page,driver.id);await page.goto('/app/home',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Edit approximate location'}).click();
   const dialog=page.getByRole('dialog',{name:'Approximate location'});await expect(dialog).toBeVisible();
-  await expect(dialog.getByText('Selected source:')).toContainText('Manually entered');
+  await expect(dialog.getByText('Selected source:')).toContainText('Choose GPS or Phone');
   await expect(dialog.getByRole('button',{name:'Choose on map'})).toHaveCount(0);
   await expect(dialog.getByLabel('Latitude')).toHaveCount(0);await expect(dialog.getByLabel('Longitude')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Use my phone'})).toHaveAttribute('aria-pressed','false');
   await expect(dialog.getByRole('button',{name:'Save location'})).toBeDisabled();
+  await expect(dialog.getByText('Last map report:')).toContainText('Not reported yet');
+  await expect(dialog.getByText('Manually entered',{exact:true})).toHaveCount(0);
+  const driverSelection=await page.request.get(`/api/capacity/manual-location?vehicleId=${vehicles[0]}`);expect(driverSelection.status()).toBe(200);
+  const driverProjection=await driverSelection.json();expect(driverProjection).toMatchObject({source:null,precisionKm:5,canSetPhoneLocation:true,canChangeLocationSource:true});
+  for(const key of ['manualPoint','canSetManualLocation'])expect(Object.hasOwn(driverProjection,key)).toBe(false);
   const legacyBefore=checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km,revision').eq('vehicle_id',vehicles[0]).single());
   const denied=await page.request.post('/api/fleet/devices',{data:{action:'SOURCE',input:{vehicleId:vehicles[0],source:'MANUAL',precisionKm:5,expectedRevision:legacyBefore.revision,manualLatitude:40.02,manualLongitude:-105.27}}});expect(denied.status()).toBe(400);
   expect(checked(await db.from('telematics_location_sources').select('source,manual_latitude,manual_longitude,selected_by,precision_km,revision').eq('vehicle_id',vehicles[0]).single())).toEqual(legacyBefore);
@@ -40,7 +45,7 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
   await expect(page.getByRole('button',{name:'Edit planned capacity: Off Duty'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Edit approximate location'}).first()).toBeVisible();
   checked(await db.rpc('update_fleet_driver_access',{actor_user_id:owner.id,command:{driver_user_id:driver.id,vehicle_id:vehicles[0],can_manage_capacity:false,can_manage_tracking:true}}));
-  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByTestId('restricted-driver-map')).toContainText('Manual locations are read-only. Choose a location source to resume updates.');
+  await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByTestId('restricted-driver-map')).toContainText('Choose GPS or Phone');
 
   const unassigned=await page.request.get(`/api/capacity/manual-location?vehicleId=${vehicles[1]}`);expect(unassigned.status()).toBe(404);
   const forbidden=await page.request.post('/api/fleet/devices',{data:{action:'SOURCE',input:{vehicleId:vehicles[1],source:'MANUAL',precisionKm:5,expectedRevision:'1970-01-01T00:00:00Z',manualLatitude:40,manualLongitude:-105}}});expect(forbidden.status()).toBe(400);
@@ -48,11 +53,13 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
 
   ownerContext=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:{width:390,height:844},extraHTTPHeaders:{'x-forwarded-for':'127.0.0.249'}});
   const ownerPage=await ownerContext.newPage();await localSupportLogin(ownerPage,owner.id);await ownerPage.goto(`/app/fleet/${vehicles[0]}?view=location`,{waitUntil:'domcontentloaded'});
-  await expect(ownerPage.getByText('The assigned driver chose a manual Capacity location.')).toBeVisible();
+  await expect(ownerPage.getByText('Assigned driver must choose a location source.',{exact:true})).toBeVisible();
   await expect(ownerPage.getByRole('button',{name:'Edit location source'})).toHaveCount(0);
   await ownerPage.screenshot({path:`${screenshots}/provider-location-read-only-phone.png`});
   const ownerSelection=await ownerPage.request.get(`/api/capacity/manual-location?vehicleId=${vehicles[0]}`);expect(ownerSelection.status()).toBe(200);
-  const ownerRevision=(await ownerSelection.json()).revision;
+  const ownerProjection=await ownerSelection.json();expect(ownerProjection).toMatchObject({source:null,canChangeLocationSource:false});
+  for(const key of ['manualPoint','canSetManualLocation'])expect(Object.hasOwn(ownerProjection,key)).toBe(false);
+  const ownerRevision=ownerProjection.revision;
   const locked=await ownerPage.request.post('/api/fleet/devices',{data:{action:'SOURCE',input:{vehicleId:vehicles[0],source:'MOBILE',precisionKm:5,expectedRevision:ownerRevision}}});expect(locked.status()).toBe(409);
   expect((await locked.json()).error.code).toBe('DRIVER_LOCATION_CHOICE_LOCKED');
 
@@ -63,7 +70,7 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
   checked(await db.from('company_pages').update({published:true}).eq('organization_id',owner.organization_id));
   await page.goto('/app/home',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Edit capacity location'}).click();
-  const restrictedDialog=page.getByRole('dialog',{name:'Capacity map location'});await expect(restrictedDialog.getByText('Selected source:')).toContainText('Manually entered');
+  const restrictedDialog=page.getByRole('dialog',{name:'Capacity map location'});await expect(restrictedDialog.getByText('Selected source:')).toContainText('Choose GPS or Phone');
   await expect(restrictedDialog.getByRole('button',{name:'Choose on map'})).toHaveCount(0);
   await expect(restrictedDialog.getByRole('button',{name:'Save location'})).toBeDisabled();
   await restrictedDialog.getByRole('button',{name:'Use my phone'}).click();
@@ -95,9 +102,10 @@ test('assigned driver reads a legacy Manual source, cannot edit it, and delibera
   await Promise.all([page.waitForURL(url=>url.pathname==='/app/home'&&url.searchParams.get('success')==='Vehicle is On Duty.',{waitUntil:'domcontentloaded',timeout:30_000}),page.getByRole('button',{name:'Available',exact:true}).click()]);
   expect(new URL(page.url()).searchParams.get('success')).toBe('Vehicle is On Duty.');
   await expect(page.getByRole('button',{name:'Off Duty',exact:true})).toBeVisible({timeout:15_000});
-  const capacity=checked(await db.from('capacities').select('location_source,location_updated_at').eq('vehicle_id',vehicles[0]).order('updated_at',{ascending:false}).limit(1).single());expect(capacity.location_source).toBe('DEVICE_OBSCURED');expect(Number.isFinite(Date.parse(capacity.location_updated_at))).toBe(true);
-  const manualAfter=await page.request.get(`/api/public/capacity?locationSource=MANUAL&viewport=-106,39,-104,41`);expect(manualAfter.status()).toBe(200);
-  expect((await manualAfter.json()).items.some((item:{vehicle_id:string})=>item.vehicle_id===vehicles[0])).toBe(false);
+  const capacity=checked(await db.from('capacities').select('location_source,location_updated_at,availability_geometry,current_route_points_json').eq('vehicle_id',vehicles[0]).order('updated_at',{ascending:false}).limit(1).single());expect(capacity.location_source).toBe('DEVICE_OBSCURED');expect(Number.isFinite(Date.parse(capacity.location_updated_at))).toBe(true);
+  expect(capacity.availability_geometry).toBe('ROUTE');expect(capacity.current_route_points_json.map((point:{place_ref:string})=>point.place_ref)).toEqual(places.map(place=>place.id));
+  const manualAfter=await page.request.get(`/api/public/capacity?locationSource=MANUAL&viewport=-106,39,-104,41`);expect(manualAfter.status()).toBe(400);
+  expect(await manualAfter.json()).toEqual({error:'Check your search and vehicle filters.'});
   const phoneAfter=await page.request.get('/api/public/capacity?locationSource=MOBILE&viewport=38,8,40,10');expect(phoneAfter.status()).toBe(200);
   expect((await phoneAfter.json()).items.some((item:{vehicle_id:string})=>item.vehicle_id===vehicles[0])).toBe(true);
   await page.reload({waitUntil:'domcontentloaded'});await expect(page.getByTestId('restricted-driver-map')).toContainText('Driver’s phone');expect(errors).toEqual([]);

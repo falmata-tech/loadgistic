@@ -9,8 +9,13 @@ test('provider access depends on an active linked workspace, never a plan or pai
   assert.deepEqual(getManagedWorkspaceAccess(user),{granted:true,status:'FREE_ACCESS',ends_at:null,days_remaining:null,subscription:null});
  }
 });
-test('retiring plans does not unlock inactive, missing, unlinked or non-provider identities',()=>{
- for(const user of [null,{active:false,role:'DRIVER',provider_profile_id:'linked'}, {active:true,role:'DRIVER'}, {active:true,role:'SHIPPER',organization_id:'linked'}, {active:true,role:'UNKNOWN',provider_profile_id:'linked'}])assert.equal(getManagedWorkspaceAccess(user).granted,false);
+test('retiring plans does not unlock inactive, missing, unlinked or mismatched identities',()=>{
+ for(const user of [null,{active:false,role:'DRIVER',provider_profile_id:'linked'}, {active:true,role:'DRIVER'}, {active:false,role:'SHIPPER'}, {active:true,role:'SHIPPER',platform_role:'TRANSPORTER'}, {active:true,role:'CUSTOMER'}, {active:true,role:'UNKNOWN',provider_profile_id:'linked'}])assert.equal(getManagedWorkspaceAccess(user).granted,false);
+ for(const role of ['SHIPPER','RECEIVER']){
+  const customer={active:true,role,platform_role:role,organization_id:'linked'};
+  assert.equal(getManagedWorkspaceAccess(customer).status,'ACCOUNT_ACCESS');
+  assert.equal(getManagedDriverAccess(customer),null);
+ }
  for(const role of ['ADMIN','SUPPORT']){assert.equal(getManagedWorkspaceAccess({active:true,role}).status,role);assert.equal(getManagedWorkspaceAccess({active:false,role}).granted,false);}
 });
 test('company-driver operational permissions are unchanged by plan retirement',()=>{

@@ -12,6 +12,56 @@ rollout: Replace local signed-cookie identity with Supabase Auth in local develo
 
 # Identity and access
 
+## November 17 personal shipment-owner account access — local implementation
+
+Related: BASE-FE-001, BASE-BE-001, FEAT-TRK-001, FEAT-PLY-001 and NR-87.
+Persisted SHIPPER/RECEIVER identities are personal accounts; CUSTOMER denotes a
+selected, currently authorized business workspace. Personal account access must
+not manufacture a business selection or provider/platform capability.
+
+Given an active verified personal shipper or receiver with no business selection\
+When they sign in and open Tracking or Account on desktop or phone\
+Then their account remains signed in with `ACCOUNT_ACCESS`, their own shipment
+list is reachable at `/app/tracking`, and current terms can be accepted through
+the ordinary policy control\
+And each list, proof, review and Team action still checks its own saved authority.
+
+Given an inactive identity, inconsistent platform role, stale CUSTOMER selection,
+or a personal account without a provider assignment or business grant\
+When it requests provider, fleet, platform or Shared Capacity authority\
+Then personal navigation and `ACCOUNT_ACCESS` confer none of those permissions\
+And selected CUSTOMER access still requires current server-verified membership.
+
+Contracts: `getManagedWorkspaceAccess`, personal Tracking/account destinations and
+the existing policy-consent control. Observe the explicit account-access status
+and ordinary scoped command denials; do not log account data. Roll out with the
+new account Tracking pages and their authorization tests. Rollback restores the
+previous account navigation/access admission without changing stored identities,
+membership, shipment history or consent. Focused tests are not desktop/phone
+workflow evidence; the actual changed signed-in entry and policy recovery need
+browser review before release.
+
+### Fixed Tracking notification return
+
+Given a registered customer follows the completion notification's canonical
+`/login?from=tracking` account entry on desktop or phone\
+When already signed in or after normal email-code verification\
+Then CUSTOMER, SHIPPER and RECEIVER return to `/app/tracking`, where the existing
+current selected-workspace check leads to business Tracking when applicable\
+And changing the login email or retrying a code retains only that fixed intent.
+
+Given an arbitrary URL, path, unrecognized intent or provider/platform role\
+When it is supplied to account entry\
+Then it cannot choose a redirect or grant Tracking authority; current role,
+membership and data checks remain authoritative\
+And existing Shared Capacity destinations remain unchanged.
+
+Contracts: the bounded `signupEntry` enum, fixed account-login destination and
+existing email-code flow. No OAuth, session-cookie, middleware or parent-layout
+changes are part of this return hint. Observe fixed outcomes without logging
+codes or contacts. Local focused tests precede actual inbox/link/sign-in review;
+rollback removes this intent without changing account or shipment records.
+
 ## October 18 public account identity — approved local implementation plan
 
 Transport Provider owners choose a public Account name and unique handle,

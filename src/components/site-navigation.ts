@@ -2,7 +2,7 @@ import {ClipboardCheck, Headphones, Home, Info, MapPinned, Network, Route, Spark
 import type {LucideIcon} from 'lucide-react';
 
 export type SiteNavigationUser={
- id:string;role:string;name:string;active?:boolean;accountName?:string;
+ id:string;role:string;platformRole?:string;name:string;active?:boolean;accountName?:string;
  canManageFleet?:boolean;drivesTruck?:boolean;
  capacityAllowed?:boolean;trackingAllowed?:boolean;
  canManageSupport?:boolean;canManageFeatured?:boolean;
@@ -15,6 +15,7 @@ export const publicDestinations:SiteDestination[]=[
 ];
 export const aboutDestination:SiteDestination={key:'about',href:'/about',label:'About',icon:Info};
 export const visitorDestinations:SiteDestination[]=[publicDestinations[0],{key:'track',href:'/track',label:'Track',icon:Route},publicDestinations[1],aboutDestination];
+function personalCustomer(user:SiteNavigationUser){return user.active===true&&['SHIPPER','RECEIVER'].includes(user.role)&&(user.platformRole||user.role)===user.role;}
 export function accountHref(user:SiteNavigationUser|null){
  if(!user)return '/login';
  if(user.role==='CUSTOMER')return '/app/business/account';
@@ -24,6 +25,11 @@ export function accountHref(user:SiteNavigationUser|null){
 }
 export function memberDestinations(user:SiteNavigationUser|null):SiteDestination[]{
  if(!user)return [];
+ if(personalCustomer(user))return [
+  {key:'my-tracking',href:'/app/tracking',label:'Tracking',icon:ClipboardCheck},
+  {key:'support',href:'/app/support',label:'Support',icon:Headphones},
+  {key:'account',href:accountHref(user),label:'Account',icon:UserRound}
+ ];
  if(user.role==='CUSTOMER')return [
   {key:'directory',href:'/app/network',label:'Network',icon:Network},
   ...(user.trackingAllowed?[{key:'my-tracking',href:'/app/business/tracking',label:'Tracking',icon:ClipboardCheck}]:[]),
@@ -54,6 +60,7 @@ export function memberDestinations(user:SiteNavigationUser|null):SiteDestination
 export function phonePrimaryDestinations(user:SiteNavigationUser|null):SiteDestination[]{
  if(!user)return visitorDestinations;
  const items=memberDestinations(user);
+ if(personalCustomer(user))return [publicDestinations[0],...items];
  if(['DRIVER','TRANSPORTER'].includes(user.role))return [items.find(item=>item.key==='my-work'),items.find(item=>item.key==='directory'),items.find(item=>item.key==='my-tracking')].filter(Boolean) as SiteDestination[];
  if(user.role==='CUSTOMER')return [publicDestinations[0],items.find(item=>item.key==='directory'),items.find(item=>item.key==='my-tracking')].filter(Boolean) as SiteDestination[];
  return [publicDestinations[0],publicDestinations[1],items[0]].filter(Boolean) as SiteDestination[];

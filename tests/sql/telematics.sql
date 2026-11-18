@@ -139,12 +139,16 @@ begin
  fix:=telematics_effective_location(truck);
  update capacities set location_lat=(fix->>'latitude')::double precision,location_lng=(fix->>'longitude')::double precision,
   location_precision_km=(fix->>'precisionKm')::integer,location_source='MANUAL_ADMIN',location_updated_at=stamp where id=capacity_id;
- select item->'selection'->'manualPoint' into rows from jsonb_array_elements(telematics_workspace(owner_id,1)->'vehicles') item where item->>'id'=truck::text;
- if rows is distinct from '{"latitude":51.5,"longitude":-0.1}'::jsonb then raise exception 'SAVED_PRIVATE_MANUAL_POINT_MISSING';end if;
+ select item->'selection' into rows from jsonb_array_elements(telematics_workspace(owner_id,1)->'vehicles') item where item->>'id'=truck::text;
+ if rows->>'source' is not null or rows ? 'manualPoint' or rows ? 'driverSelectedManual'
+  or (rows->>'revision')::timestamptz<>stamp or rows->>'canChangeLocationSource'<>'true'
+  then raise exception 'RETIRED_PRIVATE_SOURCE_OR_POINT_EXPOSED';end if;
+ if not exists(select 1 from telematics_location_sources s where s.vehicle_id=truck and s.source='MANUAL' and s.manual_latitude=51.5 and s.manual_longitude=-0.1 and s.revision=stamp) then raise exception 'SAVED_MANUAL_HISTORY_CHANGED';end if;
  if exists(select 1 from jsonb_array_elements(telematics_workspace(other_owner,1)->'vehicles') item where item->>'id'=truck::text)
   then raise exception 'SAVED_MANUAL_POINT_CROSS_OWNER';end if;
  select payload into published from public_capacity_page(jsonb_build_object('capacity_id',capacity_id));
- if published::text like '%manualPoint%' or published::text like '%manual_latitude%'
+ if published->>'location_source' is not null or published->>'location_lat' is not null or published->>'location_lng' is not null
+  or published::text like '%manualPoint%' or published::text like '%manual_latitude%'
   then raise exception 'SAVED_MANUAL_POINT_PUBLIC_LEAK';end if;
  select location_updated_at into location_time from capacities where id=capacity_id;
  perform pg_temp.gps_denied(format('select refresh_provider_capacity_location(%L,%L::jsonb)',owner_id,

@@ -1,3 +1,4 @@
+import {supportCategoryName} from '../src/lib/support-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -16,7 +17,7 @@ async function render(items,{available=true,openCount=0,limit=3,page=1,total=ite
   'lucide-react':new Proxy({},{get:(_,name)=>String(name)}),
   '@/lib/auth':{requireUser:async()=>({id:'agent',role:'SUPPORT',can_manage_support:true})},
   '@/lib/support.js':{listSupportInbox:async(...args)=>{calls.push(args);return{items,page,total,pageCount:Math.ceil(total/15),agent:{available,open_count:openCount,max_open_conversations:limit},counts:{assigned:openCount,waiting:total,closed:0}};}},
-  '@/lib/support-polling.js':{supportRevisionTag},'@/lib/team-navigation.js':teamNavigation,
+  '@/lib/support-polling.js':{supportRevisionTag},'@/lib/support-policy.js':{supportCategoryName},'@/lib/team-navigation.js':teamNavigation,
   '@/components/localization':{Text:'Text',Localized:'Localized'},
   '@/components/page-header':{PageHeader:'PageHeader'},
   '@/components/flash':{Flash:'Flash'},
@@ -37,7 +38,7 @@ test('Waiting renders only explicitly authorized claims, including away from the
  assert.equal(nodes(tree).filter(node=>node.type==='Link'&&['support-conversation-main','button secondary small'].includes(node.props.className)).length,0);
 });
 
-test('paused and shared-capacity-full inboxes offer no Claim or dead Open action',async()=>{
+test('ineligible rows offer no Claim or dead Open action regardless of displayed workload',async()=>{
  for(const options of [{available:false},{openCount:3,limit:3}]){
   const {tree}=await render([row('oldest',false),row('later',false)],options);
   assert.equal(claims(tree).length,0);

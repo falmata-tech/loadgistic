@@ -9,7 +9,11 @@ test('public search metadata and the unified shell preserve useful server HTML',
  await page.getByTestId('public-session-action').getByRole('link',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/\/login$/);
  await areas.getByRole('link',{name:'Capacity',exact:true}).click();await expect(page).toHaveURL(/\/$/);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await page.goto('/?view=private&email=PRIVATE_EMAIL_SENTINEL');await expect(page).toHaveURL(/\/login\?from=shared-capacity/);expect(await page.locator('body').innerText()).not.toContain('PRIVATE_EMAIL_SENTINEL');
+ await page.goto('/?view=private&email=PRIVATE_EMAIL_SENTINEL');
+ await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
+ expect(await page.locator('main').innerText()).not.toContain('PRIVATE_EMAIL_SENTINEL');
+ await page.getByTestId('private-capacity-entry').locator('a[href="/login?from=shared-capacity"]').click();
+ await expect(page).toHaveURL(/\/login\?from=shared-capacity/);expect(await page.locator('body').innerText()).not.toContain('PRIVATE_EMAIL_SENTINEL');
  const filtered=await request.get('/?status=EMPTY&q=PRIVATE_QUERY_SENTINEL');expect(filtered.status()).toBe(200);
  const filteredHtml=await filtered.text();expect(filteredHtml).toMatch(/name="robots" content="[^"]*noindex/);expect(filteredHtml).toMatch(/rel="canonical" href="https:\/\/loadgistic\.com\/?"/);
  const sitemap=await request.get('/sitemap.xml');expect(sitemap.status()).toBe(200);expect(await sitemap.text()).not.toContain('<loc>');

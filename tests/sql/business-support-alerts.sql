@@ -5,9 +5,15 @@ begin
  begin perform public.chat_alert_snapshot(actor);exception when others then if sqlerrm='FORBIDDEN' then return;end if;raise;end;
  raise exception 'BUSINESS_ALERT_EXPECTED_DENIAL';
 end $$;
+
+create function pg_temp.expect_account_chat_hidden(actor uuid,chat uuid) returns void language plpgsql as $$
+begin
+ if public.support_actor_can_read(actor,chat) or exists(select from jsonb_array_elements(public.chat_alert_snapshot(actor)->'items') x where x->>'id'=chat::text)
+   or public.managed_open_member_support(actor)->>'id'=chat::text then raise exception 'REVOKED_WORKSPACE_CHAT_VISIBLE';end if;
+end $$;
 do $test$
 declare owner_id uuid:=gen_random_uuid();staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();bare_id uuid:=gen_random_uuid();agent_id uuid:=gen_random_uuid();provider_id uuid:=gen_random_uuid();uid uuid;
- workspace uuid;invitation uuid;own_chat uuid:=gen_random_uuid();other_chat uuid:=gen_random_uuid();result jsonb;version_value bigint;
+ workspace uuid;invitation uuid;own_chat uuid:=gen_random_uuid();other_chat uuid:=gen_random_uuid();result jsonb;version_value bigint;new_chat uuid;reply_agent uuid;
 begin
  foreach uid in array array[owner_id,staff_id,other_id,bare_id,agent_id,provider_id] loop
   insert into auth.users(id,email,email_confirmed_at) values(uid,'synthetic-alert-'||uid||'@example.test',now());
@@ -30,9 +36,18 @@ begin
  if (public.chat_alert_snapshot(owner_id)->>'waitingCount')::integer<>0 then raise exception 'BUSINESS_OWNER_GAINED_PLATFORM_QUEUE'; end if;
  perform public.chat_alert_snapshot(provider_id);
  perform public.chat_alert_snapshot(agent_id);
- perform pg_temp.expect_business_alert_denied(bare_id);
+ foreach uid in array array[owner_id,bare_id] loop
+  new_chat:=public.create_managed_support_conversation(uid,'{"category":"ACCOUNT","body":"Synthetic broker or personal account request"}');
+  if uid=owner_id and public.support_conversation_summary(new_chat)->>'customer_workspace_name' is distinct from 'Synthetic alerts business' then raise exception 'BROKER_WORKSPACE_MISSING_IN_QUEUE';end if;
+  perform public.send_managed_support_message(uid,new_chat,'Synthetic account follow-up');
+  select assigned_agent_user_id into strict reply_agent from public.support_conversations where id=new_chat;
+  perform public.send_managed_support_message(reply_agent,new_chat,'Synthetic assigned staff reply');
+  result:=public.chat_alert_snapshot(uid);
+  if not exists(select from jsonb_array_elements(result->'items') x where x->>'id'=new_chat::text and x->>'side'='CUSTOMER') then raise exception 'ACCOUNT_SUPPORT_REPLY_ALERT_MISSING';end if;
+  perform public.close_managed_support_conversation(uid,new_chat);
+ end loop;
  update public.business_workspace_members set active=false where workspace_id=workspace and user_id=staff_id;
- perform pg_temp.expect_business_alert_denied(staff_id);
+ perform pg_temp.expect_account_chat_hidden(staff_id,own_chat);
  update public.business_workspace_members set active=true where workspace_id=workspace and user_id=staff_id;
  update public.profiles set active=false where id=staff_id;
  perform pg_temp.expect_business_alert_denied(staff_id);
@@ -41,8 +56,11 @@ begin
  perform pg_temp.expect_business_alert_denied(staff_id);
  update auth.users set deleted_at=null where id=staff_id;
  update public.business_workspaces set active=false where id=workspace;
- perform pg_temp.expect_business_alert_denied(staff_id);
+ perform pg_temp.expect_account_chat_hidden(staff_id,own_chat);
+ new_chat:=public.create_managed_support_conversation(staff_id,'{"category":"ACCOUNT","body":"Personal account help after workspace closure"}');
+ if not public.support_actor_can_read(staff_id,new_chat) or public.support_actor_can_read(staff_id,own_chat) then raise exception 'PERSONAL_AND_WORKSPACE_SCOPE_MIXED';end if;
+ perform public.close_managed_support_conversation(staff_id,new_chat);
  if public.can_manage_brokerage(agent_id) or has_function_privilege('authenticated','public.chat_alert_snapshot(uuid,uuid,text)','execute') or has_function_privilege('anon','public.chat_alert_snapshot(uuid,uuid,text)','execute') then raise exception 'RETIRED_OR_BROWSER_ALERT_AUTHORITY_CHANGED'; end if;
- raise notice 'PASS: current business member own Support alerts, no colleague content/queue, role-only/revoked/suspended/erased/archived denial, provider/staff preserved, no browser RPC';
+ raise notice 'PASS: current business member own Support alerts, no colleague content/queue, personal support, revoked workspace history denial, suspended/erased denial, provider/staff preserved, no browser RPC';
 end $test$;
 rollback;

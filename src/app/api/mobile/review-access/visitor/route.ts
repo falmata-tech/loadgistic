@@ -1,6 +1,5 @@
 import {z} from 'zod';
-import {mobileBody,mobileClient,mobileFailure,mobileJson,MobileError,mobileVerifiedIdentity} from '@/lib/mobile/server';
-import {issueReviewVisitor} from '@/lib/mobile/visitor-server';
+import {mobileBody,mobileClient,mobileFailure,MobileError,mobileVerifiedIdentity} from '@/lib/mobile/server';
 import {reviewVisitorDigest} from '@/lib/privacy/review-access.js';
 import {checkRateLimit,requestKey} from '@/lib/rate-limit';
 export const runtime='nodejs';
@@ -13,5 +12,6 @@ export async function POST(request:Request){try{
  const rate=await checkRateLimit(requestKey(request,'review-visitor'),30,60000);
  if(!rate.allowed)throw new MobileError(429,'PLEASE_WAIT','Please wait before trying again.');
  if(!await reviewVisitorDigest(actor.id,input.data.scope))throw new MobileError(403,'FORBIDDEN','This review access is unavailable.');
- return mobileJson(issueReviewVisitor(input.data.scope,actor.id));
+ if(input.data.scope==='tracking')throw new MobileError(410,'TRACKING_LINK_REQUIRED','Open the shipment’s current tracking link and enter its code.');
+ throw new MobileError(410,'ACCOUNT_REQUIRED','Sign in to view Shared capacity.');
 }catch(error){return mobileFailure(error);}}

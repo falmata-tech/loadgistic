@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {config,executeDemoCapacity,runDemoCapacity} from '../netlify/functions/demo-capacity.mjs';
+import {config,executeDemoCapacity,executeScheduledDemoCapacity,runDemoCapacity} from '../netlify/functions/demo-capacity.mjs';
 import {handleDemoCapacityAdvance} from '../src/lib/demo-world-advance.js';
 import {
   DEMO_CAPACITY_ADVANCE_PATH,DEMO_WORLD_ADVANCE_PATH,DEMO_WORLD_SIGNATURE_HEADER,
@@ -187,15 +187,57 @@ test('malformed, oversized, old-catalog and over-budget responses fail closed af
 });
 
 test('transport and application failures never retry or expose remote error bodies',async()=>{
-  for(const fetcher of [
-    async()=>{throw Error('secret private@example.invalid');},
-    ...[401,403,429,500,503].map(status=>async()=>new Response('secret private@example.invalid',{status}))
+  for(const [fetcher,code,httpStatus] of [
+    [async()=>{throw Error('secret private@example.invalid');},'UNCLASSIFIED',null],
+    ...[401,403,429,500,503].map(status=>[async()=>new Response('secret private@example.invalid',{status}),'DEMO_CAPACITY_ADVANCE_FAILED',status])
   ]){
     let calls=0;
     const captured=await captureLogs(()=>executeDemoCapacity(request(),{environment,now,
       fetchImpl:async(...args)=>{calls++;return fetcher(...args);}}));
     assert.equal(calls,1);assert.equal(captured.result.status,500);
     assert.equal(await captured.result.text(),'');
-    assert.deepEqual(captured.logs,[{event:'demo-capacity-scheduled',ok:false,error:'ADVANCE_FAILED'}]);
+    assert.deepEqual(captured.logs,[{event:'demo-capacity-scheduled',ok:false,error:'ADVANCE_FAILED',phase:'REQUEST',code,httpStatus}]);
+  }
+});
+
+test('native Capacity schedule ignores synthetic incoming URL and signs only the configured site/path',async()=>{
+  for(const url of ['https://scheduler.invalid/','https://scheduler.invalid/not-a-public-route?synthetic=1',invocationUrl]){
+    let calls=0;
+    const captured=await captureLogs(()=>executeScheduledDemoCapacity(new Request(url,{method:'POST',
+      body:JSON.stringify({next_run:'2026-11-15T06:01:00Z'})}),{environment,now,fetchImpl:async(target,options)=>{
+        calls++;assert.equal(target.href,origin+DEMO_CAPACITY_ADVANCE_PATH);
+        assert.equal(options.redirect,'error');assert.equal(options.credentials,'omit');
+        assert.deepEqual(JSON.parse(options.body),{limit:2});
+        assert.equal(verifyDemoWorldSignature({timestamp:options.headers[DEMO_WORLD_TIMESTAMP_HEADER],
+          signature:options.headers[DEMO_WORLD_SIGNATURE_HEADER],url:target.href,purpose:'capacity-advance',body:options.body},environment,now),true);
+        return Response.json(summary);
+      }}));
+    assert.equal(calls,1);assert.equal(captured.result.status,204);assert.equal(captured.logs[0].ok,true);
+    assert.doesNotMatch(JSON.stringify(captured.logs),/scheduler\.invalid|synthetic|next_run|cccccccc/);
+  }
+});
+
+test('native Capacity schedule retains exact site/production/stop/hour gates without reading provider URL',async()=>{
+  for(const patch of [{CONTEXT:'deploy-preview'},{NODE_ENV:'development'},{SITE_ID:'wrong'},
+    {URL:'https://other.invalid'},{LOADGISTIC_DEMO_CAPACITY_NETLIFY_KILL_SWITCH:'true'},
+    {LOADGISTIC_DEMO_WORLD_KILL_SWITCH:'true'},{LOADGISTIC_SCENARIO_WORKER_ENABLED:'true'}]){
+    const captured=await captureLogs(()=>executeScheduledDemoCapacity({get url(){throw Error('URL_MUST_NOT_BE_READ');}},
+      {environment:{...environment,...patch},now,fetchImpl:async()=>{assert.fail('MUST_NOT_SEND');}}));
+    assert.equal(captured.result.status,204);assert.deepEqual(captured.logs,[]);
+  }
+  const closed=await captureLogs(()=>executeScheduledDemoCapacity(undefined,{environment,now:Date.parse('2026-11-15T08:00:00Z'),fetchImpl:async()=>{assert.fail('MUST_NOT_SEND');}}));
+  assert.equal(closed.result.status,204);assert.deepEqual(closed.logs,[]);
+});
+
+test('Capacity diagnostic phases distinguish invocation, signature, transport and malformed response without raw errors',async()=>{
+  for(const [invoke,phase,code] of [
+    [()=>executeDemoCapacity(new Request('https://wrong.invalid/'),{environment,now}),'INVOCATION','DEMO_CAPACITY_ORIGIN_INVALID'],
+    [()=>executeScheduledDemoCapacity(undefined,{environment:{...environment,DEMO_CAPACITY_WORKER_SECRET:undefined},now}),'SIGNATURE','DEMO_CAPACITY_SECRET_UNAVAILABLE'],
+    [()=>executeScheduledDemoCapacity(undefined,{environment,now,fetchImpl:async()=>{throw new DOMException('private@example.invalid','TimeoutError');}}),'REQUEST','REQUEST_TIMEOUT'],
+    [()=>executeScheduledDemoCapacity(undefined,{environment,now,fetchImpl:async()=>Response.json({privateContact:'not logged'})}),'RESPONSE','DEMO_CAPACITY_RESPONSE_INVALID']
+  ]){
+    const captured=await captureLogs(invoke);assert.equal(captured.result.status,500);
+    assert.deepEqual(captured.logs,[{event:'demo-capacity-scheduled',ok:false,error:'ADVANCE_FAILED',phase,code,httpStatus:null}]);
+    assert.equal(await captured.result.text(),'');
   }
 });

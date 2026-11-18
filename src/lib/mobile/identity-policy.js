@@ -8,7 +8,10 @@ export function mobileBearer(header) {
 export function mobileAccountState(user, authId, { canJoin = false, canSignUp = false } = {}) {
   if (!user || user.id !== authId) return 'DENIED';
   if (['ADMIN', 'SUPPORT'].includes(user.platform_role || user.role)) return 'WEB_ONLY';
-  if (user.active) return ['TRANSPORTER', 'DRIVER'].includes(user.role) || managedBusinessContext(user) ? 'ACTIVE' : (canSignUp || user.business_workspace_eligible ? 'ONBOARDING' : 'DENIED');
+  if (user.active) {
+    const personal=['SHIPPER','RECEIVER'].includes(user.role)&&(user.platform_role||user.role)===user.role&&!user.selected_business_workspace;
+    return ['TRANSPORTER', 'DRIVER'].includes(user.role) || managedBusinessContext(user) || personal ? 'ACTIVE' : (canSignUp || user.business_workspace_eligible ? 'ONBOARDING' : 'DENIED');
+  }
   if (canJoin) return 'JOIN_FLEET';
   if (canSignUp) return 'ONBOARDING';
   return 'DENIED';

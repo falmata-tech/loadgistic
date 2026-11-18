@@ -6,9 +6,61 @@ import {
   postgresErrorCategory, runGpsClonePipeline, splitPgGraphqlAclToc,
   captureGpsCloneGraphql,checkedGpsCloneArchive,restoreGpsCloneArchive,
   proveGpsCloneGraphqlCreation,gpsCloneGraphqlArchiveDiagnostic,
+  GPS_CLONE_SPATIAL_SECURITY_SQL,parseGpsCloneSpatialSecurity,
+  checkedGpsCloneSpatialSecurity,gpsCloneSpatialOwnerSql,
 } from '../scripts/ci-disposable-gps-clone.mjs';
 
 const child = (source) => [process.execPath, ['-e', source]];
+
+const spatialPrivileges=['DELETE','INSERT','REFERENCES','SELECT','TRIGGER','TRUNCATE','UPDATE'];
+function spatialSnapshot(maintain=true){
+ const privileges=maintain?[...spatialPrivileges,'MAINTAIN']:spatialPrivileges;
+ return{extension:'postgis',version:'3.3.7',schema:'public',owner:'supabase_admin',rls:true,forceRls:false,policyCount:0,
+  acl:['supabase_admin','postgres','service_role'].flatMap(role=>privileges.map(p=>['supabase_admin',role,p,false]))};
+}
+const spatialOwnerSql=readFileSync(new URL('../docs/operations/spatial-reference-owner-repair.sql',import.meta.url),'utf8');
+test('PostGIS clone restores only exact source grants through the existing local owner bootstrap',()=>{
+ for(const maintain of [false,true]){
+  const source=spatialSnapshot(maintain),target={...source,rls:false,acl:source.acl.filter(a=>a[1]==='supabase_admin')};
+  const sql=gpsCloneSpatialOwnerSql(source,target,spatialOwnerSql);
+  assert.match(sql,/current_database\(\)<>'loadgistic_telematics_ci'/);
+  assert.match(sql,/current_user<>'supabase_admin'/);
+  assert.match(sql,/grant all privileges on table public\.spatial_ref_sys to postgres,service_role;/);
+  assert.ok(sql.indexOf('GPS_CLONE_LOCAL_OWNER_REQUIRED')<sql.indexOf('grant all privileges'));
+  assert.ok(sql.indexOf('EXISTING_TABLE_OWNER_REQUIRED')<sql.indexOf('grant all privileges'));
+  assert.doesNotMatch(sql,/alter\s+extension|alter\s+table[^;]*\s+owner\s+to|set\s+role|update\s+pg_/i);
+  assert.equal(checkedGpsCloneSpatialSecurity(source,{...source,acl:[...source.acl].reverse()}),true);
+ }
+});
+test('PostGIS clone refuses source drift before any repair SQL is returned',()=>{
+ const source=spatialSnapshot();
+ for(const change of [{owner:'postgres'},{schema:'extensions'},{extension:'other'},{rls:false},{rls:null},{forceRls:true},{policyCount:1},{version:'unsafe-secret-value'},
+  {acl:[...source.acl,['supabase_admin','PUBLIC','SELECT',false]]},{acl:[...source.acl,source.acl[0]]},{acl:source.acl.slice(1)},
+  {acl:source.acl.map((a,i)=>i===0?[...a.slice(0,3),true]:a)},{unknown:'unsafe-secret-value'}]){
+  assert.throws(()=>gpsCloneSpatialOwnerSql({...source,...change},source,spatialOwnerSql),error=>{
+   assert.match(error.message,/expected local PostGIS owner security/);assert.doesNotMatch(error.message,/unsafe-secret-value/);return true;
+  });
+ }
+});
+test('PostGIS clone refuses target identity, unexpected grants and version drift',()=>{
+ const source=spatialSnapshot();
+ for(const change of [{owner:'postgres'},{schema:'extensions'},{forceRls:true},{policyCount:1},{acl:[...source.acl,['supabase_admin','anon','SELECT',false]]}])
+  assert.throws(()=>gpsCloneSpatialOwnerSql(source,{...source,...change},spatialOwnerSql),/expected local PostGIS owner security/);
+ assert.throws(()=>gpsCloneSpatialOwnerSql(source,{...source,version:'3.4.0'},spatialOwnerSql),/source\/clone version mismatch/);
+});
+test('PostGIS clone verifies final RLS and complete source ACL instead of trusting bootstrap success',()=>{
+ const source=spatialSnapshot();
+ for(const change of [{rls:false},{acl:source.acl.filter(a=>a[1]!=='service_role')},{acl:source.acl.filter(a=>a[1]!=='postgres')},{acl:source.acl.filter(a=>a[2]!=='MAINTAIN')}])
+  assert.throws(()=>checkedGpsCloneSpatialSecurity(source,{...source,...change}),/PostGIS/);
+ assert.throws(()=>checkedGpsCloneSpatialSecurity(source,{...source,version:'3.4.0'}),/source\/clone security mismatch/);
+});
+test('PostGIS clone rejects unknown metadata and missing or duplicate owner anchors safely',()=>{
+ assert.match(GPS_CLONE_SPATIAL_SECURITY_SQL,/pg_depend/);
+ assert.match(GPS_CLONE_SPATIAL_SECURITY_SQL,/aclexplode/);
+ assert.throws(()=>parseGpsCloneSpatialSecurity('private-value-not-json'),error=>{assert.equal(error.message,'GPS CI PostGIS security metadata unavailable');return true;});
+ const source=spatialSnapshot();
+ for(const sql of ['',spatialOwnerSql+spatialOwnerSql])assert.throws(()=>gpsCloneSpatialOwnerSql(source,source,sql),/existing local owner bootstrap/);
+});
 
 function run(dumpSource, restoreSource, options = {}) {
   const [dumpCommand, dumpArgs] = child(dumpSource);

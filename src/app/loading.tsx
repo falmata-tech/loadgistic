@@ -1,7 +1,7 @@
-import {LoadingIndicator} from '@/components/loading-state';
+import {RouteLoading} from '@/components/route-loading';
 
 // This boundary also covers authenticated layouts. Never briefly substitute the
-// public header/map for a dashboard whose own shell is still being resolved.
+// public header for a dashboard whose own shell is still being resolved.
 export default function AppLoading(){
-  return <main className="app-route-loading"><LoadingIndicator label="Loading page"/></main>;
+  return <RouteLoading/>;
 }

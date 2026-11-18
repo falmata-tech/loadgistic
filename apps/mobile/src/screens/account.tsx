@@ -1,6 +1,6 @@
 import FleetScreen from './fleet';
 import {DriverHome} from './driver-home';
-import {hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../navigation/destinations';
+import {hasPersonalTrackingAccount,hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../navigation/destinations';
 import {providerHomeTab,providerHomeTabs} from '../../../../src/lib/provider-workspace.js';
 import {PublicCapacityHome} from './capacity';
 import {WorkspaceTabs} from '../components/workspace-task';
@@ -30,6 +30,7 @@ export default function AccountScreen() {
   if (account.session.state === 'ONBOARDING'&&setup==='business') return <BusinessWorkspaces startBusiness/>;
   if (account.session.state === 'ONBOARDING') return <Redirect href="/signup"/>;
   if (account.session.state === 'JOIN_FLEET') return <Invitations key={account.session.user.id} committed={committed?.actorId===account.session.user.id&&committed.kind==='JOIN_FLEET'} onCommitted={()=>setCommitted({actorId:account.session!.user.id,kind:'JOIN_FLEET'})}/>;
+  if(hasPersonalTrackingAccount(account.session))return <Redirect href="/business-tracking"/>;
   if(account.session.user.role==='CUSTOMER')return <Redirect href={businessHome(account.session.user.selectedBusinessWorkspace)}/>;
   const capabilities=workspaceCapabilities(account.session);
   if (hasProviderHome(account.session)) return <ProviderHomeScreen key={account.session.user.id} requested={tab} capabilities={capabilities} market={providerMarketContext(params)}/>;

@@ -24,7 +24,7 @@ test('one company footer reserves map space and stays above phone navigation',as
   await expect(page.locator('body>.site-copyright')).toHaveCount(1);
   await expect(page.getByRole('link',{name:'MarketVision Technology',exact:true})).toHaveCount(1);
   await page.goto('/track',{waitUntil:'domcontentloaded'});
-  const action=page.getByRole('button',{name:'Email me a code',exact:true});
+  const action=page.getByRole('button',{name:'Open tracking',exact:true});
   await expect(action).toBeVisible();
   expect(await page.evaluate(()=>{
     const button=document.querySelector('.tracking-unlock-panel .auth-primary-action')?.getBoundingClientRect();

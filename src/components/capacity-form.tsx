@@ -51,7 +51,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   const activeVehicle=React.useRef(selectedId);activeVehicle.current=selectedId;
   const lastAutomaticRefresh=React.useRef({vehicleId:'',at:0});
   const phoneSelected=capacityLocationSource(selectedVehicle?.locationSelection)==='MOBILE';
-  const manualSaved=capacityLocationSource(selectedVehicle?.locationSelection)==='MANUAL';
+  const unselected=capacityLocationSource(selectedVehicle?.locationSelection)===null;
   const canReadPhone=allowDeviceLocation&&phoneSelected;
   const location=React.useMemo(()=>selectedCapacityLocation({selection:selectedVehicle?.locationSelection,
     published:snapshotLocation(current),phone:selectedVehicle?.driverLocation,
@@ -63,7 +63,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
   const hasCoverage=Boolean(current?.availability_geometry==='ROUTE'&&(current.current_route_points?.length||0)>=2||current?.availability_geometry==='RADIUS'&&(current.capacity_area_boundary?.length||0)>=3||regularSignals.length);
   const savedMap=React.useMemo(()=>location||hasCoverage?<CapacityLocationMap key={selectedId} center={location} radiusKm={location?.radius||0} areaCenter={current?.availability_geometry==='RADIUS'&&current.capacity_area_center_lat!=null?{lat:Number(current.capacity_area_center_lat),lng:Number(current.capacity_area_center_lng)}:null} areaBoundary={current?.availability_geometry==='RADIUS'?current.capacity_area_boundary||[]:[]} routePoints={current?.availability_geometry==='ROUTE'?current.current_route_points||[]:[]} regularSignals={regularSignals} availabilityStatus={current?.status}/>:null,[location,hasCoverage,current,regularSignals,selectedId]);
   const onDuty=Boolean(current&&current.status!=='OFF_DUTY');
-  const reportedSource=localLocation?.vehicleId===selectedId?'Driver’s phone':locationSourceLabel(current?.location_source)||(!current&&capacityLocationSource(selectedVehicle?.locationSelection)==='MANUAL'?'Manually entered':!current&&selectedVehicle?.driverLocation?'Driver’s phone':'');
+  const reportedSource=localLocation?.vehicleId===selectedId?'Driver’s phone':locationSourceLabel(current?.location_source)||(!current&&phoneSelected&&selectedVehicle?.driverLocation?'Driver’s phone':'');
 
   async function refreshLocation(radius=nextCapacityPrivacyRadius(location?.radius),automatic=false){
     if(requestActive.current||!canReadPhone||!onDuty)return;
@@ -108,7 +108,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
       <div className="capacity-summary-layout">{savedMap||<div className="capacity-map-empty">
         <MapPinned aria-hidden="true"/>
         <strong>{current?<Text message="No Driver location"/>:<Text message="No planned capacity published yet"/>}</strong>
-        <span>{!current&&manualSaved?<Text message="Manual locations are read-only. Choose a location source to resume updates."/>:!current?<Text message="Set availability, coverage and approximate location for this vehicle."/>:onDuty?allowDeviceLocation?<Text message="Add an approximate location to show this vehicle’s map."/>:<Text message="The assigned Driver can add an approximate location for this vehicle."/>:<Text message="Set capacity when this vehicle is ready to work."/>}</span>
+        <span>{!current&&unselected?<Text message="Choose GPS or Phone"/>:!current?<Text message="Set availability, coverage and approximate location for this vehicle."/>:onDuty?allowDeviceLocation?<Text message="Add an approximate location to show this vehicle’s map."/>:<Text message="The assigned Driver can add an approximate location for this vehicle."/>:<Text message="Set capacity when this vehicle is ready to work."/>}</span>
         {!current||!onDuty||allowDeviceLocation?<button type="button" className="button" disabled={!controlsReady||refreshing||syncing} aria-haspopup="dialog" onClick={()=>setEditSection('CAPACITY')}>
           <Gauge aria-hidden="true"/><Text message="Plan capacity"/>
         </button>:null}
@@ -126,7 +126,7 @@ export function CapacityForm({vehicles,initialVehicleId,allowDeviceLocation=true
     {expectedDriverId?<ProviderCargoSpacePhoto key={selectedId} vehicleId={selectedId} canUpload={allowDeviceLocation} canRemove={canRemovePhoto}/>:null}
     {editSection&&(editSection!=='RECURRING'||expectedDriverId)?<CapacityEditDialog title={editSection==='RECURRING'?regularTitle:editorTitles[editSection as EditSection]} truck={editSection==='RECURRING'?`${truckLabel} · ${selectedVehicle.driver?.name}`:truckLabel} busy={busy} onClose={close}>
       {editSection==='RECURRING'?<CapacityMarketPlanning key={`${selectedId}:${expectedDriverId}`} vehicleId={selectedId} expectedDriverId={expectedDriverId} corridors={scopedCorridors} returnTo={returnTo} onBusyChange={setBusy} onSaved={geometry=>saved(geometry==='RADIUS'?'Preferred area saved.':'Preferred corridor saved.')} onRemoved={id=>{setRemovedCorridorIds((previous:Set<string>)=>new Set([...previous,id]));startSync(()=>router.refresh());}} onCancel={close}/>:editSection==='LOCATION'?<>
-<DriverCapacityLocationEditor key={selectedId} vehicleId={selectedId} location={location} publishedSource={current?.location_source} onDuty={onDuty} onBusyChange={setBusy} onCancel={close} onSaved={(_mode,value)=>{if(value)setLocalLocation({vehicleId:selectedId,value});else setLocalLocation(null);saved('Phone location selected.');}}/></>:<CapacitySignalEditor section={editSection} hasAssignedDriver={Boolean(selectedVehicle.driver)} vehicleId={selectedId} current={current} location={location} allowDeviceLocation={canReadPhone} savedManualSource={capacityLocationSource(selectedVehicle.locationSelection)==='MANUAL'} onBusyChange={setBusy} onSaved={()=>saved()} onCancel={close}/>}
+<DriverCapacityLocationEditor key={selectedId} vehicleId={selectedId} location={location} publishedSource={localLocation?.vehicleId===selectedId?'MOBILE':current?.location_source||(!current&&phoneSelected&&selectedVehicle?.driverLocation?'MOBILE':null)} onDuty={onDuty} onBusyChange={setBusy} onCancel={close} onSaved={(_mode,value)=>{if(value)setLocalLocation({vehicleId:selectedId,value});else setLocalLocation(null);saved('Phone location selected.');}}/></>:<CapacitySignalEditor section={editSection} hasAssignedDriver={Boolean(selectedVehicle.driver)} vehicleId={selectedId} current={current} location={location} allowDeviceLocation={canReadPhone} onBusyChange={setBusy} onSaved={()=>saved()} onCancel={close}/>}
     </CapacityEditDialog>:null}
   </div>;
 }

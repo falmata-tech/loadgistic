@@ -9,8 +9,8 @@ begin
  if (select md5(prosrc) from pg_proc where oid='public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure)<>'ae6155282f29ad40f599798657b4477a'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_matches(jsonb,jsonb)'::regprocedure)<>'7a4ca944e31f1989d522e11d4f1d8f52'
   -- 218 adds the reported-space projection and minimum filter to these two
-  -- current producers. Keep this guard pinned to their installed definitions.
-  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'11f75def78dd8e922112be96f17bdc42'
+  -- current producers. Migration 228 also excludes retired Manual positions from public rows.
+  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'d98a54c5d109cd293bc989255cb26332'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_profile_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'dc244f78d7035c55debec8f242664e0b'
   then raise exception 'CURRENT_ACCOUNT_REFERENCE_SOURCE_DRIFT';end if;
  definition:=pg_get_functiondef('public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure);

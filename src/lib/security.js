@@ -80,6 +80,24 @@ export function providerTrackingRecipientDigest(email,environment=process.env) {
     .digest('hex');
 }
 
+/** Independent random credentials. Neither can be recovered from a shipment ID. */
+export function createTrackingSessionCredentials(environment=process.env){
+  const linkToken=crypto.randomBytes(32).toString('base64url');
+  let value=BigInt('0x'+crypto.randomBytes(5).toString('hex')),code='';
+  for(let shift=35n;shift>=0n;shift-=5n)code+=CROCKFORD_ALPHABET[Number((value>>shift)&31n)];
+  const formatted=code.slice(0,4)+'-'+code.slice(4);
+  return {linkToken,code:formatted,...trackingSessionCredentialDigests(linkToken,formatted,environment)};
+}
+
+export function trackingSessionCredentialDigests(linkToken,code,environment=process.env){
+  const normalized=String(code||'').trim().toUpperCase().replace(/-/g,'');
+  if(typeof linkToken!=='string'||!(/^[A-Za-z0-9_-]{43}$/).test(linkToken)
+    ||!(/^[0-9A-HJKMNP-TV-Z]{8}$/).test(normalized))throw Error('TRACKING_ACCESS_DENIED');
+  const key=trackingCodeSecret(environment);
+  return {linkDigest:crypto.createHmac('sha256',key).update('tracking-session-link:v1:'+linkToken).digest('hex'),
+    codeDigest:crypto.createHmac('sha256',key).update('tracking-session-code:v1:'+normalized).digest('hex')};
+}
+
 export function providerTrackingOtpCode(challengeId) {
   const digest=crypto.createHmac('sha256',secret()).update(`provider-tracking-otp:${challengeId}`).digest();
   const value=digest.readUInt32BE(0)%1_000_000;

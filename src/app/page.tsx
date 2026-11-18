@@ -5,6 +5,7 @@ import {redirect} from 'next/navigation';
 import {publicPageMetadata} from '@/lib/seo.js';
 import {PublicHeader} from '@/components/public-header';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
+import {PrivateCapacityEntry} from '@/components/private-capacity-entry';
 import {listPublicCapacityCursor} from '@/lib/capacity-market.js';
 import {capacityIntroduction} from '@/lib/platform-copy.js';
 import {CAPACITY_FILTER_CHOICES,capacityFilterRecord,type CapacityFilterGroups} from '@/lib/capacity-filter-values.js';
@@ -24,6 +25,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   const raw=Object.fromEntries(Object.entries(input).map(([key,value])=>[key,Array.isArray(value)?value[0]:value])) as Record<string,string|undefined>;
   const privateView=raw.view==='private';
   const user=await getCurrentUser({allowLimited:true});
+  const signedOutPrivate=privateView&&!user;
   if(user?.active===true&&['DRIVER','TRANSPORTER'].includes(user.role)&&(await getWorkspaceAccess(user)).granted){
     const publicQuery=new URLSearchParams();
     for(const [key,value]of Object.entries(input))for(const item of Array.isArray(value)?value:[value]){
@@ -48,9 +50,9 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   let apiPath='/api/public/capacity',searchApiPath: string|undefined,scope='public';
   let initial;
   if(privateView){
-    if(!user)redirect('/login?from=shared-capacity');
-    if(!user.active)redirect('/signup?verified=1');
-    if(user.role==='CUSTOMER'){
+    if(!user){scope='private-entry';initial=denied;}
+    else if(!user.active)redirect('/signup?verified=1');
+    else if(user.role==='CUSTOMER'){
       const workspace=user.selected_business_workspace;
       if(!workspace?.permissions.capacity)redirect('/app/business/account');
       scope=`${user.id}:${workspace.id}:${workspace.membershipRevision}`;
@@ -69,7 +71,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
       </Localized>:null}
     </header>
     <div className="capacity-view-body">
-      <Localized as="section" copy={["aria-label"]} id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body"><PublicCapacityFeed key={scope} initial={initial} query={{...mapQuery,q:query.q}} apiPath={apiPath} searchApiPath={searchApiPath}/></div></Localized>
+      <Localized as="section" copy={["aria-label"]} id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body">{signedOutPrivate?<PrivateCapacityEntry/>:<PublicCapacityFeed key={scope} initial={initial} query={{...mapQuery,q:query.q}} apiPath={apiPath} searchApiPath={searchApiPath}/>}</div></Localized>
     </div>
   </main></>;
 }

@@ -14,3 +14,9 @@ test('tracking map displays the full privacy radius without an exact-location pi
  for (const [lng, lat] of ring) { const rad = Math.PI / 180, a = Math.sin((lat - 9) * rad / 2) ** 2 + Math.cos(9 * rad) * Math.cos(lat * rad) * Math.sin((lng - 38) * rad / 2) ** 2; assert.ok(Math.abs(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) - 20) < 0.00001); }
  for (const change of [{ latitude: NaN }, { longitude: 181 }, { radius: 0 }, { radius: 10000 }]) assert.equal(trackingAreaGeometry({ ...location, ...change }), null);
 });
+
+test('retired or unknown provenance cannot become an unlabelled current Tracking point',()=>{
+ const location={latitude:9,longitude:38,radius:5,area:'Old area',updatedAt:'2026-11-17T00:00:00Z'};
+ for(const source of ['MANUAL','MANUAL_ADMIN','UNKNOWN',false,{}])assert.equal(trackingAreaGeometry({...location,source}),null);
+ for(const source of [undefined,null,'GPS','MOBILE','TELEMATICS','DEVICE_OBSCURED'])assert.ok(trackingAreaGeometry({...location,source}));
+});

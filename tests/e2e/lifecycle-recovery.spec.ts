@@ -1,3 +1,4 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures,issueTrackingFixtureLink,openTrackingFixtureLink} from './tracking-session-fixtures';
 import {auditDeleteVehicles} from './audit-helpers';
 import {test,expect as baseExpect} from './browser-test';
 // Native form redirects stream a loading shell before their final outcome.
@@ -6,15 +7,14 @@ const expect=baseExpect.configure({timeout:20000});
 import {mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {localAuditService,checked,auditLogin,auditProvider,auditFleetProvider,auditFleetDriver} from './audit-helpers';
+import {localAuditService,checked,auditLogin,auditTrackingOwnerLogin,auditProvider,auditFleetProvider,auditFleetDriver} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
-import {createProviderShipment,updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
-import {localMailpitNumericCode} from './mailpit-helper';
+import {updateProviderShipmentStatus} from '../../src/lib/provider-tracking.js';
 
 test('owners and Operations recover Tracking, preserve history and retire trucks safely',async({page,browser}:{page:any;browser:any},info:any)=>{
  test.setTimeout(180000);page.setDefaultTimeout(20000);const service=localAuditService();let actor:any;const vehicles:string[]=[];const drivers:any[]=[];let shipmentId='';let guest:any;
  const snapshots=path.dirname(info.outputPath('lifecycle-state.png'));mkdirSync(snapshots,{recursive:true});
- const diagnostics={stage:'SETUP',errorClass:'',otpStatus:0,activeOwnerRecipients:0,activeShipperGrants:0,challengeStored:false,outbox:[] as {status:string;attempts:number}[]};let challengeId='';
+ const diagnostics={stage:'SETUP',errorClass:'',linkAccessVerified:false,activeOwnerRecipients:0,activeShipperGrants:0};
  function phase(stage:string){diagnostics.stage=stage;writeFileSync(info.outputPath('lifecycle-diagnostics.json'),JSON.stringify(diagnostics,null,2)+'\n');}
  try{
   actor=await auditFleetProvider(service,'lifecycle');
@@ -39,13 +39,10 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   diagnostics.activeShipperGrants=checked(await service.from('shipment_party_grants').select('id').eq('shipment_id',shipment.id).eq('party_role','SHIPPER').is('revoked_at',null)).length;
   expect(diagnostics.activeOwnerRecipients).toBe(1);expect(diagnostics.activeShipperGrants).toBe(1);
   guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.247'}});const guestPage=await guest.newPage();
-  await guestPage.goto('/track');await guestPage.getByLabel('Email',{exact:true}).fill(email);
-  phase('GUEST_CODE_REQUEST');const requestedAt=Date.now();const sent=guestPage.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/otp'&&response.request().method()==='POST',{timeout:20000});await guestPage.getByRole('button',{name:'Email me a code',exact:true}).click();const response=await sent;diagnostics.otpStatus=response.status();expect(response.status()).toBe(200);
-  const payload=await response.json();challengeId=typeof payload.challengeId==='string'&&/^[a-f0-9-]{36}$/.test(payload.challengeId)?payload.challengeId:'';expect(Boolean(challengeId)).toBe(true);
-  diagnostics.challengeStored=checked(await service.from('provider_tracking_email_otps').select('id').eq('id',challengeId)).length===1;expect(diagnostics.challengeStored).toBe(true);
-  diagnostics.outbox=checked(await service.from('access_email_deliveries').select('status,attempts').eq('entity_id',challengeId)).map((row:any)=>({status:['QUEUED','FAILED','SENT'].includes(row.status)?row.status:'OTHER',attempts:row.attempts}));
-  phase('GUEST_CODE_DELIVERY');await expect(guestPage.getByLabel('6-digit email code')).toBeVisible();await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));
-  phase('GUEST_CODE_VERIFY');await guestPage.getByRole('button',{name:'Open tracking',exact:true}).click();await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible({timeout:30000});
+  phase('OWNER_LINK_ISSUE');const ownerSession=await auditTrackingOwnerLogin(page,email,shipment.id);
+  const link=await issueTrackingFixtureLink(page,ownerSession.id,true);
+  phase('GUEST_LINK_AND_CODE');const shared=await openTrackingFixtureLink(guestPage,link);expect(shared.id).toBe(ownerSession.id);
+  diagnostics.linkAccessVerified=true;await expect(guestPage.getByRole('heading',{name:'Shipment progress',exact:true})).toBeVisible({timeout:30000});
   const guestUrl=guestPage.url();
   phase('OPERATIONS_MAP');await auditLogin(page,'admin@loadgistic.local',`/admin/operations/tracking/${shipment.id}`);
   await expect(page.locator('.tracking-reported-area')).toContainText('Around Addis Ababa');await expect(page.locator('.tracking-reported-area')).toHaveAttribute('data-location-radius-km','10');await expect(page.locator('.leaflet-container')).toBeVisible();await expect(page.locator('.tracking-approximate-circle')).toHaveCount(1);await expect(page.locator('[data-route-stop]')).toHaveCount(3);
@@ -56,7 +53,7 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   await reassign.getByRole('button',{name:'Save reassignment'}).click();await expect(page.getByText('Tracking updated. Earlier events are retained.',{exact:true})).toBeVisible();
   await expect(page.locator('.tracking-reported-area')).toHaveCount(0);await expect(page.locator('.tracking-truck-marker')).toHaveCount(0);
   expect(checked(await service.from('provider_shipments').select('assigned_vehicle_id').eq('id',shipment.id).single()).assigned_vehicle_id).toBe(vehicles[1]);
-  await guestPage.reload();await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible();await expect(guestPage.locator('.tracking-reported-area')).toHaveCount(0);await expect(guestPage.locator('.tracking-truck-marker')).toHaveCount(0);
+  await guestPage.reload();await expect(guestPage.getByRole('heading',{name:'Shipment progress',exact:true})).toBeVisible();await expect(guestPage.locator('.tracking-reported-area')).toHaveCount(0);await expect(guestPage.locator('.tracking-truck-marker')).toHaveCount(0);
   // Correct a synthetic workspace through the Customers permission boundary.
   phase('CUSTOMER_CORRECTION');await page.goto(`/admin/operations/workspaces/${actor.organization_id}?kind=ORGANIZATION`,{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Edit account name',exact:true}).click();await page.getByLabel('Account name',{exact:true}).fill(`Corrected audit business ${actor.suffix}`);await page.getByLabel('Reason',{exact:true}).fill('Correct the business display name');
@@ -86,15 +83,17 @@ test('owners and Operations recover Tracking, preserve history and retire trucks
   await expect(page.getByLabel('Location privacy radius',{exact:true})).toHaveCount(0);await expect(page.getByText('Tracking truck or Driver reassigned',{exact:true})).toBeVisible();
   await page.screenshot({path:path.join(snapshots,`${info.project.name}-cancelled-history.png`),fullPage:true,scale:'css'});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  phase('GUEST_REVOCATION');await guestPage.goto(guestUrl);await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toHaveCount(0);
+  phase('GUEST_REVOCATION');await guestPage.goto(guestUrl);await expect(guestPage.getByRole('heading',{name:'Shipment progress',exact:true})).toHaveCount(0);
   expect(checked(await service.from('provider_tracking_recoveries').select('id').eq('shipment_id',shipment.id))).toHaveLength(3);
   phase('COMPLETE');
  }catch(error){const name=error instanceof Error?error.name:'';diagnostics.errorClass=['Error','TimeoutError','AssertionError','TypeError'].includes(name)?name:'OTHER';phase(diagnostics.stage);throw new Error('TRACKING_LIFECYCLE_FAILED '+diagnostics.stage,{cause:error});}
  finally{
   if(guest)await guest.close();
-  if(challengeId)checked(await service.from('access_email_deliveries').delete().eq('entity_id',challengeId).eq('delivery_kind','TRACKING_OTP'));
   if(shipmentId){checked(await service.from('provider_tracking_recoveries').delete().eq('shipment_id',shipmentId));checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipmentId));checked(await service.from('audit_logs').delete().eq('entity_id',shipmentId));checked(await service.from('provider_shipments').delete().eq('id',shipmentId));}
   if(vehicles.length){checked(await service.from('audit_logs').delete().in('entity_id',vehicles));checked(await auditDeleteVehicles(service,'id',vehicles));}
   if(actor){checked(await service.from('audit_logs').delete().eq('entity_id',actor.organization_id));checked(await service.from('audit_logs').delete().in('actor_user_id',[actor.id,...drivers.map(driver=>driver.id)]));for(const driver of drivers)checked(await service.auth.admin.deleteUser(driver.id));checked(await service.auth.admin.deleteUser(actor.id));checked(await service.from('organizations').delete().eq('id',actor.organization_id));}
  }
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

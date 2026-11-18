@@ -6,6 +6,7 @@ import {reviewVisitorDigest} from '../privacy/review-access.js';
 export type VisitorScope = 'tracking' | 'capacity';
 export function visitorScope(value: string): VisitorScope { if (value !== 'tracking' && value !== 'capacity') throw new MobileError(404, 'NOT_FOUND', 'Not found.'); return value; }
 export async function requireVisitor(request: Request, scope: VisitorScope) {
+ if(scope==='tracking')throw new MobileError(410,'TRACKING_LINK_REQUIRED','Open the shipment’s current tracking link and enter its code.');
  const payload=verifySessionToken(visitorBearer(request.headers.get('authorization')));
  const review=parseReviewVisitor(payload,scope);
  if(review){const digest=await reviewVisitorDigest(review.reviewActorId,scope);if(!digest)throw new MobileError(401,'EMAIL_REQUIRED','This review access is unavailable.');return {...review,digest};}

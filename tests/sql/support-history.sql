@@ -31,20 +31,20 @@ begin
     values(attachment_id,guest_chat,'00000000-0000-0000-0000-000000000030','supabase://support-attachment/test-history.png','history.png','image/png',100);
 
   foreach kind in array array['support','guest_support'] loop
-    args:=case when kind='support' then format('%L,%L',member_id,member_chat) else format('null,%L',guest_chat) end;
-    execute format('select managed_%s_history(%s,null,500%s)',kind,args,case when kind='guest_support' then format(',%L',digest) else '' end) into result;
+    args:=case when kind='support' then format('%L,%L',member_id,member_chat) else format('%L,%L',admin_id,guest_chat) end;
+    execute format('select managed_%s_history(%s,null,500%s)',kind,args,case when kind='guest_support' then ',null' else '' end) into result;
     if jsonb_array_length(result->'messages')<>50 or result->'messages'->0->>'body' not like '%72' then raise exception 'LATEST_WINDOW_ORDER';end if;
     cursor_id:=(result->>'next_before')::uuid;
-    execute format('select managed_%s_history(%s,%L,50%s)',kind,args,cursor_id,case when kind='guest_support' then format(',%L',digest) else '' end) into first_page;
+    execute format('select managed_%s_history(%s,%L,50%s)',kind,args,cursor_id,case when kind='guest_support' then ',null' else '' end) into first_page;
     if jsonb_array_length(first_page->'messages')<>50 or first_page->'messages'->0->>'body' not like '%22' then raise exception 'HISTORY_ORDER';end if;
     if first_page::text like '%supabase://%' or first_page::text like '%email_digest%' then raise exception 'PRIVATE_METADATA_LEAK';end if;
     second_cursor:=(first_page->>'next_before')::uuid;
-    execute format('select managed_%s_history(%s,%L,50%s)',kind,args,second_cursor,case when kind='guest_support' then format(',%L',digest) else '' end) into result;
+    execute format('select managed_%s_history(%s,%L,50%s)',kind,args,second_cursor,case when kind='guest_support' then ',null' else '' end) into result;
     if jsonb_array_length(result->'messages')<>21 or (result->>'has_older')::boolean or result->>'next_before' is not null then raise exception 'TERMINAL_HISTORY';end if;
   end loop;
   -- New replies do not move the preceding window, including equal timestamps.
   insert into guest_support_messages(conversation_id,sender_kind,body) values(guest_chat,'TEAM','New reply');
-  result:=managed_guest_support_history(null,guest_chat,cursor_id,50,digest);
+  result:=managed_guest_support_history(admin_id,guest_chat,cursor_id,50,null);
   if result->'messages'<>first_page->'messages' then raise exception 'UNSTABLE_CURSOR';end if;
   if (select guest_last_read_at from guest_support_conversations where id=guest_chat) is not null then raise exception 'HISTORY_MARKED_READ';end if;
   perform managed_support_history(agent_id,member_chat,cursor_id,50);
@@ -53,7 +53,7 @@ begin
   perform managed_guest_support_history(admin_id,guest_chat,cursor_id,50,null);
   perform pg_temp.expect_history_denied(format('select managed_support_history(%L,%L,null,50)',outsider_id,member_chat));
   perform pg_temp.expect_history_denied(format('select managed_guest_support_history(null,%L,null,50,%L)',guest_chat,repeat('b',64)));
-  perform pg_temp.expect_history_denied(format('select managed_guest_support_history(null,%L,%L,50,%L)',other_chat,cursor_id,repeat('b',64)),'INVALID_SUPPORT_CURSOR');
+  perform pg_temp.expect_history_denied(format('select managed_guest_support_history(%L,%L,%L,50,null)',admin_id,other_chat,cursor_id),'INVALID_SUPPORT_CURSOR');
   perform pg_temp.expect_history_denied(format('select managed_support_history(%L,%L,%L,50)',member_id,member_chat,gen_random_uuid()),'INVALID_SUPPORT_CURSOR');
   update profiles set active=false where id=member_id;
   perform pg_temp.expect_history_denied(format('select managed_support_history(%L,%L,null,50)',member_id,member_chat));
@@ -67,9 +67,10 @@ begin
   perform pg_temp.expect_history_denied(format('select managed_guest_support_attachment_file(%L,%L,%L,null)',agent_id,guest_chat,attachment_id));
   if (select count(*) from guest_support_events where conversation_id=guest_chat)<>n or
     (select agent_last_read_at from guest_support_conversations where id=guest_chat) is not null then raise exception 'DENIED_SIDE_EFFECT';end if;
-  if managed_guest_support_attachment_file(null,guest_chat,attachment_id,digest) is null then raise exception 'GUEST_ATTACHMENT_LOST';end if;
+  perform pg_temp.expect_history_denied(format('select managed_guest_support_attachment_file(null,%L,%L,%L)',guest_chat,attachment_id,digest));
+  if managed_guest_support_attachment_file(admin_id,guest_chat,attachment_id,null) is null then raise exception 'GUEST_ATTACHMENT_LOST';end if;
   update guest_support_conversations set status='CLOSED' where id=guest_chat;
-  perform managed_guest_support_history(null,guest_chat,cursor_id,50,digest);
+  perform managed_guest_support_history(admin_id,guest_chat,cursor_id,50,null);
   update guest_support_conversations set status='OPEN',assigned_agent_user_id=agent_id where id=guest_chat;
   perform send_managed_guest_support_message(agent_id,guest_chat,null,'Permitted assigned reply');
   perform close_managed_guest_support(agent_id,guest_chat,null);

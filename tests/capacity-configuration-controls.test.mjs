@@ -8,7 +8,7 @@ const node=(type,props,key)=>({type,props:props||{},key});
 function component(name){
  const source=readFileSync(new URL(`../src/components/${name}.tsx`,import.meta.url),'utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;
- const choices={vehicleCategory:configurations.map(item=>item.name),status:['EMPTY','PARTIAL'],locationSource:['GPS','MOBILE','MANUAL']};
+ const choices={vehicleCategory:configurations.map(item=>item.name),status:['EMPTY','PARTIAL'],locationSource:['GPS','MOBILE']};
  // These tests exercise the actual controls. The shared parser has its own
  // backend suite; this narrow stub supplies its canonical CSV port contract.
  const values=(key,value)=>{const result=value?String(value).split(','):[];if(result.some(item=>!choices[key].includes(item)))throw Error('INVALID_CAPACITY_FILTER');return [...new Set(result)].sort();};
@@ -65,9 +65,9 @@ test('multi option groups toggle independently, preserve malformed input for den
 
 test('location source is a canonical multi-select that can be cleared',()=>{
  const {CapacityMultiOptions}=component('capacity-multi-options');let value='';
- const props={name:'locationSource',label:'Location source',anyLabel:'Any location source',options:[['GPS','GPS device'],['MOBILE','Driver’s phone'],['MANUAL','Manually entered']],onChange:next=>{value=next;}};
+ const props={name:'locationSource',label:'Location source',anyLabel:'Any location source',options:[['GPS','GPS device'],['MOBILE','Driver’s phone']],onChange:next=>{value=next;}};
  const render=()=>CapacityMultiOptions({...props,value});
- let tree=render();inputs(tree).find(item=>item.props.value==='MOBILE').props.onChange({target:{checked:true}});
+ let tree=render();assert.equal(inputs(tree).some(item=>item.props.value==='MANUAL'),false);inputs(tree).find(item=>item.props.value==='MOBILE').props.onChange({target:{checked:true}});
  tree=render();inputs(tree).find(item=>item.props.value==='GPS').props.onChange({target:{checked:true}});
  assert.equal(value,'GPS,MOBILE');assert.equal(inputs(render()).find(item=>item.props.name==='locationSource').props.value,'GPS,MOBILE');
  all(render(),item=>item.type==='button').find(item=>item.props['data-clear-options']).props.onClick();
@@ -77,7 +77,7 @@ test('location source is a canonical multi-select that can be cleared',()=>{
 test('location source options have localized labels in every supported web language',()=>{
  for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(new URL(`../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
-  for(const label of ['Location source','Any location source','GPS device','Driver’s phone','Manually entered']){
+  for(const label of ['Location source','Any location source','GPS device','Driver’s phone','Choose GPS or Phone','Assigned driver must choose a location source.']){
    assert.ok(messages[label],`${locale}: ${label}`);
    assert.notEqual(messages[label],label,`${locale}: ${label} should not fall back to English`);
   }

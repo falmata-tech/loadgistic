@@ -429,6 +429,12 @@ And authenticated navigation remains available during nested route loading\
 And existing map results remain visible while additional results load\
 And no fake percentage, full-screen blocking overlay, or large loading headline appears\
 And skeleton decoration is hidden from assistive technology with one concise status\
+And fresh navigation reserves the pending surface's height, including a map-shaped
+placeholder on map routes, without guessing a signed-out header while authentication resolves\
+And short loading, empty and failure states keep the normal-flow company footer at
+the bottom of the available workspace rather than collapsing it toward the header\
+And map read failure, retry and an empty response preserve the mounted map,
+reachable controls and its reserved height; a successful retry replaces only the results\
 And reduced-motion preference disables decorative animation\
 And a pending native POST form preserves its submitted button command and prevents
 duplicate submissions while announcing progress.

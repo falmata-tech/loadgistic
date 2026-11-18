@@ -2,7 +2,7 @@ import { parseSession, type AccountSession } from './contract.ts';
 import { ApiError } from '../api/response.ts';
 type Port = {
  now: () => number; read: () => Promise<string | null>; write: (token: string) => Promise<void>; remove: () => Promise<void>;
- request: (path: string, options: { token?: string; body?: unknown }) => Promise<unknown>; changed: () => void;
+ request: (path: string, options: { token?: string; body?: unknown;method?:'DELETE' }) => Promise<unknown>; changed: () => void;
 };
 export function createAccountController(port: Port) {
  let session: AccountSession | null = null, error = '', busy = true, epoch = 0, restoreBlocked = false;
@@ -83,12 +83,12 @@ export function createAccountController(port: Port) {
    const generation=++epoch;restoreBlocked=true;session=null;emit();
    await accept(await port.request('/api/mobile/review-access',{body:{email,password}}),generation);
   },
-  async request(path: string, body?: unknown) {
+  async request(path: string, body?: unknown,options?:{method:'DELETE'}) {
    const generation = epoch; let active = session;
    if (!active || active.expiresAt * 1000 - port.now() < 60000) active = await refresh();
    if (!active || generation !== epoch) throw new ApiError(401, 'SIGN_IN_REQUIRED', 'Please sign in again.');
    try {
-    const result = await port.request(path, { token: active.accessToken, body });
+    const result = await port.request(path, { token: active.accessToken, body,...(options?{method:options.method}:{}) });
     if (generation !== epoch) throw new ApiError(401, 'SESSION_CHANGED', 'Please sign in again.');
     return result;
    } catch (caught) {

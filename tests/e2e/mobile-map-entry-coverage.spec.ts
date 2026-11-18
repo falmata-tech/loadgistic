@@ -42,28 +42,26 @@ test('Expo Tracking entry has an empty map behind verification without private s
  test.skip(info.project.name!=='mobile-chromium','Phone Expo browser workflow');test.setTimeout(120000);
  await context.setExtraHTTPHeaders({'x-forwarded-for':'127.0.0.243'});
  const privateRequests:string[]=[];
- page.on('request',request=>{if(/\/api\/mobile\/visitor\/tracking\/shipments(?:\/|\?|$)/.test(new URL(request.url()).pathname))privateRequests.push(request.url());});
+ page.on('request',request=>{if(/\/api\/(?:mobile\/visitor\/tracking\/shipments|tracking\/sessions)(?:\/|$)/.test(new URL(request.url()).pathname))privateRequests.push(request.url());});
  for(const width of [390,320]){
   await page.setViewportSize({width,height:width===320?640:844});await page.goto(preview+'/about');
   await page.getByRole('tab',{name:'Track',exact:true}).click();
   await expect(page.getByText('Follow your shipment',{exact:true})).toBeVisible();
   const map=await paintedMap(page);
   await expect(map.locator('[data-marker-id]')).toHaveCount(0);
-  const [frame,input,tabs]=await Promise.all([map.boundingBox(),page.getByLabel('Your email',{exact:true}).boundingBox(),page.getByRole('tab',{name:'Track',exact:true}).boundingBox()]);
+  const [frame,input,tabs]=await Promise.all([map.boundingBox(),page.getByLabel('Tracking link',{exact:true}).boundingBox(),page.getByRole('tab',{name:'Track',exact:true}).boundingBox()]);
   expect(frame&&input&&tabs).toBeTruthy();expect(Math.abs(frame!.y+frame!.height-tabs!.y)).toBeLessThan(12);
   expect(input!.y).toBeGreaterThan(frame!.y);expect(input!.y+input!.height).toBeLessThan(frame!.y+frame!.height);
-  await page.getByLabel('Your email',{exact:true}).fill('expo-entry-layout@example.test');
-  await page.getByRole('button',{name:'Send email code',exact:true}).click({trial:true});
+  await page.getByLabel('Tracking link',{exact:true}).fill('https://loadgistic.com/track/'+'a'.repeat(43));
+  await page.getByLabel('Tracking code',{exact:true}).fill('0000-0000');
+  await page.getByRole('button',{name:'Open tracking',exact:true}).click({trial:true});
   await page.screenshot({path:info.outputPath(`expo-tracking-entry-map-${width}.png`),scale:'css'});
  }
- const otp=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/visitor/tracking/request'&&response.request().method()==='POST');
- await page.getByRole('button',{name:'Send email code',exact:true}).click();expect((await otp).ok()).toBe(true);
- await page.getByLabel('Email verification code',{exact:true}).fill('111111');
- const verify=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/visitor/tracking/verify'&&response.request().method()==='POST');
- await page.getByRole('button',{name:'Open private access',exact:true}).click();expect((await verify).status()).toBe(401);
+ const denied=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
+ await page.getByRole('button',{name:'Open tracking',exact:true}).click();expect((await denied).status()).toBe(401);
  await expect(page.getByRole('alert')).toBeVisible();await paintedMap(page);expect(privateRequests).toEqual([]);
- await page.setViewportSize({width:390,height:480});await page.getByLabel('Email verification code',{exact:true}).focus();
- await page.getByRole('button',{name:'Open private access',exact:true}).scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Open private access',exact:true}).click({trial:true});
+ await page.setViewportSize({width:390,height:480});await page.getByLabel('Tracking code',{exact:true}).focus();
+ await page.getByRole('button',{name:'Open tracking',exact:true}).scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Open tracking',exact:true}).click({trial:true});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:info.outputPath('expo-tracking-entry-short-viewport.png'),scale:'css'});
 });

@@ -69,7 +69,7 @@ try{
   const {data:guestProjection,error:guestProjectionError}=await service.rpc('managed_guest_support_conversation',{
     actor_user_id:null,conversation_id:guestConversationId,requested_email_digest:guestDigest,requested_limit:50,mark_read:true
   });
-  if(guestProjectionError||guestProjection?.email!==null||guestProjection?.phone!==null||JSON.stringify(guestProjection).includes(fakeReference))throw new Error('SUPPORT_VERIFY_GUEST_PROJECTION_INVALID');
+  if(guestProjectionError?.message!=='NOT_FOUND'||guestProjection!==null)throw new Error('SUPPORT_VERIFY_GUEST_PROJECTION_INVALID');
   const {data:guestRow,error:guestRowError}=await service.from('guest_support_conversations').select('assigned_agent_user_id').eq('id',guestConversationId).single();
   if(guestRowError||!guestRow.assigned_agent_user_id)throw new Error('SUPPORT_VERIFY_GUEST_ASSIGNMENT_MISSING');
   const {data:teamProjection,error:teamProjectionError}=await service.rpc('managed_guest_support_conversation',{
@@ -81,9 +81,13 @@ try{
   const {data:file,error:fileError}=await service.rpc('managed_guest_support_attachment_file',{
     actor_user_id:null,conversation_id:guestConversationId,attachment_id:attachment.id,requested_email_digest:guestDigest
   });
-  if(fileError||file?.storage_path!==fakeReference)throw new Error('SUPPORT_VERIFY_ATTACHMENT_AUTH_FAILED');
+  if(fileError?.message!=='NOT_FOUND'||file!==null)throw new Error('SUPPORT_VERIFY_ATTACHMENT_AUTH_FAILED');
   const {error:guestCloseError}=await service.rpc('close_managed_guest_support',{actor_user_id:null,conversation_id:guestConversationId,requested_email_digest:guestDigest});
-  if(guestCloseError)throw new Error('SUPPORT_VERIFY_GUEST_CLOSE_FAILED');
+  if(guestCloseError?.message!=='NOT_FOUND')throw new Error('SUPPORT_VERIFY_GUEST_CLOSE_ALLOWED');
+  const staffFile=await service.rpc('managed_guest_support_attachment_file',{actor_user_id:agentId,conversation_id:guestConversationId,attachment_id:attachment.id,requested_email_digest:null});
+  if(staffFile.error||staffFile.data?.storage_path!==fakeReference)throw new Error('SUPPORT_VERIFY_STAFF_FILE_FAILED');
+  const closed=await service.rpc('close_managed_guest_support',{actor_user_id:agentId,conversation_id:guestConversationId,requested_email_digest:null});
+  if(closed.error)throw new Error('SUPPORT_VERIFY_STAFF_CLOSE_FAILED');
 
   const {data:agents,error:agentsError}=await service.rpc('managed_support_agent_page',{actor_user_id:admin.id,requested_offset:0,requested_limit:5});
   if(agentsError||agents.length>5||JSON.stringify(agents).includes('password'))throw new Error('SUPPORT_VERIFY_AGENT_PAGE_INVALID');

@@ -31,15 +31,20 @@ export function normalizeNativeLink(path: unknown, development = false): string 
     else if (url.protocol === 'https:' && ['loadgistic.com', 'www.loadgistic.com'].includes(url.hostname) && !url.port) route = url.pathname;
     else return unavailable;
     route = route.replace(/\/$/, '') || '/';
-    // Shipment emails use the website's canonical entry. This alias opens
-    // normal email verification; all query/credential denials still apply.
+    // Only the link token is carried by a Tracking URL. The separate code is
+    // entered in the screen; a link never grants access by itself.
+    const trackingLink=route.match(/^\/track\/([A-Za-z0-9_-]{43})$/);
+    if(trackingLink)return url.search?unavailable:`/visitor-tracking?linkToken=${trackingLink[1]}`;
     if (route === '/track') route = '/visitor-tracking';
     const sharedAlias=route==='/shared-capacity';
     const profileAlias=route.match(/^\/@([a-zA-Z0-9][a-zA-Z0-9_-]{1,63})$/);
     const entries = [...url.searchParams.entries()];
     if (entries.some(([key, value]) => /[\u0000-\u001f\u007f]/.test(key + value))) return unavailable;
     const params = new URLSearchParams();
-    if(sharedAlias){
+    if(route==='/visitor-tracking'&&entries.length){
+      if(entries.length!==1||entries[0][0]!=='linkToken'||!/^[A-Za-z0-9_-]{43}$/.test(entries[0][1]))return unavailable;
+      params.set('linkToken',entries[0][1]);
+    }else if(sharedAlias){
       if(entries.length)return unavailable;
       route='/';params.set('view','private');
     }else if(profileAlias){

@@ -1,7 +1,7 @@
 import {trackingRoute,trackingMapLocation,trackingPublicTruck} from '@/lib/tracking-map.js';
 
 export type TrackingRoutePoint={placeRef:string;label:string;coordinate:[number,number]};
-export type TrackingReportedLocation={coordinate:[number,number];radiusKm:number;label:string;updatedAt:string;source?:'GPS'|'MOBILE'|'MANUAL'|null;demo?:true};
+export type TrackingReportedLocation={coordinate:[number,number];radiusKm:number;label:string;updatedAt:string;source?:'GPS'|'MOBILE'|null;demo?:true};
 export type TrackingPublicTruck={platformNumber:string;make:string;model:string;configuration:string;providerName:string;providerHandle:string;driverName:string;driverPhone:string;contactPhone:string;authority?:import('@/lib/provider-authority.js').TruckAuthority};
 export type TrackingMapData={route:TrackingRoutePoint[];location:TrackingReportedLocation|null;truck:TrackingPublicTruck|null;status:string;trackingMode:string;recordedStatuses:string[]};
 

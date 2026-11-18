@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server.js';
-import {getCurrentUser,getGuestSupportSession} from '@/lib/auth';
+import {getCurrentUser} from '@/lib/auth';
 import {supportConversationRevision} from '@/lib/support/revision.js';
 import {supportRevisionTag,supportRevisionMatches} from '@/lib/support-polling.js';
 import {listSupportInbox,listGuestSupportInbox} from '@/lib/support.js';
@@ -13,9 +13,8 @@ export async function GET(request:NextRequest){
   const user=await getCurrentUser({allowLimited:true});let state:unknown;
   if(conversationId){
    if(!/^[0-9a-f-]{36}$/.test(conversationId))return NextResponse.json({error:'Updates unavailable.'},{status:400,headers});
-   const session=guest&&query.get('participant')==='GUEST'?await getGuestSupportSession():null;
-   if(session?.conversationId!==conversationId&&!user)return NextResponse.json({error:'Access required.'},{status:401,headers});
-   state=await supportConversationRevision({actorId:user?.id||null,conversationId,guest,emailDigest:session?.conversationId===conversationId?session.emailDigest:null});
+   if(!user)return NextResponse.json({error:'Access required.'},{status:401,headers});
+   state=await supportConversationRevision({actorId:user.id,conversationId,guest});
   }else{
    if(!user)return NextResponse.json({error:'Access required.'},{status:401,headers});
    const options={page:Number(query.get('page'))||1,pageSize:user.role==='ADMIN'&&query.get('pageSize')==='10'?10:15};const view=query.get('view')||'ASSIGNED';

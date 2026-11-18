@@ -35,10 +35,10 @@ begin
  values(provider_open,other_member,'ACCOUNT','OPEN',other_agent);
  insert into public.transport_service_requests(id,requester_name,phone,origin,destination,status,follow_up_note)
  values(request_id,'Synthetic transport request','+251900000155','Adama','Dire Dawa','NEW','Retain this separate Brokerage request');
- begin perform public.claim_managed_support_conversation(agent,provider_waiting);raise exception 'RETIRED_GUEST_DID_NOT_CONSUME_REAL_CAPACITY';
- exception when others then if sqlerrm<>'SUPPORT_AGENT_AT_CAPACITY' then raise;end if;end;
+ -- Before retirement the archived assignment contributes to workload. The
+ -- oldest member request is claimable at every workload under FEAT-SUP-001.
  state:=public.managed_support_inbox(agent,'WAITING',0,50);
- if (state->'agent'->>'open_count')::integer<>1 or exists(select 1 from jsonb_array_elements(state->'items') item where item->>'id'=provider_waiting::text and item->>'can_claim'='true')
+ if (state->'agent'->>'open_count')::integer<>1 or not exists(select 1 from jsonb_array_elements(state->'items') item where item->>'id'=provider_waiting::text and item->>'can_claim'='true')
  then raise exception 'PRE_RETIREMENT_CAPACITY_OR_CLAIM_MISMATCH';end if;
  insert into retirement_fixture values(jsonb_build_object('agent',agent,'otherAgent',other_agent,'providerWaiting',provider_waiting,'providerOpen',provider_open,'openedGuest',opened,'waitingGuest',waiting,'closedGuest',closed));
  foreach table_name in array array['support_conversations','support_messages','support_events','support_agent_profiles','transport_service_requests','transport_chat_access','transport_chat_messages','transport_request_events','guest_support_messages','guest_support_attachments'] loop

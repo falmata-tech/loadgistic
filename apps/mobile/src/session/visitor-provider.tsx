@@ -19,7 +19,7 @@ export function VisitorProvider({ children }: PropsWithChildren) {
  useEffect(() => {
   let mounted = true;
   const report = () => { if (mounted) setError('Could not update saved email access on this phone. Please try again.'); };
-  void Promise.all([controller.restore('tracking'), controller.restore('capacity')]).catch(report).finally(() => { if (mounted) setReady(true); });
+  void Promise.all([controller.clear('tracking'), controller.restore('capacity')]).catch(report).finally(() => { if (mounted) setReady(true); });
   const listener = AppState.addEventListener('change', state => { controller.setForeground(state === 'active'); void controller.expire().catch(report); });
   // Expiry only: no network request or renewal from this timer.
   const timer = setInterval(() => { void controller.expire().catch(report); }, 1000);
