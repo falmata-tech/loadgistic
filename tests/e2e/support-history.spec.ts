@@ -43,8 +43,10 @@ async function profiles(service:any){
 const timestamp=(i:number)=>new Date(Date.UTC(2026,0,1,0,0,i)).toISOString();
 
 test('invalid archive recovery does not expose a conversation or offer public chat',async({page}:{page:Page})=>{
- await page.goto('/help');
- await expect(page.getByRole('link',{name:'Sign in',exact:true}).last()).toBeVisible();
+ await page.goto('/help',{waitUntil:'domcontentloaded'});
+ const signIn=page.getByRole('main').getByRole('link',{name:'Sign in',exact:true});
+ await expect(signIn).toBeVisible();
+ await expect(signIn).toHaveAttribute('href','/login?from=support');
  await expect(page.getByLabel('Recovery code')).toHaveCount(0);
  expect((await page.request.post('/api/guest-support/access',{form:{email:'former@example.test',code:'invalid'}})).status()).toBe(410);
 });
@@ -92,7 +94,7 @@ test('retired guest recovery denies historical reads and staff attachments requi
     stored=await storePrivateUpload(new File([bytes],'history.png',{type:'image/png'}),'guest-support');
     const attachmentId=randomUUID();
     expect((await service.from('guest_support_attachments').insert({id:attachmentId,conversation_id:id,message_id:rows[29].id,file_path:stored.path,original_name:'history.png',mime_type:'image/png',size_bytes:bytes.length})).error).toBeNull();
-    await page.goto('/help');
+    await page.goto('/help',{waitUntil:'domcontentloaded'});
     await expect(page.getByLabel('Recovery code')).toHaveCount(0);
     expect((await page.request.post('/api/guest-support/access',{form:{email,code:guestSupportAccessCode(id)}})).status()).toBe(410);
     expect((await page.request.get('/help/'+id)).status()).toBe(404);

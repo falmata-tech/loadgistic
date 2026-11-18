@@ -25,7 +25,7 @@ test('member Waiting offers only the authoritative FIFO claim and repeats curren
  }
  async function waiting(expectedRows:number){
   const response=await page.goto('/support?view=WAITING',{waitUntil:'domcontentloaded'});
-  expect(response?.status()).toBe(200);await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible({timeout:10000});
+  expect(response?.status()).toBe(200);await expect(page.getByRole('heading',{name:'Support',exact:true})).toBeVisible({timeout:10000});
   await expect(page.locator('.support-conversation-list > article')).toHaveCount(expectedRows,{timeout:10000});
  }
  const forms=()=>page.locator('form[action^="/api/support/conversations/"][action$="/claim"]');

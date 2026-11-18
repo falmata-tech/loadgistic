@@ -16,7 +16,7 @@ test('admin support and Team controls fit desktop and phones while brokerage sta
  try{
   for(const width of[1440,390,320]){
    await page.setViewportSize({width,height:900});await page.goto('/admin/support?tab=chats&view=WAITING&queuePage=1');
-   await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible();
+   await expect(page.getByRole('heading',{name:'Support',exact:true})).toBeVisible();
    await expect(page.locator('form[action="/api/admin/support-agents"]')).toHaveCount(0);
    await expect(page.getByRole('link',{name:'Guest support',exact:true})).toHaveCount(0);
    if(width<980){const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});const more=nav.getByRole('button',{name:'More',exact:true});await expect(more).toBeVisible();await more.click();const menu=page.getByRole('dialog',{name:'More navigation'});await expect(menu.getByRole('link',{name:'Support',exact:true})).toBeVisible();await expect(menu.getByRole('link',{name:'Brokerage',exact:true})).toHaveCount(0);await menu.getByRole('button',{name:'Close menu'}).click();}
@@ -50,7 +50,7 @@ test('Support staff can reach sign-out from the phone header without additional 
  page.on('response',response=>{if(new URL(response.url()).pathname==='/api/auth/logout')diagnostic.logoutResponses.push(response.status());});
  page.on('requestfailed',request=>{if(new URL(request.url()).pathname==='/api/auth/logout'){const reason=request.failure()?.errorText||'';diagnostic.logoutFailures.push(/^net::ERR_[A-Z_]+$/.test(reason)?reason:'REQUEST_FAILED');}});
  try{
-  await page.setViewportSize({width:390,height:844});await page.goto('/support');await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible();
+  await page.setViewportSize({width:390,height:844});await page.goto('/support');await expect(page.getByRole('heading',{name:'Support',exact:true})).toBeVisible();
   const nav=page.getByRole('navigation',{name:'Mobile navigation',exact:true});await expect(nav.getByRole('link',{name:'Support',exact:true})).toBeVisible();
   await expect(nav.getByRole('link',{name:'Brokerage',exact:true})).toHaveCount(0);
   await expect(page.getByRole('link',{name:'Guest support',exact:true})).toHaveCount(0);

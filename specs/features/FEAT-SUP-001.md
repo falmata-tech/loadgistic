@@ -11,7 +11,7 @@ rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Pre
 
 ## November 17 account-only Support
 
-Given an active registered shipper, broker workspace member or Transport Provider, when they send a message through web or Expo, then open or resume their own conversation. The account can receive a reply, open its attachments, close the chat and revisit history.
+Given an active registered shipper, broker workspace member or Transport Provider, when they send a message through web or Expo, then open or resume their own conversation. The account can receive a reply alert, open its attachments, close the chat and revisit history. A new conversation started in a business workspace requires that current membership. After losing workspace access, the person can contact Support about their own account. Workspace messages and attachments remain protected.
 
 Given eligible available Support staff, when a conversation enters the queue, then assign the lowest open-chat count below its configured limit. Break ties by oldest assignment, then agent ID. When all staff are unavailable or at capacity, keep the conversation waiting. Staff access follows assignment. Admins oversee the queue and agent settings.
 

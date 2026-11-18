@@ -41,7 +41,8 @@ begin
   perform fleet_accept_invitation(recipient,invite_id); -- safe retry
   if not exists(select 1 from drivers d join organization_members m on m.user_id=d.user_id and m.organization_id=d.organization_id
     where d.user_id=recipient and d.active and d.organization_id=org and m.membership_role='DRIVER') then raise exception 'DRIVER_MEMBERSHIP_MISSING';end if;
-  if (select can_manage_capacity or can_manage_tracking from driver_permissions where user_id=recipient) then raise exception 'DEFAULT_PERMISSIONS_TOO_BROAD';end if;
+  if not exists(select from driver_permissions where user_id=recipient and not can_manage_capacity and can_manage_tracking)
+    then raise exception 'WRONG_NEW_DRIVER_PERMISSIONS';end if;
   row:=create_provider_vehicle(owner_id,'{"make":"Isuzu","model":"Test","plate":"TEST-123","cargo_configuration":"Mini Box Truck","use_basis":"OWNED"}');
   vehicle_id:=(row->>'id')::uuid;before_number:=row->>'platform_number';
   perform update_fleet_driver_access(owner_id,jsonb_build_object('driver_user_id',recipient,'vehicle_id',vehicle_id,'can_manage_capacity',true,'can_manage_tracking',true));

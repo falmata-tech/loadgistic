@@ -10,6 +10,7 @@ import { Flash } from '@/components/flash';
 import { Pagination } from '@/components/pagination';
 import { StatusPill } from '@/components/status-pill';
 import { SupportRefresh } from '@/components/support-refresh';
+import {supportCategoryName} from '@/lib/support-policy.js';
 import {teamQueuePath,teamConversationHref} from '@/lib/team-navigation.js';
 import {supportRevisionTag} from '@/lib/support-polling.js';
 
@@ -31,23 +32,23 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
 
   return <div className="page support-page">
     <SupportRefresh endpoint={`/api/support/updates?view=${view}&page=${result.page}`} initialRevision={supportRevisionTag(result)}/>
-    <PageHeader icon={Headphones} title={<Text message="Provider support"/>} action={<form action="/api/support/availability" method="post"><input type="hidden" name="returnTo" value={returnTo}/>{!available?<input type="hidden" name="available" value="on"/>:null}<Localized as="button" copy={['title']} className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/><Text message="Pause"/></>:<><PlayCircle aria-hidden="true"/><Text message="Go available"/></>}</Localized></form>}/>
+    <PageHeader icon={Headphones} title={<Text message="Support"/>} action={<form action="/api/support/availability" method="post"><input type="hidden" name="returnTo" value={returnTo}/>{!available?<input type="hidden" name="available" value="on"/>:null}<Localized as="button" copy={['title']} className={`button ${available?'secondary':''}`} title={available?'Pause new assignments':'Take new conversations'}>{available?<><PauseCircle aria-hidden="true"/><Text message="Pause"/></>:<><PlayCircle aria-hidden="true"/><Text message="Go available"/></>}</Localized></form>}/>
     <Flash error={query.error} success={query.success}/>
     <section className="support-agent-strip">
       <span className={`live-dot ${available?'':'off'}`} aria-hidden="true"/>
       <div><strong>{available?<Text message="Available"/>:<Text message="Paused"/>}</strong><small>{result.agent.open_count}<Text message=" of "/>{result.agent.max_open_conversations}<Text message=" assigned"/></small></div>
     </section>
     <Localized as="nav" copy={["aria-label"]} className="support-tabs" aria-label="Support queue">
-      {views.map(item=>{const Icon=item.icon;return <Link className={view===item.id?'active':''} href={`/support?view=${item.id}`} key={item.id}><Icon aria-hidden="true"/><span>{item.label}</span><strong>{result.counts[item.count]}</strong></Link>;})}
+      {views.map(item=>{const Icon=item.icon;return <Link className={view===item.id?'active':''} href={`/support?view=${item.id}`} key={item.id} aria-current={view===item.id?'page':undefined}><Icon aria-hidden="true"/><Text message={item.label}/><strong>{result.counts[item.count]}</strong></Link>;})}
     </Localized>
     <section className="support-conversation-list">
       {result.items.map((item:any)=><article key={item.id}>
         {item.status==='WAITING'?<div className="support-conversation-main">
           <span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span>
-          <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
+          <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name}</small><small><Text message={supportCategoryName(item.category)}/> · {new Date(item.last_message_at).toLocaleString()}</small></span>
         </div>:<Link className="support-conversation-main" href={teamConversationHref('support',item.id,returnTo)}>
           <span className="support-avatar">{item.customer_name.split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</span>
-          <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name} · {item.customer_role.replaceAll('_',' ')}</small><small>{item.category.replaceAll('_',' ')} · {new Date(item.last_message_at).toLocaleString()}</small></span>
+          <span><strong>{item.customer_name}</strong><small>{item.customer_workspace_name}</small><small><Text message={supportCategoryName(item.category)}/> · {new Date(item.last_message_at).toLocaleString()}</small></span>
         </Link>}
         <StatusPill status={item.status}/>
         {item.status==='WAITING'?(item.can_claim===true?<form action={`/api/support/conversations/${item.id}/claim`} method="post"><input type="hidden" name="returnTo" value={returnTo}/><button className="button small"><UserCheck aria-hidden="true"/><Text message="Claim"/></button></form>:null):<Link className="button secondary small" href={teamConversationHref('support',item.id,returnTo)}><Inbox aria-hidden="true"/><Text message="Open"/></Link>}
