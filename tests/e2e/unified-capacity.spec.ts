@@ -10,6 +10,8 @@ test('Capacity choices lead to the public map and account sign-in',async({page},
   await expect(page.getByRole('region',{name:'Open transport capacity'})).toBeVisible();
   await page.screenshot({path:info.outputPath('public-capacity.png')});
   await choice.getByRole('link',{name:'Privately shared with you'}).click();
+  await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
+  await page.getByTestId('private-capacity-entry').locator('a[href="/login?from=shared-capacity"]').click();
   await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
   await expect(page.getByText('Sign in to see vehicles shared with your account.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Email me a code'})).toBeVisible();
@@ -17,7 +19,8 @@ test('Capacity choices lead to the public map and account sign-in',async({page},
   await expect(page.getByRole('radio',{name:/Shipper|Transport Provider/})).toHaveCount(0);
   await page.screenshot({path:info.outputPath('shared-capacity-sign-in.png')});
   await page.goto('/?view=private&vehicleCategory=Cargo+van');
-  await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
+  await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
+  await expect(page).toHaveURL(url=>url.searchParams.get('view')==='private');
 });
 
 test('provider Capacity stays public while Network remains a separate task',async({page})=>{
@@ -60,6 +63,8 @@ test('signed-out Privately shared with you entry is readable at narrow phone wid
     const entry=page.locator('.capacity-view-choice a[href="/?view=private"]');
     await expect(entry).toHaveText(messages['Privately shared with you']);
     await entry.click();
+    await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
+    await page.getByTestId('private-capacity-entry').locator('a[href="/login?from=shared-capacity"]').click();
     await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
     await expect(page.getByText(messages['Sign in to see vehicles shared with your account.'])).toBeVisible();
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

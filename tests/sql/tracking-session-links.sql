@@ -178,6 +178,12 @@ begin
  perform pg_temp.session_assert((select owner_user_id=customer from tracking_sessions where id=registered_session)and not exists(select 1 from email_deliveries where shipment_id=registered_shipment and delivery_kind='TRACKING_ACCESS')
  and(tracking_session_workspace(customer,null)->>'total')::integer=1 and tracking_session_detail(customer,registered_session)->>'id'=registered_session::text,'SESSION229_REGISTERED_OWNER_BINDING_OR_EMAIL');
  perform pg_temp.session_denied(format('select tracking_owner_sharing_command(%L,%L,clock_timestamp(),%L::jsonb)',registered_shipment,registered_digest,'{"action":"ADD_VIEWER","expectedRevision":0,"name":"Retired viewer","email":"nobody@example.invalid","digest":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"}'),'TRACKING_EMAIL_SHARING_RETIRED');
+ -- A guest link follows its issuer's current sharing authority on this load.
+ perform issue_tracking_session_link(customer,registered_session,repeat('4',64),repeat('5',64),'{"allowLocation":false}');
+ perform pg_temp.session_assert(read_tracking_session_link(repeat('4',64),repeat('5',64)) is not null,'REGISTERED_OWNER_LINK_UNREADABLE');
+ update provider_tracking_recipients set revoked_at=clock_timestamp() where shipment_id=registered_shipment and recipient_role='OWNER';
+ perform pg_temp.session_assert(read_tracking_session_link(repeat('4',64),repeat('5',64)) is null,'REVOKED_OWNER_LINK_READABLE');
+ update provider_tracking_recipients set revoked_at=null where shipment_id=registered_shipment and recipient_role='OWNER';
  -- Actual account ownership remains the captured ID even if a teammate later
  -- receives its old address. Model the legacy email-based control separately;
  -- the new authenticated HTTP bridge must require canManageTeam as well.

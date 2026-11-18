@@ -58,10 +58,19 @@ test('uploaded Tracking proof opens for provider, admin and registered owner whi
     const shared=await openTrackingFixtureLink(guestPage,link);expect(shared.tracking.events.some((event:any)=>event.hasProof)).toBe(false);
     await expect(guestPage.getByRole('button',{name:'Open proof',exact:true})).toHaveCount(0);
     expect((await guest.request.get(accountHref)).status()).toBe(401);expect((await guest.request.get(href)).status()).toBe(404);
+    const detailUrl=`/api/tracking/sessions/${ownerSession.id}`;
+    expect((await guest.request.get(detailUrl+'?view=manager')).status()).toBe(401);
+    const guestDetail=await guest.request.get(detailUrl);
+    expect(guestDetail.status()).toBe(200);
+    const guestProjection=(await guestDetail.json()).data;
+    expect(guestProjection).toMatchObject({id:ownerSession.id,workspaceId:null,links:[]});
+    expect(Object.values(guestProjection.capabilities).some(Boolean)).toBe(false);
+    expect(guestProjection.tracking.events.some((entry:any)=>entry.hasProof)).toBe(false);
     await guestPage.screenshot({path:info.outputPath('link-guest-no-proof.png')});
     expect((await service.from('provider_tracking_recipients').update({revoked_at:new Date().toISOString()}).eq('shipment_id',shipment.id).eq('recipient_email',email)).error).toBeNull();
     expect((await ownerContext.request.get(accountHref)).status()).toBe(404);
-    expect((await guest.request.get(`/api/tracking/sessions/${ownerSession.id}`)).status()).toBe(401);
+    expect((await guest.request.get(detailUrl)).status()).toBe(401);
+    expect((await guest.request.get(detailUrl+'?view=manager')).status()).toBe(401);
 
     await login(guestPage,'transporter@loadgistic.local');
     expect((await guest.request.get(href)).status()).toBe(404);

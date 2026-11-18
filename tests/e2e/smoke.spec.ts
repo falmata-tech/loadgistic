@@ -859,11 +859,11 @@ test('administrator Operations shows provider-owned Tracking and no retired Netw
 test('public Tracking submission shows progress and a visible invalid-code result',async({page}:{page:any})=>{
   await page.goto('/track');
   await expect(page.getByLabel('Email',{exact:true})).toHaveCount(0);
-  await page.getByLabel('Tracking link',{exact:true}).fill(new URL('/track/'+ 'A'.repeat(43),page.url()).toString());
+  await page.getByLabel('Tracking link',{exact:true}).fill('https://loadgistic.com/track/'+'A'.repeat(43));
   await page.getByLabel('Tracking code',{exact:true}).fill('0000-0000');
   const denied=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Open tracking',exact:true}).click();expect((await denied).status()).toBe(401);
-  await expect(page.getByRole('alert')).toContainText('This Tracking link or code is unavailable. Check both and try again.');
+  await expect(page.locator('.tracking-unlock-panel').getByRole('alert')).toContainText('This Tracking link or code is unavailable. Check both and try again.');
   await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();
 });
 

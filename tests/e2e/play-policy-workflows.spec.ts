@@ -159,16 +159,37 @@ test('Play native reviewer uses normal login and accepted terms; private guest s
   const deniedShare=await service.rpc('grant_private_capacity_access',{actor_user_id:actor.id,target_vehicle_id:truck,normalized_recipient_email:ordinary.email,recipient_digest:capacityDigest});expect(deniedShare.error?.message).toBe('REVIEW_WORKSPACE_ONLY');
   expect(checked(await service.from('capacity_access_grants').select('id').eq('vehicle_id',truck).eq('recipient_email',ordinary.email))).toHaveLength(0);
   const retiredShare=await service.rpc('grant_private_capacity_access',{actor_user_id:actor.id,target_vehicle_id:truck,normalized_recipient_email:actor.email,recipient_digest:capacityDigest});expect(retiredShare.error?.message).toContain('EMAIL_CAPACITY_RETIRED');
-  const shipment=randomUUID();checked(await service.rpc('create_provider_tracking_with_recipients',{actor_user_id:actor.id,command:{id:shipment,code:'LGX-'+shipment.replaceAll('-','').slice(0,8).toUpperCase(),vehicle_id:truck,origin_place_ref:points[0].place_ref,passing_place_ref:points[1].place_ref,destination_place_ref:points[2].place_ref,cargo_summary:'Synthetic reviewer shipment',customer_email:actor.email,customer_email_digest:trackingDigest,expected_delivery_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),tracking_mode:'LOCATION_AND_STATUS',tracking_code_hash:(randomUUID()+randomUUID()).replaceAll('-',''),review_code_hash:(randomUUID()+randomUUID()).replaceAll('-','')}}));
-  await page.goto('http://localhost:8084/visitor-tracking');await page.getByRole('button',{name:'Open demo shipment tracking',exact:true}).click();await expect(page.getByText('Your shipments',{exact:true})).toBeVisible({timeout:20000});await expect(page.getByRole('link',{name:'View updates',exact:true})).toBeVisible({timeout:20000});await page.screenshot({path:'.local/play-policy-native-review-tracking.png'});
+  const shipment=randomUUID();
+  checked(await service.rpc('start_tracking_without_partner',{actor_user_id:actor.id,command:{
+   id:shipment,code:'LGX-'+shipment.replaceAll('-','').slice(0,8).toUpperCase(),vehicle_id:truck,
+   origin_place_ref:points[0].place_ref,passing_place_ref:points[1].place_ref,destination_place_ref:points[2].place_ref,
+   cargo_summary:'Synthetic reviewer shipment',expected_delivery_date:new Date(Date.now()+2*86400000).toISOString().slice(0,10),tracking_mode:'STATUS_ONLY',
+  }}));
+  const login=await page.request.post('/api/mobile/review-access',{data:{email:actor.email,password}});expect(login.status()).toBe(200);const session=await login.json();
+  const headers={authorization:'Bearer '+session.accessToken};
+  const detail=await page.request.post('/api/tracking/sessions/from-shipment',{headers,data:{shipmentId:shipment}});
+  expect(detail.status()).toBe(200);const sessionId=(await detail.json()).data.id;
+  const linksPath='/api/tracking/sessions/'+sessionId+'/links';
+  const issued=await page.request.post(linksPath,{headers,data:{expiresInDays:1,allowLocation:false}});
+  expect(issued.status()).toBe(201);const {url,code,id}= (await issued.json()).data.link;
+  await page.goto('http://localhost:8084/visitor-tracking');
+  await page.getByLabel('Tracking link',{exact:true}).fill(url);
+  await page.getByLabel('Tracking code',{exact:true}).fill(code);
+  await page.getByRole('button',{name:'Open tracking',exact:true}).click();
+  await expect(page.getByText('Synthetic reviewer shipment',{exact:true})).toBeVisible({timeout:20000});
+  await expect(page.getByRole('button',{name:'Close Tracking',exact:true})).toBeVisible();
+  await page.screenshot({path:'.local/play-policy-native-review-tracking.png'});
+  expect((await page.request.delete(linksPath+'?linkId='+id,{headers})).status()).toBe(200);
+  await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
+  await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();
   await page.goto('http://localhost:8084/privacy');await page.getByRole('button',{name:'How location sharing works',exact:true}).click();await expect(page.getByText('Location during your shipment',{exact:true})).toBeVisible();await page.screenshot({path:'.local/play-policy-location-disclosure-phone.png'});await page.getByRole('button',{name:'Close',exact:true}).click();
-  const login=await page.request.post('http://127.0.0.1:3100/api/mobile/review-access',{data:{email:actor.email,password}});expect(login.status()).toBe(200);const session=await login.json();
-  const grant=await page.request.post('http://127.0.0.1:3100/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'capacity'}});expect(grant.status()).toBe(403);
-  const trackingGrant=await page.request.post('http://127.0.0.1:3100/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'tracking'}});expect(trackingGrant.status()).toBe(200);
+
+  const grant=await page.request.post('/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'capacity'}});expect(grant.status()).toBe(403);
+  const trackingGrant=await page.request.post('/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'tracking'}});expect(trackingGrant.status()).toBe(410);
   checked(await service.from('app_review_accounts').update({enabled:false}).eq('user_id',actor.id));
-  expect((await page.request.post('http://127.0.0.1:3100/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'tracking'}})).status()).toBe(403);
-  expect((await page.request.get('http://127.0.0.1:3100/api/mobile/session',{headers:{authorization:'Bearer '+session.accessToken}})).status()).toBe(403);
- }finally{await page.goto('about:blank');await remove(service,actor);await remove(service,ordinary);}
+  expect((await page.request.post('/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'tracking'}})).status()).toBe(403);
+  expect((await page.request.get('/api/mobile/session',{headers:{authorization:'Bearer '+session.accessToken}})).status()).toBe(403);
+ }finally{if(!page.isClosed())await page.goto('about:blank',{waitUntil:'commit',timeout:5000}).catch(()=>undefined);await remove(service,actor);await remove(service,ordinary);}
 });
 
 test('Play normal mobile signup requires account-bound consent and explicitly publishes one of two Draft vehicles',async({page}:{page:any})=>{

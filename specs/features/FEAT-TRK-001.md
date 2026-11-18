@@ -44,6 +44,7 @@ When the separate code is absent or incorrect, or access is expired/revoked\
 Then no route, status, contact, vehicle or position is disclosed\
 And successful access grants only that session for at most five minutes\
 And each read rechecks digests, expiry, revocation and location consent\
+And if the account that issued the link loses sharing authority on that shipment, both new unlocks and existing guest sessions lose access on their next request. Location also requires the issuer’s current location permission\
 And the guest cannot list shipments, read proofs, approve, review, mutate or share\
 And only explicitly permitted obscured GPS/Phone location is returned; pending,
 terminal, wrong-assignment/source-epoch and retired Manual points remain absent.

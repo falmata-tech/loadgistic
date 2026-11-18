@@ -18,6 +18,8 @@ The driver-to-guest phone-web check also passed for two saved privacy radii, coo
 
 Migration 232 adds personal registered customer Support, fixes replies for business members and retires anonymous recovery of historical chats. Local workload, waiting, reassignment, role and attachment SQL tests passed. Migration 233 removes the open-chat ceiling. In the local six-chat test two agents shared five requests by workload. The sixth waited while both agents were paused, then assigned when one returned. One returning agent also took all 101 waiting chats in a rollback-only test. Team shows actual open chats and availability. The queued tracking and account-closure race verifier passed all six checks with a registered shipment owner.
 
+The browser run at `9579d676` found a Tracking entry page whose map no longer filled the space above the footer, old tests expecting immediate Private map sign-in or guest email access, and a guest link that survived the issuing owner's loss of access. The local correction restores the locked map layout and returns HTTP 404 for retired Support conversation links. Migration 234 passed the local Tracking SQL regression, including denied access after owner revocation. Desktop and phone browser verification, installed Android testing and production publication remain open.
+
 Worktree: `.local/gps-phone-courier`, branch `feat/gps-phone-courier`, from the
 independently checked current remote main `906a51f1`. Preserve the existing dirty
 checkouts and completed simulator hosting setup. Runtime acceptance remains

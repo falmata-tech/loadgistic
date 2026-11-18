@@ -1,5 +1,9 @@
 # Security failures we must not repeat
 
+## November 17 guest Tracking after the issuer loses shipment access
+
+CI's proof workflow found that removing the registered owner denied their proof request while an already-open customer link could still read the shipment. The local installed guest reader checked the link and shipment but skipped the issuer's current sharing authority. Migration 234 rechecks that authority on each unlock and refresh, and rechecks location permission before returning a point. The rollback-only SQL regression issued a working link, revoked the owner, and observed the next read return no record. The Tracking release maintainer must verify the browser denial and the same function on the release target. No hosted repair has been applied.
+
 ## November 17 Support account boundary (FEAT-SUP-001)
 
 The former recovery code still opened historical conversations and attachments after public chat creation closed. Separately, registered customers could reach the Support interface but older create, message and attachment commands restricted the actor to a provider/staff role. Migration 232 and the web adapters close recovery and recheck current account, conversation ownership and staff assignment. Local member, workload, history, attachment and polling SQL tests passed. The release maintainer must confirm exact-source CI, deployment and signed-in staff/member handoff.

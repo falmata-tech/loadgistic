@@ -11,5 +11,5 @@ export default async function TrackPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;if(!trackingLinkToken.safeParse(id).success)notFound();
  const store=await cookies(),grant=parseTrackingLinkGrant(store.get(TRACKING_LINK_GRANT_COOKIE)?.value);
  const bound=grant&&grant.linkDigest===trackingSessionCredentialDigests(id,'00000000').linkDigest?grant:null;
- return <><PublicHeader/><main className="public-app-page tracking-public-workspace"><TrackingUnlockForm linkToken={id} resumeSessionId={bound?.sessionId} resumeExpiresAt={bound?new Date(bound.expiresAt).toISOString():undefined}/></main></>;
+ return <><PublicHeader/><TrackingUnlockForm linkToken={id} resumeSessionId={bound?.sessionId} resumeExpiresAt={bound?new Date(bound.expiresAt).toISOString():undefined}/></>;
 }

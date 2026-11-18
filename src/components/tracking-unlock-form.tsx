@@ -25,12 +25,12 @@ export function TrackingUnlockForm({linkToken,resumeSessionId,resumeExpiresAt}:{
   }catch{setError('This Tracking link or code is unavailable. Check both and try again.');setBusy(false);}
   finally{lock.current=false;}
  }
- if(access||resume)return <div className="container tracking-public-container"><TrackingSessionGuest initial={access||undefined} sessionId={resumeSessionId} expiresAt={resumeExpiresAt} onClosed={()=>{setAccess(null);setResume(false);}}/></div>;
- return <div className="tracking-entry-workspace"><div className="tracking-entry-stage"><TrackingEntryMap/><div className="container tracking-unlock-shell public-form-container"><section className="tracking-unlock-panel"><div className="tracking-unlock-icon"><KeyRound aria-hidden="true"/></div><div><h1 className="page-title"><Text message="Follow your shipment"/></h1><p className="page-subtitle"><Text message="Open the shared link and enter its separate code."/></p></div><form method="post" action="/api/tracking/access" className="stack auth-primary-form" onSubmit={open} aria-busy={busy}>
+ if(access||resume)return <main className="public-app-page tracking-public-workspace"><div className="container tracking-public-container"><TrackingSessionGuest initial={access||undefined} sessionId={resumeSessionId} expiresAt={resumeExpiresAt} onClosed={()=>{setAccess(null);setResume(false);}}/></div></main>;
+ return <main className="public-app-page tracking-entry-workspace"><div className="tracking-entry-stage"><TrackingEntryMap/><div className="container tracking-unlock-shell public-form-container"><section className="tracking-unlock-panel"><div className="tracking-unlock-icon"><KeyRound aria-hidden="true"/></div><div><h1 className="page-title"><Text message="Follow your shipment"/></h1><p className="page-subtitle"><Text message="Open the shared link and enter its separate code."/></p></div><form method="post" action="/api/tracking/access" className="stack auth-primary-form" onSubmit={open} aria-busy={busy}>
   {!linkToken?<label className="form-group"><Text message="Tracking link"/><input name="trackingLink" type="text" autoComplete="off" autoCapitalize="none" spellCheck={false} value={link} onChange={event=>setLink(event.target.value)} maxLength={2048} required readOnly={busy}/></label>:null}
   <label className="form-group"><Text message="Tracking code"/><input name="trackingCode" type="text" autoComplete="off" autoCapitalize="characters" spellCheck={false} value={code} onChange={event=>setCode(event.target.value.toUpperCase())} maxLength={9} placeholder="XXXX-XXXX" required readOnly={busy} aria-describedby="tracking-code-help"/></label>
   <p id="tracking-code-help" className="meta"><Text message="The link and code open this load only."/></p>
   <button className="button auth-primary-action icon-button-label" disabled={busy}>{busy?<LoaderCircle className="tracking-submit-spinner" aria-hidden="true"/>:<KeyRound aria-hidden="true"/>}<Text message={busy?'Opening tracking…':'Open tracking'}/></button>
   {error?<p className="form-error" role="alert">{t(error)}</p>:null}
- </form></section></div></div></div>;
+ </form></section></div></div></main>;
 }

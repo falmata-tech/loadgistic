@@ -26,7 +26,7 @@ test('retired guest recovery and old thread links cannot access the support serv
   assert.match(read(path),/status:410/);
   assert.doesNotMatch(read(path),/lib\/support\.js|getGuestSupportSession/);
  }
- assert.match(read('src/app/help/[id]/page.tsx'),/notFound\(\)/);
+ assert.match(read('src/app/help/[id]/route.ts'),/status: 404/);
 });
 
 test('managed Support commands are bounded, actor scoped, terminal, and service-role-only',()=>{
