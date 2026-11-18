@@ -80,4 +80,17 @@ $old$,$new$$new$),
  end loop;
  execute definition;
 end $workload$;
+-- Member requests previously held by a ceiling can be assigned immediately.
+-- Only an actually available Support agent can change a waiting row.
+do $resume_waiting$
+declare waiting_id uuid;
+begin
+ for waiting_id in
+  select id from public.support_conversations
+  where status='WAITING' and assigned_agent_user_id is null
+  order by created_at,id
+ loop
+  exit when public.support_assign_one(waiting_id,false) is null;
+ end loop;
+end $resume_waiting$;
 commit;
