@@ -2484,3 +2484,10 @@ Saved and manual days remain intact. A saved day imported after the schema
 change is counted before the next automatic selection. The additive local schema
 and web/Expo implementation are specified in [FEAT-CON-001](../specs/features/FEAT-CON-001.md);
 this decision does not claim a hosted rollout.
+
+## November 18 — Signed-in account identity
+
+Web and Expo continue to call the same no-argument public identity RPC. Migration
+235 runs that entry point with the caller’s privileges and confines its privileged
+read to the unexposed loadgistic_identity schema. The underlying projection still
+resolves account and organization from the authenticated session. See FEAT-SEC-001.

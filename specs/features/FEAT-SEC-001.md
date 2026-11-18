@@ -157,12 +157,12 @@ Given an anonymous visitor or an active or inactive authenticated identity
 When it attempts direct access to a non-extension public application relation
 Then table, view, sequence and column privileges deny access before legacy RLS policies
 And browser sessions cannot execute the legacy organization/workspace policy helpers
-And only the caller-bound current_user_projection security-definer function remains
-executable by authenticated sessions among application security-definer functions
+And the public current_user_projection RPC executes as the caller
+And its no-argument, caller-bound privileged read lives outside the Data API schemas
 And authorized service adapters retain their existing privileges and history.
 
 Given a later migration grants browser relation or column access, or exposes an
-application security-definer function beyond the own-identity contract
+public application security-definer function
 When the catalog gate runs
 Then the release fails even if RLS is enabled on that relation.
 
@@ -176,6 +176,22 @@ explicit column-grant repair and repeatability).
 Migration 096 was applied with migrations 077–097 on September 20. Independent
 application catalog, guard and service checks passed. Application rollout evidence
 and the separately open PostGIS repair are recorded in `docs/PROGRESS.md`.
+
+## Scenario: signed-in account read after migration 235 (BASE-BE-001, BASE-DEP-001, FEAT-IAM-001)
+
+Given an existing web or mobile session, when it calls the same public identity
+RPC, then it receives its own existing account fields and active status. A request
+without a verified identity receives no account. Anonymous callers cannot execute
+either function. The database gate rejects a public definer, anonymous access
+and exposure of the private schema through PostgREST. Browser table grants stay
+closed. On deployment verify the identity RPC, Data API guard and hosted advisor.
+If verification fails, hold publication. The previous web version can use the
+same RPC. Restoring the old function requires owner review of the prior warning.
+
+Given a hosted project with leaked-password protection enabled, when someone
+chooses or changes a password present in the breach list, then Supabase Auth
+rejects it. Verify the saved setting and fresh hosted advisor independently.
+Email-code and Google sign-in keep their existing configuration.
 
 ## Scenario: Data API requests require an approved database role and operation
 

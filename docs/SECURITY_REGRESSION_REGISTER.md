@@ -2724,3 +2724,13 @@ the actual native language boundary, rather than assuming every native-only key
 exists in the web catalog. Local cleanup and screenshots are being verified;
 owner visual review, replacement standalone captures and publication remain
 separate gates. Owner: interface and mobile/Play release maintainers.
+
+## November 18 — Hosted identity and password advisor warnings
+
+The November 18 project-scoped monitor found an authenticated public definer
+for the caller’s own account and disabled Auth leaked-password protection.
+Migration 235 moves the privileged account read to an unexposed schema. The
+catalog gate rejects exposed definers, anonymous identity access and private
+schema exposure. Local account and permission tests passed against migration 235.
+Release owner must verify the hosted Auth setting and both advisor results before
+promotion. [Monitor baseline](https://github.com/falmata-tech/loadgistic/actions/runs/44348691094)

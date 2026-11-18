@@ -1,11 +1,20 @@
 # Current work and release status
 
-Updated 2026-11-17. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-18. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
+
+## November 18 security corrections
+
+Migration 235 preserves the signed-in account RPC used by the web and Android apps.
+The local review database passed the application catalog, Data API guard,
+active/inactive/anonymous account, provider display-name and driver verification
+checks. The November 18 hosted monitor reported both the exposed definer and
+disabled leaked-password protection before these corrections. Hosted verification
+and publication are pending.
 
 ## Active owner checklist — November17
 
