@@ -29,3 +29,22 @@ test('new Expo tooling findings require exact locked paths and remain outside th
   assert.throws(()=>reviewNativeDependencies(input),/REVIEWED_TOOLING_VERSION_DRIFT/,name);
  }
 });
+
+test('picomatch disposition requires every reviewed tooling path and excludes all Android runtime copies',()=>{
+ const makeInput=()=>{
+  const input=fixture();
+  input.audit.metadata.vulnerabilities.total++;
+  const nodes=Object.keys(input.lock.packages).filter(name=>name.endsWith('/picomatch'));
+  input.audit.vulnerabilities.picomatch={nodes,via:[{name:'picomatch',url:'https://github.com/advisories/GHSA-fc5q-39xc-vjpf'}]};
+  return input;
+ };
+ assert.equal(reviewNativeDependencies(makeInput()).eligibleForInternalBuild,true);
+ for(const mutate of [
+  input=>input.audit.vulnerabilities.picomatch.nodes.pop(),
+  input=>input.lock.packages['node_modules/picomatch'].version='4.0.7',
+  input=>input.lock.packages['node_modules/other/node_modules/picomatch']={version:'4.0.7'},
+  input=>input.map.sources.push('node_modules/some-app/node_modules/picomatch/index.js'),
+ ]){
+  const input=makeInput();mutate(input);assert.throws(()=>reviewNativeDependencies(input));
+ }
+});

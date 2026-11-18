@@ -1,17 +1,43 @@
 'use client';
 import React from 'react';
-import {trackingSessionAccessSchema,trackingSessionViewSchema,type TrackingSessionView} from '@/lib/tracking-sessions/contracts';
-import {guestTrackingSession,trackingLinkToken,trackingAccessCode} from '@/lib/tracking-sessions/client';
 import {browserRequest} from '@/lib/browser-request';
+import {useTrackingRequests,type SendTrackingRequest} from '@/lib/tracking-sessions/request-workflow';
 import {Text} from './localization';
-type Vehicle={id:string;label?:string;platform_number?:string;make?:string;model?:string};
-export function ConnectTracking({vehicles}:{vehicles:Vehicle[]}){
- const vehicleSelectId=React.useId();
- const [connectedShipment,setConnectedShipment]=React.useState('');
- const lock=React.useRef(false),[open,setOpen]=React.useState(false),[link,setLink]=React.useState(''),[code,setCode]=React.useState(''),[vehicleId,setVehicleId]=React.useState(vehicles.length===1?vehicles[0].id:''),[mode,setMode]=React.useState('STATUS_ONLY'),[busy,setBusy]=React.useState(false),[uncertain,setUncertain]=React.useState(false),[error,setError]=React.useState('');
- const [session,setSession]:[TrackingSessionView|null,(value:TrackingSessionView|null)=>void]=React.useState(null);
- async function preview(event:React.FormEvent){event.preventDefault();if(lock.current)return;const token=trackingLinkToken(link,process.env.NODE_ENV==='development'||process.env.NODE_ENV==='test'),secret=trackingAccessCode(code);if(!token||!secret){setError('Enter the Tracking link and its separate 8-character code.');return;}lock.current=true;setBusy(true);setError('');try{const {response,data}=await browserRequest<{ok?:boolean;data?:unknown}>('/api/tracking/access',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({linkToken:token,code:secret})});if(!response.ok||data.ok!==true)throw Error();setSession(guestTrackingSession(trackingSessionAccessSchema.parse(data.data).session));}catch{setError('This Tracking link or code is unavailable. Check both and try again.');}finally{lock.current=false;setBusy(false);}}
- async function connect(event:React.FormEvent){event.preventDefault();if(lock.current||uncertain||!session||session.state!=='PENDING_PROVIDER')return;lock.current=true;setBusy(true);setError('');try{const {response,data}=await browserRequest<{ok?:boolean;data?:unknown}>(`/api/tracking/sessions/${session.id}/connect`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({linkToken:trackingLinkToken(link,process.env.NODE_ENV==='development'||process.env.NODE_ENV==='test'),code:trackingAccessCode(code),vehicleId,trackingMode:mode})});if(!response.ok||data.ok!==true)throw Error();const result=trackingSessionViewSchema.parse(data.data);if(result.id!==session.id||result.state!=='CONNECTED'||!result.shipmentId)throw Error();setSession(result);setConnectedShipment(result.shipmentId);setLink('');setCode('');}catch{setUncertain(true);setError('We could not confirm the result. Check your saved Tracking before trying again.');}finally{lock.current=false;setBusy(false);}}
- if(!open)return <button type="button" className="button secondary" onClick={()=>setOpen(true)}><Text message="Connect Tracking"/></button>;
- return <section className="form-card stack"><h2><Text message="Connect Tracking"/></h2>{!session?<form method="post" action="/api/tracking/access" className="stack" onSubmit={preview}><label><Text message="Tracking link"/><input value={link} onChange={event=>setLink(event.target.value)} required maxLength={2048} autoComplete="off" readOnly={busy}/></label><label><Text message="Tracking code"/><input value={code} onChange={event=>setCode(event.target.value.toUpperCase())} required maxLength={9} placeholder="XXXX-XXXX" autoComplete="off" readOnly={busy}/></label><button className="button" disabled={busy}><Text message="Open load details"/></button></form>:<><strong>{session.reference}</strong><p>{session.cargoSummary}</p><ol>{session.route.map(point=><li key={point.placeRef}>{point.label}</li>)}</ol>{session.state==='PENDING_PROVIDER'?<form method="post" action={`/api/tracking/sessions/${session.id}/connect`} className="stack" onSubmit={connect}><p className="meta"><Text message="Confirm the agreed load, assigned vehicle and updates before connecting."/></p><label htmlFor={vehicleSelectId}><Text message="Vehicle and assigned driver"/></label><select id={vehicleSelectId} required value={vehicleId} onChange={event=>setVehicleId(event.target.value)} disabled={busy||uncertain}><option value=""><Text message="Choose a vehicle"/></option>{vehicles.map(vehicle=><option key={vehicle.id} value={vehicle.id}>{vehicle.label||[vehicle.platform_number,vehicle.make,vehicle.model].filter(Boolean).join(' · ')}</option>)}</select><fieldset disabled={busy||uncertain}>{[['STATUS_ONLY','Status only'],['LOCATION_AND_STATUS','Status and approximate location']].map(([value,label])=><label key={value}><input type="radio" name="connectTrackingMode" checked={mode===value} onChange={()=>setMode(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message="Approximate location uses the vehicle’s selected GPS or Phone source. It is shared only after you connect and enable it."/></p><button className="button" disabled={busy||uncertain||!vehicleId}><Text message="Connect this load"/></button></form>:<p role="status"><Text message={session.state==='CONNECTED'?'Provider connected':'Tracking cancelled'}/></p>}</>}{connectedShipment?<a className="button" href={`/app/provider-shipments/${connectedShipment}`}><Text message="Open Tracking"/></a>:null}{error?<p className="alert error" role="alert"><Text message={error}/></p>:null}{uncertain?<a className="button secondary" href="/app/provider-shipments"><Text message="Check my Tracking list"/></a>:null}<button type="button" className="button secondary" disabled={busy} onClick={()=>{setConnectedShipment('');setOpen(false);setLink('');setCode('');setSession(null);setError('');}}><Text message="Close"/></button></section>;
+
+const send:SendTrackingRequest=async(command)=>{
+ const {response,data}=await browserRequest<{ok:boolean;data:unknown}>('/api/tracking/requests',{
+  method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(command)
+ });
+ if(!response.ok||!data.ok)throw Error();
+ return data.data;
+};
+
+export function TrackingRequests({sessionId}:{sessionId?:string}){
+ const w=useTrackingRequests(send,sessionId);
+ const [locationId,setLocationId]=React.useState('');
+ return <section className="card stack" aria-busy={w.busy}>
+  <h3><Text message={sessionId?'Request a vehicle':'Tracking requests'}/></h3>
+  {w.error?<p role="alert"><Text message="Could not load Tracking sessions. Please try again."/></p>:null}
+  {sessionId?<><p>{w.target?.selected?<><Text message="Requested vehicle"/> · {w.target.selected}</>:null}</p>
+   <form className="stack" onSubmit={e=>{e.preventDefault();void w.search();}}>
+    <label><Text message="Truck number, driver or provider"/><input value={w.query} disabled={w.busy} onChange={e=>w.setQuery(e.target.value)} minLength={2} maxLength={100} required/></label>
+    <button className="button secondary" disabled={w.busy||w.query.trim().length<2}><Text message="Search"/></button>
+   </form>
+   {w.target?.items.map(row=><button type="button" className="button secondary" key={row.vehicleId} disabled={w.busy} onClick={()=>void w.select(row)}>
+    <Text message="Request tracking"/> · {row.label}{row.connected?<> · <Text message="In your network"/></>:null}
+   </button>)}
+   {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<p><Text message="No matching available vehicles."/></p>:null}
+  </>:<>
+   {!w.busy&&!w.error&&!w.incoming.length?<p><Text message="No pending tracking requests."/></p>:null}
+   {w.incoming.map(row=><article className="stack" key={row.id}>
+    <strong>{row.broker} · {row.reference}</strong><p>{row.cargo} · {row.vehicle}</p>
+    <p>{row.route.map(p=>p.label).join(' → ')}</p><p>{[row.pickupDate,row.deliveryDate].filter(Boolean).join(' → ')}</p>
+    <label><input type="checkbox" checked={locationId===row.id} onChange={e=>setLocationId(e.target.checked?row.id:'')}/> <Text message="Status and approximate location"/></label>
+    <button className="button" type="button" disabled={w.busy} onClick={()=>void w.accept(row,locationId===row.id?'LOCATION_AND_STATUS':'STATUS_ONLY')}><Text message="Accept tracking request"/></button>
+   </article>)}
+   {w.shipment?<a className="button" href={'/app/provider-shipments/'+w.shipment}><Text message="Open Tracking"/></a>:null}
+  </>}
+  {w.busy?<p role="status"><Text message="Loading Tracking"/></p>:null}
+  {(!sessionId||w.error)&&<button className="button secondary" type="button" disabled={w.busy} onClick={()=>void w.refresh()}><Text message="Refresh requests"/></button>}
+ </section>;
 }

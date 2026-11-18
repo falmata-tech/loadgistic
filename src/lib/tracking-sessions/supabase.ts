@@ -1,7 +1,8 @@
+import {targetResult,incomingResult,acceptedResult,type RequestCommand} from './requests';
 import {z} from 'zod';
 import {createSupabaseAdminClient} from '../supabase-adapter.js';
 import {trackingMapLocation} from '../tracking-map.js';
-import {trackingSessionId,trackingSessionView,trackingSessionLink,trackingSessionCreate,trackingSessionIssueInput,trackingSessionConnect,trackingSessionListSchema,type TrackingSessionView} from './contracts';
+import {trackingSessionId,trackingSessionView,trackingSessionLink,trackingSessionCreate,trackingSessionIssueInput,trackingSessionListSchema,type TrackingSessionView} from './contracts';
 
 export class TrackingSessionError extends Error {constructor(public code:string){super(code);}}
 export interface TrackingSessionRpc {rpc(name:string,args:Record<string,unknown>):PromiseLike<{data:unknown;error:{message:string}|null}>}
@@ -48,6 +49,16 @@ export function trackingSessionService(client:TrackingSessionRpc=createSupabaseA
    if(raw.workspaceId!==workspaceId||raw.page!==page||wrongScope)throw new TrackingSessionError('TRACKING_UNAVAILABLE');
    return result(trackingSessionListSchema,{...raw,sessions:raw.sessions.map(s=>view(s))});
   },
+  async request(actorId:string,command:RequestCommand){
+   const user=actor(actorId);
+   if(command.action==='INBOX')return result(incomingResult,await rpc('incoming_tracking_requests',{actor:user}));
+   if(command.action==='ACCEPT'){
+    const record=await managed('accept_tracking_request',{actor_user_id:user,target_session_id:command.sessionId,requested_revision:command.revision,command:{trackingMode:command.trackingMode}},command.sessionId);
+    return result(acceptedResult,{shipmentId:record.shipmentId});
+   }
+   const {sessionId,...fields}=command;
+   return result(targetResult,await rpc('manage_tracking_request',{actor:user,session_id:sessionId,command:fields}));
+  },
   async attachPartner(actorId:string,shipmentId:string,email:string,digest:string){
    return result(z.literal(true),await rpc('attach_tracking_partner',{actor_user_id:actor(actorId),target_shipment_id:actor(shipmentId),partner_email:email,recipient_digest:digest}));
   },
@@ -57,10 +68,6 @@ export function trackingSessionService(client:TrackingSessionRpc=createSupabaseA
    if(raw.sessionId!==id||raw.revokedAt!==null||raw.allowLocation!==command.allowLocation)throw new TrackingSessionError('TRACKING_UNAVAILABLE');return raw;
   },
   revoke:(actorId:string,id:string,linkId:string)=>managed('revoke_tracking_session_link',{actor_user_id:actor(actorId),target_session_id:actor(id),target_link_id:actor(linkId)},id),
-  connect:(actorId:string,id:string,digests:{linkDigest:string;codeDigest:string},input:unknown)=>{
-   const command=result(trackingSessionConnect,input,'INVALID_TRACKING_INPUT');
-   return managed('connect_tracking_session',{actor_user_id:actor(actorId),target_session_id:actor(id),link_digest:digests.linkDigest,code_digest:digests.codeDigest,command:{vehicleId:command.vehicleId,trackingMode:command.trackingMode}},id);
-  },
   approve:(actorId:string,id:string)=>managed('approve_tracking_session_handover',{actor_user_id:actor(actorId),target_session_id:actor(id)},id),
   review:(actorId:string,id:string,command:unknown)=>managed('review_tracking_session_provider',{actor_user_id:actor(actorId),target_session_id:actor(id),command:result(z.object({rating:z.number().int().min(1).max(5),note:z.string().trim().max(1000),termsAccepted:z.literal(true)}).strict(),command,'INVALID_TRACKING_INPUT')},id),
   async proof(actorId:string,id:string,eventId:string){

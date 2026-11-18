@@ -21,8 +21,9 @@ function compile(path,ports){
  new Function(...Object.keys(ports),'exports',code)(...Object.values(ports),exports);return exports;
 }
 const contracts=compile('src/lib/tracking-sessions/contracts.ts',{z,dateOnly});
+const requestSchemas=compile('src/lib/tracking-sessions/requests.ts',{z,id:contracts.trackingSessionId});
 const {trackingSessionService,TrackingSessionError}=compile('src/lib/tracking-sessions/supabase.ts',{
- z,...contracts,trackingMapLocation,createSupabaseAdminClient(){throw Error('Tests require an injected RPC port');}
+ z,...contracts,...requestSchemas,trackingMapLocation,createSupabaseAdminClient(){throw Error('Tests require an injected RPC port');}
 });
 const body=compile('src/lib/business-workspaces/http.ts',{});
 const route=[{placeRef:'one',label:'Origin',coordinate:[38,9]},{placeRef:'two',label:'Via',coordinate:[39,10]},{placeRef:'three',label:'Destination',coordinate:[40,11]}];
@@ -74,7 +75,7 @@ test('malformed cargo/date/issue/connect inputs fail as400-class input errors be
   assert.throws(()=>service.create(actor,{...create,...patch}),error=>error.code==='INVALID_TRACKING_INPUT');
  }
  for(const input of[{expiresInDays:31,allowLocation:false},{expiresInDays:7,allowLocation:'true'}])await assert.rejects(service.issue(actor,id,credentials,input),error=>error.code==='INVALID_TRACKING_INPUT');
- assert.throws(()=>service.connect(actor,id,credentials,{linkToken:credentials.linkToken,code:credentials.code,vehicleId:other,trackingMode:'UNRESTRICTED'}),error=>error.code==='INVALID_TRACKING_INPUT');
+ assert.equal(requestSchemas.requestCommand.safeParse({action:'ACCEPT',sessionId:id,revision:1,trackingMode:'UNRESTRICTED'}).success,false);
  assert.equal(calls,0);
 });
 
@@ -123,7 +124,7 @@ test('the captured owner can list a connected personal shipment also shared with
 test('connected reads retain the saved update time and reject an incomplete shipment wire projection',async()=>{
  let raw={...rawManager(),state:'CONNECTED',shipmentId:other,shipment:shipment()};
  const service=trackingSessionService({rpc:async()=>({data:raw,error:null})});
- const connected=await service.connect(actor,id,credentials,{linkToken:credentials.linkToken,code:credentials.code,vehicleId:other,trackingMode:'STATUS_ONLY'});
+ const connected=await service.detail(actor,id);
  assert.equal(connected.tracking.updatedAt,raw.shipment.updated_at);
  delete raw.shipment.updated_at;
  await assert.rejects(service.detail(actor,id),/TRACKING_UNAVAILABLE/);
@@ -195,7 +196,7 @@ function httpRuntime(){
   z,...contracts,TrackingSessionError,mutationOriginAllowed,checkOriginBeforeScopedLimit,requestKey:()=> 'origin',
   businessBody:body.businessBody,BusinessHttpError:body.BusinessHttpError,businessActorIdentity:async()=>{calls.push(['actor']);if(!state.actor)throw new body.BusinessHttpError(401,'SIGN_IN_REQUIRED');return{id:state.actor};},businessLimit:async(...args)=>calls.push(['actorLimit',...args]),
   createTrackingSessionCredentials:()=>createTrackingSessionCredentials(environment),trackingSessionCredentialDigests:digest,
-  issueTrackingLinkGrant,parseTrackingLinkGrant,TRACKING_LINK_GRANT_COOKIE,trackingSessionService:()=>service,
+  ...requestSchemas,issueTrackingLinkGrant,parseTrackingLinkGrant,TRACKING_LINK_GRANT_COOKIE,trackingSessionService:()=>service,
   privateFilePayload,privateDocumentHeaders,readPrivateUpload:async reference=>{calls.push(['privateFile',reference]);return proofBytes;},
   process:{env:{NODE_ENV:'production',APP_URL:'https://loadgistic.example'}}
  });
@@ -292,14 +293,21 @@ test('guest grants never authorize manager commands or turn into an owner sessio
 test('declared Tracking RPC denial/conflict/input codes retain safe HTTP404/409/400 semantics',async()=>{
  for(const [message,operation,method,status]of[
   ['NOT_FOUND','DETAIL','GET',404],['TRACKING_SESSION_NOT_FOUND','DETAIL','GET',404],
-  ['TRACKING_SESSION_ALREADY_CONNECTED','CONNECT','POST',409],['INVALID_TRACKING_INPUT','CONNECT','POST',400],
-  ['INVALID_TRACKING_MODE','CONNECT','POST',400]
+  ['TRACKING_SESSION_ALREADY_CONNECTED','REQUEST','POST',409],['INVALID_TRACKING_INPUT','REQUEST','POST',400],
+  ['INVALID_TRACKING_MODE','REQUEST','POST',400]
  ]){
   const h=httpRuntime(),service=trackingSessionService({rpc:async()=>({data:null,error:{message}})});h.state.actor=actor;
-  h.service.detail=service.detail;h.service.connect=service.connect;
+  h.service.detail=service.detail;h.service.request=service.request;
   const request=new Request('https://loadgistic.example/api/tracking-sessions/'+id,{method,
-   ...(method==='POST'?{headers:{'content-type':'application/json'},body:JSON.stringify({linkToken:credentials.linkToken,code:credentials.code,vehicleId:other,trackingMode:'STATUS_ONLY'})}:{})});
+   ...(method==='POST'?{headers:{'content-type':'application/json'},body:JSON.stringify({action:'ACCEPT',sessionId:id,revision:1,trackingMode:'STATUS_ONLY'})}:{})});
   const response=await h.run(request,operation,{sessionId:id});
   assert.equal(response.status,status,message+' must not be presented as a transient503');
  }
+});
+
+test('signed-in providers cannot claim a load with a guest link and code',async()=>{
+ const h=httpRuntime();h.state.actor=actor;
+ const response=await h.run(h.access(),'CONNECT',{sessionId:id});
+ assert.equal(response.status,410);
+ assert.equal((await response.json()).error.code,'TRACKING_REQUEST_REQUIRED');
 });

@@ -6,7 +6,7 @@ FEAT-TRK/SHP/ENT/IAM/MOB-001 / BASE-FE/BE/DEP-001. The owner requires BOTH an
 expiring unique URL and a separate generated code. Brokers can create Pending
 provider sessions or share existing authorized shipments. Pending sessions have
 no vehicle position and are private agreed-work preparation, never demand posts.
-Only normal authenticated provider/driver acceptance connects an eligible truck.
+The broker selects a discoverable assigned truck through network-first search. Migration 231 binds a request to the truck and its current driver. The signed-in authorized fleet owner or assigned driver with Tracking permission can accept it. Guest credentials grant viewing only. New fleet drivers start with Tracking permission enabled. Fleet owners retain control of it.
 
 Migration229 adds private sessions and hash-only revocable links. Tokens and
 codes are independent random credentials with separate keyed digests. Link life

@@ -5,6 +5,7 @@ export function trackingSessionApiPathAllowed(value,method){
  const [path,query,extra]=value.split('?');if(extra!==undefined)return false;
  const params=new URLSearchParams(query||'');if(new Set(params.keys()).size!==params.size)return false;
  const allowed=(methods)=>method===undefined||methods.includes(method);
+ if(path==='/api/tracking/requests')return !params.size&&allowed(['POST']);
  if(path==='/api/tracking/access')return params.size===0&&allowed(['POST','DELETE']);
  if(path==='/api/tracking/sessions')return [...params].every(([key,v])=>key==='workspaceId'?uuid.test(v):key==='page'&&/^[1-9]\d{0,3}$/.test(v))&&allowed(params.size?['GET']:['GET','POST']);
  if(path==='/api/tracking/sessions/from-shipment'||path==='/api/tracking/sessions/partner')return !params.size&&allowed(['POST']);

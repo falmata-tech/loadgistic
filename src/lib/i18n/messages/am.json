@@ -3327,5 +3327,14 @@
   "Choose one account to manage customer tracking and approve unloading.": "ደንበኞች ጭነቱን መከታተል እንዲችሉ የሚያደርግና መራገፉን የሚያረጋግጥ አንድ መለያ ይምረጡ።",
   "Refresh the shipment and check its partner.": "የጭነቱን ገጽ አድሰው አጋሩን ያረጋግጡ።",
   "Shipments shared with my account": "ከመለያዬ ጋር የተጋሩ ጭነቶች",
-  "Waiting for a provider update.": "የአጓጓዡን ማሻሻያ በመጠበቅ ላይ።"
+  "Waiting for a provider update.": "የአጓጓዡን ማሻሻያ በመጠበቅ ላይ።",
+  "Request a vehicle": "ተሽከርካሪ ይጠይቁ",
+  "Tracking requests": "የክትትል ጥያቄዎች",
+  "Requested vehicle": "የተጠየቀው ተሽከርካሪ",
+  "Truck number, driver or provider": "የተሽከርካሪ ቁጥር፣ አሽከርካሪ ወይም አጓጓዥ",
+  "Request tracking": "ክትትል ይጠይቁ",
+  "In your network": "በእርስዎ መረብ ውስጥ",
+  "No pending tracking requests.": "በመጠባበቅ ላይ ያለ የክትትል ጥያቄ የለም።",
+  "Accept tracking request": "የክትትል ጥያቄውን ይቀበሉ",
+  "Refresh requests": "ጥያቄዎችን ያድሱ"
 }

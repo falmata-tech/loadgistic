@@ -33,13 +33,9 @@ test('signed-cookie resume uses only the bound session ID/expiry and does not en
  const expiresAt=new Date(Date.now()+300000).toISOString(),h=harness(()=>assert.fail('No implicit unlock'),{linkToken:token,resumeSessionId:id,resumeExpiresAt:expiresAt}),tree=h.render(),guest=find(tree,'TrackingSessionGuest');assert.equal(guest.props.sessionId,id);assert.equal(guest.props.expiresAt,expiresAt);assert.equal(h.calls.length,0);assert.equal(find(tree,'input'),undefined);
 });
 
-test('provider connect uses a distinct explicit vehicle label after opening the agreed load',async()=>{
- const vehicleId='16000000-0000-4000-8000-000000000002';
- const h=harness(async()=>accepted(),{vehicles:[{id:vehicleId,label:'Synthetic assigned vehicle'}]},'ConnectTracking');
- let tree=h.render();find(tree,'button').props.onClick();tree=h.render();
- const inputs=nodes(tree).filter(node=>node.type==='input');inputs[0].props.onChange({target:{value:token}});inputs[1].props.onChange({target:{value:'ABCD-EF23'}});
- tree=h.render();await find(tree,'form').props.onSubmit({preventDefault(){}});tree=h.render();
- const label=find(tree,'label',node=>nodes(node).some(child=>child.type==='Text'&&child.props.message==='Vehicle and assigned driver'));
- const select=find(tree,'select');assert.ok(label);assert.ok(select);assert.equal(label.props.htmlFor,select.props.id);assert.ok(select.props.id);assert.equal(find(label,'select'),undefined);assert.equal(select.props.value,vehicleId);
- assert.equal(h.calls.length,1);assert.equal(h.calls[0].path,'/api/tracking/access');
+test('provider inbox accepts a selected request without collecting guest viewing credentials',()=>{
+ const ui=readFileSync('src/components/connect-tracking.tsx','utf8');
+ assert.match(ui,/w\.accept\(row,/);
+ assert.match(ui,/Accept tracking request/);
+ assert.doesNotMatch(ui,/trackingLinkToken|trackingAccessCode|api\/tracking\/access/);
 });

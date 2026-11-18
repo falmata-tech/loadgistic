@@ -91,12 +91,15 @@ test('broker creates a pending load and shares link/code before a provider conne
   mark('PROVIDER_SETUP');provider=await auditProvider(service,'tracking-link');
   const vehicle=await createProviderVehicle(provider,{useBasis:'OWNED',make:'Toyota',model:'Link journey',plate:`LINK-${nonce}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false});vehicleId=vehicle.id;
   expect(vehicle).toMatchObject({active:true,publication_status:'DRAFT'});
+  checked(await service.from('company_pages').update({published:true}).eq('provider_profile_id',provider.provider_profile_id));
   checked(await service.rpc('set_provider_driving_mode',{actor_user_id:provider.id,requested_drives_truck:true}));
   await updateFleetDriverAccess(provider,provider.id,{vehicleId,canManageCapacity:true,canManageTracking:true});
   expect(checked(await service.rpc('capacity_active_driver_id',{target_vehicle_id:vehicleId}))).toBe(provider.id);
   // The installed workspace/create guards require active authorized vehicles
   // and the current driver, independently of public Capacity Go Live.
   expect((await getProviderTrackingWorkspace(provider)).vehicles.map((item:{id:string})=>item.id)).toEqual([vehicleId]);
+  checked(await service.rpc('set_provider_vehicle_publication',{actor_user_id:provider.id,target_vehicle_id:vehicleId,requested_state:'LIVE'}));
+  const truckNumber=checked(await service.from('vehicles').select('platform_number').eq('id',vehicleId).single()).platform_number;
   mark('BROKER_SIGN_IN');await auditLogin(page,owner.email,'/app/business/tracking');
   mark('BROKER_FORM');await page.getByRole('button',{name:'Create Tracking session',exact:true}).click();
   for(const [label,query,option]of[['Pickup city','Addis',/Addis Ababa, Ethiopia/i],['Passing through city','Adama',/Adama, Ethiopia/i],['Delivery city','Dire',/Dire Dawa, Ethiopia/i]]as const){
@@ -114,23 +117,30 @@ test('broker creates a pending load and shares link/code before a provider conne
   await page.getByRole('checkbox',{name:'Include approximate location when the provider has enabled it.',exact:true}).check();
   await page.getByRole('button',{name:'Create Tracking link',exact:true}).click();const issuedResponse=await issued;expect(issuedResponse.status()).toBe(201);const link=(await issuedResponse.json()).data.link;
   await expect(page.getByLabel('Tracking link',{exact:true})).toHaveValue(link.url);await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue(link.code);
+  await page.getByLabel('Truck number, driver or provider').fill(truckNumber);
+  const picker=page.locator('section').filter({has:page.getByRole('heading',{name:'Request a vehicle',exact:true})}).last();
+  await picker.getByRole('button',{name:'Search',exact:true}).click();
+  await picker.getByRole('button',{name:/^Request tracking/}).click();
+  await expect(picker.getByText(/Requested vehicle/)).toBeVisible();
   const options={baseURL:info.project.use.baseURL,viewport:page.viewportSize()!,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch)};
   mark('GUEST_PENDING_OPEN');guestContext=await browser.newContext(options);const guest=await guestContext.newPage(),shared=await openTrackingFixtureLink(guest,link);
   expect(shared.id).toBe(sessionId);expect(shared.state).toBe('PENDING_PROVIDER');expect(shared.tracking).toBeNull();await expect(guest.locator('.tracking-truck-marker')).toHaveCount(0);
   mark('PROVIDER_SIGN_IN');providerContext=await browser.newContext({...options,geolocation:{latitude:9.031234,longitude:38.741234,accuracy:3}});
   await providerContext.grantPermissions(['geolocation'],{origin:new URL(info.project.use.baseURL!).origin});
-  const driver=await providerContext.newPage();await auditLogin(driver,provider.email,'/app/provider-shipments');
-  mark('PROVIDER_OPEN_LINK');await driver.getByRole('button',{name:'Connect Tracking',exact:true}).click();await driver.getByLabel('Tracking link',{exact:true}).fill(link.url);await driver.getByLabel('Tracking code',{exact:true}).fill(link.code);
-  const preview=driver.waitForResponse((response:PlaywrightResponse)=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
-  await driver.getByRole('button',{name:'Open load details',exact:true}).click();
-  const previewResponse=await preview;console.log('CI_TRACKING_LINK_RESULT '+JSON.stringify({stage:'PROVIDER_PREVIEW_RESPONSE',status:previewResponse.status(),elapsedMs:Date.now()-began}));
-  expect(previewResponse.status()).toBe(200);const previewBody=await previewResponse.json();expect(previewBody.ok).toBe(true);
-  expect(previewBody.data.session.id).toBe(sessionId);expect(previewBody.data.session.state).toBe('PENDING_PROVIDER');
-  await expect(driver.getByText(`Synthetic broker load ${nonce}`,{exact:true})).toBeVisible();
-  await driver.getByLabel('Vehicle and assigned driver',{exact:true}).selectOption(vehicleId);await driver.getByRole('radio',{name:'Status and approximate location',exact:true}).check();
-  mark('PROVIDER_CONNECT');const connected=driver.waitForResponse((response:PlaywrightResponse)=>new URL(response.url()).pathname===`/api/tracking/sessions/${sessionId}/connect`&&response.request().method()==='POST');
-  await driver.getByRole('button',{name:'Connect this load',exact:true}).click();const connectedResponse=await connected;expect(connectedResponse.status()).toBe(200);const connectedSession=(await connectedResponse.json()).data;shipmentId=connectedSession.shipmentId;
-  expect(connectedSession.id).toBe(sessionId);expect(connectedSession.state).toBe('CONNECTED');expect(connectedSession.route).toEqual(pending.route);expect(shipmentId).toMatch(uuid);
+  const driver=await providerContext.newPage();
+  const inbox=driver.waitForResponse((r:PlaywrightResponse)=>new URL(r.url()).pathname==='/api/tracking/requests'&&r.request().postDataJSON()?.action==='INBOX',{timeout:45000});
+  await auditLogin(driver,provider.email,'/app/provider-shipments');
+  mark('PROVIDER_OPEN_LINK');
+  expect((await inbox).status()).toBe(200);
+  const requestRow=driver.locator('article').filter({hasText:pending.reference});
+  await expect(requestRow).toContainText(truckNumber);
+  await expect(driver.getByLabel('Tracking code',{exact:true})).toHaveCount(0);
+  await requestRow.getByRole('checkbox',{name:'Status and approximate location'}).check();
+  mark('PROVIDER_CONNECT');
+  const accepted=driver.waitForResponse((r:PlaywrightResponse)=>new URL(r.url()).pathname==='/api/tracking/requests'&&r.request().postDataJSON()?.action==='ACCEPT');
+  await requestRow.getByRole('button',{name:'Accept tracking request'}).click();
+  const reply=await accepted;expect(reply.status()).toBe(200);shipmentId=(await reply.json()).data.shipmentId;
+  expect(shipmentId).toMatch(uuid);
   expect(checked(await service.from('provider_shipments').select('assigned_vehicle_id,assigned_driver_user_id').eq('id',shipmentId).single())).toMatchObject({assigned_vehicle_id:vehicleId,assigned_driver_user_id:provider.id});
   mark('GUEST_CONNECTED_REFRESH');await guest.bringToFront();const refresh=guest.waitForResponse((response:PlaywrightResponse)=>new URL(response.url()).pathname===`/api/tracking/sessions/${sessionId}`);
   await guest.getByRole('button',{name:'Refresh updates',exact:true}).click();expect((await refresh).status()).toBe(200);

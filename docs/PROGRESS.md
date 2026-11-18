@@ -14,7 +14,7 @@ chosen at provider start or added later. Its rollback-only SQL check and local
 installation passed. Both initiation orders passed phone-web workflows, including
 late attachment through completion/review and the broker-first provider's normal
 operational controls. The connected provider saved Going to pickup and both broker and guest timelines reflected it. Customer followers use the expiring link and separate code.
-The driver-to-guest phone-web check also passed for two saved privacy radii, cooldown and retry. Web quality passed all 1,681 tests and mobile passed all 462 tests. See the review for the unresolved provider-invitation boundary before rollout.
+The driver-to-guest phone-web check also passed for two saved privacy radii, cooldown and retry. Web quality passed all 1,681 tests and mobile passed all 462 tests. Migration 231 adds broker search and a targeted provider inbox. Local SQL verified driver permission defaults, manager revocation and reassignment. Phone web verified selection through the saved provider update and broker and guest readback.
 
 Worktree: `.local/gps-phone-courier`, branch `feat/gps-phone-courier`, from the
 independently checked current remote main `906a51f1`. Preserve the existing dirty

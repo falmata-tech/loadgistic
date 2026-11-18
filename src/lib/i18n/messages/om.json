@@ -3327,5 +3327,14 @@
   "Choose one account to manage customer tracking and approve unloading.": "Herrega hordoffii maamiltootaa bulchuu fi bu’iinsa fe’umsaa mirkaneessu tokko filadhu.",
   "Refresh the shipment and check its partner.": "Odeeffannoo fe’umsaa haaromsii hiriyaa isaa ilaali.",
   "Shipments shared with my account": "Fe’umsa herrega koo waliin qoodame",
-  "Waiting for a provider update.": "Odeeffannoo geejjibaan kennu eeggachaa jira."
+  "Waiting for a provider update.": "Odeeffannoo geejjibaan kennu eeggachaa jira.",
+  "Request a vehicle": "Konkolaataa gaafadhu",
+  "Tracking requests": "Gaaffilee hordoffii",
+  "Requested vehicle": "Konkolaataa gaafatame",
+  "Truck number, driver or provider": "Lakkoofsa konkolaataa, konkolaachisaa ykn geejjibaa",
+  "Request tracking": "Hordoffii gaafadhu",
+  "In your network": "Neetworkii kee keessa",
+  "No pending tracking requests.": "Gaaffiin hordoffii eegamaa jiru hin jiru.",
+  "Accept tracking request": "Gaaffii hordoffii fudhadhu",
+  "Refresh requests": "Gaaffilee haaromsi"
 }

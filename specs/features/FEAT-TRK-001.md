@@ -11,6 +11,16 @@ rollout: Qualify228 and229 locally with permission, state-transition, file, web 
 
 # Guest tracking
 
+## Targeted transport requests — November 17
+
+Given a broker with management rights on a pending session, when they search by truck number, driver name or provider handle, then show currently discoverable assigned trucks and put connections first. Search is independent of available capacity. A broker selects the truck and its current driver. A replacement selection requires the saved revision.
+
+Given a pending request, when the assigned driver with Tracking permission or the truck's authorized fleet owner accepts, then recheck assignment, actor, expiry, review scope and lifecycle, then create the normal operational shipment once. A forwarded viewing link, a different driver, an old assignment, or a manager's disabled driver permission cannot authorize acceptance. The broker and guests retain their existing views.
+
+Given a newly added fleet driver, initialize Tracking permission on. Preserve existing permission decisions, and require a current assignment to act. Preserve capacity permissions. The broker can see the saved target, and eligible providers find incoming requests in Tracking without link or code.
+
+Contracts include signed-in target search, selection, incoming requests and acceptance. Record changes with actor and session. Deploy database before clients. Pending untargeted sessions require a broker selection. During rollback keep the credential-only connect path closed.
+
 ## November17 owner decision — supersedes anonymous email access
 
 Implementation and release qualification are in progress. Linked base IDs remain
@@ -84,11 +94,12 @@ Then PostgreSQL snapshots three distinct catalogue cities and requires the norma
 And it stores only independently keyed digests, seven-day default/thirty-day maximum expiry and revocation metadata\
 And a foreign tenant, deactivated member or view-only staff member cannot create or share it; rejection leaves rows and audit unchanged.
 
-Given both valid credentials for one pending session\
-When an authenticated provider explicitly connects an authorized assigned truck\
+Given a pending request addressed to a truck and its current driver\
+When an eligible provider accepts the saved request from their signed-in inbox\
 Then the existing actor, truck, assignment, city-route and lifecycle guards run atomically\
 And the actual confirmed workspace owner is retained as account provenance\
-And a second connection, a foreign truck, a revoked link or a sample/real boundary mismatch fails without creating a shipment\
+And a second connection, a replaced request, a foreign truck or a sample/real boundary mismatch fails without creating a shipment\
+And guest link expiry and revocation control viewing independently of provider acceptance\
 And no fabricated email, recipient, identity, assignment or location report is inserted.
 
 Given a provider starts Tracking for an existing registered customer\

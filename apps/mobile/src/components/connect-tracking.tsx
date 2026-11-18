@@ -1,19 +1,38 @@
-import {AppLink} from './app-link';
-import {useEffect,useRef,useState} from 'react';
-import {AppState,View} from 'react-native';
+import {useCallback,useState} from 'react';
+import {View} from 'react-native';
+import {useTrackingRequests,type SendTrackingRequest} from '../../../../src/lib/tracking-sessions/request-workflow';
 import {useAccount} from '../session/provider';
-import {apiRequest} from '../api/http';
-import {trackingData,trackingSessionAccessSchema,trackingSessionViewSchema,type TrackingSessionView} from '../api/tracking-sessions';
-import {guestTrackingSession,trackingLinkToken,trackingAccessCode} from '../../../../src/lib/tracking-sessions/client';
+import {AppLink} from './app-link';
 import {Button,Card,Copy,ErrorText,Field,Title} from './ui';
-import {Choices} from './choices';
-export function ConnectTracking({vehicles}:{vehicles:{id:string;label:string}[]}){
- const [connectedShipment,setConnectedShipment]=useState('');
- const account=useAccount(),[open,setOpen]=useState(false),[link,setLink]=useState(''),[code,setCode]=useState(''),[vehicleId,setVehicleId]=useState(vehicles.length===1?vehicles[0].id:''),[mode,setMode]=useState('STATUS_ONLY'),[session,setSession]=useState<TrackingSessionView|null>(null),[busy,setBusy]=useState(false),[uncertain,setUncertain]=useState(false),[error,setError]=useState(''),lock=useRef(false),epoch=useRef(0);
- const close=()=>{epoch.current++;setConnectedShipment('');setOpen(false);setLink('');setCode('');setSession(null);setError('');};
- useEffect(()=>{const invalidate=()=>{epoch.current++;};const listener=AppState.addEventListener('change',state=>{if(state!=='active')close();});return()=>{invalidate();listener.remove();};},[]);
- async function preview(){if(lock.current)return;const token=trackingLinkToken(link,__DEV__),secret=trackingAccessCode(code);if(!token||!secret){setError('Enter the Tracking link and its separate 8-character code.');return;}lock.current=true;setBusy(true);setError('');const version=epoch.current;try{const access=trackingData(await apiRequest('/api/tracking/access',{body:{linkToken:token,code:secret}}),trackingSessionAccessSchema);if(version===epoch.current)setSession(guestTrackingSession(access.session));}catch{if(version===epoch.current)setError('This Tracking link or code is unavailable. Check both and try again.');}finally{lock.current=false;setBusy(false);}}
- async function connect(){if(lock.current||uncertain||!session||session.state!=='PENDING_PROVIDER')return;lock.current=true;setBusy(true);setError('');const version=epoch.current;try{const result=trackingData(await account.request(`/api/tracking/sessions/${session.id}/connect`,{linkToken:trackingLinkToken(link,__DEV__),code:trackingAccessCode(code),vehicleId,trackingMode:mode}),trackingSessionViewSchema);if(result.id!==session.id||result.state!=='CONNECTED'||!result.shipmentId)throw Error();if(version===epoch.current){setConnectedShipment(result.shipmentId);setSession(result);setLink('');setCode('');}}catch{if(version===epoch.current){setUncertain(true);setError('We could not confirm the result. Check your saved Tracking before trying again.');}}finally{lock.current=false;setBusy(false);}}
- if(!open)return <Button secondary message="Connect Tracking" onPress={()=>setOpen(true)}/>;
- return <Card><Title message="Connect Tracking"/>{!session?<><Field message="Tracking link" value={link} onChangeText={setLink} maxLength={2048} autoComplete="off" autoCapitalize="none" editable={!busy}/><Field message="Tracking code" value={code} onChangeText={value=>setCode(value.toUpperCase())} maxLength={9} autoComplete="off" autoCapitalize="characters" placeholder="XXXX-XXXX" editable={!busy}/><Button message="Open load details" busy={busy} onPress={()=>void preview()}/></>:<><Copy>{session.reference}</Copy><Copy>{session.cargoSummary}</Copy>{session.route.map(point=><Copy key={point.placeRef}>{point.label}</Copy>)}{session.state==='PENDING_PROVIDER'?<View style={{gap:14}}><Copy message="Confirm the agreed load, assigned vehicle and updates before connecting."/><Choices value={vehicleId} options={vehicles} onChange={setVehicleId} disabled={busy||uncertain}/><Choices value={mode} options={[{id:'STATUS_ONLY',label:'Status only'},{id:'LOCATION_AND_STATUS',label:'Status and approximate location'}]} onChange={setMode} disabled={busy||uncertain}/><Copy message="Approximate location uses the vehicle’s selected GPS or Phone source. It is shared only after you connect and enable it."/><Button message="Connect this load" busy={busy} disabled={uncertain||!vehicleId} onPress={()=>void connect()}/></View>:<Copy message={session.state==='CONNECTED'?'Provider connected':'Tracking cancelled'}/>}</>}<ErrorText message={error}/>{!!connectedShipment&&<AppLink href={{pathname:'/shipment-detail',params:{id:connectedShipment}}} message="Open Tracking"/>}<Button secondary message="Close" busy={busy} onPress={close}/></Card>;
+import {useLanguage} from '../localization/provider';
+
+export function TrackingRequests({sessionId}:{sessionId?:string}){
+ const account=useAccount(),{t}=useLanguage(),request=account.request;
+ const send=useCallback<SendTrackingRequest>(async command=>{
+  const response=await request('/api/tracking/requests',command) as {ok:boolean;data:unknown};
+  if(!response.ok)throw Error();
+  return response.data;
+ },[request]);
+ const w=useTrackingRequests(send,sessionId),[locationId,setLocationId]=useState('');
+ return <Card><Title message={sessionId?'Request a vehicle':'Tracking requests'}/>
+  {w.error&&<ErrorText message="Could not load Tracking sessions. Please try again."/>}
+  {sessionId?<>{!!w.target?.selected&&<Copy>{t('Requested vehicle')} · {w.target.selected}</Copy>}
+   <Field message="Truck number, driver or provider" value={w.query} editable={!w.busy} onChangeText={w.setQuery} maxLength={100}/>
+   <Button secondary message="Search" disabled={w.busy||w.query.trim().length<2} onPress={()=>void w.search()}/>
+   {w.target?.items.map(row=><View key={row.vehicleId}><Copy>{row.label}{row.connected?' · '+t('In your network'):''}</Copy>
+    <Button secondary message="Request tracking" disabled={w.busy} onPress={()=>void w.select(row)}/></View>)}
+   {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<Copy message="No matching available vehicles."/>:null}
+  </>:<>
+   {!w.busy&&!w.error&&!w.incoming.length&&<Copy message="No pending tracking requests."/>}
+   {w.incoming.map(row=><View key={row.id} style={{gap:10}}>
+    <Copy>{row.broker} · {row.reference}</Copy><Copy>{row.cargo} · {row.vehicle}</Copy><Copy>{row.route.map(p=>p.label).join(' → ')}</Copy>
+    <Copy>{[row.pickupDate,row.deliveryDate].filter(Boolean).join(' → ')}</Copy>
+    <Button secondary message={locationId===row.id?'Status and approximate location':'Status only'} disabled={w.busy} onPress={()=>setLocationId(locationId===row.id?'':row.id)}/>
+    <Button message="Accept tracking request" disabled={w.busy} onPress={()=>void w.accept(row,locationId===row.id?'LOCATION_AND_STATUS':'STATUS_ONLY')}/>
+   </View>)}
+   {!!w.shipment&&<AppLink href={{pathname:'/shipment-detail',params:{id:w.shipment}}} message="Open Tracking"/>}
+  </>}
+  {w.busy&&<Copy message="Loading Tracking"/>}
+  {(!sessionId||w.error)&&<Button secondary message="Refresh requests" disabled={w.busy} onPress={()=>void w.refresh()}/>}
+ </Card>;
 }

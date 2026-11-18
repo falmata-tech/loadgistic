@@ -16,7 +16,7 @@ import {TrackingDemoLabel} from '../components/tracking-demo-label';
 import {isDemoTrackingShipment} from '../../../../src/lib/demo-tracking-identity.js';
 import {workspaceCapabilities} from '../navigation/destinations';
 import { PlacePicker, emptyPlace } from '../components/place-picker';
-import {ConnectTracking} from '../components/connect-tracking';
+import {TrackingRequests} from '../components/connect-tracking';
 export default function Shipments() {
  const {t}=useLanguage();
  const account = useAccount(), query = useAccountQuery<TrackingWorkspace>('/api/mobile/shipments');
@@ -26,7 +26,7 @@ export default function Shipments() {
  return <Page><Title message={"Tracking"}/><Copy message={"Keep customers informed after you agree the transport work."}/><ErrorText message={query.error} />
   {!query.data && !query.error && <LoadingSpinner accessibilityLabel="Loading shipments" />}
   <Button secondary message="Refresh shipments" onPress={() => { void query.reload(); }} busy={query.loading} />
-  {query.data?.canManage&&<ConnectTracking vehicles={query.data.vehicles}/>}
+  {query.data?.canManage&&<TrackingRequests/>}
   {query.data?.canManage && !creating && <Button message="Start tracking" onPress={() => setCreating(true)} />}
   {creating && query.data && <CreateTracking workspace={query.data} onClose={() => { setCreating(false); void query.reload(); }} />}
   {query.data && !query.data.canManage && <Copy message={"Your fleet owner can enable Tracking access for you."}/>}

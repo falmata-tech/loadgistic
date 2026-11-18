@@ -52,7 +52,7 @@ begin
  if before_state is distinct from pg_temp.session_state()then raise exception 'SESSION229_DENIAL_MUTATED_STATE:%',expected;end if;
 end$$;
 do $test$
-declare provider_actor uuid:=gen_random_uuid();customer uuid:=gen_random_uuid();staff uuid:=gen_random_uuid();outsider uuid:=gen_random_uuid();platform_admin uuid:=gen_random_uuid();uid uuid;
+declare employee uuid:=gen_random_uuid();provider_actor uuid:=gen_random_uuid();customer uuid:=gen_random_uuid();staff uuid:=gen_random_uuid();outsider uuid:=gen_random_uuid();platform_admin uuid:=gen_random_uuid();uid uuid;
  provider uuid:=gen_random_uuid();vehicle uuid;workspace uuid;foreign_workspace uuid;invitation uuid;version bigint;cities text[];command jsonb;result jsonb;guest jsonb;manager jsonb;
  session_id uuid;shipment uuid;link_id uuid;proof_id uuid;before_count integer;old_created timestamptz;old_expiry timestamptz;
  link1 text:=repeat('a',64);code1 text:=repeat('b',64);link2 text:=repeat('c',64);code2 text:=repeat('d',64);
@@ -99,15 +99,42 @@ begin
  perform pg_temp.session_assert(read_tracking_session_link(link1,code1)is null,'SESSION229_REVOKED_LINK_ACCEPTED');
  perform pg_temp.session_denied(format('select connect_tracking_session(%L,%L,%L,%L,%L::jsonb)',provider_actor,session_id,link1,code1,jsonb_build_object('vehicleId',vehicle,'trackingMode','LOCATION_AND_STATUS')::text),'TRACKING_ACCESS_DENIED');
  perform issue_tracking_session_link(customer,session_id,link2,code2,'{"allowLocation":true}');
- perform pg_temp.session_denied(format('select connect_tracking_session(%L,%L,%L,%L,%L::jsonb)',staff,session_id,link2,code2,jsonb_build_object('vehicleId',vehicle,'trackingMode','LOCATION_AND_STATUS')::text),'FORBIDDEN');
- perform pg_temp.session_denied(format('select connect_tracking_session(%L,%L,%L,%L,%L::jsonb)',provider_actor,session_id,link2,code2,jsonb_build_object('vehicleId',gen_random_uuid(),'trackingMode','LOCATION_AND_STATUS')::text),'INVALID_VEHICLE');
- result:=connect_tracking_session(provider_actor,session_id,link2,code2,jsonb_build_object('vehicleId',vehicle,'trackingMode','LOCATION_AND_STATUS'));shipment:=(result->>'shipmentId')::uuid;
+ -- Guest credentials cannot claim even the holder's own vehicle.
+ perform pg_temp.session_denied(format('select connect_tracking_session(%L,%L,%L,%L,%L::jsonb)',provider_actor,session_id,link2,code2,'{}'),'TRACKING_ACCESS_DENIED');
+ perform pg_temp.session_denied(format('select accept_tracking_request(%L,%L,1,%L::jsonb)',provider_actor,session_id,'{"trackingMode":"STATUS_ONLY"}'),'TRACKING_ACCESS_DENIED');
+ insert into company_pages(provider_profile_id,published,account_name) values(provider,true,'Synthetic session provider');
+ perform set_provider_vehicle_publication(provider_actor,vehicle,'LIVE');
+ -- Fleet membership alone cannot accept a request. Reassignment invalidates it.
+ insert into auth.users(id,email,raw_user_meta_data) values(employee,'session231-'||employee||'@example.invalid','{}');
+ perform fleet_register_driver(provider_actor,employee,jsonb_build_object('name','Test driver','email','session231-'||employee||'@example.invalid','phone','+251900000001'));
+ perform pg_temp.session_assert((select can_manage_tracking and not can_manage_capacity from driver_permissions where user_id=employee),'NEW_DRIVER_TRACKING_DEFAULT');
+ update auth.users set email_confirmed_at=now() where id=employee;
+ perform accept_content_policy(employee,'2026-10-09');
+ perform update_fleet_driver_access(provider_actor,jsonb_build_object('driver_user_id',employee,'vehicle_id',vehicle,'can_manage_tracking',true,'can_manage_capacity',false));
+ result:=manage_tracking_request(customer,session_id,jsonb_build_object('action','SEARCH','query',''));
+ result:=manage_tracking_request(customer,session_id,jsonb_build_object('action','SELECT','vehicleId',vehicle,'driverId',employee,'revision',result->'revision'));
+ perform pg_temp.session_assert(incoming_tracking_requests(employee)->0->>'id'=session_id::text,'EMPLOYEE_CAN_ACCEPT_ASSIGNED_REQUEST');
+ perform update_fleet_driver_access(provider_actor,jsonb_build_object('driver_user_id',employee,'vehicle_id',vehicle,'can_manage_tracking',false,'can_manage_capacity',false));
+ perform pg_temp.session_assert(jsonb_array_length(incoming_tracking_requests(employee))=0 and incoming_tracking_requests(provider_actor)->0->>'id'=session_id::text,'EMPLOYER_OVERRIDE');
+ perform pg_temp.session_denied(format('select accept_tracking_request(%L,%L,%s,%L::jsonb)',employee,session_id,result->>'revision','{"trackingMode":"STATUS_ONLY"}'),'TRACKING_ACCESS_DENIED');
+ perform update_fleet_driver_access(provider_actor,jsonb_build_object('driver_user_id',provider_actor,'vehicle_id',vehicle,'can_manage_tracking',true,'can_manage_capacity',true));
+ perform pg_temp.session_assert(jsonb_array_length(incoming_tracking_requests(provider_actor))=0,'STALE_ASSIGNMENT_INBOX');
+ result:=manage_tracking_request(customer,session_id,jsonb_build_object('action','SEARCH','query',(select platform_number from vehicles where id=vehicle)));
+ perform pg_temp.session_assert(result->'items'->0->>'vehicleId'=vehicle::text,'REQUEST_SEARCH_WITHOUT_CAPACITY');
+ command:=jsonb_build_object('action','SELECT','vehicleId',vehicle,'driverId',provider_actor,'revision',result->'revision');
+ perform pg_temp.session_denied(format('select manage_tracking_request(%L,%L,%L::jsonb)',staff,session_id,command),'FORBIDDEN');
+ result:=manage_tracking_request(customer,session_id,command);
+ version:=(result->>'revision')::bigint;
+ perform pg_temp.session_denied(format('select manage_tracking_request(%L,%L,%L::jsonb)',customer,session_id,command),'TRACKING_SESSION_CHANGED');
+ perform pg_temp.session_assert(incoming_tracking_requests(provider_actor)->0->>'id'=session_id::text and jsonb_array_length(incoming_tracking_requests(outsider))=0,'REQUEST_SCOPED_INBOX');
+ perform pg_temp.session_denied(format('select accept_tracking_request(%L,%L,%s,%L::jsonb)',outsider,session_id,version,'{"trackingMode":"STATUS_ONLY"}'),'TRACKING_ACCESS_DENIED');
+ result:=accept_tracking_request(provider_actor,session_id,version,'{"trackingMode":"LOCATION_AND_STATUS"}');shipment:=(result->>'shipmentId')::uuid;
  perform pg_temp.session_wire_shipment(result->'shipment');
  perform pg_temp.session_wire_shipment(tracking_session_detail(customer,session_id)->'shipment');
  perform pg_temp.session_assert(result->>'state'='CONNECTED'and result->'shipment'->'current_location'='null'::jsonb,'SESSION229_CONNECTION_OR_INVENTED_POINT');
  perform pg_temp.session_assert((select owner_user_id=customer from tracking_sessions where id=session_id)and(select shipper_email is null and receiver_email is null from provider_shipments where id=shipment)
  and not exists(select 1 from provider_tracking_recipients where shipment_id=shipment)and not exists(select 1 from email_deliveries where shipment_id=shipment),'SESSION229_FAKE_IDENTITY_OR_EMAIL');
- perform pg_temp.session_denied(format('select connect_tracking_session(%L,%L,%L,%L,%L::jsonb)',provider_actor,session_id,link2,code2,jsonb_build_object('vehicleId',vehicle,'trackingMode','LOCATION_AND_STATUS')::text),'TRACKING_SESSION_ALREADY_CONNECTED');
+ perform pg_temp.session_denied(format('select connect_tracking_session(%L,%L,%L,%L,%L::jsonb)',provider_actor,session_id,link2,code2,jsonb_build_object('vehicleId',vehicle,'trackingMode','LOCATION_AND_STATUS')::text),'TRACKING_ACCESS_DENIED');
  insert into provider_shipment_events(shipment_id,status,event_type,location_area,location_lat,location_lng,location_precision_km,location_source,created_by,created_at)
  values(shipment,'CREATED','LOCATION','Synthetic obscured phone area',9.11,38.81,10,'DEVICE_OBSCURED',provider_actor,clock_timestamp());
  guest:=read_tracking_session_link(link2,code2);
@@ -221,7 +248,7 @@ begin
 
  update business_workspace_members set active=false where workspace_id=workspace and user_id=staff;
  perform pg_temp.session_denied(format('select tracking_session_detail(%L,%L)',staff,session_id),'NOT_FOUND');
- foreach sig in array array['public.create_tracking_session(uuid,jsonb)','public.connect_tracking_session(uuid,uuid,text,text,jsonb)','public.read_tracking_session_link(text,text)','public.tracking_session_proof_file(uuid,uuid,uuid)','public.approve_tracking_session_handover(uuid,uuid)','public.review_tracking_session_provider(uuid,uuid,jsonb)']loop
+ foreach sig in array array['public.manage_tracking_request(uuid,uuid,jsonb)','public.accept_tracking_request(uuid,uuid,bigint,jsonb)','public.incoming_tracking_requests(uuid)','public.create_tracking_session(uuid,jsonb)','public.connect_tracking_session(uuid,uuid,text,text,jsonb)','public.read_tracking_session_link(text,text)','public.tracking_session_proof_file(uuid,uuid,uuid)','public.approve_tracking_session_handover(uuid,uuid)','public.review_tracking_session_provider(uuid,uuid,jsonb)']loop
   perform pg_temp.session_assert(not has_function_privilege('anon',sig,'execute')and not has_function_privilege('authenticated',sig,'execute')and has_function_privilege('service_role',sig,'execute'),'SESSION229_RPC_BROWSER_EXPOSURE');
  end loop;
  perform pg_temp.session_assert(not has_function_privilege('service_role','public.create_tracking_session_shipment(uuid,jsonb)','execute')

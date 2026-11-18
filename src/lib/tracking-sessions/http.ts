@@ -10,7 +10,9 @@ import {trackingSessionService,TrackingSessionError} from './supabase';
 import {readPrivateUpload,privateDocumentHeaders} from '../private-storage.js';
 import {privateFilePayload} from '../mobile/file-contract.js';
 
-type Operation='ACCESS'|'LOGOUT'|'LIST'|'CREATE'|'DETAIL'|'ATTACH_PARTNER'|'FROM_SHIPMENT'|'ISSUE'|'REVOKE'|'CONNECT'|'APPROVE'|'REVIEW'|'PROOF';
+import {requestCommand} from './requests';
+
+type Operation='REQUEST'|'ACCESS'|'LOGOUT'|'LIST'|'CREATE'|'DETAIL'|'ATTACH_PARTNER'|'FROM_SHIPMENT'|'ISSUE'|'REVOKE'|'CONNECT'|'APPROVE'|'REVIEW'|'PROOF';
 type Params={sessionId?:string;eventId?:string};
 export function trackingSessionJson(data:unknown,status=200):Response{
  return Response.json({ok:true,data},{status,headers:{'Cache-Control':'private, no-store','CDN-Cache-Control':'no-store','Netlify-CDN-Cache-Control':'no-store',Vary:'Cookie, Authorization, x-loadgistic-tracking-grant','X-Robots-Tag':'noindex, nofollow, nosnippet, noimageindex','Referrer-Policy':'no-referrer'}});
@@ -77,6 +79,7 @@ export async function trackingSessionHttp(request:Request,operation:Operation,pa
   }
   if(operation==='DETAIL')return trackingSessionJson(await service.detail(actor.id,sessionId!));
   await businessLimit(actor.id,'tracking-session:'+operation,operation==='CONNECT'?5:20);
+  if(operation==='REQUEST')return trackingSessionJson(await service.request(actor.id,input(requestCommand,await businessBody(request))));
   if(operation==='CREATE')return trackingSessionJson(await service.create(actor.id,await businessBody(request)),201);
   if(operation==='ATTACH_PARTNER'){
    const body=input(z.object({shipmentId:trackingSessionId,email:z.string().trim().email().max(254)}).strict(),await businessBody(request));
@@ -92,10 +95,7 @@ export async function trackingSessionHttp(request:Request,operation:Operation,pa
    return trackingSessionJson({link:{id:link.id,url:origin+'/track/'+credentials.linkToken,code:credentials.code,expiresAt:link.expiresAt,allowLocation:link.allowLocation}},201);
   }
   if(operation==='REVOKE')return trackingSessionJson(await service.revoke(actor.id,sessionId!,input(trackingSessionId,url.searchParams.get('linkId'))));
-  if(operation==='CONNECT'){
-   const body=await businessBody(request),parsed=input(z.object({linkToken:trackingLinkToken,code:trackingLinkCode,vehicleId:trackingSessionId,trackingMode:z.enum(['STATUS_ONLY','LOCATION_AND_STATUS'])}).strict(),body);
-   return trackingSessionJson(await service.connect(actor.id,sessionId!,trackingSessionCredentialDigests(parsed.linkToken,parsed.code),parsed));
-  }
+  if(operation==='CONNECT')return failure(410,'TRACKING_REQUEST_REQUIRED','Open Tracking requests in your provider account.');
   if(operation==='APPROVE')return trackingSessionJson(await service.approve(actor.id,sessionId!));
   if(operation==='REVIEW')return trackingSessionJson(await service.review(actor.id,sessionId!,await businessBody(request)));
   throw new BusinessHttpError(404,'NOT_FOUND');
