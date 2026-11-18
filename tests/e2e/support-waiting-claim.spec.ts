@@ -63,9 +63,9 @@ test('member Waiting offers only the authoritative FIFO claim and repeats curren
   stage='STAFF_SESSION';logout=await localSupportLogin(page,staffId);
   stage='PAUSED_WAITING';await waiting(15);await expect(page.getByRole('button',{name:'Go available',exact:true})).toBeVisible();await expect(forms()).toHaveCount(0);
   await page.screenshot({path:info.outputPath('waiting-paused.png')});
-  stage='SHARED_CAPACITY_FULL';checked(await db.from('support_agent_profiles').update({available:true}).eq('user_id',staffId));
-  await waiting(15);await expect(page.locator('.support-agent-strip')).toContainText('2 of 2 assigned');await expect(forms()).toHaveCount(0);
-  await page.screenshot({path:info.outputPath('waiting-shared-capacity-full.png')});
+  stage='ELIGIBLE_ABOVE_FORMER_CAP';checked(await db.from('support_agent_profiles').update({available:true}).eq('user_id',staffId));
+  await waiting(15);await expect(page.locator('.support-agent-strip')).toContainText('2 assigned');await expect(forms()).toHaveCount(1);
+  await page.screenshot({path:info.outputPath('waiting-eligible-with-open-chats.png')});
   // Direct fixture closure cannot run the automatic assignment command.
   checked(await db.from('support_conversations').update({status:'CLOSED'}).eq('id',memberOpen));
   checked(await db.from('guest_support_conversations').update({status:'CLOSED'}).eq('id',guestOpen));

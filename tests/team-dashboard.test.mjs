@@ -1,3 +1,4 @@
+import {supportCategoryName} from '../src/lib/support-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -14,7 +15,7 @@ function load(file,ports={}){
   'next/navigation':{usePathname:()=>'/support/'+id,useSearchParams:()=>new URLSearchParams(),redirect:path=>{throw Error('REDIRECT:'+path);},notFound:()=>{throw Error('NOT_FOUND');}},
   '@/components/localization':{Text:'Text',Localized:'Localized'},'./localization':{Text:'Text',Localized:'Localized',LanguagePicker:'LanguagePicker',useTranslation:()=>({t:value=>value})},
   '@/components/workspace-task-dialog':{WorkspaceTaskDialog:'TaskDialog'},'@/components/page-header':{PageHeader:'Header'},'@/components/flash':{Flash:'Flash'},'@/components/pagination':{Pagination:'Pagination'},'@/components/status-pill':{StatusPill:'Status'},'@/components/support-refresh':{SupportRefresh:'Refresh'},'./workspace-shell.module.css':{__esModule:true,default:simple},
-  '@/lib/team-navigation.js':navigation,'@/lib/support-polling.js':{supportRevisionTag},'@/app/admin/admin-presentation.module.css':{__esModule:true,default:simple},'./staff-account.module.css':{__esModule:true,default:simple},
+  '@/lib/support-policy.js':{supportCategoryName},'@/lib/team-navigation.js':navigation,'@/lib/support-polling.js':{supportRevisionTag},'@/app/admin/admin-presentation.module.css':{__esModule:true,default:simple},'./staff-account.module.css':{__esModule:true,default:simple},
   './content-policy-consent':{ContentPolicyConsent:'Consent'},'./logo':{Logo:'Logo'},'./staff-account':{StaffAccount:'StaffAccount'},'./public-mobile-nav':{PublicMobileNav:'PublicMobileNav'},'./site-topbar':{SiteTopbar:'SiteTopbar'},'./workspace-back-button':{WorkspaceBackButton:'Back'},'./chat-alerts':{ChatAlerts:'Alerts'},
   '@/lib/provider-workspace.js':{providerWorkspaceCapabilities:()=>({canManageFleet:false,drivesTruck:false})},...ports};
  const source=readFileSync(new URL('../'+file,import.meta.url),'utf8'),code=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;

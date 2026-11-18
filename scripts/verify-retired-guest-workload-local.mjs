@@ -7,7 +7,7 @@ import {pathToFileURL} from 'node:url';
 const root=new URL('../',import.meta.url);
 const container='supabase_db_loadgistic-local';
 const migrationDigest='694e9288f202fccd05d392afacc921541e13a0e005c557edb25483d2d1d2b3d2';
-const fixtureDigests={setup:'a515b283b85673dbbeeee67a9bcafb2488a078fa2b14700e9d4f46817868b2e0',assertions:'ca1b8e6748c4d0d1351bfde9f09166b84aa16f49cbf04167965a37f8274936b3'};
+const fixtureDigests={setup:'3e2a1c0c39178605d71b3120d6c0bbe742b982e8c3d12ab26954506ea0da13ff',assertions:'ca1b8e6748c4d0d1351bfde9f09166b84aa16f49cbf04167965a37f8274936b3'};
 const rollbackMarker='RETIRED_GUEST_WORKLOAD_ROLLBACK_OK';
 const controls=/^[ \t]*(?:begin|commit|rollback|start[ \t]+transaction|end|abort)[ \t]*;[ \t]*$/gmi;
 const meta=/^[ \t]*\\/m;

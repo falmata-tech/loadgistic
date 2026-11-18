@@ -1,5 +1,9 @@
 # Architecture Decisions
 
+## ADR-090 — Route signed-in Support by open workload
+
+Registered shippers, broker workspace members and Transport Providers can contact Support. New conversations use the active workspace or the member’s own account. An available agent with Support permission receives the next conversation according to their open-chat count. The longest idle agent wins a tie. There is no per-agent ceiling. When no eligible agent is available, conversations wait in arrival order and assign when staff return. Admins manage team availability and permissions. FEAT-SUP-001 and migrations 232–233 cover this change.
+
 ## ADR-089 — Per-load links and codes replace anonymous email Tracking (2026-11-17)
 
 FEAT-TRK/SHP/ENT/IAM/MOB-001 / BASE-FE/BE/DEP-001. The owner requires BOTH an

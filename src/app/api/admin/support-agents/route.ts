@@ -15,7 +15,6 @@ export async function POST(request:NextRequest) {
     await createSupportAgent(user,{
       name:text(form,'name'),
       email:text(form,'email'),
-      maxOpenConversations:text(form,'maxOpenConversations'),
       canManageCustomers:checked(form,'canManageCustomers'),
       canManageOperations:checked(form,'canManageOperations'),
       canManageTrust:checked(form,'canManageTrust'),

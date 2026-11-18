@@ -115,18 +115,18 @@ function staffHarness(page:Page,browser:Browser,info:{outputPath:(name:string)=>
   stage='STAFF_PERMISSIONS_TEAM';
   const fields='active,available,max_open_conversations,can_manage_customers,can_manage_operations,can_manage_trust,can_manage_billing,can_manage_support,can_manage_brokerage,can_manage_featured';
   const snapshot=()=>db.from('support_agent_profiles').select(fields).eq('user_id',id).single().then(checked);
-  const form=await teamForm(id);
+  const prior=await snapshot(),form=await teamForm(id);
   stage='STAFF_PERMISSIONS_OPEN';
   stage='STAFF_PERMISSIONS_EDIT';
   await form.getByRole('checkbox',{name:'Available for chats',exact:true}).uncheck();
-  await form.getByLabel('Max open chats',{exact:true}).fill('4');
+  await expect(form.getByLabel('Max open chats',{exact:true})).toHaveCount(0);
   await form.getByRole('checkbox',{name:'Featured',exact:true}).check();
   stage='STAFF_PERMISSIONS_SAVE';
   await form.getByRole('button',{name:'Save permissions',exact:true}).click();
   await expect(page.getByText('Support agent updated.',{exact:true})).toBeVisible();
   stage='STAFF_PERMISSIONS_SNAPSHOT';
   const assigned=await snapshot();
-  expect(assigned).toEqual({active:true,available:false,max_open_conversations:4,
+  expect(assigned).toEqual({active:true,available:false,max_open_conversations:prior.max_open_conversations,
    can_manage_customers:false,can_manage_operations:false,can_manage_trust:false,can_manage_billing:false,
    can_manage_support:true,can_manage_brokerage:false,can_manage_featured:true});
   const updates='/api/support/updates';

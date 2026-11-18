@@ -13,7 +13,7 @@ rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Pre
 
 Given an active registered shipper, broker workspace member or Transport Provider, when they send a message through web or Expo, then open or resume their own conversation. The account can receive a reply alert, open its attachments, close the chat and revisit history. A new conversation started in a business workspace requires that current membership. After losing workspace access, the person can contact Support about their own account. Workspace messages and attachments remain protected.
 
-Given eligible available Support staff, when a conversation enters the queue, then assign the lowest open-chat count below its configured limit. Break ties by oldest assignment, then agent ID. When all staff are unavailable or at capacity, keep the conversation waiting. Staff access follows assignment. Admins oversee the queue and agent settings.
+Given eligible available Support staff, when a conversation enters the queue, then assign the agent with the lowest open-chat count, regardless of how many chats are open. Break ties by oldest assignment, then agent ID. When all eligible staff are unavailable, keep the conversation waiting. Staff access follows assignment. Admins oversee the queue and agent settings.
 
 Given a signed-out visitor, when they open a saved help URL, present a recovery code or use an old cookie, then disclose no messages, attachments or updates and allow no mutation. Staff retain authorized access to historical records. Keep assignment and message events, deploy server permissions before clients and keep historical guest recovery closed on rollback. Linked contracts include FEAT-IAM-001 and BASE-BE-001.
 
@@ -61,9 +61,9 @@ of silently creating another request.
 
 Given multiple available customer-service agents and queued conversations\
 When automatic assignment runs\
-Then an agent at the configured open-conversation limit receives no additional conversation\
-And closing a conversation frees one assignment slot\
-And an availability change passes only the bounded remaining integer capacity into automatic assignment\
+Then each new conversation goes to the eligible agent with the fewest open chats\
+And closing a conversation reduces that agent’s workload\
+And making an agent available drains waiting conversations in FIFO order\
 And equal-load agents are selected by the oldest assignment time\
 And assignment, claim, availability, and closure remain visible in the support audit trail.
 
@@ -110,12 +110,12 @@ Given support conversations exist in Waiting, Open, and Closed states\
 When an administrator opens Customer Support\
 Then status tabs filter a bounded server page of safe conversation summaries\
 And each row shows the customer workspace, topic, latest message preview, update time, assigned agent, and state\
-And agent capacity and permissions remain managed separately from the conversation queue.
+And agent availability and permissions remain managed separately from the conversation queue.
 
 ### Scenario: waiting work can be claimed
 
-Given no available agent had capacity when a member opened a conversation\
-When an available support agent below their limit claims the oldest waiting conversation\
+Given no eligible agent was available when a member opened a conversation\
+When an available support agent claims the oldest waiting conversation\
 Then assignment is atomic\
 And another agent cannot claim the same conversation\
 And the member sees the assigned agent name after refresh.
@@ -136,7 +136,7 @@ or a later queue page\
 When a staff member opens Waiting\
 Then Claim is offered only for the exact oldest conversation accepted by the
 current database command, while the agent is available and below their shared
-member/retained-guest workload limit\
+staff availability\
 And displayed row order alone is not treated as authority to claim\
 And the database repeats these checks when the action is submitted.
 
@@ -166,7 +166,7 @@ And queue and history lists use server pagination and supporting indexes.
 Given local development, Preview, or Production uses the managed runtime\
 When a member, assigned Support actor, or administrator reads or changes Support state\
 Then the active application route uses the dedicated Support port and Supabase PostgreSQL\
-And PostgreSQL repeats active-role, ownership, assignment, Support-permission, capacity, open-state, message-limit, and terminal-state checks\
+And PostgreSQL repeats active-role, ownership, assignment, Support-permission, availability, open-state, message-limit, and terminal-state checks\
 And member history, staff queues, conversations, messages, and team lists are bounded independently\
 And assignment or requeue decisions are atomic across member and Assisted matching conversations\
 And browser roles cannot execute the service-only actor commands directly\

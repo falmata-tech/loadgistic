@@ -1,4 +1,5 @@
 
+import {supportCategoryName} from '@/lib/support-policy.js';
 import {Localized,Text} from '@/components/localization';
 import { CheckCircle2, Headphones, Paperclip, Send, UserRound } from 'lucide-react';
 import { StatusPill } from './status-pill';
@@ -20,7 +21,7 @@ export function SupportThread({ conversation, user, canClose=false,returnTo }:{
     <SupportRefresh endpoint={`/api/support/updates?conversation=${conversation.id}`} enabled={open&&!conversation.history_before}/>
     <SupportAutoScroll containerId={messageContainerId} lastMessageId={conversation.messages.at(-1)?.id} atStart={Boolean(conversation.history_before)}/>
     <header className="support-thread-header" data-chat-presence>
-      <div className="section-heading-icon"><Headphones aria-hidden="true"/><div><h2>{conversation.category.replaceAll('_',' ')}</h2><p className="meta">{conversation.assigned_agent_name?<><Text message="Assigned to"/> {conversation.assigned_agent_name}</>:<Text message="Waiting for the next available agent"/>}</p></div></div>
+      <div className="section-heading-icon"><Headphones aria-hidden="true"/><div><h2><Text message={supportCategoryName(conversation.category)}/></h2><p className="meta">{conversation.assigned_agent_name?<><Text message="Assigned to"/> {conversation.assigned_agent_name}</>:<Text message="Waiting for the next available agent"/>}</p></div></div>
       <StatusPill status={conversation.status}/>
       <ChatTeamJoined/>
     </header>

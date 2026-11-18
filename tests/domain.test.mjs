@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mutationOriginAllowed } from '../src/lib/origin.js';
-import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityUpdateStage, capacityUpdatePresentation, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage, validateSupportAgentLimit } from '../src/lib/domain.js';
+import { validateCapacity, validateAcceptedLoads, validateCapacityServiceRadius, validateFreightLoadType, validateMovementScope, validateServiceRadius, distanceBetweenKm, pointInServiceArea, serviceAreasOverlap, validatePriceMode, canTransition, capacityFreshness, capacitySignalFreshness, capacityUpdateStage, capacityUpdatePresentation, capacityExpiryState, loadBoardDeadlineState, formatEtb, isPendingDirectRequest, roleCanCreateShipment, validateSupportCategory, validateSupportMessage } from '../src/lib/domain.js';
 import { bestGeographicRouteMatch, capacityRouteAlignmentMatch, corridorAlignmentMatch, geographicRouteMatch, normalizePlace, serviceAreaGeometryMatch, uncertaintyAreasOverlap } from '../src/lib/route-matching.js';
 import { buildAlongRouteChains, distanceKm, poolCompatibleLoads } from '../src/lib/pstl.js';
 import { placeIdentity, placeLabel, qualifyCorridorList, qualifyPlaceList } from '../src/lib/place-labels.js';
@@ -321,7 +321,4 @@ test('support inputs are bounded and use a small stable category set',()=>{
  assert.equal(validateSupportMessage('  Please help with payment.  '),'Please help with payment.');
  assert.throws(()=>validateSupportMessage(''),/SUPPORT_MESSAGE_REQUIRED/);
  assert.throws(()=>validateSupportMessage('x'.repeat(2001)),/SUPPORT_MESSAGE_TOO_LONG/);
- assert.equal(validateSupportAgentLimit('4'),4);
- assert.throws(()=>validateSupportAgentLimit('0'),/INVALID_SUPPORT_AGENT_LIMIT/);
- assert.throws(()=>validateSupportAgentLimit('21'),/INVALID_SUPPORT_AGENT_LIMIT/);
 });

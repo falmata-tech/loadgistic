@@ -36,7 +36,7 @@ export default async function SupportInboxPage({searchParams}:{searchParams:Prom
     <Flash error={query.error} success={query.success}/>
     <section className="support-agent-strip">
       <span className={`live-dot ${available?'':'off'}`} aria-hidden="true"/>
-      <div><strong>{available?<Text message="Available"/>:<Text message="Paused"/>}</strong><small>{result.agent.open_count}<Text message=" of "/>{result.agent.max_open_conversations}<Text message=" assigned"/></small></div>
+      <div><strong>{available?<Text message="Available"/>:<Text message="Paused"/>}</strong><small>{result.agent.open_count}<Text message=" assigned"/></small></div>
     </section>
     <Localized as="nav" copy={["aria-label"]} className="support-tabs" aria-label="Support queue">
       {views.map(item=>{const Icon=item.icon;return <Link className={view===item.id?'active':''} href={`/support?view=${item.id}`} key={item.id} aria-current={view===item.id?'page':undefined}><Icon aria-hidden="true"/><Text message={item.label}/><strong>{result.counts[item.count]}</strong></Link>;})}

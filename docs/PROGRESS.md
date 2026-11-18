@@ -16,7 +16,7 @@ late attachment through completion/review and the broker-first provider's normal
 operational controls. The connected provider saved Going to pickup and both broker and guest timelines reflected it. Customer followers use the expiring link and separate code.
 The driver-to-guest phone-web check also passed for two saved privacy radii, cooldown and retry. Web quality passed all 1,681 tests and mobile passed all 462 tests. Migration 231 adds broker search and a targeted provider inbox. Local SQL verified driver permission defaults, manager revocation and reassignment. Phone web verified selection through the saved provider update and broker and guest readback.
 
-Migration 232 adds personal registered customer Support, fixes replies for business members and retires anonymous recovery of historical chats. Local workload, waiting, reassignment, role and attachment SQL tests passed.
+Migration 232 adds personal registered customer Support, fixes replies for business members and retires anonymous recovery of historical chats. Local workload, waiting, reassignment, role and attachment SQL tests passed. Migration 233 removes the open-chat ceiling. In the local six-chat test two agents shared five requests by workload. The sixth waited while both agents were paused, then assigned when one returned. One returning agent also took all 101 waiting chats in a rollback-only test. Team shows actual open chats and availability. The queued tracking and account-closure race verifier passed all six checks with a registered shipment owner.
 
 Worktree: `.local/gps-phone-courier`, branch `feat/gps-phone-courier`, from the
 independently checked current remote main `906a51f1`. Preserve the existing dirty

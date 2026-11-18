@@ -52,7 +52,7 @@ export default async function AdminSupportPage({searchParams}:{searchParams:Prom
       <div className={styles.teamRows}>{agents.items.map((agent:TeamMember)=><article className={styles.teamRow} key={agent.user_id} data-member-id={agent.user_id}>
         <div className={styles.teamIdentity}><span className={`live-dot ${agent.available&&agent.active?'':'off'}`}/><div><strong>{agent.name}</strong><small>{agent.email}</small></div></div>
         <div className={styles.teamResponsibilities}>{responsibilities.filter(([key])=>agent[key]).map(([,label])=><span key={label}><Text message={label}/></span>)}</div>
-        <div className={styles.teamWorkload}><strong>{agent.open_count} / {agent.max_open_conversations}</strong><small><Text message="Open chats"/></small></div>
+        <div className={styles.teamWorkload}><strong>{agent.open_count}</strong><small><Text message="Open chats"/></small></div>
         <StatusPill status={agent.active?'ACTIVE':'SUSPENDED'}/>
         <WorkspaceTaskDialog title="Edit member" triggerLabel="Edit member" description={agent.name}><TeamMemberForm agent={agent}/></WorkspaceTaskDialog>
       </article>)}</div>
@@ -63,7 +63,7 @@ export default async function AdminSupportPage({searchParams}:{searchParams:Prom
 
 
 type TeamMember={
- user_id:string;name:string;email:string;active:boolean;available:boolean;open_count:number;closed_count:number;max_open_conversations:number;
+ user_id:string;name:string;email:string;active:boolean;available:boolean;open_count:number;closed_count:number;
  can_manage_customers:boolean;can_manage_operations:boolean;can_manage_trust:boolean;can_manage_billing:boolean;can_manage_support:boolean;can_manage_brokerage:boolean;can_manage_featured:boolean;
 };
 const responsibilities=[['can_manage_customers','Customers','canManageCustomers'],['can_manage_operations','Operations','canManageOperations'],['can_manage_trust','Trust','canManageTrust'],['can_manage_support','Support','canManageSupport'],['can_manage_featured','Featured','canManageFeatured']] as const;
@@ -72,7 +72,6 @@ function TeamMemberForm({agent}:{agent?:TeamMember}){
  return <form action={agent?`/api/admin/support-agents/${agent.user_id}`:'/api/admin/support-agents'} method="post" className={`stack ${styles.memberForm}`}>
   {!agent?<section><h3><Text message="Account"/></h3><div className="form-grid"><label htmlFor={`member-name-${key}`}><Text message="Name"/><input id={`member-name-${key}`} name="name" required/></label><label htmlFor={`member-email-${key}`}><Text message="Sign-in email"/><input id={`member-email-${key}`} name="email" type="email" required/></label></div></section>:<section><h3><Text message="Account"/></h3><p className="meta">{agent.email}</p><label className="checkbox-control"><input name="active" type="checkbox" defaultChecked={Boolean(agent.active)}/><Text message="Account active"/></label><label className="checkbox-control"><input name="available" type="checkbox" defaultChecked={Boolean(agent.available)}/><Text message="Available for chats"/></label><input type="hidden" name="canManageBilling" value={agent.can_manage_billing?'on':''}/></section>}
   <section><h3><Text message="Responsibilities"/></h3><div className="team-permission-grid">{responsibilities.map(([field,label,name])=><label className="checkbox-control" key={name}><input name={name} type="checkbox" defaultChecked={agent?Boolean(agent[field]):name==='canManageSupport'}/><Text message={label}/></label>)}</div></section>
-  <section><h3><Text message="Chat workload"/></h3><label htmlFor={`limit-${key}`}><Text message="Max open chats"/><input id={`limit-${key}`} name="maxOpenConversations" type="number" min="1" max="20" defaultValue={agent?.max_open_conversations||3} required/></label></section>
   <button className="button"><Save aria-hidden="true"/><Text message={agent?'Save permissions':'Create member'}/></button>
  </form>;
 }

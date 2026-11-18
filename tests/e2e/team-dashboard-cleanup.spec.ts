@@ -25,7 +25,7 @@ test('admin support and Team controls fit desktop and phones while brokerage sta
    const form=page.locator('form[action="/api/admin/support-agents"]');await expect(form).toHaveCount(0);await page.getByRole('button',{name:'Add member',exact:true}).click();await expect(page.getByRole('dialog',{name:'Add member',exact:true})).toBeVisible();
    for(const label of['Customers','Operations','Trust','Support','Featured'])await expect(form.getByRole('checkbox',{name:label,exact:true})).toBeVisible();
    await expect(form.getByRole('checkbox',{name:'Brokerage',exact:true})).toHaveCount(0);
-   await expect(form.getByLabel('Max open chats')).toHaveAttribute('min','1');await expect(form.getByLabel('Max open chats')).toHaveAttribute('max','20');
+   await expect(form.getByLabel('Max open chats')).toHaveCount(0);
    if(width===1440){watchTeam=true;await form.getByLabel('Name',{exact:true}).fill('Unsaved synthetic draft');await page.waitForTimeout(6500);await expect(form.getByLabel('Name',{exact:true})).toHaveValue('Unsaved synthetic draft');evidence.teamDraftKept=true;watchTeam=false;}
    await capture(page,info,`admin-team-${width}.png`);await page.getByRole('dialog',{name:'Add member',exact:true}).getByRole('button',{name:'Cancel',exact:true}).click();await expect(form).toHaveCount(0);await expect(page.getByRole('button',{name:'Add member',exact:true})).toBeFocused();await capture(page,info,`admin-team-list-${width}.png`);
    await page.goto('/brokerage?queue=ALL&view=ALL&page=1');await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();

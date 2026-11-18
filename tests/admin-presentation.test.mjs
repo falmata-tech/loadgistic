@@ -1,3 +1,4 @@
+import {supportCategoryName} from '../src/lib/support-policy.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -42,7 +43,7 @@ function load(file,overrides={}){
   '@/lib/featured-time-presentation.js':featuredTime,
   '@/lib/expo-broadcast.js':{DEFAULT_FEATURED_SCHEDULE_CONFIG},
   '@/lib/featured-heading-presentation.js':featuredHeading,
-  '@/lib/pagination.js':{readWindowedPage},'@/lib/team-navigation.js':teamNavigation,'@/lib/support-polling.js':{supportRevisionTag},'@/components/support-refresh':{SupportRefresh:'Refresh'},
+  '@/lib/pagination.js':{readWindowedPage},'@/lib/support-policy.js':{supportCategoryName},'@/lib/team-navigation.js':teamNavigation,'@/lib/support-polling.js':{supportRevisionTag},'@/components/support-refresh':{SupportRefresh:'Refresh'},
   '@/app/admin/admin-presentation.module.css':{__esModule:true,default:simple},...overrides
  };
  const exports={};new Function('require','exports',code)(name=>{assert.ok(name in imports,'Unbounded import '+name);return imports[name];},exports);return exports.default||exports;
@@ -148,7 +149,7 @@ test('team form retains separate permissions, email-code membership, account sta
  for(const name of ['canManageCustomers','canManageOperations','canManageTrust','canManageSupport','canManageFeatured']){assert.ok(all(create,'input').some(n=>n.props.name===name));assert.ok(all(edit,'input').some(n=>n.props.name===name));}
  for(const form of [create,edit])assert.ok(!all(form,'input').some(n=>n.props.name==='canManageBrokerage'));
  const billing=all(edit,'input').find(n=>n.props.name==='canManageBilling');assert.equal(billing.props.value,'on');
- for(const form of [create,edit]){const max=all(form,'input').find(n=>n.props.name==='maxOpenConversations');assert.equal(max.props.min,'1');assert.equal(max.props.max,'20');assert.equal(form.props.method,'post');}
+ for(const form of [create,edit]){const max=all(form,'input').find(n=>n.props.name==='maxOpenConversations');assert.equal(max,undefined);assert.equal(form.props.method,'post');}
  assert.ok(all(tree,'TaskDialog').some(n=>n.props.description==='Members sign in with an email code.'));
  assert.equal(all(tree,'details').length,0);assert.equal(all(tree,'TaskDialog').length,2);
 });
