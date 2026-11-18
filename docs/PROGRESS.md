@@ -20,6 +20,12 @@ Migration 232 adds personal registered customer Support, fixes replies for busin
 
 The browser run at `9579d676` found a Tracking entry page whose map no longer filled the space above the footer, old tests expecting immediate Private map sign-in or guest email access, and a guest link that survived the issuing owner's loss of access. The local correction restores the locked map layout and returns HTTP 404 for retired Support conversation links. Migration 234 passed the local Tracking SQL regression, including denied access after owner revocation. Desktop and phone browser verification, installed Android testing and production publication remain open.
 
+A desktop Tracking screenshot confirmed the map and footer geometry at 1440px but showed blocked community tiles behind the form. The tracking page’s referrer policy prevented the browser from identifying the app to the tile service. The local tile layer now sends only the origin. The page continues suppressing the private tracking URL. The focused desktop browser test intercepted the tile requests for a synthetic private link, verified the site origin as their only referrer, and confirmed the page retained no-referrer metadata. The six tile configuration tests passed. Separate Chrome views at 1280×800 and 390×844 returned HTTP 200 tile images and displayed the geographic basemap, entry form and footer.
+
+The rerun at `aa6121c` passed validation, Mobile internal-build boundaries, Operations proof, the container build, the three Featured checks and four browser groups. The other four browser groups reported two distinct failures. The Play reviewer case needed to open shipment progress to see its cargo. The Tracking submit button extended outside its card at 320×568 and 844×390. After the responsive fix, measurements at both sizes put the full action inside the card, the map above the footer and the attribution inside the map.
+
+The internal standalone Android 1.2.0/code 10 APK now includes ARM64 and x86_64. Both native libraries, signature, alignment and permissions passed. The 95,295,409-byte artifact has SHA256 `0e0fa204c5b2446f997f3c7063802f1902543fbccb9f69c9980fe101be8fdd5f`. The build used the disposable internal key. Installed journeys and Play signing have their own checks.
+
 Worktree: `.local/gps-phone-courier`, branch `feat/gps-phone-courier`, from the
 independently checked current remote main `906a51f1`. Preserve the existing dirty
 checkouts and completed simulator hosting setup. Runtime acceptance remains

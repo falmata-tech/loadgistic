@@ -58,8 +58,10 @@ And normal account email verification remains unchanged.
 Changed contracts: TrackingSession, TrackingSessionLink, SingleSessionGrant,
 PendingProviderConnection, workspace lists and web/native guest entry/read/logout.
 Logs contain fixed events/counts only, never raw link/code/cookie/location/contact.
-Private responses are no-store/noindex; link pages use no-referrer; rate limits
-precede lookup. New anonymous Tracking never queues email. Rollout requires229
+Private responses are no-store/noindex. Link pages use no-referrer. Given a guest
+opens a link, when the basemap requests tiles, then only the site origin may
+identify the app to its tile provider. The private path, token, code and query
+never travel in the tile referrer. Rate limits precede lookup. New anonymous Tracking never queues email. Rollout requires229
 local permission/transition SQL, focused web/native tests, actual desktop/phone/
 Expo review and full release gates. Exact hosted source/SQL/backup/rollback review
 remains required. Rollback disables new links while retaining history; it must

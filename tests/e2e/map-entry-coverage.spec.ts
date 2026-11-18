@@ -50,6 +50,23 @@ test('Capacity basemap fills its space above the footer without retired transpor
   }
 });
 
+test('private Tracking identifies the site to the tile provider without sharing the load link',async({page,baseURL})=>{
+  test.setTimeout(90_000);
+  const origin=new URL(baseURL!).origin;
+  const tileOrigin=new URL(process.env.NEXT_PUBLIC_MAP_TILE_URL||'https://tile.openstreetmap.org').origin;
+  const referrers=new Set<string>();
+  await page.route(tileOrigin+'/**',async route=>{
+    const headers=await route.request().allHeaders();
+    referrers.add(headers.referer||'');
+    await route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/></svg>'});
+  });
+  await page.goto('/track/'+'Q'.repeat(43),{waitUntil:'commit'});
+  await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();
+  await basemapReady(page,'.tracking-entry-map .leaflet-container');
+  expect([...referrers]).toEqual([origin+'/']);
+  await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content','no-referrer');
+});
+
 test('locked Tracking keeps an empty basemap behind its working link and code form',async({page,context},info)=>{
   test.setTimeout(90_000);
   await context.setExtraHTTPHeaders({'x-forwarded-for':info.project.name.includes('mobile')?'127.0.0.246':'127.0.0.245'});

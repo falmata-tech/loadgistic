@@ -6,6 +6,7 @@ import {localAuditService,checked,auditProvider,auditDeleteVehicles} from './aud
 import {updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {localSupportLogin} from './provider-support-helper';
 import {localMailpitNumericCode} from './mailpit-helper';
+import {openNativeTrackingLink} from './native-tracking-fixtures';
 
 // Local synthetic identities only. Never record credentials, sessions or inboxes.
 test.use({trace:'off',screenshot:'off'});
@@ -172,16 +173,18 @@ test('Play native reviewer uses normal login and accepted terms; private guest s
   const linksPath='/api/tracking/sessions/'+sessionId+'/links';
   const issued=await page.request.post(linksPath,{headers,data:{expiresInDays:1,allowLocation:false}});
   expect(issued.status()).toBe(201);const {url,code,id}= (await issued.json()).data.link;
-  await page.goto('http://localhost:8084/visitor-tracking');
-  await page.getByLabel('Tracking link',{exact:true}).fill(url);
-  await page.getByLabel('Tracking code',{exact:true}).fill(code);
-  await page.getByRole('button',{name:'Open tracking',exact:true}).click();
+  const shared=await openNativeTrackingLink(page,{url,code});
+  expect(shared.id).toBe(sessionId);
+  await page.getByRole('button',{name:'Open shipment progress',exact:true}).click();
   await expect(page.getByText('Synthetic reviewer shipment',{exact:true})).toBeVisible({timeout:20000});
   await expect(page.getByRole('button',{name:'Close Tracking',exact:true})).toBeVisible();
   await page.screenshot({path:'.local/play-policy-native-review-tracking.png'});
   expect((await page.request.delete(linksPath+'?linkId='+id,{headers})).status()).toBe(200);
+  const deniedRefresh=page.waitForResponse((response:any)=>response.request().method()==='GET'&&new URL(response.url()).pathname==='/api/tracking/sessions/'+sessionId);
   await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
-  await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();
+  expect((await deniedRefresh).status()).toBe(401);
+  await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible({timeout:20000});
+  await expect(page.getByText('Synthetic reviewer shipment',{exact:true})).toHaveCount(0);
   await page.goto('http://localhost:8084/privacy');await page.getByRole('button',{name:'How location sharing works',exact:true}).click();await expect(page.getByText('Location during your shipment',{exact:true})).toBeVisible();await page.screenshot({path:'.local/play-policy-location-disclosure-phone.png'});await page.getByRole('button',{name:'Close',exact:true}).click();
 
   const grant=await page.request.post('/api/mobile/review-access/visitor',{headers:{authorization:'Bearer '+session.accessToken},data:{scope:'capacity'}});expect(grant.status()).toBe(403);
