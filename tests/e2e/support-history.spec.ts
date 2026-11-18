@@ -43,11 +43,10 @@ async function profiles(service:any){
 const timestamp=(i:number)=>new Date(Date.UTC(2026,0,1,0,0,i)).toISOString();
 
 test('invalid archive recovery does not expose a conversation or offer public chat',async({page}:{page:Page})=>{
- await page.goto('/help');await page.getByText('View a previous conversation',{exact:true}).click();
- await page.getByLabel('Email',{exact:true}).fill('unknown@example.test');await page.getByLabel('Recovery code').fill('LG-HELP-0000-0000');
- await page.getByRole('button',{name:'View conversation',exact:true}).click();
- await expect(page.getByText('That email and recovery code could not be verified.')).toBeVisible();
- await expect(page.locator('.support-thread,.public-chat-start')).toHaveCount(0);
+ await page.goto('/help');
+ await expect(page.getByRole('link',{name:'Sign in',exact:true}).last()).toBeVisible();
+ await expect(page.getByLabel('Recovery code')).toHaveCount(0);
+ expect((await page.request.post('/api/guest-support/access',{form:{email:'former@example.test',code:'invalid'}})).status()).toBe(410);
 });
 
 test('member and assigned staff can page every retained message without shifting history',async({page}:{page:any},info:any)=>{
@@ -79,7 +78,7 @@ test('member and assigned staff can page every retained message without shifting
   }finally{expect((await service.from('support_conversations').delete().eq('id',id)).error).toBeNull();}
 });
 
-test('guest archive is read-only, pages retained history and protects old attachments',async({page,browser}:{page:any;browser:any},info:any)=>{
+test('retired guest recovery denies historical reads and staff attachments require assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(180000);const service=localService();const {agent}=await profiles(service);
   const email=`history-${randomUUID()}@example.test`;let id:string|undefined;let stored:any;let staff:any;
   try{
@@ -93,23 +92,13 @@ test('guest archive is read-only, pages retained history and protects old attach
     stored=await storePrivateUpload(new File([bytes],'history.png',{type:'image/png'}),'guest-support');
     const attachmentId=randomUUID();
     expect((await service.from('guest_support_attachments').insert({id:attachmentId,conversation_id:id,message_id:rows[29].id,file_path:stored.path,original_name:'history.png',mime_type:'image/png',size_bytes:bytes.length})).error).toBeNull();
-    await page.goto('/help');await page.getByText('View a previous conversation',{exact:true}).click();
-    await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Recovery code').fill(guestSupportAccessCode(id));
-    await page.getByRole('button',{name:'View conversation',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/help/${id}`));
-    await expect(page.locator('.support-composer,.public-chat-composer')).toHaveCount(0);await expect(page.getByText('This conversation is read-only.').first()).toBeVisible();
-    const requests:string[]=[];page.on('request',(r:Request)=>{if(r.url().includes('/api/support/updates')||r.url().includes('/api/guest-support/current'))requests.push(r.url());});
-    await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(page.locator('.support-message')).toHaveCount(50);
-    await expect(page.getByText('Guest history 71',{exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(page.locator('.support-message')).toHaveCount(50);
-    await expect(page.getByText('Guest history 21',{exact:true})).toBeVisible();
-    const attachmentUrl=await page.getByRole('link',{name:'history.png'}).getAttribute('href');
-    const downloaded=await page.request.get(attachmentUrl!);expect(downloaded.ok()).toBe(true);expect(Buffer.compare(await downloaded.body(),bytes)).toBe(0);
-    await capture(page,info,'guest-history');
+    await page.goto('/help');
+    await expect(page.getByLabel('Recovery code')).toHaveCount(0);
+    expect((await page.request.post('/api/guest-support/access',{form:{email,code:guestSupportAccessCode(id)}})).status()).toBe(410);
+    expect((await page.request.get('/help/'+id)).status()).toBe(404);
+    const attachmentUrl=`/api/guest-support/${id}/attachments/${attachmentId}`;
+    expect((await page.request.get(attachmentUrl)).status()).toBe(404);
     expect((await page.request.post(`/api/guest-support/${id}/messages`,{form:{body:'Cannot reply'}})).status()).toBe(410);
-    expect((await service.from('guest_support_messages').insert({conversation_id:id,sender_kind:'TEAM',sender_user_id:agent,body:'A newer team reply'})).error).toBeNull();
-    await page.waitForTimeout(2500);await expect(page.getByText('A newer team reply',{exact:true})).toHaveCount(0);expect(requests).toEqual([]);
-    await page.getByRole('link',{name:'Older messages',exact:true}).click();await expect(page.getByText('Beginning of conversation')).toBeVisible();
-    await page.getByRole('link',{name:'Latest messages',exact:true}).click();await expect(page.getByText('A newer team reply',{exact:true})).toBeVisible();
     staff=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.245'}});const staffPage=await staff.newPage();
     await loginAs(staffPage,agent);await staffPage.goto(`/support/assisted/${id}`);
     await expect(staffPage.getByRole('heading',{name:'404',exact:true})).toBeVisible();
@@ -119,7 +108,7 @@ test('guest archive is read-only, pages retained history and protects old attach
     expect((await staffPage.request.get(attachmentUrl)).ok()).toBe(true);
     expect((await service.from('guest_support_conversations').update({assigned_agent_user_id:null,status:'WAITING'}).eq('id',id)).error).toBeNull();
     expect((await staffPage.request.get(attachmentUrl)).ok()).toBe(false);
-    expect((await page.request.get(attachmentUrl)).ok()).toBe(true);
+    expect((await page.request.get(attachmentUrl)).ok()).toBe(false);
     await staffPage.goto(`/support/assisted/${id}`);await expect(staffPage.getByRole('heading',{name:'404',exact:true})).toBeVisible();
     await expect(staffPage.locator('.guest-support-thread,.support-message')).toHaveCount(0);
     await page.context().clearCookies();expect((await page.request.get(attachmentUrl)).ok()).toBe(false);

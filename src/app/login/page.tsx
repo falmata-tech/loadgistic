@@ -34,7 +34,7 @@ export default async function LoginPage({
     <PublicHeader/>
     <PublicAuthShell
       variant="login"
-      taskKicker={<Text message={from==='tracking'?'Tracking':sharedEntry?'Shared with you':'Account'}/>}
+      taskKicker={<Text message={from==='tracking'?'Tracking':from==='support'?'Support':sharedEntry?'Shared with you':'Account'}/>}
       title={codeStep?'Enter your code':'Sign in'}
       description={codeStep
         ?<Text message="We sent a six-digit code to {email}." values={{email:maskedProviderSignupEmail(handoff?.email||'')}}/>
@@ -77,7 +77,7 @@ function EmailCodeForm({localInbox,from}:{localInbox:string|null;from:string}){
       <small id={helpId}><Text message="Codes expire after ten minutes and can be used once."/></small>
     </div>
     <button className="button auth-primary-action" type="submit"><LogIn aria-hidden="true"/><Text message="Continue"/></button>
-    <Link className="auth-inline-link" href={from==='tracking'?'/login?from=tracking':'/login'}><RotateCcw aria-hidden="true"/><Text message="Use a different email"/></Link>
+    <Link className="auth-inline-link" href={from?`/login?from=${from}`:'/login'}><RotateCcw aria-hidden="true"/><Text message="Use a different email"/></Link>
     {localInbox?<LocalInboxLink url={localInbox}/>:null}
   </form>;
 }

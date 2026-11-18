@@ -2,8 +2,9 @@ begin;
 create function pg_temp.expect_poll_denied(command text) returns void language plpgsql as $$
 begin begin execute command;exception when others then if sqlerrm='NOT_FOUND' then return;end if;raise;end;raise exception 'EXPECTED_DENIAL';end $$;
 do $test$
-declare member_id uuid; agent_id uuid; outsider uuid; chat uuid:=gen_random_uuid(); guest_chat uuid:=gen_random_uuid(); revision text; next_revision text;
+declare admin_id uuid; member_id uuid; agent_id uuid; outsider uuid; chat uuid:=gen_random_uuid(); guest_chat uuid:=gen_random_uuid(); revision text; next_revision text;
 begin
+ select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  select id into strict member_id from profiles where active and role='DRIVER' order by created_at,id limit 1;
  select id into strict outsider from profiles where active and role='TRANSPORTER' order by created_at,id limit 1;
  select id into strict agent_id from profiles where active and role='SUPPORT' order by created_at,id limit 1;
@@ -17,11 +18,12 @@ begin
  if revision=next_revision then raise exception 'MESSAGE_NOT_DETECTED';end if;
  update support_conversations set customer_last_read_at=now() where id=chat;
  if next_revision is distinct from support_conversation_revision(member_id,chat,false) then raise exception 'READ_RECEIPT_REFRESH_LOOP';end if;
- revision:=support_conversation_revision(null,guest_chat,true,repeat('a',64));
+ perform pg_temp.expect_poll_denied(format('select support_conversation_revision(null,%L,true,%L)',guest_chat,repeat('a',64)));
+ revision:=support_conversation_revision(admin_id,guest_chat,true);
  perform pg_temp.expect_poll_denied(format('select support_conversation_revision(null,%L,true,%L)',guest_chat,repeat('b',64)));
  perform support_conversation_revision(agent_id,guest_chat,true);
  update guest_support_conversations set assigned_agent_user_id=null,status='WAITING' where id=guest_chat;
- if revision=support_conversation_revision(null,guest_chat,true,repeat('a',64)) then raise exception 'ASSIGNMENT_NOT_DETECTED';end if;
+ if revision=support_conversation_revision(admin_id,guest_chat,true) then raise exception 'ASSIGNMENT_NOT_DETECTED';end if;
  perform pg_temp.expect_poll_denied(format('select support_conversation_revision(%L,%L,true)',agent_id,guest_chat));
  update support_agent_profiles set can_manage_support=false where user_id=agent_id;
  perform pg_temp.expect_poll_denied(format('select support_conversation_revision(%L,%L,false)',agent_id,chat));

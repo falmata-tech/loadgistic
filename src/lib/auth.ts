@@ -9,7 +9,6 @@ import { createSupabaseServerClient } from './supabase/server';
 export const TRACKING_GRANT_COOKIE = 'lg_tracking_grant';
 export const REVIEW_GRANT_COOKIE = 'lg_review_grant';
 const SHARED_CAPACITY_COOKIE = 'lg_shared_capacity';
-export const GUEST_SUPPORT_COOKIE = 'lg_guest_support';
 export const TRACKING_IDLE_SECONDS = 5 * 60;
 
 export async function getCurrentUser(options:{allowLimited?:boolean}={}) {
@@ -71,19 +70,4 @@ export async function clearSharedCapacitySession() {
   store.set(SHARED_CAPACITY_COOKIE,'',{
     httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:0
   });
-}
-
-export async function setGuestSupportSession(conversationId:string,emailDigest:string) {
-  const store=await cookies();
-  store.set(GUEST_SUPPORT_COOKIE,createSessionToken(`guest-support:${conversationId}:${emailDigest}`,60*60*24*30),{
-    httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:60*60*24*30
-  });
-}
-
-export async function getGuestSupportSession(conversationId?:string) {
-  const store=await cookies();
-  const payload=verifySessionToken(store.get(GUEST_SUPPORT_COOKIE)?.value);
-  const match=String(payload?.sub||'').match(/^guest-support:([^:]+):([a-f0-9]{64})$/);
-  if(!match||conversationId&&match[1]!==conversationId)return null;
-  return {conversationId:match[1],emailDigest:match[2]};
 }

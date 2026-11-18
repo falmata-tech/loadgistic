@@ -27,6 +27,7 @@ export function memberDestinations(user:SiteNavigationUser|null):SiteDestination
  if(!user)return [];
  if(personalCustomer(user))return [
   {key:'my-tracking',href:'/app/tracking',label:'Tracking',icon:ClipboardCheck},
+  {key:'support',href:'/app/support',label:'Support',icon:Headphones},
   {key:'account',href:accountHref(user),label:'Account',icon:UserRound}
  ];
  if(user.role==='CUSTOMER')return [

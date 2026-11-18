@@ -21,7 +21,7 @@ export function TrackingRequests({sessionId}:{sessionId?:string}){
    <Button secondary message="Search" disabled={w.busy||w.query.trim().length<2} onPress={()=>void w.search()}/>
    {w.target?.items.map(row=><View key={row.vehicleId}><Copy>{row.label}{row.connected?' · '+t('In your network'):''}</Copy>
     <Button secondary message="Request tracking" disabled={w.busy} onPress={()=>void w.select(row)}/></View>)}
-   {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<Copy message="No matching available vehicles."/>:null}
+   {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<Copy message="No trucks match your search."/>:null}
   </>:<>
    {!w.busy&&!w.error&&!w.incoming.length&&<Copy message="No pending tracking requests."/>}
    {w.incoming.map(row=><View key={row.id} style={{gap:10}}>

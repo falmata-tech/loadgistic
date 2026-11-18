@@ -104,3 +104,36 @@ begin
  raise notice 'Support FIFO, tie order, pagination, shared capacity, competing claim, authority and grants passed';
 end $test$;
 rollback;
+
+-- Exercise automatic routing through the member's ordinary create and close commands.
+begin;
+do $workload$
+declare staff uuid[]:=array[gen_random_uuid(),gen_random_uuid()]; members uuid[]; chats uuid[]:='{}';
+ worker uuid; expected uuid; actual uuid; n integer; state text;
+begin
+ update support_agent_profiles set available=false where available;
+ update support_conversations set status='CLOSED' where status='WAITING';
+ select array_agg(id order by id) into members from (select p.id from profiles p where p.active and p.role='DRIVER'
+  and not exists(select from support_conversations c where c.customer_user_id=p.id and c.status='OPEN')
+  order by p.id limit 5) eligible;
+ if cardinality(members) is distinct from 5 then raise exception 'WORKLOAD_FIXTURE_REQUIRED';end if;
+ foreach worker in array staff loop
+  insert into auth.users(id,email,email_confirmed_at) values(worker,worker||'@example.test',now());
+  insert into profiles(id,email,full_name,role,active) values(worker,worker||'@example.test','Synthetic workload agent','SUPPORT',true)
+   on conflict(id) do update set role='SUPPORT',active=true;
+  insert into support_agent_profiles(user_id,active,available,can_manage_support,max_open_conversations,last_assigned_at)
+   values(worker,true,true,true,2,case when worker=staff[1] then now()-interval '2 days' else now()-interval '1 day' end);
+ end loop;
+ for n in 1..5 loop
+  -- Make the busier agent the longest idle. Current workload must still take precedence.
+  if n=2 then update support_agent_profiles set last_assigned_at=now()-interval '4 days' where user_id=staff[1];end if;
+  chats:=array_append(chats,create_managed_support_conversation(members[n],'{"category":"ACCOUNT","body":"Synthetic routing check"}'));
+  select assigned_agent_user_id,status into actual,state from support_conversations where id=chats[n];
+  expected:=case n when 1 then staff[1] when 2 then staff[2] when 3 then staff[1] when 4 then staff[2] end;
+  if actual is distinct from expected or state<>(case when n=5 then 'WAITING' else 'OPEN' end) then raise exception 'AUTOMATIC_WORKLOAD_ASSIGNMENT_%',n;end if;
+ end loop;
+ perform close_managed_support_conversation(members[2],chats[2]);
+ if not exists(select from support_conversations where id=chats[5] and status='OPEN' and assigned_agent_user_id=staff[2]) then raise exception 'WAITING_CHAT_NOT_ROUTED_AFTER_CLOSE';end if;
+ raise notice 'PASS: least open workload, oldest assignment tiebreaker, per-agent limit, waiting and automatic reassignment after close';
+end $workload$;
+rollback;

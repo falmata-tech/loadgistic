@@ -12,11 +12,11 @@ import {
 const provider={id:'owner',role:'TRANSPORTER',name:'Provider',canManageFleet:true,drivesTruck:true};
 const driver={id:'driver',role:'DRIVER',name:'Driver',canManageFleet:false,drivesTruck:true};
 
-test('active personal shippers and receivers find only their account Tracking and Account without a business grant',()=>{
+test('active personal shippers and receivers find Tracking, Support and Account without a business grant',()=>{
  for(const role of ['SHIPPER','RECEIVER']){
   const user={id:'personal-owner',name:'Synthetic owner',role,platformRole:role,active:true,capacityAllowed:true,trackingAllowed:true,canManageFleet:true};
-  assert.deepEqual(memberDestinations(user).map(item=>item.href),['/app/tracking','/app/more']);
-  assert.deepEqual(phonePrimaryDestinations(user).map(item=>item.href),['/','/app/tracking','/app/more']);
+  assert.deepEqual(memberDestinations(user).map(item=>item.href),['/app/tracking','/app/support','/app/more']);
+  assert.deepEqual(phonePrimaryDestinations(user).map(item=>item.href),['/','/app/tracking','/app/support','/app/more']);
   assert.equal(activeSiteDestination('/app/tracking/synthetic-session',user),'my-tracking');assert.equal(accountHref(user),'/app/more');
   for(const forbidden of ['/app/provider-shipments','/app/fleet','/app/network','/app/business/tracking','/admin'])assert.equal(memberDestinations(user).some(item=>item.href===forbidden),false);
   assert.deepEqual(memberDestinations({...user,active:false}),[]);

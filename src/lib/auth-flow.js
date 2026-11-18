@@ -38,6 +38,7 @@ export function managedWorkspaceDestination(role,workspace=null) {
  * @param {string} entry
  */
 export function managedAccountLoginDestination(role,workspace=null,entry='') {
+  if(entry==='support')return role==='ADMIN'?'/admin/support':role==='SUPPORT'?'/support':'/app/support';
   if(entry==='tracking'&&['CUSTOMER','SHIPPER','RECEIVER'].includes(role))return '/app/tracking';
   return managedWorkspaceDestination(role,workspace);
 }

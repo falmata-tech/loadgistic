@@ -22,7 +22,7 @@ const categories=[
 function supportCategoryName(value:string){return value==='PAYMENT'?'Other':value==='GPS_SETUP'?'GPS device setup':value.replaceAll('_',' ');}
 
 export default async function MemberSupportPage({searchParams}:{searchParams:Promise<Record<string,string|undefined>>}) {
-  const user=await requireUser(['TRANSPORTER','DRIVER','CUSTOMER'],{allowLimited:true});
+  const user=await requireUser(['TRANSPORTER','DRIVER','CUSTOMER','SHIPPER','RECEIVER'],{allowLimited:true});
   const query=await searchParams;
   const selectedCategory=categories.some(category=>category.value===query.category)?query.category:'ACCOUNT';
   const result:any=await listMemberSupportConversations(user,{page:query.page,pageSize:10,status:'CLOSED'});

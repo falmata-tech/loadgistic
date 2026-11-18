@@ -9,6 +9,14 @@ observability: [support_conversation_created, support_message_sent, support_conv
 rollout: Use actor-scoped Supabase PostgreSQL commands in local development, Preview, and Production with visibility-aware bounded refreshes and message/query windows; durable database records remain authoritative so authorized Realtime notifications can be enabled without changing ownership, and managed failure never falls back to SQLite.
 ---
 
+## November 17 account-only Support
+
+Given an active registered shipper, broker workspace member or Transport Provider, when they send a message through web or Expo, then open or resume their own conversation. The account can receive a reply, open its attachments, close the chat and revisit history.
+
+Given eligible available Support staff, when a conversation enters the queue, then assign the lowest open-chat count below its configured limit. Break ties by oldest assignment, then agent ID. When all staff are unavailable or at capacity, keep the conversation waiting. Staff access follows assignment. Admins oversee the queue and agent settings.
+
+Given a signed-out visitor, when they open a saved help URL, present a recovery code or use an old cookie, then disclose no messages, attachments or updates and allow no mutation. Staff retain authorized access to historical records. Keep assignment and message events, deploy server permissions before clients and keep historical guest recovery closed on rollback. Linked contracts include FEAT-IAM-001 and BASE-BE-001.
+
 # Transport Provider support inbox
 
 ### Scenario: every retained message remains reachable

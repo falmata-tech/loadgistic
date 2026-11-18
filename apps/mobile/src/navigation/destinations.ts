@@ -50,7 +50,7 @@ export function workspaceRoleLabel(session:AccountSession|null):string{
 export function isWorkspace(path:string,session:AccountSession|null){return hasPersonalTrackingAccount(session)?['/account','/account-settings','/account-details','/account-security','/workspaces','/business-tracking','/support','/support-chat'].includes(path):hasWorkspace(session)&&workspacePaths.has(path);}
 export function workspaceDestinations(session:AccountSession|null):Destination[]{
  if(!hasWorkspace(session))return [];
- if(hasPersonalTrackingAccount(session))return [{href:'/business-tracking',label:'Tracking',icon:'tracking'},settings];
+ if(hasPersonalTrackingAccount(session))return [{href:'/business-tracking',label:'Tracking',icon:'tracking'},support,settings];
  if(session!.user.role==='CUSTOMER'){
   const permissions=session!.user.selectedBusinessWorkspace!.permissions;
   return [{href:'/directory',label:'Network',icon:'network'},...(permissions.tracking?[{href:'/business-tracking',label:'Tracking',icon:'tracking'} as Destination]:[]),{href:'/business-account',label:'Account',icon:'user'}];
@@ -75,6 +75,7 @@ export function accountSections(session:AccountSession|null):AccountSection[]{
 }
 export function activeDestination(path:string,workspace:boolean,session?:AccountSession|null):string{
  if(!workspace){if(['/visitor-tracking','/visitor-shipment'].includes(path))return '/visitor-tracking';if(path==='/featured')return '/featured';if(path==='/about')return '/about';return path==='/'||path==='/transporter'?'/':'';}
+ if(hasPersonalTrackingAccount(session)&&['/support','/support-chat'].includes(path))return '/support';
  if(hasPersonalTrackingAccount(session))return path==='/business-tracking'?'/business-tracking':'/account-settings';
  if(session?.user.role==='CUSTOMER')return path==='/directory'?'/directory':['/shared-capacity','/business-capacity'].includes(path)?'/':['/business-tracking','/business-shipment'].includes(path)?'/business-tracking':'/business-account';
  if(['/shipments','/shipment-detail','/shipment-manage'].includes(path))return '/shipments';

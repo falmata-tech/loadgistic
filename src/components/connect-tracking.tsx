@@ -26,7 +26,7 @@ export function TrackingRequests({sessionId}:{sessionId?:string}){
    {w.target?.items.map(row=><button type="button" className="button secondary" key={row.vehicleId} disabled={w.busy} onClick={()=>void w.select(row)}>
     <Text message="Request tracking"/> · {row.label}{row.connected?<> · <Text message="In your network"/></>:null}
    </button>)}
-   {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<p><Text message="No matching available vehicles."/></p>:null}
+   {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<p><Text message="No trucks match your search."/></p>:null}
   </>:<>
    {!w.busy&&!w.error&&!w.incoming.length?<p><Text message="No pending tracking requests."/></p>:null}
    {w.incoming.map(row=><article className="stack" key={row.id}>

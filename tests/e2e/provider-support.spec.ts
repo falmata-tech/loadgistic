@@ -8,7 +8,7 @@ import {localSupportLogin} from './provider-support-helper';
 test('transport companies, owner-operators and company drivers retain dashboard conversations',async({page,browser}:{page:Page;browser:Browser},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(180000);page.setDefaultTimeout(20_000);const service=localAuditService(),id=checked(await service.auth.admin.createUser({email:`provider-support-${randomUUID()}@example.test`,email_confirm:true})).user.id;
  const admin=checked(await service.from('profiles').select('id').eq('role','ADMIN').eq('active',true).limit(1).single());
- const staff=await browser.newContext({baseURL:'http://127.0.0.1:3100',viewport:page.viewportSize()!}),staffPage=await staff.newPage();staffPage.setDefaultTimeout(20_000);
+ const staff=await browser.newContext({baseURL:process.env.PLAYWRIGHT_BASE_URL||'http://127.0.0.1:3100',viewport:page.viewportSize()!}),staffPage=await staff.newPage();staffPage.setDefaultTimeout(20_000);
  const signouts:(()=>Promise<unknown>)[]=[];let chat='',organization='';
  try{
   signouts.push(await localSupportLogin(staffPage,admin.id));
@@ -40,10 +40,21 @@ test('transport companies, owner-operators and company drivers retain dashboard 
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
    await page.getByRole('button',{name:'End chat',exact:true}).click();await expect(page.getByRole('link',{name:'New chat',exact:true})).toBeVisible();expect(checked(await service.from('support_conversations').select('status').eq('id',chat).single()).status).toBe('CLOSED');
   }
+  checked(await service.from('organization_members').delete().eq('user_id',id));
   for(const role of ['SHIPPER','RECEIVER']){
    checked(await service.from('profiles').update({role}).eq('id',id));signouts.push(await localSupportLogin(page,id));
-   expect((await page.request.post('/api/support/conversations',{form:{category:'ACCOUNT',body:'Denied'}})).status()).toBe(403);
-   expect((await page.request.post(`/api/support/conversations/${chat}/messages`,{form:{body:'Denied'}})).status()).toBe(403);
+   await page.goto('/app/support?new=1');
+   const body='Please check my '+role.toLowerCase()+' account.';
+   await page.getByLabel('What do you need?').fill(body);
+   await page.getByRole('button',{name:'Send to support'}).click();
+   await expect(page.getByText(body,{exact:true})).toBeVisible();
+   chat=checked(await service.from('support_conversations').select('id').eq('customer_user_id',id).in('status',['OPEN','WAITING']).single()).id;
+   await staffPage.goto('/support/'+chat);
+   await staffPage.getByLabel('Message',{exact:true}).fill('We received your account question.');
+   await staffPage.getByRole('button',{name:'Send',exact:true}).click();
+   await expect(page.getByText('We received your account question.',{exact:true})).toBeVisible();
+   await page.getByRole('button',{name:'End chat',exact:true}).click();
+   await expect(page.getByRole('link',{name:'New chat',exact:true})).toBeVisible();
   }
  }finally{
   for(const signout of signouts)await signout();await staff.close();

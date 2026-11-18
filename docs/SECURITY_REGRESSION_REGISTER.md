@@ -1,5 +1,9 @@
 # Security failures we must not repeat
 
+## November 17 Support account boundary (FEAT-SUP-001)
+
+The former recovery code still opened historical conversations and attachments after public chat creation closed. Separately, registered customers could reach the Support interface but older create, message and attachment commands restricted the actor to a provider/staff role. Migration 232 and the web adapters close recovery and recheck current account, conversation ownership and staff assignment. Local member, workload, history, attachment and polling SQL tests passed. The release maintainer must confirm exact-source CI, deployment and signed-in staff/member handoff.
+
 ## NR-87 — A matching email is not captured account ownership
 
 November17 independent review of the unreleased per-load Tracking integration

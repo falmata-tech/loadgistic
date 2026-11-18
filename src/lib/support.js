@@ -6,9 +6,7 @@ export {
   createGuestSupportConversation,
   createSupportAgent,
   createSupportConversation,
-  endGuestSupportConversation,
   getAssistedMatchingAvailability,
-  getGuestSupportConversationForGuest,
   getGuestSupportConversationForTeam,
   getOpenMemberSupportConversation,
   getSupportConversation,
@@ -20,6 +18,5 @@ export {
   sendGuestSupportMessage,
   sendSupportMessage,
   updateSupportAgent,
-  updateSupportAvailability,
-  verifyGuestSupportAccess
+  updateSupportAvailability
 } from './support/supabase.js';
