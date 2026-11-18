@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,existsSync,rmSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,openSync,closeSync,writeFileSync,readFileSync,existsSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {pilotOwnerAdminExecArgs} from '../scripts/lib/pilot-owner-race-target.mjs';
@@ -17,13 +17,18 @@ process.stdout.write('LOCAL_ADMIN_AUTHENTICATED');
 `;
 function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'loadgistic-pilot-auth-')),bin=path.join(root,'bin'),trace=path.join(root,'calls.txt');
+ writeFileSync(path.join(root,'stdin.txt'),'synthetic fixture input',{mode:0o600});
  mkdirSync(bin);for(const name of ['psql','pg_dump','pg_restore'])writeFileSync(path.join(bin,name),fakeClient,{mode:0o700});
  return {root,bin,trace};
 }
 function runShell(args,{root,bin,trace,password}){
  const env={PATH:bin,FAKE_ADMIN_TRACE:trace,PGPASSWORD:'PRIVATE_STALE_PASSWORD'};
  if(password!==undefined)env.POSTGRES_PASSWORD=password;
- return spawnSync('/bin/sh',args.slice(args.indexOf('sh')+1),{cwd:root,input:'synthetic fixture input',env,encoding:'utf8',timeout:3000});
+ // The password check may exit before reading stdin. A regular input file
+ // preserves the positive-case payload without racing a write to a closed pipe.
+ const input=openSync(path.join(root,'stdin.txt'),'r');
+ try{return spawnSync('/bin/sh',args.slice(args.indexOf('sh')+1),{cwd:root,stdio:[input,'pipe','pipe'],env,encoding:'utf8',timeout:3000});}
+ finally{closeSync(input);}
 }
 
 test('all local admin clients authenticate inside the container wrapper without password argv or output',()=>{
