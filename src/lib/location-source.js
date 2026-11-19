@@ -1,3 +1,5 @@
+import {capacityMapColors,capacityStatusPresentation} from './capacity-status-presentation.js';
+
 /** Attribution of the published position, never the requested future source. */
 export function locationSourceKind(value){
   if(value==='TELEMATICS'||value==='GPS')return 'GPS';
@@ -8,7 +10,7 @@ export function locationSourceLabel(value){
   return {GPS:'GPS device',MOBILE:'Driver’s phone'}[locationSourceKind(value)]||'';
 }
 export function locationSourceColor(value){
-  return {GPS:'#7257c8',MOBILE:'#1976ed'}[locationSourceKind(value)]||'#526875';
+  return locationSourceKind(value)?capacityMapColors.location:capacityStatusPresentation.OFF_DUTY.text;
 }
 // Only static paths are emitted. No submitted field enters this markup.
 export function locationSourceSvg(value){

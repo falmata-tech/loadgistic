@@ -20,10 +20,10 @@ import {capacityMarkerFanLayout} from '../../../../src/lib/capacity-marker-fan.j
 import { vehicleConfigurationImage } from '../../../../src/lib/vehicle-configurations';
 import { apiOrigin } from '../api/http';
 import {palette} from './ui';
-import {capacityStatusPresentation} from '../theme/capacity-status-presentation';
+import {capacityMapColors,capacityStatusPresentation} from '../theme/capacity-status-presentation';
 import {localizedUpdateLabel} from '../../../../src/lib/i18n/update-label.js';
 type VisiblePoint=MapPoint;
-const colors={truck:'#155eef',location:'#7846a7',current:capacityStatusPresentation.EMPTY.color,regular:'#c06620'};
+const colors={truck:capacityMapColors.selection,location:capacityMapColors.location,current:capacityStatusPresentation.EMPTY.color,regular:capacityMapColors.preferred};
 const EXPO_CAPACITY_CAMERA={...DEFAULT_CAPACITY_CAMERA,zoom:DEFAULT_CAPACITY_CAMERA.zoom-1};
 const NO_OWN_SIGNALS:string[]=[];
 const ownSourceId=(status:'EMPTY'|'PARTIAL')=>`${capacitySourceIds[status]}-own`;
@@ -157,7 +157,7 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
  <GeoJSONSource id="selected-signals" data={pathData} onPress={event=>{event.stopPropagation();const feature=event.nativeEvent.features[0];const kind=feature?.properties?.kind as InfoKind;if(selected&&kind in colors)setInfo({id:selectedIdentity!,kind,index:Number(feature?.properties?.index)||0});}}>
  <Layer id="location-outline" type="line" filter={['==',['get','kind'],'location']} paint={{'line-color':colors.location,'line-width':4,'line-dasharray':[2,2]}}/>
  <Layer id="current-route" type="line" filter={['==',['get','kind'],'current']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':color('current'),'line-width':5}}/>
- <Layer id="regular-route" type="line" filter={['==',['get','kind'],'regular']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':'#c06620','line-width':4,'line-dasharray':[1,2]}}/>
+ <Layer id="regular-route" type="line" filter={['==',['get','kind'],'regular']} layout={{'line-cap':'round','line-join':'round'}} paint={{'line-color':capacityMapColors.preferred,'line-width':4,'line-dasharray':[1,2]}}/>
  </GeoJSONSource>
  <GeoJSONSource id="capacity-fan-connectors" data={fanData}><Layer id="capacity-fan-lines" type="line" paint={{'line-color':'#526875','line-width':2,'line-dasharray':[2,2],'line-opacity':.8}}/></GeoJSONSource>
  {capacityStatuses.map(status=><GeoJSONSource key={status} ref={status==='EMPTY'?emptySource:partialSource} id={capacitySourceIds[status]} data={data[status]} cluster clusterRadius={64} clusterMaxZoom={19}>
@@ -183,7 +183,8 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
        <Text style={[styles.clusterStatus,{color:'#fff'}]}>{t(status==='EMPTY'?'Empty':'Partial')}</Text>
        {isOwn&&<View pointerEvents="none" style={styles.ownBadge}><Text style={styles.ownBadgeText}>★</Text></View>}
       </>:<View style={[styles.truckWrap,isOwn&&styles.ownTruckWrap]}>
-       <View style={[styles.truck,{borderColor:selected?'#155eef':capacityColors[status]},selectedId===item!.id&&styles.selected]}>
+       {selectedId===item!.id&&<View pointerEvents="none" style={[styles.selectedOutline,{borderRadius:status==='PARTIAL'?20:40}]}/>}
+       <View style={[styles.truck,selectedId===item!.id&&styles.selected,{borderColor:capacityColors[status],borderRadius:status==='PARTIAL'?16:36}]}>
         <Image source={{uri:apiOrigin+vehicleConfigurationImage(item!.configuration)}} resizeMode="contain" style={styles.image}/>
        </View>
        {item!.latitude!==null&&item!.longitude!==null&&locationSourceKind(item!.locationSource)&&<View pointerEvents="none" style={[styles.sourceBadge,{borderColor:locationSourceColor(item!.locationSource)}]}>
@@ -200,11 +201,11 @@ function CapacityMap({items,ownSignalIds=NO_OWN_SIGNALS,onSelect,onDeselect,sele
   {legendOpen&&<ScrollView style={{flexShrink:1}} contentContainerStyle={styles.mapKeyItems}>
    {ownSignalIds.length>0&&<View style={styles.mapKeyItem}><Text style={{width:16,textAlign:'center',color:palette.ink}}>★</Text><Text style={styles.mapKeyText}>{t('Your vehicle')}</Text></View>}
    <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.EMPTY.color}]}/><Text style={styles.mapKeyText}>{t('Empty')}</Text></View>
-   <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.PARTIAL.color}]}/><Text style={styles.mapKeyText}>{t('Partial')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={[styles.mapKeyDot,{backgroundColor:capacityStatusPresentation.PARTIAL.color,borderRadius:3}]}/><Text style={styles.mapKeyText}>{t('Partial')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyLocation}/><Text style={styles.mapKeyText}>{t('Approximate location')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyArea}/><Text style={styles.mapKeyText}>{t('Planned area')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyRoute}/><Text style={styles.mapKeyText}>{t('Planned route')}</Text></View>
-   <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred area')}</Text></View>
+   <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferredArea}/><Text style={styles.mapKeyText}>{t('Preferred area')}</Text></View>
    <View style={styles.mapKeyItem}><View style={styles.mapKeyPreferred}/><Text style={styles.mapKeyText}>{t('Preferred corridor')}</Text></View>
   </ScrollView>}
  </View>}
@@ -227,8 +228,8 @@ const styles=StyleSheet.create({
  mapKey:{position:'absolute',left:12,maxWidth:230,borderWidth:1,borderColor:palette.borderSoft,borderRadius:10,backgroundColor:'#fff',overflow:'hidden'},
  mapKeyToggle:{minHeight:44,paddingHorizontal:10,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},mapKeyTitle:{fontSize:12,fontWeight:'700',color:palette.ink},
  mapKeyItems:{gap:8,paddingHorizontal:10,paddingBottom:10},mapKeyItem:{flexDirection:'row',alignItems:'center',gap:8},mapKeyText:{fontSize:11,lineHeight:16,color:palette.ink,flexShrink:1},
- mapKeyDot:{width:13,height:13,borderRadius:7},mapKeyLocation:{width:16,height:16,borderRadius:8,borderWidth:2,borderStyle:'dashed',borderColor:'#7846a7'},
- mapKeyArea:{width:16,height:13,borderWidth:2,borderColor:palette.muted},mapKeyRoute:{width:18,height:0,borderTopWidth:3,borderColor:capacityStatusPresentation.EMPTY.color},mapKeyPreferred:{width:18,height:0,borderTopWidth:3,borderStyle:'dashed',borderColor:'#c06620'},
+ mapKeyDot:{width:13,height:13,borderRadius:7},mapKeyLocation:{width:16,height:16,borderRadius:8,borderWidth:2,borderStyle:'dashed',borderColor:capacityMapColors.location},
+ mapKeyArea:{width:16,height:13,borderWidth:2,borderColor:capacityStatusPresentation.OFF_DUTY.color},mapKeyRoute:{width:18,height:0,borderTopWidth:3,borderColor:capacityStatusPresentation.OFF_DUTY.color},mapKeyPreferredArea:{width:16,height:13,borderWidth:2,borderStyle:'dashed',borderColor:capacityMapColors.preferred},mapKeyPreferred:{width:18,height:0,borderTopWidth:3,borderStyle:'dashed',borderColor:capacityMapColors.preferred},
  truckWrap:{position:'relative'},ownTruckWrap:{borderWidth:3,borderColor:'#0b1d3a',borderRadius:38,padding:2,backgroundColor:'#fff'},ownBadge:{position:'absolute',top:-8,right:-8,width:22,height:22,borderRadius:11,borderWidth:2,borderColor:'#fff',backgroundColor:'#0b1d3a',alignItems:'center',justifyContent:'center'},ownBadgeText:{color:'#fff',fontSize:12,lineHeight:16},sourceBadge:{position:'absolute',top:-4,left:-4,width:22,height:22,borderRadius:11,borderWidth:1.5,backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},
  markerContents:{alignItems:'center',width:96},clusterStatus:{fontSize:10,lineHeight:14,fontWeight:'700'},
  truckStatusLine:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},truckLoadPreference:{fontSize:11,lineHeight:16,fontWeight:'700',color:'#243b63',backgroundColor:'#edf3ff',borderRadius:6,paddingHorizontal:7,paddingVertical:4},truckFacts:{flexDirection:'row',flexWrap:'wrap',gap:6},truckFact:{fontSize:12,lineHeight:18,color:palette.muted,backgroundColor:palette.canvas,borderRadius:6,paddingHorizontal:8,paddingVertical:5},
@@ -240,7 +241,7 @@ const styles=StyleSheet.create({
  selectionExit:{width:44,height:44,borderRadius:22,borderWidth:2,borderColor:'#155eef',backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},
  modalBackdrop:{flex:1,backgroundColor:'rgba(23,44,70,0.22)'},modalPosition:{position:'absolute',alignItems:'center',justifyContent:'center',padding:16},
  infoCard:{width:'100%',maxWidth:430,maxHeight:'100%',borderWidth:1,borderColor:'#cbd5e1',borderRadius:12,backgroundColor:'#fff',overflow:'hidden'},infoHeader:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:14,borderBottomWidth:1,borderBottomColor:palette.borderSoft},infoHeading:{flex:1,flexDirection:'row',alignItems:'center',gap:8},infoAccent:{width:4,height:18,borderRadius:2},infoTitle:{fontSize:14,lineHeight:20,fontWeight:'700',color:'#0b1d3a',flexShrink:1},infoText:{fontSize:15,lineHeight:22,color:'#526875'},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},profile:{color:'#155eef',fontWeight:'700',minHeight:44,paddingVertical:12},
- map:{flex:1,overflow:'hidden'},error:{position:'absolute',top:62,left:16,right:16,padding:12,backgroundColor:'#fff',color:'#8b2525',borderRadius:12},cluster:{width:58,height:58,borderRadius:29,backgroundColor:'#155eef',alignItems:'center',justifyContent:'center',borderWidth:3,borderColor:'#fff'},ownCluster:{borderColor:'#0b1d3a',borderWidth:4},count:{fontSize:15,fontWeight:'700',color:'#fff'},truck:{width:54,height:54,borderRadius:27,borderWidth:3,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',overflow:'hidden'},selected:{width:70,height:70,borderRadius:35,borderWidth:4},image:{width:'95%',height:'90%'},legend:{position:'absolute',bottom:12,left:12,right:12,alignItems:'center'},legendText:{backgroundColor:'#ffffffee',color:'#334b58',fontSize:11,padding:7,borderRadius:8}});
+ map:{flex:1,overflow:'hidden'},error:{position:'absolute',top:62,left:16,right:16,padding:12,backgroundColor:'#fff',color:'#8b2525',borderRadius:12},cluster:{width:58,height:58,borderRadius:29,backgroundColor:'#155eef',alignItems:'center',justifyContent:'center',borderWidth:3,borderColor:'#fff'},ownCluster:{borderColor:'#0b1d3a',borderWidth:4},count:{fontSize:15,fontWeight:'700',color:'#fff'},truck:{width:54,height:54,borderRadius:27,borderWidth:3,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',overflow:'hidden'},selected:{width:70,height:70,borderWidth:4},selectedOutline:{position:'absolute',top:-4,right:-4,bottom:-4,left:-4,borderColor:capacityMapColors.selection,borderWidth:2},image:{width:'95%',height:'90%'},legend:{position:'absolute',bottom:12,left:12,right:12,alignItems:'center'},legendText:{backgroundColor:'#ffffffee',color:'#334b58',fontSize:11,padding:7,borderRadius:8}});
 
 // Draft typing and opening unrelated controls do not rebuild native map layers.
 export default memo(CapacityMap);

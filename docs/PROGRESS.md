@@ -16,8 +16,8 @@ passed locally for migration 236. Desktop, phone web and Expo web were exercised
 with active placements on an empty programme day.
 
 The public provider profile now opens directly on its scoped fleet map. Public
-document summaries, notes, reviews and the paginated vehicle and driver roster
-remain available. Fleet and independent demo owners each saved a cover, and a
+document summaries, notes and reviews remain available. Visitors open vehicle
+and driver details from the map. Fleet and independent demo owners each saved a cover, and a
 transactional check verified removal, invalid-input rollback and staff denial.
 The sample is [Ethiopian talented sinotruck driver pt 2, by Yodi Yodi](https://www.youtube.com/watch?v=WZMVTHGhlbg).
 The image above Play is the video's original YouTube thumbnail. Chrome playback
@@ -28,6 +28,29 @@ The Admin sponsor edit/cancel/save/reload and the granted staff schedule/disable
 and revoked staff denial passed locally. Sponsor saves return the committed ID
 and redirect to the lightweight sponsor catalogue. Migration 237
 and demo data have only been applied in the local review environment.
+
+## November 18 map-only profiles and Capacity colors
+
+Web and Expo profiles now open vehicle and driver detail from the map. The
+account can still be contacted about vehicles with no published marker. The
+web profile and mobile map view skip the retired roster's detail reads. Default
+fleet API pagination stays available for existing clients.
+
+Empty uses green and a round marker. Partial uses amber and a rounded square.
+Slate marks approximate location with a dashed circle. Cyan marks preferred
+coverage with a dotted line. Planned coverage uses the availability color.
+Selection adds a blue outline and preserves availability. GPS and phone retain
+distinct icons and labels on neutral badges. Tracking uses the same slate
+location treatment.
+
+Chrome desktop (1440px), phone web (390px) and Expo web (390px) exercised
+marker selection, the map key and vehicle and driver details using scoped
+synthetic Capacity responses. Location, planned route and preferred coverage
+strokes were checked in the selected web map. Live browser runs hit local
+Capacity timeouts. After a preview restart, the real profile API returned the
+same fleet count in both modes, with detail rows only in the default mode.
+Screenshots and logs are under
+`.local/sponsor-review/capacity-colors-*` in the review worktree.
 
 ## November 18 security corrections
 

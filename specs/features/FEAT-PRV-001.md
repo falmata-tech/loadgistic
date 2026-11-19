@@ -450,12 +450,15 @@ identity and a large interactive map scoped to that provider. The map follows
 the public Capacity cursor independently of fleet pagination. Selecting a marker
 opens the existing vehicle and driver information. Current public location
 precision, sharing rules and eligible statuses apply on every read.
-Given a listed vehicle without public capacity, its published profile details
-remain in Vehicles and drivers. No location is inferred for it. Account documents,
-contacts, reviews and introduction remain reachable on desktop and phone.
+The map is the only vehicle and driver entry point on the profile. When a
+vehicle has no public capacity marker, visitors can use the provider’s public
+contact actions to ask about it. The profile never infers a location. Account
+documents, contacts, reviews and introduction are reachable on desktop and phone.
 Loading, failure with retry and an empty map preserve the map area.
 This supersedes the earlier map-link-first and expanded-fleet presentation.
-The existing public profile and Capacity endpoints retain their contracts.
+The Expo profile requests the mobile public profile with `view=map` to get
+account details and the verified fleet count without hydrating vehicle records.
+Default mobile API responses and the public Capacity endpoint retain their contracts.
 Rollback restores the earlier layout without a database change.
 
 Given an authorized independent or fleet owner saves a YouTube watch, short or

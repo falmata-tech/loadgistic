@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {trackingAreaGeometry} from '../src/location/tracking-area.ts';
 import {canonicalRouteGeometry,coverageBounds,coverageGeometry} from '../src/map/coverage-preview.ts';
-import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
+import {capacityMapColors,capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import * as locationSource from '../../../src/lib/location-source.js';
 
 // Run the actual component and its effects against the existing Camera ref contract.
@@ -32,7 +32,7 @@ function trackingMap(initial){
   '../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/http':{apiOrigin:'http://127.0.0.1'},
   '../../../../src/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/truck.svg'},
   '../../../../src/lib/location-source.js':locationSource,'./app-icon':{AppIcon:'AppIcon'},
-  '../theme/capacity-status-presentation':{capacityStatusPresentation}
+  '../theme/capacity-status-presentation':{capacityStatusPresentation,capacityMapColors}
  };
  const exports={};new Function('require','exports',compiled)(name=>{assert.ok(name in dependencies,`unexpected dependency ${name}`);return dependencies[name];},exports);
  const camera={fitBounds:(bounds,options)=>{
@@ -76,11 +76,11 @@ test('driver map separates same-lane Capacity and corridor routes from location'
  const coverage={kind:'ROUTE',places:route,partial:false};
  const view=trackingMap({location:area(39),coverage,regular:[coverage],vehicleConfiguration:'Box truck',fill:true});
  const tree=view.render();
- assert.equal(find(tree,item=>item.props.id==='tracking-area-outline').props.paint['line-color'],'#7846a7');
- assert.ok(find(find(tree,item=>item.props.id==='tracking-reported-truck'),item=>item.props.style?.borderColor==='#7846a7'));
+ assert.equal(find(tree,item=>item.props.id==='tracking-area-outline').props.paint['line-color'],capacityMapColors.location);
+ assert.ok(find(find(tree,item=>item.props.id==='tracking-reported-truck'),item=>item.props.style?.borderColor===capacityMapColors.location));
  assert.equal(find(tree,item=>item.props.id==='saved-capacity-outline').props.paint['line-offset'],-6);
  assert.equal(find(tree,item=>item.props.id==='home-regular-line-0').props.paint['line-offset'],6);
- assert.equal(find(tree,item=>item.props.id==='home-regular-line-0').props.paint['line-color'],'#c06620');
+ assert.equal(find(tree,item=>item.props.id==='home-regular-line-0').props.paint['line-color'],capacityMapColors.preferred);
  const reversed=view.render({location:area(39),coverage,regular:[{...coverage,places:[...route].reverse()}],vehicleConfiguration:'Box truck',fill:true});
  assert.deepEqual(find(reversed,item=>item.props.id==='saved-capacity').props.data.geometry.coordinates,find(reversed,item=>item.props.id==='home-regular-0').props.data.geometry.coordinates,'reversed corridors need the same display direction before opposite lane offsets');
  const single=view.render({location:area(39),coverage,regular:[],fill:true});

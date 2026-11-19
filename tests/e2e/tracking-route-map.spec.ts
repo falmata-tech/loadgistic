@@ -1,3 +1,4 @@
+import {capacityMapColors} from '../../src/lib/capacity-status-presentation.js';
 import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures} from './tracking-session-fixtures';
 import {test,expect} from './browser-test';
 import {auditDeleteVehicles,auditLogin,auditProof,auditProvider,auditTrackingOwnerLogin,checked,localAuditService} from './audit-helpers';
@@ -44,7 +45,7 @@ test('Tracking keeps the saved route on its map without a location and hides ter
     checked(await service.from('provider_shipment_events').insert({shipment_id:shipmentId,status:'LOADING',event_type:'LOCATION',location_area:'Synthetic reported area',location_lat:9.02,location_lng:38.76,location_precision_km:10,location_source:'DEVICE_OBSCURED',created_by:actor.id}));
     await page.reload({waitUntil:'domcontentloaded'});
     await expect(map.locator('.tracking-truck-marker')).toHaveCount(1);await expect(map.locator('[data-location-radius-km="10"]')).toBeVisible();
-    await expect(map.locator('.tracking-approximate-circle')).toHaveAttribute('stroke','#7846a7');
+    await expect(map.locator('.tracking-approximate-circle')).toHaveAttribute('stroke',capacityMapColors.location);
     await expect(page.getByRole('button',{name:'Change vehicle',exact:true})).toHaveCount(0);
     await page.getByRole('button',{name:'Edit details',exact:true}).click();
     const correction=page.getByRole('dialog',{name:'Correct Tracking details',exact:true});

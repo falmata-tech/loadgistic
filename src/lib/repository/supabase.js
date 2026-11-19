@@ -394,7 +394,9 @@ export async function getSupabasePublicProvider(handle,options={}){
   if(initialError)throw new Error('SUPABASE_PUBLIC_PROVIDER_FAILED',{cause:initialError});
   const page=pageResult.data;
   if(!page||!vehicleResult)return null;
-  const vehicles=vehicleResult.items;
+  // The map reads its own scoped Capacity feed. Keep the owner and count
+  // checks above while skipping unused vehicle, driver and capacity hydration.
+  const vehicles=options.includeVehicleDetails===false?[]:vehicleResult.items;
   const vehicleIds=vehicles.map(vehicle=>vehicle.id);
   const profileUserId=owner.profile?.user_id||null;
   const [vehicleDocumentResult,authorizationDocumentResult]=await Promise.all([

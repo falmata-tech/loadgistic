@@ -52,7 +52,7 @@ test('profile headings and filter distances translate without rewriting transpor
   await expect(page.locator('.provider-services,.provider-corridor-list,.provider-microsite-safety')).toHaveCount(0);
   await expect(page.locator('.provider-map-workbench .leaflet-container')).toBeVisible();
   await expect(page.getByRole('heading',{name:t('Verified shipment reviews'),exact:true})).toBeVisible();
-  await expect(page.locator('.provider-fleet-toggle')).toContainText(t('Vehicles and drivers'));
+  await expect(page.locator('.provider-fleet-disclosure')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath(`profile-${locale}.png`),fullPage:true});
  }

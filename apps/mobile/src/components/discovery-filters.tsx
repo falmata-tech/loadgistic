@@ -1,3 +1,4 @@
+import {capacityStatusPresentation} from '../theme/capacity-status-presentation';
 import { useRef,useState,type ReactNode } from 'react';
 import {useLanguage} from '../localization/provider';
 import { Modal,Pressable,ScrollView,Text,View } from 'react-native';
@@ -13,7 +14,7 @@ import {CAPACITY_FILTER_PRESENTATION as filterPresentation,initialCapacityQueryS
 function Options({label,value,choices,onChange,multiple}:{label:string;value:string;choices:readonly (readonly [string,string])[];onChange:(value:string)=>void;multiple?:'status'|'stopOption'|'freshness'|'locationSource'}) {
  const {t}=useLanguage();
  const selected=multiple?capacityFilterValues(multiple,value):value?[value]:[];
- return <View style={{gap:8}}><Text style={{fontWeight:'700',color:palette.ink}}>{t(label)}</Text><View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>{choices.map(([id,title])=>{const checked=id?selected.includes(id):selected.length===0;return <Pressable key={id} accessibilityRole={multiple?'checkbox':'radio'} accessibilityLabel={t(title)} accessibilityState={{checked}} aria-checked={checked} onPress={()=>onChange(multiple?(id?capacityFilterValue(multiple,checked?selected.filter(item=>item!==id):[...selected,id]):''):id)} style={{minHeight:46,borderRadius:12,padding:12,borderWidth:1,borderColor:checked?palette.blue:palette.border,backgroundColor:checked?'#eaf1ff':'#fff'}}><Text style={{color:palette.ink}}>{t(title)}</Text></Pressable>;})}</View></View>;
+ return <View style={{gap:8}}><Text style={{fontWeight:'700',color:palette.ink}}>{t(label)}</Text><View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}>{choices.map(([id,title])=>{const checked=id?selected.includes(id):selected.length===0;const status=multiple==='status'&&(id==='EMPTY'||id==='PARTIAL')?capacityStatusPresentation[id]:null;return <Pressable key={id} accessibilityRole={multiple?'checkbox':'radio'} accessibilityLabel={t(title)} accessibilityState={{checked}} aria-checked={checked} onPress={()=>onChange(multiple?(id?capacityFilterValue(multiple,checked?selected.filter(item=>item!==id):[...selected,id]):''):id)} style={{minHeight:46,borderRadius:12,padding:12,borderWidth:1,borderColor:checked?palette.blue:palette.border,backgroundColor:status?.soft ?? (checked?'#eaf1ff':'#fff')}}><Text style={{color:status?.text ?? palette.ink}}>{t(title)}</Text></Pressable>;})}</View></View>;
 }
 function Documents({label,value,onChange,options}:{label:string;value:string;onChange:(value:string)=>void;options:readonly (readonly [string,string])[]}) {
  const {t}=useLanguage();

@@ -84,7 +84,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
           <h3><Truck aria-hidden="true"/><Text message="Availability"/></h3>
           <div className="capacity-status-load-grid">
             <div className="capacity-status-choice-column">
-              <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
+              <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" data-capacity-status={value} aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
               {!current&&onDuty?<p className="meta"><Text message="Private until you choose Open in Sharing."/></p>:null}
               {!onDuty?<p className="meta"><Text message="Off Duty hides this vehicle from capacity maps. Your preferred corridor stays saved."/></p>:null}
             </div>

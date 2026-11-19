@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-import {capacityStatusPresentation} from '../src/lib/capacity-status-presentation.js';
+import {capacityMapColors,capacityStatusPresentation} from '../src/lib/capacity-status-presentation.js';
 import * as selection from '../src/lib/capacity-location-selection.js';
 import * as sharing from '../src/lib/capacity-sharing.js';
 
@@ -17,7 +17,7 @@ function load(file,extra={}){
   'react-leaflet':{Circle:'Circle',CircleMarker:'CircleMarker',MapContainer:'MapContainer',Tooltip:'Tooltip',useMap:()=>({})},leaflet:{__esModule:true,default:{}},
   'next/image':{__esModule:true,default:'Image'},'next/link':{__esModule:true,default:'Link'},'next/navigation':{useRouter:()=>({refresh(){}})},'lucide-react':icons,
   '@/components/localization':{Text:'Text',FeedbackText:'FeedbackText',Localized:'Localized',useTranslation:()=>({t:message=>message})},
-  '@/components/base-map-tiles':{BaseMapTiles:'Tiles'},'@/lib/capacity-status-presentation':{capacityStatusPresentation},'@/components/offset-signal-polyline':{OffsetSignalPolyline:'OffsetPolyline'},
+  '@/components/base-map-tiles':{BaseMapTiles:'Tiles'},'@/lib/capacity-status-presentation':{capacityStatusPresentation,capacityMapColors},'@/components/offset-signal-polyline':{OffsetSignalPolyline:'OffsetPolyline'},
   '@/lib/capacity-location-selection.js':selection,'@/lib/capacity-sharing':sharing,'@/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/vehicle.jpg'},'@/lib/location-privacy.js':{nextCapacityPrivacyRadius:()=>5},
   '@/lib/ui':{relativeTime:()=>''},'@/lib/capacity-editor-client':{},'@/lib/location-source.js':{locationSourceLabel:()=>''},
   './capacity-location-map':{CapacityLocationMap:'CoverageMap'},'./capacity-form':{CapacityForm:'Form'},'./cargo-space-photo-panel':{ProviderCargoSpacePhoto:'PhotoPanel'},'./public-capacity-map':{PublicCapacityMap:'PublicMap'},'./status-pill':{StatusPill:'StatusPill'},'./capacity-market-planning':{CapacityMarketPlanning:'Planning'},'./capacity-edit-dialog':{CapacityEditDialog:'Dialog'},'./capacity-signal-editor':{CapacitySignalEditor:'SignalEditor'},'./driver-capacity-location-editor':{DriverCapacityLocationEditor:'LocationEditor'},...extra};

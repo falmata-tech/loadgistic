@@ -776,12 +776,12 @@ And assignment invalidation retains the prior value and report time in an intern
 
 Given a public current-capacity projection is selected on the map\
 When its Driver location is available\
-Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
+Then a labeled dashed slate privacy circle is always shown at the Driver-selected accuracy\
 And a Service area uses a separate labeled outline joining its surrounding cities and identifies the center city\
 And a Capacity route uses a labeled polyline joining every selected city in order\
-And both use cobalt for Empty and neutral gray for Partial\
+And both use green for Empty and amber for Partial\
 And color is reinforced by text and shape rather than being the only meaning\
-And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
+And the dashed slate privacy circle remains distinct from every capacity, trip, and recurring signal.
 
 ### Scenario: a preferred corridor belongs to one truck and its current driver
 
@@ -796,7 +796,7 @@ And a preferred corridor asks for no date and never claims that a truck is curre
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
 And a Preferred corridor joins its cities with ↔ while a Preferred area names its center and boundary cities\
 And both state Confirm availability\
-And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred area, distinct from violet approximate location and status-colored Planned capacity.
+And the shared map labels an cyan dotted Preferred corridor or cyan outlined Preferred area, distinct from dashed slate approximate location and status-colored Planned capacity.
 
 ### Scenario: preferred corridor removal updates the selected vehicle
 
@@ -959,10 +959,10 @@ And the complete map key remains visible without another action and uses pointed
 And each unclustered truck marker is a sufficiently large pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types before selecting it\
 And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
 And a tractor marker and detail use only its currently attached trailer configuration rather than combining every compatible trailer into one public signal\
-And the marker uses a complete cobalt ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
+And the marker uses a complete green ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
 And no percentage-progress ring appears in a public truck marker\
 And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
-And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
+And all user-facing labels call the dashed slate circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
 And a truck or visitor-location summary appears only on hover or keyboard focus, sits above its marker, and retains a pointer to that marker rather than permanently covering the map\
 And selecting one truck enters an explicit focus state that removes every other truck marker and cluster\
 And every selected-truck approximate-location circle, Service area outline, current Capacity route, and regular Capacity route has a wide pointer target with one concise styled hover or keyboard-focus summary\
@@ -1018,7 +1018,7 @@ And one compact selected-truck control occupies the map's reserved top-left zone
 And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Preferred corridor and Location\
 And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Preferred corridor and Location stay separate\
 And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
-And the Driver map uses the same Empty cobalt, Partial gray, Approximate location violet, and Preferred corridor muted-orange signal language and readable hover summaries as the public Market\
+And the Driver map uses the same Empty green, Partial amber, Approximate location slate, and Preferred corridor cyan signal language and readable hover summaries as the public Market\
 And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
 And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
 And Capacity, Sharing, Preferred corridor, and Location each open only their relevant editor\
@@ -1310,3 +1310,20 @@ Regression: `tests/production-pilot-policy.test.mjs` and
 `tests/demo-corridor-fixture.test.mjs`. The October25 finite hosted demo repair
 was rehearsed with rollback and independently verified as20 public corridor
 preferences; protected operation evidence is linked from current progress.
+
+
+### Scenario: Capacity colors retain their meaning across surfaces
+
+Given a person views or edits Capacity on the Market, a provider profile,
+Driver Home, a fleet workspace or a shared map \
+When availability, preferred coverage, approximate location or a selected
+vehicle appears \
+Then green and a round marker mean Empty, amber and a rounded-square marker
+mean Partial, and Off Duty uses a neutral status treatment \
+And solid planned coverage uses the vehicle's availability color while
+preferred coverage uses cyan dotted lines and approximate location uses a
+slate dashed circle \
+And blue focus and selection outlines preserve the marker's status color \
+And GPS and phone use distinct icons and labels on neutral badges \
+And public and private tracking maps use the same approximate-location color. \
+No changes to status visibility, location precision, storage or permissions.

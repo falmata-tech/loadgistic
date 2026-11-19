@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { capacityStatusPresentation } from '../src/lib/capacity-status-presentation.js';
+import { capacityMapColors,capacityStatusPresentation } from '../src/lib/capacity-status-presentation.js';
 
 const css = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
 const mobileTokens = readFileSync(new URL('../apps/mobile/src/theme/capacity-status-presentation.ts', import.meta.url), 'utf8');
@@ -16,27 +16,28 @@ function contrast(foreground, background) {
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
 
-test('Empty and Partial have distinct, readable shared status colors', () => {
-  assert.deepEqual(capacityStatusPresentation, {
-    EMPTY: { color: '#155eef', soft: '#eaf1ff', text: '#155eef' },
-    PARTIAL: { color: '#667085', soft: '#f2f4f7', text: '#475467' },
-  });
-  assert.ok(contrast('#ffffff', capacityStatusPresentation.PARTIAL.color) >= 4.5);
-  assert.ok(contrast(capacityStatusPresentation.PARTIAL.text, capacityStatusPresentation.PARTIAL.soft) >= 4.5);
-
-  for (const [status, tokens] of Object.entries(capacityStatusPresentation)) {
-    const block = mobileTokens.match(new RegExp(`${status}:\\s*\\{([^}]+)\\}`))?.[1];
-    assert.ok(block, `mobile ${status} tokens exist`);
-    for (const [name, value] of Object.entries(tokens)) {
-      assert.match(block, new RegExp(`${name}:\\s*['\"]${value}['\"]`), `mobile ${status}.${name} matches web`);
-    }
+test('status and map colors have distinct meanings and readable foregrounds', () => {
+  assert.equal(new Set([
+    ...Object.values(capacityStatusPresentation).map(({color})=>color),
+    ...Object.values(capacityMapColors),
+  ]).size, 6);
+  for (const {color,soft,text} of Object.values(capacityStatusPresentation)) {
+    assert.ok(contrast('#ffffff', color) >= 4.5, `White marker text on ${color}`);
+    assert.ok(contrast(text,soft) >= 4.5, `Status text on ${soft}`);
   }
+  for (const [name,color] of Object.entries(capacityMapColors)) {
+    assert.ok(contrast('#ffffff',color)>=3, `${name} outline against light surfaces`);
+  }
+  assert.match(mobileTokens,/export \{capacityMapColors,capacityStatusPresentation\} from .*capacity-status-presentation\.js/);
 });
 
 test('web maps, filters, cards and map keys use the shared Partial color', () => {
   for (const [token, value] of Object.entries({
     '--capacity-empty': capacityStatusPresentation.EMPTY.color,
     '--capacity-empty-soft': capacityStatusPresentation.EMPTY.soft,
+    '--capacity-empty-text': capacityStatusPresentation.EMPTY.text,
+    '--capacity-location': capacityMapColors.location,
+    '--capacity-preferred': capacityMapColors.preferred,
     '--capacity-partial': capacityStatusPresentation.PARTIAL.color,
     '--capacity-partial-soft': capacityStatusPresentation.PARTIAL.soft,
     '--capacity-partial-text': capacityStatusPresentation.PARTIAL.text,
@@ -52,4 +53,13 @@ test('web maps, filters, cards and map keys use the shared Partial color', () =>
     '.capacity-marker-tooltip.partial',
     '.capacity-signal-inspector article.partial',
   ]) assert.match(css, new RegExp(`${selector.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\{[^}]*var\\(--capacity-partial`));
+});
+
+test('selection keeps status visible and map keys use shape as well as hue',()=>{
+  const selected=css.match(/vehicle-image-marker\.selected:is\(\.empty,\.partial\) \.vehicle-marker-image\{([^}]+)\}/)?.[1]||'';
+  assert.match(selected,/outline:2px solid var\(--blue\)/);
+  assert.doesNotMatch(selected,/background/);
+  assert.match(css,/\.public-map-legend \.partial-status::before\{border-radius:3px;transform:none\}/);
+  assert.match(css,/\.public-map-legend \.privacy::before\{border:2px dashed var\(--capacity-location\)/);
+  assert.match(css,/\.public-map-legend \.corridor::before\{border-top:3px dotted var\(--capacity-preferred\)/);
 });

@@ -2,14 +2,12 @@ import type {Metadata} from 'next';
 import {publicPageMetadata} from '@/lib/seo.js';
 
 import {Text,Localized} from '@/components/localization';
-import {Pagination} from '@/components/pagination';
 import {notFound} from 'next/navigation';
 import Link from 'next/link';
-import {ArrowLeft,ChevronDown,ExternalLink,Mail,MapPin,MessageCircle,Phone,Star,Truck} from 'lucide-react';
+import {ArrowLeft,ExternalLink,Mail,MapPin,MessageCircle,Phone,Star,Truck} from 'lucide-react';
 import {PublicHeader} from '@/components/public-header';
 import {ProviderIntroVideo} from '@/components/provider-intro-video';
 import {PublicCapacityFeed} from '@/components/public-capacity-feed';
-import {ProviderFleetShowcase} from '@/components/provider-fleet-showcase';
 import {VerificationBadges} from '@/components/verification-badges';
 import {getPublicProvider} from '@/lib/public-provider.js';
 import {ContentSafety} from '@/components/content-safety';
@@ -25,17 +23,12 @@ export async function generateMetadata({params,searchParams}:{params:Promise<{ha
   return publicPageMetadata({path:`/@${normalized}`,title:`@${normalized} · Transport Provider`,description:`View @${normalized} on Loadgistic: public transporter information, reviewed documents and available vehicles.`,query});
 }
 
-export default async function ProviderPage({params,searchParams}:{params:Promise<{handle:string}>;searchParams:Promise<Record<string,string|undefined>>}){
+export default async function ProviderPage({params}:{params:Promise<{handle:string}>}){
   const {handle}=await params;
-  const query=await searchParams;
-  const provider:any=await getPublicProvider(handle,{truckPage:query.truckPage});
+  const provider:any=await getPublicProvider(handle,{includeVehicleDetails:false});
   if(!provider)notFound();
   const isCompany=provider.provider_kind==='FLEET_TRANSPORTER';
   const videoId=provider.cover_video_id===undefined&&isCompany?provider.youtube_video_id:provider.cover_video_id;
-  const fleet=provider.fleet_page.total>0?<>
-    <ProviderFleetShowcase key={provider.fleet_page.page} providerName={provider.name} trucks={provider.trucks} total={provider.fleet_page.total} startIndex={(provider.fleet_page.page-1)*provider.fleet_page.pageSize}/>
-    {provider.fleet_page.pageCount>1?<Pagination path={`/@${provider.handle}`} query={{}} pageParam="truckPage" fragment="provider-trucks" page={provider.fleet_page.page} pageCount={provider.fleet_page.pageCount} total={provider.fleet_page.total}/>:null}
-  </>:null;
   return <><PublicHeader/><ContentSafety handle={provider.handle}><main className="provider-microsite provider-microsite-v2 provider-map-profile">
     <div className="container provider-site-back"><Link href={`/?provider=${encodeURIComponent(provider.handle)}`}><ArrowLeft aria-hidden="true"/><Text message="Back to Open capacity"/></Link></div>
     <section className="provider-site-hero"><div className="container provider-site-hero-grid">
@@ -54,10 +47,6 @@ export default async function ProviderPage({params,searchParams}:{params:Promise
         </details>
       </div>
       <PublicCapacityFeed key={provider.handle} profileMap query={{provider:provider.handle}} initial={{items:[],hasMore:false,nextCursor:null,pageSize:14}}/>
-      {fleet?<details id="provider-trucks" className="provider-fleet-disclosure" open={Boolean(query.truckPage)}>
-        <summary className="provider-fleet-toggle"><Truck aria-hidden="true"/><span><Text message="Vehicles and drivers"/></span><small>{provider.fleet_page.total}</small><ChevronDown aria-hidden="true"/></summary>
-        {fleet}
-      </details>:<p><Text message="No vehicles listed."/></p>}
     </div>
   </main></ContentSafety></>;
 }

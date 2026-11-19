@@ -60,7 +60,7 @@ test('web identity image keeps company/person blanks distinct and failed photos 
 });
 test('public personal profiles omit legacy extra contacts and About while company business information stays visible',async()=>{
  const provider={provider_kind:'SELF_MANAGED_DRIVER',provider_kind_label:'Independent driver',name:'Public first name',handle:'existing-handle',headline:'PRIVATE-HEADLINE',about:'PRIVATE-ABOUT',contact_phone:'+251911000002',contact_whatsapp:'+251911000003',contact_email:'personal@example.test',contact_website:'https://personal.example.test',youtube_video_id:'private-video',city:'City',fleet_page:{total:0,page:1,pageSize:12,pageCount:1},reviews:[],review_count:0,verification_badges:[]};
- const ports={'@/components/public-capacity-feed':{PublicCapacityFeed:'PublicCapacityFeed'},'next/navigation':{notFound(){throw Error('NOT_FOUND');}},'next/link':{__esModule:true,default:'Link'},'@/components/public-header':{PublicHeader:'PublicHeader'},'@/components/truck-authority':{ProviderTruckSummary:'ProviderTruckSummary'},'@/components/pagination':{Pagination:'Pagination'},'@/components/provider-intro-video':{ProviderIntroVideo:'ProviderIntroVideo'},'@/components/provider-fleet-showcase':{ProviderFleetShowcase:'ProviderFleetShowcase'},'@/components/verification-badges':{VerificationBadges:'VerificationBadges'},'@/components/content-safety':{ContentSafety:'ContentSafety'},'@/components/public-identity-image':{PublicIdentityImage:'PublicIdentityImage'},'@/lib/public-provider.js':{getPublicProvider:async()=>provider}};
+ const ports={'@/components/public-capacity-feed':{PublicCapacityFeed:'PublicCapacityFeed'},'next/navigation':{notFound(){throw Error('NOT_FOUND');}},'next/link':{__esModule:true,default:'Link'},'@/components/public-header':{PublicHeader:'PublicHeader'},'@/components/truck-authority':{ProviderTruckSummary:'ProviderTruckSummary'},'@/components/provider-intro-video':{ProviderIntroVideo:'ProviderIntroVideo'},'@/components/verification-badges':{VerificationBadges:'VerificationBadges'},'@/components/content-safety':{ContentSafety:'ContentSafety'},'@/components/public-identity-image':{PublicIdentityImage:'PublicIdentityImage'},'@/lib/public-provider.js':{getPublicProvider:async()=>provider}};
  const runtime=view('src/app/providers/[handle]/page.tsx',ports),props={params:Promise.resolve({handle:provider.handle}),searchParams:Promise.resolve({})};
  let tree=await runtime.render('default',props),serialized=JSON.stringify(tree);
  for(const value of [provider.headline,provider.about,provider.contact_whatsapp,provider.contact_email,provider.contact_website,provider.youtube_video_id])assert.ok(!serialized.includes(value),'Personal extra field rendered: '+value);
@@ -70,6 +70,12 @@ test('public personal profiles omit legacy extra contacts and About while compan
  assert.equal(nodes(tree).find(node=>node.type==='h1').props.children,'Chosen public account');assert.ok(serialized.includes('Mary'));assert.ok(serialized.includes('Account manager'));assert.ok(!serialized.includes(provider.full_name));
  provider.provider_kind='FLEET_TRANSPORTER';tree=await runtime.render('default',props);serialized=JSON.stringify(tree);
  assert.equal(nodes(tree).find(node=>node.type==='PublicIdentityImage').props.label,`${provider.name} transporter profile`);
+ const maps=nodes(tree).filter(node=>node.type==='PublicCapacityFeed');
+ assert.equal(maps.length,1);
+ assert.equal(maps[0].props.profileMap,true);
+ assert.deepEqual(maps[0].props.query,{provider:provider.handle});
+ assert.ok(!nodes(tree).some(node=>node.props.className==='provider-fleet-disclosure'));
+
  for(const value of [provider.headline,provider.about,provider.contact_whatsapp.replace(/\D/g,''),provider.contact_email,provider.contact_website,provider.youtube_video_id])assert.ok(serialized.includes(value),'Company field removed: '+value);
 });
 test('web signup separates chosen public identity from private manager details and driving choice',()=>{
