@@ -660,8 +660,28 @@ jobs:
           npm run preview:web > ../../.local/ci-mobile-preview.log 2>&1 &
           echo "$!" > ../../.local/ci-mobile-preview.pid
 
+      - name: Measure starting table counters on the disposable runner
+        run: node scripts/review/coverage.mjs before
+
       - name: Run desktop and mobile browser workflows
+        env:
+          LOADGISTIC_WORKFLOW_AUDIT: '1'
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/review/observe-http.cjs
         run: node scripts/ci-browser-shard.mjs '${{ matrix.shard }}'
+
+      - name: Collect route timings and table counter changes
+        if: always()
+        run: node scripts/review/coverage.mjs after
+
+      - name: Retain aggregate runtime coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: audit-shard-${{ matrix.shard }}
+          path: .local/workflow-coverage/summary.json
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: error
 
       - name: Retain only typed browser failure diagnostics
         if: failure()
@@ -742,8 +762,28 @@ jobs:
       - name: Check browser fixture contract before Featured workflows
         run: node scripts/ci-fixture-preflight.mjs
 
+      - name: Measure starting table counters on the disposable runner
+        run: node scripts/review/coverage.mjs before
+
       - name: Run isolated Featured Prepare workflow on desktop and phone
+        env:
+          LOADGISTIC_WORKFLOW_AUDIT: '1'
+          NODE_OPTIONS: --require=${{ github.workspace }}/scripts/review/observe-http.cjs
         run: node scripts/ci-featured-prepare.mjs '${{ matrix.featured_case }}'
+
+      - name: Collect route timings and table counter changes
+        if: always()
+        run: node scripts/review/coverage.mjs after
+
+      - name: Retain aggregate runtime coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: audit-featured-${{ matrix.featured_case }}
+          path: .local/workflow-coverage/summary.json
+          include-hidden-files: true
+          retention-days: 3
+          if-no-files-found: error
 
       - name: Stop isolated Supabase
         if: always()
