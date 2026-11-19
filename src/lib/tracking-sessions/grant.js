@@ -7,7 +7,7 @@ export function issueTrackingLinkGrant(sessionId,credentials,linkExpiresAt,now=D
  const expiresAt=Math.min(Date.parse(linkExpiresAt),now+TRACKING_LINK_GRANT_MS),seconds=Math.floor((expiresAt-now)/1000);
  const value=`tracking-link:${sessionId}:${credentials.linkDigest}:${credentials.codeDigest}:${now}`;
  if(!subject.test(value)||!Number.isFinite(seconds)||seconds<=0)throw Error('TRACKING_ACCESS_DENIED');
- return {grant:createSessionToken(value,seconds),expiresAt:new Date(expiresAt).toISOString()};
+ return {grant:createSessionToken(value,seconds,now),expiresAt:new Date(expiresAt).toISOString()};
 }
 export function parseTrackingLinkGrant(token,now=Date.now()){
  if(typeof token!=='string'||token.length>2048||token.split('.').length!==2)return null;

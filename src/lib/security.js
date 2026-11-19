@@ -131,8 +131,8 @@ export function hashTrackingAccessCode(value) {
   return sign(`tracking-code:${String(value || '').trim().toUpperCase()}`);
 }
 
-export function createSessionToken(userId, maxAgeSeconds = 60 * 60 * 12) {
-  const payload = Buffer.from(JSON.stringify({ sub: userId, exp: Math.floor(Date.now() / 1000) + maxAgeSeconds })).toString('base64url');
+export function createSessionToken(userId, maxAgeSeconds = 60 * 60 * 12, issuedAt = Date.now()) {
+  const payload = Buffer.from(JSON.stringify({ sub: userId, exp: Math.floor(issuedAt / 1000) + maxAgeSeconds })).toString('base64url');
   return `${payload}.${sign(payload)}`;
 }
 

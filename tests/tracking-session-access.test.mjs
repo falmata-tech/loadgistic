@@ -51,6 +51,9 @@ test('Tracking grant is exact-session, signed, at most five minutes and bounded 
  assert.ok(grant.expiresAt<=now+TRACKING_LINK_GRANT_MS);assert.equal(parseTrackingLinkGrant(issued.grant,now+TRACKING_LINK_GRANT_MS),null);
  const short=issueTrackingLinkGrant(id,credentials,new Date(now+60000).toISOString(),now);
  assert.equal(parseTrackingLinkGrant(short.grant,now+60000),null);
+ const delayedStart=now-1500,deadline=delayedStart+60000;
+ const delayed=issueTrackingLinkGrant(id,credentials,new Date(deadline).toISOString(),delayedStart);
+ assert.equal(parseTrackingLinkGrant(delayed.grant,deadline),null);
  const payload=Buffer.from(issued.grant.split('.')[0],'base64url').toString();
  assert.equal(payload.includes(credentials.linkToken),false);assert.equal(payload.includes(credentials.code),false);
  for(const token of[issued.grant+'.extra',issued.grant.slice(0,-1)+'!',createSessionToken(actor),'x'.repeat(2049),'malformed'])assert.equal(parseTrackingLinkGrant(token,now),null);
