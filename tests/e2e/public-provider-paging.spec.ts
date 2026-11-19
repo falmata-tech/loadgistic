@@ -108,15 +108,17 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
     await expect(page.locator('.provider-hero-facts')).toContainText(`${count} active ${count===1?'vehicle':'vehicles'}`);
     const seen=new Set<string>();const cards=page.locator('.provider-truck-card');const nav=page.getByRole('navigation',{name:'Results pages',exact:true});
     const details=page.locator('.provider-fleet-disclosure');
-    const information=page.locator('.provider-trust-card');
+    const information=page.locator('.provider-profile-documents');
     await expect(information.locator('.verification-group.rows')).toHaveCount(1);
     const regular=page.locator('.provider-corridor-list');
     await expect(regular).toHaveCount(0);
     await expect(page.locator('.provider-services,.provider-microsite-safety')).toHaveCount(0);
-    const mapAction=page.getByRole('link',{name:'See vehicles on the map',exact:true});
-    await expect(mapAction).toHaveAttribute('href',`/?provider=${handle}`);
-    await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
-    await expect(information).toBeVisible();
+    const mapAction=page.locator('.provider-map-workbench');
+    await expect(mapAction.locator('.leaflet-container')).toBeVisible();
+    await information.locator(':scope > summary').click();
+    await expect(information.locator('.verification-group.rows')).toBeVisible();
+    await expect(cards.first()).toBeHidden();
+    await details.locator(':scope > summary').click();
     if(count>1){
       await expect(details).toHaveAttribute('open','');await expect(cards.first()).toBeVisible();
       await expect(cards.first().locator('.public-truck-verification .verification-group.rows')).toHaveCount(2);
@@ -130,9 +132,9 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
       await details.locator(':scope > summary').click();await expect(cards.first()).not.toBeVisible();
       await details.locator(':scope > summary').focus();await page.keyboard.press('Enter');await expect(cards.first()).toBeVisible();
     }else{
-      await expect(details).toHaveCount(0);await expect(cards).toHaveCount(1);await expect(cards.first()).toBeVisible();await expect(nav).toHaveCount(0);
+      await expect(details).toHaveAttribute('open','');await expect(cards).toHaveCount(1);await expect(cards.first()).toBeVisible();await expect(nav).toHaveCount(0);
     }
-    const accountDocumentsBottom=await page.locator('.provider-trust-card').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
+    const accountDocumentsBottom=await page.locator('.provider-profile-documents').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
     const fleetTop=await page.locator('#provider-trucks').evaluate((node:Element)=>node.getBoundingClientRect().top+scrollY);
     const fleetBottom=await page.locator('#provider-trucks').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
     const reviewsTop=await page.locator('.provider-site-reviews').evaluate((node:Element)=>node.getBoundingClientRect().top+scrollY);
@@ -148,7 +150,7 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
       if(pages>1)await expect(nav).toContainText(`Page ${current} of ${pages} · ${count} results`);
       await expect(regular).toHaveCount(0);
       await expect(page.locator('.provider-services,.provider-microsite-safety')).toHaveCount(0);
-      await expect(mapAction).toHaveAttribute('href',`/?provider=${handle}`);
+      await expect(mapAction.locator('.leaflet-container')).toBeVisible();
       await expect(cards).toHaveCount(Math.min(12,count-(current-1)*12));
       await expect(page.locator('.provider-handle')).toContainText('Transport Provider');
       for(const card of await cards.all()){

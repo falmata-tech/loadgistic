@@ -8,7 +8,7 @@ import {getDailyFeaturedProviders} from '../../src/lib/public-featured.js';
 const expect=baseExpect.configure({timeout:20000});
 test.use({trace:'off',screenshot:'off',video:'off',actionTimeout:15000,navigationTimeout:30000});
 
-test('Featured staff save and publish an isolated manual day and manage its sponsor with current authority',async({page},info)=>{
+test('Featured staff save and publish an isolated manual day and manage its sponsor with current authority',async({page,baseURL},info)=>{
  test.setTimeout(180000);const db=localAuditService(),ids:string[]=[];
  const date=new Date(Date.UTC(2085,0,1)+randomInt(0,3650)*86400000).toISOString().slice(0,10);
  const marker='Synthetic programme '+randomUUID().slice(0,8);let stage='SETUP',logout:(()=>Promise<unknown>)|undefined,placementId='',sponsorId='';
@@ -21,7 +21,10 @@ test('Featured staff save and publish an isolated manual day and manage its spon
   const id=checked(await db.auth.admin.createUser({email:`featured-controls-${randomUUID()}@example.test`,email_confirm:true})).user.id;ids.push(id);
   checked(await db.from('profiles').update({role:'SUPPORT',active:true,full_name:'Synthetic Featured staff'}).eq('id',id));
   checked(await db.from('support_agent_profiles').insert({user_id:id,active:true,available:false,can_manage_support:false,can_manage_featured:true}));
-  phase('UNAUTHENTICATED_DENIAL');expect((await page.request.post('/api/admin/featured',{form:{featureDate:date,command:'PUBLISH'},maxRedirects:0})).status()).toBe(303);
+  phase('UNAUTHENTICATED_DENIAL');
+  const headers={Origin:new URL(baseURL!).origin};
+  const denied=await page.request.post('/api/admin/featured',{headers,form:{featureDate:date,command:'PUBLISH'},maxRedirects:0,timeout:45000});
+  expect(denied.status()).toBe(303);expect(new URL(denied.headers().location,baseURL).pathname).toBe('/login');
   phase('STAFF_LOGIN');logout=await localSupportLogin(page,id);phase('EDITOR');await page.goto(`/admin/featured?date=${date}&edit=day`);
   const editor=page.locator('.featured-roster-editor');await expect(editor).toBeVisible();
   const select=editor.getByLabel('Add Transport Provider');await expect(select).toBeEnabled();
@@ -65,7 +68,7 @@ test('Featured staff save and publish an isolated manual day and manage its spon
   expect(checked(await db.from('sponsor_placements').select('active').eq('id',placementId).single()).active).toBe(false);
   phase('REVOKED_AUTHORITY');checked(await db.from('support_agent_profiles').update({can_manage_featured:false}).eq('user_id',id));
   const before=checked(await db.from('featured_provider_days').select('*').eq('id',day.id).single());
-  expect((await page.request.post('/api/admin/featured',{form:{featureDate:date,command:'PUBLISH',publicHeadline:'Must not save'},maxRedirects:0})).status()).toBe(403);
+  expect((await page.request.post('/api/admin/featured',{headers,form:{featureDate:date,command:'PUBLISH',publicHeadline:'Must not save'},maxRedirects:0})).status()).toBe(403);
   expect(checked(await db.from('featured_provider_days').select('*').eq('id',day.id).single())).toEqual(before);
   expect(checked(await db.from('platform_controls').select('*').eq('singleton',true).single())).toEqual(controls);
   const audits=checked(await db.from('audit_logs').select('action').eq('actor_user_id',id));for(const action of ['FEATURED_DAY_SAVED','FEATURED_DAY_PUBLISHED','SPONSORSHIP_SAVED','SPONSORSHIP_DISABLED'])expect(audits.some((row:any)=>row.action===action)).toBe(true);

@@ -1,0 +1,16 @@
+[
+  {
+    "artwork": "machining",
+    "name": "Blue Gauge Precision",
+    "description": "CNC milling and small-batch replacement parts for factory maintenance teams.",
+    "website": "https://example.com/#blue-gauge-precision",
+    "phone": "+12025550142"
+  },
+  {
+    "artwork": "motors",
+    "name": "Copperturn Motor Works",
+    "description": "Motor rewinding, bearing replacement and bench testing for industrial pumps and drives.",
+    "website": "https://example.org/#copperturn-motor-works",
+    "phone": "+12025550168"
+  }
+]

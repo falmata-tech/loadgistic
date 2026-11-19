@@ -1,5 +1,13 @@
 # Architecture Decisions
 
+## ADR-092 — Public provider fleet maps and video covers
+
+The provider profile uses the public Capacity feed filtered by its canonical handle, including all cursor pages. The fleet directory retains entries without a public map location. Independent and fleet owners can explicitly attach a YouTube cover. A separate optional ID preserves the privacy of historical personal media. Migration 237 adds that field to the existing profile commands.
+
+## ADR-091 — Sponsor schedules on Featured
+
+A regional sponsor placement can appear on its scheduled dates even when the provider roster is empty. Web and Expo show one placement at a time. Admins and staff with the Featured grant manage the same catalogue. Migration 236 adds optional artwork to a placement. FEAT-SPN-001 covers public fields, expiry and playback.
+
 ## ADR-090 — Route signed-in Support by open workload
 
 Registered shippers, broker workspace members and Transport Providers can contact Support. New conversations use the active workspace or the member’s own account. An available agent with Support permission receives the next conversation according to their open-chat count. The longest idle agent wins a tie. There is no per-agent ceiling. When no eligible agent is available, conversations wait in arrival order and assign when staff return. Admins manage team availability and permissions. FEAT-SUP-001 and migrations 232–233 cover this change.

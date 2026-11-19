@@ -180,10 +180,11 @@ test('public entry makes capacity immediately usable without an account',async({
   else {
     expect(billboardLayout.sponsorBottom).toBeLessThanOrEqual(billboardLayout.boardTop);
     // The TikTok LIVE header adds its measured height above the board.
-    expect(billboardLayout.boardTop-billboardLayout.sectionTop).toBeLessThanOrEqual(283+billboardLayout.liveHeight);
+    expect(billboardLayout.boardTop-billboardLayout.sectionTop).toBeLessThanOrEqual(billboardLayout.sponsorHeight+129+billboardLayout.liveHeight);
     expect(billboardLayout.liveHeight).toBeLessThanOrEqual(48);
     expect(billboardLayout.programmeHeight).toBe(0);
-    expect(billboardLayout.sponsorHeight).toBeLessThanOrEqual(154);
+    // Preserve room for the provider board beneath the image, description and touch targets.
+    expect(billboardLayout.sponsorHeight).toBeLessThanOrEqual((page.viewportSize()?.height||0)/3);
   }
   await featuredTrucks.first().click();
   const providerDialog=page.locator('.expo-provider-dialog');

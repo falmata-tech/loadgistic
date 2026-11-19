@@ -7,6 +7,22 @@ original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
+## November 18 local Featured and provider profiles
+
+Featured has two industrial demo sponsors with original workshop artwork,
+public contact actions and eight-second rotation. Admins and staff with the
+Featured grant can manage placements. Database permission and rollback checks
+passed locally for migration 236. Desktop, phone web and Expo web were exercised
+with active placements on an empty programme day.
+
+The public provider profile now opens directly on its scoped fleet map. Public
+document summaries, notes, reviews and the paginated vehicle and driver roster
+remain available. Fleet and independent demo owners each saved a cover, and a
+transactional check verified removal, invalid-input rollback and staff denial.
+The sample is [Ethiopian talented sinotruck driver pt 2, by Yodi Yodi](https://www.youtube.com/watch?v=WZMVTHGhlbg).
+The image above Play is the video's original YouTube thumbnail. Migration 237
+and demo data have only been applied in the local review environment.
+
 ## November 18 security corrections
 
 Migration 235 preserves the signed-in account RPC used by the web and Android apps.

@@ -10,7 +10,7 @@ export async function POST(request:NextRequest){
  const form=await request.formData();
  const returnTo=workspaceFormReturnPath(text(form,'returnTo'),'/app/company-page');
  const input:Record<string,string|boolean>={basePlaceRef:text(form,'basePlaceRef'),baseRegionCode:text(form,'baseRegionCode'),published:checked(form,'published')};
- for(const key of ['accountName','handle','headline','about','contactPhone','contactWhatsapp','contactEmail','contactWebsite'])if(form.has(key))input[key]=text(form,key);
+ for(const key of ['accountName','handle','coverVideoUrl','headline','about','contactPhone','contactWhatsapp','contactEmail','contactWebsite'])if(form.has(key))input[key]=text(form,key);
  for(const [key,contact] of [['showContactPhone','contactPhone'],['showContactWhatsapp','contactWhatsapp'],['showContactEmail','contactEmail'],['showContactWebsite','contactWebsite']]){
   if(user.role==='TRANSPORTER'||form.has(key)||form.has(contact))input[key]=checked(form,key);
  }

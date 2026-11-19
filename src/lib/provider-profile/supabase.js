@@ -1,3 +1,4 @@
+import {youtubeCoverId} from '../provider-cover-video.js';
 import {normalizePublicAccountIdentity} from '../provider-public-identity.js';
 import {commitPrivateUpload} from '../private-upload-commit.js';
 import {readPrivateUpload,removePrivateUpload,storePrivateUpload} from '../private-storage.js';
@@ -46,6 +47,7 @@ export function providerProfileCommand(input){
   if(Object.hasOwn(input,'managerName')||Object.hasOwn(input,'manager_name'))throw Error('INVALID_PUBLIC_ACCOUNT_IDENTITY');
   const identity=normalizePublicAccountIdentity(input);
   const command={...(identity.accountName?{account_name:identity.accountName,handle:identity.handle}:{})};
+  if(Object.hasOwn(input,'coverVideoUrl'))command.cover_video_id=youtubeCoverId(input.coverVideoUrl);
   for(const [source,target] of Object.entries({headline:'headline',about:'about',basePlaceRef:'base_place_ref',baseRegionCode:'base_region_code',contactPhone:'contact_phone',contactWhatsapp:'contact_whatsapp',contactEmail:'contact_email',contactWebsite:'contact_website'})){
     if(Object.hasOwn(input,source))command[target]=String(input[source]||'');
   }

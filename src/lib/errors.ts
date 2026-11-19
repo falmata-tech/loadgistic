@@ -1,4 +1,5 @@
 const messages: Record<string,string> = {
+  INVALID_COVER_VIDEO:'Enter a YouTube video link or clear the field to remove the cover video.',
   BUSINESS_MANAGER_NAME_REQUIRED:'Add the account manager’s first name in Account details before submitting their National ID.',
   VERIFICATION_SUBJECT_CHANGED:'The account details changed. Submit a new document for the current details.',
   ACCOUNT_HANDLE_UNAVAILABLE:'That handle is already in use. Choose another.',

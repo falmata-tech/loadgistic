@@ -65,7 +65,7 @@ function validateText(value,min,max,errorCode){
 function validateWebsite(value){
   const raw=String(value||'').trim();if(!raw)return null;
   let url;try{url=new URL(raw);}catch{throw new Error('SPONSOR_WEBSITE_INVALID');}
-  if(url.protocol!=='https:')throw new Error('SPONSOR_WEBSITE_INVALID');return url.toString();
+  if(url.protocol!=='https:'||url.username||url.password)throw new Error('SPONSOR_WEBSITE_INVALID');return url.toString();
 }
 
 function seededPortrait(filename){
@@ -272,6 +272,7 @@ export async function saveProviderSponsorship(user,input={}){
   const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_sponsorship',{actor_user_id:user.id,command:{
     feature_date:featureDate,group_key:expo.key,region_codes:expo.regionCodes,sponsorship_id:String(input.sponsorshipId||''),
     sponsor_kind:sponsorKind,provider_key:String(input.providerKey||''),business_name:businessName,description,
+    ...(input.artworkKey===undefined?{}:{artwork_key:input.artworkKey}),
     website_url:websiteUrl,phone,starts_on:startsOn,ends_on:endsOn,position
   }});
   if(error)throw managedError('SUPABASE_SPONSORSHIP_SAVE_FAILED',error);

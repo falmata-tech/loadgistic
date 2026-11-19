@@ -1,4 +1,5 @@
 'use client';
+import {FeaturedSponsors} from './featured-sponsors';
 import React from 'react';
 import {useBlockedProviders} from './content-safety';
 import {Text} from '@/components/localization';
@@ -20,6 +21,6 @@ export function FeaturedProviderSection({feature}:{feature:any}){
   const windowLabel=featuredRangeLabel(feature.schedule?.display_label)||featuredRange(feature.broadcast_start_time,feature.broadcast_end_time);
   return <section id="featured-providers" className="featured-provider-section" aria-labelledby="featured-provider-title"><div className="container regional-expo-shell">
     <header className="regional-expo-intro"><div><h2 id="featured-provider-title"><Text message={FEATURED_PUBLIC_HEADING}/></h2>{!providerCount&&dateLabel&&windowLabel?<small>{dateLabel} · {windowLabel}</small>:null}{curatedHeadline?<p className="featured-curated-title"><strong><Text message={curatedHeadline}/></strong></p>:null}{curatedIntroduction?<p><Text message={curatedIntroduction}/></p>:null}</div></header>
-    {providerCount?<TransportExpoVenue providers={providers} sponsoredProviders={sponsors} featureDate={feature.feature_date} initialSchedule={feature.schedule} week={feature.week} expoGroup={feature.expo_group} tiktokUrl={feature.tiktok_url} tiktokStatus={feature.tiktok_broadcast_status} tiktokStart={feature.broadcast_start_time}/>:<div className="regional-expo-empty"><div><h3><Text message="No Transport Providers are scheduled today."/></h3><p><Text message="You can still explore vehicles with published capacity."/></p></div><Link className="button secondary" href="/"><Text message="Find capacity"/></Link></div>}
+    {providerCount?<TransportExpoVenue providers={providers} sponsoredProviders={sponsors} featureDate={feature.feature_date} initialSchedule={feature.schedule} week={feature.week} expoGroup={feature.expo_group} tiktokUrl={feature.tiktok_url} tiktokStatus={feature.tiktok_broadcast_status} tiktokStart={feature.broadcast_start_time}/>:<div className="featured-empty-day"><FeaturedSponsors providers={sponsors}/><div className="regional-expo-empty"><div><h3><Text message="No Transport Providers are scheduled today."/></h3><p><Text message="You can still explore vehicles with published capacity."/></p></div><Link className="button secondary" href="/"><Text message="Find capacity"/></Link></div></div>}
   </div></section>;
 }

@@ -26,6 +26,7 @@ export async function POST(request:NextRequest) {
         businessName:text(form,'businessName'),
         description:text(form,'description'),
         websiteUrl:text(form,'websiteUrl'),
+        artworkKey:form.has('artworkKey')?text(form,'artworkKey'):undefined,
         phone:text(form,'phone'),
         startsOn:text(form,'startsOn'),
         endsOn:text(form,'endsOn'),

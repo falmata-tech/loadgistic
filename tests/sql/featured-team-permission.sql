@@ -13,6 +13,29 @@ begin
   perform create_managed_support_agent(admin_id,uid,jsonb_build_object('name','Synthetic Featured staff','email',uid::text||'@example.test','max_open_conversations',3,'can_manage_support',false,'can_manage_featured',uid=staff_id));
  end loop;
  if not can_manage_featured(staff_id) or can_manage_featured(other_id) then raise exception 'CAPABILITY_DEFAULT_OR_GRANT';end if;
+ -- A granted staff member can save and change artwork. Invalid artwork rolls back
+ -- the entire edit, and the ordinary staff role cannot disable the placement.
+ declare
+   review_date date := date '2098-03-10';
+   placement uuid;
+   payload jsonb := jsonb_build_object('feature_date',review_date,'group_key',managed_featured_group_for_date(review_date),
+     'region_codes','[]'::jsonb,'sponsor_kind','ADVERTISER','position',1,'starts_on',review_date,'ends_on',review_date,
+     'business_name','Industrial test sponsor','description','Local industrial services example.',
+     'website_url','https://example.org','artwork_key','machining');
+ begin
+   placement:=save_managed_sponsorship(staff_id,payload);
+   payload:=payload||jsonb_build_object('sponsorship_id',placement,'artwork_key','motors');
+   perform save_managed_sponsorship(staff_id,payload);
+   begin
+     perform save_managed_sponsorship(staff_id,payload||'{"artwork_key":"unknown","position":2}'::jsonb);
+     raise exception 'UNKNOWN_ARTWORK_ACCEPTED';
+   exception when check_violation then null;
+   end;
+   perform pg_temp.expect_featured_denied(format('select disable_managed_sponsorship(%L,%L)',other_id,placement));
+   if not exists(select from sponsor_placements where id=placement and active and position=1 and artwork_key='motors')
+     then raise exception 'SPONSOR_EDIT_NOT_ATOMIC'; end if;
+   perform disable_managed_sponsorship(staff_id,placement);
+ end;
  result:=managed_featured_controls(staff_id);
  if result ? 'access_mode' or result ? 'updated_by' then raise exception 'UNRELATED_SETTING_EXPOSED';end if;
  perform managed_featured_overview(staff_id);
