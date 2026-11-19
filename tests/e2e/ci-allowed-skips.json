@@ -263,12 +263,12 @@
     },
     {
       "file": "public-fleet-null-number.spec.ts",
-      "title": "existing local numbered and legacy null-number trucks keep closed maps and usable actions",
+      "title": "existing local numbered and legacy null-number trucks keep a usable profile map",
       "project": "desktop-chromium"
     },
     {
       "file": "public-fleet-null-number.spec.ts",
-      "title": "existing local numbered and legacy null-number trucks keep closed maps and usable actions",
+      "title": "existing local numbered and legacy null-number trucks keep a usable profile map",
       "project": "mobile-chromium"
     },
     {
