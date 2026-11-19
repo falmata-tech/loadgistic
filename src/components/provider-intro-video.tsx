@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import {coverPosterPath} from '@/lib/provider-cover-video.js';
+import {coverPosterPath,exampleCover} from '@/lib/provider-cover-video.js';
 import {Play,X} from 'lucide-react';
 import {Text,useTranslation} from './localization';
 
@@ -15,7 +15,7 @@ export function ProviderIntroVideo({videoId,providerName}:{videoId:string;provid
   return <div className="profile-cover">
     <button type="button" className="profile-cover-poster" onClick={()=>setPlaying(true)} aria-label={t('Play cover video')}>
       <img src={poster} alt="" onError={event=>{event.currentTarget.style.visibility='hidden';}}/>
-      <span><Play aria-hidden="true"/><Text message="Cover video"/></span>{videoId==='WZMVTHGhlbg'&&<small>Yodi Yodi · YouTube</small>}
+      <span><Play aria-hidden="true"/><Text message="Cover video"/></span>{videoId===exampleCover.id&&<small>{exampleCover.credit}</small>}
     </button>
     {playing&&<dialog ref={dialog} className="profile-cover-player" aria-label={t('Cover video')} onClose={()=>setPlaying(false)}>
       <header><strong>{providerName}</strong><button type="button" onClick={()=>dialog.current?.close()} aria-label={t('Close')}><X/></button></header>

@@ -1,4 +1,4 @@
-import {coverPosterPath} from '../../../../src/lib/provider-cover-video.js';
+import {coverPosterPath,exampleCover} from '../../../../src/lib/provider-cover-video.js';
 import {apiOrigin} from '../api/http';
 import {ProviderFleetMap} from './capacity';
 import {ContentSafety} from '../components/content-safety';
@@ -23,7 +23,7 @@ function Profile({handle}:{handle:string}){
  const poster=provider?.youtubeId?coverPosterPath(provider.youtubeId):null;
  return <Page><View style={styles.workspace}><ErrorText message={query.error}/>{query.loading&&!provider&&<LoadingSpinner accessibilityLabel="Loading transporter"/>}{!!query.error&&<Button message="Try again" onPress={()=>{void query.reload();}}/>}
  {provider&&<ContentSafety handle={provider.handle}> {!!poster&&<Link href={`https://www.youtube.com/watch?v=${provider.youtubeId}`} asChild><Pressable accessibilityRole="link" accessibilityLabel={t('Play cover video')} style={styles.cover}>
-   <ImageBackground source={{uri:poster.startsWith('/')?apiOrigin+poster:poster}} resizeMode="cover" style={[styles.poster,{height:Math.max(160,Math.min(280,height*.24))}]}><Text style={styles.play}>▶  {t('Cover video')}{provider.youtubeId==='WZMVTHGhlbg'?' · Yodi Yodi':''}</Text></ImageBackground>
+   <ImageBackground source={{uri:poster.startsWith('/')?apiOrigin+poster:poster}} resizeMode="cover" style={[styles.poster,{height:Math.max(160,Math.min(280,height*.24))}]}><Text style={styles.play}>▶  {t('Cover video')}{provider.youtubeId===exampleCover.id?' · '+exampleCover.credit:''}</Text></ImageBackground>
  </Pressable></Link>}
  <View style={styles.identity}><PublicCardImage path={provider.image} label={provider.accountName||provider.name} portrait identity={provider.isCompany?'company':'person'}/><View style={styles.identityText}><Text accessibilityRole="header" style={styles.title}>{provider.accountName||provider.name}</Text><Text style={styles.caption}>@{provider.handle}</Text><Text style={styles.caption}>{t('Transport Provider')}{provider.city?` · ${provider.city}`:''}</Text>{!!provider.managerName&&<Text style={styles.caption}>{t('Account manager')} · {provider.managerName}</Text>}</View></View>
  {!!provider.headline&&<Text style={styles.introduction}>{provider.headline}</Text>}

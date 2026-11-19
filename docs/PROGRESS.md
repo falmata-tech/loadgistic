@@ -20,7 +20,13 @@ document summaries, notes, reviews and the paginated vehicle and driver roster
 remain available. Fleet and independent demo owners each saved a cover, and a
 transactional check verified removal, invalid-input rollback and staff denial.
 The sample is [Ethiopian talented sinotruck driver pt 2, by Yodi Yodi](https://www.youtube.com/watch?v=WZMVTHGhlbg).
-The image above Play is the video's original YouTube thumbnail. Migration 237
+The image above Play is the video's original YouTube thumbnail. Chrome playback
+advanced in the embedded player on the independent driver's page. A fleet owner
+saved a share URL through Edit profile and reopened it. Public desktop (1440px),
+phone web (390px), and Expo phone preview checks exercised the map and details.
+The Admin sponsor edit/cancel/save/reload and the granted staff schedule/disable
+and revoked staff denial passed locally. Sponsor saves return the committed ID
+and redirect to the lightweight sponsor catalogue. Migration 237
 and demo data have only been applied in the local review environment.
 
 ## November 18 security corrections

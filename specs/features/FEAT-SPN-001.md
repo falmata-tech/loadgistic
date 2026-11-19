@@ -93,7 +93,9 @@ BASE-IAM-001 / FEAT-FTR-001. Admins and staff with the existing Featured grant
 manage placements from Featured settings. Given a saved placement, opening Edit
 recalls its details, date range, position and artwork. Saving updates that
 placement and writes the existing audit event. Cancel preserves saved details.
-Revoked staff and other roles cannot save or disable placements.
+Revoked staff and other roles cannot save or disable placements. The focused
+catalogue reads the dated sponsor schedule without loading truck/driver roster
+evidence. After a save or disable the form returns directly to the catalogue.
 
 Given active, eligible placements for today's region and date, Featured displays
 one sponsor at a time on desktop, phone web and Expo, including an unpublished

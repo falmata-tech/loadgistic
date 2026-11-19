@@ -7,7 +7,7 @@ import {Text,Localized} from '@/components/localization';
 import Link from 'next/link';
 import { BadgeDollarSign,CalendarDays,CheckCircle2,ExternalLink,Play,Radio,Save,ShieldAlert,Sparkles,Truck } from 'lucide-react';
 import { requireUser } from '@/lib/auth';
-import { getAdminFeaturedProviderDay } from '@/lib/platform-admin.js';
+import { getAdminFeaturedProviderDay,getAdminSponsorCatalogue } from '@/lib/platform-admin.js';
 import { PageHeader } from '@/components/page-header';
 import { Flash } from '@/components/flash';
 import { FEATURED_PROVIDER_DAY } from '@/lib/featured-trucks.js';
@@ -35,6 +35,11 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   const query=await searchParams;
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Addis_Ababa',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   const date=query.date||today;
+  const sponsorOnly=query.panel==='sponsors';
+  if(sponsorOnly){
+    const catalogue=await getAdminSponsorCatalogue(user,date);
+    return <div className="stack"><Link className="button secondary" href={`/admin/featured?date=${date}`}><Text message="Featured"/></Link><Flash error={query.error} success={query.success}/><SponsorPanel date={date} stored={catalogue}/></div>;
+  }
   const editing=query.edit==='day';
   const stored=await getAdminFeaturedProviderDay(user,date);
   const controls=await getFeaturedControls(user);
@@ -54,7 +59,7 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
     <PageHeader title={<Text message={FEATURED_PUBLIC_HEADING}/>}/>
     <Flash error={query.error} success={query.success}/>
     {!editing?<FeaturedOperationOverview overview={overview} mode={controls.featured_mode}/>:null}
-    {!editing?<div className={styles.recordActions}><a className="button secondary" href="#sponsors"><Text message="Sponsors"/></a>{controls.featured_mode==='AUTO'?<FeaturedPrepareForm/>:null}<WorkspaceTaskDialog title="Selection settings" triggerLabel="Selection settings"><FeaturedControlsForm controls={controls}/></WorkspaceTaskDialog></div>:null}
+    {!editing?<div className={styles.recordActions}><a className="button secondary" href={`/admin/featured?date=${date}&panel=sponsors`}><Text message="Sponsors"/></a>{controls.featured_mode==='AUTO'?<FeaturedPrepareForm/>:null}<WorkspaceTaskDialog title="Selection settings" triggerLabel="Selection settings"><FeaturedControlsForm controls={controls}/></WorkspaceTaskDialog></div>:null}
 
     <section id="featured-day-editor" className={styles.featuredDay}><header className={styles.featuredDayHeading}><div><h2><Text message={editing?'Edit programme':'Daily programme'}/></h2></div>{editing?<Link className="button secondary small" href={`/admin/featured?date=${date}`}><Text message="Cancel editing"/></Link>:<Link className="button secondary small" href={`/admin/featured?date=${date}&edit=day#featured-day-editor`}><Text message="Edit programme"/></Link>}</header>
     <section className="panel featured-admin-picker">
@@ -81,9 +86,13 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
       </>:<p><Text message="No TikTok Live link saved. Add one while editing this programme."/></p>}
     </section>:null}
     {!editing?<>
-    <section id="sponsors" className="panel featured-sponsor-admin"><div className="section-heading"><div><span className="section-kicker"><BadgeDollarSign aria-hidden="true"/><Text message="Sponsored"/></span><h2><Text message="Sponsors"/></h2><p><Text message="Schedule up to five Transport Providers or outside advertisers. Sponsorship never changes capacity results or Featured order."/></p></div></div>
+    <SponsorPanel date={date} stored={stored}/></>:null}
+  </div>;
+}
+
+function SponsorPanel({date,stored}:{date:string;stored:{providerCandidates:any[];sponsorships:any[]}}){
+  return <section id="sponsors" className="panel featured-sponsor-admin"><div className="section-heading"><div><span className="section-kicker"><BadgeDollarSign aria-hidden="true"/><Text message="Sponsored"/></span><h2><Text message="Sponsors"/></h2><p><Text message="Schedule up to five Transport Providers or outside advertisers. Sponsorship never changes capacity results or Featured order."/></p></div></div>
       <WorkspaceTaskDialog title="Schedule sponsor" triggerLabel="Schedule sponsor"><SponsorAdminForm featureDate={date} candidates={(stored as any).providerCandidates||[]}/></WorkspaceTaskDialog>
       {stored.sponsorships.length?<div className="featured-sponsor-schedules">{stored.sponsorships.map((sponsorship:any)=><article key={sponsorship.id}><div><small><Text message="Position "/>{sponsorship.position} · {sponsorship.starts_on}<Text message=" to "/>{sponsorship.ends_on}</small><strong>{sponsorship.sponsor_name}</strong><span>{sponsorship.sponsor_kind==='ADVERTISER'?<Text message="Outside advertiser"/>:sponsorship.candidate?.base_place||'Loadgistic transporter'}</span><span className={sponsorship.eligible?'status green':'status yellow'}>{sponsorship.eligible?<Text message="Ready"/>:<Text message="Needs review"/>}</span></div><WorkspaceTaskDialog title="Edit sponsor" triggerLabel="Edit sponsor"><SponsorAdminForm featureDate={date} candidates={stored.providerCandidates} placement={sponsorship}/></WorkspaceTaskDialog><form action="/api/admin/featured" method="post"><input type="hidden" name="featureDate" value={date}/><input type="hidden" name="sponsorshipId" value={sponsorship.id}/><button className="button secondary" name="command" value="DISABLE_SPONSOR"><Text message="Disable"/></button></form></article>)}</div>:<p className="empty-state compact"><Text message="No active or upcoming sponsors are scheduled."/></p>}
-    </section></>:null}
-  </div>;
+    </section>;
 }

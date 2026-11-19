@@ -1,3 +1,5 @@
+export const exampleCover={id:'WZMVTHGhlbg',credit:'Yodi Yodi · YouTube',poster:'/marketing/covers/ethiopian-sinotruk.jpg'};
+
 // Store only an ID. The public clients construct playback and poster URLs locally.
 export function youtubeCoverId(input) {
   const text=String(input??'').trim();
@@ -17,5 +19,5 @@ export function youtubeCoverId(input) {
 
 export function coverPosterPath(id) {
   if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
-  return id==='WZMVTHGhlbg' ? '/marketing/covers/ethiopian-sinotruk.jpg' : `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+  return id===exampleCover.id ? exampleCover.poster : `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 }
