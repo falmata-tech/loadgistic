@@ -2831,6 +2831,7 @@ body:has(>.public-workspace-nav)>main.section{padding:34px 0}body:has(>.public-w
 .capacity-signal-dialog .alert{margin:0;padding:10px 12px;font-size:.8rem}
 .capacity-summary-toolrail button:disabled{opacity:.65;cursor:wait}
 .capacity-home-page .capacity-truck-copy .capacity-assigned-driver{color:#155eef;font-weight:700;white-space:normal;overflow-wrap:anywhere;font-size:.64rem}
+.capacity-home-page .driver-map-summary .capacity-space-summary{color:var(--ink);font-size:.7rem;font-weight:700;white-space:normal}
 .fleet-driver-assignment{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:.78rem;color:#526375;font-weight:650}.fleet-driver-assignment svg{width:16px;height:16px;flex-shrink:0}
 .truck-driver-link{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #d7dfeb;border-radius:12px;background:#fff;margin-bottom:12px}.truck-driver-link>svg{width:24px;color:#155eef;flex-shrink:0}.truck-driver-link>div{display:grid;gap:3px;min-width:0;flex:1}.truck-driver-link small,.truck-driver-link span{color:#526375;font-size:.78rem}.truck-driver-link strong{font-size:.95rem;overflow-wrap:anywhere}.truck-driver-link>.button{flex-shrink:0}
 .map-truck-documents{display:grid;grid-column:1/-1;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;min-width:0}
@@ -3610,6 +3611,7 @@ html:not(:lang(en)) :is(.button,.nav-link,.mobile-nav a,.public-mobile-nav a){wh
 .map-info-bubble:focus-visible{outline:3px solid #0b1d3a;outline-offset:-3px}
 .capacity-truck-map-marker.vehicle-image-marker .vehicle-marker-image .vehicle-marker-load{max-width:calc(100% - 8px);min-width:0;min-height:18px;white-space:normal;text-align:center;line-height:1.15;bottom:3px;padding:2px 4px;font-size:.58rem}
 .capacity-truck-map-marker.vehicle-image-marker.selected:is(.empty,.partial) .vehicle-marker-image{outline:2px solid var(--capacity-selection);outline-offset:5px;box-shadow:0 0 0 5px #fff}
+.vehicle-marker-space{position:absolute;z-index:3;right:-3px;bottom:0;display:grid;place-items:center;min-width:28px;min-height:20px;padding:1px 4px;border:1px solid var(--capacity-partial);border-radius:6px;background:#fff;color:#0b1d3a;box-shadow:0 1px 4px #0b1d3a26;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;pointer-events:none}
 .capacity-info-card{position:absolute;z-index:1200;left:12px;bottom:12px;width:min(350px,calc(100% - 142px));max-height:min(240px,36%);display:flex;flex-direction:column;border:2px solid var(--signal-color);border-radius:12px;background:#fff;box-shadow:0 4px 16px #0b1d3a26;overflow:hidden;color:#0b1d3a;pointer-events:auto}
 .capacity-info-card>header{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding-left:12px;flex:none;border-bottom:1px solid #e5eaf1}
 .capacity-info-card>header strong{font-size:.8rem}
@@ -4000,17 +4002,25 @@ body:has(>main.unified-capacity-workspace) .public-assistance-dock,body:has(>mai
 .cargo-photo-panel>summary svg{width:19px;height:19px;color:#155eef;flex:none}
 .cargo-photo-panel>summary strong{flex:1}
 .cargo-photo-panel>summary .status{font-size:12px}
+.cargo-photo-panel>summary:has(.status){display:grid;grid-template-columns:19px minmax(0,1fr) 19px;column-gap:10px;row-gap:5px}
+.cargo-photo-panel>summary>.status{grid-column:2;grid-row:2;justify-self:start}
+.cargo-photo-panel>summary>.cargo-photo-chevron{grid-column:3;grid-row:1}
+.cargo-photo-panel[open]>summary .cargo-photo-chevron{transform:rotate(180deg)}
+.cargo-photo-inline>h4{display:flex;align-items:center;gap:9px;padding:11px 14px;margin:0;font-size:.92rem;color:#0b1d3a}
+.cargo-photo-inline>h4 svg{width:18px;height:18px;color:#155eef;flex:none}
 .cargo-photo-panel-body{display:grid;gap:12px;padding:14px;border-top:1px solid #d7e1ed}
 .cargo-photo-panel-body .meta{margin:0}
-.cargo-photo-preview{display:grid;gap:10px}
-.cargo-photo-preview img{display:block;width:100%;max-height:320px;object-fit:contain;border:1px solid #d7e1ed;border-radius:10px;background:#f4f7fb}
-.cargo-photo-meta,.cargo-photo-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
-.cargo-photo-meta span{flex:1;min-width:160px;color:#42546f;font-size:13px}
-.cargo-photo-actions .button{min-height:42px}
+.cargo-photo-preview,.cargo-photo-upload{display:grid;gap:10px}
+.cargo-photo-image{min-height:92px;display:grid;place-items:center;background:#f4f7fb;border:1px solid #d7e1ed;border-radius:10px;scroll-margin:8px}
+.cargo-photo-preview img,.cargo-photo-draft{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:10px;background:#f4f7fb}
+.cargo-photo-preview img[hidden]{display:none}
+.cargo-photo-draft{max-height:180px;border:1px solid #d7e1ed}
+.cargo-photo-meta,.cargo-photo-actions,.cargo-photo-retry{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+.cargo-photo-meta span{flex:1;min-width:min(160px,100%);color:#42546f;font-size:13px}
+.cargo-photo-panel .button{min-height:44px}
 .cargo-photo-actions label.button{position:relative;overflow:hidden;cursor:pointer}
 .cargo-photo-actions label.button:focus-within{outline:2px solid #155eef;outline-offset:2px}
 .cargo-photo-actions label.button input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-.cargo-photo-file{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#42546f;font-size:13px}
 .capacity-home-page .capacity-console{position:relative}
 .capacity-home-page .capacity-console>.cargo-photo-panel{position:absolute;z-index:690;bottom:14px;left:14px;width:min(360px,calc(100% - 28px));max-height:calc(100% - 150px);margin:0;overflow:auto;box-shadow:0 10px 28px rgba(11,29,58,.2)}
 .capacity-home-page .capacity-console>.cargo-photo-panel:not([open]){width:max-content;max-width:calc(100% - 28px)}

@@ -76,7 +76,7 @@ begin
   if exists(select 1 from account_capacity_filtered_page(other_driver,recipient_digest) p where p.payload->>'id'=saved_id::text) then raise exception 'FOREIGN_ACCOUNT_EXPOSED';end if;
  end loop;
  -- The database itself overrides a forged Partial/BOTH full-load claim.
- saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','PARTIAL','availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads','BOTH','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
+ saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','PARTIAL','available_percent',45,'availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads','BOTH','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
  if (select id from capacities where vehicle_id=truck_id order by updated_at desc,id desc limit 1) is distinct from saved_id
  then raise exception 'LATEST_PARTIAL_REPORT_LOST';end if;
  if not exists(select 1 from capacities where id=saved_id and not accepts_full_load and accepts_partial_load) then raise exception 'PARTIAL_FULL_LOAD_SAVED';end if;

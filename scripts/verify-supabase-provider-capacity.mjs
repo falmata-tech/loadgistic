@@ -37,6 +37,7 @@ function publishInput(current,vehicleId){
   const geometry=current.availability_geometry==='RADIUS'?'RADIUS':'ROUTE';
   const input={
     vehicleId,status,acceptedLoads:status==='EMPTY'?'BOTH':'PTL',availabilityGeometry:geometry,
+    ...(status==='PARTIAL'?{availablePercent:current.available_percent??45}:{}),
     visibility:current.visibility==='PRIVATE'?'PRIVATE':'OPEN',locationSource:'DEVICE_OBSCURED',
     approximateLat:Number(current.location_lat),approximateLng:Number(current.location_lng),
     locationPrecisionKm:Number(current.location_precision_km),acceptsMultiPick:true,acceptsMultiDrop:false

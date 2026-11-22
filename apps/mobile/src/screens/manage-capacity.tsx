@@ -84,7 +84,7 @@ function TruckCapacity({truck:receivedTruck,showIdentity,active,canPublish,canRe
       {truck.canLocate&&(truck.selectedLocationSource===undefined||truck.selectedLocationSource==='MOBILE')&&truck.current&&truck.current.status!=='OFF_DUTY'&&<Copy message="Approximate location updates every 10 minutes while Capacity is open."/>}
       {automatic.busy&&<Copy message="Updating vehicle location…"/>}<ErrorText message={automatic.error?t(automatic.error):''}/>
     </Card>
-    <CargoSpacePhoto vehicleId={truck.id} assignedDriverId={truck.driverId}/>
+    <CargoSpacePhoto vehicleId={truck.id} assignedDriverId={truck.driverId} canRemove={canRegular}/>
     <Modal visible={Boolean(editingSection)} transparent animationType="slide" onRequestClose={close}>
       <SafeAreaView style={{flex:1,backgroundColor:'rgba(11,29,58,.2)',justifyContent:'flex-end',paddingHorizontal:8,paddingTop:18}}>
         <View style={{width:'100%',maxWidth:640,maxHeight:'94%',alignSelf:'center',backgroundColor:'#fff',borderRadius:20,overflow:'hidden',flexShrink:1}} accessibilityViewIsModal>
@@ -144,7 +144,7 @@ export function CapacityEditor({ truck:receivedTruck, canPublish, onSaved, onCan
   });
   const save = () => run(async () => {
     const free=availablePercent.trim();
-    if(status==='PARTIAL'&&free!==''&&(!/^\d{1,2}$/.test(free)||Number(free)<1||Number(free)>99))throw new Error('Enter 1% to 99% of space still free.');
+    if(status==='PARTIAL'&&(!/^[1-9][0-9]?$/.test(free)))throw new Error('Enter 1% to 99% of space still free.');
     if (status !== 'OFF_DUTY') {
       if(sourceUnavailable)throw new Error('Choose GPS or Phone');
       if (!truck.driver) throw new Error('Assign a driver before publishing this vehicle.');
@@ -152,11 +152,12 @@ export function CapacityEditor({ truck:receivedTruck, canPublish, onSaved, onCan
       const places = geometry === 'ROUTE' ? route : [center, ...boundary];
       if (places.some(place => !place.placeRef)) throw new Error('Choose each city from the suggestions.');
     }
-    await account.request('/api/mobile/capacity', { action: 'PUBLISH', vehicleId: truck.id, status, acceptedLoads: status === 'PARTIAL' ? 'PTL' : loads, ...(status==='PARTIAL'?{availablePercent:free===''?null:Number(free)}:{}), availabilityGeometry: geometry, visibility:sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE', sharingMode,
+    await account.request('/api/mobile/capacity', { action: 'PUBLISH', vehicleId: truck.id, status, acceptedLoads: status === 'PARTIAL' ? 'PTL' : loads, ...(status==='PARTIAL'?{availablePercent:Number(free)}:{}), availabilityGeometry: geometry, visibility:sharingMode==='PUBLIC'||sharingMode==='BOTH'?'OPEN':'PRIVATE', sharingMode,
       currentRoutePlaces: route.filter(place => place.placeRef).map(place => ({ placeRef: place.placeRef })), capacityAreaCenterPlaceRef: center.placeRef,
       capacityAreaBoundaryPlaces: boundary.filter(place => place.placeRef).map(place => ({ placeRef: place.placeRef })), acceptsMultiPick: multiPick, acceptsMultiDrop: multiDrop });
     onSaved();
   });
+  const spaceField=<View style={{flexDirection:'row',alignItems:'flex-end',gap:8}}><Field message="Available space" value={availablePercent} onChangeText={setAvailablePercent} keyboardType="number-pad" placeholder="1–99" accessibilityHint={t('Enter 1% to 99% of space still free.')} editable={!busy} style={{width:120}}/><Text style={{fontSize:18,lineHeight:50,fontWeight:'700',color:palette.ink}}>%</Text></View>;
   const duty = (onDuty: boolean) => run(async () => {
     if(onDuty&&sourceUnavailable)throw new Error('Choose GPS or Phone');
     if (onDuty && phoneSelected && !fix) throw new Error('Refresh the vehicle location before marking it Available.');
@@ -166,7 +167,7 @@ export function CapacityEditor({ truck:receivedTruck, canPublish, onSaved, onCan
     {sourceUnavailable&&<Copy message="Choose GPS or Phone"/>}
     {truck.canLocate && phoneSelected && show('LOCATION') && <>{all&&<TaskHeading message="Vehicle location" icon="pin"/>}<Copy message={"Your exact position stays on your phone. Choose the approximate radius to share."}/><Choices value={String(radius)} options={privacyRadii.map(value => [String(value), `${value} km`])} busy={busy} onChange={value => { setRadius(Number(value)); setFix(null); }} /><Button message="Share vehicle location" onPress={locate} busy={busy} />{locationSaved && <Copy message={"Approximate location saved."}/>}</>}
     {fix&&!home&&show('LOCATION')&&<TrackingMap location={{latitude:fix.approximateLat,longitude:fix.approximateLng,radius:fix.locationPrecisionKm,area:'',updatedAt:''}}/>}
-    {canPublish && section!=='LOCATION' ? <>{show('CAPACITY')&&<><TaskHeading message="Planned capacity" icon="truck"/><Choices availability value={status} options={[['EMPTY', 'Empty'], ['PARTIAL', 'Partial'], ['OFF_DUTY', 'Off Duty']]} busy={busy} onChange={setStatus} />{status!=='OFF_DUTY'&&<View style={{gap:7,paddingTop:10,borderTopWidth:1,borderColor:palette.borderSoft}}>{status==='EMPTY'?<><View style={{flexDirection:'row',alignItems:'center',gap:7}}><AppIcon name="boxes" size={17} color={palette.blue}/><Text style={{fontSize:14,fontWeight:'800',color:palette.ink}}>{t('Load type')}</Text></View><Choices value={loads} options={CAPACITY_LOAD_CHOICES} busy={busy} onChange={setLoads}/><Copy>{t(capacityLoadExplanation(loads))}</Copy></>:<View style={{flexDirection:'row',alignItems:'flex-end',gap:8}}><Field message="Available space" value={availablePercent} onChangeText={value=>setAvailablePercent(value.replace(/\D/g,'').slice(0,2))} keyboardType="number-pad" maxLength={2} placeholder={t('Optional')} editable={!busy} style={{width:120}}/><Text style={{fontSize:18,lineHeight:50,fontWeight:'700',color:palette.ink}}>%</Text></View>}</View>}</>}
+    {canPublish && section!=='LOCATION' ? <>{show('CAPACITY')&&<><TaskHeading message="Planned capacity" icon="truck"/><Choices availability value={status} options={[['EMPTY', 'Empty'], ['PARTIAL', 'Partial'], ['OFF_DUTY', 'Off Duty']]} busy={busy} onChange={setStatus} />{status!=='OFF_DUTY'&&<View style={{gap:7,paddingTop:10,borderTopWidth:1,borderColor:palette.borderSoft}}>{status==='EMPTY'?<><View style={{flexDirection:'row',alignItems:'center',gap:7}}><AppIcon name="boxes" size={17} color={palette.blue}/><Text style={{fontSize:14,fontWeight:'800',color:palette.ink}}>{t('Load type')}</Text></View><Choices value={loads} options={CAPACITY_LOAD_CHOICES} busy={busy} onChange={setLoads}/><Copy>{t(capacityLoadExplanation(loads))}</Copy></>:spaceField}</View>}</>}
       {status !== 'OFF_DUTY' && <>
         {show('COVERAGE')&&<><TaskHeading message="Where is this vehicle available?" icon="route"/><Choices value={geometry} options={[["RADIUS", "Planned area"], ["ROUTE", "Planned route"]]} busy={busy} onChange={setGeometry} />
         {geometry === 'ROUTE' ? <Cities items={route} onChange={setRoute} minimum={2} label={t('Route city')} busy={busy} /> : <><PlacePicker label={t('Area center')} value={center} onChange={setCenter} disabled={busy} /><Cities items={boundary} onChange={setBoundary} minimum={3} label={t('Boundary city')} busy={busy} /></>}
@@ -182,6 +183,7 @@ export function CapacityEditor({ truck:receivedTruck, canPublish, onSaved, onCan
           {sharingMode==='BOTH'?<Copy message="Connected shippers and brokers can also see this vehicle privately."/>
             :sharingMode==='PUBLIC'?<Copy message="Anyone browsing the map can see this vehicle."/>
             :<Copy message="Only shippers and brokers you share with can see this vehicle."/>}
+          {!show('CAPACITY')&&status==='PARTIAL'&&!current?.availablePercentReportedAt&&spaceField}
           <AppLink href="/network" message="Manage vehicle sharing" style={{color:'#155eef',fontWeight:'700',paddingVertical:12}}/>
         </>}
         {!truck.canLocate && !truck.location && <Copy message={truck.canSetPhoneLocation?"Set your location using Vehicle location on Home before publishing.":"Choose the vehicle’s location source in Fleet, then refresh before publishing."}/>}

@@ -5,6 +5,7 @@ import ts from 'typescript';
 import {capacityMapColors,capacityStatusPresentation} from '../src/lib/capacity-status-presentation.js';
 import * as selection from '../src/lib/capacity-location-selection.js';
 import * as sharing from '../src/lib/capacity-sharing.js';
+import {reportedSpacePercent} from '../src/lib/capacity-space-estimate.js';
 
 const nodes=value=>!value||typeof value!=='object'?[]:Array.isArray(value)?value.flatMap(nodes):[value,...nodes(value.props?.children)];
 const point=(lat,lng,label)=>({lat,lng,label});
@@ -19,6 +20,7 @@ function load(file,extra={}){
   '@/components/localization':{Text:'Text',FeedbackText:'FeedbackText',Localized:'Localized',useTranslation:()=>({t:message=>message})},
   '@/components/base-map-tiles':{BaseMapTiles:'Tiles'},'@/lib/capacity-status-presentation':{capacityStatusPresentation,capacityMapColors},'@/components/offset-signal-polyline':{OffsetSignalPolyline:'OffsetPolyline'},
   '@/lib/capacity-location-selection.js':selection,'@/lib/capacity-sharing':sharing,'@/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/vehicle.jpg'},'@/lib/location-privacy.js':{nextCapacityPrivacyRadius:()=>5},
+  '@/lib/capacity-space-estimate.js':{reportedSpacePercent},
   '@/lib/ui':{relativeTime:()=>''},'@/lib/capacity-editor-client':{},'@/lib/location-source.js':{locationSourceLabel:()=>''},
   './capacity-location-map':{CapacityLocationMap:'CoverageMap'},'./capacity-form':{CapacityForm:'Form'},'./cargo-space-photo-panel':{ProviderCargoSpacePhoto:'PhotoPanel'},'./public-capacity-map':{PublicCapacityMap:'PublicMap'},'./status-pill':{StatusPill:'StatusPill'},'./capacity-market-planning':{CapacityMarketPlanning:'Planning'},'./capacity-edit-dialog':{CapacityEditDialog:'Dialog'},'./capacity-signal-editor':{CapacitySignalEditor:'SignalEditor'},'./driver-capacity-location-editor':{DriverCapacityLocationEditor:'LocationEditor'},...extra};
  const code=ts.transpileModule(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,exports={};
@@ -45,7 +47,7 @@ test('reported location keeps its separate uncertainty circle alongside Planned 
 test('provider Home keeps saved coverage visible before a reported location exists',()=>{
  const render=load('src/components/capacity-form.tsx').CapacityForm;
  for(const current of [null,{status:'EMPTY',availability_geometry:'ROUTE',current_route_points:route}]){
-  const tree=render({vehicles:[{id:'vehicle',label:'Vehicle',make:'Example',model:'Van',driver:{id:'driver',name:'Driver'},current}],corridors:[preferred],allowCorridors:true,renderedAt:0});
+  const tree=render({vehicles:[{id:'vehicle',label:'Vehicle',make:'Example',model:'Van',driver:{id:'driver',name:'Driver'},current}],corridors:[preferred],allowCorridors:true,canUploadPhoto:true,renderedAt:0});
   const map=nodes(tree).find(node=>node.type==='CoverageMap');assert.ok(map);
   assert.equal(map.props.center,null);assert.equal(map.props.regularSignals.length,1);
   assert.deepEqual(map.props.routePoints,current?route:[]);
@@ -53,7 +55,7 @@ test('provider Home keeps saved coverage visible before a reported location exis
 });
 test('a fleet driver without publishing permission also sees saved coverage without a reported marker',()=>{
  const render=load('src/components/driver-capacity-home.tsx').DriverCapacityHome;
- const tree=render({vehicles:[{id:'vehicle',assigned_driver:{id:'driver'}}],capacities:[],corridors:[preferred],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
+ const tree=render({vehicles:[{id:'vehicle',assigned_driver:{id:'driver'}}],capacities:[],corridors:[preferred],access:{kind:'COMPANY',can_manage_capacity:false},canUploadPhoto:true,query:{},renderedAt:0});
  const task=nodes(tree).find(node=>typeof node.type==='function'&&node.type.name==='RestrictedAvailability');assert.ok(task);
  const map=nodes(task.type(task.props)).find(node=>node.type==='CoverageMap');assert.ok(map);
  assert.equal(map.props.center,null);assert.equal(map.props.regularSignals.length,1);

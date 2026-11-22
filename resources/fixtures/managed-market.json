@@ -10335,7 +10335,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:57.200Z",
+        "available_percent_reported_by": "user-driver",
+        "available_percent_reported_driver_id": "user-driver"
       },
       {
         "id": "cap-partner-partial",
@@ -10403,7 +10406,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:57.200Z",
+        "available_percent_reported_by": "user-transporter",
+        "available_percent_reported_driver_id": "user-company-driver-2"
       },
       {
         "id": "cap-public-100",
@@ -10479,7 +10485,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-2",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Holeta, Ethiopia",
         "destination": "Sebeta, Ethiopia",
         "corridor": "Holeta, Ethiopia → Sebeta, Ethiopia",
@@ -10539,7 +10545,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:56.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-002",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-002"
       },
       {
         "id": "cap-public-102",
@@ -10618,7 +10627,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-4",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Bulgariya Mazoriya, Ethiopia",
         "destination": "Addis Ababa, Ethiopia",
         "corridor": "Bulgariya Mazoriya, Ethiopia ↔ Addis Ababa, Ethiopia",
@@ -10678,7 +10687,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:54.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-004",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-004"
       },
       {
         "id": "cap-public-104",
@@ -10754,7 +10766,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-6",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Addis Ababa, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia service area",
@@ -10814,7 +10826,10 @@
         "capacity_area_center_label": "Addis Ababa, Ethiopia",
         "capacity_area_center_lat": 9.03,
         "capacity_area_center_lng": 38.74,
-        "capacity_area_boundary_json": "[{\"key\":\"ambo\",\"place_ref\":\"builtin:ambo\",\"label\":\"Ambo, Ethiopia\",\"name\":\"Ambo\",\"lat\":8.98,\"lng\":37.85,\"place_type\":\"town\"},{\"key\":\"weliso\",\"place_ref\":\"builtin:weliso\",\"label\":\"Weliso, Ethiopia\",\"name\":\"Weliso\",\"lat\":8.5388595,\"lng\":37.9761854,\"place_type\":\"town\"},{\"key\":\"adama\",\"place_ref\":\"builtin:adama\",\"label\":\"Adama, Ethiopia\",\"name\":\"Adama\",\"lat\":8.54,\"lng\":39.27,\"place_type\":\"town\"},{\"key\":\"debre-birhan\",\"place_ref\":\"builtin:debre birhan\",\"label\":\"Debre Birhan, Ethiopia\",\"name\":\"Debre Birhan\",\"lat\":9.68,\"lng\":39.53,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"ambo\",\"place_ref\":\"builtin:ambo\",\"label\":\"Ambo, Ethiopia\",\"name\":\"Ambo\",\"lat\":8.98,\"lng\":37.85,\"place_type\":\"town\"},{\"key\":\"weliso\",\"place_ref\":\"builtin:weliso\",\"label\":\"Weliso, Ethiopia\",\"name\":\"Weliso\",\"lat\":8.5388595,\"lng\":37.9761854,\"place_type\":\"town\"},{\"key\":\"adama\",\"place_ref\":\"builtin:adama\",\"label\":\"Adama, Ethiopia\",\"name\":\"Adama\",\"lat\":8.54,\"lng\":39.27,\"place_type\":\"town\"},{\"key\":\"debre-birhan\",\"place_ref\":\"builtin:debre birhan\",\"label\":\"Debre Birhan, Ethiopia\",\"name\":\"Debre Birhan\",\"lat\":9.68,\"lng\":39.53,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:43:52.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-006",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-006"
       },
       {
         "id": "cap-public-106",
@@ -10822,7 +10837,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-7",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Assosa, Ethiopia",
         "destination": "Addis Ababa, Ethiopia",
         "corridor": "Assosa, Ethiopia → Addis Ababa, Ethiopia",
@@ -10882,7 +10897,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:51.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-007",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-007"
       },
       {
         "id": "cap-public-107",
@@ -10890,7 +10908,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-8",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Woldiya, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Woldiya, Ethiopia",
@@ -10950,7 +10968,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:50.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-008",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-008"
       },
       {
         "id": "cap-public-108",
@@ -11026,7 +11047,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Sebeta, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Sebeta, Ethiopia",
@@ -11086,7 +11107,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:23:48.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-010",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-010"
       },
       {
         "id": "cap-public-110",
@@ -11094,7 +11118,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 90,
         "origin": "Holeta, Ethiopia",
         "destination": "Sebeta, Ethiopia",
         "corridor": "Holeta, Ethiopia → Sebeta, Ethiopia",
@@ -11154,7 +11178,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:47.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-011",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-011"
       },
       {
         "id": "cap-public-111",
@@ -11162,7 +11189,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Gondar, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Gondar, Ethiopia",
@@ -11222,7 +11249,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:46.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-012",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-012"
       },
       {
         "id": "cap-public-112",
@@ -11298,7 +11328,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Lekwuanda, Ethiopia",
         "destination": "Addis Ababa, Ethiopia",
         "corridor": "Lekwuanda, Ethiopia ↔ Addis Ababa, Ethiopia",
@@ -11358,7 +11388,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:44.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-014",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-014"
       },
       {
         "id": "cap-public-114",
@@ -11366,7 +11399,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-01-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Mizan Aman, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Mizan Aman, Ethiopia",
@@ -11426,7 +11459,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:43.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-015",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-015"
       },
       {
         "id": "cap-public-115",
@@ -11434,7 +11470,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-1",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Adama, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Adama, Ethiopia service area",
@@ -11494,7 +11530,10 @@
         "capacity_area_center_label": "Adama, Ethiopia",
         "capacity_area_center_lat": 8.54,
         "capacity_area_center_lng": 39.27,
-        "capacity_area_boundary_json": "[{\"key\":\"wenji\",\"place_ref\":\"osm:node/316861042\",\"label\":\"Wenji, Ethiopia\",\"name\":\"Wenji\",\"lat\":8.4540959,\"lng\":39.2175166,\"place_type\":\"town\"},{\"key\":\"welenchiti\",\"place_ref\":\"builtin:welenchiti\",\"label\":\"Welenchiti, Ethiopia\",\"name\":\"Welenchiti\",\"lat\":8.67,\"lng\":39.43,\"place_type\":\"town\"},{\"key\":\"mojo\",\"place_ref\":\"builtin:mojo\",\"label\":\"Mojo, Ethiopia\",\"name\":\"Mojo\",\"lat\":8.59,\"lng\":39.12,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"wenji\",\"place_ref\":\"osm:node/316861042\",\"label\":\"Wenji, Ethiopia\",\"name\":\"Wenji\",\"lat\":8.4540959,\"lng\":39.2175166,\"place_type\":\"town\"},{\"key\":\"welenchiti\",\"place_ref\":\"builtin:welenchiti\",\"label\":\"Welenchiti, Ethiopia\",\"name\":\"Welenchiti\",\"lat\":8.67,\"lng\":39.43,\"place_type\":\"town\"},{\"key\":\"mojo\",\"place_ref\":\"builtin:mojo\",\"label\":\"Mojo, Ethiopia\",\"name\":\"Mojo\",\"lat\":8.59,\"lng\":39.12,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:43:42.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-016",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-016"
       },
       {
         "id": "cap-public-116",
@@ -11570,7 +11609,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-3",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Luto, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Luto, Ethiopia ↔ Adama, Ethiopia",
@@ -11630,7 +11669,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:40.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-018",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-018"
       },
       {
         "id": "cap-public-118",
@@ -11638,7 +11680,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-4",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Adama, Ethiopia",
@@ -11698,7 +11740,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:39.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-019",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-019"
       },
       {
         "id": "cap-public-119",
@@ -11706,7 +11751,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-5",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Adama, Ethiopia",
         "destination": "Asella, Ethiopia",
         "corridor": "Adama, Ethiopia → Asella, Ethiopia",
@@ -11766,7 +11811,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:23:38.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-020",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-020"
       },
       {
         "id": "cap-public-120",
@@ -11842,7 +11890,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-7",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 90,
         "origin": "Adama, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Adama, Ethiopia service area",
@@ -11902,7 +11950,10 @@
         "capacity_area_center_label": "Adama, Ethiopia",
         "capacity_area_center_lat": 8.54,
         "capacity_area_center_lng": 39.27,
-        "capacity_area_boundary_json": "[{\"key\":\"wenji\",\"place_ref\":\"osm:node/316861042\",\"label\":\"Wenji, Ethiopia\",\"name\":\"Wenji\",\"lat\":8.4540959,\"lng\":39.2175166,\"place_type\":\"town\"},{\"key\":\"welenchiti\",\"place_ref\":\"builtin:welenchiti\",\"label\":\"Welenchiti, Ethiopia\",\"name\":\"Welenchiti\",\"lat\":8.67,\"lng\":39.43,\"place_type\":\"town\"},{\"key\":\"mojo\",\"place_ref\":\"builtin:mojo\",\"label\":\"Mojo, Ethiopia\",\"name\":\"Mojo\",\"lat\":8.59,\"lng\":39.12,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"wenji\",\"place_ref\":\"osm:node/316861042\",\"label\":\"Wenji, Ethiopia\",\"name\":\"Wenji\",\"lat\":8.4540959,\"lng\":39.2175166,\"place_type\":\"town\"},{\"key\":\"welenchiti\",\"place_ref\":\"builtin:welenchiti\",\"label\":\"Welenchiti, Ethiopia\",\"name\":\"Welenchiti\",\"lat\":8.67,\"lng\":39.43,\"place_type\":\"town\"},{\"key\":\"mojo\",\"place_ref\":\"builtin:mojo\",\"label\":\"Mojo, Ethiopia\",\"name\":\"Mojo\",\"lat\":8.59,\"lng\":39.12,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:43:36.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-022",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-022"
       },
       {
         "id": "cap-public-122",
@@ -11910,7 +11961,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-8",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Adama, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Adama, Ethiopia service area",
@@ -11970,7 +12021,10 @@
         "capacity_area_center_label": "Adama, Ethiopia",
         "capacity_area_center_lat": 8.54,
         "capacity_area_center_lng": 39.27,
-        "capacity_area_boundary_json": "[{\"key\":\"meki\",\"place_ref\":\"builtin:meki\",\"label\":\"Meki, Ethiopia\",\"name\":\"Meki\",\"lat\":8.15,\"lng\":38.82,\"place_type\":\"town\"},{\"key\":\"asella\",\"place_ref\":\"builtin:asella\",\"label\":\"Asella, Ethiopia\",\"name\":\"Asella\",\"lat\":7.95,\"lng\":39.13,\"place_type\":\"town\"},{\"key\":\"awash\",\"place_ref\":\"builtin:awash\",\"label\":\"Awash, Ethiopia\",\"name\":\"Awash\",\"lat\":8.98,\"lng\":40.17,\"place_type\":\"town\"},{\"key\":\"bishoftu\",\"place_ref\":\"builtin:bishoftu\",\"label\":\"Bishoftu, Ethiopia\",\"name\":\"Bishoftu\",\"lat\":8.75,\"lng\":38.99,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"meki\",\"place_ref\":\"builtin:meki\",\"label\":\"Meki, Ethiopia\",\"name\":\"Meki\",\"lat\":8.15,\"lng\":38.82,\"place_type\":\"town\"},{\"key\":\"asella\",\"place_ref\":\"builtin:asella\",\"label\":\"Asella, Ethiopia\",\"name\":\"Asella\",\"lat\":7.95,\"lng\":39.13,\"place_type\":\"town\"},{\"key\":\"awash\",\"place_ref\":\"builtin:awash\",\"label\":\"Awash, Ethiopia\",\"name\":\"Awash\",\"lat\":8.98,\"lng\":40.17,\"place_type\":\"town\"},{\"key\":\"bishoftu\",\"place_ref\":\"builtin:bishoftu\",\"label\":\"Bishoftu, Ethiopia\",\"name\":\"Bishoftu\",\"lat\":8.75,\"lng\":38.99,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:43:35.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-023",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-023"
       },
       {
         "id": "cap-public-123",
@@ -11978,7 +12032,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-9",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Adama, Ethiopia",
@@ -12038,7 +12092,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:34.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-024",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-024"
       },
       {
         "id": "cap-public-124",
@@ -12114,7 +12171,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Adama, Ethiopia",
@@ -12174,7 +12231,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:32.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-026",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-026"
       },
       {
         "id": "cap-public-126",
@@ -12182,7 +12242,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Adama, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Adama, Ethiopia → Dire Dawa, Ethiopia",
@@ -12242,7 +12302,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:31.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-027",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-027"
       },
       {
         "id": "cap-public-127",
@@ -12250,7 +12313,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-13",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Adama, Ethiopia",
         "destination": "Bishoftu, Ethiopia",
         "corridor": "Adama, Ethiopia → Bishoftu, Ethiopia",
@@ -12310,7 +12373,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:30.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-028",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-028"
       },
       {
         "id": "cap-public-128",
@@ -12386,7 +12452,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-02-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Adama, Ethiopia",
         "destination": "Addis Ababa, Ethiopia",
         "corridor": "Adama, Ethiopia → Addis Ababa, Ethiopia",
@@ -12446,7 +12512,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:23:28.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-030",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-030"
       },
       {
         "id": "cap-public-130",
@@ -12454,7 +12523,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-1",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 90,
         "origin": "Dessie, Ethiopia",
         "destination": "Bahir Dar, Ethiopia",
         "corridor": "Dessie, Ethiopia → Bahir Dar, Ethiopia",
@@ -12514,7 +12583,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:27.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-031",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-031"
       },
       {
         "id": "cap-public-131",
@@ -12522,7 +12594,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-2",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Gondar, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Gondar, Ethiopia",
@@ -12582,7 +12654,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:26.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-032",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-032"
       },
       {
         "id": "cap-public-132",
@@ -12658,7 +12733,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-4",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Dangila, Ethiopia",
         "destination": "Bahir Dar, Ethiopia",
         "corridor": "Dangila, Ethiopia → Bahir Dar, Ethiopia",
@@ -12718,7 +12793,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:24.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-034",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-034"
       },
       {
         "id": "cap-public-134",
@@ -12726,7 +12804,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-5",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Tis Abay, Ethiopia",
         "destination": "Bahir Dar, Ethiopia",
         "corridor": "Tis Abay, Ethiopia → Bahir Dar, Ethiopia",
@@ -12786,7 +12864,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:23.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-035",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-035"
       },
       {
         "id": "cap-public-135",
@@ -12794,7 +12875,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-6",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Gondar, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Gondar, Ethiopia",
@@ -12854,7 +12935,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:22.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-036",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-036"
       },
       {
         "id": "cap-public-136",
@@ -12930,7 +13014,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-8",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Bahir Dar, Ethiopia",
         "destination": "Bahir Dar, Ethiopia",
         "corridor": "Bahir Dar, Ethiopia service area",
@@ -12990,7 +13074,10 @@
         "capacity_area_center_label": "Bahir Dar, Ethiopia",
         "capacity_area_center_lat": 11.59,
         "capacity_area_center_lng": 37.39,
-        "capacity_area_boundary_json": "[{\"key\":\"dangila\",\"place_ref\":\"builtin:dangila\",\"label\":\"Dangila, Ethiopia\",\"name\":\"Dangila\",\"lat\":11.27,\"lng\":36.83,\"place_type\":\"town\"},{\"key\":\"debre-markos\",\"place_ref\":\"builtin:debre markos\",\"label\":\"Debre Markos, Ethiopia\",\"name\":\"Debre Markos\",\"lat\":10.34,\"lng\":37.73,\"place_type\":\"town\"},{\"key\":\"debre-tabor\",\"place_ref\":\"builtin:debre tabor\",\"label\":\"Debre Tabor, Ethiopia\",\"name\":\"Debre Tabor\",\"lat\":11.86,\"lng\":38,\"place_type\":\"town\"},{\"key\":\"gondar\",\"place_ref\":\"builtin:gondar\",\"label\":\"Gondar, Ethiopia\",\"name\":\"Gondar\",\"lat\":12.6,\"lng\":37.47,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"dangila\",\"place_ref\":\"builtin:dangila\",\"label\":\"Dangila, Ethiopia\",\"name\":\"Dangila\",\"lat\":11.27,\"lng\":36.83,\"place_type\":\"town\"},{\"key\":\"debre-markos\",\"place_ref\":\"builtin:debre markos\",\"label\":\"Debre Markos, Ethiopia\",\"name\":\"Debre Markos\",\"lat\":10.34,\"lng\":37.73,\"place_type\":\"town\"},{\"key\":\"debre-tabor\",\"place_ref\":\"builtin:debre tabor\",\"label\":\"Debre Tabor, Ethiopia\",\"name\":\"Debre Tabor\",\"lat\":11.86,\"lng\":38,\"place_type\":\"town\"},{\"key\":\"gondar\",\"place_ref\":\"builtin:gondar\",\"label\":\"Gondar, Ethiopia\",\"name\":\"Gondar\",\"lat\":12.6,\"lng\":37.47,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:33:20.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-038",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-038"
       },
       {
         "id": "cap-public-138",
@@ -12998,7 +13085,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-9",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 25,
         "origin": "Bahir Dar, Ethiopia",
         "destination": "Dessie, Ethiopia",
         "corridor": "Bahir Dar, Ethiopia → Dessie, Ethiopia",
@@ -13058,7 +13145,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:19.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-039",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-039"
       },
       {
         "id": "cap-public-139",
@@ -13066,7 +13156,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Bahir Dar, Ethiopia",
         "destination": "Dessie, Ethiopia",
         "corridor": "Bahir Dar, Ethiopia → Dessie, Ethiopia",
@@ -13126,7 +13216,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:23:18.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-040",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-040"
       },
       {
         "id": "cap-public-140",
@@ -13202,7 +13295,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 25,
         "origin": "Dessie, Ethiopia",
         "destination": "Bahir Dar, Ethiopia",
         "corridor": "Dessie, Ethiopia → Bahir Dar, Ethiopia",
@@ -13262,7 +13355,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:16.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-042",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-042"
       },
       {
         "id": "cap-public-142",
@@ -13341,7 +13437,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-03-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Bahir Dar, Ethiopia",
         "destination": "Dessie, Ethiopia",
         "corridor": "Bahir Dar, Ethiopia → Dessie, Ethiopia",
@@ -13401,7 +13497,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:14.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-044",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-044"
       },
       {
         "id": "cap-public-144",
@@ -13477,7 +13576,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-1",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Adigrat, Ethiopia",
         "destination": "Woldiya, Ethiopia",
         "corridor": "Adigrat, Ethiopia → Woldiya, Ethiopia",
@@ -13537,7 +13636,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:12.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-046",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-046"
       },
       {
         "id": "cap-public-146",
@@ -13545,7 +13647,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-2",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Mekelle, Ethiopia",
         "destination": "Kombolcha, Ethiopia",
         "corridor": "Mekelle, Ethiopia → Kombolcha, Ethiopia",
@@ -13605,7 +13707,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:11.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-047",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-047"
       },
       {
         "id": "cap-public-147",
@@ -13613,7 +13718,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-3",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Mekelle, Ethiopia",
         "destination": "Wukro, Ethiopia",
         "corridor": "Mekelle, Ethiopia → Wukro, Ethiopia",
@@ -13673,7 +13778,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:10.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-048",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-048"
       },
       {
         "id": "cap-public-148",
@@ -13749,7 +13857,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-5",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "ዓይኒ ዓለም Aynalem, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "ዓይኒ ዓለም Aynalem, Ethiopia → Mekelle, Ethiopia",
@@ -13809,7 +13917,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:23:08.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-050",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-050"
       },
       {
         "id": "cap-public-150",
@@ -13888,7 +13999,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-7",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Mekelle, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "Mekelle, Ethiopia service area",
@@ -13948,7 +14059,10 @@
         "capacity_area_center_label": "Mekelle, Ethiopia",
         "capacity_area_center_lat": 13.5,
         "capacity_area_center_lng": 39.48,
-        "capacity_area_boundary_json": "[{\"key\":\"alamata\",\"place_ref\":\"builtin:alamata\",\"label\":\"Alamata, Ethiopia\",\"name\":\"Alamata\",\"lat\":12.42,\"lng\":39.56,\"place_type\":\"town\"},{\"key\":\"quiha\",\"place_ref\":\"builtin:quiha\",\"label\":\"Quiha, Ethiopia\",\"name\":\"Quiha\",\"lat\":13.47,\"lng\":39.55,\"place_type\":\"town\"},{\"key\":\"adigrat\",\"place_ref\":\"builtin:adigrat\",\"label\":\"Adigrat, Ethiopia\",\"name\":\"Adigrat\",\"lat\":14.28,\"lng\":39.46,\"place_type\":\"town\"},{\"key\":\"hagere-selam\",\"place_ref\":\"builtin:hagere selam\",\"label\":\"Hagere Selam, Ethiopia\",\"name\":\"Hagere Selam\",\"lat\":13.65,\"lng\":39.16,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"alamata\",\"place_ref\":\"builtin:alamata\",\"label\":\"Alamata, Ethiopia\",\"name\":\"Alamata\",\"lat\":12.42,\"lng\":39.56,\"place_type\":\"town\"},{\"key\":\"quiha\",\"place_ref\":\"builtin:quiha\",\"label\":\"Quiha, Ethiopia\",\"name\":\"Quiha\",\"lat\":13.47,\"lng\":39.55,\"place_type\":\"town\"},{\"key\":\"adigrat\",\"place_ref\":\"builtin:adigrat\",\"label\":\"Adigrat, Ethiopia\",\"name\":\"Adigrat\",\"lat\":14.28,\"lng\":39.46,\"place_type\":\"town\"},{\"key\":\"hagere-selam\",\"place_ref\":\"builtin:hagere selam\",\"label\":\"Hagere Selam, Ethiopia\",\"name\":\"Hagere Selam\",\"lat\":13.65,\"lng\":39.16,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:43:06.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-052",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-052"
       },
       {
         "id": "cap-public-152",
@@ -14024,7 +14138,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-9",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Adigrat, Ethiopia",
         "destination": "Woldiya, Ethiopia",
         "corridor": "Adigrat, Ethiopia → Woldiya, Ethiopia",
@@ -14084,7 +14198,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:04.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-054",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-054"
       },
       {
         "id": "cap-public-154",
@@ -14092,7 +14209,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Adigrat, Ethiopia",
         "destination": "Woldiya, Ethiopia",
         "corridor": "Adigrat, Ethiopia → Woldiya, Ethiopia",
@@ -14152,7 +14269,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:03.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-055",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-055"
       },
       {
         "id": "cap-public-155",
@@ -14160,7 +14280,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Kombolcha, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "Kombolcha, Ethiopia → Mekelle, Ethiopia",
@@ -14220,7 +14340,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:02.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-056",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-056"
       },
       {
         "id": "cap-public-156",
@@ -14296,7 +14419,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-13",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Mekelle, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "Mekelle, Ethiopia service area",
@@ -14356,7 +14479,10 @@
         "capacity_area_center_label": "Mekelle, Ethiopia",
         "capacity_area_center_lat": 13.5,
         "capacity_area_center_lng": 39.48,
-        "capacity_area_boundary_json": "[{\"key\":\"alamata\",\"place_ref\":\"builtin:alamata\",\"label\":\"Alamata, Ethiopia\",\"name\":\"Alamata\",\"lat\":12.42,\"lng\":39.56,\"place_type\":\"town\"},{\"key\":\"quiha\",\"place_ref\":\"builtin:quiha\",\"label\":\"Quiha, Ethiopia\",\"name\":\"Quiha\",\"lat\":13.47,\"lng\":39.55,\"place_type\":\"town\"},{\"key\":\"adigrat\",\"place_ref\":\"builtin:adigrat\",\"label\":\"Adigrat, Ethiopia\",\"name\":\"Adigrat\",\"lat\":14.28,\"lng\":39.46,\"place_type\":\"town\"},{\"key\":\"hagere-selam\",\"place_ref\":\"builtin:hagere selam\",\"label\":\"Hagere Selam, Ethiopia\",\"name\":\"Hagere Selam\",\"lat\":13.65,\"lng\":39.16,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"alamata\",\"place_ref\":\"builtin:alamata\",\"label\":\"Alamata, Ethiopia\",\"name\":\"Alamata\",\"lat\":12.42,\"lng\":39.56,\"place_type\":\"town\"},{\"key\":\"quiha\",\"place_ref\":\"builtin:quiha\",\"label\":\"Quiha, Ethiopia\",\"name\":\"Quiha\",\"lat\":13.47,\"lng\":39.55,\"place_type\":\"town\"},{\"key\":\"adigrat\",\"place_ref\":\"builtin:adigrat\",\"label\":\"Adigrat, Ethiopia\",\"name\":\"Adigrat\",\"lat\":14.28,\"lng\":39.46,\"place_type\":\"town\"},{\"key\":\"hagere-selam\",\"place_ref\":\"builtin:hagere selam\",\"label\":\"Hagere Selam, Ethiopia\",\"name\":\"Hagere Selam\",\"lat\":13.65,\"lng\":39.16,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:33:00.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-058",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-058"
       },
       {
         "id": "cap-public-158",
@@ -14364,7 +14490,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "ዓይኒ ዓለም Aynalem, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "ዓይኒ ዓለም Aynalem, Ethiopia ↔ Mekelle, Ethiopia",
@@ -14424,7 +14550,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:59.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-059",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-059"
       },
       {
         "id": "cap-public-159",
@@ -14432,7 +14561,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-04-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Kombolcha, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "Kombolcha, Ethiopia → Mekelle, Ethiopia",
@@ -14492,7 +14621,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:22:58.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-060",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-060"
       },
       {
         "id": "cap-public-160",
@@ -14568,7 +14700,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-2",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Semera, Ethiopia",
         "destination": "Kombolcha, Ethiopia",
         "corridor": "Semera, Ethiopia → Kombolcha, Ethiopia",
@@ -14628,7 +14760,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:56.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-062",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-062"
       },
       {
         "id": "cap-public-162",
@@ -14636,7 +14771,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-3",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Adama, Ethiopia",
         "destination": "Semera, Ethiopia",
         "corridor": "Adama, Ethiopia → Semera, Ethiopia",
@@ -14696,7 +14831,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:55.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-063",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-063"
       },
       {
         "id": "cap-public-163",
@@ -14704,7 +14842,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-4",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Kombolcha, Ethiopia",
         "destination": "Semera, Ethiopia",
         "corridor": "Kombolcha, Ethiopia → Semera, Ethiopia",
@@ -14764,7 +14902,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:54.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-064",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-064"
       },
       {
         "id": "cap-public-164",
@@ -14840,7 +14981,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-6",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Mille, Ethiopia",
         "destination": "Semera, Ethiopia",
         "corridor": "Mille, Ethiopia → Semera, Ethiopia",
@@ -14900,7 +15041,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:52.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-066",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-066"
       },
       {
         "id": "cap-public-166",
@@ -14908,7 +15052,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-7",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Semera, Ethiopia",
         "destination": "Tendaho, Ethiopia",
         "corridor": "Semera, Ethiopia → Tendaho, Ethiopia",
@@ -14968,7 +15112,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:51.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-067",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-067"
       },
       {
         "id": "cap-public-167",
@@ -14976,7 +15123,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-8",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Semera, Ethiopia",
         "destination": "Semera, Ethiopia",
         "corridor": "Semera, Ethiopia service area",
@@ -15036,7 +15183,10 @@
         "capacity_area_center_label": "Semera, Ethiopia",
         "capacity_area_center_lat": 11.79,
         "capacity_area_center_lng": 41.01,
-        "capacity_area_boundary_json": "[{\"key\":\"chifra\",\"place_ref\":\"builtin:chifra\",\"label\":\"Chifra, Ethiopia\",\"name\":\"Chifra\",\"lat\":11.6,\"lng\":40.02,\"place_type\":\"town\"},{\"key\":\"mille\",\"place_ref\":\"builtin:mille\",\"label\":\"Mille, Ethiopia\",\"name\":\"Mille\",\"lat\":11.42,\"lng\":40.77,\"place_type\":\"town\"},{\"key\":\"asayita\",\"place_ref\":\"builtin:asayita\",\"label\":\"Asayita, Ethiopia\",\"name\":\"Asayita\",\"lat\":11.57,\"lng\":41.44,\"place_type\":\"town\"},{\"key\":\"sardo\",\"place_ref\":\"builtin:sardo\",\"label\":\"Sardo, Ethiopia\",\"name\":\"Sardo\",\"lat\":11.9584793,\"lng\":41.3018957,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"chifra\",\"place_ref\":\"builtin:chifra\",\"label\":\"Chifra, Ethiopia\",\"name\":\"Chifra\",\"lat\":11.6,\"lng\":40.02,\"place_type\":\"town\"},{\"key\":\"mille\",\"place_ref\":\"builtin:mille\",\"label\":\"Mille, Ethiopia\",\"name\":\"Mille\",\"lat\":11.42,\"lng\":40.77,\"place_type\":\"town\"},{\"key\":\"asayita\",\"place_ref\":\"builtin:asayita\",\"label\":\"Asayita, Ethiopia\",\"name\":\"Asayita\",\"lat\":11.57,\"lng\":41.44,\"place_type\":\"town\"},{\"key\":\"sardo\",\"place_ref\":\"builtin:sardo\",\"label\":\"Sardo, Ethiopia\",\"name\":\"Sardo\",\"lat\":11.9584793,\"lng\":41.3018957,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:32:50.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-068",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-068"
       },
       {
         "id": "cap-public-168",
@@ -15112,7 +15262,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Semera, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Semera, Ethiopia → Adama, Ethiopia",
@@ -15172,7 +15322,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:12:48.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-070",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-070"
       },
       {
         "id": "cap-public-170",
@@ -15180,7 +15333,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 25,
         "origin": "Semera, Ethiopia",
         "destination": "Semera, Ethiopia",
         "corridor": "Semera, Ethiopia service area",
@@ -15240,7 +15393,10 @@
         "capacity_area_center_label": "Semera, Ethiopia",
         "capacity_area_center_lat": 11.79,
         "capacity_area_center_lng": 41.01,
-        "capacity_area_boundary_json": "[{\"key\":\"chifra\",\"place_ref\":\"builtin:chifra\",\"label\":\"Chifra, Ethiopia\",\"name\":\"Chifra\",\"lat\":11.6,\"lng\":40.02,\"place_type\":\"town\"},{\"key\":\"mille\",\"place_ref\":\"builtin:mille\",\"label\":\"Mille, Ethiopia\",\"name\":\"Mille\",\"lat\":11.42,\"lng\":40.77,\"place_type\":\"town\"},{\"key\":\"asayita\",\"place_ref\":\"builtin:asayita\",\"label\":\"Asayita, Ethiopia\",\"name\":\"Asayita\",\"lat\":11.57,\"lng\":41.44,\"place_type\":\"town\"},{\"key\":\"sardo\",\"place_ref\":\"builtin:sardo\",\"label\":\"Sardo, Ethiopia\",\"name\":\"Sardo\",\"lat\":11.9584793,\"lng\":41.3018957,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"chifra\",\"place_ref\":\"builtin:chifra\",\"label\":\"Chifra, Ethiopia\",\"name\":\"Chifra\",\"lat\":11.6,\"lng\":40.02,\"place_type\":\"town\"},{\"key\":\"mille\",\"place_ref\":\"builtin:mille\",\"label\":\"Mille, Ethiopia\",\"name\":\"Mille\",\"lat\":11.42,\"lng\":40.77,\"place_type\":\"town\"},{\"key\":\"asayita\",\"place_ref\":\"builtin:asayita\",\"label\":\"Asayita, Ethiopia\",\"name\":\"Asayita\",\"lat\":11.57,\"lng\":41.44,\"place_type\":\"town\"},{\"key\":\"sardo\",\"place_ref\":\"builtin:sardo\",\"label\":\"Sardo, Ethiopia\",\"name\":\"Sardo\",\"lat\":11.9584793,\"lng\":41.3018957,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:42:47.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-071",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-071"
       },
       {
         "id": "cap-public-171",
@@ -15248,7 +15404,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 65,
         "origin": "Adama, Ethiopia",
         "destination": "Semera, Ethiopia",
         "corridor": "Adama, Ethiopia → Semera, Ethiopia",
@@ -15308,7 +15464,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:46.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-072",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-072"
       },
       {
         "id": "cap-public-172",
@@ -15384,7 +15543,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Semera, Ethiopia",
         "destination": "Tendaho, Ethiopia",
         "corridor": "Semera, Ethiopia → Tendaho, Ethiopia",
@@ -15444,7 +15603,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:44.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-074",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-074"
       },
       {
         "id": "cap-public-174",
@@ -15452,7 +15614,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-05-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Semera, Ethiopia",
         "destination": "Mille, Ethiopia",
         "corridor": "Semera, Ethiopia → Mille, Ethiopia",
@@ -15512,7 +15674,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:43.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-075",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-075"
       },
       {
         "id": "cap-public-175",
@@ -15520,7 +15685,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-1",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Harar, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Harar, Ethiopia → Jigjiga, Ethiopia",
@@ -15580,7 +15745,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:42.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-076",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-076"
       },
       {
         "id": "cap-public-176",
@@ -15656,7 +15824,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-3",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Xoodhleey, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Xoodhleey, Ethiopia",
@@ -15716,7 +15884,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:40.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-078",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-078"
       },
       {
         "id": "cap-public-178",
@@ -15724,7 +15895,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-4",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Chinaksen, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Chinaksen, Ethiopia",
@@ -15784,7 +15955,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:39.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-079",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-079"
       },
       {
         "id": "cap-public-179",
@@ -15792,7 +15966,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-5",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 90,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Xoodhleey, Ethiopia",
         "corridor": "Jigjiga, Ethiopia ↔ Xoodhleey, Ethiopia",
@@ -15852,7 +16026,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:22:38.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-080",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-080"
       },
       {
         "id": "cap-public-180",
@@ -15928,7 +16105,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-7",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Jigjiga, Ethiopia",
@@ -15988,7 +16165,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:36.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-082",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-082"
       },
       {
         "id": "cap-public-182",
@@ -15996,7 +16176,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-8",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Kebri Dehar, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Kebri Dehar, Ethiopia → Jigjiga, Ethiopia",
@@ -16056,7 +16236,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:35.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-083",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-083"
       },
       {
         "id": "cap-public-183",
@@ -16064,7 +16247,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-9",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Jigjiga, Ethiopia service area",
@@ -16124,7 +16307,10 @@
         "capacity_area_center_label": "Jigjiga, Ethiopia",
         "capacity_area_center_lat": 9.35,
         "capacity_area_center_lng": 42.8,
-        "capacity_area_boundary_json": "[{\"key\":\"babile\",\"place_ref\":\"builtin:babile\",\"label\":\"Babile, Ethiopia\",\"name\":\"Babile\",\"lat\":9.21,\"lng\":42.33,\"place_type\":\"town\"},{\"key\":\"kebri-beyah\",\"place_ref\":\"builtin:kebri beyah\",\"label\":\"Kebri Beyah, Ethiopia\",\"name\":\"Kebri Beyah\",\"lat\":9.1000628,\"lng\":43.1786727,\"place_type\":\"town\"},{\"key\":\"tog-wajale\",\"place_ref\":\"builtin:tog wajale\",\"label\":\"Tog Wajale, Ethiopia\",\"name\":\"Tog Wajale\",\"lat\":9.6,\"lng\":43.34,\"place_type\":\"town\"},{\"key\":\"chinaksen\",\"place_ref\":\"builtin:chinaksen\",\"label\":\"Chinaksen, Ethiopia\",\"name\":\"Chinaksen\",\"lat\":9.5060137,\"lng\":42.6088587,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"babile\",\"place_ref\":\"builtin:babile\",\"label\":\"Babile, Ethiopia\",\"name\":\"Babile\",\"lat\":9.21,\"lng\":42.33,\"place_type\":\"town\"},{\"key\":\"kebri-beyah\",\"place_ref\":\"builtin:kebri beyah\",\"label\":\"Kebri Beyah, Ethiopia\",\"name\":\"Kebri Beyah\",\"lat\":9.1000628,\"lng\":43.1786727,\"place_type\":\"town\"},{\"key\":\"tog-wajale\",\"place_ref\":\"builtin:tog wajale\",\"label\":\"Tog Wajale, Ethiopia\",\"name\":\"Tog Wajale\",\"lat\":9.6,\"lng\":43.34,\"place_type\":\"town\"},{\"key\":\"chinaksen\",\"place_ref\":\"builtin:chinaksen\",\"label\":\"Chinaksen, Ethiopia\",\"name\":\"Chinaksen\",\"lat\":9.5060137,\"lng\":42.6088587,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:42:34.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-084",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-084"
       },
       {
         "id": "cap-public-184",
@@ -16200,7 +16386,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Kebri Dehar, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Kebri Dehar, Ethiopia",
@@ -16260,7 +16446,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:32.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-086",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-086"
       },
       {
         "id": "cap-public-186",
@@ -16268,7 +16457,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Dire Dawa, Ethiopia",
@@ -16328,7 +16517,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:31.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-087",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-087"
       },
       {
         "id": "cap-public-187",
@@ -16336,7 +16528,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-13",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Kebri Dehar, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Kebri Dehar, Ethiopia → Jigjiga, Ethiopia",
@@ -16396,7 +16588,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:30.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-088",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-088"
       },
       {
         "id": "cap-public-188",
@@ -16472,7 +16667,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-06-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Kebri Dehar, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Kebri Dehar, Ethiopia",
@@ -16532,7 +16727,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:22:28.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-090",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-090"
       },
       {
         "id": "cap-public-190",
@@ -16540,7 +16738,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-1",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 65,
         "origin": "Maya City, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Maya City, Ethiopia → Harar, Ethiopia",
@@ -16600,7 +16798,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:27.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-091",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-091"
       },
       {
         "id": "cap-public-191",
@@ -16608,7 +16809,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-2",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Jigjiga, Ethiopia",
@@ -16668,7 +16869,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:26.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-092",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-092"
       },
       {
         "id": "cap-public-192",
@@ -16744,7 +16948,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-4",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Harar, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Harar, Ethiopia service area",
@@ -16804,7 +17008,10 @@
         "capacity_area_center_label": "Harar, Ethiopia",
         "capacity_area_center_lat": 9.31,
         "capacity_area_center_lng": 42.12,
-        "capacity_area_boundary_json": "[{\"key\":\"bedeno\",\"place_ref\":\"builtin:bedeno\",\"label\":\"Bedeno, Ethiopia\",\"name\":\"Bedeno\",\"lat\":8.92,\"lng\":41.87,\"place_type\":\"town\"},{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"},{\"key\":\"dire-dawa\",\"place_ref\":\"builtin:dire dawa\",\"label\":\"Dire Dawa, Ethiopia\",\"name\":\"Dire Dawa\",\"lat\":9.6,\"lng\":41.87,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"bedeno\",\"place_ref\":\"builtin:bedeno\",\"label\":\"Bedeno, Ethiopia\",\"name\":\"Bedeno\",\"lat\":8.92,\"lng\":41.87,\"place_type\":\"town\"},{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"},{\"key\":\"dire-dawa\",\"place_ref\":\"builtin:dire dawa\",\"label\":\"Dire Dawa, Ethiopia\",\"name\":\"Dire Dawa\",\"lat\":9.6,\"lng\":41.87,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:42:24.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-094",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-094"
       },
       {
         "id": "cap-public-194",
@@ -16812,7 +17019,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-5",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 65,
         "origin": "Adama, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Adama, Ethiopia → Harar, Ethiopia",
@@ -16872,7 +17079,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:23.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-095",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-095"
       },
       {
         "id": "cap-public-195",
@@ -16880,7 +17090,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-6",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Kembolcha, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Kembolcha, Ethiopia → Harar, Ethiopia",
@@ -16940,7 +17150,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:22.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-096",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-096"
       },
       {
         "id": "cap-public-196",
@@ -17016,7 +17229,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-8",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 35,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Harar, Ethiopia",
@@ -17076,7 +17289,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:20.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-098",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-098"
       },
       {
         "id": "cap-public-198",
@@ -17084,7 +17300,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-9",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Harar, Ethiopia",
         "destination": "Maya City, Ethiopia",
         "corridor": "Harar, Ethiopia → Maya City, Ethiopia",
@@ -17144,7 +17360,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:19.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-099",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-099"
       },
       {
         "id": "cap-public-199",
@@ -17152,7 +17371,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Adama, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Adama, Ethiopia → Harar, Ethiopia",
@@ -17212,7 +17431,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:22:18.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-100",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-100"
       },
       {
         "id": "cap-public-200",
@@ -17288,7 +17510,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Harar, Ethiopia",
         "destination": "Maya City, Ethiopia",
         "corridor": "Harar, Ethiopia → Maya City, Ethiopia",
@@ -17348,7 +17570,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:16.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-102",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-102"
       },
       {
         "id": "cap-public-202",
@@ -17356,7 +17581,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-13",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Harar, Ethiopia",
@@ -17416,7 +17641,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:15.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-103",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-103"
       },
       {
         "id": "cap-public-203",
@@ -17424,7 +17652,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-07-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Dawo, Ethiopia",
         "destination": "Harar, Ethiopia",
         "corridor": "Dawo, Ethiopia ↔ Harar, Ethiopia",
@@ -17484,7 +17712,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:14.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-104",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-104"
       },
       {
         "id": "cap-public-204",
@@ -17560,7 +17791,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-1",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia service area",
@@ -17620,7 +17851,10 @@
         "capacity_area_center_label": "Dire Dawa, Ethiopia",
         "capacity_area_center_lat": 9.6,
         "capacity_area_center_lng": 41.87,
-        "capacity_area_boundary_json": "[{\"key\":\"maya-city\",\"place_ref\":\"builtin:maya city\",\"label\":\"Maya City, Ethiopia\",\"name\":\"Maya City\",\"lat\":9.3972116,\"lng\":42.0012638,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"},{\"key\":\"melka-jebdu\",\"place_ref\":\"osm:node/316855944\",\"label\":\"Melka Jebdu, Ethiopia\",\"name\":\"Melka Jebdu\",\"lat\":9.6193211,\"lng\":41.7836794,\"place_type\":\"town\",\"distance\":9.704523914311896}]"
+        "capacity_area_boundary_json": "[{\"key\":\"maya-city\",\"place_ref\":\"builtin:maya city\",\"label\":\"Maya City, Ethiopia\",\"name\":\"Maya City\",\"lat\":9.3972116,\"lng\":42.0012638,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"},{\"key\":\"melka-jebdu\",\"place_ref\":\"osm:node/316855944\",\"label\":\"Melka Jebdu, Ethiopia\",\"name\":\"Melka Jebdu\",\"lat\":9.6193211,\"lng\":41.7836794,\"place_type\":\"town\",\"distance\":9.704523914311896}]",
+        "available_percent_reported_at": "2026-08-23T22:42:12.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-106",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-106"
       },
       {
         "id": "cap-public-206",
@@ -17628,7 +17862,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-2",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Shinile, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Shinile, Ethiopia ↔ Dire Dawa, Ethiopia",
@@ -17688,7 +17922,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:11.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-107",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-107"
       },
       {
         "id": "cap-public-207",
@@ -17696,7 +17933,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-3",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia service area",
@@ -17756,7 +17993,10 @@
         "capacity_area_center_label": "Dire Dawa, Ethiopia",
         "capacity_area_center_lat": 9.6,
         "capacity_area_center_lng": 41.87,
-        "capacity_area_boundary_json": "[{\"key\":\"mieso\",\"place_ref\":\"builtin:mieso\",\"label\":\"Mieso, Ethiopia\",\"name\":\"Mieso\",\"lat\":9.24,\"lng\":40.75,\"place_type\":\"town\"},{\"key\":\"bedeno\",\"place_ref\":\"builtin:bedeno\",\"label\":\"Bedeno, Ethiopia\",\"name\":\"Bedeno\",\"lat\":8.92,\"lng\":41.87,\"place_type\":\"town\"},{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"mieso\",\"place_ref\":\"builtin:mieso\",\"label\":\"Mieso, Ethiopia\",\"name\":\"Mieso\",\"lat\":9.24,\"lng\":40.75,\"place_type\":\"town\"},{\"key\":\"bedeno\",\"place_ref\":\"builtin:bedeno\",\"label\":\"Bedeno, Ethiopia\",\"name\":\"Bedeno\",\"lat\":8.92,\"lng\":41.87,\"place_type\":\"town\"},{\"key\":\"jigjiga\",\"place_ref\":\"builtin:jigjiga\",\"label\":\"Jigjiga, Ethiopia\",\"name\":\"Jigjiga\",\"lat\":9.35,\"lng\":42.8,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:32:10.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-108",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-108"
       },
       {
         "id": "cap-public-208",
@@ -17832,7 +18072,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-5",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Melka Jebdu, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Melka Jebdu, Ethiopia",
@@ -17892,7 +18132,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:22:08.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-110",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-110"
       },
       {
         "id": "cap-public-210",
@@ -17900,7 +18143,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-6",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 25,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Adama, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Adama, Ethiopia",
@@ -17960,7 +18203,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:07.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-111",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-111"
       },
       {
         "id": "cap-public-211",
@@ -17968,7 +18214,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-7",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Babile, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Babile, Ethiopia → Dire Dawa, Ethiopia",
@@ -18028,7 +18274,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:06.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-112",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-112"
       },
       {
         "id": "cap-public-212",
@@ -18104,7 +18353,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-9",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia service area",
@@ -18164,7 +18413,10 @@
         "capacity_area_center_label": "Dire Dawa, Ethiopia",
         "capacity_area_center_lat": 9.6,
         "capacity_area_center_lng": 41.87,
-        "capacity_area_boundary_json": "[{\"key\":\"maya-city\",\"place_ref\":\"builtin:maya city\",\"label\":\"Maya City, Ethiopia\",\"name\":\"Maya City\",\"lat\":9.3972116,\"lng\":42.0012638,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"},{\"key\":\"melka-jebdu\",\"place_ref\":\"osm:node/316855944\",\"label\":\"Melka Jebdu, Ethiopia\",\"name\":\"Melka Jebdu\",\"lat\":9.6193211,\"lng\":41.7836794,\"place_type\":\"town\",\"distance\":9.704523914311896}]"
+        "capacity_area_boundary_json": "[{\"key\":\"maya-city\",\"place_ref\":\"builtin:maya city\",\"label\":\"Maya City, Ethiopia\",\"name\":\"Maya City\",\"lat\":9.3972116,\"lng\":42.0012638,\"place_type\":\"town\"},{\"key\":\"shinile\",\"place_ref\":\"builtin:shinile\",\"label\":\"Shinile, Ethiopia\",\"name\":\"Shinile\",\"lat\":9.68,\"lng\":41.84,\"place_type\":\"town\"},{\"key\":\"melka-jebdu\",\"place_ref\":\"osm:node/316855944\",\"label\":\"Melka Jebdu, Ethiopia\",\"name\":\"Melka Jebdu\",\"lat\":9.6193211,\"lng\":41.7836794,\"place_type\":\"town\",\"distance\":9.704523914311896}]",
+        "available_percent_reported_at": "2026-08-23T22:42:04.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-114",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-114"
       },
       {
         "id": "cap-public-214",
@@ -18172,7 +18424,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Dire Dawa, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Dire Dawa, Ethiopia → Jigjiga, Ethiopia",
@@ -18232,7 +18484,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:03.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-115",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-115"
       },
       {
         "id": "cap-public-215",
@@ -18240,7 +18495,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Adama, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Adama, Ethiopia → Dire Dawa, Ethiopia",
@@ -18300,7 +18555,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:42:02.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-116",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-116"
       },
       {
         "id": "cap-public-216",
@@ -18376,7 +18634,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-13",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Dire Dawa, Ethiopia",
@@ -18436,7 +18694,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:32:00.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-118",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-118"
       },
       {
         "id": "cap-public-218",
@@ -18444,7 +18705,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 65,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Dire Dawa, Ethiopia",
@@ -18504,7 +18765,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:31:59.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-119",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-119"
       },
       {
         "id": "cap-public-219",
@@ -18512,7 +18776,7 @@
         "provider_profile_id": null,
         "vehicle_id": "veh-public-fleet-08-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Jigjiga, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Jigjiga, Ethiopia → Dire Dawa, Ethiopia",
@@ -18572,7 +18836,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:21:58.325Z",
+        "available_percent_reported_by": "user-public-fleet-driver-120",
+        "available_percent_reported_driver_id": "user-public-fleet-driver-120"
       },
       {
         "id": "cap-public-220",
@@ -18648,7 +18915,7 @@
         "provider_profile_id": "profile-public-owner-02",
         "vehicle_id": "veh-public-owner-02",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 90,
         "origin": "Adama, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Adama, Ethiopia ↔ Dire Dawa, Ethiopia",
@@ -18708,7 +18975,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:32.325Z",
+        "available_percent_reported_by": "user-public-owner-02",
+        "available_percent_reported_driver_id": "user-public-owner-02"
       },
       {
         "id": "cap-public-222",
@@ -18787,7 +19057,7 @@
         "provider_profile_id": "profile-public-owner-04",
         "vehicle_id": "veh-public-owner-04",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Kombolcha, Ethiopia",
         "destination": "Mekelle, Ethiopia",
         "corridor": "Kombolcha, Ethiopia → Mekelle, Ethiopia",
@@ -18847,7 +19117,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:30.325Z",
+        "available_percent_reported_by": "user-public-owner-04",
+        "available_percent_reported_driver_id": "user-public-owner-04"
       },
       {
         "id": "cap-public-224",
@@ -18923,7 +19196,7 @@
         "provider_profile_id": "profile-public-owner-06",
         "vehicle_id": "veh-public-owner-06",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 70,
         "origin": "Kebri Dehar, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Kebri Dehar, Ethiopia → Jigjiga, Ethiopia",
@@ -18983,7 +19256,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:28.325Z",
+        "available_percent_reported_by": "user-public-owner-06",
+        "available_percent_reported_driver_id": "user-public-owner-06"
       },
       {
         "id": "cap-public-226",
@@ -18991,7 +19267,7 @@
         "provider_profile_id": "profile-public-owner-07",
         "vehicle_id": "veh-public-owner-07",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Harar, Ethiopia",
         "destination": "Jigjiga, Ethiopia",
         "corridor": "Harar, Ethiopia ↔ Jigjiga, Ethiopia",
@@ -19051,7 +19327,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:27.325Z",
+        "available_percent_reported_by": "user-public-owner-07",
+        "available_percent_reported_driver_id": "user-public-owner-07"
       },
       {
         "id": "cap-public-227",
@@ -19059,7 +19338,7 @@
         "provider_profile_id": "profile-public-owner-08",
         "vehicle_id": "veh-public-owner-08",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 45,
         "origin": "Adama, Ethiopia",
         "destination": "Dire Dawa, Ethiopia",
         "corridor": "Adama, Ethiopia → Dire Dawa, Ethiopia",
@@ -19119,7 +19398,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:26.325Z",
+        "available_percent_reported_by": "user-public-owner-08",
+        "available_percent_reported_driver_id": "user-public-owner-08"
       },
       {
         "id": "cap-public-228",
@@ -19195,7 +19477,7 @@
         "provider_profile_id": "profile-public-owner-10",
         "vehicle_id": "veh-public-owner-10",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 85,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Mizan Aman, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Mizan Aman, Ethiopia",
@@ -19255,7 +19537,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:23:24.325Z",
+        "available_percent_reported_by": "user-public-owner-10",
+        "available_percent_reported_driver_id": "user-public-owner-10"
       },
       {
         "id": "cap-public-230",
@@ -19263,7 +19548,7 @@
         "provider_profile_id": "profile-public-owner-11",
         "vehicle_id": "veh-public-owner-11",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 90,
         "origin": "Arba Minch, Ethiopia",
         "destination": "Chencha, Ethiopia",
         "corridor": "Arba Minch, Ethiopia → Chencha, Ethiopia",
@@ -19323,7 +19608,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:23.325Z",
+        "available_percent_reported_by": "user-public-owner-11",
+        "available_percent_reported_driver_id": "user-public-owner-11"
       },
       {
         "id": "cap-public-231",
@@ -19331,7 +19619,7 @@
         "provider_profile_id": "profile-public-owner-12",
         "vehicle_id": "veh-public-owner-12",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 55,
         "origin": "Asosa, Ethiopia",
         "destination": "Assosa, Ethiopia",
         "corridor": "Asosa, Ethiopia → Assosa, Ethiopia",
@@ -19391,7 +19679,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:22.325Z",
+        "available_percent_reported_by": "user-public-owner-12",
+        "available_percent_reported_driver_id": "user-public-owner-12"
       },
       {
         "id": "cap-public-232",
@@ -19467,7 +19758,7 @@
         "provider_profile_id": "profile-public-owner-14",
         "vehicle_id": "veh-public-owner-14",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 60,
         "origin": "Mizan Aman, Ethiopia",
         "destination": "Mizan Aman, Ethiopia",
         "corridor": "Mizan Aman, Ethiopia service area",
@@ -19527,7 +19818,10 @@
         "capacity_area_center_label": "Mizan Aman, Ethiopia",
         "capacity_area_center_lat": 7,
         "capacity_area_center_lng": 35.58,
-        "capacity_area_boundary_json": "[{\"key\":\"dima\",\"place_ref\":\"builtin:dima\",\"label\":\"Dima, Ethiopia\",\"name\":\"Dima\",\"lat\":6.54,\"lng\":35.3,\"place_type\":\"town\"},{\"key\":\"maji\",\"place_ref\":\"builtin:maji\",\"label\":\"Maji, Ethiopia\",\"name\":\"Maji\",\"lat\":6.21,\"lng\":35.58,\"place_type\":\"town\"},{\"key\":\"bonga\",\"place_ref\":\"builtin:bonga\",\"label\":\"Bonga, Ethiopia\",\"name\":\"Bonga\",\"lat\":7.27,\"lng\":36.23,\"place_type\":\"town\"},{\"key\":\"tepi\",\"place_ref\":\"builtin:tepi\",\"label\":\"Tepi, Ethiopia\",\"name\":\"Tepi\",\"lat\":7.2,\"lng\":35.42,\"place_type\":\"town\"}]"
+        "capacity_area_boundary_json": "[{\"key\":\"dima\",\"place_ref\":\"builtin:dima\",\"label\":\"Dima, Ethiopia\",\"name\":\"Dima\",\"lat\":6.54,\"lng\":35.3,\"place_type\":\"town\"},{\"key\":\"maji\",\"place_ref\":\"builtin:maji\",\"label\":\"Maji, Ethiopia\",\"name\":\"Maji\",\"lat\":6.21,\"lng\":35.58,\"place_type\":\"town\"},{\"key\":\"bonga\",\"place_ref\":\"builtin:bonga\",\"label\":\"Bonga, Ethiopia\",\"name\":\"Bonga\",\"lat\":7.27,\"lng\":36.23,\"place_type\":\"town\"},{\"key\":\"tepi\",\"place_ref\":\"builtin:tepi\",\"label\":\"Tepi, Ethiopia\",\"name\":\"Tepi\",\"lat\":7.2,\"lng\":35.42,\"place_type\":\"town\"}]",
+        "available_percent_reported_at": "2026-08-23T22:43:20.325Z",
+        "available_percent_reported_by": "user-public-owner-14",
+        "available_percent_reported_driver_id": "user-public-owner-14"
       },
       {
         "id": "cap-public-234",
@@ -19535,7 +19829,7 @@
         "provider_profile_id": "profile-public-owner-15",
         "vehicle_id": "veh-public-owner-15",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 20,
         "origin": "Moyale, Ethiopia",
         "destination": "Arba Minch, Ethiopia",
         "corridor": "Moyale, Ethiopia ↔ Arba Minch, Ethiopia",
@@ -19595,7 +19889,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:19.325Z",
+        "available_percent_reported_by": "user-public-owner-15",
+        "available_percent_reported_driver_id": "user-public-owner-15"
       },
       {
         "id": "cap-public-235",
@@ -19603,7 +19900,7 @@
         "provider_profile_id": "profile-public-owner-16",
         "vehicle_id": "veh-public-owner-16",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Dessie, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia ↔ Dessie, Ethiopia",
@@ -19663,7 +19960,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:43:18.325Z",
+        "available_percent_reported_by": "user-public-owner-16",
+        "available_percent_reported_driver_id": "user-public-owner-16"
       },
       {
         "id": "cap-public-236",
@@ -19739,7 +20039,7 @@
         "provider_profile_id": "profile-public-owner-18",
         "vehicle_id": "veh-public-owner-18",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Addis Ababa, Ethiopia",
         "destination": "Gondar, Ethiopia",
         "corridor": "Addis Ababa, Ethiopia → Gondar, Ethiopia",
@@ -19799,7 +20099,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:16.325Z",
+        "available_percent_reported_by": "user-public-owner-18",
+        "available_percent_reported_driver_id": "user-public-owner-18"
       },
       {
         "id": "cap-public-238",
@@ -19807,7 +20110,7 @@
         "provider_profile_id": "profile-public-owner-19",
         "vehicle_id": "veh-public-owner-19",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 30,
         "origin": "Mekelle, Ethiopia",
         "destination": "Adigrat, Ethiopia",
         "corridor": "Mekelle, Ethiopia ↔ Adigrat, Ethiopia",
@@ -19867,7 +20170,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:33:15.325Z",
+        "available_percent_reported_by": "user-public-owner-19",
+        "available_percent_reported_driver_id": "user-public-owner-19"
       },
       {
         "id": "cap-public-239",
@@ -19875,7 +20181,7 @@
         "provider_profile_id": "profile-public-owner-20",
         "vehicle_id": "veh-public-owner-20",
         "status": "PARTIAL",
-        "available_percent": 50,
+        "available_percent": 75,
         "origin": "Semera, Ethiopia",
         "destination": "Dessie, Ethiopia",
         "corridor": "Semera, Ethiopia ↔ Dessie, Ethiopia",
@@ -19935,7 +20241,10 @@
         "capacity_area_center_label": null,
         "capacity_area_center_lat": null,
         "capacity_area_center_lng": null,
-        "capacity_area_boundary_json": "[]"
+        "capacity_area_boundary_json": "[]",
+        "available_percent_reported_at": "2026-08-23T22:13:14.325Z",
+        "available_percent_reported_by": "user-public-owner-20",
+        "available_percent_reported_driver_id": "user-public-owner-20"
       }
     ],
     "verification_requests": [

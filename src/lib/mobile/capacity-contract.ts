@@ -24,7 +24,7 @@ export const capacityCommand = z.discriminatedUnion('action', [
   }).strict(),
   z.object({ action: z.literal('PUBLISH'), vehicleId,
     status: z.enum(['EMPTY', 'PARTIAL', 'OFF_DUTY']),
-    availablePercent: z.number().int().min(1).max(99).nullable().optional(),
+    availablePercent: z.number().int().min(1).max(99).optional(),
     acceptedLoads: z.enum(['FTL', 'PTL', 'BOTH']), availabilityGeometry: z.enum(['ROUTE', 'RADIUS']),
     visibility: z.enum(['PRIVATE', 'OPEN']).default('PRIVATE'),
     sharingMode: z.enum(['PUBLIC','PRIVATE','BOTH']).optional(),

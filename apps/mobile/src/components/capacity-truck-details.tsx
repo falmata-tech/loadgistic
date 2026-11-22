@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState,type ReactNode} from 'react';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {Link} from 'expo-router';
 import * as Linking from 'expo-linking';
@@ -55,7 +55,7 @@ export function CapacityTruckContact({truck}:{truck:CapacitySignal}){
  </View>;
 }
 
-export function CapacityTruckDetails({truck}:{truck:CapacitySignal}){
+export function CapacityTruckDetails({truck,privatePhoto}:{truck:CapacitySignal;privatePhoto?:ReactNode}){
  const {t}=useLanguage();
  return <>
   <View style={styles.hero}><View style={styles.illustration}><Image source={{uri:apiOrigin+vehicleConfigurationImage(truck.configuration)}} resizeMode="contain" style={{width:'100%',height:58}}/></View><View style={{flex:1,gap:4}}>
@@ -69,6 +69,7 @@ export function CapacityTruckDetails({truck}:{truck:CapacitySignal}){
    <View style={styles.person}><PublicCardImage path={truck.portrait} label={truck.driver} portrait identity="person"/><View style={[styles.identity,{flexDirection:'column',gap:3}]}><Text style={styles.personLabel}>{t(truck.driverKind)}</Text><Text style={styles.personName}>{truck.driver}</Text>{!truck.driverPhone&&<Text style={styles.meta}>{t('Phone not published')}</Text>}</View></View>
   </View>
   <View style={styles.updates}><View style={styles.update}><AppIcon name="truck" size={16}/><Text style={[styles.meta,{flex:1}]}>{localizedUpdateLabel(truck.capacityAge,t)}</Text></View>{truck.currentVisible&&<View style={styles.update}><AppIcon name="location" size={16} color="#1a73e8"/><Text style={[styles.meta,{flex:1}]}>{localizedUpdateLabel(truck.locationAge,t,'location')}</Text></View>}<Text style={styles.meta}>{t('Confirm availability directly.')}</Text></View>
+  {privatePhoto}
   <CapacityDocumentGroups truck={truck}/>
  </>;
 }

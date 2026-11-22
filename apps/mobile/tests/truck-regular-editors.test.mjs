@@ -12,6 +12,8 @@ import {capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capaci
 import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
 import {capacityMapColors,capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import {locationRadiusMinimumZoom} from '../../../src/lib/map-signal-offset.js';
+import {reportedSpacePercent} from '../../../src/lib/capacity-space-estimate.js';
+import {cargoPhotoCollectionPath} from '../src/api/cargo-space-photo-path.ts';
 import {capacityLoadExplanation} from '../../../src/lib/capacity-load-preferences.js';
 import {translateMessage} from '../../../src/lib/i18n/core.js';
 import {localizedUpdateLabel} from '../../../src/lib/i18n/update-label.js';
@@ -27,6 +29,13 @@ function renderer(){
  function resolve(tree,path='root'){if(Array.isArray(tree))return tree.map((child,index)=>resolve(child,`${path}/${index}`));if(!tree||typeof tree!=='object')return tree;if(typeof tree.type==='function'){const id=`${path}:${tree.type.name}:${tree.key||''}`;slots=stores.get(id)||[];stores.set(id,slots);cursor=0;return resolve(tree.type(tree.props),`${id}/content`);}return{...tree,props:{...tree.props,children:resolve(tree.props.children,`${path}/children`)}};}
  return{compile,render:(component,props={})=>resolve(React.createElement(component,props))};
 }
+function compileDriverHome(view,{useAccountQuery,...values}){
+ return view.compile('../src/screens/driver-home.tsx',{...values,useAccountQuery:path=>{
+  const result=useAccountQuery(path);
+  return path.startsWith('/api/capacity/cargo-space-photos?')
+   ?{...result,data:{photo:null,requests:[]}}:result;
+ }}).DriverHome;
+}
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];
 const find=(tree,type,match=()=>true)=>nodes(tree).find(node=>node.type===type&&match(node));
 const settle=async()=>{for(let index=0;index<8;index++)await Promise.resolve();};
@@ -35,7 +44,7 @@ const place=label=>({placeRef:label,label,coordinate:[38.7,9.0]});
 const service=(vehicleId=vehicleA,driverId=driverA)=>({id:vehicleId,vehicleId,driverId,geometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],center:place('Adama'),boundary:[]});
 const native=Object.fromEntries(['ActivityIndicator','Redirect','Page','Title','Copy','Card','Button','ErrorText','Choices','Cities','PlacePicker','View','Text','Pressable','ScrollView','Modal','SafeAreaView','Switch','Image','Field','WorkspaceSection','WorkspaceAction','WorkspaceTaskHeader','WorkspaceFact','TrackingMap','Map','Camera','AppIcon','AppLink','TruckLocationSource','CargoSpacePhoto'].map(name=>[name,name]));
 const t=(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match));
-const common={...native,capacityMapColors,currentCapacityLocation,locationSourceKind,locationSourceLabel,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
+const common={...native,cargoPhotoCollectionPath,reportedSpacePercent,capacityMapColors,currentCapacityLocation,locationSourceKind,locationSourceLabel,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
 
 function regular(){
  const view=renderer(),requests=[],paths=[];let data={services:[service(),service(vehicleB,driverB),{...service(),vehicleId:'',driverId:'',id:'legacy'}]},saved=0;
@@ -65,15 +74,15 @@ test('native regular editor never guesses an unscoped route and resets draft sta
 
 test('company-driver Home displays only its authorized pair regular overlay and keeps owner-only editing',()=>{
  const view=renderer(),paths=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service(),service(vehicleB,driverB),{...service(),driverId:driverB}]};
- const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:path=>{paths.push(path);return{data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}};},useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
- const tree=view.render(screen);assert.equal(find(tree,'TrackingMap').props.regular.length,1);assert.deepEqual(find(tree,'TrackingMap').props.regular[0].places,service().route);assert.ok(!nodes(tree).some(node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Manage preferred corridor or service area'),'a fleet driver cannot open the owner-only corridor editor');assert.deepEqual(paths,['/api/mobile/capacity']);
+ const screen=compileDriverHome(view,{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:path=>{paths.push(path);return{data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}};},useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
+ const tree=view.render(screen);assert.equal(find(tree,'TrackingMap').props.regular.length,1);assert.deepEqual(find(tree,'TrackingMap').props.regular[0].places,service().route);assert.ok(!nodes(tree).some(node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Manage preferred corridor or service area'),'a fleet driver cannot open the owner-only corridor editor');assert.deepEqual(paths,['/api/mobile/capacity',cargoPhotoCollectionPath(vehicleA)]);
 });
 
 test('driver Home shows saved Planned and Preferred coverage without inventing reported location',()=>{
  for(const location of [null,{coordinate:null,radius:20,area:'',updatedAt:''}]){
   const view=renderer(),current={id:'plan',status:'PARTIAL',acceptedLoads:'PTL',sharingMode:'PRIVATE',availabilityGeometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],boundary:[]};
   const truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,canSetManualLocation:false,canSetPhoneLocation:true,publishedLocationSource:'GPS',location,current,regularServices:[service(),service(vehicleB,driverB)]};
-  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+  const screen=compileDriverHome(view,{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
   const tree=view.render(screen),map=find(tree,'TrackingMap');assert.ok(map,'saved coverage must not depend on reported coordinates');assert.equal(map.props.location,null);assert.equal(map.props.coverage.kind,'ROUTE');assert.deepEqual(map.props.coverage.places,current.route);assert.equal(map.props.regular.length,1);assert.deepEqual(map.props.regular[0].places,service().route);
   const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string').join(' ');assert.ok(!text.includes('GPS device'));assert.ok(text.includes('No driver location shared yet'));
   truck.current=null;const preferredOnly=view.render(screen);assert.ok(find(preferredOnly,'TrackingMap'));assert.equal(find(preferredOnly,'TrackingMap').props.coverage,undefined);
@@ -83,14 +92,14 @@ test('driver Home shows saved Planned and Preferred coverage without inventing r
 
 test('Home discards an open regular editor when the active driver assignment changes',()=>{
  const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service()]};
- const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'OWNER_OPERATOR',currentDriverId:driverA,currentDrivenVehicleId:vehicleA}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+ const screen=compileDriverHome(view,{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'OWNER_OPERATOR',currentDriverId:driverA,currentDrivenVehicleId:vehicleA}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
  let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage preferred corridor or service area').props.onPress();tree=view.render(screen);assert.equal(find(tree,'RegularService').props.expectedDriverId,driverA);assert.equal(find(tree,'Modal').props.visible,true);
  truck.driverId=driverB;tree=view.render(screen);assert.equal(find(tree,'RegularService'),undefined,'a new active pair must not inherit the previous open editor');assert.equal(find(tree,'Modal'),undefined);assert.equal(find(tree,'TrackingMap'),undefined,'a stale session cannot display the new driver’s job as the owner’s own');assert.ok(find(tree,'Copy',node=>node.props.message==='Choose the vehicle you drive under Manage vehicles.'));
 });
 
 test('driver Home names Capacity and Location consistently and opens the assigned vehicle editor',()=>{
  const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Courier car',plate:'LOCAL',canLocate:false,canSetManualLocation:false,canSetPhoneLocation:true,location:null,current:null,regularServices:[]};
- const screen=view.compile('../src/screens/driver-home.tsx',{...common,DriverLocationEditor:'DriverLocationEditor',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+ const screen=compileDriverHome(view,{...common,DriverLocationEditor:'DriverLocationEditor',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
  let tree=view.render(screen);
  const capacity=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update planned capacity');
  const location=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Set vehicle location');
@@ -167,8 +176,15 @@ test('native new Planned capacity uses the Planned area default',()=>{
 test('native Empty to Partial keeps Area and submits the saved area without changing reported position',async()=>{
  const editor=capacityEditor(currentArea('EMPTY'));let tree=editor.render();currentChoice(tree,'Partial').props.onPress();tree=editor.render();
  assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);assert.ok(find(tree,'PlacePicker',node=>node.props.label==='Area center'));
- find(tree,'Button',node=>node.props.message==='Save planned capacity').props.onPress();await settle();
- assert.equal(editor.requests.length,1);const {path,body}=editor.requests[0];assert.equal(path,'/api/mobile/capacity');assert.equal(body.status,'PARTIAL');assert.equal(body.availabilityGeometry,'RADIUS');assert.equal(body.capacityAreaCenterPlaceRef,'Addis Ababa');assert.deepEqual(body.capacityAreaBoundaryPlaces,[{placeRef:'Sululta'},{placeRef:'Bishoftu'},{placeRef:'Sebeta'}]);assert.equal(body.acceptsMultiPick,true);assert.equal(body.acceptedLoads,'PTL');assert.equal(Object.hasOwn(body,'approximateLat'),false);
+ const submit=()=>find(tree,'Button',node=>node.props.message==='Save planned capacity').props.onPress();
+ const estimate=()=>find(tree,'Field',node=>node.props.message==='Available space');
+ submit();await settle();tree=editor.render();
+ assert.equal(editor.requests.length,0);
+ assert.equal(find(tree,'ErrorText').props.message,'Enter 1% to 99% of space still free.');
+ estimate().props.onChangeText('100');tree=editor.render();submit();await settle();tree=editor.render();
+ assert.equal(editor.requests.length,0,'a pasted 100 must not become 10');
+ estimate().props.onChangeText('65');tree=editor.render();submit();await settle();
+ assert.equal(editor.requests.length,1);const {path,body}=editor.requests[0];assert.equal(path,'/api/mobile/capacity');assert.equal(body.status,'PARTIAL');assert.equal(body.availablePercent,65);assert.equal(body.availabilityGeometry,'RADIUS');assert.equal(body.capacityAreaCenterPlaceRef,'Addis Ababa');assert.deepEqual(body.capacityAreaBoundaryPlaces,[{placeRef:'Sululta'},{placeRef:'Bishoftu'},{placeRef:'Sebeta'}]);assert.equal(body.acceptsMultiPick,true);assert.equal(body.acceptedLoads,'PTL');assert.equal(Object.hasOwn(body,'approximateLat'),false);
 });
 
 test('native saved Partial Area reopens and status changes do not replace an explicit Route',()=>{
@@ -240,7 +256,7 @@ test('actual CapacityEditor dynamic load explanations translate every accepted l
 test('driver Home hides retired current points and offers an explicit source recovery',()=>{
  for(const publishedLocationSource of ['MANUAL','MANUAL_ADMIN','INFERRED']){
   const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Driver',label:'Vehicle',plate:'LOCAL',selectedLocationSource:null,publishedLocationSource,canLocate:true,canSetPhoneLocation:true,location:{coordinate:[38.7,9],radius:5,area:'Retired current area',updatedAt:'2026-10-13'},current:null,regularServices:[]};
-  const screen=view.compile('../src/screens/driver-home.tsx',{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),DriverLocationEditor:'DriverLocationEditor',RegularService:'RegularService',CapacityEditor:'CapacityEditor'}).DriverHome;
+  const screen=compileDriverHome(view,{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),DriverLocationEditor:'DriverLocationEditor',RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
   const tree=view.render(screen);assert.equal(find(tree,'TrackingMap'),undefined);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Share vehicle location'),undefined);assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Set vehicle location'));
   assert.ok(find(tree,'Text',node=>node.props.children.includes('Choose GPS or Phone')));assert.equal(find(tree,'Text',node=>node.props.children.includes('Retired current area')),undefined);
  }

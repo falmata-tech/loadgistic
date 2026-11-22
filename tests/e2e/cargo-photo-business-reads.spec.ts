@@ -5,6 +5,7 @@ import type {BrowserContext,Page} from 'playwright-core';
 import {test,expect} from './browser-test';
 import {acceptAuditContentPolicy,auditDeleteVehicles,auditFleetProvider,checked,localAuditService} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
+import {localMailpitNumericCode} from './mailpit-helper';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {setProviderVehiclePublication} from '../../src/lib/provider-authority.js';
 import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
@@ -12,7 +13,9 @@ import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 // Each run creates its own local people, workspace, vehicle and private Storage
 // object; no managed demo or hosted data is used.
 test.use({headless:true,trace:'off',video:'off',screenshot:'only-on-failure'});
-const web='http://127.0.0.1:3100';
+const database=process.env.LOADGISTIC_E2E_DB_CONTAINER||'supabase_db_loadgistic-local';
+if(!/^supabase_db_loadgistic-(?:local|review-[0-9]{8})$/.test(database))throw Error('LOCAL_PHOTO_DATABASE_REQUIRED');
+const expo=process.env.LOADGISTIC_E2E_CARGO_EXPO==='1'?'http://localhost:8084':null;
 const uuid=/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
 const photoPath=/^supabase:\/\/capacity-photo\/(capacity\/\d{4}-\d{2}-\d{2}\/[a-f0-9-]{36}\.jpg)$/;
 type Owned={providerId:string;organizationId:string;driverId:string;vehicleId:string;ownerId:string;staffId:string;workspaceId:string;connectionId:string;grantId:string;photoId:string};
@@ -65,7 +68,7 @@ async function deleteExactBroker(db:ReturnType<typeof localAuditService>,owned:O
   delete from public.business_workspaces where id=w and handle='photo-broker-${nonce}';
   if not found then raise exception 'EXACT_PHOTO_WORKSPACE_DELETE_REQUIRED'; end if;
  end $cleanup$; commit;`;
- execFileSync('docker',['exec','supabase_db_loadgistic-local','psql','-X','-q','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',sql],{timeout:25_000,stdio:'pipe'});
+ execFileSync('docker',['exec',database,'psql','-X','-q','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',sql],{timeout:25_000,stdio:'pipe'});
 }
 
 async function deleteExactPhotos(db:ReturnType<typeof localAuditService>,owned:Owned){
@@ -108,14 +111,14 @@ function verifyExactCleanup(owned:Owned){
   'profiles',(select count(*) from public.profiles where id=any(${people})),
   'auth_users',(select count(*) from auth.users where id=any(${people})),
   'organization',(select count(*) from public.organizations where id=${id(owned.organizationId)}))::text;`;
- const raw=execFileSync('docker',['exec','supabase_db_loadgistic-local','psql','-X','-q','-t','-A','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',sql],
+ const raw=execFileSync('docker',['exec',database,'psql','-X','-q','-t','-A','-v','ON_ERROR_STOP=1','-U','postgres','-d','postgres','-c',sql],
   {timeout:20_000,encoding:'utf8',stdio:['pipe','pipe','pipe']}).trim();
  const counts=JSON.parse(raw) as Record<string,number>;
  expect(Object.keys(counts)).toHaveLength(9);
  expect(Object.values(counts)).toEqual(Array(9).fill(0));
 }
 
-async function openPrivatePhoto(page:Page,workspaceId:string,vehicleId:string,photoId:string){
+async function openPrivatePanel(page:Page,workspaceId:string,vehicleId:string){
  const capacity=await page.request.get(`/api/business-workspaces/${workspaceId}/capacity`);
  expect(capacity.status()).toBe(200);
  const item=(await capacity.json() as {items:{id:string;vehicle_id:string}[]}).items.find(item=>item.vehicle_id===vehicleId);
@@ -123,23 +126,45 @@ async function openPrivatePhoto(page:Page,workspaceId:string,vehicleId:string,ph
  await page.goto(`/?view=private&truck=${item!.id}`,{waitUntil:'domcontentloaded'});
  await page.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
  const sheet=page.locator('.truck-inspection');await expect(sheet).toBeVisible();
- const panel=sheet.locator('details.cargo-photo-panel');await expect(panel).toBeVisible();
- await panel.locator('summary').click();
+ const panel=sheet.getByRole('region',{name:'Cargo space photo'});
+ await expect(panel).toBeVisible();
+ return panel;
+}
+
+async function readPhoto(page:Page,panel:ReturnType<Page['getByRole']>,path:string){
+ const fetched=page.waitForResponse(response=>new URL(response.url()).pathname===path&&response.request().resourceType()==='image');
  await panel.getByRole('button',{name:'Open photo',exact:true}).click();
+ const file=await fetched;
+ expect(file.status()).toBe(200);
+ expect(await file.headerValue('content-type')).toMatch(/^image[/]jpeg/);
+ expect(await file.headerValue('cache-control')).toMatch(/no-store/i);
  const image=panel.getByRole('img',{name:'Cargo space photo'});
- await expect(image).toHaveAttribute('src',`/api/business-workspaces/${workspaceId}/capacity/photos/${photoId}`);
+ await expect(image).toHaveAttribute('src',path,{timeout:30000});
  await expect.poll(()=>image.evaluate((element:HTMLImageElement)=>element.complete&&element.naturalWidth>0)).toBe(true);
 }
 
-test('broker owner and permitted staff can read a private cargo photo until vehicle access is revoked',async({browser,request},info)=>{
+async function nativeLogin(page:Page,email:string){
+ await page.goto('/account',{waitUntil:'domcontentloaded'});
+ await page.getByLabel('Email',{exact:true}).fill(email,{timeout:30000});
+ const since=Date.now();
+ await page.getByRole('button',{name:'Send code',exact:true}).click();
+ const code=page.getByLabel('Sign-in code',{exact:true});
+ await expect(code).toBeVisible({timeout:30000});
+ await code.fill(await localMailpitNumericCode(email,since,['Your Loadgistic sign-in code','Your Loadgistic signup code']));
+ const signIn=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/auth/verify'&&response.request().method()==='POST');
+ await page.getByRole('button',{name:'Sign in',exact:true}).last().click();
+ expect((await signIn).status()).toBe(200);
+}
+
+test('private cargo photo request goes from a broker’s map to the assigned driver and back to permitted staff',async({browser,request,baseURL},info)=>{
  test.skip(info.project.name!=='desktop-chromium','One serialized browser run uses explicit phone-sized owner and staff contexts.');
- test.setTimeout(240_000);
+ test.setTimeout(360_000);
  const db=localAuditService(),nonce=randomUUID().slice(0,8),started=Date.now();
  const owned:Owned={providerId:'',organizationId:'',driverId:'',vehicleId:'',ownerId:'',staffId:'',workspaceId:'',connectionId:'',grantId:'',photoId:''};
- const contexts:BrowserContext[]=[];let primary:unknown=null,cleanup:unknown=null;
+ const contexts:BrowserContext[]=[],businessContexts:BrowserContext[]=[];let primary:unknown=null,cleanup:unknown=null;
  const manifest=()=>writeFileSync(info.outputPath('cargo-photo-owned.json'),JSON.stringify({nonce,stage,owned},null,2),{mode:0o600});
  let stage='SETUP';manifest();
- const phone=async()=>{const context=await browser.newContext({baseURL:web,viewport:{width:390,height:844},isMobile:true,hasTouch:true,
+ const browserPage=async(width=390,origin=baseURL)=>{const context=await browser.newContext({baseURL:origin,viewport:{width,height:844},isMobile:width<600,hasTouch:width<600,
   extraHTTPHeaders:{'x-forwarded-for':`127.0.0.${240+contexts.length}`}});contexts.push(context);return context.newPage();};
  try{
   const provider=await auditFleetProvider(db,'photo-read');owned.providerId=provider.id;owned.organizationId=provider.organization_id;manifest();
@@ -165,7 +190,7 @@ test('broker owner and permitted staff can read a private cargo photo until vehi
   await updateFleetDriverAccess(provider,owned.driverId,{vehicleId:owned.vehicleId,canManageCapacity:true,canManageTracking:true});
   await setProviderVehiclePublication(provider,owned.vehicleId,'LIVE');
   const place=async(name:string)=>checked(await db.from('place_catalog').select('id').eq('normalized_name',name).limit(1).single()).id as string;
-  await publishProviderCapacity({id:owned.driverId,role:'DRIVER',driver_kind:'COMPANY',organization_id:owned.organizationId},{vehicleId:owned.vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',
+  await publishProviderCapacity({id:owned.driverId,role:'DRIVER',driver_kind:'COMPANY',organization_id:owned.organizationId},{vehicleId:owned.vehicleId,status:'PARTIAL',availablePercent:65,acceptedLoads:'PTL',availabilityGeometry:'ROUTE',
    visibility:'PRIVATE',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,
    currentRoutePlaces:[await place('addis ababa'),await place('adama')].map(placeRef=>({placeRef}))});
   owned.connectionId=checked(await db.rpc('request_account_connection',{actor_user_id:owned.providerId,
@@ -174,17 +199,86 @@ test('broker owner and permitted staff can read a private cargo photo until vehi
   owned.grantId=checked(await db.rpc('grant_account_capacity_access',{actor_user_id:owned.providerId,
    target_connection_id:owned.connectionId,target_vehicle_id:owned.vehicleId})).id;manifest();
 
+  stage='BROKER_REQUEST';manifest();
+  const brokerPage=await browserPage(1280);businessContexts.push(brokerPage.context());await localSupportLogin(brokerPage,owned.ownerId);
+  const brokerPanel=await openPrivatePanel(brokerPage,owned.workspaceId,owned.vehicleId);
+  await expect(brokerPage.locator('.truck-inspection').getByText('Available space: 65%',{exact:true})).toBeVisible();
+  await expect(brokerPanel.getByText('No photo yet',{exact:true})).toBeVisible({timeout:35000});
+  const requestResponse=brokerPage.waitForResponse(response=>new URL(response.url()).pathname.endsWith('/capacity/photo-requests')&&response.request().method()==='POST');
+  await brokerPanel.getByRole('button',{name:'Request photo',exact:true}).click();
+  const requested=await requestResponse;expect(requested.status()).toBe(201);
+  const {id:requestId}=await requested.json() as {id:string};expect(requestId).toMatch(uuid);
+  await expect(brokerPanel.getByText('Photo requested',{exact:true})).toBeVisible();
+  expect(checked(await db.from('cargo_space_photo_requests').select('status,requested_by')
+   .eq('id',requestId).single())).toEqual({status:'PENDING',requested_by:owned.ownerId});
+  await brokerPage.screenshot({path:info.outputPath('request-pending-desktop.png')});
+
+  const imageFile={name:'synthetic-cargo.png',mimeType:'image/png',buffer:readFileSync('public/icon-192.png')};
+  if(expo){
+   stage='EXPO_DRIVER_PREVIEW';manifest();
+   const driverExpo=await browserPage(390,expo);
+   await nativeLogin(driverExpo,`photo-driver-${nonce}@loadgistic.local`);
+   await expect(driverExpo.getByText('Available space: 65%',{exact:true})).toBeVisible({timeout:20000});
+   await driverExpo.getByRole('button',{name:'Update planned capacity',exact:true}).click();
+   const space=driverExpo.getByLabel('Available space',{exact:true});
+   await expect(space).toHaveValue('65');
+   await space.fill('');
+   await driverExpo.getByRole('button',{name:'Save planned capacity',exact:true}).click();
+   await expect(driverExpo.getByText('Enter 1% to 99% of space still free.',{exact:true})).toBeVisible();
+   await driverExpo.getByRole('button',{name:'Close',exact:true}).click();
+   const photoTool=driverExpo.getByRole('button',{name:'Cargo space photo',exact:true});
+   await expect(photoTool).toContainText('Photo requested',{timeout:30000});
+   await photoTool.click();
+   const nativeDriverPanel=driverExpo.getByTestId('cargo-space-photo-section');
+   await expect(nativeDriverPanel.getByText('New photo requested',{exact:true})).toBeVisible({timeout:20000});
+   const chooser=driverExpo.waitForEvent('filechooser');
+   await nativeDriverPanel.getByRole('button',{name:'Choose photo',exact:true}).click();
+   await (await chooser).setFiles(imageFile);
+   await expect(nativeDriverPanel.getByRole('img',{name:'Selected cargo space photo'})).toBeVisible({timeout:20000});
+   await driverExpo.screenshot({path:info.outputPath('driver-preview-expo.png')});
+   await nativeDriverPanel.getByRole('button',{name:'Cancel',exact:true}).click();
+   await expect(nativeDriverPanel.getByRole('button',{name:'Save photo',exact:true})).toHaveCount(0);
+   await driverExpo.context().close();
+  }
+
   stage='DRIVER_UPLOAD';manifest();
-  const driverPage=await phone();await localSupportLogin(driverPage,owned.driverId);
-  const upload=await driverPage.request.post('/api/capacity/cargo-space-photos',{multipart:{
-   command:JSON.stringify({vehicleId:owned.vehicleId,source:'UPLOAD'}),
-   file:{name:'synthetic-cargo.png',mimeType:'image/png',buffer:readFileSync('public/icon-192.png')}
-  }});
+  const driverPage=await browserPage();await localSupportLogin(driverPage,owned.driverId);
+  const driverSummary=driverPage.waitForResponse(response=>{
+   const url=new URL(response.url());
+   return url.pathname==='/api/capacity/cargo-space-photos'&&url.searchParams.get('vehicleId')===owned.vehicleId;
+  },{timeout:45000});
+  await driverPage.goto('/app/home',{waitUntil:'domcontentloaded'});
+  await expect(driverPage.locator('.capacity-space-summary')).toHaveText('Available space: 65%');
+  const driverPanel=driverPage.locator('details.cargo-photo-panel');
+  const capacityPhoto=await driverSummary;
+  expect(capacityPhoto.status()).toBe(200);
+  expect((await capacityPhoto.json()).requests).toEqual([expect.objectContaining({id:requestId})]);
+  await expect(driverPanel.locator('summary')).toContainText('New photo requested',{timeout:20000});
+  await driverPanel.locator('summary').click();
+  const picker=driverPanel.getByLabel('Choose photo',{exact:true});
+  await picker.setInputFiles(imageFile);
+  await expect(driverPanel.getByRole('img',{name:'Selected cargo space photo'})).toBeVisible();
+  await expect(driverPanel.getByRole('button',{name:'Save photo',exact:true})).toBeInViewport({ratio:1});
+  await expect(driverPanel.getByRole('button',{name:'Cancel',exact:true})).toBeInViewport({ratio:1});
+  await driverPage.screenshot({path:info.outputPath('driver-preview-phone.png')});
+  await driverPanel.getByRole('button',{name:'Cancel',exact:true}).click();
+  await expect(driverPanel.getByRole('button',{name:'Save photo',exact:true})).toHaveCount(0);
+  expect(checked(await db.from('cargo_space_photos').select('id').eq('vehicle_id',owned.vehicleId))).toHaveLength(0);
+  await picker.setInputFiles(imageFile);
+  const uploadResponse=driverPage.waitForResponse(response=>new URL(response.url()).pathname==='/api/capacity/cargo-space-photos'&&response.request().method()==='POST');
+  await driverPanel.getByRole('button',{name:'Save photo',exact:true}).click();
+  const upload=await uploadResponse;
   expect(upload.status()).toBe(201);
   owned.photoId=(await upload.json() as {photo:{id:string}}).photo.id;manifest();expect(owned.photoId).toMatch(uuid);
   const photo=checked(await db.from('cargo_space_photos').select('storage_path,uploaded_by,state,created_at')
    .eq('id',owned.photoId).single());
   expect(photo.uploaded_by).toBe(owned.driverId);expect(photo.state).toBe('ACTIVE');
+  await expect(driverPanel.getByText('Photo saved.',{exact:true})).toBeVisible({timeout:20000});
+  expect(checked(await db.from('cargo_space_photo_requests').select('status').eq('id',requestId).single()).status).toBe('FULFILLED');
+  await expect(driverPanel.getByRole('button',{name:'Remove photo',exact:true})).toHaveCount(0);
+  const deniedRemove=await driverPage.request.delete(`/api/capacity/cargo-space-photos/${owned.photoId}`);
+  expect(deniedRemove.status()).toBe(403);
+  expect(checked(await db.from('cargo_space_photos').select('state').eq('id',owned.photoId).single()).state).toBe('ACTIVE');
   expect(photoPath.test(photo.storage_path)).toBe(true);expect(new Date(photo.created_at).getTime()).toBeGreaterThanOrEqual(started-5000);
   const filePath=`/api/business-workspaces/${owned.workspaceId}/capacity/photos/${owned.photoId}`;
   const anonymous=await request.get(filePath);expect([401,403,404]).toContain(anonymous.status());
@@ -193,25 +287,86 @@ test('broker owner and permitted staff can read a private cargo photo until vehi
 
   for(const [role,userId] of [['OWNER',owned.ownerId],['STAFF',owned.staffId]] as const){
    stage=`${role}_READ`;manifest();
-   const page=await phone();await localSupportLogin(page,userId);
-   const summary=await page.request.get(`/api/business-workspaces/${owned.workspaceId}/capacity/photos?vehicleId=${owned.vehicleId}`);
+   const page=role==='OWNER'?brokerPage:await browserPage();
+   if(role==='STAFF'){businessContexts.push(page.context());await localSupportLogin(page,userId);}
+   const received=page.waitForResponse(response=>{
+    const url=new URL(response.url());
+    return url.pathname===`/api/business-workspaces/${owned.workspaceId}/capacity/photos`&&url.searchParams.get('vehicleId')===owned.vehicleId;
+   });
+   const panel=role==='OWNER'?brokerPanel:await openPrivatePanel(page,owned.workspaceId,owned.vehicleId);
+   if(role==='OWNER')await panel.getByRole('button',{name:'Refresh',exact:true}).click();
+   const summary=await received;
    expect(summary.status()).toBe(200);
    expect((await summary.json() as {photo:{id:string;contentPath:string}}).photo).toMatchObject({id:owned.photoId,contentPath:filePath});
-   const bytes=await page.request.get(filePath);expect(bytes.status()).toBe(200);
-   expect(bytes.headers()['content-type']).toMatch(/^image\/jpeg/);
-   expect(bytes.headers()['cache-control']).toMatch(/no-store/i);
-   expect((await bytes.body()).length).toBeGreaterThan(0);
-   await openPrivatePhoto(page,owned.workspaceId,owned.vehicleId,owned.photoId);
+   await readPhoto(page,panel,filePath);
+   await page.screenshot({path:info.outputPath(`photo-${role.toLowerCase()}.png`)});
+  }
+
+  if(expo){
+   stage='EXPO_BROKER_READ';manifest();
+   const brokerExpo=await browserPage(390,expo);
+   await nativeLogin(brokerExpo,`photo-owner-${nonce}@loadgistic.local`);
+   await brokerExpo.goto('/?view=private',{waitUntil:'domcontentloaded'});
+   const truckMarker=brokerExpo.getByRole('button',{name:/^Isuzu Photo test.*Available space: 65%/});
+   const retry=brokerExpo.getByRole('button',{name:'Try again',exact:true});
+   await expect(truckMarker.or(retry).first()).toBeVisible({timeout:30000});
+   if(await retry.isVisible())await retry.click();
+   await expect(truckMarker.getByText('65%',{exact:true})).toBeVisible({timeout:30000});
+   await brokerExpo.screenshot({path:info.outputPath('private-market-percent-expo.png')});
+   await truckMarker.click({timeout:30000});
+   await brokerExpo.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
+   const nativeBusinessPanel=brokerExpo.getByTestId('business-cargo-space-photo');
+   const mobileBytes=brokerExpo.waitForResponse(response=>new URL(response.url()).pathname===filePath);
+   await nativeBusinessPanel.getByRole('button',{name:'Open photo',exact:true}).click({timeout:20000});
+   expect((await mobileBytes).status()).toBe(200);
+   await expect(brokerExpo.getByRole('img',{name:'Cargo space photo'})).toBeVisible({timeout:20000});
+   await brokerExpo.screenshot({path:info.outputPath('photo-broker-expo.png')});
+   await brokerExpo.getByRole('button',{name:'Close photo',exact:true}).click();
+   await brokerExpo.context().close();
   }
 
   stage='REVOKE_AND_DENY';manifest();
   checked(await db.rpc('revoke_account_capacity_access',{actor_user_id:owned.providerId,target_grant_id:owned.grantId,expected_revision:1}));
-  for(const context of contexts.slice(1)){
+  for(const context of businessContexts){
    const response=await context.request.get(filePath);
    expect([403,404]).toContain(response.status());expect(response.headers()['cache-control']).toMatch(/no-store/i);
    const summary=await context.request.get(`/api/business-workspaces/${owned.workspaceId}/capacity/photos?vehicleId=${owned.vehicleId}`);
    expect([403,404]).toContain(summary.status());
   }
+  stage='FLEET_OWNER_REMOVE';manifest();
+  const fleetPage=await browserPage();
+  await localSupportLogin(fleetPage,owned.providerId);
+  await fleetPage.goto(`/app/fleet/${owned.vehicleId}`,{waitUntil:'domcontentloaded'});
+  const ownerPanel=fleetPage.locator('details.cargo-photo-panel');
+  await ownerPanel.locator('summary').click();
+  await expect(ownerPanel.getByLabel('Choose photo',{exact:true})).toHaveCount(0);
+  await ownerPanel.getByRole('button',{name:'Open photo',exact:true}).click({timeout:20000});
+  await expect(ownerPanel.getByRole('img',{name:'Cargo space photo'})).toBeVisible({timeout:20000});
+  await expect(ownerPanel.getByRole('button',{name:'Remove photo',exact:true})).toBeVisible();
+  if(expo){
+   const fleetExpo=await browserPage(390,expo);
+   await nativeLogin(fleetExpo,provider.email);
+   await fleetExpo.goto('/account?tab=vehicles',{waitUntil:'domcontentloaded'});
+   await fleetExpo.getByRole('button',{name:/Isuzu Photo test/}).click({timeout:30000});
+   await fleetExpo.getByRole('button',{name:'Cargo space photo',exact:true}).click({timeout:20000});
+   const nativeFleetPanel=fleetExpo.getByTestId('cargo-space-photo-section');
+   await expect(nativeFleetPanel.getByRole('button',{name:'Choose photo',exact:true})).toHaveCount(0);
+   const removal=fleetExpo.waitForResponse(response=>new URL(response.url()).pathname===`/api/capacity/cargo-space-photos/${owned.photoId}`&&response.request().method()==='DELETE');
+   await nativeFleetPanel.getByRole('button',{name:'Remove photo',exact:true}).click({timeout:20000});
+   const removed=await removal;
+   expect(removed.status()).toBe(200);
+   expect(await removed.headerValue('content-type')).toMatch(/application\/json/);
+   expect(await removed.json()).toMatchObject({id:owned.photoId,removed:true});
+   await expect(nativeFleetPanel.getByText('Photo removed.',{exact:true})).toBeVisible({timeout:20000});
+   await expect(nativeFleetPanel.getByText('No photo yet',{exact:true})).toBeVisible({timeout:20000});
+   await fleetExpo.screenshot({path:info.outputPath('photo-removed-expo.png')});
+  }else{
+   const removal=fleetPage.waitForResponse(response=>new URL(response.url()).pathname===`/api/capacity/cargo-space-photos/${owned.photoId}`&&response.request().method()==='DELETE');
+   await ownerPanel.getByRole('button',{name:'Remove photo',exact:true}).click();
+   expect((await removal).status()).toBe(200);
+   await expect(ownerPanel.getByText('Photo removed.',{exact:true})).toBeVisible({timeout:20000});
+  }
+  expect(['DELETING','DELETED']).toContain(checked(await db.from('cargo_space_photos').select('state').eq('id',owned.photoId).single()).state);
  }catch(error){primary=error;}
  finally{
   await Promise.allSettled(contexts.map(context=>context.close()));

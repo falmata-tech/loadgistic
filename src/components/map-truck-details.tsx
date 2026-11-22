@@ -63,11 +63,11 @@ export function MapTruckDetails({truck,privatePhoto}:{truck:TruckDetails;private
       {truck.capacity_confirmation_needed?<p className="truck-inspection-confirm"><Text message="Confirm availability directly."/></p>:null}
     </div>
     {truck.current_signal_geometry_visible===false?<p className="truck-inspection-private"><strong><Text message={preferredArea?'Preferred area—not current location':'Preferred corridor—not current location'}/></strong></p>:null}
+    {privatePhoto?<BusinessCargoSpacePhoto key={`${privatePhoto.workspaceId}:${privatePhoto.vehicleId}`} workspaceId={privatePhoto.workspaceId} vehicleId={privatePhoto.vehicleId}/>:null}
     <div className="map-truck-documents">
       <TruckDocumentSummary label={truck.provider_organization_id?'Transport Provider documents':'Owner documents'} badges={truck.owner_verification_badges}/>
       <TruckDocumentSummary label="Driver documents" badges={truck.driver_verification_badges}/>
       <TruckDocumentSummary label="Vehicle documents" badges={truck.truck_verification_badges}/>
     </div>
-    {privatePhoto?<BusinessCargoSpacePhoto key={`${privatePhoto.workspaceId}:${privatePhoto.vehicleId}`} workspaceId={privatePhoto.workspaceId} vehicleId={privatePhoto.vehicleId}/>:null}
   </section>;
 }

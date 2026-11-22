@@ -106,7 +106,7 @@ test('space estimates hide legacy Partial50 and expose only a reported value',()
   assert.equal(empty.available_percent,100);
   assert.equal(empty.available_percent_reported_at,null);
 });
-test('publish command keeps omission distinct from clear and never trusts client provenance',async()=>{
+test('publish command keeps legacy omission, refuses clear and never trusts client provenance',async()=>{
   const previous={fetch:globalThis.fetch,url:process.env.NEXT_PUBLIC_SUPABASE_URL,key:process.env.SUPABASE_SERVICE_ROLE_KEY};
   const commands=[];
   process.env.NEXT_PUBLIC_SUPABASE_URL='https://capacity-test.invalid';
@@ -118,18 +118,16 @@ test('publish command keeps omission distinct from clear and never trusts client
   try{
     const base={vehicleId:'vehicle',status:'PARTIAL'};
     await publishSupabaseProviderCapacity({id:'actor'},base);
-    await publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent:null});
     await publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent:40,availablePercentReportedAt:'2000-01-01T00:00:00Z',availablePercentReportedBy:'other-user'});
     assert.equal(Object.hasOwn(commands[0],'available_percent'),false);
-    assert.equal(commands[1].available_percent,null);
-    assert.equal(commands[2].available_percent,40);
-    assert.equal(Object.hasOwn(commands[2],'available_percent_reported_at'),false);
-    assert.equal(Object.hasOwn(commands[2],'available_percent_reported_by'),false);
-    for(const availablePercent of [0,100,40.5,'40.0','040','40x']){
+    assert.equal(commands[1].available_percent,40);
+    assert.equal(Object.hasOwn(commands[1],'available_percent_reported_at'),false);
+    assert.equal(Object.hasOwn(commands[1],'available_percent_reported_by'),false);
+    for(const availablePercent of [null,'',0,100,40.5,'40.0','040','40x']){
       await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent}),/INVALID_AVAILABLE_PERCENT/);
     }
     await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,status:'EMPTY',availablePercent:40}),/INVALID_AVAILABLE_PERCENT/);
-    assert.equal(commands.length,3);
+    assert.equal(commands.length,2);
   }finally{
     globalThis.fetch=previous.fetch;
     for(const [key,value] of [['NEXT_PUBLIC_SUPABASE_URL',previous.url],['SUPABASE_SERVICE_ROLE_KEY',previous.key]]) {

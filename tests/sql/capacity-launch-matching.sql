@@ -50,7 +50,8 @@ begin
  command:=jsonb_build_object('vehicle_id',truck_id,'availability_geometry','ROUTE','location_source','PRESERVE_DRIVER','sharing_mode','BOTH','current_route_places',route_points,'accepts_multi_pick',true,'accepts_multi_drop',false);
  foreach status_value in array array['EMPTY','PARTIAL'] loop
  foreach load_choice in array array['FTL','PTL','BOTH'] loop
-  saved_id:=publish_provider_capacity(owner_id,command||jsonb_build_object('status',status_value,'accepted_loads',load_choice));
+  saved_id:=publish_provider_capacity(owner_id,command||jsonb_build_object('status',status_value,'accepted_loads',load_choice)
+   ||case when status_value='PARTIAL' then '{"available_percent":45}'::jsonb else '{}'::jsonb end);
   if(select id from capacities where vehicle_id=truck_id order by updated_at desc,id desc limit 1) is distinct from saved_id then raise exception 'LATEST_MATCHING_REPORT_LOST';end if;
   base_query:=jsonb_build_object('capacity_id',saved_id,'q',marker,'status',status_value,'vehicle_category','Mini Box Truck','stop_option','MULTI_PICK','freshness','FRESH',
    'origin_lat',route_points->0->'lat','origin_lng',route_points->0->'lng','destination_lat',route_points->(jsonb_array_length(route_points)-1)->'lat','destination_lng',route_points->(jsonb_array_length(route_points)-1)->'lng',

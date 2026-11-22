@@ -1,11 +1,34 @@
 # Current work and release status
 
-Updated 2026-11-21. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-22. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
+
+## November 22 Capacity estimates and private cargo photos
+
+Partial markers show the reported percentage on web and in Expo. The same
+estimate appears on the Driver's Capacity home and in Vehicle and driver. Both
+editors require an integer from 1 to 99. The database protects the original
+report time and assigned-driver scope. Existing unreported customer history
+stays unknown. All 107 Partial demo records in the managed fixture have an
+attributed estimate from 20% to 90%. The simulator startup accepts only its exact
+authored seeds and retains the human-report denial.
+
+Verified a broker request from Private Network, assigned Driver preview and
+upload on phone-width web, broker and Capacity staff photo reads, denial after
+revocation, and fleet owner removal in Expo. Chrome capture and test evidence
+are in the review worktree under `.local/interactive-previews`. The installed
+Android camera and hosted deployment remain separate checks.
+
+The preceding PR 42 source's encrypted database restore matched 202 relations
+and 135 ACL entries. Its isolated migration rehearsal initially failed the
+Data API guard because the restored catalog lacked the cluster role setting.
+A scoped hosted read confirmed one exact setting and zero conflicts. The
+restore role could not reapply it. The private Storage recovery and final
+release checks are still open. Production was inspected read-only.
 
 ## November 21 production recheck
 

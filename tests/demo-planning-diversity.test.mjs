@@ -80,7 +80,8 @@ test('the saved public market has a usable mix of short and long routes and loca
   assert.ok(recent.some(row=>row.availability_geometry==='ROUTE'),status+' recent route');
   assert.ok(recent.some(row=>row.availability_geometry==='RADIUS'),status+' recent area');
  }
- const reports=open.filter(row=>row.available_percent_reported_at);
+ const reports=tables.capacities.filter(row=>(row.market_status||row.status)==='PARTIAL');
+ assert.ok(reports.every(row=>Number.isInteger(row.available_percent)&&row.available_percent>=1&&row.available_percent<=99));
  assert.ok(reports.some(row=>row.available_percent>=75));
  assert.ok(reports.some(row=>row.available_percent>=50&&row.available_percent<75));
  assert.ok(reports.some(row=>row.available_percent>=25&&row.available_percent<50));

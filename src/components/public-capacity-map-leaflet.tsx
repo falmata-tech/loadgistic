@@ -18,13 +18,14 @@ import {locationSourceLabel,locationSourceSvg,locationSourceColor} from '@/lib/l
 import sourceStyles from './location-source-badge.module.css';
 import {localizedUpdateLabel} from '@/lib/i18n/update-label.js';
 import {capacityLoadLabel,capacityLoadPreference} from '@/lib/capacity-load-preferences';
+import {reportedSpacePercent} from '@/lib/capacity-space-estimate.js';
 import {capacityMapColors} from '@/lib/capacity-status-presentation';
 import {locationRadiusMinimumZoom} from '@/lib/map-signal-offset';
 import {LocateFixed,Truck} from 'lucide-react';
 
 type Point={lat:number;lng:number};
 type PlacePoint={place_ref:string;label:string;lat:number;lng:number};
-type Signal={location_source?:string;location_is_demo?:boolean;accepts_full_load?:boolean|number;accepts_partial_load?:boolean|number;id:string;vehicle_id?:string;provider_name:string;platform_number?:string;status:string;cargo_configuration?:string;availability_geometry?:string|null;current_signal_geometry_visible?:boolean;location_lat?:number;location_lng?:number;location_precision_km?:number;work_radius_km?:number;location_updated_at?:string|null;capacity_updated_label?:string;capacity_confirmation_needed?:boolean;location_updated_label?:string;location_is_last_reported?:boolean;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];current_route_points?:PlacePoint[];recurring_corridors?:any[]};
+type Signal={location_source?:string;location_is_demo?:boolean;available_percent?:number|null;available_percent_reported_at?:string|null;accepts_full_load?:boolean|number;accepts_partial_load?:boolean|number;id:string;vehicle_id?:string;provider_name:string;platform_number?:string;status:string;cargo_configuration?:string;availability_geometry?:string|null;current_signal_geometry_visible?:boolean;location_lat?:number;location_lng?:number;location_precision_km?:number;work_radius_km?:number;location_updated_at?:string|null;capacity_updated_label?:string;capacity_confirmation_needed?:boolean;location_updated_label?:string;location_is_last_reported?:boolean;capacity_area_center_label?:string;capacity_area_center_lat?:number;capacity_area_center_lng?:number;capacity_area_boundary?:PlacePoint[];current_route_points?:PlacePoint[];recurring_corridors?:any[]};
 type MapSignalInfo={id:string;accent:'truck'|'location'|'empty'|'partial'|'regular';label:string;title:string;primary:string;detail:string};
 const NO_OWN_SIGNALS:string[]=[];
 
@@ -185,14 +186,17 @@ function truckMarker(item:Signal,selected=false,zoom=10,visualOffset:[number,num
   const source=hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)?locationSourceLabel(item.location_source):'';
   const escaped=source?t(source).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]!)):'';
   const badge=source?`<span class="${sourceStyles.badge}" style="color:${locationSourceColor(item.location_source)}" title="${escaped}">${locationSourceSvg(item.location_source)}</span>`:'';
-  return L.divIcon({className:`capacity-truck-map-marker vehicle-image-marker ${statusClass}${trailerConfiguration?' trailer-configuration':''}${selected?' selected':''}${isOwn?' own-vehicle':''}${spread?' spread':''}`,html:`<span class="vehicle-marker-image"><span class="vehicle-marker-content"><img src="${image}" alt=""/></span>${badge}${isOwn?'<span class="own-vehicle-mark" aria-hidden="true">★</span>':''}</span>`,iconSize:size,iconAnchor:[size[0]/2-visualOffset[0],size[1]-visualOffset[1]]});
+  const percent=reportedSpacePercent(item.status,item.available_percent,item.available_percent_reported_at);
+  const space=percent===null?'':`<span class="vehicle-marker-space" aria-hidden="true">${percent}%</span>`;
+  return L.divIcon({className:`capacity-truck-map-marker vehicle-image-marker ${statusClass}${trailerConfiguration?' trailer-configuration':''}${selected?' selected':''}${isOwn?' own-vehicle':''}${spread?' spread':''}`,html:`<span class="vehicle-marker-image"><span class="vehicle-marker-content"><img src="${image}" alt=""/></span>${badge}${space}${isOwn?'<span class="own-vehicle-mark" aria-hidden="true">★</span>':''}</span>`,iconSize:size,iconAnchor:[size[0]/2-visualOffset[0],size[1]-visualOffset[1]]});
 }
 
-function truckMarkerAccessibleLabel(item:Signal,t:(text:string)=>string=text=>text,isOwn=false){
+function truckMarkerAccessibleLabel(item:Signal,t:(text:string,values?:{percent:number})=>string=text=>text,isOwn=false){
   const status=item.status==='PARTIAL'?'Partial capacity':'Empty vehicle';
   const preference=capacityLoadPreference(item.status,item.accepts_full_load,item.accepts_partial_load);
   const source=hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)?locationSourceLabel(item.location_source):'';
-  return `${isOwn?t('Your vehicle')+' · ':''}${item.cargo_configuration||'Vehicle'} · ${status}${preference?' · '+t(capacityLoadLabel(preference)):''} · ${item.provider_name}${source?' · '+t(source):''}${hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)&&item.location_is_demo===true?' · '+t('Demo location'):''}`;
+  const percent=reportedSpacePercent(item.status,item.available_percent,item.available_percent_reported_at);
+  return [isOwn?t('Your vehicle'):'',t(item.cargo_configuration||'Vehicle'),t(status),percent===null?'':t('Available space: {percent}%',{percent}),preference?t(capacityLoadLabel(preference)):'',item.provider_name,source?t(source):'',hasCoordinate(item.location_lat)&&hasCoordinate(item.location_lng)&&item.location_is_demo===true?t('Demo location'):''].filter(Boolean).join(' · ');
 }
 
 function routePointAtFraction(points:PlacePoint[],fraction:number):[number,number]|null{

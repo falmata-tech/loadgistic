@@ -11,6 +11,7 @@ import {capacityMapColors,capacityStatusPresentation} from '../src/theme/capacit
 import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../src/lib/map-initial-camera.js';
 import {capacityMarkerFanLayout} from '../../../src/lib/capacity-marker-fan.js';
 import {locationRadiusMinimumZoom} from '../../../src/lib/map-signal-offset.js';
+import {reportedSpacePercent} from '../../../src/lib/capacity-space-estimate.js';
 import {createCapacityCameraIntent,expandCapacityCluster} from '../src/map/capacity-camera-intent.ts';
 
 // Execute the real component/handlers with its native host and hooks substituted.
@@ -46,7 +47,7 @@ function fixture(currentVisible=true,topInset,bottomInset){
   capacityMarkerFanLayout,createCapacityCameraIntent,expandCapacityCluster,BackHandler:{addEventListener:()=>({remove(){}})},
   mapStyle:{},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,palette:{success:capacityStatusPresentation.EMPTY.color},capacityMapColors,capacityStatusPresentation,capacityDetailFrame,CapacityTruckDetails:'CapacityTruckDetails',CapacityTruckContact:'CapacityTruckContact',AppIcon:'AppIcon',Modal:'Modal',useWindowDimensions:()=>({width:320,height:600}),Image:'Image',Pressable:'Pressable',ScrollView:'ScrollView',Text:'Text',View:'View',
   StyleSheet:{create:value=>value,absoluteFill:{}},Map:'NativeMap',Camera:'Camera',GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',
-  markerLocation,signalBounds,signalPaths,locationRadiusMinimumZoom,createVisibleQuery:()=>({invalidate(){},moving(){},settled(){},refresh(){},close(){}}),
+  markerLocation,signalBounds,signalPaths,locationRadiusMinimumZoom,reportedSpacePercent,createVisibleQuery:()=>({invalidate(){},moving(){},settled(){},refresh(){},close(){}}),
   vehicleConfigurationImage:()=>'/vehicle-configurations/mini-box-truck.png',apiOrigin:'https://loadgistic.example',useLanguage:()=>({t:value=>value})};
  new Function(...Object.keys(parameters),compiled)(...Object.values(parameters));
  const Component=parameters.exports.default;

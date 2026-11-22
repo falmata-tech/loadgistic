@@ -69,8 +69,13 @@ begin
   'location_source','DEVICE_OBSCURED','approximate_lat',9.03,
   'approximate_lng',38.74,'location_precision_km',20);
 
- -- Older clients have no percent key. Storage compatibility is not a claim.
- signal_id:=public.publish_provider_capacity(owner_id,command);
+ -- An older write without an estimate is denied. A pre-rollout row can still
+ -- exist and must never advertise a measurement.
+ perform pg_temp.space_denied(format(
+  'select public.publish_provider_capacity(%L,%L::jsonb)',owner_id,command::text),
+  'INVALID_AVAILABLE_PERCENT');
+ signal_id:=public.publish_provider_capacity(owner_id,command||'{"available_percent":40}'::jsonb);
+ update public.capacities set available_percent=50 where id=signal_id;
  perform pg_temp.space_assert((select available_percent=50 and available_percent_reported_at is null
   from public.capacities where id=signal_id),'legacy_partial_stays_unreported');
  perform pg_temp.space_assert((select payload->>'available_percent' is null
@@ -156,14 +161,12 @@ begin
  perform pg_temp.space_assert((select available_percent_reported_at=report_time
   from public.capacities where id=signal_id),'unchanged_value_does_not_refresh_age');
 
- -- Explicit clear leaves a compatible numeric storage value but no visible estimate.
- signal_id:=public.publish_provider_capacity(owner_id,command||'{"available_percent":null}'::jsonb);
- perform pg_temp.space_assert((select available_percent=50 and available_percent_reported_at is null
-  from public.capacities where id=signal_id),'explicit_clear_hides_legacy_storage');
- perform pg_temp.space_assert(not exists(select 1 from public.account_capacity_filtered_page(
-  broker_id,private_digest,null,null,12,
-  jsonb_build_object('capacity_id',signal_id,'min_available_percent',1))),
-  'private_minimum_excludes_cleared');
+ -- A rejected clear leaves the current report and filter result intact.
+ perform pg_temp.space_denied(format(
+  'select public.publish_provider_capacity(%L,%L::jsonb)',owner_id,
+  (command||'{"available_percent":null}'::jsonb)::text),'INVALID_AVAILABLE_PERCENT');
+ perform pg_temp.space_assert((select available_percent=40 and available_percent_reported_at=report_time
+  from public.capacities where id=signal_id),'explicit_clear_leaves_saved_estimate');
 
  perform pg_temp.space_denied(format(
   'select public.publish_provider_capacity(%L,%L::jsonb)',owner_id,
@@ -215,7 +218,7 @@ do $reassignment$
 declare
  owner_id uuid:=gen_random_uuid();first_driver uuid:=gen_random_uuid();second_driver uuid:=gen_random_uuid();
  organization_id uuid:=gen_random_uuid();vehicle_id uuid;signal_id uuid;route_places jsonb;
- command jsonb;result jsonb;
+ command jsonb;result jsonb;duty_command jsonb;configured_at timestamptz;
 begin
  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
  (owner_id,'space-fleet-'||owner_id||'@example.invalid',now(),'{}'),
@@ -273,9 +276,9 @@ begin
  perform public.refresh_provider_capacity_location(second_driver,jsonb_build_object(
   'vehicle_id',vehicle_id,'approximate_lat',9.03,'approximate_lng',38.74,
   'location_precision_km',20));
- signal_id:=public.publish_provider_capacity(owner_id,command);
- perform pg_temp.space_assert((select available_percent=50 and available_percent_reported_at is null
-  from public.capacities where id=signal_id),'new_driver_does_not_inherit_estimate');
+ perform pg_temp.space_denied(format(
+  'select public.publish_provider_capacity(%L,%L::jsonb)',owner_id,command::text),
+  'INVALID_AVAILABLE_PERCENT');
  signal_id:=public.publish_provider_capacity(owner_id,command||'{"available_percent":60}'::jsonb);
  perform pg_temp.space_assert((select available_percent_reported_driver_id=second_driver
   and available_percent=60 from public.capacities where id=signal_id),
@@ -296,9 +299,21 @@ begin
   'vehicle_id',vehicle_id,'status','OFF_DUTY'));
  perform pg_temp.space_assert((select available_percent=0 and available_percent_reported_at is null
   from public.capacities where id=signal_id),'off_duty_clears_estimate');
- signal_id:=public.publish_provider_capacity(owner_id,command);
- perform pg_temp.space_assert((select available_percent=50 and available_percent_reported_at is null
-  from public.capacities where id=signal_id),'partial_after_off_duty_is_unknown');
+ perform pg_temp.space_denied(format(
+  'select public.publish_provider_capacity(%L,%L::jsonb)',owner_id,command::text),
+  'INVALID_AVAILABLE_PERCENT');
+ duty_command:=jsonb_build_object('vehicle_id',vehicle_id,'on_duty',true,
+  'location_source','DEVICE_OBSCURED','approximate_lat',9.03,'approximate_lng',38.74,'location_precision_km',20);
+ perform pg_temp.space_denied(format(
+  'select public.set_provider_assigned_vehicle_duty(%L,%L::jsonb)',second_driver,duty_command::text),
+  'CAPACITY_AVAILABLE_SPACE_CONFIGURATION_REQUIRED');
+ signal_id:=public.publish_provider_capacity(owner_id,command||'{"available_percent":60}'::jsonb);
+ select available_percent_reported_at into configured_at from public.capacities where id=signal_id;
+ perform public.publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','OFF_DUTY'));
+ signal_id:=public.set_provider_assigned_vehicle_duty(second_driver,duty_command);
+ perform pg_temp.space_assert((select available_percent=60 and available_percent_reported_at=configured_at
+  and available_percent_reported_by=owner_id and available_percent_reported_driver_id=second_driver
+  from public.capacities where id=signal_id),'driver_resumes_configured_estimate');
  raise notice 'PASS: assigned-driver changes and duty changes invalidate available-space reports';
 end $reassignment$;
 rollback;

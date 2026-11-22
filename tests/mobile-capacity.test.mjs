@@ -73,9 +73,8 @@ test('capacity publication defaults private and never accepts direct device coor
  const value = { action: 'PUBLISH', vehicleId: id, status: 'EMPTY', acceptedLoads: 'FTL', availabilityGeometry: 'ROUTE', currentRoutePlaces: [{ placeRef: 'place-a' }, { placeRef: 'place-b' }], capacityAreaCenterPlaceRef: '', capacityAreaBoundaryPlaces: [], acceptsMultiPick: false, acceptsMultiDrop: false };
  assert.equal(capacityCommand.parse(value).visibility, 'PRIVATE');
  assert.equal(capacityCommand.parse({...value,status:'PARTIAL',availablePercent:40}).availablePercent,40);
- assert.equal(capacityCommand.parse({...value,status:'PARTIAL',availablePercent:null}).availablePercent,null);
  assert.equal(capacityCommand.parse({...value,status:'PARTIAL'}).availablePercent,undefined);
- for(const availablePercent of [0,100,40.5,'40']) assert.equal(
+ for(const availablePercent of [null,0,100,40.5,'40']) assert.equal(
   capacityCommand.safeParse({...value,status:'PARTIAL',availablePercent}).success,false
  );
  assert.equal(capacityCommand.safeParse({...value,status:'PARTIAL',availablePercent:0}).error.issues[0].path[0],

@@ -13,8 +13,9 @@ if (!__DEV__ && !apiOrigin.startsWith('https://')) throw new Error('HTTPS is req
 export async function apiRequest(path: string, options: { token?: string; trackingGrant?:string;method?:'GET'|'POST'|'DELETE'; body?: unknown; signal?: AbortSignal } = {}): Promise<unknown> {
   const method=options.method||(options.body===undefined?'GET':'POST');
   if(options.trackingGrant&&(!/^[A-Za-z0-9._-]{1,4096}$/.test(options.trackingGrant)||options.token||!(method==='DELETE'&&path==='/api/tracking/access'||method==='GET'&&/^\/api\/tracking\/sessions\/[0-9a-f-]{36}$/i.test(path))))throw new Error('Invalid API path');
-  if(options.method&&!trackingSessionApiPathAllowed(path,method))throw new Error('Invalid API path');
-  if ((!trackingSessionApiPathAllowed(path,method)&&!path.startsWith('/api/mobile/')&&!businessApiPathAllowed(path)&&!cargoPhotoApiPathAllowed(path)) || path.includes('..')||/[\u0000-\u001f\u007f\\#]/.test(path)) throw new Error('Invalid API path');
+  const trackingPath=trackingSessionApiPathAllowed(path,method),cargoPhotoPath=cargoPhotoApiPathAllowed(path,method);
+  if(options.method&&!trackingPath&&!cargoPhotoPath)throw new Error('Invalid API path');
+  if ((!trackingPath&&!path.startsWith('/api/mobile/')&&!businessApiPathAllowed(path)&&!cargoPhotoPath) || path.includes('..')||/[\u0000-\u001f\u007f\\#]/.test(path)) throw new Error('Invalid API path');
   const multipart = options.body instanceof FormData;
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), multipart ? 60000 : 20000);
   const abort = () => controller.abort(); options.signal?.addEventListener('abort', abort, { once: true });

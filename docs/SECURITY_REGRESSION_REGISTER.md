@@ -1,5 +1,18 @@
 # Security failures we must not repeat
 
+## November 22 database recovery omitted the Data API role setting
+
+The encrypted ledger 227 database archive produced a network-isolated restore
+with matching data and ACL entries. After rehearsing 228–241, the restored
+database failed `DATA_API_GUARD_SETTING_REQUIRED`. A separate exact production
+read confirmed one expected global role setting and zero conflicting
+overrides. The restore role's bounded replay returned SQLSTATE `42501`. Keep
+that failed gate visible. The release maintainer must capture the exact role
+setting alongside future backups, use the supported restore authority in a
+disposable environment, and verify the unmodified Data API guard after replay.
+This finding concerns the recovery environment. No hosted grant or setting
+changed.
+
 ## November 17 guest Tracking after the issuer loses shipment access
 
 CI's proof workflow found that removing the registered owner denied their proof request while an already-open customer link could still read the shipment. The local installed guest reader checked the link and shipment but skipped the issuer's current sharing authority. Migration 234 rechecks that authority on each unlock and refresh, and rechecks location permission before returning a point. The rollback-only SQL regression issued a working link, revoked the owner, and observed the next read return no record. The Tracking release maintainer must verify the browser denial and the same function on the release target. No hosted repair has been applied.

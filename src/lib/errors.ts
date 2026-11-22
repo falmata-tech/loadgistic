@@ -139,6 +139,7 @@ const messages: Record<string,string> = {
   INVALID_VEHICLE_CONFIGURATION: 'Choose a supported cargo configuration.',
   SHIPMENT_VEHICLE_REQUIRED: 'Choose a vehicle with an assigned driver before starting this shipment.',
   CAPACITY_CONFIGURATION_REQUIRED: 'A fleet owner must configure this vehicle before it can return On Duty.',
+  CAPACITY_AVAILABLE_SPACE_CONFIGURATION_REQUIRED: 'Ask your fleet owner to enter available space before marking this vehicle Available.',
   CAPACITY_DRIVER_LOCATION_REQUIRED: 'The assigned Driver must allow device location before this vehicle can be published.',
   CAPACITY_LOCATION_ACTIVE_REQUIRED: 'Set this vehicle to Empty or Partial before refreshing its public location.',
   INVALID_CAPACITY_STATUS: 'Choose Empty, Partial, or Off Duty.',

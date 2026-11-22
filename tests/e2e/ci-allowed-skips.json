@@ -83,7 +83,7 @@
     },
     {
       "file": "cargo-photo-business-reads.spec.ts",
-      "title": "broker owner and permitted staff can read a private cargo photo until vehicle access is revoked",
+      "title": "private cargo photo request goes from a broker’s map to the assigned driver and back to permitted staff",
       "project": "mobile-chromium"
     },
     {

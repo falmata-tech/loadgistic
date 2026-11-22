@@ -22,7 +22,7 @@ async function currentPairModalFixture(page:any){
   checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
   const places=checked(await db.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
   const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
-  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:routePlaces});
+  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',availablePercent:45,acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:routePlaces});
   routeId=await addProviderRegularCapacity(actor,{...scope(),geometry:'ROUTE',routePlaces,areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
   const saved=checked(await db.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id,route_points_json').eq('id',routeId).single());
   expect(saved).toMatchObject({assigned_vehicle_id:vehicleId,assigned_driver_user_id:actor.id});expect(saved.route_points_json).toHaveLength(2);

@@ -3,28 +3,12 @@ const {trackingSessionApiPathAllowed}=require('../../../src/lib/mobile/tracking-
 const {createReadStream}=require('node:fs');
 const path=require('node:path');
 const {businessApiPathAllowed}=require('../../../src/lib/mobile/business-api-path.js');
-const photoCollection='/api/capacity/cargo-space-photos';
-const uuid='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
-const photoRead=new RegExp(`^${photoCollection}/${uuid}$`);
-const exactId=new RegExp(`^${uuid}$`);
-function providerPhotoPathAllowed(value){
- if(typeof value!=='string'||/[\u0000-\u001f\u007f\\#]/.test(value))return false;
- const [pathname,query,extra]=value.split('?');
- if(extra!==undefined)return false;
- if(pathname===photoCollection){
-  if(query===undefined)return true;
-  const params=new URLSearchParams(query);
-  return params.size===1&&exactId.test(params.get('vehicleId')||'');
- }
- if(!photoRead.test(pathname)||query===undefined)return false;
- const params=new URLSearchParams(query);
- return params.size===1&&params.get('format')==='base64';
-}
-const allowedPath = value => {
+const {cargoPhotoApiPathAllowed}=require('../../../src/lib/mobile/cargo-space-photo-path.js');
+const allowedPath = (value,method) => {
  try {
   const pathname=decodeURIComponent(value.split('?')[0]);
   if (pathname.includes('\\') || pathname.split('/').some(part=>part==='.'||part==='..')) return false;
-  return /^\/(?:api\/(?:mobile|public)\/|vehicle-configurations\/|marketing\/)/.test(pathname)||businessApiPathAllowed(value)||providerPhotoPathAllowed(value)||trackingSessionApiPathAllowed(value);
+  return /^\/(?:api\/(?:mobile|public)\/|vehicle-configurations\/|marketing\/)/.test(pathname)||businessApiPathAllowed(value)||cargoPhotoApiPathAllowed(value,method)||trackingSessionApiPathAllowed(value);
  } catch { return false; }
 };
 function previewBackendPort(env=process.env){
@@ -42,7 +26,7 @@ function localPreviewProxy(middleware) {
     .on('error',()=>{response.statusCode=500;response.end();}).pipe(response);
    return;
   }
-  if (!allowedPath(request.url || '')) return middleware(request,response,next);
+  if (!allowedPath(request.url || '',request.method)) return middleware(request,response,next);
   if((request.url||'').startsWith('/api/tracking/')&&!trackingSessionApiPathAllowed(request.url,request.method)){response.writeHead(400);response.end();return;}
   const host=(request.headers.host||'').split(':')[0];
   if (!['localhost','127.0.0.1'].includes(host)) {response.writeHead(403);response.end();return;}
@@ -59,4 +43,4 @@ function localPreviewProxy(middleware) {
   request.pipe(upstream);
  };
 }
-module.exports={localPreviewProxy,allowedPath,providerPhotoPathAllowed,previewBackendPort};
+module.exports={localPreviewProxy,allowedPath,previewBackendPort};

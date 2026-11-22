@@ -763,13 +763,24 @@ When the load status is Empty or Off Duty\
 Then the service derives 100% available for Empty and 0% for Off Duty without accepting a submitted percentage\
 And Off Duty is never offered as available space.
 
-Given the load status is Partial\
-When the actor optionally submits an integer percentage from 1 through 99\
-Then the service saves that percentage and its own report time against the same authorized vehicle and current signal\
+Given an authorized provider or Driver publishes Partial capacity\
+When the actor submits an integer percentage from 1 through 99\
+Then web and mobile require the estimate and the service saves it with its own report time against the same authorized vehicle and current signal\
+And a blank, explicitly null, out-of-range, or missing initial estimate cannot create a new Partial publication\
 And the caller cannot set, backdate or forge the report time or other provenance\
 And the result describes the value as a provider-reported estimate.
 
-Given a Partial signal was published by an older client without a percentage or already contains the historical default of 50\
+Given a Partial estimate is saved for a driver's current truck\
+When the assigned driver opens the capacity map on web or in the app\
+Then the truck summary shows the reported available-space percentage without requiring an edit.
+
+Given a Capacity map displays an individual Partial vehicle with a reported estimate\
+When an authorized visitor sees its marker\
+Then the marker shows the same percentage as the vehicle details and includes its meaning in the accessible name\
+And a cluster shows its vehicle count without an aggregate percentage\
+And Empty vehicles and Partial vehicles without a report keep their existing markers.
+
+Given a Partial signal predates the required estimate and already contains the historical default of 50\
 Then its numeric storage value is legacy and its report time is absent\
 And no public or private result displays or filters that value as an estimate\
 And republishing an estimate for that vehicle does not rewrite historical signal or audit rows.
@@ -777,7 +788,19 @@ And republishing an estimate for that vehicle does not rewrite historical signal
 Given a current Partial estimate was already reported and a provider edits unrelated capacity facts\
 When the percentage is omitted by an older client or repeated unchanged by a new client\
 Then the same estimate, original reporter and original report time carry into the new Partial signal without becoming newly fresh\
-And an explicitly cleared percentage removes the estimate from the new signal without rewriting history.
+And an explicitly cleared percentage is rejected without changing the saved signal.
+
+Given a fleet-managed driver resumes a truck's saved Partial plan\
+When the plan still has a report for that same assigned driver\
+Then the new duty publication retains the saved estimate and original report time\
+And a missing report tells the driver to ask their fleet manager to set the space first.
+
+Demo fixture seeds contain a dated illustrative estimate for every Partial truck.
+The Capacity simulator accepts an exact seeded baseline for its own allowlisted
+vehicles and retains validation of legacy startup rows during rollout. The
+new write rules are enforced inside the existing publication and duty RPCs.
+Rollback restores the preceding function definitions and seed bindings from the
+reviewed backup without modifying customer Capacity history.
 
 Given a reported Partial estimate is followed by a new duty state, another assigned Driver, or an independent load-status or percentage change\
 Then the old report does not appear or match a space filter for the new Driver or state\
