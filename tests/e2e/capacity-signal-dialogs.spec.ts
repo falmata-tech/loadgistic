@@ -92,11 +92,12 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   const originalPick=await dialog.getByLabel('Multiple pickups').isChecked();
   const originalDrop=await dialog.getByLabel('Multiple drop-offs').isChecked();
   await expect(dialog.getByRole('radio',{name:'Full or shared',exact:true})).toBeVisible();
-  const invalidArea=await page.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:await dialog.locator('input[name="vehicleId"]').inputValue(),status:'PARTIAL',availabilityGeometry:'RADIUS'}});
+  const invalidArea=await page.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:await dialog.locator('input[name="vehicleId"]').inputValue(),status:'PARTIAL',availablePercent:'45',availabilityGeometry:'RADIUS'}});
   expect(invalidArea.status()).toBe(400);
   expect(await invalidArea.json()).toEqual({error:'Choose an Ethiopian city, town, or local area from the search results.'});
   const nextStatus=originalStatus==='PARTIAL'?'Empty':'Partial';
   await dialog.getByRole('button',{name:nextStatus,exact:true}).click();
+  if(nextStatus==='Partial')await dialog.getByLabel('Available space',{exact:true}).fill('45');
   await save(page,dialog);
   await expect(capacity).toBeEnabled({timeout:15000});
   await expect(capacity).toHaveAttribute('aria-label',`Edit planned capacity: ${nextStatus}`);

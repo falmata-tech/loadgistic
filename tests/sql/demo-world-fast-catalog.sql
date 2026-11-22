@@ -503,11 +503,15 @@ begin
   update public.demo_world_control set enabled=true,activated_at=clock_timestamp()-interval '1 second',
    catalog_starts_at=null,last_dispatch_at=null where id=1;
   select * into job from public.demo_world_claim_batch(gen_random_uuid(),1);
-  perform pg_temp.fast_human_report('independent-partial',null);
+  before_state:=pg_temp.fast_state();
+  perform pg_temp.fast_denied('select pg_temp.fast_human_report(''independent-partial'',null)',
+   'INVALID_AVAILABLE_PERCENT');
+  perform pg_temp.fast_assert(pg_temp.fast_state()=before_state,'missing_human_percent_does_not_change_first_claim');
+  perform pg_temp.fast_human_report('independent-partial',75);
   before_state:=pg_temp.fast_state();
   perform pg_temp.fast_denied(format('select public.demo_world_execute_capacity_step(%s,%L)',job.step_id,job.lease_token),
    'DEMO_WORLD_PREDECESSOR_CHANGED');
-  perform pg_temp.fast_assert(pg_temp.fast_state()=before_state,'human_unreported_republish_after_first_claim_unchanged');
+  perform pg_temp.fast_assert(pg_temp.fast_state()=before_state,'human_report_after_first_claim_unchanged');
   raise exception using errcode='P2240',message='rollback first predecessor fixture';
  exception when sqlstate 'P2240' then null;end;
  begin
