@@ -5,6 +5,7 @@ import {usePathname,useRouter} from 'next/navigation';
 import {FileText,LockKeyhole,MoreHorizontal,X} from 'lucide-react';
 import {Localized,Text} from './localization';
 import {aboutDestination,activeSiteDestination,memberDestinations,phonePrimaryDestinations,publicDestinations,visitorDestinations,type SiteDestination,type SiteNavigationUser} from './site-navigation';
+import {AppInstallLink} from './app-install';
 import styles from './public-navigation.module.css';
 
 export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
@@ -26,6 +27,7 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
   if(item.key==='my-work'&&active==='my-work'&&currentHomeTab&&!event.defaultPrevented&&event.button===0&&!event.altKey&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&(!event.currentTarget.target||event.currentTarget.target==='_self'))event.preventDefault();
   setMenuOpen(false);
  }}><item.icon aria-hidden="true"/><span><Text message={item.label}/></span></Link>;
+ const installLink=<AppInstallLink onOpen={()=>setMenuOpen(false)}/>;
  return <>
   <Localized as="nav" copy={["aria-label"]} className={`public-workspace-nav ${styles.rail}`} aria-label="Site navigation">
    {!user?visitorDestinations.map(item=>link(item)):<>
@@ -37,7 +39,7 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
    {utilityItems.map(item=>link(item))}
    {link(aboutDestination)}
    </>}
-   <div className={styles.legal}><Link href="/privacy" aria-current={pathname==='/privacy'?'page':undefined}><LockKeyhole aria-hidden="true"/><span><Text message="Privacy"/></span></Link><Link href="/terms" aria-current={pathname==='/terms'?'page':undefined}><FileText aria-hidden="true"/><span><Text message="Terms"/></span></Link></div>
+   <div className={styles.legal}>{installLink}<Link href="/privacy" aria-current={pathname==='/privacy'?'page':undefined}><LockKeyhole aria-hidden="true"/><span><Text message="Privacy"/></span></Link><Link href="/terms" aria-current={pathname==='/terms'?'page':undefined}><FileText aria-hidden="true"/><span><Text message="Terms"/></span></Link></div>
   </Localized>
   <Localized as="nav" copy={["aria-label"]} className="public-mobile-nav" aria-label="Mobile navigation">
    {primary.map(item=>link(item))}
@@ -50,6 +52,7 @@ export function PublicMobileNav({user}:{user:SiteNavigationUser|null}){
     {moreUtility.length?<div className={styles.group} aria-hidden="true"/>:null}
     {moreUtility.map(item=>link(item))}
     {link(aboutDestination)}
+    {installLink}
     <div className={styles.legal}><Link href="/privacy" aria-current={pathname==='/privacy'?'page':undefined}><Text message="Privacy"/></Link><Link href="/terms" aria-current={pathname==='/terms'?'page':undefined}><Text message="Terms"/></Link></div></div></div>:null}
  </>;
 }

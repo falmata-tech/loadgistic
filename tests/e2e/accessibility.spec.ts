@@ -102,7 +102,7 @@ test('unified account access keeps one responsive and touch-sized task',async({p
     const email=emailForm.locator('input[type="email"]');
     const emailAction=emailForm.getByRole('button',{name:/email.*code|continue.*email/i});
     const google=page.getByRole('button',{name:'Continue with Google'});
-    const back=page.getByRole('link',{name:/Back to Open capacity/i});
+    const back=page.getByRole('link',{name:/Back to Open Market/i});
     await expect(emailForm).toBeVisible();
     await expect(google).toHaveCount(0);
     await expect(page.locator('.auth-context-panel')).toHaveCount(0);

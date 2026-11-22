@@ -19,7 +19,8 @@ export function markerLocation(item:CapacitySignal):LngLat|null {
 export function locationRing(item:CapacitySignal):LngLat[] {
  if(!item.currentVisible||item.latitude===null||item.longitude===null)return[];
  const angular=Math.min(1000,item.precisionKm)/6371,lat=item.latitude*Math.PI/180,lng=item.longitude*Math.PI/180;
- return Array.from({length:73},(_,i)=>{const bearing=i/72*2*Math.PI,y=Math.asin(Math.sin(lat)*Math.cos(angular)+Math.cos(lat)*Math.sin(angular)*Math.cos(bearing));const x=lng+Math.atan2(Math.sin(bearing)*Math.sin(angular)*Math.cos(lat),Math.cos(angular)-Math.sin(lat)*Math.sin(y));return[x*180/Math.PI,y*180/Math.PI];});
+ const points=Array.from({length:72},(_,i):LngLat=>{const bearing=i/72*2*Math.PI,y=Math.asin(Math.sin(lat)*Math.cos(angular)+Math.cos(lat)*Math.sin(angular)*Math.cos(bearing));const x=lng+Math.atan2(Math.sin(bearing)*Math.sin(angular)*Math.cos(lat),Math.cos(angular)-Math.sin(lat)*Math.sin(y));return[x*180/Math.PI,y*180/Math.PI];});
+ return close(points);
 }
 export function signalPaths(item:CapacitySignal,zoom:number):{kind:'location'|'current'|'regular';points:LngLat[]}[] {
  // Pixel separation at world zoom can shift a signal hundreds of kilometres.

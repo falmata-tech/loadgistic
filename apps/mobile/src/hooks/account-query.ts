@@ -5,9 +5,9 @@ import {ApiError} from '../api/response';
 
 // Reload on navigation focus; stale/blurred requests cannot replace newer data.
 // A different identity or query never renders the previous response.
-export function useAccountQuery<T>(path: string) {
+export function useAccountQuery<T>(path: string, requestBody?: object) {
   const account = useAccount(), request = account.request, userId = account.session?.user.id;
-  const key = `${userId || ''}:${path}`, sequence = useRef(0);
+  const key = `${userId || ''}:${path}:${requestBody?JSON.stringify(requestBody):''}`, sequence = useRef(0);
   const [state, setState] = useState<{ key: string; data: T | null; error: string; loading: boolean }>({ key: '', data: null, error: '', loading: true });
   const read = useCallback(async (quiet = false) => {
     if (!userId) return false;
@@ -16,14 +16,14 @@ export function useAccountQuery<T>(path: string) {
     // map/list mounted; a different actor or query must start without its data.
     setState(previous => ({ key, data: previous.key === key ? previous.data : null, error: quiet && previous.key === key ? previous.error : '', loading: true }));
     try {
-      const data = await request(path) as T;
+      const data = await request(path,requestBody) as T;
       if (generation === sequence.current) {setState({ key, data, error: '', loading: false });return true;}
     } catch (error) {
       const denied=error instanceof ApiError&&[401,403,404,410].includes(error.status);
       if (generation === sequence.current) setState(previous => ({ key, data: !denied&&previous.key === key ? previous.data : null, error: error instanceof Error ? error.message : 'Could not load. Please try again.', loading: false }));
     }
     return false;
-  }, [key, path, request, userId]);
+  }, [key, path, request, requestBody, userId]);
   const reload = useCallback(async () => {await read();}, [read]);
   const refresh = useCallback(async () => {await read(true);}, [read]);
   const reloadConfirmed=useCallback(()=>read(),[read]);

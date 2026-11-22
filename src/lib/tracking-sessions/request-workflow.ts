@@ -18,6 +18,7 @@ export function useTrackingRequests(send:SendTrackingRequest,sessionId?:string){
    if(current!==generation.current)return;
    switch(command.action){
     case 'INBOX':setIncoming(incomingResult.parse(response));break;
+    case 'DECLINE':if(response!==true)throw Error();setIncoming(rows=>rows.filter(row=>row.id!==command.sessionId));break;
     case 'ACCEPT':setShipment(acceptedResult.parse(response).shipmentId);setIncoming(rows=>rows.filter(row=>row.id!==command.sessionId));break;
     default:setTarget(targetResult.parse(response));setSearched(command.action==='SEARCH'&&command.query.trim().length>=2);break;
    }
@@ -30,6 +31,8 @@ export function useTrackingRequests(send:SendTrackingRequest,sessionId?:string){
  return {query,setQuery,searched,target,incoming,shipment,busy,error,refresh,
   search:()=>sessionId&&run({action:'SEARCH',sessionId,query}),
   select:(row:Target)=>sessionId&&target&&run({action:'SELECT',sessionId,vehicleId:row.vehicleId,driverId:row.driverId,revision:target.revision}),
+  withdraw:()=>sessionId&&target?.selected&&run({action:'WITHDRAW',sessionId,revision:target.revision}),
+  decline:(row:Incoming)=>run({action:'DECLINE',sessionId:row.id,revision:row.revision}),
   accept:(row:Incoming,trackingMode:'STATUS_ONLY'|'LOCATION_AND_STATUS')=>run({action:'ACCEPT',sessionId:row.id,revision:row.revision,trackingMode})
  };
 }

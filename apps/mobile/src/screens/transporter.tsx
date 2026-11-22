@@ -33,8 +33,8 @@ function Profile({handle}:{handle:string}){
  </View>
 
  <View style={styles.switches}>
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:documents}} onPress={()=>setDocuments(!documents)} style={styles.switch}><Text style={styles.switchText}>{t('Account documents')}</Text><AppIcon name={documents?'chevronUp':'chevronDown'} size={16}/></Pressable>
-  <Pressable accessibilityRole="button" accessibilityState={{expanded:details}} onPress={()=>setDetails(!details)} style={styles.switch}><Text style={styles.switchText}>{t('About this transporter')}</Text><AppIcon name={details?'chevronUp':'chevronDown'} size={16}/></Pressable>
+  <Pressable accessibilityRole="button" aria-expanded={documents} onPress={()=>setDocuments(!documents)} style={styles.switch}><Text style={styles.switchText}>{t('Account documents')}</Text><AppIcon name={documents?'chevronUp':'chevronDown'} size={16}/></Pressable>
+  <Pressable accessibilityRole="button" aria-expanded={details} onPress={()=>setDetails(!details)} style={styles.switch}><Text style={styles.switchText}>{t('About this transporter')}</Text><AppIcon name={details?'chevronUp':'chevronDown'} size={16}/></Pressable>
  </View>
  {documents&&<PublicCard><PublicBadges items={provider.badges} rows/></PublicCard>}
  {details&&<>

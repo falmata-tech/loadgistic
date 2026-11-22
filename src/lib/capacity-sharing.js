@@ -1,7 +1,7 @@
 export const CAPACITY_SHARING_CHOICES = [
-  ['PUBLIC', 'Open to the public'],
-  ['PRIVATE', 'Private network'],
-  ['BOTH', 'Public + private network'],
+  ['PUBLIC', 'Open Market'],
+  ['PRIVATE', 'Private Network'],
+  ['BOTH', 'Open Market + Private Network'],
 ];
 
 export function capacitySharingMode(value, legacyVisibility) {
@@ -11,6 +11,6 @@ export function capacitySharingMode(value, legacyVisibility) {
 }
 
 export function capacitySharingLabel(value) {
-  if (value === 'EXCLUSIVE') return 'Private network';
+  if (value === 'EXCLUSIVE') return 'Private Network';
   return CAPACITY_SHARING_CHOICES.find(([mode]) => mode === value)?.[1] || 'Sharing not specified';
 }

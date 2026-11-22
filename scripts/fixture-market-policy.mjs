@@ -37,15 +37,15 @@ export const MANAGED_COURIER_FIXTURE_VEHICLES=Object.freeze([
   ['veh-public-owner-01','Heavy Rigid Stake Body Truck','Courier car','Toyota','Vitz'],
   ['veh-public-owner-04','Heavy Rigid Stake Body Truck','Courier car','Suzuki','Dzire'],
   ['veh-public-owner-05','Heavy Rigid Stake Body Truck','Courier car','Toyota','Corolla'],
-  ['veh-public-owner-09','Heavy Rigid Stake Body Truck + Trailer','Courier motorcycle','Bajaj','Boxer 150'],
-  ['veh-public-owner-10','Heavy Rigid Stake Body Truck + Trailer','Courier motorcycle','TVS','HLX 150'],
-  ['veh-public-owner-11','Heavy Rigid Stake Body Truck + Trailer','Courier motorcycle','Honda','Ace 125'],
+  ['veh-public-owner-09','Heavy Rigid Stake Body Truck + Trailer','Courier car','Toyota','Yaris'],
+  ['veh-public-owner-10','Heavy Rigid Stake Body Truck + Trailer','Courier car','Suzuki','Swift'],
+  ['veh-public-owner-11','Heavy Rigid Stake Body Truck + Trailer','Courier car','Honda','Fit'],
   ['veh-public-fleet-01-8','Mini Open Body Truck','Courier car','Toyota','Vitz'],
   ['veh-public-fleet-02-3','Mini Open Body Truck','Courier car','Suzuki','Dzire'],
   ['veh-public-fleet-03-5','Mini Open Body Truck','Courier car','Toyota','Corolla'],
-  ['veh-public-fleet-04-6','Mini Open Body Truck','Courier motorcycle','Bajaj','Boxer 150'],
-  ['veh-public-fleet-05-5','Mini Stake Body Truck','Courier motorcycle','TVS','HLX 150'],
-  ['veh-public-fleet-06-3','Mini Open Body Truck','Courier motorcycle','Honda','Ace 125']
+  ['veh-public-fleet-04-6','Mini Open Body Truck','Courier car','Toyota','Yaris'],
+  ['veh-public-fleet-05-5','Mini Stake Body Truck','Courier car','Suzuki','Swift'],
+  ['veh-public-fleet-06-3','Mini Open Body Truck','Courier car','Honda','Fit']
 ].map(([id,previousConfiguration,configuration,make,model])=>Object.freeze({id,previousConfiguration,configuration,make,model})));
 
 export function applyManagedFixtureVehicleCatalog(vehicles,assignments,users){

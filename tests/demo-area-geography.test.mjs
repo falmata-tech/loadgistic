@@ -4,7 +4,7 @@ import {DEMO_BASES,DEMO_PLACES,demoCurrentRouteForLocation,demoServiceAreaForLoc
 import {distanceBetweenKm} from '../src/lib/domain.js';
 import {serviceAreaGeometryMatch} from '../src/lib/route-matching.js';
 
-const configurations=['Courier car','Courier motorcycle','Cargo van','Pickup truck','Mini Open Body Truck',
+const configurations=['Courier car','Cargo van','Pickup truck','Mini Open Body Truck',
   'Light Box Truck','Medium Box Truck','Heavy Rigid Stake Body Truck','Tractor + Container Trailer'];
 const known=new Set(Object.values(DEMO_PLACES));
 

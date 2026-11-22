@@ -10,7 +10,7 @@ export default function Directory(){
  if(account.busy)return <Page><LoadingSpinner/></Page>;
  if(!account.session)return <Redirect href="/account"/>;
  if(account.session.user.role!=='CUSTOMER')return <Redirect href="/network"/>;
- return <Page><Title message="Network"/><ActionLink href="/?view=private" message="Shared with you" icon="map"/>
+ return <Page><Title message="Network"/><ActionLink href="/?view=private" message="Private Network" icon="map"/>
   <WorkspaceTabs value={view} items={[{id:'FIND',message:'Find accounts'},{id:'CONNECTIONS',message:'Connections'}]} onChange={setView}/>
   <WorkspaceTaskPane active={view==='FIND'}><AccountDirectoryNative view="FIND"/></WorkspaceTaskPane>
   <WorkspaceTaskPane active={view==='CONNECTIONS'}><AccountDirectoryNative view="CONNECTIONS"/></WorkspaceTaskPane>

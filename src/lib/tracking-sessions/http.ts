@@ -5,14 +5,14 @@ import {checkOriginBeforeScopedLimit} from '../guest-rate-limit.js';
 import {requestKey} from '../rate-limit';
 import {providerTrackingRecipientDigest,createTrackingSessionCredentials,trackingSessionCredentialDigests} from '../security.js';
 import {issueTrackingLinkGrant,parseTrackingLinkGrant,TRACKING_LINK_GRANT_COOKIE} from './grant.js';
-import {trackingSessionId,trackingLinkToken,trackingLinkCode,trackingSessionIssueInput} from './contracts';
+import {trackingSessionId,trackingLinkToken,trackingLinkCode,trackingSessionIssueInput,trackingSessionReferenceSearch} from './contracts';
 import {trackingSessionService,TrackingSessionError} from './supabase';
 import {readPrivateUpload,privateDocumentHeaders} from '../private-storage.js';
 import {privateFilePayload} from '../mobile/file-contract.js';
 
 import {requestCommand} from './requests';
 
-type Operation='REQUEST'|'ACCESS'|'LOGOUT'|'LIST'|'CREATE'|'DETAIL'|'ATTACH_PARTNER'|'FROM_SHIPMENT'|'ISSUE'|'REVOKE'|'CONNECT'|'APPROVE'|'REVIEW'|'PROOF';
+type Operation='REQUEST'|'ACCESS'|'LOGOUT'|'LIST'|'REFERENCE_SEARCH'|'CREATE'|'DETAIL'|'ATTACH_PARTNER'|'FROM_SHIPMENT'|'ISSUE'|'REVOKE'|'CONNECT'|'APPROVE'|'REVIEW'|'PROOF';
 type Params={sessionId?:string;eventId?:string};
 export function trackingSessionJson(data:unknown,status=200):Response{
  return Response.json({ok:true,data},{status,headers:{'Cache-Control':'private, no-store','CDN-Cache-Control':'no-store','Netlify-CDN-Cache-Control':'no-store',Vary:'Cookie, Authorization, x-loadgistic-tracking-grant','X-Robots-Tag':'noindex, nofollow, nosnippet, noimageindex','Referrer-Policy':'no-referrer'}});
@@ -79,6 +79,10 @@ export async function trackingSessionHttp(request:Request,operation:Operation,pa
   }
   if(operation==='DETAIL')return trackingSessionJson(await service.detail(actor.id,sessionId!));
   await businessLimit(actor.id,'tracking-session:'+operation,operation==='CONNECT'?5:20);
+  if(operation==='REFERENCE_SEARCH'){
+   const inputValue=input(trackingSessionReferenceSearch,await businessBody(request));
+   return trackingSessionJson(await service.list(actor.id,inputValue.workspaceId,inputValue.page,inputValue.reference));
+  }
   if(operation==='REQUEST')return trackingSessionJson(await service.request(actor.id,input(requestCommand,await businessBody(request))));
   if(operation==='CREATE')return trackingSessionJson(await service.create(actor.id,await businessBody(request)),201);
   if(operation==='ATTACH_PARTNER'){

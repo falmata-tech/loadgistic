@@ -1,6 +1,6 @@
 const FEATURED_TRUCK_DAYS=Object.freeze([
   {key:'mini-trucks',label:'Mini trucks',shortLabel:'Mini',configurations:['Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck']},
-  {key:'cargo-vans',label:'Vans and couriers',shortLabel:'Vans & couriers',configurations:['Cargo van','Courier car','Courier motorcycle']},
+  {key:'cargo-vans',label:'Vans and couriers',shortLabel:'Vans & couriers',configurations:['Cargo van','Courier car']},
   {key:'pickups',label:'Pickup trucks',shortLabel:'Pickups',configurations:['Pickup truck','Pickup stake body']},
   {key:'light-duty',label:'Light-duty vehicles',shortLabel:'Light duty',configurations:['Light Box Truck','Light Stake Body Truck']},
   {key:'medium-duty',label:'Medium-duty vehicles',shortLabel:'Medium duty',configurations:['Medium Box Truck','Medium Stake Body Truck']},
@@ -8,7 +8,7 @@ const FEATURED_TRUCK_DAYS=Object.freeze([
     'Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer','Tractor + Container Trailer',
     'Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer'
   ]},
-  {key:'mixed-trucks',label:'Mixed vehicles',shortLabel:'Mixed',configurations:["Courier motorcycle", "Courier car", "Cargo van", "Pickup truck", "Pickup stake body", "Mini Open Body Truck", "Mini Stake Body Truck", "Mini Box Truck", "Light Stake Body Truck", "Light Box Truck", "Medium Stake Body Truck", "Medium Box Truck", "Heavy Rigid Stake Body Truck", "Heavy Rigid Stake Body Truck + Trailer", "Tractor + Container Trailer", "Tractor + Dry Van Trailer", "Tractor + Heavy Equipment Trailer"]}
+  {key:'mixed-trucks',label:'Mixed vehicles',shortLabel:'Mixed',configurations:["Courier car", "Cargo van", "Pickup truck", "Pickup stake body", "Mini Open Body Truck", "Mini Stake Body Truck", "Mini Box Truck", "Light Stake Body Truck", "Light Box Truck", "Medium Stake Body Truck", "Medium Box Truck", "Heavy Rigid Stake Body Truck", "Heavy Rigid Stake Body Truck + Trailer", "Tractor + Container Trailer", "Tractor + Dry Van Trailer", "Tractor + Heavy Equipment Trailer"]}
 ]);
 
 // Historical vehicle themes remain for old saved days and rollback evidence.

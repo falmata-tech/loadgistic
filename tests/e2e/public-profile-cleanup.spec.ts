@@ -33,7 +33,7 @@ test('native transporter profile keeps useful detail and opens vehicles and driv
     expect(row).toBeTruthy();
     const marker=map.getByRole('button',{name:row.vehicle_make+' '+row.vehicle_model}).first();
     await marker.click();
-    await map.getByRole('button',{name:'Vehicle details',exact:true}).click();
+    await map.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
     await expect(page.getByRole('heading',{name:'Vehicle details',exact:true})).toBeVisible();
     await page.getByRole('button',{name:'Close map signal details',exact:true}).last().click();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

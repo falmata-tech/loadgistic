@@ -70,7 +70,7 @@ function cleanupBroker(workspaceId:string,ownerId:string,handle:string,sessionId
 let cleanupOwned:(()=>Promise<void>)|undefined;
 
 test('broker creates a pending load and shares link/code before a provider connects the agreed vehicle',async({page,browser},info)=>{
- test.setTimeout(150_000);
+ test.setTimeout(220_000);
  const service=localAuditService(),nonce=randomUUID().slice(0,8),handle=`tracking-link-${nonce}`;
  let ownerId='',workspaceId='',sessionId='',shipmentId='',vehicleId='',provider:any,guestContext:any,providerContext:any;
  const began=Date.now();let lastStage='LOCAL_TARGET';
@@ -85,7 +85,14 @@ test('broker creates a pending load and shares link/code before a provider conne
   await cleanupTrackingOwnerFixtures();mark('CLEANUP_COMPLETE');
  };
  try{
-  mark('LOCAL_TARGET');localDatabase();mark('OWNER_SETUP');
+  mark('LOCAL_TARGET');localDatabase();
+  // Development compiles these route modules on their first request. Warm
+  // them with credential-free reads before testing the bounded write UI.
+  const emptyId='00000000-0000-4000-8000-000000000000';
+  await page.request.get(`/api/tracking/sessions/${emptyId}`,{timeout:45000});
+  await page.request.get(`/api/tracking/sessions/${emptyId}/links`,{timeout:45000});
+  await page.request.get('/api/tracking/requests',{timeout:45000});
+  mark('OWNER_SETUP');
   const owner=await registeredTrackingOwner(service,`tracking-link-${nonce}@example.test`);ownerId=owner.id;
   workspaceId=checked(await service.rpc('business_workspace_create',{actor_user_id:ownerId,command:{name:`Tracking link ${nonce}`,handle,kind:'BROKER'}})).id;
   mark('PROVIDER_SETUP');provider=await auditProvider(service,'tracking-link');
@@ -101,19 +108,35 @@ test('broker creates a pending load and shares link/code before a provider conne
   checked(await service.rpc('set_provider_vehicle_publication',{actor_user_id:provider.id,target_vehicle_id:vehicleId,requested_state:'LIVE'}));
   const truckNumber=checked(await service.from('vehicles').select('platform_number').eq('id',vehicleId).single()).platform_number;
   mark('BROKER_SIGN_IN');await auditLogin(page,owner.email,'/app/business/tracking');
+  if(info.project.use.isMobile){
+   await page.getByRole('button',{name:'More',exact:true}).click();
+   const menu=page.getByRole('dialog',{name:'More navigation'});
+   await expect(menu.getByRole('link',{name:'Install app',exact:true})).toHaveAttribute('href','/install');
+   await menu.getByRole('button',{name:'Close menu',exact:true}).click();
+  }
   mark('BROKER_FORM');await page.getByRole('button',{name:'Create Tracking session',exact:true}).click();
-  for(const [label,query,option]of[['Pickup city','Addis',/Addis Ababa, Ethiopia/i],['Passing through city','Adama',/Adama, Ethiopia/i],['Delivery city','Dire',/Dire Dawa, Ethiopia/i]]as const){
+  for(const [label,query,option]of[['Pickup city','Addis',/Addis Ababa, Ethiopia/i],['Delivery city','Dire',/Dire Dawa, Ethiopia/i]]as const){
    await page.getByRole('combobox',{name:label,exact:true}).fill(query);
    await page.getByRole('option',{name:option}).first().click();
   }
+  const jobReference=`BROKER-${nonce}`;
+  await page.getByLabel('Your shipment reference (optional)',{exact:true}).fill(jobReference);
   await page.getByLabel('Cargo',{exact:true}).fill(`Synthetic broker load ${nonce}`);
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
   mark('BROKER_CREATE');const created=page.waitForResponse((response:PlaywrightResponse)=>new URL(response.url()).pathname==='/api/tracking/sessions'&&response.request().method()==='POST');
   await page.getByRole('button',{name:'Create Tracking session',exact:true}).click();
   const createdResponse=await created;expect(createdResponse.status()).toBe(201);const pending=(await createdResponse.json()).data;sessionId=pending.id;
-  expect(pending.state).toBe('PENDING_PROVIDER');expect(pending.shipmentId).toBeNull();expect(pending.tracking).toBeNull();expect(pending.route).toHaveLength(3);
-  await expect(page.getByText('Waiting for a Transport Provider to connect. No vehicle location is shared yet.',{exact:true})).toBeVisible();
-  mark('BROKER_ISSUE_LINK');const issued=page.waitForResponse((response:PlaywrightResponse)=>new URL(response.url()).pathname===`/api/tracking/sessions/${sessionId}/links`&&response.request().method()==='POST');
+  expect(pending.state).toBe('PENDING_PROVIDER');expect(pending.shipmentId).toBeNull();expect(pending.tracking).toBeNull();expect(pending.route).toHaveLength(2);expect(pending.brokerReference).toBe(jobReference);
+  await expect(page.getByText('Waiting for a Transport Provider to connect. No vehicle location is shared yet.',{exact:true})).toBeVisible({timeout:25000});
+  const searchReference=page.getByRole('searchbox',{name:'Search by your shipment reference'});
+  await searchReference.fill(jobReference);
+  const found=page.waitForResponse((r:PlaywrightResponse)=>new URL(r.url()).pathname==='/api/tracking/sessions/search');
+  await searchReference.press('Enter');
+  const results=await found;
+  expect(results.status()).toBe(200);
+  expect((await results.json()).data.sessions.map((row:{id:string})=>row.id)).toEqual([sessionId]);
+  await page.getByRole('button',{name:new RegExp(jobReference)}).click();
+  mark('BROKER_ISSUE_LINK');const issued=page.waitForResponse((response:PlaywrightResponse)=>new URL(response.url()).pathname===`/api/tracking/sessions/${sessionId}/links`&&response.request().method()==='POST',{timeout:25000});
   await page.getByRole('checkbox',{name:'Include approximate location when the provider has enabled it.',exact:true}).check();
   await page.getByRole('button',{name:'Create Tracking link',exact:true}).click();const issuedResponse=await issued;expect(issuedResponse.status()).toBe(201);const link=(await issuedResponse.json()).data.link;
   await expect(page.getByLabel('Tracking link',{exact:true})).toHaveValue(link.url);await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue(link.code);
@@ -121,10 +144,10 @@ test('broker creates a pending load and shares link/code before a provider conne
   const picker=page.locator('section').filter({has:page.getByRole('heading',{name:'Request a vehicle',exact:true})}).last();
   await picker.getByRole('button',{name:'Search',exact:true}).click();
   await picker.getByRole('button',{name:/^Request tracking/}).click();
-  await expect(picker.getByText(/Requested vehicle/)).toBeVisible();
+  await expect(picker.getByText(/Requested vehicle/)).toBeVisible({timeout:15000});
   const options={baseURL:info.project.use.baseURL,viewport:page.viewportSize()!,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch)};
   mark('GUEST_PENDING_OPEN');guestContext=await browser.newContext(options);const guest=await guestContext.newPage(),shared=await openTrackingFixtureLink(guest,link);
-  expect(shared.id).toBe(sessionId);expect(shared.state).toBe('PENDING_PROVIDER');expect(shared.tracking).toBeNull();await expect(guest.locator('.tracking-truck-marker')).toHaveCount(0);
+  expect(shared.id).toBe(sessionId);expect(shared.state).toBe('PENDING_PROVIDER');expect(shared.brokerReference).toBeUndefined();expect(shared.tracking).toBeNull();await expect(guest.locator('.tracking-truck-marker')).toHaveCount(0);
   mark('PROVIDER_SIGN_IN');providerContext=await browser.newContext({...options,geolocation:{latitude:9.031234,longitude:38.741234,accuracy:3}});
   await providerContext.grantPermissions(['geolocation'],{origin:new URL(info.project.use.baseURL!).origin});
   const driver=await providerContext.newPage();
@@ -133,6 +156,24 @@ test('broker creates a pending load and shares link/code before a provider conne
   mark('PROVIDER_OPEN_LINK');
   expect((await inbox).status()).toBe(200);
   const requestRow=driver.locator('article').filter({hasText:pending.reference});
+  await expect(requestRow).toContainText(truckNumber);
+  const declined=driver.waitForResponse((r:PlaywrightResponse)=>new URL(r.url()).pathname==='/api/tracking/requests'&&r.request().postDataJSON()?.action==='DECLINE');
+  await requestRow.getByRole('button',{name:'Decline tracking request',exact:true}).click();
+  expect((await declined).status()).toBe(200);
+  await expect(requestRow).toHaveCount(0);
+  await page.bringToFront();
+  await picker.getByRole('button',{name:'Refresh requests',exact:true}).click();
+  await expect(picker.getByText('The provider declined the request.',{exact:true})).toBeVisible({timeout:15000});
+  await picker.getByRole('button',{name:'Search',exact:true}).click();
+  await picker.getByRole('button',{name:/^Request tracking/}).click();
+  await expect(picker.getByText(/Requested vehicle/)).toBeVisible({timeout:15000});
+  await picker.getByRole('button',{name:'Withdraw tracking request',exact:true}).click();
+  await expect(picker.getByText('You withdrew the request.',{exact:true})).toBeVisible({timeout:15000});
+  await picker.getByRole('button',{name:'Search',exact:true}).click();
+  await picker.getByRole('button',{name:/^Request tracking/}).click();
+  await expect(picker.getByText(/Requested vehicle/)).toBeVisible({timeout:15000});
+  await driver.bringToFront();
+  await driver.getByRole('button',{name:'Refresh requests',exact:true}).click();
   await expect(requestRow).toContainText(truckNumber);
   await expect(driver.getByLabel('Tracking code',{exact:true})).toHaveCount(0);
   await requestRow.getByRole('checkbox',{name:'Status and approximate location'}).check();
@@ -151,8 +192,8 @@ test('broker creates a pending load and shares link/code before a provider conne
   await driver.bringToFront();
   const openTracking=driver.getByRole('link',{name:'Open Tracking',exact:true});
   await expect(openTracking).toHaveAttribute('href',`/app/provider-shipments/${shipmentId}`);
-  await openTracking.click();
-  await expect(driver.getByRole('heading',{name:`Synthetic broker load ${nonce}`,exact:true})).toBeVisible({timeout:15000});
+  await openTracking.click({timeout:25000});
+  await expect(driver.getByRole('heading',{name:`Synthetic broker load ${nonce}`,exact:true})).toBeVisible({timeout:30000});
   await expect(driver.locator('.tracking-control-panel')).toBeVisible();
   await expect(driver.getByRole('button',{name:'Add partner',exact:true})).toHaveCount(0);
   mark('PROVIDER_STATUS');

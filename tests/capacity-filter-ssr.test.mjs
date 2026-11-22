@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as filters from '../src/lib/capacity-filter-values.js';
-function page({admin=false,actor=null,authError=null,workspaceGranted=true}={}){
+function page({admin=false,actor=null,authError=null,capacityError=null,workspaceGranted=true}={}){
  const calls=[],authCalls=[],accessCalls=[];
  const source=readFileSync(new URL(admin?'../src/app/admin/capacity-network/page.tsx':'../src/app/page.tsx',import.meta.url),'utf8');
  const compiled=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
@@ -12,8 +12,8 @@ function page({admin=false,actor=null,authError=null,workspaceGranted=true}={}){
   '@/lib/auth':{getCurrentUser:async options=>{authCalls.push(options);if(authError)throw authError;return actor;},requireUser:async(roles,options)=>{authCalls.push({roles,options});if(authError)throw authError;return actor;}},
   '@/lib/workspace.js':{getWorkspaceAccess:async user=>{accessCalls.push(user);return{granted:workspaceGranted};}},
   '@/lib/private-capacity.js':{listAccountCapacity:async(_user,query)=>{calls.push(query);return{items:[],hasMore:false,nextCursor:null,pageSize:100};}},
-  '@/lib/business-capacity/supabase':{listBusinessCapacity:async(_user,_workspace,query)=>{calls.push(query);return{items:[],hasMore:false,nextCursor:null,pageSize:100};}},
-  '@/lib/capacity-market.js':{listPublicCapacityCursor:async query=>{calls.push(query);return{items:[]};}},
+  '@/lib/business-capacity/supabase':{listBusinessCapacity:async(_user,_workspace,query)=>{calls.push(query);if(capacityError)throw capacityError;return{items:[],hasMore:false,nextCursor:null,pageSize:100};}},
+  '@/lib/capacity-market.js':{listPublicCapacityCursor:async query=>{calls.push(query);if(capacityError)throw capacityError;return{items:[]};}},
   '@/lib/auth-flow.js':{localAuthInboxUrl:()=>null},'@/components/public-header':{PublicHeader:'PublicHeader'},
   '@/components/public-capacity-feed':{PublicCapacityFeed:'Feed'},'@/components/private-capacity-entry':{PrivateCapacityEntry:'PrivateEntry'},'@/lib/platform-copy.js':{capacityIntroduction:{}},'@/lib/capacity-filter-values.js':filters,
   '@/lib/seo.js':{publicPageMetadata:()=>({})},'next/navigation':{notFound:()=>{throw new Error('SYNTHETIC_NOT_FOUND');},redirect:path=>{throw new Error(`SYNTHETIC_REDIRECT:${path}`);}},
@@ -107,4 +107,18 @@ test('retired admin capacity page does not read or render capacity',async()=>{
  assert.throws(()=>current.render({status:'EMPTY',locationSource:'GPS'}),/SYNTHETIC_NOT_FOUND/);
  assert.equal(current.calls.length,0);
  assert.equal(current.authCalls.length,0);
+});
+
+test('a map read failure renders the same map with in-place retry state',async()=>{
+ const actor={id:'synthetic-owner',role:'CUSTOMER',active:true,selected_business_workspace:{id:'synthetic-business',membershipRevision:1,permissions:{capacity:true}}};
+ for(const [user,query,api] of [[null,{status:'EMPTY'},'/api/public/capacity'],[actor,{view:'private',status:'EMPTY'},'/api/business-workspaces/synthetic-business/capacity']]){
+  const current=page({actor:user,capacityError:new Error('INTERNAL_DETAILS')});
+  const feed=find(await current.render(query));
+  assert.equal(current.calls.length,1);
+  assert.equal(feed.props.apiPath,api);
+  assert.equal(feed.props.query.status,'EMPTY');
+  assert.deepEqual(feed.props.initial.items,[]);
+  assert.equal(feed.props.initial.filterError,undefined);
+  assert.equal(feed.props.initial.loadError,'Could not finish loading vehicles. Please try again.');
+ }
 });

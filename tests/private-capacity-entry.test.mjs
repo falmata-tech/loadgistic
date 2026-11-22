@@ -48,7 +48,7 @@ test('Private entry has explicit account actions and a record-free basemap inste
  const component=load('src/components/private-capacity-entry.tsx',{Link:'Link',Text:'Text',TrackingEntryMap:'TrackingEntryMap',styles:{workspace:'workspace',card:'card',actions:'actions'}});
  const tree=component.PrivateCapacityEntry(),all=nodes(tree),map=all.find(value=>value.type==='TrackingEntryMap');assert.deepEqual(map.props,{});
  assert.deepEqual(all.filter(value=>value.type==='Link').map(value=>value.props.href),['/login?from=shared-capacity','/signup?audience=BUSINESS']);
- assert.deepEqual(all.filter(value=>value.type==='Text').map(value=>value.props.message),['Privately shared with you','Sign in to see vehicles shared with your account.','Sign in','Sign up']);
+ assert.deepEqual(all.filter(value=>value.type==='Text').map(value=>value.props.message),['Private Network','Sign in to see vehicles your transport partners share with you.','Sign in','Sign up']);
  assert.equal(all.find(value=>value.type==='section').props['aria-labelledby'],'private-capacity-entry-title');
  assert.doesNotMatch(readFileSync('src/components/private-capacity-entry.tsx','utf8'),/PublicCapacityFeed|fetch\(|apiPath|latitude|longitude/);
 });

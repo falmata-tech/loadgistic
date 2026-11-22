@@ -34,11 +34,11 @@ export default async function LoginPage({
     <PublicHeader/>
     <PublicAuthShell
       variant="login"
-      taskKicker={<Text message={from==='tracking'?'Tracking':from==='support'?'Support':sharedEntry?'Shared with you':'Account'}/>}
+      taskKicker={<Text message={from==='tracking'?'Tracking':from==='support'?'Support':sharedEntry?'Private Network':'Account'}/>}
       title={codeStep?'Enter your code':'Sign in'}
       description={codeStep
         ?<Text message="We sent a six-digit code to {email}." values={{email:maskedProviderSignupEmail(handoff?.email||'')}}/>
-        :<Text message={sharedEntry?'Sign in to see vehicles shared with your account.':'Enter your email to sign in securely.'}/>}
+        :<Text message={sharedEntry?'Sign in to see vehicles your transport partners share with you.':'Enter your email to sign in securely.'}/>}
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <div className="managed-login-stack">

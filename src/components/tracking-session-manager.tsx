@@ -59,7 +59,7 @@ export function TrackingSessionManager({sessionId,workspaceId,businesses=[]}:{se
   <div className="actions"><button type="button" className="button secondary" disabled={busy||refreshing} onClick={()=>void load()}><Text message="Refresh Tracking"/></button>{refreshing&&data?<p role="status"><Text message="Refreshing…"/></p>:null}</div>
   {error?<p role="alert" className="alert error">{t(error)}</p>:null}
   {!data&&!error?<SurfaceSkeleton kind="map" label="Loading Tracking"/>:null}
-  {data?<><h3>{data.reference}</h3><p>{data.cargoSummary}</p><p><Text message={data.state==='PENDING_PROVIDER'?'Waiting for a Transport Provider to connect. No vehicle location is shared yet.':data.state==='CANCELLED'?'Tracking cancelled':'Provider connected'}/></p>{data.state==='PENDING_PROVIDER'&&data.capabilities.canIssueLink?<TrackingRequests key={data.id} sessionId={data.id}/>:null}<TrackingLocationMap showProgress={Boolean(data.tracking)} shipment={{route:data.route,location:data.tracking?.location||null,truck:null,status:data.tracking?.status||'CREATED',trackingMode:data.tracking?.trackingMode||'STATUS_ONLY',recordedStatuses:data.tracking?.events.map(event=>event.status)||[]}}/>{data.tracking?<section className="stack"><h4><Text message="Shipment progress"/></h4>{data.tracking.events.map(event=><div key={event.id}><strong><Text message={trackingStatusLabels[event.status]||'Tracking update'}/></strong><p>{new Date(event.createdAt).toLocaleString()}</p>{event.note?<p>{event.note}</p>:null}{data.capabilities.canReadProof&&event.hasProof?<TrackingProofLink shipmentId={data.shipmentId||data.id} eventId={event.id} endpoint={`${path}/proof/${event.id}`}/>:null}</div>)}</section>:null}
+  {data?<><h3>{data.reference}</h3>{data.brokerReference?<p><Text message="Your shipment reference"/> · {data.brokerReference}</p>:null}<p>{data.cargoSummary}</p><p><Text message={data.requestExpired?'This tracking request has expired.':data.state==='PENDING_PROVIDER'?'Waiting for a Transport Provider to connect. No vehicle location is shared yet.':data.state==='CANCELLED'?'Tracking cancelled':'Provider connected'}/></p>{data.state==='PENDING_PROVIDER'&&data.capabilities.canIssueLink?<TrackingRequests key={data.id} sessionId={data.id}/>:null}<TrackingLocationMap showProgress={Boolean(data.tracking)} shipment={{route:data.route,location:data.tracking?.location||null,truck:null,status:data.tracking?.status||'CREATED',trackingMode:data.tracking?.trackingMode||'STATUS_ONLY',recordedStatuses:data.tracking?.events.map(event=>event.status)||[]}}/>{data.tracking?<section className="stack"><h4><Text message="Shipment progress"/></h4>{data.tracking.events.map(event=><div key={event.id}><strong><Text message={trackingStatusLabels[event.status]||'Tracking update'}/></strong><p>{new Date(event.createdAt).toLocaleString()}</p>{event.note?<p>{event.note}</p>:null}{data.capabilities.canReadProof&&event.hasProof?<TrackingProofLink shipmentId={data.shipmentId||data.id} eventId={event.id} endpoint={`${path}/proof/${event.id}`}/>:null}</div>)}</section>:null}
    {issued?<section className="stack permission-note"><h4><Text message="Save this link and code"/></h4><p><Text message="They are shown once. Share both privately with the intended person."/></p><label><Text message="Tracking link"/><input readOnly value={issued.link.url}/></label><button type="button" className="button secondary" onClick={()=>void copy(issued.link.url)}><Text message="Copy link"/></button><label><Text message="Tracking code"/><input readOnly value={issued.link.code}/></label><button type="button" className="button secondary" onClick={()=>void copy(issued.link.code)}><Text message="Copy code"/></button><p><Text message="Expires"/>: {new Date(issued.link.expiresAt).toLocaleString()}</p>{copied?<p role="status">{t(copied)}</p>:null}</section>:null}
    {data.capabilities.canIssueLink?<form method="post" action={`${path}/links`} className="stack" onSubmit={event=>{event.preventDefault();void change('ISSUE');}}><label htmlFor={expirySelectId}><Text message="Link expiry"/></label><select id={expirySelectId} value={days} disabled={busy||uncertain} onChange={event=>setDays(Number(event.target.value))}>{[1,7,14,30].map(day=><option key={day} value={day}>{day} {t('days')}</option>)}</select><label><input type="checkbox" checked={allowLocation} disabled={busy||uncertain} onChange={event=>setAllowLocation(event.target.checked)}/><Text message="Include approximate location when the provider has enabled it."/></label><button className="button" disabled={busy||uncertain}><Text message="Create Tracking link"/></button></form>:null}
    <section className="stack"><h4><Text message="Saved links"/></h4>{!data.links.length?<p className="meta"><Text message="No links created yet."/></p>:data.links.map(link=><div key={link.id}><p><Text message={link.revokedAt?'Revoked':'Expires'}/>: {new Date(link.revokedAt||link.expiresAt).toLocaleString()}</p>{data.capabilities.canRevokeLink&&!link.revokedAt?<button type="button" className="button secondary" disabled={busy||uncertain} onClick={()=>void change('REVOKE',link.id)}><Text message="Revoke link"/></button>:null}</div>)}</section>
@@ -72,9 +72,48 @@ export function TrackingSessionManager({sessionId,workspaceId,businesses=[]}:{se
 }
 export function CreateTrackingSession({workspaceId,onCreated,onCancel}:{workspaceId:string;onCreated?:(session:TrackingSessionView)=>void;onCancel?:()=>void}){
  const {t}=useTranslation(),lock=React.useRef(false);const [busy,setBusy]=React.useState(false),[uncertain,setUncertain]=React.useState(false),[error,setError]=React.useState('');
- async function create(event:React.FormEvent<HTMLFormElement>){event.preventDefault();if(lock.current||uncertain)return;const fields=new FormData(event.currentTarget);const input={workspaceId,cargoDescription:String(fields.get('cargo')||''),pickupDate:String(fields.get('pickup')||''),deliveryDate:String(fields.get('delivery')||''),route:['pickupPlace','passingPlace','deliveryPlace'].map(key=>({placeRef:String(fields.get(key)||'')}))};const parsed=trackingSessionCreate.safeParse(input);if(!parsed.success){setError('Choose three distinct cities and add the cargo details.');return;}lock.current=true;setBusy(true);setError('');try{const {response,data}=await browserRequest<Reply>('/api/tracking/sessions',{method:'POST',headers:{'Content-Type':'application/json',accept:'application/json'},body:JSON.stringify(parsed.data)});if(!response.ok||data.ok!==true)throw Error();onCreated?.(trackingSessionViewSchema.parse(data.data));}catch{setUncertain(true);setError('We could not confirm the result. Check saved Tracking sessions before creating another.');}finally{lock.current=false;setBusy(false);}}
- return <form method="post" action="/api/tracking/sessions" className="stack" onSubmit={create} aria-busy={busy}><h3><Text message="Create Tracking session"/></h3><p className="meta"><Text message="Save the route, then choose a truck to invite."/></p><fieldset disabled={busy||uncertain} className="stack">{[['pickup','Pickup city','pickupPlace'],['passing','Passing through city','passingPlace'],['delivery','Delivery city','deliveryPlace']].map(([id,label,name])=><label key={id}><Text message={label}/><EthiopiaPlaceInput id={`session-${id}`} placeRefName={name} required/></label>)}<label><Text message="Cargo"/><input name="cargo" required minLength={3} maxLength={500}/></label><DatePicker name="pickup" label="Expected pickup"/><DatePicker name="delivery" label="Expected delivery" required/><button className="button"><Text message="Create Tracking session"/></button></fieldset>{error?<p role="alert" className="alert error">{t(error)}</p>:null}{onCancel?<button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message={uncertain?'Check saved Tracking':'Cancel'}/></button>:null}</form>;
+ async function create(event:React.FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  if(lock.current||uncertain)return;
+  const fields=new FormData(event.currentTarget);
+  const placeRef=(name:string)=>String(fields.get(name)||'');
+  const stop=placeRef('passingPlace');
+  if(!stop&&placeRef('passingText').trim()){
+   setError('Choose the stop from the search results or clear it.');
+   return;
+  }
+  const route=[placeRef('pickupPlace'),...(stop?[stop]:[]),placeRef('deliveryPlace')].map(ref=>({placeRef:ref}));
+  const parsed=trackingSessionCreate.safeParse({
+   workspaceId,route,brokerReference:String(fields.get('brokerReference')||''),
+   cargoDescription:fields.get('cargo'),pickupDate:fields.get('pickup')||'',deliveryDate:fields.get('delivery')||''
+  });
+  if(!parsed.success){setError('Check the cities, cargo and delivery date.');return;}
+  lock.current=true;setBusy(true);setError('');
+  try{
+   const {response,data}=await browserRequest<Reply>('/api/tracking/sessions',{method:'POST',headers:{'Content-Type':'application/json',accept:'application/json'},body:JSON.stringify(parsed.data)});
+   if(!response.ok||data.ok!==true)throw Error();
+   onCreated?.(trackingSessionViewSchema.parse(data.data));
+  }catch{
+   setUncertain(true);setError('We could not confirm the result. Check saved Tracking sessions before creating another.');
+  }finally{lock.current=false;setBusy(false);}
+ }
+ return <form method="post" action="/api/tracking/sessions" className="stack" onSubmit={create} aria-busy={busy}>
+  <h3><Text message="Create Tracking session"/></h3>
+  <p className="meta"><Text message="Save the route, then choose a truck to invite."/></p>
+  <fieldset disabled={busy||uncertain} className="stack">
+   <label><Text message="Pickup city"/><EthiopiaPlaceInput id="session-pickup" placeRefName="pickupPlace" required/></label>
+   <label><Text message="Passing through city"/><span className="meta"> <Text message="(optional)"/></span><EthiopiaPlaceInput id="session-passing" name="passingText" placeRefName="passingPlace"/></label>
+   <label><Text message="Delivery city"/><EthiopiaPlaceInput id="session-delivery" placeRefName="deliveryPlace" required/></label>
+   <label><Text message="Your shipment reference (optional)"/><input name="brokerReference" maxLength={80}/></label>
+   <label><Text message="Cargo"/><input name="cargo" required minLength={3} maxLength={500}/></label>
+   <DatePicker name="pickup" label="Expected pickup"/><DatePicker name="delivery" label="Expected delivery" required/>
+   <button className="button"><Text message="Create Tracking session"/></button>
+  </fieldset>
+  {error?<p role="alert" className="alert error">{t(error)}</p>:null}
+  {onCancel?<button type="button" className="button secondary" disabled={busy} onClick={onCancel}><Text message={uncertain?'Check saved Tracking':'Cancel'}/></button>:null}
+ </form>;
 }
+
 export function TrackingShipmentLinks({shipmentId,workspaceId,businesses=[]}:{shipmentId:string;workspaceId?:string;businesses?:Business[]}){
  const [session,setSession]:[TrackingSessionView|null,(value:TrackingSessionView|null)=>void]=React.useState(null);
  const [busy,setBusy]=React.useState(false),[error,setError]=React.useState(''),[uncertain,setUncertain]=React.useState(false),lock=React.useRef(false);
@@ -92,6 +131,7 @@ export function SessionList({workspaceId,canCreate=false,businesses=[]}:SessionL
  const [selected,setSelected]=React.useState(''),[creating,setCreating]=React.useState(false);
  const [error,setError]=React.useState(''),[loading,setLoading]=React.useState(true);
  const [page,setPage]=React.useState(1),[pageCount,setPageCount]=React.useState(1);
+ const [draftReference,setDraftReference]=React.useState(''),[reference,setReference]=React.useState('');
  const requestSequence=React.useRef(0);
  const load=React.useCallback(async()=>{
   const sequence=++requestSequence.current;
@@ -99,7 +139,9 @@ export function SessionList({workspaceId,canCreate=false,businesses=[]}:SessionL
   try{
    const params=new URLSearchParams({page:String(page)});
    if(workspaceId)params.set('workspaceId',workspaceId);
-   const {response,data}=await browserRequest<Reply>(`/api/tracking/sessions?${params}`,{cache:'no-store'});
+   const {response,data}=reference&&workspaceId
+    ?await browserRequest<Reply>('/api/tracking/sessions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({workspaceId,page,reference})})
+    :await browserRequest<Reply>(`/api/tracking/sessions?${params}`,{cache:'no-store'});
    if(sequence!==requestSequence.current)return;
    if(!response.ok||data.ok!==true){
     if([401,403,404,410].includes(response.status)){setSessions(null);setSelected('');setPageCount(1);}
@@ -113,10 +155,15 @@ export function SessionList({workspaceId,canCreate=false,businesses=[]}:SessionL
   }finally{
    if(sequence===requestSequence.current)setLoading(false);
   }
- },[workspaceId,page]);
+ },[workspaceId,page,reference]);
  React.useEffect(()=>{void load();return()=>{requestSequence.current++;};},[load]);
  function changePage(next:number){
   requestSequence.current++;setSessions(null);setSelected('');setError('');setLoading(true);setPage(next);
+ }
+ function search(next:string){
+  const value=next.trim();
+  if(value===reference&&page===1){void load();return;}
+  requestSequence.current++;setSessions(null);setSelected('');setError('');setLoading(true);setPage(1);setReference(value);
  }
  return <section className="stack">
   <h2><Text message="Tracking sessions"/></h2>
@@ -125,11 +172,16 @@ export function SessionList({workspaceId,canCreate=false,businesses=[]}:SessionL
    onCancel={()=>{setCreating(false);void load();}}
    onCreated={session=>{setCreating(false);setSelected(session.id);void load();}}/>:<>
    {workspaceId&&canCreate?<button className="button" onClick={()=>setCreating(true)}><Text message="Create Tracking session"/></button>:null}
+   {workspaceId?<form className="stack" onSubmit={event=>{event.preventDefault();search(draftReference);}}>
+    <label><Text message="Search by your shipment reference"/><input type="search" maxLength={80} value={draftReference} onChange={event=>setDraftReference(event.target.value)}/></label>
+    <div className="actions"><button className="button secondary"><Text message="Search"/></button>
+    {reference?<button type="button" className="button secondary" onClick={()=>{setDraftReference('');search('');}}><Text message="Clear"/></button>:null}</div>
+   </form>:null}
    <button className="button secondary" disabled={loading} onClick={()=>void load()}><Text message="Refresh Tracking"/></button>
    {sessions===null&&loading?<SurfaceSkeleton label="Loading Tracking"/>:null}
-   {sessions?.length===0&&!error?<p><Text message="No Tracking sessions yet."/></p>:null}
+   {sessions?.length===0&&!error?<p><Text message={reference?"No shipments match that reference.":"No Tracking sessions yet."}/></p>:null}
    {sessions?.map(session=><button key={session.id} type="button" className="card text-left" onClick={()=>setSelected(session.id)}>
-    <strong>{session.reference}</strong><span>{session.cargoSummary}</span><Text message={session.state==='PENDING_PROVIDER'?'Waiting for provider':session.state==='CANCELLED'?'Tracking cancelled':'Provider connected'}/>
+    <strong>{session.reference}</strong>{session.brokerReference?<span>{session.brokerReference}</span>:null}<span>{session.cargoSummary}</span><Text message={session.requestExpired?'This tracking request has expired.':session.state==='PENDING_PROVIDER'?'Waiting for provider':session.state==='CANCELLED'?'Tracking cancelled':'Provider connected'}/>
    </button>)}
   </>}
   {selected?<TrackingSessionManager key={selected} sessionId={selected} workspaceId={workspaceId} businesses={businesses}/>:null}

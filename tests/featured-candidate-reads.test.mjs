@@ -31,14 +31,14 @@ function fixture(count, failTable='') {
     providers:[{provider_profile_id:'owner',eligible:true,provider_kind:'INDEPENDENT_DRIVER'}]};
 }
 
-test('restored courier types join Tuesday only with authoritative current driver links and eligible provider',async()=>{
+test('cars and vans join Tuesday only with authoritative current driver links and eligible provider',async()=>{
  const f=fixture(5),types=['Courier car','Courier motorcycle','Cargo van','Courier car','Courier motorcycle'];
  f.tables.vehicles.forEach((vehicle,index)=>{vehicle.cargo_configuration=types[index];});
  f.tables.assignments=f.tables.assignments.filter(link=>link.vehicle_id!==f.tables.vehicles[3].id);
  f.tables.vehicles[4].active=false;
  const rows=await loadFeaturedTruckCandidates(f.client,'2026-10-20',f.providers);
- assert.deepEqual(rows.map(row=>row.cargo_configuration),types.slice(0,3));
- assert.equal(rows.length,3);assert.ok(rows.every(row=>row.driver_user_id));
+ assert.deepEqual(rows.map(row=>row.cargo_configuration),[types[0],types[2]]);
+ assert.equal(rows.length,2);assert.ok(rows.every(row=>row.driver_user_id));
  f.providers[0].eligible=false;
  assert.deepEqual(await loadFeaturedTruckCandidates(f.client,'2026-10-20',f.providers),[]);
 });

@@ -7,11 +7,11 @@ import { markerLocation,project,signalPaths,separateMarkers } from '../src/map/c
 const raw={id:'truck1',status:'EMPTY',assigned_driver_first_name:'Driver',location_lat:null,location_lng:null,availability_geometry:'ROUTE',current_route_points:[{lat:9,lng:38,label:'A'},{lat:10,lng:39,label:'B'}],recurring_corridors:[{geometry:'ROUTE',route_points:[{lat:8,lng:39,label:'C'},{lat:10,lng:39,label:'B'},{lat:9,lng:38,label:'A'}]}]};
 const parse=row=>parseCapacityPage({items:[row],hasMore:false}).items[0];
 test('location source is one canonical multi-filter group on public and private maps',async()=>{
- const filters={locationSource:'MOBILE,GPS,MOBILE',vehicleCategory:'Courier motorcycle,Courier car'};
+ const filters={locationSource:'MOBILE,GPS,MOBILE',vehicleCategory:'Courier car,Cargo van'};
  const urls=[];const response=async url=>{urls.push(String(url));return Response.json({items:[],hasMore:false,nextCursor:null});};
  await loadCapacity('https://loadgistic.com','',new AbortController().signal,()=>{},response,filters);
  await loadSharedCapacity('',new AbortController().signal,()=>{},async path=>{urls.push('https://loadgistic.com'+path);return {items:[],hasMore:false,nextCursor:null};},filters);
- assert.equal(urls.length,2);for(const url of urls){const params=new URL(url).searchParams;assert.equal(params.get('locationSource'),'GPS,MOBILE');assert.equal(params.get('vehicleCategory'),'Courier car,Courier motorcycle');assert.equal(params.getAll('locationSource').length,1);}
+ assert.equal(urls.length,2);for(const url of urls){const params=new URL(url).searchParams;assert.equal(params.get('locationSource'),'GPS,MOBILE');assert.equal(params.get('vehicleCategory'),'Cargo van,Courier car');assert.equal(params.getAll('locationSource').length,1);}
  assert.equal(filterCount({locationSource:'GPS,MANUAL,MOBILE'}),1);
  assert.equal(discoveryParams('',{locationSource:''}).has('locationSource'),false);
  assert.equal(peopleSearchFilters({...filters,provider:'selected',truck:'selected-truck'}).locationSource,filters.locationSource);

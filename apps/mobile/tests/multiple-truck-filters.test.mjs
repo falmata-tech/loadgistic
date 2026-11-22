@@ -1,3 +1,4 @@
+import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -22,21 +23,21 @@ const find=(tree,match)=>{const node=nodes(tree).find(match);assert.ok(node,'exp
 const native=Object.fromEntries(['Modal','Pressable','ScrollView','Image','Text','View'].map(name=>[name,name]));
 const ui=Object.fromEntries(['Page','Title','Button','Copy','ErrorText'].map(name=>[name,name]));
 ui.palette={ink:'#0b1d3a',border:'#cbd5e1'};
-const common={'react-native':native,'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/discovery':discovery,'./ui':ui,'./app-icon':{AppIcon:'AppIcon'},'../../../../src/lib/capacity-filter-presentation':filterPresentation};
+const common={'../theme/capacity-status-presentation':{capacityStatusPresentation},'react-native':native,'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/discovery':discovery,'./ui':ui,'./app-icon':{AppIcon:'AppIcon'},'../../../../src/lib/capacity-filter-presentation':filterPresentation};
 
-test('native courier pickers preserve distinct artwork and canonical values behind translated labels',()=>{
- const options=[{name:'Courier car',image:'/vehicle-configurations/courier-car.jpg'},{name:'Courier motorcycle',image:'/vehicle-configurations/courier-motorcycle.jpg'}];
+test('native courier pickers preserve Courier car artwork and canonical values behind translated labels',()=>{
+ const options=[{name:'Courier car',image:'/vehicle-configurations/courier-car.jpg'},{name:'Cargo van',image:'/vehicle-configurations/cargo-van.jpg'}];
  const language={'../localization/provider':{useLanguage:()=>({t:message=>'translated '+message})}};
  const single=component('../src/components/configuration-picker.tsx',{...common,...language,'../api/http':{apiOrigin:'https://loadgistic.com'}});let chosen='';
  const render=()=>single.render('ConfigurationPicker',{value:chosen,options,onChange:value=>{chosen=value;}});
- let tree=render();find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='translated Courier motorcycle').props.onPress();
- assert.equal(chosen,'Courier motorcycle');tree=render();
- assert.equal(find(tree,node=>node.type==='Image'&&node.props.accessibilityLabel==='translated Courier motorcycle').props.source.uri,'https://loadgistic.com/vehicle-configurations/courier-motorcycle.jpg');
+ let tree=render();find(tree,node=>node.type==='Pressable'&&node.props.accessibilityLabel==='translated Courier car').props.onPress();
+ assert.equal(chosen,'Courier car');tree=render();
+ assert.equal(find(tree,node=>node.type==='Image'&&node.props.accessibilityLabel==='translated Courier car').props.source.uri,'https://loadgistic.com/vehicle-configurations/courier-car.jpg');
  const multi=component('../src/components/multiple-configuration-picker.tsx',{...common,...language,'../api/http':{apiOrigin:'https://loadgistic.com'},'./app-icon':{AppIcon:'AppIcon'}});let value='';
  const renderMulti=()=>multi.render('MultipleConfigurationPicker',{value,options,onChange:next=>{value=next;}});
  find(renderMulti(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='translated Courier car').props.onPress();
- find(renderMulti(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='translated Courier motorcycle').props.onPress();
- assert.equal(value,'Courier car,Courier motorcycle');
+ find(renderMulti(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='translated Cargo van').props.onPress();
+ assert.equal(value,'Cargo van,Courier car');
  assert.equal(nodes(renderMulti()).filter(node=>node.type==='Pressable'&&node.props.accessibilityState?.checked).length,2);
 });
 

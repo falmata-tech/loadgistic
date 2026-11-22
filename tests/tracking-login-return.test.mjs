@@ -61,7 +61,7 @@ test('Tracking login request/code/retry renders bounded intent with existing acc
   assert.equal(all.filter(item=>item.type==='input'&&item.props.name==='from'&&item.props.value==='tracking').length,1);
   if(step)assert.ok(all.some(item=>item.type==='Link'&&item.props.href==='/login?from=tracking'));
  }
- const shared=nodes(await render({from:'shared-capacity'})).find(item=>item.type==='AuthShell');assert.equal(shared.props.taskKicker.props.message,'Shared with you');assert.equal(shared.props.description.props.message,'Sign in to see vehicles shared with your account.');
+ const shared=nodes(await render({from:'shared-capacity'})).find(item=>item.type==='AuthShell');assert.equal(shared.props.taskKicker.props.message,'Private Network');assert.equal(shared.props.description.props.message,'Sign in to see vehicles your transport partners share with you.');
  const invalid=nodes(await render({from:'https://outside.example'}));assert.equal(invalid.some(item=>item.type==='input'&&item.props.name==='from'),false);
 });
 

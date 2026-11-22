@@ -80,8 +80,16 @@ begin
  perform pg_temp.session_denied(format('select create_tracking_session(%L,%L::jsonb)',outsider,command::text),'BUSINESS_FORBIDDEN');
  perform pg_temp.session_denied(format('select create_tracking_session(%L,%L::jsonb)',platform_admin,command::text),'BUSINESS_FORBIDDEN');
  perform pg_temp.session_denied(format('select create_tracking_session(%L,%L::jsonb)',customer,(command||jsonb_build_object('route',jsonb_build_array(jsonb_build_object('placeRef',cities[1]),jsonb_build_object('placeRef',cities[1]),jsonb_build_object('placeRef',cities[3]))))::text),'ROUTE_LOCATIONS_MUST_DIFFER');
+ command:=command||jsonb_build_object('route',jsonb_build_array(jsonb_build_object('placeRef',cities[1]),jsonb_build_object('placeRef',cities[3])),
+  'brokerReference','  PILOT-239-ABC  ');
+ perform pg_temp.session_denied(format('select create_tracking_session(%L,%L::jsonb)',customer,
+  (command||jsonb_build_object('brokerReference',repeat('x',81)))::text),'INVALID_TRACKING_INPUT');
  result:=create_tracking_session(customer,command);session_id:=(result->>'id')::uuid;
- perform pg_temp.session_assert(result->>'state'='PENDING_PROVIDER'and result->'shipment'='null'::jsonb and result->'shipmentId'='null'::jsonb and jsonb_array_length(result->'route')=3,'SESSION229_PENDING_LEAK');
+ perform pg_temp.session_assert(result->>'brokerReference'='PILOT-239-ABC'
+  and tracking_session_reference_search(customer,workspace,1,'pilot-239')->'sessions'->0->>'id'=session_id::text
+  and (tracking_session_reference_search(outsider,foreign_workspace,1,'PILOT-239')->>'total')::int=0,'PILOT239_REFERENCE_SCOPE');
+ perform pg_temp.session_denied(format('select tracking_session_reference_search(%L,%L,1,%L)',outsider,workspace,'PILOT-239'),'BUSINESS_FORBIDDEN');
+ perform pg_temp.session_assert(result->>'state'='PENDING_PROVIDER'and result->'shipment'='null'::jsonb and result->'shipmentId'='null'::jsonb and jsonb_array_length(result->'route')=2,'SESSION229_PENDING_LEAK');
  perform pg_temp.session_assert((tracking_session_workspace(customer,workspace)->>'total')::integer=1 and(tracking_session_workspace(staff,workspace)->>'total')::integer=1,'SESSION229_WORKSPACE_LIST');
  perform pg_temp.session_denied(format('select tracking_session_workspace(%L,%L)',outsider,workspace),'BUSINESS_FORBIDDEN');
  perform pg_temp.session_denied(format('select issue_tracking_session_link(%L,%L,%L,%L,%L::jsonb)',staff,session_id,link1,code1,'{"allowLocation":false}'),'FORBIDDEN');
@@ -90,7 +98,7 @@ begin
  perform pg_temp.session_assert((result->>'expiresAt')::timestamptz-(result->>'createdAt')::timestamptz=interval '7 days'and result::text!~'digest|email|storage_path|linkToken|code','SESSION229_ISSUE_METADATA_OR_DEFAULT');
  perform pg_temp.session_assert(read_tracking_session_link(link1,null)is null and read_tracking_session_link(link1,repeat('f',64))is null and read_tracking_session_link(code1,link1)is null,'SESSION229_BOTH_CREDENTIALS_REQUIRED');
  guest:=read_tracking_session_link(link1,code1);
- perform pg_temp.session_assert(guest->>'id'=session_id::text and guest->'shipment'='null'::jsonb and guest::text!~'digest|email|storage_path|vehicleId|current_location','SESSION229_PENDING_GUEST_SCOPE');
+ perform pg_temp.session_assert(guest->>'id'=session_id::text and guest->'shipment'='null'::jsonb and guest::text!~'digest|email|storage_path|vehicleId|current_location|brokerReference|PILOT-239','SESSION229_PENDING_GUEST_SCOPE');
  select created_at,expires_at into old_created,old_expiry from tracking_session_links where id=link_id;
  update tracking_session_links set created_at=clock_timestamp()-interval '2 days',expires_at=clock_timestamp()-interval '1 day'where id=link_id;
  perform pg_temp.session_assert(read_tracking_session_link(link1,code1)is null,'SESSION229_EXPIRED_LINK_ACCEPTED');
@@ -128,7 +136,28 @@ begin
  perform pg_temp.session_denied(format('select manage_tracking_request(%L,%L,%L::jsonb)',customer,session_id,command),'TRACKING_SESSION_CHANGED');
  perform pg_temp.session_assert(incoming_tracking_requests(provider_actor)->0->>'id'=session_id::text and jsonb_array_length(incoming_tracking_requests(outsider))=0,'REQUEST_SCOPED_INBOX');
  perform pg_temp.session_denied(format('select accept_tracking_request(%L,%L,%s,%L::jsonb)',outsider,session_id,version,'{"trackingMode":"STATUS_ONLY"}'),'TRACKING_ACCESS_DENIED');
+ perform pg_temp.session_denied(format('select decline_tracking_request(%L,%L,%s)',outsider,session_id,version),'TRACKING_ACCESS_DENIED');
+ perform pg_temp.session_denied(format('select manage_tracking_request(%L,%L,%L::jsonb)',staff,session_id,jsonb_build_object('action','WITHDRAW','revision',version)),'FORBIDDEN');
+ result:=manage_tracking_request(customer,session_id,jsonb_build_object('action','WITHDRAW','revision',version));
+ perform pg_temp.session_assert(result->>'status'='WITHDRAWN' and result->>'selected' is null,'PILOT239_BROKER_WITHDRAW');
+ perform pg_temp.session_denied(format('select accept_tracking_request(%L,%L,%s,%L::jsonb)',provider_actor,session_id,version,'{"trackingMode":"STATUS_ONLY"}'),'TRACKING_ACCESS_DENIED');
+ result:=manage_tracking_request(customer,session_id,command||jsonb_build_object('revision',result->'revision'));
+ version:=(result->>'revision')::bigint;
+ perform pg_temp.session_assert(decline_tracking_request(provider_actor,session_id,version),'PILOT239_PROVIDER_DECLINE');
+ perform pg_temp.session_denied(format('select decline_tracking_request(%L,%L,%s)',provider_actor,session_id,version),'TRACKING_ACCESS_DENIED');
+ result:=manage_tracking_request(customer,session_id,'{"action":"SEARCH","query":""}');
+ perform pg_temp.session_assert(result->>'status'='DECLINED' and jsonb_array_length(incoming_tracking_requests(provider_actor))=0,'PILOT239_DECLINE_READBACK');
+ select pending_expires_at into old_expiry from tracking_sessions where id=session_id;
+ update tracking_sessions set pending_expires_at=clock_timestamp()-interval '1 second' where id=session_id;
+ perform pg_temp.session_assert(manage_tracking_request(customer,session_id,'{"action":"SEARCH","query":""}')->>'status'='EXPIRED'
+ and (tracking_session_detail(customer,session_id)->>'requestExpired')::boolean,'PILOT239_EXPIRED_READBACK');
+ update tracking_sessions set pending_expires_at=old_expiry where id=session_id;
+ result:=manage_tracking_request(customer,session_id,command||jsonb_build_object('revision',result->'revision'));
+ version:=(result->>'revision')::bigint;
  result:=accept_tracking_request(provider_actor,session_id,version,'{"trackingMode":"LOCATION_AND_STATUS"}');shipment:=(result->>'shipmentId')::uuid;
+ perform pg_temp.session_assert(result->>'brokerReference' is null and (select passing_place_ref is null
+  and origin_place_ref=cities[1] and destination_place_ref=cities[3] from provider_shipments where id=shipment),
+  'PILOT239_DIRECT_ROUTE_OR_REFERENCE_LEAK');
  perform pg_temp.session_wire_shipment(result->'shipment');
  perform pg_temp.session_wire_shipment(tracking_session_detail(customer,session_id)->'shipment');
  perform pg_temp.session_assert(result->>'state'='CONNECTED'and result->'shipment'->'current_location'='null'::jsonb,'SESSION229_CONNECTION_OR_INVENTED_POINT');
@@ -139,6 +168,7 @@ begin
  values(shipment,'CREATED','LOCATION','Synthetic obscured phone area',9.11,38.81,10,'DEVICE_OBSCURED',provider_actor,clock_timestamp());
  guest:=read_tracking_session_link(link2,code2);
  perform pg_temp.session_wire_shipment(guest->'shipment');
+ perform pg_temp.session_assert(not(guest?'brokerReference') and guest::text not like '%PILOT-239-ABC%','PILOT239_GUEST_REFERENCE_LEAK');
  perform pg_temp.session_assert(guest->'shipment'->'current_location'->>'location_source'='DEVICE_OBSCURED'and guest->'shipment'->'current_location'->>'location_precision_km'='10'
  and guest->'shipment'->>'can_approve'='false'and guest->'shipment'->>'can_review'='false'and guest->'shipment'->>'can_share'='false'and guest::text!~'storage_path|recipient|email|contactPhone|driverPhone','SESSION229_GUEST_PRIVACY_OR_PHONE');
  manager:=tracking_session_detail(staff,session_id);

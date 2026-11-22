@@ -7,9 +7,10 @@ import {markerLocation,signalBounds,signalPaths} from '../src/map/capacity-geome
 import {capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,renderedCapacityPoints,capacityMarkerOffsets} from '../src/map/capacity-clusters.ts';
 import {locationSourceKind,locationSourceLabel,locationSourceColor} from '../../../src/lib/location-source.js';
 import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
-import {capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
+import {capacityMapColors,capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../../../src/lib/map-initial-camera.js';
 import {capacityMarkerFanLayout} from '../../../src/lib/capacity-marker-fan.js';
+import {locationRadiusMinimumZoom} from '../../../src/lib/map-signal-offset.js';
 import {createCapacityCameraIntent,expandCapacityCluster} from '../src/map/capacity-camera-intent.ts';
 
 // Execute the real component/handlers with its native host and hooks substituted.
@@ -43,9 +44,9 @@ function fixture(currentVisible=true,topInset,bottomInset){
  const parameters={...hooks,useLayoutEffect:hooks.useEffect,React,exports:{},capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,locationSourceKind,locationSourceLabel,locationSourceColor,focusedMarkers,
   capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capacityLayerIds,renderedCapacityPoints,capacityMarkerOffsets,
   capacityMarkerFanLayout,createCapacityCameraIntent,expandCapacityCluster,BackHandler:{addEventListener:()=>({remove(){}})},
-  mapStyle:{},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,palette:{success:capacityStatusPresentation.EMPTY.color},capacityStatusPresentation,capacityDetailFrame,CapacityTruckDetails:'CapacityTruckDetails',CapacityTruckContact:'CapacityTruckContact',AppIcon:'AppIcon',Modal:'Modal',useWindowDimensions:()=>({width:320,height:600}),Image:'Image',Pressable:'Pressable',ScrollView:'ScrollView',Text:'Text',View:'View',
+  mapStyle:{},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,palette:{success:capacityStatusPresentation.EMPTY.color},capacityMapColors,capacityStatusPresentation,capacityDetailFrame,CapacityTruckDetails:'CapacityTruckDetails',CapacityTruckContact:'CapacityTruckContact',AppIcon:'AppIcon',Modal:'Modal',useWindowDimensions:()=>({width:320,height:600}),Image:'Image',Pressable:'Pressable',ScrollView:'ScrollView',Text:'Text',View:'View',
   StyleSheet:{create:value=>value,absoluteFill:{}},Map:'NativeMap',Camera:'Camera',GeoJSONSource:'GeoJSONSource',Layer:'Layer',Marker:'Marker',
-  markerLocation,signalBounds,signalPaths,createVisibleQuery:()=>({invalidate(){},moving(){},settled(){},refresh(){},close(){}}),
+  markerLocation,signalBounds,signalPaths,locationRadiusMinimumZoom,createVisibleQuery:()=>({invalidate(){},moving(){},settled(){},refresh(){},close(){}}),
   vehicleConfigurationImage:()=>'/vehicle-configurations/mini-box-truck.png',apiOrigin:'https://loadgistic.example',useLanguage:()=>({t:value=>value})};
  new Function(...Object.keys(parameters),compiled)(...Object.values(parameters));
  const Component=parameters.exports.default;
@@ -74,6 +75,22 @@ test('a fanned marker never returns after a source or selection changes and late
  f.setItems(original);f.render();f.render();assert.equal(connectorCount(),0,'returning to old rows cannot resurrect a stale fan');
  f.seedFan({clusterKey:'synthetic-cluster',members:[member]});f.render();assert.equal(connectorCount(),1);
  f.setSelected(f.item);f.render();f.render();f.setSelected(null);f.render();f.render();assert.equal(connectorCount(),0,'selection and Back cannot resurrect a stale fan');
+});
+
+test('the thin public radius clears at wide zoom while its location action stays available',()=>{
+ const f=fixture();
+ const layers=()=>nodes(f.tree).map(({node})=>node);
+ const fill=()=>layers().find(node=>node.props.id==='location-radius-fill');
+ const zoomTo=zoom=>{layers().find(node=>node.type==='NativeMap').props.onRegionDidChange({nativeEvent:{...f.previous,zoom}});f.render();};
+ const initial=fill().props.data.features[0].geometry;
+ assert.deepEqual(initial.coordinates[0][0],initial.coordinates[0].at(-1));
+ assert.equal(fill().props.onPress,undefined,'the fill cannot intercept route taps');
+ zoomTo(3);
+ assert.deepEqual(fill().props.data.features,[]);
+ assert.deepEqual(layers().find(node=>node.props.id==='selected-signals').props.data.features,[]);
+ assert.ok(layers().some(node=>node.props.accessibilityLabel==='Approximate location'));
+ zoomTo(8);
+ assert.deepEqual(fill().props.data.features[0].geometry,initial,'zooming restores the same saved radius');
 });
 
 test('selected exit uses an independent native button and restores the saved camera without selecting truck details',()=>{
@@ -123,7 +140,7 @@ test('a custom bottom inset moves selected controls without shortening the map',
 });
 
 test('truck details keep their selected public record and fixed contact outside scrolling evidence',()=>{
- const f=fixture(),button=nodes(f.tree).find(({node})=>node.props.accessibilityLabel==='Vehicle details').node;
+ const f=fixture(),button=nodes(f.tree).find(({node})=>node.props.accessibilityLabel==='Vehicle and driver').node;
  button.props.onPress();f.render();
  const all=nodes(f.tree),details=all.find(({node})=>node.type==='CapacityTruckDetails'),contact=all.find(({node})=>node.type==='CapacityTruckContact');
  assert.equal(details.node.props.truck,f.item);assert.equal(contact.node.props.truck,f.item);

@@ -33,7 +33,7 @@ import {CapacitySearchResults,CapacityDocumentFilters} from './capacity-search-r
 import {TRANSPORTER_SEARCH_DELAY_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
 import searchStyles from './transporter-search.module.css';
 
-type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number;filterError?:string|null};
+type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number;filterError?:string|null;loadError?:string};
 type Point={lat:number;lng:number};
 type VisitorLocationState='idle'|'locating'|'ready'|'denied'|'timeout'|'unavailable'|'unsupported'|'insecure'|'outside'|'error';
 
@@ -81,7 +81,7 @@ function CapacityFeedState({initial,query,profileMap=false,searchPath='/',apiPat
   const [allItems,setItems]=React.useState(initial.items);
   const items=React.useMemo(()=>allItems.filter((item:any)=>!blocked.includes(item.provider_handle)),[allItems,blockKey]);
   const [loading,setLoading]=React.useState(profileMap);
-  const [error,setError]=React.useState(initial.filterError||'');
+  const [error,setError]=React.useState(initial.filterError||initial.loadError||'');
   const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(
     initial.items.some((item:any)=>item.id===query.truck)?query.truck
       :query.truck&&!initial.filterError&&initial.items.length===1?initial.items[0].id:null);
@@ -333,7 +333,7 @@ function CapacityFeedState({initial,query,profileMap=false,searchPath='/',apiPat
   const overlayKind=error?'error':loading?'loading':!items.length?'empty':'';
 
   const privateAccountMap=apiPath==='/api/account-capacity'||apiPath.startsWith('/api/business-workspaces/');
-  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?privateAccountMap&&activeFilterCount===0&&!query.provider&&!query.truck?<><Text message="No vehicles are shared with this account yet."/> <Link href="/app/network"><Text message="Find connections"/></Link></>:<><Text message="No matching available vehicles."/>{activeFilterCount>0?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:null}</>:locationNotice}</div>:null;
+  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<><Text message={error}/>{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?privateAccountMap&&activeFilterCount===0&&!query.provider&&!query.truck?<><Text message="No vehicles are shared with this account yet."/> <Link href="/app/network"><Text message="Find connections"/></Link></>:<><Text message="No matching available vehicles."/>{activeFilterCount>0?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:null}</>:locationNotice}</div>:null;
 
   const searchControls=<form className="capacity-people-search-form" onSubmit={event=>{event.preventDefault();search.submit();}}><div className={searchStyles.field}>
     <label className="sr-only" htmlFor="capacity-market-search"><Text message="Search transporters"/></label><Search aria-hidden="true"/>

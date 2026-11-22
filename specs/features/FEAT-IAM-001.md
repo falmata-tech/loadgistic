@@ -670,6 +670,19 @@ And first installation does not reload a login or application form while the use
 And the service-worker script is served with no-store update headers and a self-only script policy\
 And the service worker does not cache Next.js executable chunks, preventing a framework upgrade from combining stale and current runtime modules.
 
+Given a visitor or signed-in member uses the desktop rail, when they reach the
+lower navigation section, then Install app opens the browser installation
+options. On phones the member can find it in More and the visitor can find it in
+About. Use the browser prompt when available and show Add to Home Screen
+instructions when it is unavailable. Installed views hide the entry.
+
+Given an installed app loses connectivity, when a normal navigation fails,
+then a small public offline page offers a retry. Private pages, API payloads,
+guest links and framework code stay outside the service-worker cache.
+Installation and worker updates do not take over an active form. Rollback
+retains the manifest URL and app identity. Check successful installation,
+dismissal, offline recovery and cache isolation with no credential telemetry.
+
 ## Contract ownership
 
 - Inbound adapters: `src/app/login/page.tsx`, public capacity/provider/track pages, workspace pages, `src/app/api/auth/*`

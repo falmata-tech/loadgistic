@@ -1,0 +1,7 @@
+:root{font:16px/1.5 system-ui,sans-serif;color:#0b1d3a;background:#f6f8fb}
+body{box-sizing:border-box;margin:0;min-height:100dvh;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+main{width:min(100%,26rem);box-sizing:border-box;padding:24px;border:1px solid #d7dfeb;background:#fff;border-radius:16px}
+h1{font-size:1.5rem;margin:12px 0 8px}
+p{margin:0 0 20px;color:#526375}
+button{min-height:48px;padding:0 18px;border:0;border-radius:10px;background:#155eef;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+button:focus-visible{outline:3px solid #0b1d3a;outline-offset:3px}

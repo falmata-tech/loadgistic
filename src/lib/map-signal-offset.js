@@ -16,6 +16,13 @@ export function signalLaneZoom(zoom,tileSize=512){
 /** Projected pixel limit, with 1m rounding headroom under the 1km ground bound. */
 export function signalLaneLimit(zoom,tileSize=512){return 999*tileSize*2**zoom/40075016.6856;}
 
+/** Hide a location radius below an 18px diameter without changing its ground size. */
+export function locationRadiusMinimumZoom(latitude,radiusKm,tileSize){
+  const metresAtEquator=40075016.6856;
+  const latitudeScale=Math.cos(Math.min(85,Math.abs(latitude))*Math.PI/180);
+  return Math.log2(18*metresAtEquator*latitudeScale/(radiusKm*2000*tileSize));
+}
+
 /** Keep paired routes legible on a fitted phone map. Their display-only lanes
  * may move at most 1.8km at low zoom; street zoom and area outlines keep the
  * existing 1km bound. Stored route points and location privacy are unchanged.

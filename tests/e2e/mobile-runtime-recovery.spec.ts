@@ -33,7 +33,7 @@ test('mobile Featured recovers from unavailable and malformed responses without 
  await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-restored.png')});
  await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
- await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toBeVisible();
+ await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toBeVisible();
  expect(errors).toEqual([]);
 });
 
@@ -61,7 +61,7 @@ for(const [name,message] of [['empty',''],['whitespace',' \t\n ']]){
   state='failed';await refresh();
   await expect(page.getByRole('alert')).toHaveText('Please try again.');
   await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
-  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toBeVisible();
   expect(errors).toEqual([]);
  });
 }
@@ -125,13 +125,13 @@ test('mobile link and code open one load, survive recoverable reads and clear on
 
 test('mobile Private map stays selected with explicit sign-in/sign-up and preserves public Capacity',async({page}:{page:Page})=>{
  await page.goto(preview+'/?view=private');
- await expect(page).toHaveURL(/view=private/);await expect(page.getByRole('tab',{name:'Privately shared with you',exact:true})).toHaveAttribute('aria-selected','true');
- await expect(page.getByText('Sign in to see vehicles shared with your account.',{exact:true})).toBeVisible();
+ await expect(page).toHaveURL(/view=private/);await expect(page.getByRole('tab',{name:'Private Network',exact:true})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByText('Sign in to see vehicles your transport partners share with you.',{exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();expect(await page.locator('[data-marker-id]').count()).toBe(0);
  await page.getByRole('link',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/\/account\?from=capacity/);await expect(page.getByLabel('Email',{exact:true})).toBeVisible();
  await page.getByRole('tab',{name:'Capacity',exact:true}).click();
  await expect(page).toHaveURL(/localhost:8084\/$/);
- await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toHaveAttribute('aria-selected','true');
  await expect(page.getByRole('link',{name:'Sign up',exact:true})).toHaveCount(0);
 });
 

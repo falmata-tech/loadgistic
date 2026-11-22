@@ -17,11 +17,17 @@ export function TrackingRequests({sessionId}:{sessionId?:string}){
  return <Card><Title message={sessionId?'Request a vehicle':'Tracking requests'}/>
   {w.error&&<ErrorText message="Could not load Tracking sessions. Please try again."/>}
   {sessionId?<>{!!w.target?.selected&&<Copy>{t('Requested vehicle')} · {w.target.selected}</Copy>}
+   {w.target?.status==='DECLINED'&&<Copy message="The provider declined the request."/>}
+   {w.target?.status==='WITHDRAWN'&&<Copy message="You withdrew the request."/>}
+   {w.target?.status==='EXPIRED'&&<Copy message="This tracking request has expired."/>}
+   {!!w.target?.selected&&<Button secondary message="Withdraw tracking request" disabled={w.busy} onPress={()=>void w.withdraw()}/>}
+   {w.target?.status!=='EXPIRED'?<>
    <Field message="Truck number, driver or provider" value={w.query} editable={!w.busy} onChangeText={w.setQuery} maxLength={100}/>
    <Button secondary message="Search" disabled={w.busy||w.query.trim().length<2} onPress={()=>void w.search()}/>
    {w.target?.items.map(row=><View key={row.vehicleId}><Copy>{row.label}{row.connected?' · '+t('In your network'):''}</Copy>
     <Button secondary message="Request tracking" disabled={w.busy} onPress={()=>void w.select(row)}/></View>)}
    {w.target&&w.target.items.length===0&&w.searched&&!w.busy?<Copy message="No trucks match your search."/>:null}
+   </>:null}
   </>:<>
    {!w.busy&&!w.error&&!w.incoming.length&&<Copy message="No pending tracking requests."/>}
    {w.incoming.map(row=><View key={row.id} style={{gap:10}}>
@@ -29,10 +35,11 @@ export function TrackingRequests({sessionId}:{sessionId?:string}){
     <Copy>{[row.pickupDate,row.deliveryDate].filter(Boolean).join(' → ')}</Copy>
     <Button secondary message={locationId===row.id?'Status and approximate location':'Status only'} disabled={w.busy} onPress={()=>setLocationId(locationId===row.id?'':row.id)}/>
     <Button message="Accept tracking request" disabled={w.busy} onPress={()=>void w.accept(row,locationId===row.id?'LOCATION_AND_STATUS':'STATUS_ONLY')}/>
+    <Button secondary message="Decline tracking request" disabled={w.busy} onPress={()=>void w.decline(row)}/>
    </View>)}
    {!!w.shipment&&<AppLink href={{pathname:'/shipment-detail',params:{id:w.shipment}}} message="Open Tracking"/>}
   </>}
   {w.busy&&<Copy message="Loading Tracking"/>}
-  {(!sessionId||w.error)&&<Button secondary message="Refresh requests" disabled={w.busy} onPress={()=>void w.refresh()}/>}
+  <Button secondary message="Refresh requests" disabled={w.busy} onPress={()=>void w.refresh()}/>
  </Card>;
 }

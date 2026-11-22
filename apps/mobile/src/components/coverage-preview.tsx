@@ -4,7 +4,7 @@ import {View} from 'react-native';
 import {Map,Camera,GeoJSONSource,Layer} from './map-platform';
 import {coverageBounds,coverageGeometry} from '../map/coverage-preview';
 import {mapStyle} from './map-style';
-import {Copy,ErrorText,palette} from './ui';
+import {Copy,ErrorText} from './ui';
 import {useLanguage} from '../localization/provider';
 import type {Place} from './place-picker';
 export function CoveragePreview({kind,places,regular=false,status='EMPTY'}:{kind:string;places:Place[];regular?:boolean;status?:'EMPTY'|'PARTIAL'}){

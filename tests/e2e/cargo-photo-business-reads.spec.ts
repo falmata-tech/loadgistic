@@ -121,7 +121,7 @@ async function openPrivatePhoto(page:Page,workspaceId:string,vehicleId:string,ph
  const item=(await capacity.json() as {items:{id:string;vehicle_id:string}[]}).items.find(item=>item.vehicle_id===vehicleId);
  expect(item?.id).toMatch(uuid);
  await page.goto(`/?view=private&truck=${item!.id}`,{waitUntil:'domcontentloaded'});
- await page.getByRole('button',{name:'Vehicle details',exact:true}).click();
+ await page.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
  const sheet=page.locator('.truck-inspection');await expect(sheet).toBeVisible();
  const panel=sheet.locator('details.cargo-photo-panel');await expect(panel).toBeVisible();
  await panel.locator('summary').click();

@@ -10,11 +10,11 @@ test('account choices reveal concise benefits without crowding phone signup',asy
  for(const width of [320,390,1440]){
   await page.setViewportSize({width,height:760});
   await page.goto('/signup');
-  await expect(page.getByRole('radio',{name:'Put your vehicles on the map'})).toBeChecked();
+  await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toBeChecked();
   await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
-  await page.getByRole('radio',{name:'Find room for your load'}).check();
+  await page.getByRole('radio',{name:'Plan freight with your transporters'}).check();
   await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
-  await page.getByRole('radio',{name:'Put your vehicles on the map'}).check();
+  await page.getByRole('radio',{name:'Manage vehicles and share capacity'}).check();
   await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeHidden();
   await expect(page.getByLabel('Email',{exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'See how Loadgistic works'})).toHaveAttribute('href','/about');
@@ -35,12 +35,12 @@ test('Expo signup presents the same account benefits on a narrow phone',async({p
  test.setTimeout(90_000);
  await page.setViewportSize({width:320,height:760});
  await page.goto('http://localhost:8084/signup');
- await expect(page.getByRole('radio',{name:'Find room for your load'})).toBeVisible();
- await expect(page.getByRole('radio',{name:'Put your vehicles on the map'})).toHaveAttribute('aria-checked','true');
+ await expect(page.getByRole('radio',{name:'Plan freight with your transporters'})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toHaveAttribute('aria-checked','true');
  await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
- await page.getByRole('radio',{name:'Find room for your load'}).click();
+ await page.getByRole('radio',{name:'Plan freight with your transporters'}).click();
  await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
- await page.getByRole('radio',{name:'Put your vehicles on the map'}).click();
+ await page.getByRole('radio',{name:'Manage vehicles and share capacity'}).click();
  await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
  await expect(page.getByText('Build a private map from transporters who share with your team.')).toHaveCount(0);
  await expect(page.getByRole('link',{name:'See how Loadgistic works'})).toBeVisible();
@@ -55,11 +55,11 @@ test('account entry and signed-in navigation remain usable across phone, tablet 
  for(const width of widths){
   await page.setViewportSize({width,height:width<=390?760:900});
   await expect(page.getByRole('heading',{name:'Create an account'})).toBeVisible();
-  await expect(page.getByRole('radio',{name:'Put your vehicles on the map'})).toBeVisible();
+  await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toBeVisible();
   await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
-  await page.getByRole('radio',{name:'Find room for your load'}).check();
+  await page.getByRole('radio',{name:'Plan freight with your transporters'}).check();
   await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
-  await page.getByRole('radio',{name:'Put your vehicles on the map'}).check();
+  await page.getByRole('radio',{name:'Manage vehicles and share capacity'}).check();
   await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeHidden();
   await expect(page.getByRole('link',{name:'See how Loadgistic works'})).toHaveAttribute('href','/about');
   await expect(page.getByRole('link',{name:'Sign in'}).last()).toBeVisible();

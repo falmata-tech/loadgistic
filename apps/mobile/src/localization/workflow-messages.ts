@@ -1,6 +1,6 @@
 // Fixed app copy only. Record names, descriptions and messages are never keys.
 export const workflowRows: readonly (readonly string[])[] = [
-  ["This vehicle uses an older sharing setting. In Capacity, choose Private network before sharing with an account.", "ይህ መኪና የቀድሞ የማጋራት ቅንብር ይጠቀማል። ለመለያ ከማጋራትዎ በፊት በጭነት ቦታ ማስተዳደሪያ ውስጥ «የግል አጋሮች»ን ይምረጡ።", "Konkolaataan kun qindaaʼina qooddannaa durii fayyadama. Herrega waliin qooduu dura bakka Iddoo feʼumsaa keessatti «Michoota dhuunfaa» filadhaa."],
+  ["This vehicle uses an older sharing setting. In Capacity, choose Private Network before sharing with an account.", "ይህ መኪና የቀድሞ የማጋራት ቅንብር ይጠቀማል። ለመለያ ከማጋራትዎ በፊት በጭነት ቦታ ማስተዳደሪያ ውስጥ «የግል አጋሮች»ን ይምረጡ።", "Konkolaataan kun qindaaʼina qooddannaa durii fayyadama. Herrega waliin qooduu dura bakka Iddoo feʼumsaa keessatti «Michoota dhuunfaa» filadhaa."],
   ["Could not open Terms. Please try again.", "ውሎችን መክፈት አልተቻለም። እንደገና ይሞክሩ።", "Ulaagaalee banuun hin dandaʼamne. Irra deebiʼaa yaalaa."],
   ["Checking saved email access", "የተቀመጠ የኢሜይል መዳረሻ እየተፈተሸ ነው", "Seensi iimeelii kuufame ilaalamaa jira"],
   ["Loading transporter", "የአጓጓዥ መረጃ እየተጫነ ነው", "Odeeffannoon geejjibaa feʼamaa jira"],

@@ -82,7 +82,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   expect(await dialog.evaluate((element:HTMLDialogElement)=>element.matches(':modal'))).toBe(true);
   await expect(map).toHaveAttribute('data-original-map','yes');
   await expect(dialog.getByRole('combobox')).toHaveCount(2);
-  await expect(dialog.getByRole('button',{name:'Open to the public',exact:true})).toHaveCount(0);
+  await expect(dialog.getByRole('button',{name:'Open Market',exact:true})).toHaveCount(0);
   await expect(dialog.getByRole('combobox',{name:'City 1',exact:true})).toHaveValue(/Addis Ababa/);
   await expect(dialog.getByRole('combobox',{name:'City 2',exact:true})).toHaveValue(/Adama/);
   const originalStatus=await dialog.locator('input[name="status"]').inputValue();
@@ -105,7 +105,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await expect(dialog.getByRole('button',{name:'Empty',exact:true})).toHaveCount(0);
   await expect(dialog.getByRole('radio')).toHaveCount(0);
   const originalVisibility=await dialog.locator('button[aria-pressed=true]').innerText();
-  const otherVisibility=originalVisibility==='Open to the public'?'Private network':'Open to the public';
+  const otherVisibility=originalVisibility==='Open Market'?'Private Network':'Open Market';
   await dialog.getByRole('button',{name:otherVisibility,exact:true}).click();
   await page.screenshot({path:testInfo.outputPath('capacity-dialog.png')});
   await page.keyboard.press('Escape');

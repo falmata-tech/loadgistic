@@ -9,14 +9,13 @@ import {palette} from './ui';
 
 export function FeaturedSponsors({items}:{items:Featured['sponsors']}){
  const {t}=useLanguage(),[index,setIndex]=useState(0),[paused,setPaused]=useState(false);
- const [reduced,setReduced]=useState(true),[reader,setReader]=useState(true);
+ const [reduced,setReduced]=useState(true),[reader,setReader]=useState(Platform.OS!=='web');
  useEffect(()=>{
   let mounted=true;
   void AccessibilityInfo.isReduceMotionEnabled().then(x=>{if(mounted)setReduced(Boolean(x));}).catch(()=>{});
   // React Native Web reports a screen reader for every browser. Its motion
   // preference remains available, as do the manual rotation controls.
-  if(Platform.OS==='web')setReader(false);
-  else void AccessibilityInfo.isScreenReaderEnabled().then(x=>{if(mounted)setReader(Boolean(x));}).catch(()=>{});
+  if(Platform.OS!=='web')void AccessibilityInfo.isScreenReaderEnabled().then(x=>{if(mounted)setReader(Boolean(x));}).catch(()=>{});
   const motion=AccessibilityInfo.addEventListener('reduceMotionChanged',setReduced);
   const speech=Platform.OS==='web'?undefined:AccessibilityInfo.addEventListener('screenReaderChanged',setReader);
   return ()=>{mounted=false;motion?.remove();speech?.remove();};

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   metadataBase:new URL(PUBLIC_SITE_ORIGIN),
   robots:searchRobots(),
   title: { default: 'Loadgistic', template: '%s | Loadgistic' },
-  description: 'Keep your transport network in view. Share vehicle capacity, routes and availability with trusted contacts or the open market, and follow agreed shipments privately.',
+  description: 'Plan freight with the transporters you work with. See their latest capacity, find other options in the Open Market, and follow agreed shipments.',
   manifest: '/manifest.webmanifest',
   applicationName: 'Loadgistic',
   icons: {

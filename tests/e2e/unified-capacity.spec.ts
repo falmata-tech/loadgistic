@@ -6,14 +6,14 @@ import {localSupportLogin} from './provider-support-helper';
 test('Capacity choices lead to the public map and account sign-in',async({page},info)=>{
   await page.goto('/');
   const choice=page.getByRole('navigation',{name:'Capacity views'});
-  await expect(choice.getByRole('link',{name:'Openly shared'})).toHaveAttribute('aria-current','page');
-  await expect(page.getByRole('region',{name:'Open transport capacity'})).toBeVisible();
+  await expect(choice.getByRole('link',{name:'Open Market'})).toHaveAttribute('aria-current','page');
+  await expect(page.getByRole('region',{name:'Open Market'})).toBeVisible();
   await page.screenshot({path:info.outputPath('public-capacity.png')});
-  await choice.getByRole('link',{name:'Privately shared with you'}).click();
+  await choice.getByRole('link',{name:'Private Network'}).click();
   await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
   await page.getByTestId('private-capacity-entry').locator('a[href="/login?from=shared-capacity"]').click();
   await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
-  await expect(page.getByText('Sign in to see vehicles shared with your account.')).toBeVisible();
+  await expect(page.getByText('Sign in to see vehicles your transport partners share with you.')).toBeVisible();
   await expect(page.getByRole('button',{name:'Email me a code'})).toBeVisible();
   await expect(page.getByRole('link',{name:'Sign up'})).toBeVisible();
   await expect(page.getByRole('radio',{name:/Shipper|Transport Provider/})).toHaveCount(0);
@@ -53,7 +53,7 @@ test('provider Capacity stays public while Network remains a separate task',asyn
   }
 });
 
-test('signed-out Privately shared with you entry is readable at narrow phone width in Amharic and Oromo',async({page},info)=>{
+test('signed-out Private Network entry is readable at narrow phone width in Amharic and Oromo',async({page},info)=>{
   test.setTimeout(90_000);
   await page.setViewportSize({width:320,height:720});
   for(const locale of ['am','om']){
@@ -61,12 +61,12 @@ test('signed-out Privately shared with you entry is readable at narrow phone wid
     await page.goto('/');
     await page.locator('.language-picker select:visible').selectOption(locale);
     const entry=page.locator('.capacity-view-choice a[href="/?view=private"]');
-    await expect(entry).toHaveText(messages['Privately shared with you']);
+    await expect(entry).toHaveText(messages['Private Network']);
     await entry.click();
     await expect(page.getByTestId('private-capacity-entry')).toBeVisible();
     await page.getByTestId('private-capacity-entry').locator('a[href="/login?from=shared-capacity"]').click();
     await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
-    await expect(page.getByText(messages['Sign in to see vehicles shared with your account.'])).toBeVisible();
+    await expect(page.getByText(messages['Sign in to see vehicles your transport partners share with you.'])).toBeVisible();
     await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath(`shared-sign-in-${locale}.png`)});
   }

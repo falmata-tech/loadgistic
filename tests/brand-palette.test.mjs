@@ -88,13 +88,9 @@ function findLegacyColors(source) {
   return colors;
 }
 
-const capacityAvailabilityTokens=new Set(['#18734b','#eaf6ef','#145b3b']);
-const capacityPaletteFiles=new Set(['src/lib/capacity-status-presentation.js','src/app/globals.css']);
-
-test('production UI source reserves green and teal for explicit capacity availability tokens' , () => {
+test('production UI source uses the approved palette without legacy green or teal', () => {
   const findings = sourceRoots.flatMap(root => collectSourceFiles(root)).flatMap(filePath =>
     findLegacyColors(readFileSync(filePath, 'utf8'))
-      .filter(color => !(capacityPaletteFiles.has(filePath) && capacityAvailabilityTokens.has(color)))
       .map(color => `${filePath}: ${color}`),
   );
   assert.deepEqual(findings, [], `Replace old green/teal UI colors with the approved palette:\n${findings.join('\n')}`);

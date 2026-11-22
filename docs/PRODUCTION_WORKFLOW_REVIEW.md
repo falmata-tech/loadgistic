@@ -2,11 +2,46 @@
 
 November 17, 2026 · Local feature branch based on `906a51f1`. Production still serves the earlier version. This review covers the customer-facing web app, Expo routes, fleet operations and platform staff tools. The earlier [mobile workflow matrix](MOBILE_IMPLEMENTATION.md) links each area to the maintained test suites.
 
+## November 21 broker-to-transporter pilot review
+
+The local workflow already supports both starting orders. A broker can choose a
+truck and send a tracking request. A provider can create a shipment and add one
+registered broker or shipper later. The broker can put the per-load link on the
+shipment in their own system and share the code separately. The November 17
+tests below establish the local handoff, saved progress and guest readback.
+
+| Priority | Finding | Next step |
+|---|---|---|
+| Direct shipments | Locally, brokers enter a pickup and delivery city with an optional stop. The provider receives the same planned cities on acceptance. | Include migration 239 in the reviewed release and prove one direct shipment on the hosted candidate. |
+| Request handling | Locally, providers can decline and brokers can withdraw or request a different truck. The session shows declined, withdrawn and expired states. | Keep assignment, stale-request and expiry checks in the release regression. |
+| Broker's own reference | Locally, brokers can save and search their job reference inside the workspace. The guest link exposes the Loadgistic reference. | Verify the broker's actual handoff to their own tools during the pilot. |
+| Customer following | Guest access uses the link and code, with a five-minute unlocked viewing session capped by link expiry. | Observe a real customer's use before adjusting the duration. Retest immediate revocation and denial of private files if the session changes. [Guest grant](../src/lib/tracking-sessions/grant.js) |
+
+The strongest public story is the sequence. **Start with your transporters.**
+See the space and plans they share in your Private Network, and use the Open
+Market when you need another option. **Once the job is agreed,** brokers can
+send their customer a private link and code for that shipment. About and sales
+materials have room to tell that story. The homepage can keep its short
+introduction. Say who supplied the update and when it was posted. Optional
+document review can name the checks that were completed.
+
+For current local PWA and broker tracking evidence see [Progress](PROGRESS.md#november-21-installable-web-app-and-broker-pilot).
+
+### Production connections
+
+| Connection | Evidence | What launch still needs |
+|---|---|---|
+| Published web and database | On November 21 anonymous GET requests returned 200 from the public site's health and Track pages. The published Track page showed an email field and the new sessions endpoint returned 404. Local showed the link-and-code form and returned 401 to the same unsigned API request. | Qualify and release the same approved web source and matching database changes. Use two synthetic accounts on the deployed version to prove invite, acceptance, private link, revocation and private proof access. Recheck the hosted advisor and Data API guard against that exact deployment. [Release verification](operations/NETLIFY_RELEASE_VERIFICATION.md) |
+| Real GPS and phone | Local projection and simulated location tests exist. The last recorded hosted simulator window accepted zero reports. This review did not read a later schedule or use a physical device. | Follow a real tracker point through Traccar, the bridge and database to an authorized view, then verify recovery from a disconnect. Separately follow a phone point from the installed Android app through its location lease to the broker view. Check source, age and privacy radius in both. [GPS qualification](operations/DEMO-GPS-HOSTING.md#end-to-end-qualification-evidence) |
+| Email, native push and proof files | Managed delivery and private storage have local evidence. A local inbox and Expo web cannot establish hosted sender delivery or Android delivery with the app closed. | On the release candidate, verify sign-in and invitations in an external test mailbox, a closed-app push opening the intended shipment, and a scanned proof upload that opens only for an authorized account. [Device checks](operations/ANDROID_DEVICE_TESTING.md) |
+| Market performance | The local anonymous Market API returned 200 with 14 results and both route and area signals. Earlier local browser runs recorded Capacity database timeouts under load. | Measure first and repeat searches, map pans and filters for concurrent customers using representative data. Verify retries and stale-data labels. Record a throughput and latency result for the released stack. |
+| Map tiles | A normal anonymous visit to the published homepage loaded 18 tiles with HTTP 200 from the OpenStreetMap community tile server. Its policy describes the service as best effort. | Choose a tile service sized for rollout traffic and confirm web and Android use it, with working attribution and safe referrer handling for private links. [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/) |
+
 ## Tracking by party
 
 | Starting point or viewer | Experience and authority | Evidence on this candidate |
 |---|---|---|
-| Broker starts before hiring a provider | Enter three cities, cargo and dates. The saved session shows the planned route and a waiting message. No truck or current position exists. The broker can issue an expiring load-specific link and separate code. | Local broker creation, opening the guest link, connecting a provider and saved readback passed on desktop and phone web. The broker form was also inspected in the VS Code browser. |
+| Broker starts before hiring a provider | Enter pickup and delivery cities, an optional stop, cargo and dates. The saved session shows the planned route and a waiting message. No truck or current position exists. The broker can issue an expiring load-specific link and separate code. | Local broker creation, opening the guest link, connecting a provider and saved readback passed on desktop and phone web. The broker form was also inspected in the VS Code browser. |
 | Provider accepts the broker's session | The broker searches by truck number, driver or provider, selects the assigned truck and sends a request. The authorized driver or fleet owner opens incoming requests, chooses the tracking mode and accepts. The normal operational detail opens for either starting order. | Phone web passed search, request, acceptance and a saved Going to pickup update visible to the broker and guest. Local PostgreSQL checks passed for manager-disabled driver access, reassignment, stale revisions, duplicate acceptance and refusal of guest credentials. |
 | Provider starts with a registered shipper or broker | The provider selects its vehicle, route, cargo, dates and tracking mode. The provider can nominate the one registered partner at creation. Creation captures its account ID. Its owner can open the shipment from their list. | Creation, unloading proof, owner approval, one review, replay denial and notification were exercised locally. |
 | Provider starts before the broker is known | Leave the partner field blank. On the same shipment, enter one registered shipper or broker account when ready. Only eligible provider actors can do this. Existing history stays attached. An ordinary guest cannot claim the shipment. | Local migration 230 passed a rollback-only database rehearsal. It verifies one account, foreign and unknown account denials, rejection of a second partner, saved account-list membership and guest access. The phone-web workflow then passed in 1.2 minutes through late attachment, proof, approval, notification, one review and saved readback. |

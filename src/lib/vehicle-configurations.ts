@@ -1,5 +1,4 @@
 export const VEHICLE_CONFIGURATIONS = [
-  { name: 'Courier motorcycle', image: '/vehicle-configurations/courier-motorcycle.jpg' },
   { name: 'Courier car', image: '/vehicle-configurations/courier-car.jpg' },
   { name: 'Cargo van', image: '/vehicle-configurations/cargo-van.jpg' },
   { name: 'Pickup truck', image: '/vehicle-configurations/pickup-truck.jpg' },

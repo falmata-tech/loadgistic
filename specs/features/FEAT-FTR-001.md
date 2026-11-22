@@ -103,7 +103,19 @@ And timing, account order, sponsor records and permissions remain unchanged\
 And the actual REST save and administrator readback complete within the existing
 timeout with measured margin on the qualified fixture; no timeout is widened.
 
-## October18 courier configurations — planned local restoration
+## November20 courier eligibility correction
+
+Given Featured computes eligibility for a new programme
+When it evaluates the courier vehicle configuration
+Then Courier car is eligible under the existing rules and Courier motorcycle is excluded
+And previously saved programmes remain intact.
+
+Migration238 aligns Tuesday and Sunday SQL themes with the shared selection
+catalogue. Sunday covers all sixteen supported types. Theme dates and identifiers,
+eligibility telemetry and roster limits stay the same. Reverting requires restoring
+the previous theme sets in source and in a forward migration.
+
+## October18 courier configurations — historical restoration
 
 Restore `Courier car` and `Courier motorcycle` to the supported vehicle catalogue
 and Featured eligibility. Keep the seven existing theme keys, dates and weekly

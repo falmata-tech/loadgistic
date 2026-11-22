@@ -10,7 +10,8 @@ pending; first verify the actual installed catalog and source.
 
 # October18 provider identity and courier restoration
 
-The latest owner restores Courier car/motorcycle. All provider owners retain the
+The November20 owner decision keeps Courier car as the sole courier type.
+All provider owners retain the
 same Transport Provider identity and existing publication/fleet authority rules.
 A chosen public Account name may be a person's or business's chosen name without
 converting the account's legal/storage role. Public Account manager is first-name

@@ -12,8 +12,8 @@ test('signed-out Shared capacity reaches account signup and retired email access
  await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();
  await page.getByRole('link',{name:'Sign up',exact:true}).click();
  await expect(page).toHaveURL(/\/signup$/);
- await expect(page.getByRole('radio',{name:/Find room for your load/})).toBeVisible();
- await page.getByRole('radio',{name:/Put your vehicles on the map/}).check();
+ await expect(page.getByRole('radio',{name:/Plan freight with your transporters/})).toBeVisible();
+ await page.getByRole('radio',{name:/Manage vehicles and share capacity/}).check();
  await page.getByLabel('Email',{exact:true}).fill('held@example.test');
  await expect(page.getByLabel('Email',{exact:true})).toHaveValue('held@example.test');
  expect((await page.request.post('/api/shared-capacity/otp',{data:{email:'held@example.test'}})).status()).toBe(410);

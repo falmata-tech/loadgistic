@@ -30,7 +30,7 @@ test('preferred corridor keeps planned capacity distinct on phone web and Expo',
  const {route:signal,area}=await preferredSignals(page);
 
  await page.goto(`/?truck=${encodeURIComponent(signal.id)}`);
- await expect(page.getByRole('button',{name:'Vehicle details',exact:true})).toBeVisible({timeout:45_000});
+ await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible({timeout:45_000});
  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:45_000});
  const legend=page.locator('.public-map-legend');await expect(legend).toBeVisible();
  if(await legend.getAttribute('open')===null)await legend.locator('summary').click();
@@ -40,7 +40,7 @@ test('preferred corridor keeps planned capacity distinct on phone web and Expo',
  await page.screenshot({path:info.outputPath('web-preferred-corridor-phone.png'),scale:'css'});
 
  if(area){await page.goto(`/?truck=${encodeURIComponent(area.id)}`);
-  await expect(page.getByRole('button',{name:'Vehicle details',exact:true})).toBeVisible({timeout:45_000});
+  await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible({timeout:45_000});
   const areaLegend=page.locator('.public-map-legend');if(await areaLegend.getAttribute('open')===null)await areaLegend.locator('summary').click();
   await expect(areaLegend.locator('.corridor')).toHaveText(['Preferred area','Preferred corridor']);}
 

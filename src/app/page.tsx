@@ -17,7 +17,7 @@ export const dynamic='force-dynamic';
 export async function generateMetadata({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}):Promise<Metadata>{
   const query=await searchParams;
   const privateView=Array.isArray(query.view)?query.view.includes('private'):query.view==='private';
-  return publicPageMetadata({path:'/',title:{absolute:'Vehicle Capacity & Transporter Networks | Loadgistic'},description:'Keep your transporters in view. Find vehicle space and routes, explore public availability, or open capacity shared privately with you.',query,privateView});
+  return publicPageMetadata({path:'/',title:{absolute:'Freight Collaboration and Transport Networks | Loadgistic'},description:capacityIntroduction.webDescription,query,privateView});
 }
 
 export default async function HomePage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}) {
@@ -47,6 +47,7 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
   Object.assign(query,visibleSelections);
   const mapQuery={...query,q:'',...(privateView?{view:'private'}:{})};
   const denied={items:[],hasMore:false,nextCursor:null,pageSize:14,filterError};
+  const unavailable={...denied,loadError:'Could not finish loading vehicles. Please try again.'};
   let apiPath='/api/public/capacity',searchApiPath: string|undefined,scope='public';
   let initial;
   if(privateView){
@@ -58,20 +59,20 @@ export default async function HomePage({searchParams}:{searchParams:Promise<Reco
       scope=`${user.id}:${workspace.id}:${workspace.membershipRevision}`;
       apiPath=`/api/business-workspaces/${workspace.id}/capacity`;
       searchApiPath=`${apiPath}/search`;
-      initial=filterError?{...denied,pageSize:100}:await listBusinessCapacity(user.id,workspace.id,mapQuery);
+      initial=filterError?{...denied,pageSize:100}:await listBusinessCapacity(user.id,workspace.id,mapQuery).catch(()=>({...unavailable,pageSize:100}));
     }else redirect('/');
-  }else initial=filterError?denied:await listPublicCapacityCursor(mapQuery,{pageSize:14});
+  }else initial=filterError?denied:await listPublicCapacityCursor(mapQuery,{pageSize:14}).catch(()=>unavailable);
   return <><PublicHeader user={user}/><main className="public-app-page public-market-workspace public-market-introduced unified-capacity-workspace">
     <header className="market-introduction">
       <h1><Text message={capacityIntroduction.title}/></h1>
       <p><Text message={capacityIntroduction.webDescription}/></p>
       {canViewShared?<Localized as="nav" copy={["aria-label"]} className="capacity-view-choice" aria-label="Capacity views">
-        <a href="/" aria-current={!privateView?'page':undefined}><Text message="Openly shared"/></a>
-        <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Privately shared with you"/></a>
+        <a href="/" aria-current={!privateView?'page':undefined}><Text message="Open Market"/></a>
+        <a href="/?view=private" aria-current={privateView?'page':undefined}><Text message="Private Network"/></a>
       </Localized>:null}
     </header>
     <div className="capacity-view-body">
-      <Localized as="section" copy={["aria-label"]} id="capacity-market" className="container home-market-shell public-market-console" aria-label="Open transport capacity"><div className="public-capacity-body">{signedOutPrivate?<PrivateCapacityEntry/>:<PublicCapacityFeed key={scope} initial={initial} query={{...mapQuery,q:query.q}} apiPath={apiPath} searchApiPath={searchApiPath}/>}</div></Localized>
+      <Localized as="section" copy={["aria-label"]} id="capacity-market" className="container home-market-shell public-market-console" aria-label={privateView?'Private Network':'Open Market'}><div className="public-capacity-body">{signedOutPrivate?<PrivateCapacityEntry/>:<PublicCapacityFeed key={scope} initial={initial} query={{...mapQuery,q:query.q}} apiPath={apiPath} searchApiPath={searchApiPath}/>}</div></Localized>
     </div>
   </main></>;
 }

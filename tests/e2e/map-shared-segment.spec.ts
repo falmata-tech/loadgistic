@@ -1,4 +1,5 @@
 import {test,expect} from './browser-test';
+import {capacityMapColors} from '../../src/lib/capacity-status-presentation.js';
 import {closeCapacityFilters} from './capacity-drawer-helper';
 import {auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles,auditProvider,checked,localAuditService} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
@@ -23,7 +24,8 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps Capacity and corridor routes
   const loaded=page.waitForResponse((r:any)=>r.url().includes('/api/public/capacity?'));
   await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);await loaded;
   await closeCapacityFilters(page);
-  await expect(page.locator('.map-current-route')).toHaveAttribute('stroke','#667085');
+  await expect(page.locator('.map-current-route')).toHaveAttribute('stroke',capacityMapColors.planned);
+  await expect(page.locator('.map-regular-corridor')).toHaveAttribute('stroke',capacityMapColors.selectedPreferred);
   // Selection now fits the complete regular route too. Inspect the shared leg
   // at street scale, where both strokes have room beside the info bubbles.
   await page.locator('.leaflet-control-zoom-in').click();
@@ -91,21 +93,21 @@ test('JAC X200 shared Dire Dawa–Shinile leg keeps Capacity and corridor routes
       const map=document.querySelector('.public-map-canvas')!.getBoundingClientRect();
       const at=(path:SVGPathElement,t:number)=>path.getPointAtLength(path.getTotalLength()*t).matrixTransform(path.getScreenCTM()!);
       const exposed=(path:SVGPathElement,p:{x:number;y:number})=>p.x>map.left+15&&p.x<map.right-15&&p.y>map.top+15&&p.y<map.bottom-15&&document.elementFromPoint(p.x,p.y)===path;
-      const brown=Array.from({length:1201},(_,i)=>at(regular,i/1200));
+      const preferredSamples=Array.from({length:1201},(_,i)=>at(regular,i/1200));
       const samples=Array.from({length:25},(_,i)=>{
-        const yellow=at(current,.2+i*.6/24);
-        const nearest=brown.reduce((best,p)=>Math.hypot(p.x-yellow.x,p.y-yellow.y)<Math.hypot(best.x-yellow.x,best.y-yellow.y)?p:best);
+        const planned=at(current,.2+i*.6/24);
+        const nearest=preferredSamples.reduce((best,p)=>Math.hypot(p.x-planned.x,p.y-planned.y)<Math.hypot(best.x-planned.x,best.y-planned.y)?p:best);
         // Touch coordinates are rounded by the browser. Avoid a fractional
         // hit at the very end of a dash that rounds into its transparent gap.
-        const yellowPixel={x:Math.round(yellow.x),y:Math.round(yellow.y)},brownPixel={x:Math.round(nearest.x),y:Math.round(nearest.y)};
-        return{distance:Math.hypot(nearest.x-yellow.x,nearest.y-yellow.y),yellow:yellowPixel,brown:brownPixel,bothExposed:exposed(current,yellowPixel)&&exposed(regular,brownPixel)};
+        const plannedPixel={x:Math.round(planned.x),y:Math.round(planned.y)},preferredPixel={x:Math.round(nearest.x),y:Math.round(nearest.y)};
+        return{distance:Math.hypot(nearest.x-planned.x,nearest.y-planned.y),planned:plannedPixel,preferred:preferredPixel,bothExposed:exposed(current,plannedPixel)&&exposed(regular,preferredPixel)};
       });
       return{minimum:Math.min(...samples.map(s=>s.distance)),target:samples.find(s=>s.bothExposed)};
     });
     // SVG rounding may consume a pixel of the 12px model clearance.
     expect(geometry.minimum,'separation along the shared leg, not an unrelated exposed segment').toBeGreaterThanOrEqual(10);
     expect(geometry.target,'both shared strokes need an unobscured test point').toBeTruthy();
-    for(const [selector,key,label] of [['.map-current-route','yellow','Planned route'],['.map-regular-corridor','brown','Preferred corridor']]){
+    for(const [selector,key,label] of [['.map-current-route','planned','Planned route'],['.map-regular-corridor','preferred','Preferred corridor']]){
       const cameraBefore=await page.locator('.leaflet-proxy').getAttribute('style');
       const point=geometry.target[key];
       if(info.project.name.includes('mobile'))await page.touchscreen.tap(point.x,point.y);else await page.mouse.click(point.x,point.y);

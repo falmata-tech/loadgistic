@@ -15,3 +15,19 @@ test('bounded request stops waiting for transport and body without retrying',asy
   const result=await browserRequest('/ok');assert.equal(result.response.status,201);assert.deepEqual(result.data,{ok:true});
  }finally{global.fetch=original;}
 });
+
+test('leaving a view cancels its in-flight request without a retry',async()=>{
+ const original=global.fetch;
+ const abort=new AbortController();
+ let calls=0;
+ try{
+  global.fetch=(_url,{signal})=>new Promise((_,reject)=>{
+   calls++;
+   signal.addEventListener('abort',()=>reject(signal.reason),{once:true});
+  });
+  const pending=browserRequest('/old-view',{signal:abort.signal});
+  abort.abort(new Error('VIEW_CLOSED'));
+  await assert.rejects(pending,/VIEW_CLOSED/);
+  assert.equal(calls,1);
+ }finally{global.fetch=original;}
+});

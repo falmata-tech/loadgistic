@@ -116,7 +116,7 @@ function renderNavigation(path,user){
  const node=(type,props)=>({type,props:props||{}}),react={useState:initial=>[initial,()=>{}],useEffect(){}},icons=new Proxy({},{get:(_value,key)=>key});
  const ports={'react/jsx-runtime':{jsx:node,jsxs:node},react:{__esModule:true,default:react},'next/link':{__esModule:true,default:'Link'},
   'next/navigation':{usePathname:()=>path,useRouter:()=>({replace(){assert.fail('no navigation during render');}})},'lucide-react':icons,
-  './localization':{Localized:'Localized',Text:'Text',LanguagePicker:'LanguagePicker'},'./site-navigation':navigation,
+  './localization':{Localized:'Localized',Text:'Text',LanguagePicker:'LanguagePicker'},'./site-navigation':navigation,'./app-install':{AppInstallLink:'AppInstallLink'},
   './public-navigation.module.css':{__esModule:true,default:icons},'./logo':{Logo:'Logo'},'./chat-alerts':{ChatAlerts:'ChatAlerts'},'./staff-account':{StaffAccount:'StaffAccount'}};
  const load=file=>{const exports={},code=ts.transpileModule(readFileSync(new URL('../src/components/'+file,import.meta.url),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','exports',code)(name=>{assert.ok(name in ports,'Unexpected navigation dependency '+name);return ports[name];},exports);return exports;};
  return{tree:load('public-mobile-nav.tsx').PublicMobileNav({user}),topbar:()=>load('site-topbar.tsx').SiteTopbar({user})};

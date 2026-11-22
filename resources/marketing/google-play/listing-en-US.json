@@ -3,8 +3,8 @@
   "locale": "en-US",
   "status": "copy_revision_pending_owner_review",
   "appName": "Loadgistic",
-  "shortDescription": "See reported vehicle space from transporters you know and beyond.",
-  "fullDescription": "Know who has space before you call.\n\nA load comes in. Which transporter has room, and where can their vehicle go? Loadgistic brings reported capacity, routes and approximate locations into one map. Start with the providers you already work with, or explore public options when you need another.\n\nKEEP YOUR NETWORK IN VIEW\nAsk transporters to share capacity with your verified email and see their available vehicles together on a private map. A business workspace can help your authorized team coordinate the capacity shared with your company.\n\nSHOW WHERE YOU CAN WORK\nTransport Providers publish available space and usual routes for the vehicles they manage, from courier motorcycles and cars to vans and freight trucks. Choose whether a signal is public, shared with contacts, both, or for one recipient. Update availability and approximate location as work changes.\n\nFIND A USEFUL STARTING POINT\nSearch transporter profiles by account name, handle or manager's first name. Filter the capacity map by vehicle type, route, current load, location source and signal age. Open a vehicle to see what its provider reports, then contact the transporter to confirm fit, timing and terms directly.\n\nKEEP THE AGREED SHIPMENT VISIBLE\nAfter the work is agreed, share private status, route and loading or unloading proof with the people involved. Live vehicle location is limited to the shipment owner and staff they explicitly authorize; other invited viewers see route and status without the moving vehicle.\n\nBuilt for East African transport work. Available in English, Amharic and Afaan Oromo.\n\nThe app asks permission before sharing a driver's phone location. Active shipment tracking may continue when the app is closed. Capacity and shipment maps show approximate vehicle areas; connected GPS trackers send exact positions to the provider's restricted fleet workspace. Notifications are optional. Document badges identify specific records Loadgistic reviewed; they do not guarantee a service. Transport is agreed directly with the provider, without in-app transport payments.",
+  "shortDescription": "Work better with transporters to serve your customers.",
+  "fullDescription": "Transporters manage their vehicles and drivers. Their updates show which vehicles have room and where they plan to go, so you can plan more cost-effective shipments.\n\nWORK WITH YOUR PRIVATE NETWORK\nSee the available space and routes your transporters share with your business. Authorized teammates can see available space, routes, and approximate locations on one map.\n\nFIND VEHICLE SPACE\nSearch the Open Market by route, vehicle type, or available space. Open vehicle and provider details, then contact the provider to confirm availability and terms.\n\nMANAGE VEHICLES AND SHARE CAPACITY\nTransport providers can assign drivers, manage preferred routes, and choose which customers see each vehicle. Publish capacity to the Open Market, share it with your Private Network, or do both. Use phone location or ask Loadgistic to help connect compatible GPS.\n\nTRACK AGREED SHIPMENTS\nFollow shipment progress and proof shared with your team. Share an expiring tracking link and a separate code with a customer when appropriate. Permissions control who sees shipment information and location.\n\nAvailable in English, Amharic and Afaan Oromo.\n\nPhone location requires permission. Active shipment tracking may continue when the app is closed. Public Capacity shows approximate vehicle locations. Notifications are optional. Reviewed document badges identify completed checks. Arrange transport and payment directly with the provider.",
   "featureGraphic": {
     "source": "resources/marketing/google-play/feature-graphic.svg",
     "export": "feature-graphic-1024x500.png",
@@ -35,7 +35,7 @@
   "phoneScreenshots": [
     {
       "id": "05-private-capacity",
-      "title": "Your transporter network",
+      "title": "See capacity from your transporters",
       "altText": "An authorized private capacity map with signals from the transporters sharing with this synthetic recipient.",
       "status": "awaiting_final_standalone_capture",
       "draftObservation": "Actual short-screen draft clips the lower entry action at the map edge. Review final standalone scrolling/keyboard clearance before selecting this optional store screenshot; see WEB-MOB-019.",
@@ -43,32 +43,32 @@
     },
     {
       "id": "01-capacity",
-      "title": "Find your next option",
+      "title": "Explore the Open Market",
       "altText": "Public vehicle capacity on the map, with transporter search and vehicle filters.",
       "status": "awaiting_final_standalone_capture"
     },
     {
       "id": "02-truck-signals",
-      "title": "See where it can take your load",
+      "title": "See available space and routes",
       "altText": "A selected vehicle’s approximate location, capacity route and signal details.",
       "status": "awaiting_final_standalone_capture"
     },
     {
       "id": "03-driver-workspace",
-      "title": "Let them see your space",
+      "title": "Share available space",
       "altText": "Driver Home with a map and controls for available space, usual routes and vehicle location.",
       "status": "awaiting_final_standalone_capture",
       "draftObservation": "Code7 screenshot contains internal reviewer profile/vehicle names. Replace with a genuine final native capture using purpose-specific synthetic display records; never edit image pixels or conceal valid user records in the app."
     },
     {
       "id": "06-fleet",
-      "title": "Keep your vehicles working",
+      "title": "Manage vehicles and drivers",
       "altText": "A synthetic Transport Provider workspace with managed vehicles and assigned drivers.",
       "status": "awaiting_final_standalone_capture"
     },
     {
       "id": "04-tracking",
-      "title": "Keep everyone in the picture",
+      "title": "Keep customers informed",
       "altText": "An agreed synthetic shipment with its current status and next tracking action.",
       "status": "awaiting_final_standalone_capture"
     }

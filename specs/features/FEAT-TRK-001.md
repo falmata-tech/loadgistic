@@ -11,6 +11,29 @@ rollout: Qualify228 and229 locally with permission, state-transition, file, web 
 
 # Guest tracking
 
+## Broker direct shipments and request decisions
+
+Given a broker managing a workspace session, when they save pickup and delivery
+with or without one distinct stop, then the saved route and the accepted
+provider shipment retain exactly those places. Duplicate and unknown places
+remain invalid. The broker may add their own reference when creating the
+session. It is searchable and visible only to members with Tracking permission
+in that workspace. Guests and providers read the Loadgistic reference.
+
+Given an active targeted request, when the assigned eligible provider declines
+or the broker withdraws it, then the current target is cleared, the broker sees
+the outcome, and the earlier request revision can no longer be accepted.
+Declining uses the same current driver and permission checks as acceptance.
+A pending session whose deadline passed shows Expired to its broker.
+
+Changed contracts include create, workspace list search and request decisions.
+Web and Expo send the reference in the authenticated search POST body.
+Audit records distinguish decline and withdrawal with actor and session IDs.
+Keep broker references and guest credentials out of logs. Apply the guarded
+migration before clients. On rollback keep two-point routes, references and
+decision history readable and disable new edits if compatibility requires it.
+Permission and revision checks cover NR-87 and guest isolation under 234.
+
 ## Targeted transport requests — November 17
 
 Given a broker with management rights on a pending session, when they search by truck number, driver name or provider handle, then show currently discoverable assigned trucks and put connections first. Search is independent of available capacity. A broker selects the truck and its current driver. A replacement selection requires the saved revision.
@@ -27,7 +50,7 @@ Implementation and release qualification are in progress. Linked base IDs remain
 BASE-FE-001, BASE-BE-001 and BASE-DEP-001, with FEAT-IAM/SHP/ENT/GPS/MOB-001.
 
 Given a current shipper/broker member with Tracking permission\
-When they create a session for agreed work with three distinct catalogue cities\
+When they create a session for agreed work with pickup and delivery cities and an optional distinct stop\
 Then it belongs to that workspace and starts Pending provider with no location\
 And only an authenticated provider passing normal truck/assignment/route/lifecycle
 checks can connect its truck; no email identity or provider authority is invented.

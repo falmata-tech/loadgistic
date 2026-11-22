@@ -27,6 +27,8 @@ test('bounded configuration allowlist exactly matches the established catalog',(
  const catalog=readFileSync(new URL('../src/lib/vehicle-configurations.ts',import.meta.url),'utf8').matchAll(/\{ name: '([^']+)', image:/g);
  assert.deepEqual([...CAPACITY_FILTER_CHOICES.vehicleCategory].sort(),[...catalog].map(match=>match[1]).sort());
  const migration=readFileSync(new URL('../supabase/migrations/168_restore_courier_configurations.sql',import.meta.url),'utf8');
- const sql=migration.match(/when 'vehicle_category' then array\[([\s\S]*?)\]/)[1];
+ const retirement=readFileSync(new URL('../supabase/migrations/238_retire_courier_motorcycle.sql',import.meta.url),'utf8');
+ const retiredEntry=retirement.match(/\$entry\$('.*?',)\$entry\$/)[1];
+ const sql=migration.match(/when 'vehicle_category' then array\[([\s\S]*?)\]/)[1].replace(retiredEntry,'');
  assert.deepEqual([...CAPACITY_FILTER_CHOICES.vehicleCategory].sort(),[...sql.matchAll(/'([^']+)'/g)].map(match=>match[1]).sort());
 });

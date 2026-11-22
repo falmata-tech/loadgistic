@@ -238,7 +238,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await expect(ownerWeb).toHaveURL(url=>url.searchParams.get('provider')===provider.organization_id||url.searchParams.get('provider')===`broker-parity-${provider.suffix}`);
   await expect(ownerWeb.locator('.capacity-truck-map-marker').first()).toBeVisible();
   await ownerWeb.locator('.capacity-truck-map-marker').first().click();
-  await ownerWeb.getByRole('button',{name:'Vehicle details',exact:true}).click();
+  await ownerWeb.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
   await expect(ownerWeb.locator('.truck-inspection')).toBeVisible();
   await ownerWeb.getByRole('button',{name:'Close map signal details'}).click();
   await ownerWeb.getByRole('button',{name:/Vehicle filters/}).click();
@@ -270,7 +270,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await ownerExpo.getByRole('button',{name:'Show vehicles on map',exact:true}).first().click();
   await expect(ownerExpo.getByRole('button',{name:/Isuzu Journey/})).toBeVisible();
   await ownerExpo.getByRole('button',{name:/Isuzu Journey/}).click();
-  await ownerExpo.getByRole('button',{name:'Vehicle details',exact:true}).click();
+  await ownerExpo.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
   await expect(ownerExpo.getByRole('heading',{name:'Vehicle details',exact:true})).toBeVisible();
   await ownerExpo.getByRole('button',{name:'Close map signal details'}).last().click();
   await ownerExpo.getByRole('button',{name:'Back to map',exact:true}).click();
