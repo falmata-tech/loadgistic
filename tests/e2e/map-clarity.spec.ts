@@ -69,7 +69,7 @@ test('blue location feedback stays by controls and the small map key opens withi
   const box=await key.locator('.public-map-legend-items').boundingBox();const size=page.viewportSize();
   expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(size.width);expect(box.height).toBeLessThan(200);
   const colors=await key.evaluate((el:HTMLElement)=>({location:getComputedStyle(el.querySelector('.privacy')!,'::before').borderColor,regular:getComputedStyle(el.querySelector('.corridor')!,'::before').borderTopColor}));
-  expect(colors.location).toContain('120, 70, 167');expect(colors.regular).toBe('rgb(192, 102, 32)');
+  expect(colors.location).toContain('47, 112, 218');expect(colors.regular).toBe('rgb(100, 123, 152)');
   await expect.poll(()=>page.locator('.leaflet-tile').evaluateAll((tiles:HTMLImageElement[])=>tiles.length>0&&tiles.every(tile=>tile.complete&&tile.naturalWidth>0)),{timeout:20000}).toBe(true);
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
   await page.screenshot({path:path.join(captures,`${info.project.name}-map-key.png`),scale:'css'});
@@ -96,11 +96,11 @@ test('modal scroll leaves camera still and map zoom resumes after dismissal',asy
  await expect(radius).toHaveAttribute('fill-opacity','0.09');
  await expect(radius).not.toHaveClass(/leaflet-interactive/);
  await page.screenshot({path:info.outputPath('radius-close.png'),scale:'css'});
- await expect(circle).toBeVisible({timeout:30000});await circle.focus();await expect(panel).toHaveCount(0);
+ await expect(location).toBeVisible();await location.focus();await expect(panel).toHaveCount(0);
  await page.keyboard.press('Enter');await expect(panel).toBeVisible();
  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
  const before=await zoom();const box=await panel.boundingBox();await page.mouse.move(box.x+30,box.y+55);await page.mouse.wheel(0,180);await page.waitForTimeout(400);expect(await zoom()).toBe(before);
- await panel.getByRole('button',{name:'Close map signal details'}).click();await expect(panel).toHaveCount(0);await expect(circle).toBeVisible();
+ await panel.getByRole('button',{name:'Close map signal details'}).click();await expect(panel).toHaveCount(0);await expect(location).toBeVisible();
  await page.locator('.leaflet-control-zoom-in').click();await expect.poll(zoom).not.toBe(before);
  const vehicle=page.getByRole('button',{name:'Vehicle and driver',exact:true});
  await vehicle.click();await expect(panel).toHaveClass(/truck/);

@@ -9,6 +9,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   use: {
     baseURL: localBrowserBaseUrl,
+    // The test fixture routes browser requests to attach local-only rate-limit
+    // identities. Chromium otherwise attributes a redirected GET handled by
+    // the worker to the original POST, hiding the actual 303 from Playwright.
+    // The PWA suite exercises the service worker with its own opt-in.
+    serviceWorkers: 'block',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },

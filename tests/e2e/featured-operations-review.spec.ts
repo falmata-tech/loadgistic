@@ -36,7 +36,9 @@ test('Featured explains automatic operation and persists a manual draft and publ
   expect((await getDailyFeaturedProviders(date)).providers).toHaveLength(0);
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();const publish=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:'Publish this day',exact:true}).click();expect((await publish).status()).toBe(303);await expect(page.getByText('Daily feature published.',{exact:true})).toBeVisible({timeout:30000});
   row=checked(await service.from('featured_provider_days').select('id,status,selection_source,target_count').eq('feature_date',date).single());expect(row.status).toBe('PUBLISHED');const publicDay=await getDailyFeaturedProviders(date);expect(publicDay.providers).toHaveLength(1);expect(publicDay.headline).toBe(`Featured review ${suffix}`);
-  await page.getByRole('link',{name:'Edit programme',exact:true}).click();await expect(editor).toBeVisible();
+  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
+  await expect(page).toHaveURL(url=>url.searchParams.get('edit')==='day',{timeout:20000});
+  await expect(editor).toBeVisible({timeout:20000});
   await editor.getByRole('button',{name:'Manual',exact:true}).click();await expect(editor.getByLabel('Starts',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('featured-manual-day.png'),fullPage:true});
  }finally{

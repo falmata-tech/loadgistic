@@ -1,5 +1,7 @@
 import {test,expect} from './browser-test';
 
+test.use({serviceWorkers:'allow'});
+
 test('Install app is reachable from navigation and private pages use a generic offline fallback',async({page,context},info)=>{
  test.setTimeout(120000);
  const phone=info.project.name.includes('mobile');

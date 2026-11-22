@@ -265,8 +265,8 @@ test('public mobile shell keeps every visitor destination directly reachable',as
     const workspaceNav=page.getByRole('navigation',{name:'Site navigation'});
     await expect(workspaceNav).toBeVisible();
     await expect(workspaceNav.getByRole('link',{name:'Capacity',exact:true})).toHaveAttribute('aria-current','page');
-    await expect(workspaceNav.getByRole('link')).toHaveCount(6);
-    for(const label of ['Featured','Track','About','Privacy','Terms'])await expect(workspaceNav.getByRole('link',{name:label,exact:true})).toBeVisible();
+    await expect(workspaceNav.getByRole('link')).toHaveCount(7);
+    for(const label of ['Featured','Track','About','Install app','Privacy','Terms'])await expect(workspaceNav.getByRole('link',{name:label,exact:true})).toBeVisible();
     await expect(workspaceNav.getByRole('link',{name:'Join',exact:true})).toHaveCount(0);
     await Promise.all([
       page.waitForURL(/\/privacy$/),
@@ -544,7 +544,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await expect(page.locator('.public-map-legend .empty-status')).toHaveText('Empty');
   await expect(page.locator('.public-map-legend .partial-status')).toHaveText('Partial');
   await expect(page.locator('.public-map-legend .radius')).toHaveText('Planned area');
-  await expect(page.locator('.public-map-legend .empty-route')).toHaveText('Planned route');
+  await expect(page.locator('.public-map-legend .current-route')).toHaveText('Planned route');
   await expect(page.locator('.public-map-legend')).toBeVisible();
   const legendColors=await page.locator('.public-map-legend').evaluate((legend:any)=>Object.fromEntries(['empty-status','partial-status','privacy','radius','empty-route','corridor'].map(className=>{const style=getComputedStyle(legend.querySelector(`.${className}`),'::before');return [className,{background:style.backgroundColor,border:style.borderColor,borderTop:style.borderTopColor}];})));
   expect(legendColors['empty-status'].background).toBe('rgb(21, 94, 239)');
@@ -641,7 +641,7 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await page.locator('.map-info-bubble.truck').click();
   await expect(page.locator('.map-capacity-sheet')).toBeVisible();
   await expect(page.locator('.public-map-legend .radius')).toHaveText('Planned area');
-  await expect(page.locator('.public-map-legend .empty-route')).toHaveText('Planned route');
+  await expect(page.locator('.public-map-legend .current-route')).toHaveText('Planned route');
   await expect(page.locator('.public-map-legend .corridor')).toHaveText(['Preferred area','Preferred corridor']);
   await expect(page.locator('.public-map-legend')).not.toContainText('Next trip');
   await page.screenshot({path:path.join(captures,`${info.project.name}-selected-truck.png`),scale:'css'});
@@ -738,7 +738,7 @@ test('provider-name search filters the one Truck Market and truck details reach 
   await expect(page.locator('.provider-handle')).toHaveText('Transport Provider');
   await expect(page.locator('.provider-site-identity > p').first()).toHaveText(`@${blueLineTrucks[0].provider_handle}`);
   const documents=page.locator('.provider-profile-documents');
-  await documents.locator('summary').click();
+  await documents.getByText('Account documents',{exact:true}).click();
   await expect(documents.locator('.verification-badge').first()).toBeVisible();
   const map=page.locator('.provider-map-workbench');
   await expect(map.locator('.leaflet-container')).toBeVisible();

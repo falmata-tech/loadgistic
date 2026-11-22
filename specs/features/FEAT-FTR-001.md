@@ -20,6 +20,16 @@ does not prove a running broadcast. Earlier truck-theme, morning-window and
 local/pending implementation notes below retain their dated history; they do
 not override this account-based evening contract or describe current rollout.
 
+## Eligibility recheck during preparation
+
+Given a Featured candidate has already been selected for the upcoming roster,
+when the worker rechecks eligibility under the vehicle lock, then it checks
+that vehicle and its assigned driver against the existing rules. A change in
+vehicle, driver, account, sharing or publication authority still aborts the
+operation. The private scoped query has no new caller grants. Existing
+rounds, saved days and audit outcomes keep their contracts. Migration 240
+changes the private query without changing any saved roster or receipt.
+
 ## Current programme window and identity — accepted October26
 
 Given a current Featured programme is prepared for an Ethiopia calendar date\

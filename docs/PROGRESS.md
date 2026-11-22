@@ -28,6 +28,32 @@ site, method, signature, and schedule denials. See
 requires successful dispatch, accepted saved Capacity and GPS/Phone updates,
 and inactivity outside the agreed window.
 
+Draft [PR 42](https://github.com/falmata-tech/loadgistic/pull/42) opened
+against the current main and production source. Initial CI passed validation,
+the Android internal build and the standalone container. Independent operations
+proof passed. The initial browser gate exposed a Chromium interaction between
+test request interception and the service worker. The redirected GET's 200
+appeared as the original POST's response in Playwright. In a disposable browser
+without the interception the worker preserved the real 303. Normal browser
+tests now retain transport status checks with the worker disabled, and the
+install and offline suite opts in to real worker execution.
+
+The local Featured Prepare request also hit the database statement deadline.
+Migration 240 scopes each final eligibility recheck to the selected vehicle
+while retaining its lock, current driver, publication and account checks.
+A rollback benchmark prepared the same seven missing days on 145 local
+vehicles in 5.3 seconds, down from 10.6 seconds. Saved roster history remains
+under the existing checks. Driver portrait and owner-qualification tests use
+the real profile map and its vehicle drawer.
+
+A Chrome installation launched the app in standalone mode and opened Track
+and About at 390 CSS pixels. Android Chrome at 412 CSS pixels had an active
+worker and no installability errors and accepted the app's install action.
+Its separate launcher launch could not be reproduced on the loopback emulator.
+The latest hosted audit passed the Data API guard and reported zero errors and
+one signed-in security-definer warning. Release review and all current
+same-source verification still apply.
+
 ## November 21 installable web app and broker pilot
 
 Install app is near the bottom of the desktop navigation rail and in More on

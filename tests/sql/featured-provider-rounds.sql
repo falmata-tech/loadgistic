@@ -24,6 +24,7 @@ declare start_day date;day_value date;response jsonb;existing_days integer;exist
   remaining_after_saved integer;next_day_current_turns integer;next_day_new_turns integer;
   first_draw text[];second_draw text[];retry_before jsonb;retry_after jsonb;
   legacy_vehicle_before jsonb;legacy_theme_before jsonb;observed_before bigint;
+  scoped_sample record;
 begin
   select max(feature_date)+1 into start_day from public.featured_provider_days;
   if start_day is null then start_day:=(now() at time zone 'Africa/Addis_Ababa')::date+30;end if;
@@ -36,6 +37,23 @@ begin
     into legacy_theme_before from public.featured_theme_rotation_selections history;
   select count(*) into eligible_count from public.featured_eligible_account_links();
   if eligible_count<8 then raise exception 'FEATURED_ACCOUNT_FIXTURE_TOO_SMALL: %',eligible_count;end if;
+  select candidate.vehicle_id,candidate.driver_user_id,vehicle.cargo_configuration into strict scoped_sample
+    from public.featured_eligible_account_links() candidate
+    join public.vehicles vehicle on vehicle.id=candidate.vehicle_id
+    order by candidate.vehicle_id limit 1;
+  if not exists(
+    select 1 from public.featured_eligible_truck_links_scoped(array[scoped_sample.cargo_configuration],scoped_sample.vehicle_id) link
+    where link.vehicle_id=scoped_sample.vehicle_id and link.driver_user_id=scoped_sample.driver_user_id
+  ) or exists(
+    select 1 from public.featured_eligible_truck_links_scoped(array[scoped_sample.cargo_configuration],scoped_sample.vehicle_id) link
+    where link.vehicle_id<>scoped_sample.vehicle_id
+  ) or exists(
+    select 1 from public.featured_eligible_truck_links_scoped(array['unsupported-fixture-configuration'],scoped_sample.vehicle_id)
+  ) then raise exception 'FEATURED_SCOPED_ELIGIBILITY_CHANGED';end if;
+  if has_function_privilege('anon','public.featured_eligible_truck_links_scoped(text[],uuid)','EXECUTE')
+    or has_function_privilege('authenticated','public.featured_eligible_truck_links_scoped(text[],uuid)','EXECUTE')
+    or has_function_privilege('service_role','public.featured_eligible_truck_links_scoped(text[],uuid)','EXECUTE')
+    then raise exception 'FEATURED_SCOPED_ELIGIBILITY_EXPOSED';end if;
   update public.platform_controls set featured_mode='AUTO',featured_target_count=8 where singleton;
   for week_value in 0..3 loop
     day_value:=start_day+week_value*7;

@@ -41,9 +41,10 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
     return <div className="stack"><Link className="button secondary" href={`/admin/featured?date=${date}`}><Text message="Featured"/></Link><Flash error={query.error} success={query.success}/><SponsorPanel date={date} stored={catalogue}/></div>;
   }
   const editing=query.edit==='day';
-  const stored=await getAdminFeaturedProviderDay(user,date);
-  const controls=await getFeaturedControls(user);
-  const overview=await getFeaturedOverview(user);
+  const [stored,selectionOverview]=await Promise.all([
+    getAdminFeaturedProviderDay(user,date),
+    editing?null:Promise.all([getFeaturedControls(user),getFeaturedOverview(user)])
+  ]);
   const theme=FEATURED_PROVIDER_DAY;
   const candidates:any[]=stored.candidates;
   const eligible=candidates.filter((item:any)=>item.eligible);
@@ -58,8 +59,8 @@ export default async function AdminFeaturedPage({searchParams}:{searchParams:Pro
   return <div className={"page featured-admin-page "+styles.workspace}>
     <PageHeader title={<Text message={FEATURED_PUBLIC_HEADING}/>}/>
     <Flash error={query.error} success={query.success}/>
-    {!editing?<FeaturedOperationOverview overview={overview} mode={controls.featured_mode}/>:null}
-    {!editing?<div className={styles.recordActions}><a className="button secondary" href={`/admin/featured?date=${date}&panel=sponsors`}><Text message="Sponsors"/></a>{controls.featured_mode==='AUTO'?<FeaturedPrepareForm/>:null}<WorkspaceTaskDialog title="Selection settings" triggerLabel="Selection settings"><FeaturedControlsForm controls={controls}/></WorkspaceTaskDialog></div>:null}
+    {selectionOverview?<FeaturedOperationOverview overview={selectionOverview[1]} mode={selectionOverview[0].featured_mode}/>:null}
+    {selectionOverview?<div className={styles.recordActions}><a className="button secondary" href={`/admin/featured?date=${date}&panel=sponsors`}><Text message="Sponsors"/></a>{selectionOverview[0].featured_mode==='AUTO'?<FeaturedPrepareForm/>:null}<WorkspaceTaskDialog title="Selection settings" triggerLabel="Selection settings"><FeaturedControlsForm controls={selectionOverview[0]}/></WorkspaceTaskDialog></div>:null}
 
     <section id="featured-day-editor" className={styles.featuredDay}><header className={styles.featuredDayHeading}><div><h2><Text message={editing?'Edit programme':'Daily programme'}/></h2></div>{editing?<Link className="button secondary small" href={`/admin/featured?date=${date}`}><Text message="Cancel editing"/></Link>:<Link className="button secondary small" href={`/admin/featured?date=${date}&edit=day#featured-day-editor`}><Text message="Edit programme"/></Link>}</header>
     <section className="panel featured-admin-picker">

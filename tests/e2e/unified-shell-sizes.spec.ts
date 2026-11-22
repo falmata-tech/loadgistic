@@ -11,11 +11,11 @@ test('account choices reveal concise benefits without crowding phone signup',asy
   await page.setViewportSize({width,height:760});
   await page.goto('/signup');
   await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toBeChecked();
-  await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
+  await expect(page.getByText('Manage vehicles and drivers. Use phone location or compatible GPS.')).toBeVisible();
   await page.getByRole('radio',{name:'Plan freight with your transporters'}).check();
-  await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
+  await expect(page.getByText('See the capacity your transporters share in your Private Network.')).toBeVisible();
   await page.getByRole('radio',{name:'Manage vehicles and share capacity'}).check();
-  await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeHidden();
+  await expect(page.getByText('See the capacity your transporters share in your Private Network.')).toBeHidden();
   await expect(page.getByLabel('Email',{exact:true})).toBeVisible();
   await expect(page.getByRole('link',{name:'See how Loadgistic works'})).toHaveAttribute('href','/about');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth),`signup overflow at ${width}px`).toBeLessThanOrEqual(width+1);
@@ -25,7 +25,7 @@ test('account choices reveal concise benefits without crowding phone signup',asy
  for(const locale of ['am','om']){
   await page.locator('.language-picker select:visible').selectOption(locale);
   const catalog=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
-  await expect(page.getByText(catalog['Manage vehicles and drivers; add compatible GPS with our help.'])).toBeVisible();
+  await expect(page.getByText(catalog['Manage vehicles and drivers. Use phone location or compatible GPS.'])).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth),`${locale} signup overflow`).toBeLessThanOrEqual(321);
   await page.screenshot({path:info.outputPath(`signup-benefits-${locale}-320.png`)});
  }
@@ -37,12 +37,12 @@ test('Expo signup presents the same account benefits on a narrow phone',async({p
  await page.goto('http://localhost:8084/signup');
  await expect(page.getByRole('radio',{name:'Plan freight with your transporters'})).toBeVisible();
  await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toHaveAttribute('aria-checked','true');
- await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
+ await expect(page.getByText('Manage vehicles and drivers. Use phone location or compatible GPS.')).toBeVisible();
  await page.getByRole('radio',{name:'Plan freight with your transporters'}).click();
- await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
+ await expect(page.getByText('See the capacity your transporters share in your Private Network.')).toBeVisible();
  await page.getByRole('radio',{name:'Manage vehicles and share capacity'}).click();
- await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
- await expect(page.getByText('Build a private map from transporters who share with your team.')).toHaveCount(0);
+ await expect(page.getByText('Manage vehicles and drivers. Use phone location or compatible GPS.')).toBeVisible();
+ await expect(page.getByText('See the capacity your transporters share in your Private Network.')).toHaveCount(0);
  await expect(page.getByRole('link',{name:'See how Loadgistic works'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
  await page.screenshot({path:info.outputPath('expo-signup-benefits-320.png')});
@@ -56,11 +56,11 @@ test('account entry and signed-in navigation remain usable across phone, tablet 
   await page.setViewportSize({width,height:width<=390?760:900});
   await expect(page.getByRole('heading',{name:'Create an account'})).toBeVisible();
   await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toBeVisible();
-  await expect(page.getByText('Manage vehicles and drivers; add compatible GPS with our help.')).toBeVisible();
+  await expect(page.getByText('Manage vehicles and drivers. Use phone location or compatible GPS.')).toBeVisible();
   await page.getByRole('radio',{name:'Plan freight with your transporters'}).check();
-  await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeVisible();
+  await expect(page.getByText('See the capacity your transporters share in your Private Network.')).toBeVisible();
   await page.getByRole('radio',{name:'Manage vehicles and share capacity'}).check();
-  await expect(page.getByText('Build a private map from transporters who share with your team.')).toBeHidden();
+  await expect(page.getByText('See the capacity your transporters share in your Private Network.')).toBeHidden();
   await expect(page.getByRole('link',{name:'See how Loadgistic works'})).toHaveAttribute('href','/about');
   await expect(page.getByRole('link',{name:'Sign in'}).last()).toBeVisible();
   const documentWidth=await page.evaluate(()=>document.documentElement.scrollWidth);

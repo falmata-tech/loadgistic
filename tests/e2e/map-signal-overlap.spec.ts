@@ -39,6 +39,14 @@ test('coincident closed areas and routes remain separately tappable through zoom
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});
     const current=mode==='area'?'.map-service-area':'.map-current-route';
     await expect(page.locator(current)).toBeVisible();
+    // The approximate location outline is intentionally hidden when it would
+    // be too small to distinguish from the vehicle marker.
+    const locationOutline=page.locator('.map-location-privacy-circle');
+    for(let step=0;step<4&&await locationOutline.count()===0;step++){
+      await page.locator('.leaflet-control-zoom-in').click();
+      await expect(page.locator('.leaflet-zoom-anim')).toHaveCount(0);
+    }
+    await expect(locationOutline).toBeAttached();
     for(let zoom=0;zoom<2;zoom++){
       if(zoom){
         // Search keeps its complete result set; zoom must change geometry, not refetch it.

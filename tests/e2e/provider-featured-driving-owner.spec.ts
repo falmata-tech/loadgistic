@@ -4,6 +4,7 @@ import {test,expect as baseExpect} from './browser-test';
 import {auditFleetProvider,auditDeleteVehicles,checked,localAuditService} from './audit-helpers';
 import {loadFeaturedTruckCandidates} from '../../src/lib/featured-truck-candidates.js';
 import {FEATURED_PROVIDER_DAY} from '../../src/lib/featured-trucks.js';
+import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 test.use({trace:'off',screenshot:'off',video:'off',actionTimeout:20_000,navigationTimeout:30_000});
 const expect=baseExpect.configure({timeout:30_000}),preview='http://localhost:8084';
@@ -24,13 +25,21 @@ test('an organization owner who drives qualifies without an employee row and app
   checkpoint('EXPLICIT_OWNER_ASSIGNMENT');checked(await service.rpc('update_fleet_driver_access',{actor_user_id:owner.id,command:{driver_user_id:owner.id,vehicle_id:truckId,can_manage_capacity:true,can_manage_tracking:true}}));expect(checked(await service.from('drivers').select('id').eq('user_id',owner.id))).toHaveLength(0);expect(checked(await service.from('verification_requests').select('id').eq('submitted_by',owner.id))).toHaveLength(0);
   checkpoint('ACTUAL_FEATURED_ELIGIBILITY');const projected=checked(await service.rpc('public_featured_provider_candidates',{requested_region_codes:['ADDIS_ABABA']})) as Array<{provider_organization_id:string;eligible:boolean;handle:string;name:string}>;const candidates=projected.filter(candidate=>candidate.provider_organization_id===owner!.organization_id);expect(candidates).toHaveLength(1);const candidate=candidates[0];expect(candidate.eligible).toBe(true);expect(FEATURED_PROVIDER_DAY.configurations).toContain('Mini Box Truck');
   const rows=await loadFeaturedTruckCandidates(service,date,[candidate]);expect(rows).toHaveLength(1);expect(rows[0]).toMatchObject({vehicle_id:truckId,driver_user_id:owner.id,driver_first_name:'Aster',driver_kind_label:'Driver',eligible:true});
-  checkpoint('ANONYMOUS_NATIVE_PROFILE');const response=await context.request.get(`http://127.0.0.1:3100/api/mobile/public/providers/${encodeURIComponent(candidate.handle)}`);apiStatus=response.status();evidence();expect(apiStatus).toBe(200);const profile=await response.json();apiCode=typeof profile.code==='string'&&/^[A-Z_]{3,100}$/.test(profile.code)?profile.code:'';publicChecks={truckCount:Array.isArray(profile.trucks)?profile.trucks.length:null,driverMatches:profile.trucks?.[0]?.driver==='Aster',labelMatches:profile.trucks?.[0]?.driverKind==='Driver',ownershipReviewed:profile.trucks?.[0]?.authority?.ownership?.verified===true,summaryValid:Boolean(profile.authoritySummary),privateNameAbsent:!JSON.stringify(profile).includes('PrivateFatherFeatured'),privatePhoneAbsent:!JSON.stringify(profile).includes('+251900000067')};evidence();expect(profile.trucks).toHaveLength(1);expect(profile.trucks[0].driver).toBe('Aster');expect(profile.trucks[0].driverKind).toBe('Driver');expect(profile.trucks[0].authority.ownership.verified).toBe(false);expect(profile.authoritySummary).toMatchObject({total:1,ownershipVerified:0,operatingLicenceVerified:0,permissionVerified:0,notYetVerified:1});expect(JSON.stringify(profile)).not.toContain('PrivateFatherFeatured');expect(JSON.stringify(profile)).not.toContain('+251900000067');
+  checkpoint('ANONYMOUS_NATIVE_PROFILE');const response=await context.request.get(`${info.project.use.baseURL}/api/mobile/public/providers/${encodeURIComponent(candidate.handle)}`);apiStatus=response.status();evidence();expect(apiStatus).toBe(200);const profile=await response.json();apiCode=typeof profile.code==='string'&&/^[A-Z_]{3,100}$/.test(profile.code)?profile.code:'';publicChecks={truckCount:Array.isArray(profile.trucks)?profile.trucks.length:null,driverMatches:profile.trucks?.[0]?.driver==='Aster',labelMatches:profile.trucks?.[0]?.driverKind==='Driver',ownershipReviewed:profile.trucks?.[0]?.authority?.ownership?.verified===true,summaryValid:Boolean(profile.authoritySummary),privateNameAbsent:!JSON.stringify(profile).includes('PrivateFatherFeatured'),privatePhoneAbsent:!JSON.stringify(profile).includes('+251900000067')};evidence();expect(profile.trucks).toHaveLength(1);expect(profile.trucks[0].driver).toBe('Aster');expect(profile.trucks[0].driverKind).toBe('Driver');expect(profile.trucks[0].authority.ownership.verified).toBe(false);expect(profile.authoritySummary).toMatchObject({total:1,ownershipVerified:0,operatingLicenceVerified:0,permissionVerified:0,notYetVerified:1});expect(JSON.stringify(profile)).not.toContain('PrivateFatherFeatured');expect(JSON.stringify(profile)).not.toContain('+251900000067');
+  const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').order('population',{ascending:false}).limit(1).single());
+  await publishProviderCapacity(owner,{vehicleId:truckId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',
+    locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,
+    currentRoutePlaces:[{placeRef:city.id},{placeRef:destination.id}]});
   await page.goto(`/transporter?handle=${encodeURIComponent(candidate.handle)}`,{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
-  await expect(page.getByText('Aster · Driver',{exact:true})).toBeVisible();
-  await expect(page.getByText('Vehicle documents',{exact:true})).toBeVisible();
-  for(const name of ['Ownership','Permission','Operating licence'])await expect(page.getByRole('button',{name:`${name} · Not verified`,exact:true})).toBeVisible();
-  await page.getByText('Aster · Driver',{exact:true}).scrollIntoViewIfNeeded();
+  const fleetMap=page.getByTestId('profile-fleet-map');
+  await fleetMap.getByRole('button',{name:/^Isuzu Featured owner, Aster, Empty/}).click();
+  await fleetMap.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Vehicle details',exact:true})).toBeVisible();
+  await expect(page.getByText('Aster',{exact:true}).last()).toBeVisible();
+  const vehicleDocuments=page.getByRole('button',{name:'Vehicle documents',exact:true});
+  await expect(vehicleDocuments).toContainText(/Not verified|0 of \d+ reviewed/);
+  await vehicleDocuments.click();
   await page.screenshot({path:info.outputPath('native-public-featured-owner-driver.png')});completed=true;checkpoint('COMPLETE');
  }catch(error){workflowFailed=true;evidence();throw error;
  }finally{

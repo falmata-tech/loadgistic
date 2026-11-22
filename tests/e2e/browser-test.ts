@@ -4,7 +4,7 @@ import {test as base,expect} from 'playwright/test';
 import type {Browser,BrowserContext,BrowserContextOptions,Page} from 'playwright-core';
 import {localRequestHeaders,localTestIP,scopeLocalRequest,scopeLocalRoute,stripForwardedFor} from './browser-test-headers.mjs';
 
-type LocalDefaults={baseURL?:string;headers?:Record<string,string>};
+type LocalDefaults={baseURL?:string;headers?:Record<string,string>;serviceWorkers?:BrowserContextOptions['serviceWorkers']};
 const defaults=new WeakMap<Browser,LocalDefaults>();
 
 function scopeRouteHandlers(target:BrowserContext|Page,ip:()=>string,baseURL?:string){
@@ -25,7 +25,7 @@ async function localContext(browser:Browser,options:BrowserContextOptions,config
  const baseURL=options.baseURL??configured.baseURL;
  // Supplying even an empty header map prevents Playwright's defaults hook from
  // adding a test.use x-forwarded-for back onto external requests.
- const context=await browser.newContext({...options,extraHTTPHeaders:stripForwardedFor(headers)});
+ const context=await browser.newContext({...options,serviceWorkers:options.serviceWorkers??configured.serviceWorkers,extraHTTPHeaders:stripForwardedFor(headers)});
  try{
   const property=Object.getOwnPropertyDescriptor(context,'request');
   if(!property?.writable)throw Error('LOCAL_TEST_REQUEST_PROPERTY_NOT_WRITABLE');
@@ -51,8 +51,8 @@ export const test=base.extend<{_localBrowserDefaults:void}>({
   }});
   await use(proxy);
  },
- _localBrowserDefaults:[async({browser,baseURL,extraHTTPHeaders},use)=>{
-  defaults.set(browser,{baseURL,headers:extraHTTPHeaders});
+ _localBrowserDefaults:[async({browser,baseURL,extraHTTPHeaders,serviceWorkers},use)=>{
+  defaults.set(browser,{baseURL,headers:extraHTTPHeaders,serviceWorkers});
   try{await use();}finally{defaults.delete(browser);}
  },{auto:true}],
  request:async({playwright,baseURL,extraHTTPHeaders},use)=>{
