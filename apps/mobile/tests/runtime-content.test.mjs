@@ -22,3 +22,10 @@ test('Tracking accepts its authorized projection and rejects malformed lists and
  for(const value of [null,{}, {...detail,events:[null]}, {...detail,events:null},{...detail,location:{latitude:NaN}},{...detail,review:{rating:Infinity,note:''}},{...detail,route:[route[0],{...route[1],coordinate:[38,NaN]},route[2]]},{...detail,route:[route[0],route[0]]},{...detail,publicTruck:{plate:'PRIVATE'}}])
   assert.throws(()=>parseVisitorShipment(value),/Could not load shipment updates/);
 });
+
+test('retired visitor Tracking fixes become no current location rather than an unlabelled point',()=>{
+ const detail={...shipment,route:[],publicTruck:null,provider:'Demo',mode:'LOCATION_AND_STATUS',canReview:false,canApprove:false,events:[],review:null};
+ const point={latitude:9,longitude:38,radius:10,area:'Retired area',updatedAt:'2026-11-17T00:00:00Z'};
+ for(const source of ['MANUAL','MANUAL_ADMIN','INFERRED',{}])assert.equal(parseVisitorShipment({...detail,location:{...point,source}}).location,null);
+ for(const source of [null,undefined,'GPS','MOBILE'])assert.deepEqual(parseVisitorShipment({...detail,location:{...point,source}}).location,{...point,source});
+});

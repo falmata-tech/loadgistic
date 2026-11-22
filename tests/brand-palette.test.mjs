@@ -88,9 +88,10 @@ function findLegacyColors(source) {
   return colors;
 }
 
-test('production UI source contains no legacy green or teal brand hues', () => {
+test('production UI source uses the approved palette without legacy green or teal', () => {
   const findings = sourceRoots.flatMap(root => collectSourceFiles(root)).flatMap(filePath =>
-    findLegacyColors(readFileSync(filePath, 'utf8')).map(color => `${filePath}: ${color}`),
+    findLegacyColors(readFileSync(filePath, 'utf8'))
+      .map(color => `${filePath}: ${color}`),
   );
   assert.deepEqual(findings, [], `Replace old green/teal UI colors with the approved palette:\n${findings.join('\n')}`);
 });

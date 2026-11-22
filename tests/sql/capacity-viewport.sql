@@ -24,6 +24,9 @@ begin
  -- The managed verifier can leave the source truck Partial or Off Duty. Its
  -- current status is irrelevant: every synthetic copy below is explicitly Empty.
  select * into strict source from capacities where provider_profile_id=provider order by updated_at desc limit 1;
+ source.available_percent_reported_at:=null;
+ source.available_percent_reported_by:=null;
+ source.available_percent_reported_driver_id:=null;
  insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data)
  values(broker_actor,'viewport-broker-'||broker_actor||'@example.invalid',now(),'{}');
  update public.profiles set role='SHIPPER',active=true where id=broker_actor;

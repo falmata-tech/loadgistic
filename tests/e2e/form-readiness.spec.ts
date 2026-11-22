@@ -15,7 +15,7 @@ test('account signup choice and email remain usable while client scripts are del
  try{
   await page.goto('/signup',{waitUntil:'commit'});
   const email=page.getByLabel('Email',{exact:true}),submit=page.getByRole('button',{name:'Email me a code'});
-  await expect(email).toBeEnabled();await page.getByRole('radio',{name:/Put your vehicles on the map/}).check();
+  await expect(email).toBeEnabled();await page.getByRole('radio',{name:/Manage vehicles and share capacity/}).check();
   await email.fill('readiness@example.test');release();await submit.click();
   await expect.poll(()=>submitted).toContain('email=readiness%40example.test');
   expect(submitted).toContain('audience=PROVIDER');

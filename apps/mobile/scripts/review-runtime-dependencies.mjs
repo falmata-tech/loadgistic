@@ -3,7 +3,14 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 const root=fileURLToPath(new URL('../',import.meta.url));
+const picomatchTools = {
+ 'node_modules/picomatch': '2.3.2',
+ 'node_modules/@expo/metro-config/node_modules/picomatch': '4.0.7',
+ 'node_modules/expo/node_modules/picomatch': '4.0.7',
+ 'node_modules/tinyglobby/node_modules/picomatch': '4.0.7',
+};
 const reviewed=new Map([
+ ['https://github.com/advisories/GHSA-fc5q-39xc-vjpf',{name:'picomatch',toolingVersions:picomatchTools}],
  ['https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',{name:'braces',version:'3.0.3'}],
  ['https://github.com/advisories/GHSA-gcqx-w48m-w2h4',{name:'deepmerge',version:'4.3.1',toolingPath:'node_modules/deepmerge'}],
  ['https://github.com/advisories/GHSA-3g3m-2fjr-6pw4',{name:'glob',version:'13.0.6',toolingPath:'node_modules/glob'}],
@@ -27,6 +34,18 @@ export function reviewNativeDependencies({audit,lock,map}){
  if(Object.keys(audit.vulnerabilities).length&&!findings.size)throw Error('UNREVIEWED_DEPENDENCY_FINDING');
  for(const item of findings.values()){
   const expected=reviewed.get(item.url);
+  if(expected.toolingVersions){
+   const pins=expected.toolingVersions;
+   const paths=Object.keys(pins);
+   const nodes=new Set(audit.vulnerabilities[item.name]?.nodes);
+   const installed=Object.keys(lock.packages).filter(name=>name.endsWith('/'+item.name));
+   if(nodes.size!==paths.length||installed.length!==paths.length||
+    paths.some(name=>!nodes.has(name)||lock.packages[name]?.version!==pins[name]))
+    throw Error('REVIEWED_TOOLING_VERSION_DRIFT');
+   if(map.sources.some(name=>('/'+name.replaceAll('\\','/')).includes('/node_modules/'+item.name+'/')))
+    throw Error('VULNERABLE_PACKAGE_IN_ANDROID_RUNTIME');
+   continue;
+  }
   if(expected.toolingPath){
    const nodes=audit.vulnerabilities[item.name]?.nodes;
    if(!Array.isArray(nodes)||nodes.length!==1||nodes[0]!==expected.toolingPath

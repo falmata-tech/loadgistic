@@ -6,7 +6,12 @@ import type { VisitorScope } from '../session/visitor-controller';
 import { Button, Card, Copy, ErrorText, Field, Title, LoadingSpinner } from './ui';
 import {useLanguage} from '../localization/provider';
 import {useAccount} from '../session/provider';
+import {TrackingLinkAccess} from '../screens/visitor-tracking';
 export function VisitorAccess({ scope, children }: PropsWithChildren<{ scope: VisitorScope }>) {
+ if(scope==='tracking')return <TrackingLinkAccess/>;
+ return <LegacyCapacityAccess scope={scope}>{children}</LegacyCapacityAccess>;
+}
+function LegacyCapacityAccess({scope,children}:PropsWithChildren<{scope:VisitorScope}>){
  const visitor = useVisitor(), [error, setError] = useState('');
  if (!visitor.ready) return <LoadingSpinner accessibilityLabel="Checking saved email access" />;
  if (!visitor.snapshot.foreground) return <Copy message={"Private access is paused while the app is in the background."}/>;
@@ -28,7 +33,7 @@ function VisitorLogin({ scope }: { scope: VisitorScope }) {
   } catch (error) { setError(error instanceof Error ? error.message : 'Could not verify this email.'); }
   finally { lock.current = false; setBusy(false); }
  }
- return <Card>{scope==='tracking'?<><Title message="Follow your shipment"/><Copy message="Use the email your transporter added. One code opens your shared shipments."/></>:<><Title message="Privately shared with you"/><Copy message="Enter the email your transporters share capacity with."/></>}
+ return <Card>{scope==='tracking'?<><Title message="Follow your shipment"/><Copy message="Use the email your transporter added. One code opens your shared shipments."/></>:<><Title message="Private Network"/><Copy message="Enter the email your transporters share capacity with."/></>}
   {account.session?.user.review&&<Button secondary label={t(scope==='tracking'?'Open demo shipment tracking':'Open demo private capacity')} busy={busy} onPress={()=>{if(lock.current||!account.session)return;lock.current=true;setBusy(true);setError('');void visitor.controller.review(scope,account.session.accessToken).catch(caught=>setError(caught instanceof Error?caught.message:'This review access is unavailable.')).finally(()=>{lock.current=false;setBusy(false);});}}/>}
   {handoff ? <Field message="Email verification code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" maxLength={6} editable={!busy} /> : <Field message="Your email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" editable={!busy} />}
   {!!message && <Copy>{message}</Copy>}<ErrorText message={error || visitor.errors[scope] || visitor.error} />{handoff?<Button message="Open private access" busy={busy} onPress={()=>void submit()}/>:<Button message="Send email code" busy={busy} onPress={()=>void submit()}/>}

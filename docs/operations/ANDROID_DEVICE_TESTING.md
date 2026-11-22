@@ -97,8 +97,12 @@ Android artifacts.
    disposable local debug key** at the same path. Do not retrieve or reuse the
    owner's existing upload/Play/EAS key. The generated key has no store identity
    and must not update an existing signed installation or become a release key.
-6. Build an ARM64-only standalone release variant with that debug certificate.
-   Example after the scoped JDK/SDK are installed and their paths verified:
+6. Select the ABI for the device that will run the standalone test. An ARM64
+   phone uses `arm64-v8a`. For the project's Intel emulator, use `x86_64`.
+   To use the same APK on both, pass `-PreactNativeArchitectures=arm64-v8a,x86_64`.
+   Check `adb -s <serial> shell getprop ro.product.cpu.abi` on the intended device.
+   Android can install an ARM64 APK through translation on this emulator and
+   still fail to load React Native at launch. Example for an ARM64 phone:
 
    ```bash
    # Working directory: the frozen copy's apps/mobile/android
@@ -115,6 +119,30 @@ Android artifacts.
    root; set command-scoped JDK/SDK/cache paths from its receipts. Include
    `CMAKE_BUILD_PARALLEL_LEVEL=1` and a1536MB Node heap limit. This command is a
    build recipe; the successful actual invocation/receipts are recorded below.
+
+   On this Mac the Android Gradle plugin launched Ninja directly, and one Gradle
+   worker still started ten compiler processes. For low-resource local builds,
+   add these CMake arguments to the generated Android modules that compile
+   native code in the disposable build tree. Use the same pool for compile and
+   link so both compete for one slot:
+
+   ```groovy
+   defaultConfig {
+       externalNativeBuild {
+           cmake {
+               arguments "-DCMAKE_JOB_POOLS=local_native=1",
+                         "-DCMAKE_JOB_POOL_COMPILE=local_native",
+                         "-DCMAKE_JOB_POOL_LINK=local_native"
+           }
+       }
+   }
+   ```
+
+   Check the generated `CMakeFiles/rules.ninja` for `pool local_native` with
+   `depth = 1` and the compile/link edges in `build.ninja` for
+   `pool = local_native`. The project's SDK CMake 3.22.1 emitted that pool on
+   three compile edges and one link edge in a small local check. The first
+   dual-ABI APK build had already started before that check.
    `assembleDebug`/the development client requires Metro and does not establish
    standalone behavior. The repo's `build:android:test` invokes remote EAS; do
    not use it for this local preparation. Follow the exact SDK57 documentation

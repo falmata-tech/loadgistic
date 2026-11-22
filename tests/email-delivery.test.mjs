@@ -229,7 +229,7 @@ test('retired Capacity email template is rejected while Tracking remains availab
 
 test('completion email escapes customer-visible data and excludes private event fields',()=>{
   const message=buildEmailMessage({
-    template:'tracking-completed',to:'guest@example.test',tracking:{url:'https://loadgistic.example/track',code:'LG-1111-2222-3333-4444'},review:{url:'https://loadgistic.example/track',code:'review-code'},
+    template:'tracking-completed',to:'owner@example.test',account:{url:'https://loadgistic.com/login?from=tracking'},
     shipment:{
       code:'LG-TEST',providerName:'Example <script>alert(1)</script>',origin:'Addis Ababa',destination:'Adama',
       cargoSummary:'Workshop inputs',events:[{
@@ -241,7 +241,10 @@ test('completion email escapes customer-visible data and excludes private event 
   assert.match(message.text,/Status timeline/);
   assert.doesNotMatch(message.text,/LG-1111-2222-3333-4444/);
   assert.doesNotMatch(message.text,/review-code/);
-  assert.match(message.text,/already verified, no new code/);
+  assert.match(message.text,/Sign in to your Loadgistic account/);
+  assert.match(message.html,/href="https:\/\/loadgistic.com\/login\?from=tracking"/);
+  assert.match(message.html,/>Open your shipments<\/a>/);
+  assert.doesNotMatch(message.text,/verify this email|no new code|six-digit/i);
   assert.match(message.text,/In Transit/);
   assert.doesNotMatch(message.html,/<script>|<strong>safely<\/strong>/);
   assert.match(message.html,/&lt;script&gt;|&lt;strong&gt;/);

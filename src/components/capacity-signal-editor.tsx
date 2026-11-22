@@ -27,7 +27,7 @@ function PlaceSequenceEditor({items,setItems,name,refName,min,label}:{items:Edit
   </div>;
 }
 
-export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,savedManualSource=false,onBusyChange,onSaved,onCancel}:{section:'CAPACITY'|'SHARING';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;savedManualSource?:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
+export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,current,location,allowDeviceLocation,onBusyChange,onSaved,onCancel}:{section:'CAPACITY'|'SHARING';vehicleId:string;hasAssignedDriver:boolean;current?:CapacitySnapshot|null;location:DriverLocation|null;allowDeviceLocation:boolean;onBusyChange:(busy:boolean)=>void;onSaved:()=>void;onCancel:()=>void}){
   const {t}=useTranslation();
   const [status,setStatus]=React.useState(current?.status||'EMPTY');
   const [sharingMode,setSharingMode]=React.useState(capacitySharingMode(current?.sharing_mode,current?.visibility));
@@ -51,9 +51,11 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
   const needsCoverage=!current?.availability_geometry||current.status==='OFF_DUTY';
   const showCoverage=onDuty&&(section==='CAPACITY'||needsCoverage);
   const needsLocation=onDuty&&allowDeviceLocation&&!location;
-  const waitingForDriverLocation=onDuty&&!allowDeviceLocation&&!location&&!savedManualSource;
+  const waitingForDriverLocation=onDuty&&!allowDeviceLocation&&!location;
   const draftLocation=captured||location;
   const invalidCoverage=showCoverage&&(geometry==='ROUTE'?routePoints.some((point:EditablePlace)=>!point.place_ref):!areaCenter.place_ref||areaBoundary.some((point:EditablePlace)=>!point.place_ref));
+
+  const spaceField=<div className="form-group capacity-available-percent"><label htmlFor="capacity-available-percent"><Boxes aria-hidden="true"/><Text message="Available space"/></label><div className="capacity-percent-field"><input id="capacity-available-percent" name="availablePercent" type="number" min="1" max="99" step="1" inputMode="numeric" required aria-describedby="capacity-available-percent-help" value={availablePercent} onChange={event=>setAvailablePercent(event.target.value)}/><span aria-hidden="true">%</span></div><small id="capacity-available-percent-help" className="meta"><Text message="Enter 1% to 99% of space still free."/></small></div>;
 
   function chooseStatus(value:string){
     setStatus(value);
@@ -84,12 +86,12 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
           <h3><Truck aria-hidden="true"/><Text message="Availability"/></h3>
           <div className="capacity-status-load-grid">
             <div className="capacity-status-choice-column">
-              <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
+              <div className="segmented-control capacity-status-choices">{[{value:'EMPTY',label:'Empty',Icon:Truck},{value:'PARTIAL',label:'Partial',Icon:Boxes},{value:'OFF_DUTY',label:'Off Duty',Icon:PowerOff}].map(({value,label,Icon})=><button key={value} type="button" data-capacity-status={value} aria-pressed={status===value} onClick={()=>chooseStatus(value)}><Icon aria-hidden="true"/><strong><Text message={label}/></strong></button>)}</div>
               {!current&&onDuty?<p className="meta"><Text message="Private until you choose Open in Sharing."/></p>:null}
               {!onDuty?<p className="meta"><Text message="Off Duty hides this vehicle from capacity maps. Your preferred corridor stays saved."/></p>:null}
             </div>
             {onDuty?<div className="capacity-load-choice-column">
-              {status==='EMPTY'?<><fieldset className="capacity-load-choices"><legend><Boxes aria-hidden="true"/><Text message="Load type"/></legend>{CAPACITY_LOAD_CHOICES.map(([value,label])=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message={capacityLoadExplanation(acceptedLoads)}/></p></>:<div className="form-group capacity-available-percent"><label htmlFor="capacity-available-percent"><Boxes aria-hidden="true"/><Text message="Available space"/></label><div className="capacity-percent-field"><input id="capacity-available-percent" name="availablePercent" type="number" min="1" max="99" step="1" inputMode="numeric" placeholder={t('Optional')} value={availablePercent} onChange={event=>setAvailablePercent(event.target.value)}/><span aria-hidden="true">%</span></div></div>}
+              {status==='EMPTY'?<><fieldset className="capacity-load-choices"><legend><Boxes aria-hidden="true"/><Text message="Load type"/></legend>{CAPACITY_LOAD_CHOICES.map(([value,label])=><label key={value}><input type="radio" name="loadChoice" value={value} checked={acceptedLoads===value} onChange={()=>setAcceptedLoads(value)}/><Text message={label}/></label>)}</fieldset><p className="meta"><Text message={capacityLoadExplanation(acceptedLoads)}/></p></>:spaceField}
             </div>:null}
           </div>
         </section>:null}
@@ -97,6 +99,7 @@ export function CapacitySignalEditor({section,vehicleId,hasAssignedDriver,curren
           <h3><Users aria-hidden="true"/><Text message="Who can see it?"/></h3>
           <div className="segmented-control capacity-visibility-choices">{CAPACITY_SHARING_CHOICES.map(([value,label])=><button key={value} type="button" aria-pressed={sharingMode===value} onClick={()=>setSharingMode(value)}><strong><Text message={label}/></strong></button>)}</div>
           <p className="meta"><Text message={sharingMode==='BOTH'?'Connected shippers and brokers can also see this vehicle privately.':sharingMode==='PUBLIC'?'Anyone browsing the map can see this vehicle.':'Only shippers and brokers you share with can see this vehicle.'}/></p>
+          {status==='PARTIAL'&&(!current?.available_percent_reported_at||current.available_percent==null)?spaceField:null}
           <Link className="button secondary small" href="/app/network"><Text message="Manage vehicle sharing"/></Link>
         </section>:null}
         {showCoverage?<section className="capacity-signal-group">

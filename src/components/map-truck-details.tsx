@@ -36,7 +36,7 @@ export function MapTruckDetails({truck,privatePhoto}:{truck:TruckDetails;private
     <div className="truck-inspection-hero">
       <div className="truck-inspection-image"><img src={vehicleConfigurationImage(truck.cargo_configuration)} alt=""/></div>
       <div className="truck-inspection-identity">
-        <div className="truck-inspection-status-line"><span className={`status ${truck.status==='PARTIAL'?'yellow':'green'}`}><Text message={truck.status==='PARTIAL'?'Partial capacity':'Empty vehicle'}/></span>{loadPreference?<span className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></span>:null}{truck.status==='PARTIAL'&&truck.available_percent_reported_at&&typeof truck.available_percent==='number'&&Number.isInteger(truck.available_percent)?<span className="truck-load-preference"><Text message="Available space: {percent}%" values={{percent:truck.available_percent}}/></span>:null}</div>
+        <div className="truck-inspection-status-line"><span className={`status ${truck.status==='PARTIAL'?'partial':'empty'}`}><Text message={truck.status==='PARTIAL'?'Partial capacity':'Empty vehicle'}/></span>{loadPreference?<span className="truck-load-preference"><Text message={capacityLoadLabel(loadPreference)}/></span>:null}{truck.status==='PARTIAL'&&truck.available_percent_reported_at&&typeof truck.available_percent==='number'&&Number.isInteger(truck.available_percent)?<span className="truck-load-preference"><Text message="Available space: {percent}%" values={{percent:truck.available_percent}}/></span>:null}</div>
         <h3>{truck.vehicle_make} {truck.vehicle_model}</h3>
         {truck.cargo_configuration?<p><Text message={truck.cargo_configuration}/></p>:null}
         <div className="truck-inspection-tags">{truck.sharing_mode?<span><Text message={capacitySharingLabel(truck.sharing_mode)}/></span>:null}</div>
@@ -63,11 +63,11 @@ export function MapTruckDetails({truck,privatePhoto}:{truck:TruckDetails;private
       {truck.capacity_confirmation_needed?<p className="truck-inspection-confirm"><Text message="Confirm availability directly."/></p>:null}
     </div>
     {truck.current_signal_geometry_visible===false?<p className="truck-inspection-private"><strong><Text message={preferredArea?'Preferred area—not current location':'Preferred corridor—not current location'}/></strong></p>:null}
+    {privatePhoto?<BusinessCargoSpacePhoto key={`${privatePhoto.workspaceId}:${privatePhoto.vehicleId}`} workspaceId={privatePhoto.workspaceId} vehicleId={privatePhoto.vehicleId}/>:null}
     <div className="map-truck-documents">
       <TruckDocumentSummary label={truck.provider_organization_id?'Transport Provider documents':'Owner documents'} badges={truck.owner_verification_badges}/>
       <TruckDocumentSummary label="Driver documents" badges={truck.driver_verification_badges}/>
       <TruckDocumentSummary label="Vehicle documents" badges={truck.truck_verification_badges}/>
     </div>
-    {privatePhoto?<BusinessCargoSpacePhoto key={`${privatePhoto.workspaceId}:${privatePhoto.vehicleId}`} workspaceId={privatePhoto.workspaceId} vehicleId={privatePhoto.vehicleId}/>:null}
   </section>;
 }

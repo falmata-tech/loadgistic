@@ -1,13 +1,26 @@
-"use client";
+'use client';
 
-
-import {Text,useTranslation} from '@/components/localization';
 import React from 'react';
-import { Play } from 'lucide-react';
+import {coverPosterPath,exampleCover} from '@/lib/provider-cover-video.js';
+import {Play,X} from 'lucide-react';
+import {Text,useTranslation} from './localization';
 
 export function ProviderIntroVideo({videoId,providerName}:{videoId:string;providerName:string}){
   const {t}=useTranslation();
   const [playing,setPlaying]=React.useState(false);
-  if(!/^[A-Za-z0-9_-]{11}$/.test(videoId))return null;
-  return <div className="provider-video">{playing?<iframe src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`} title={t('Introduction to {name}',{name:providerName})} allow="accelerometer; autoplay; encrypted-media; picture-in-picture" allowFullScreen/>:<button type="button" onClick={()=>setPlaying(true)} style={{backgroundImage:`linear-gradient(90deg,rgba(3,20,33,.82),rgba(3,20,33,.2)),url(https://i.ytimg.com/vi/${videoId}/hqdefault.jpg)`}}><Play aria-hidden="true"/><span><strong><Text message="Meet "/>{providerName}</strong><small><Text message="Play provider introduction"/></small></span></button>}</div>;
+  const dialog=React.useRef(null as HTMLDialogElement|null);
+  React.useEffect(()=>{if(playing)dialog.current?.showModal();},[playing]);
+  const poster=coverPosterPath(videoId);
+  if(!poster)return null;
+  return <div className="profile-cover">
+    <button type="button" className="profile-cover-poster" onClick={()=>setPlaying(true)} aria-label={t('Play cover video')}>
+      <img src={poster} alt="" onError={event=>{event.currentTarget.style.visibility='hidden';}}/>
+      <span><Play aria-hidden="true"/><Text message="Cover video"/></span>{videoId===exampleCover.id&&<small>{exampleCover.credit}</small>}
+    </button>
+    {playing&&<dialog ref={dialog} className="profile-cover-player" aria-label={t('Cover video')} onClose={()=>setPlaying(false)}>
+      <header><strong>{providerName}</strong><button type="button" onClick={()=>dialog.current?.close()} aria-label={t('Close')}><X/></button></header>
+      <iframe src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`} title={t('Cover video')} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen/>
+      <a href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noopener noreferrer"><Text message="Watch on YouTube"/></a>
+    </dialog>}
+  </div>;
 }

@@ -6,20 +6,27 @@ const read=path=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const supportRoutes=[
   'src/app/app/support/page.tsx','src/app/support/page.tsx','src/app/support/[id]/page.tsx',
   'src/app/admin/support/page.tsx',
-  'src/app/help/[id]/page.tsx','src/app/api/support/availability/route.ts',
+  'src/app/api/support/availability/route.ts',
   'src/app/api/support/conversations/route.ts','src/app/api/support/conversations/[id]/claim/route.ts',
   'src/app/api/support/conversations/[id]/close/route.ts','src/app/api/support/conversations/[id]/messages/route.ts',
-  'src/app/api/guest-support/access/route.ts',
   'src/app/api/guest-support/[id]/messages/route.ts','src/app/api/guest-support/[id]/claim/route.ts',
-  'src/app/api/guest-support/[id]/close/route.ts','src/app/api/guest-support/[id]/end/route.ts',
+  'src/app/api/guest-support/[id]/close/route.ts',
   'src/app/api/guest-support/[id]/attachments/[attachmentId]/route.ts',
   'src/app/api/admin/support-agents/route.ts','src/app/api/admin/support-agents/[id]/route.ts'
 ];
 
-test('active Support and retained recovery adapters use the managed Support port',()=>{
+test('active member and staff adapters use the managed Support port',()=>{
   for(const path of supportRoutes){
     const source=read(path);assert.doesNotMatch(source,/lib\/repository\.js/,path);assert.match(source,/lib\/support\.js/,path);
   }
+});
+
+test('retired guest recovery and old thread links cannot access the support service',()=>{
+ for(const path of ['src/app/api/guest-support/access/route.ts','src/app/api/guest-support/[id]/end/route.ts']){
+  assert.match(read(path),/status:410/);
+  assert.doesNotMatch(read(path),/lib\/support\.js|getGuestSupportSession/);
+ }
+ assert.match(read('src/app/help/[id]/route.ts'),/status: 404/);
 });
 
 test('managed Support commands are bounded, actor scoped, terminal, and service-role-only',()=>{

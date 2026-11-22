@@ -1,9 +1,11 @@
+import {reportedSpacePercent} from '../../../../src/lib/capacity-space-estimate.js';
+import {locationSourceKind,locationSourceLabel} from '../../../../src/lib/location-source.js';
 import {capacitySharingLabel} from '../../../../src/lib/capacity-sharing';
 import {capacityLoadLabel} from '../../../../src/lib/capacity-load-preferences';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import type {CapacityTruck,CapacityWorkspace} from '../api/capacity';
+import {currentCapacityLocation,type CapacityTruck,type CapacityWorkspace} from '../api/capacity';
 import {useAccountQuery} from '../hooks/account-query';
 import {useCapacityLocation} from '../hooks/capacity-location';
 import {useLanguage} from '../localization/provider';
@@ -14,12 +16,14 @@ import {currentDrivingTruck} from '../navigation/current-driving-pair';
 import {AppIcon,type IconName} from '../components/app-icon';
 import {AppLink} from '../components/app-link';
 import { Button, Copy, ErrorText, palette, LoadingSpinner } from '../components/ui';
-import {capacityStatusPresentation} from '../theme/capacity-status-presentation';
+import {capacityMapColors,capacityStatusPresentation} from '../theme/capacity-status-presentation';
 import {TrackingMap} from '../components/tracking-map';
+import type {TrackingArea} from '../location/tracking-area';
 import {Map,Camera} from '../components/map-platform';
 import {mapStyle} from '../components/map-style';
 import {CapacityEditor} from './manage-capacity';
 import {CargoSpacePhoto} from '../components/cargo-space-photo';
+import {cargoPhotoCollectionPath} from '../api/cargo-space-photo-path';
 import {DriverLocationEditor} from '../components/driver-location-editor';
 import RegularService from './regular-service';
 import type {MapCoverage} from '../components/tracking-map';
@@ -47,27 +51,32 @@ function HomeTruck(props:HomeTruckProps){return <DriverTruck {...props}/>;}
 function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckProps){
  const {t,locale}=useLanguage(),[section,setSection]=useState<'CAPACITY'|'REGULAR'|'LOCATION'|'PHOTO'|null>(null),[saving,setSaving]=useState(false),savingRef=useRef(false);
  const regular:MapCoverage[]=useMemo(()=>(truck.regularServices||[]).filter(item=>item.vehicleId===truck.id&&item.driverId===truck.driverId).map(item=>({kind:item.geometry,places:item.geometry==='ROUTE'?item.route:item.boundary,partial:false})),[truck.id,truck.driverId,truck.regularServices]);
+ const photoSummary=useAccountQuery<{requests:{id:string}[]}>(cargoPhotoCollectionPath(truck.id));
+ const pendingPhoto=Boolean(photoSummary.data?.requests.length);
  const editing=section!==null;
  const location=useCapacityLocation(truck,editing,refresh),current=truck.current;
+ const availableSpace=reportedSpacePercent(current?.status,current?.availablePercent,current?.availablePercentReportedAt);
  const status=current?t(current.status==='EMPTY'?'Empty':current.status==='PARTIAL'?'Partial':'Off Duty'):t('No planned capacity published yet');
  const regularTitle=regular[0]?.kind==='RADIUS'?'Preferred area':'Preferred corridor';
- const reportedLocation=truck.location?.coordinate?{latitude:truck.location.coordinate[1],longitude:truck.location.coordinate[0],radius:truck.location.radius,area:truck.location.area,updatedAt:truck.location.updatedAt,source:truck.publishedLocationSource,...(truck.locationIsDemo?{demo:true as const}:{})}:null;
+ const sourceKind=locationSourceKind(truck.publishedLocationSource),reportedSource=sourceKind==='GPS'||sourceKind==='MOBILE'?sourceKind:null;
+ const currentLocation=currentCapacityLocation(truck);
+ const reportedLocation:TrackingArea|null=reportedSource&&currentLocation?.coordinate?{latitude:currentLocation.coordinate[1],longitude:currentLocation.coordinate[0],radius:currentLocation.radius,area:currentLocation.area,updatedAt:currentLocation.updatedAt,source:reportedSource,...(truck.locationIsDemo?{demo:true as const}:{})}:null;
  const coverage=current&&current.status!=='OFF_DUTY'?{kind:current.availabilityGeometry,places:current.availabilityGeometry==='ROUTE'?current.route:current.boundary,partial:current.status==='PARTIAL'}:undefined;
- const color=current?.status==='PARTIAL'?capacityStatusPresentation.PARTIAL.text:current?.status==='EMPTY'?palette.success:palette.muted;
- const close=()=>{if(savingRef.current)return;const previous=section;setSection(null);if(previous!=='PHOTO')void refresh();};
+ const color=current?.status==='PARTIAL'?capacityStatusPresentation.PARTIAL.text:current?.status==='EMPTY'?capacityStatusPresentation.EMPTY.text:capacityStatusPresentation.OFF_DUTY.text;
+ const close=()=>{if(savingRef.current)return;const previous=section;setSection(null);if(previous==='PHOTO')void photoSummary.refresh();else void refresh();};
  return <>
   <View style={styles.truckBar} aria-hidden={editing} importantForAccessibility={editing?'no-hide-descendants':'auto'} accessibilityElementsHidden={editing}>
    <View style={styles.truckIcon}><AppIcon name="truck" color={palette.blue}/></View>
-   <View style={{flex:1,minWidth:0}}><Text numberOfLines={1} style={styles.truckName}>{truck.label}</Text><Text numberOfLines={1} style={styles.small}>{truck.plate} · {truck.driver||t('No driver assigned')}</Text><Text numberOfLines={2} style={[styles.status,{color}]}>{status}{current&&current.status!=='OFF_DUTY'&&current.acceptedLoads?` · ${t(capacityLoadLabel(current.acceptedLoads))}`:''}{current?` · ${t(capacitySharingLabel(current.sharingMode))}`:''}</Text></View>
+   <View style={{flex:1,minWidth:0}}><Text numberOfLines={1} style={styles.truckName}>{truck.label}</Text><Text numberOfLines={1} style={styles.small}>{truck.plate} · {truck.driver||t('No driver assigned')}</Text><Text numberOfLines={2} style={[styles.status,{color}]}>{status}{current&&current.status!=='OFF_DUTY'&&current.acceptedLoads?` · ${t(capacityLoadLabel(current.acceptedLoads))}`:''}{current?` · ${t(capacitySharingLabel(current.sharingMode))}`:''}</Text>{availableSpace!==null?<Text style={[styles.status,{color}]}>{t('Available space: {percent}%',{percent:availableSpace})}</Text>:null}</View>
   </View>
   <View testID="driver-home-map" style={styles.map} aria-hidden={editing} importantForAccessibility={editing?'no-hide-descendants':'auto'} accessibilityElementsHidden={editing}>
    {reportedLocation||coverage||regular.length?<TrackingMap fill regular={regular} vehicleConfiguration={truck.configuration||'Vehicle'} location={reportedLocation} coverage={coverage}/>:<EmptyMap/>}
    <View pointerEvents="box-none" style={styles.mapOverlay}>
-    <View style={styles.locationNote}><View style={{flexDirection:'row',gap:7,alignItems:'center'}}><AppIcon name="location" size={16} color="#7846a7"/><Text numberOfLines={2} style={[styles.small,{flex:1}]}>{reportedLocation?locationAreaLabel(reportedLocation.area,t):t('No driver location shared yet')}</Text></View>{reportedLocation&&<Text style={styles.updated}>{reportedLocation.source?`${t(reportedLocation.source==='GPS'?'GPS device':reportedLocation.source==='MOBILE'?'Driver’s phone':'Manually entered')} · `:''}{t('{radius} km radius',{radius:reportedLocation.radius})} · {t('Location updated {date}',{date:new Date(reportedLocation.updatedAt).toLocaleString(locale==='om'?'en-ET':locale,{dateStyle:'short',timeStyle:'short'})})}</Text>}</View>
-    {truck.canLocate&&<Pressable accessibilityRole="button" accessibilityLabel={t(reportedLocation?'Refresh vehicle location':'Share vehicle location')} accessibilityState={{busy:location.busy,disabled:location.busy}} disabled={location.busy} onPress={()=>{void location.shareLocation();}} style={styles.locate}>{location.busy?<LoadingSpinner color={palette.blue}/>:<AppIcon name="location" color={palette.blue}/>}</Pressable>}
+    <View style={styles.locationNote}><View style={{flexDirection:'row',gap:7,alignItems:'center'}}><AppIcon name="location" size={16} color={capacityMapColors.location}/><Text numberOfLines={2} style={[styles.small,{flex:1}]}>{reportedLocation?locationAreaLabel(reportedLocation.area,t):t(truck.selectedLocationSource===null?'Choose GPS or Phone':'No driver location shared yet')}</Text></View>{reportedLocation&&<Text style={styles.updated}>{reportedLocation.source?`${t(locationSourceLabel(reportedLocation.source))} · `:''}{t('{radius} km radius',{radius:reportedLocation.radius})} · {t('Location updated {date}',{date:new Date(reportedLocation.updatedAt).toLocaleString(locale==='om'?'en-ET':locale,{dateStyle:'short',timeStyle:'short'})})}</Text>}</View>
+    {truck.canLocate&&(truck.selectedLocationSource===undefined||truck.selectedLocationSource==='MOBILE')&&<Pressable accessibilityRole="button" accessibilityLabel={t(reportedLocation?'Refresh vehicle location':'Share vehicle location')} accessibilityState={{busy:location.busy,disabled:location.busy}} disabled={location.busy} onPress={()=>{void location.shareLocation();}} style={styles.locate}>{location.busy?<LoadingSpinner color={palette.blue}/>:<AppIcon name="location" color={palette.blue}/>}</Pressable>}
     <View style={styles.actions} pointerEvents="box-none"><ScrollView style={styles.rail} contentContainerStyle={styles.railContent} showsVerticalScrollIndicator>
       <GroupButton label={canPublish?'Planned capacity':'Duty status'} hint={canPublish?'Update planned capacity':'Update duty status'} icon="truck" color={color} onPress={()=>setSection('CAPACITY')}/>
-      <GroupButton label="Photo" hint="Cargo space photo" icon="camera" onPress={()=>setSection('PHOTO')}/>
+      <GroupButton label={pendingPhoto?'Photo requested':'Photo'} hint="Cargo space photo" attention={pendingPhoto?'New photo requested':undefined} icon="camera" onPress={()=>setSection('PHOTO')}/>
       {canRegular&&!!truck.driverId&&<GroupButton label={regularTitle} hint="Manage preferred corridor or service area" icon="repeat" onPress={()=>setSection('REGULAR')}/>}
       {(truck.canLocate||truck.canSetPhoneLocation)&&<GroupButton label="Location" hint="Set vehicle location" icon="pin" onPress={()=>setSection('LOCATION')}/>}
      </ScrollView></View>
@@ -75,11 +84,11 @@ function DriverTruck({truck,canPublish,canRegular,refresh,loadError}:HomeTruckPr
    </View>
   </View>
   <Modal visible={editing} transparent animationType="slide" onRequestClose={close}>
-   <SafeAreaView style={styles.backdrop}><View style={styles.sheet} accessibilityViewIsModal><View style={styles.sheetHeader}><View style={{flex:1}}><Text style={styles.truckName}>{section==='PHOTO'?truck.label:t(section==='REGULAR'?regularTitle:section==='LOCATION'?'Vehicle location':canPublish?'Update planned capacity':'Location and availability')}</Text><Text numberOfLines={1} style={styles.small}>{section==='PHOTO'?truck.plate:`${truck.label} · ${truck.plate}`}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Close')} accessibilityState={{disabled:saving}} disabled={saving} onPress={close} style={styles.iconButton}><AppIcon name="close" color={palette.blue}/></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.editor}>{section==='PHOTO'?<CargoSpacePhoto vehicleId={truck.id} assignedDriverId={truck.driverId} initiallyOpen/>:section==='REGULAR'?<RegularService embedded vehicleId={truck.id} expectedDriverId={truck.driverId} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section==='LOCATION'?<DriverLocationEditor truck={truck} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section&&<CapacityEditor section="HOME" truck={truck} canPublish={canPublish} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}} onCancel={close}/>}</ScrollView></View></SafeAreaView>
+   <SafeAreaView style={styles.backdrop}><View style={styles.sheet} accessibilityViewIsModal><View style={styles.sheetHeader}><View style={{flex:1}}><Text style={styles.truckName}>{section==='PHOTO'?t('Cargo space photo'):t(section==='REGULAR'?regularTitle:section==='LOCATION'?'Vehicle location':canPublish?'Update planned capacity':'Location and availability')}</Text><Text numberOfLines={1} style={styles.small}>{`${truck.label} · ${truck.plate}`}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={t('Close')} accessibilityState={{disabled:saving}} disabled={saving} onPress={close} style={styles.iconButton}><AppIcon name="close" color={palette.blue}/></Pressable></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.editor}>{section==='PHOTO'?<CargoSpacePhoto vehicleId={truck.id} assignedDriverId={truck.driverId} canRemove={canRegular} inSheet onBusyChange={value=>{savingRef.current=value;setSaving(value);}}/>:section==='REGULAR'?<RegularService embedded vehicleId={truck.id} expectedDriverId={truck.driverId} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section==='LOCATION'?<DriverLocationEditor truck={truck} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}}/>:section&&<CapacityEditor section="HOME" truck={truck} canPublish={canPublish} onBusy={value=>{savingRef.current=value;setSaving(value);}} onSaved={()=>{setSection(null);void refresh();}} onCancel={close}/>}</ScrollView></View></SafeAreaView>
   </Modal>
  </>;
 }
-function GroupButton({label,hint,icon,color=palette.blue,onPress}:{label:string;hint?:string;icon:IconName;color?:string;onPress:()=>void}){const {t}=useLanguage();return <Pressable accessibilityRole="button" accessibilityLabel={t(hint||label)} onPress={onPress} style={styles.group}><AppIcon name={icon} size={20} color={color}/><Text style={styles.groupText}>{t(label)}</Text></Pressable>;}
+function GroupButton({label,hint,attention,icon,color=palette.blue,onPress}:{label:string;hint?:string;attention?:string;icon:IconName;color?:string;onPress:()=>void}){const {t}=useLanguage();return <Pressable accessibilityRole="button" accessibilityLabel={t(hint||label)} accessibilityHint={attention?t(attention):undefined} onPress={onPress} style={styles.group}><AppIcon name={icon} size={20} color={color}/><Text style={styles.groupText}>{t(label)}</Text></Pressable>;}
 function EmptyMap(){return <Map style={{flex:1}} androidView="texture" mapStyle={mapStyle} attribution><Camera initialViewState={{center:[38.74,9.03],zoom:5}}/></Map>;}
 const styles=StyleSheet.create({
  rail:{flexGrow:0,flexShrink:1,width:90},railContent:{gap:7,padding:3},group:{width:84,minHeight:56,paddingHorizontal:4,paddingVertical:7,backgroundColor:'rgba(255,255,255,.98)',borderRadius:12,borderWidth:1,borderColor:palette.border,flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,boxShadow:'0px 2px 8px rgba(23,44,70,.13)'},groupText:{fontSize:11,fontWeight:'700',color:palette.ink,textAlign:'center'},

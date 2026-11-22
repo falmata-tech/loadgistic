@@ -126,7 +126,7 @@ convert browser/emulator results into installed-phone proof.
   readiness is claimed.
   Relevant source/UI tests include `provider-home-entry.test.mjs`,
   `provider-home-tabs-helper.ts`, `provider-owner-fleet.spec.ts`,
-  `truck-regular-editors.test.mjs` and `provider-fleet-showcase.test.mjs` in their
+  `truck-regular-editors.test.mjs` and `public-profile-cleanup.spec.ts` in their
   existing native/root/E2E directories. Current Android artifact qualification,
   exact-source CI, signing and hosted delivery remain separate.
 

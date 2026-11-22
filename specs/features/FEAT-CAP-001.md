@@ -69,8 +69,8 @@ Given a provider or currently assigned driver edits a vehicle location\
 When the source editor opens on web or Expo\
 Then new updates offer Phone (`MOBILE`) and, under existing fleet permissions,
 an assigned GPS device only; no map-point or coordinate-entry action is offered\
-And a saved legacy `MANUAL` source/report remains honestly labelled Manually
-entered, with its saved age and privacy radius retained for historical reading\
+And a saved legacy `MANUAL` source/report is retained internally as history;
+current product projections show an unselected source and no Manual position\
 And opening it, changing only its radius, or cancelling never converts it to
 Phone/GPS or grants location consent. Manual writes are refused at the server.
 
@@ -81,6 +81,11 @@ denial leaves the saved source/location unchanged\
 And source revision, current assignment and driver-choice ownership remain
 authoritative. Configured GPS selection retains existing owner permissions.
 Capacity source edits never alter an active Tracking agreement's saved source.
+
+November17 owner direction also removes Manual from the source filter itself.
+Public/account/business projections and map cluster anchors must not expose an
+unlabelled old Manual point. Planned routes/areas and saved availability remain
+independent facts; they must not be fabricated into a current GPS/Phone fix.
 
 Qualification requires focused denial/retry/revision tests plus real local
 desktop/phone web and Expo save/readback. Native OS permission and movement
@@ -338,7 +343,19 @@ passes5/5; existing browser refresh/retry checks remain required. The separate
 179 Driver-cache repair passes local query parity, security and affected Expo
 workflow checks (FEAT-MKT-001); full same-source CI/scale and rollout remain gated.
 
-## October18 courier configurations — planned local restoration
+## November20 courier Capacity filter correction
+
+Given a visitor or authorized member opens a vehicle filter
+When the vehicle configurations are shown and applied
+Then Courier car is a supported value on web, Expo, and the API
+And a query containing Courier motorcycle returns `INVALID_CAPACITY_FILTER`
+And the courier car filter composes with the existing geography and signal groups.
+
+Migration238 updates the SQL allowlist together with the shared client catalogue.
+It preserves existing result visibility rules and the filter error contract.
+Roll back the catalogue and SQL allowlist together if the correction is reversed.
+
+## October18 courier configurations — historical restoration
 
 The owner restores `Courier car` and `Courier motorcycle` alongside the existing
 fifteen configurations. Public/private/business Capacity filters support either
@@ -374,7 +391,7 @@ does not remove the driver’s accepted-load preference from saved capacity or
 vehicle details; existing API callers may still use the bounded load-type query.
 
 Given a pictured configuration picker opens inside a filter dialog, when the
-visitor sees the Courier car or Courier motorcycle option, then its actual
+visitor sees the Courier car option, then its actual
 configuration artwork loads without requiring an extra selection or scroll.
 Closed pickers retain lazy loading; opening the choices may load their thumbnails
 eagerly without changing submitted single/multiple selection values.
@@ -746,13 +763,24 @@ When the load status is Empty or Off Duty\
 Then the service derives 100% available for Empty and 0% for Off Duty without accepting a submitted percentage\
 And Off Duty is never offered as available space.
 
-Given the load status is Partial\
-When the actor optionally submits an integer percentage from 1 through 99\
-Then the service saves that percentage and its own report time against the same authorized vehicle and current signal\
+Given an authorized provider or Driver publishes Partial capacity\
+When the actor submits an integer percentage from 1 through 99\
+Then web and mobile require the estimate and the service saves it with its own report time against the same authorized vehicle and current signal\
+And a blank, explicitly null, out-of-range, or missing initial estimate cannot create a new Partial publication\
 And the caller cannot set, backdate or forge the report time or other provenance\
 And the result describes the value as a provider-reported estimate.
 
-Given a Partial signal was published by an older client without a percentage or already contains the historical default of 50\
+Given a Partial estimate is saved for a driver's current truck\
+When the assigned driver opens the capacity map on web or in the app\
+Then the truck summary shows the reported available-space percentage without requiring an edit.
+
+Given a Capacity map displays an individual Partial vehicle with a reported estimate\
+When an authorized visitor sees its marker\
+Then the marker shows the same percentage as the vehicle details and includes its meaning in the accessible name\
+And a cluster shows its vehicle count without an aggregate percentage\
+And Empty vehicles and Partial vehicles without a report keep their existing markers.
+
+Given a Partial signal predates the required estimate and already contains the historical default of 50\
 Then its numeric storage value is legacy and its report time is absent\
 And no public or private result displays or filters that value as an estimate\
 And republishing an estimate for that vehicle does not rewrite historical signal or audit rows.
@@ -760,7 +788,19 @@ And republishing an estimate for that vehicle does not rewrite historical signal
 Given a current Partial estimate was already reported and a provider edits unrelated capacity facts\
 When the percentage is omitted by an older client or repeated unchanged by a new client\
 Then the same estimate, original reporter and original report time carry into the new Partial signal without becoming newly fresh\
-And an explicitly cleared percentage removes the estimate from the new signal without rewriting history.
+And an explicitly cleared percentage is rejected without changing the saved signal.
+
+Given a fleet-managed driver resumes a truck's saved Partial plan\
+When the plan still has a report for that same assigned driver\
+Then the new duty publication retains the saved estimate and original report time\
+And a missing report tells the driver to ask their fleet manager to set the space first.
+
+Demo fixture seeds contain a dated illustrative estimate for every Partial truck.
+The Capacity simulator accepts an exact seeded baseline for its own allowlisted
+vehicles and retains validation of legacy startup rows during rollout. The
+new write rules are enforced inside the existing publication and duty RPCs.
+Rollback restores the preceding function definitions and seed bindings from the
+reviewed backup without modifying customer Capacity history.
 
 Given a reported Partial estimate is followed by a new duty state, another assigned Driver, or an independent load-status or percentage change\
 Then the old report does not appear or match a space filter for the new Driver or state\
@@ -771,12 +811,12 @@ And assignment invalidation retains the prior value and report time in an intern
 
 Given a public current-capacity projection is selected on the map\
 When its Driver location is available\
-Then a labeled violet privacy circle is always shown at the Driver-selected accuracy\
+Then a labeled dashed slate privacy circle is always shown at the Driver-selected accuracy\
 And a Service area uses a separate labeled outline joining its surrounding cities and identifies the center city\
 And a Capacity route uses a labeled polyline joining every selected city in order\
-And both use cobalt for Empty and neutral gray for Partial\
+And both use green for Empty and amber for Partial\
 And color is reinforced by text and shape rather than being the only meaning\
-And the violet privacy circle remains distinct from every capacity, trip, and recurring signal.
+And the dashed slate privacy circle remains distinct from every capacity, trip, and recurring signal.
 
 ### Scenario: a preferred corridor belongs to one truck and its current driver
 
@@ -791,7 +831,7 @@ And a preferred corridor asks for no date and never claims that a truck is curre
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
 And a Preferred corridor joins its cities with ↔ while a Preferred area names its center and boundary cities\
 And both state Confirm availability\
-And the shared map labels an orange dashed route Preferred corridor or an orange outlined area Preferred area, distinct from violet approximate location and status-colored Planned capacity.
+And the selected map uses dotted slate for Preferred coverage, solid cobalt for Planned coverage, and a lightly shaded blue radius for approximate location.
 
 ### Scenario: preferred corridor removal updates the selected vehicle
 
@@ -921,6 +961,17 @@ And older unbound provider route fixtures remain retained history without a gues
 And every regular Capacity route follows a plausible named road sequence while every regular Service area uses a named center and enclosing boundary\
 And intermediate cities are included only when they clarify the road path rather than filling every route with unnecessary stops.
 
+Given synthetic public fixtures cover multiple vehicle configurations and availability states\
+When the Market is filtered by availability, vehicle configuration, area or route\
+Then both statuses have usable short and long routes and local and broad areas\
+And the same planning mix supplies small and large configurations with both short and long examples where cohort size allows\
+And valid combined filters find matching records while impossible or unrelated combinations can return zero results. The fixture refresh preserves location, visibility and matching rules.
+
+Given the synthetic Market is seeded locally\
+When a visitor filters for a recently published signal or sets a minimum amount of available space\
+Then selected demo examples include recent Empty and Partial signals and distinct Partial space reports attributed to their assigned synthetic drivers\
+And earlier signals and Partial listings without an explicit report remain available under their existing eligibility rules.
+
 Given exact Capacity rows also provide approved simulator corridor evidence\
 When ordinary demo plans are refreshed\
 Then those complete ordered coordinates remain unchanged, including evidence
@@ -954,10 +1005,10 @@ And the complete map key remains visible without another action and uses pointed
 And each unclustered truck marker is a sufficiently large pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types before selecting it\
 And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
 And a tractor marker and detail use only its currently attached trailer configuration rather than combining every compatible trailer into one public signal\
-And the marker uses a complete cobalt ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
+And the marker uses a complete green ring and tail for Empty or a complete amber ring and tail for Partial, with no Empty or Partial text placed over the vehicle artwork\
 And no percentage-progress ring appears in a public truck marker\
 And status remains available in the marker's accessible name, hover or keyboard-focus summary, selected-truck details, and map key rather than being communicated by color alone, while route lines, the Service area polygon, and their legend remain geometrically distinct from marker status\
-And all user-facing labels call the violet circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
+And all user-facing labels call the dashed slate circle the Approximate current location or Approximate location radius while location privacy remains an internal data-policy term\
 And a truck or visitor-location summary appears only on hover or keyboard focus, sits above its marker, and retains a pointer to that marker rather than permanently covering the map\
 And selecting one truck enters an explicit focus state that removes every other truck marker and cluster\
 And every selected-truck approximate-location circle, Service area outline, current Capacity route, and regular Capacity route has a wide pointer target with one concise styled hover or keyboard-focus summary\
@@ -965,7 +1016,7 @@ And that summary names the signal, its distance or endpoints, its capacity meani
 And each summary uses a readable light surface, restrained neutral border, and distinct signal-color accent rather than a thick dark frame or color-on-color text\
 And clicking one signal pins only that signal's summary while selecting another signal replaces it\
 And overlapping current and regular Capacity routes are drawn with small opposite screen-space offsets that preserve their stored cities and make each line independently selectable\
-And Service-area and approximate-location interiors do not intercept route interaction, while their thick outlines remain selectable\
+And Service-area and approximate-location interiors do not intercept route interaction, while their outlines remain selectable when visible\
 And the selected truck keeps one visually distinct marker outside the clustering algorithm while its compact adjacent identity dock provides essential actions without a second permanent map label or blocking the signal workspace\
 And automatic bounds prioritize that truck's approximate location area and current Service area or Capacity route rather than its regular provider routes\
 And on wider screens the selected truck information card occupies a dedicated right-hand rail outside the map canvas while the map narrows to remain fully usable\
@@ -1013,7 +1064,7 @@ And one compact selected-truck control occupies the map's reserved top-left zone
 And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Preferred corridor and Location\
 And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Preferred corridor and Location stay separate\
 And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
-And the Driver map uses the same Empty cobalt, Partial gray, Approximate location violet, and Preferred corridor muted-orange signal language and readable hover summaries as the public Market\
+And the Driver map uses the same Empty green, Partial amber, Approximate location slate, and Preferred corridor cyan signal language and readable hover summaries as the public Market\
 And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
 And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
 And Capacity, Sharing, Preferred corridor, and Location each open only their relevant editor\
@@ -1184,7 +1235,8 @@ Supersedes the earlier automatic truck-details drawer: it obscured selected sign
 GIVEN a public or authorized private capacity map, WHEN a truck is selected,
 THEN close the results drawer and retain only the selected truck and its permitted
 lines/circles/polygons, with small white information buttons outlined in each
-signal's color. The truck's information button uses distinct cobalt. No details
+signal's color for coverage. The Vehicle and driver and Approximate location
+buttons use distinct truck and location icons. No details
 card opens automatically, including via a truck deep link.
 
 WHEN a truck or signal information button (or the signal itself) is activated,
@@ -1305,3 +1357,21 @@ Regression: `tests/production-pilot-policy.test.mjs` and
 `tests/demo-corridor-fixture.test.mjs`. The October25 finite hosted demo repair
 was rehearsed with rollback and independently verified as20 public corridor
 preferences; protected operation evidence is linked from current progress.
+
+
+### Scenario: Capacity colors retain their meaning across surfaces
+
+Given a person views or edits Capacity on the Market, a provider profile,
+Driver Home, a fleet workspace or a shared map \
+When availability, preferred coverage, approximate location or a selected
+vehicle appears \
+Then Empty uses cobalt and Partial uses navy with the same round vehicle marker, and Off Duty uses a neutral status treatment \
+And after a vehicle is selected, planned coverage uses a solid cobalt line,
+preferred coverage uses a slate dotted line, and approximate location uses
+a thin blue circle with light shading and no extra location pin \
+And the radius is hidden below a readable screen size while the Location
+button still opens the saved radius and freshness details \
+And the selected vehicle keeps its availability color inside a white gap and soft slate outline \
+And GPS and phone use distinct icons and labels on neutral badges \
+And public and private tracking maps use the same approximate-location color. \
+No changes to status visibility, location precision, storage or permissions.

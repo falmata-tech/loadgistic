@@ -23,7 +23,7 @@ function localService(cleanupDeadline:()=>number){
 }
 function checked(result:any){expect(result.error).toBeNull();return result.data;}
 function batches<T>(values:T[]):T[][]{return Array.from({length:Math.ceil(values.length/40)},(_,index)=>values.slice(index*40,(index+1)*40));}
-for(const kind of ['large','company','single'])test(`public ${kind} fleet pages reach every truck with scoped capacity`,async({page}:{page:any},info:any)=>{
+for(const kind of ['large','company','single'])test(`public ${kind} profile uses one map and its public fleet API reaches every truck`,async({page}:{page:any},info:any)=>{
   test.setTimeout(150000);let cleanupDeadline=0;const service=localService(()=>cleanupDeadline);const suffix=randomUUID().slice(0,8);const handle=`paging-${suffix}`;
   const count=kind==='large'?105:kind==='single'?1:13;let actor='';let provider='';let org='';let vehicles:any[]=[];const driverIds:string[]=[];
   const requestIds:string[]=[],reviewIds:string[]=[],invitationIds:string[]=[],proofIds:string[]=[],proofPaths:string[]=[];const driverByTruck=new Map<string,string>();
@@ -104,86 +104,56 @@ for(const kind of ['large','company','single'])test(`public ${kind} fleet pages 
         current_route_points_json:[{label:'Addis Ababa',lat:9.03,lng:38.74},{label:'Bishoftu',lat:8.75,lng:38.99}]
       }))));
     }
-    checkpoint('PUBLIC_PROFILE');const pages=Math.ceil(count/12);await page.goto(`/@${handle}`);
+    checkpoint('PUBLIC_PROFILE');
+    await page.goto(`/@${handle}`);
     await expect(page.locator('.provider-hero-facts')).toContainText(`${count} active ${count===1?'vehicle':'vehicles'}`);
-    const seen=new Set<string>();const cards=page.locator('.provider-truck-card');const nav=page.getByRole('navigation',{name:'Results pages',exact:true});
-    const details=page.locator('.provider-fleet-disclosure');
-    const information=page.locator('.provider-trust-card');
-    await expect(information.locator('.verification-group.rows')).toHaveCount(1);
-    const regular=page.locator('.provider-corridor-list');
-    await expect(regular).toHaveCount(0);
-    await expect(page.locator('.provider-services,.provider-microsite-safety')).toHaveCount(0);
-    const mapAction=page.getByRole('link',{name:'See vehicles on the map',exact:true});
-    await expect(mapAction).toHaveAttribute('href',`/?provider=${handle}`);
-    await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
-    await expect(information).toBeVisible();
-    if(count>1){
-      await expect(details).toHaveAttribute('open','');await expect(cards.first()).toBeVisible();
-      await expect(cards.first().locator('.public-truck-verification .verification-group.rows')).toHaveCount(2);
-      const firstDocument=cards.first().locator('.public-truck-verification .verification-badge').first();
-      expect(await firstDocument.evaluate((node:Element)=>getComputedStyle(node).borderLeftWidth)).toBe('0px');
-      const badgeTarget=cards.first().locator('.public-truck-verification .verification-badge summary').first();
-      expect((await badgeTarget.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-      await details.locator(':scope > summary').click();await expect(cards.first()).not.toBeVisible();await expect(nav).not.toBeVisible();
-      await page.screenshot({path:info.outputPath(`${kind}-profile-collapsed.png`),fullPage:true});
-      await details.locator(':scope > summary').click();await expect(cards.first()).toBeVisible();
-      await details.locator(':scope > summary').click();await expect(cards.first()).not.toBeVisible();
-      await details.locator(':scope > summary').focus();await page.keyboard.press('Enter');await expect(cards.first()).toBeVisible();
-    }else{
-      await expect(details).toHaveCount(0);await expect(cards).toHaveCount(1);await expect(cards.first()).toBeVisible();await expect(nav).toHaveCount(0);
-    }
-    const accountDocumentsBottom=await page.locator('.provider-trust-card').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
-    const fleetTop=await page.locator('#provider-trucks').evaluate((node:Element)=>node.getBoundingClientRect().top+scrollY);
-    const fleetBottom=await page.locator('#provider-trucks').evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY);
-    const reviewsTop=await page.locator('.provider-site-reviews').evaluate((node:Element)=>node.getBoundingClientRect().top+scrollY);
-    expect(accountDocumentsBottom).toBeLessThanOrEqual(fleetTop);expect(fleetBottom).toBeLessThanOrEqual(reviewsTop);
-    expect(await mapAction.evaluate((node:Element)=>node.getBoundingClientRect().bottom+scrollY)).toBeLessThanOrEqual(fleetTop);
-    const preservedLegacy=checked(await service.from('profile_routes').select('origin').eq(org?'organization_id':'provider_profile_id',org||provider));
-    expect(preservedLegacy).toEqual([{origin:'Regular origin'}]);
+    await expect(page.locator('.provider-map-workbench .leaflet-container')).toBeVisible();
+    await expect(page.locator('.provider-fleet-disclosure,.provider-truck-card,.provider-corridor-list')).toHaveCount(0);
+    const information=page.locator('.provider-profile-documents');
+    await information.getByText('Account documents',{exact:true}).click();
+    await expect(information.locator('.verification-group.rows')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    await page.screenshot({path:info.outputPath(`${kind}-profile-fleet.png`),fullPage:true});
+    const html=await page.content();
+    const hiddenFields=[`PRIVATE-PLATE-${suffix}`,'PRIVATE-ACCOUNT-PHONE','PRIVATE-LAST-NAME','PRIVATE-WHATSAPP','private-website.invalid','hidden-business@example.invalid','Private hidden area','synthetic-private-paging-proof'];
+    for(const hidden of hiddenFields)expect(html).not.toContain(hidden);
+    await page.screenshot({path:path.join(captures,`${info.project.name}-${kind}-profile-map.png`),scale:'css'});
 
+    checkpoint('PUBLIC_FLEET_API');
+    const pages=Math.ceil(count/12);
+    const readPage=async(value:string)=>{
+      const response=await page.request.get(`/api/mobile/public/providers/${handle}?page=${value}`);
+      expect(response.ok()).toBe(true);
+      const payload=await response.json();
+      for(const hidden of hiddenFields)expect(JSON.stringify(payload)).not.toContain(hidden);
+      return payload;
+    };
+    const seen=new Map<string,any>();
     for(let current=1;current<=pages;current++){
-      checkpoint(`PAGE_${current}`);
-      if(pages>1)await expect(nav).toContainText(`Page ${current} of ${pages} · ${count} results`);
-      await expect(regular).toHaveCount(0);
-      await expect(page.locator('.provider-services,.provider-microsite-safety')).toHaveCount(0);
-      await expect(mapAction).toHaveAttribute('href',`/?provider=${handle}`);
-      await expect(cards).toHaveCount(Math.min(12,count-(current-1)*12));
-      await expect(page.locator('.provider-handle')).toContainText('Transport Provider');
-      for(const card of await cards.all()){
-        const text=await card.innerText();const match=text.match(new RegExp(`PG-${suffix}-\\d{3}`));expect(match).not.toBeNull();
-        expect(seen.has(match![0])).toBe(false);seen.add(match![0]);
+      const result=await readPage(String(current));
+      expect(result.fleet).toMatchObject({page:current,pages,total:count});
+      expect(result.trucks).toHaveLength(Math.min(12,count-(current-1)*12));
+      for(const truck of result.trucks){
+        expect(seen.has(truck.number)).toBe(false);
+        seen.set(truck.number,truck);
       }
-      if(current<pages){await nav.getByRole('link',{name:'Next page',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/@${handle}\\?truckPage=${current+1}#provider-trucks$`));}
     }
-    expect(seen.size).toBe(count);
-    await expect(page.locator('.provider-truck-card').filter({hasText:'Regular origin'})).toHaveCount(0);
-    checkpoint('PUBLIC_PRIVACY');const html=await page.content();for(const hidden of [`PRIVATE-PLATE-${suffix}`,'PRIVATE-ACCOUNT-PHONE','PRIVATE-LAST-NAME','PRIVATE-WHATSAPP','private-website.invalid','hidden-business@example.invalid','Private hidden area','synthetic-private-paging-proof'])expect(html.includes(hidden),`Private field appeared in public HTML: ${hidden.replace(suffix,'fixture')}`).toBe(false);
+    expect([...seen.keys()].sort()).toEqual(activeVehicles.map(vehicle=>vehicle.platform_number).sort());
     if(kind==='large'){
-      await expect(page.locator('.provider-fleet-counts')).toContainText('5 with published capacity');
-      const finalAvailable=cards.filter({hasText:vehicles[100].platform_number});
-      await expect(finalAvailable.getByRole('button',{name:'View capacity on map',exact:true})).toBeVisible();
-      await finalAvailable.getByRole('button',{name:'View capacity on map',exact:true}).click();
-      await expect(finalAvailable.locator('.leaflet-container')).toBeVisible({timeout:30000});
-      await finalAvailable.locator('.leaflet-container').scrollIntoViewIfNeeded();
-      await page.screenshot({path:path.join(captures,`${info.project.name}-last-capacity-map.png`),scale:'css'});
-      for(const index of [101,102,103,104])await expect(cards.filter({hasText:vehicles[index].platform_number}).getByRole('link',{name:'Ask about this vehicle',exact:true})).toBeVisible();
+      expect(seen.get(vehicles[100].platform_number).capacity).toBeTruthy();
+      for(const index of [101,102,103,104])expect(seen.get(vehicles[index].platform_number).capacity).toBeNull();
     }
-    checkpoint('PAGING_BOUNDARIES');if(pages>1){
-    await nav.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(captures,`${info.project.name}-${kind}-last-page.png`),scale:'css'});
-    await expect(nav.getByRole('link',{name:'Next page',exact:true})).toHaveCount(0);
-    await nav.getByRole('link',{name:'Previous page',exact:true}).click();await expect(nav).toContainText(`Page ${pages-1} of ${pages}`);
-    await page.goBack();await expect(nav).toContainText(`Page ${pages} of ${pages}`);
-    for(const invalid of ['-1','1.5','2147483648','2&truckPage=3']){await page.goto(`/@${handle}?truckPage=${invalid}`);await expect(nav).toContainText(`Page 1 of ${pages}`);}
-    await page.goto(`/@${handle}?truckPage=2147483647`);await expect(nav).toContainText(`Page ${pages} of ${pages}`);
+    const overflow=await readPage('999999');
+    expect(overflow.fleet.page).toBe(pages);
+    for(const invalid of ['-1','1.5','2147483648']){
+      const response=await page.request.get(`/api/mobile/public/providers/${handle}?page=${invalid}`);
+      expect(response.status()).toBe(400);
     }
     checkpoint('UNPUBLISHED_DENIAL');checked(await service.from('company_pages').update({published:false}).eq(org?'organization_id':'provider_profile_id',org||provider));
     // The existing streamed layout can send 200 before notFound renders.
     await page.goto(`/@${handle}?truckPage=2`);
     await expect(page.getByRole('heading',{name:'404',exact:true})).toBeVisible();
     await expect(page.locator('.provider-microsite')).toHaveCount(0);
-    await expect(cards).toHaveCount(0);
+    await expect(page.locator('.provider-map-workbench')).toHaveCount(0);
     expect(await page.content()).not.toContain(`PG-${suffix}-`);checkpoint('COMPLETE');
   }catch(error){bodyFailed=true;bodyError=error;failedStage=stage;try{evidence();}catch{/* Preserve the original assertion even if writing evidence fails. */}}
   finally{

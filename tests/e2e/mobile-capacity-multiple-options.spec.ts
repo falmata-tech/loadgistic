@@ -40,6 +40,33 @@ async function mapPainted(page:Page){
  },{timeout:30_000,message:'The map must paint before a review capture.'}).toBe(true);
 }
 
+test('Expo Courier car selection loads its photo and matching public vehicles',async({page},info)=>{
+ test.setTimeout(90_000);
+ await page.goto('http://localhost:8084/');
+ await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();
+ await page.getByRole('button',{name:'All vehicle types',exact:true}).click();
+ const car=page.getByRole('checkbox',{name:'Courier car',exact:true});
+ await car.check();
+ await expect(car).toBeChecked();
+ const photo=car.locator('img[src*="/vehicle-configurations/courier-car.jpg"]');
+ await expect.poll(()=>photo.evaluate(image=>image instanceof HTMLImageElement&&image.complete&&image.naturalWidth>0)).toBe(true);
+ await car.scrollIntoViewIfNeeded();
+ await page.screenshot({path:info.outputPath('expo-courier-car-selected.png'),scale:'css'});
+ await page.getByRole('button',{name:'Close',exact:true}).click();
+ const filtered=page.waitForResponse(response=>{
+  const url=new URL(response.url());
+  return url.pathname==='/api/public/capacity'&&url.searchParams.get('vehicleCategory')==='Courier car';
+ });
+ await page.getByRole('button',{name:'Show vehicles',exact:true}).click();
+ const response=await filtered;
+ expect(response.ok()).toBe(true);
+ const {items}=await response.json();
+ expect(items.length).toBeGreaterThan(0);
+ expect(items.every((item:{cargo_configuration:string})=>item.cargo_configuration==='Courier car')).toBe(true);
+ await mapPainted(page);
+ await page.screenshot({path:info.outputPath('expo-courier-car-results.png'),scale:'css'});
+});
+
 test('Expo multi-option controls keep drafts and submit canonical groups plus document filters on narrow phones',async({page},info)=>{
  test.setTimeout(120_000);const requests:URL[]=[];
  page.on('request',request=>{const url=new URL(request.url());if(url.pathname==='/api/public/capacity')requests.push(url);});
@@ -47,10 +74,10 @@ test('Expo multi-option controls keep drafts and submit canonical groups plus do
  await expect(page.getByRole('button',{name:'Vehicle filters',exact:true})).toBeVisible({timeout:45_000});await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
  await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();await configs(page,info);
  await page.getByRole('radio',{name:'Route',exact:true}).click();await page.getByRole('button',{name:'Vehicle location',exact:true}).click();await page.getByRole('button',{name:'More filters',exact:true}).click();
- for(const label of ['Full truck','Shared space'])await expect(page.getByRole('checkbox',{name:label,exact:true})).toHaveCount(0);
- for(const label of ['Empty vehicle','Partly loaded','GPS device','Manually entered','Multiple pickups','Multiple drop-offs','Within 12 hours','More than 12 hours ago']){await page.getByRole('checkbox',{name:label,exact:true}).check();await expect(page.getByRole('checkbox',{name:label,exact:true})).toBeChecked();}
+ for(const label of ['Full truck','Shared space','Manually entered','Manual capacity location'])await expect(page.getByRole('checkbox',{name:label,exact:true})).toHaveCount(0);
+ for(const label of ['Empty vehicle','Partly loaded','GPS device','Driver’s phone','Multiple pickups','Multiple drop-offs','Within 12 hours','More than 12 hours ago']){await page.getByRole('checkbox',{name:label,exact:true}).check();await expect(page.getByRole('checkbox',{name:label,exact:true})).toBeChecked();}
  await page.getByRole('checkbox',{name:'Business License',exact:true}).check();
- const expected={vehicleCategory:csv,status:'EMPTY,PARTIAL',locationSource:'GPS,MANUAL',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED',ownerDocs:'BUSINESS_LICENSE'};
+ const expected={vehicleCategory:csv,status:'EMPTY,PARTIAL',locationSource:'GPS,MOBILE',stopOption:'MULTI_DROP,MULTI_PICK',freshness:'FRESH,UPDATE_NEEDED',ownerDocs:'BUSINESS_LICENSE'};
  expect(requests.every(url=>!Object.keys(expected).some(key=>url.searchParams.get(key)))).toBe(true);
  for(const width of [390,320]){
   await page.setViewportSize({width,height:width===320?640:844});await checkControls(page);

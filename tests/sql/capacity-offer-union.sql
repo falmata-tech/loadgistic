@@ -120,12 +120,12 @@ begin
  area_places:='[{"place_ref":"builtin:holeta"},{"place_ref":"builtin:sebeta"},{"place_ref":"builtin:bishoftu"},{"place_ref":"builtin:sululta"}]';
  route_places:='[{"place_ref":"builtin:harar"},{"place_ref":"builtin:jigjiga"}]';
  begin
-  perform publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','accepted_loads','PTL',
+  perform publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
    'availability_geometry','RADIUS','capacity_area_center_place_ref','builtin:addis ababa',
    'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
   raise exception 'MALFORMED_PARTIAL_AREA_ACCEPTED';
  exception when others then if sqlerrm<>'CAPACITY_AREA_BOUNDARY_REQUIRED' then raise;end if;end;
- capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','accepted_loads','PTL',
+ capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
    'availability_geometry','RADIUS','capacity_area_center_place_ref','builtin:addis ababa','capacity_area_boundary_places',area_places,
    'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
  if (select availability_geometry from capacities where id=capacity_id) is distinct from 'RADIUS' then raise exception 'PARTIAL_AREA_PUBLICATION_NOT_SAVED';end if;
@@ -185,7 +185,7 @@ begin
    or (select count(*) from business_capacity_filtered_page(broker_id,workspace_id,null,null,100,query))<>1
  then raise exception 'DUPLICATED_MATCHING_VEHICLE';end if;
  perform pg_temp.assert_public_profile_offer217(query||jsonb_build_object('q','offer-'||organization_id),1,'DUPLICATE_OFFERS_COUNT_ONCE',true);
- capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','accepted_loads','PTL',
+ capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
    'availability_geometry','ROUTE','current_route_places',route_places,'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
  select current_route_points_json->0 into route_first from capacities where id=capacity_id;
  if route_first is null then raise exception 'CURRENT_ROUTE_FIXTURE_NOT_PUBLISHED';end if;
@@ -221,7 +221,7 @@ begin
    or (select count(*) from business_capacity_filtered_page(broker_id,workspace_id,null,null,100,query))<>1
  then raise exception 'EMPTY_CURRENT_ROUTE_AREA_QUERY_AUDIENCE_PARITY';end if;
  perform pg_temp.assert_public_profile_offer217(query||jsonb_build_object('q','offer-'||organization_id),1,'EMPTY_PLANNED_ROUTE_AREA',true);
- capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','accepted_loads','PTL',
+ capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
    'availability_geometry','ROUTE','current_route_places',route_places,'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
  query:=jsonb_build_object('capacity_id',capacity_id,'status','PARTIAL','geometry','RADIUS',
    'origin_lat',9.006,'origin_lng',38.732,'destination_lat',8.919,'destination_lng',38.600,

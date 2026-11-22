@@ -83,10 +83,6 @@ test('active Tracking routes use the dedicated managed-data facade without deman
     'src/app/api/provider-shipments/route.ts',
     'src/app/api/provider-shipments/[id]/status/route.ts',
     'src/app/api/provider-shipments/[id]/location/route.ts',
-    'src/app/api/tracking/unlock/route.ts',
-    'src/app/api/tracking/review-unlock/route.ts',
-    'src/app/api/tracking/[id]/review/route.ts',
-    'src/app/track/[id]/page.tsx',
     'src/app/app/provider-shipments/page.tsx',
     'src/app/app/provider-shipments/[id]/page.tsx',
     'src/app/app/provider-shipments/new/page.tsx'
@@ -95,6 +91,16 @@ test('active Tracking routes use the dedicated managed-data facade without deman
     const source=fs.readFileSync(path.join(root,file),'utf8');
     assert.match(source,/@\/lib\/provider-tracking\.js/);
     assert.doesNotMatch(source,/@\/lib\/repository\.js/);
+  }
+  for(const file of ['src/app/api/tracking/access/route.ts','src/app/api/tracking/sessions/[sessionId]/route.ts','src/app/api/tracking/sessions/[sessionId]/review/route.ts']){
+    const source=fs.readFileSync(path.join(root,file),'utf8');
+    assert.match(source,/@\/lib\/tracking-sessions\/http/);
+    assert.doesNotMatch(source,/@\/lib\/repository\.js|@\/lib\/provider-tracking\.js/);
+  }
+  for(const file of ['src/app/api/tracking/unlock/route.ts','src/app/api/tracking/review-unlock/route.ts','src/app/api/tracking/[id]/review/route.ts']){
+    const source=fs.readFileSync(path.join(root,file),'utf8');
+    assert.match(source,/retiredTrackingAccess/);
+    assert.doesNotMatch(source,/getProviderTrackingGrant|@\/lib\/repository\.js|@\/lib\/provider-tracking\.js/);
   }
   assert.match(facade,/provider-tracking\/supabase\.js/);
   assert.doesNotMatch(facade,/DATA_BACKEND|repository\.js/);

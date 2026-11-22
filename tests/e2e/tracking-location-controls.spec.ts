@@ -1,12 +1,12 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures,issueTrackingFixtureLink,openTrackingFixtureLink} from './tracking-session-fixtures';
 import {test,expect} from './browser-test';
-import {auditIdentity,auditLogin,auditOpenTrackingProgress} from './audit-helpers';
+import {auditIdentity,auditLogin,auditTrackingOwnerLogin,auditOpenTrackingProgress} from './audit-helpers';
 import nextEnv from '@next/env';
 import {createClient} from '@supabase/supabase-js';
 import {randomUUID} from 'node:crypto';
 import {mkdirSync} from 'node:fs';
 import path from 'node:path';
-import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
-import {localMailpitNumericCode} from './mailpit-helper';
+import {getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
 function checked(result:any){expect(result.error).toBeNull();return result.data;}
 
 test('Driver selects Tracking privacy radius with truthful cooldown and foreground-only updates',async({page,browser}:{page:any;browser:any},info:any)=>{
@@ -68,10 +68,10 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     await page.evaluate(()=>localStorage.removeItem('test-tracking-gps'));await controls.getByRole('button',{name:'Retry location',exact:true}).click();
     expect(await (await retryReply).json()).toMatchObject({recorded:false,reason:'THROTTLED'});await expect(controls.getByRole('status')).toContainText('Waiting');
     expect(checked(await service.from('provider_shipment_events').select('id').eq('shipment_id',shipment.id).eq('location_source','DEVICE_OBSCURED'))).toHaveLength(2);
-    const guestPage=await guest.newPage();await guestPage.goto('/track');await guestPage.getByLabel('Email',{exact:true}).fill(email);
-    const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();
-    await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));await guestPage.getByRole('button',{name:'Open tracking'}).click();
-    await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible({timeout:20000});
+    const guestPage=await guest.newPage(),ownerSession=await auditTrackingOwnerLogin(guestPage,email,shipment.id);
+    const link=await issueTrackingFixtureLink(guestPage,ownerSession.id,true);await guest.clearCookies();
+    const shared=await openTrackingFixtureLink(guestPage,link);expect(shared.tracking.location.source).toBe('MOBILE');
+    await expect(guestPage.getByRole('heading',{name:'Shipment progress',exact:true})).toBeVisible({timeout:20000});
     await expect(guestPage.locator('.tracking-mode-banner')).toContainText('Location and status updates');await expect(guestPage.locator('.tracking-mode-banner')).not.toContainText('pause when it closes or the phone locks');await expect(guestPage.getByLabel('Location privacy radius')).toHaveCount(0);
     await guestPage.locator('.tracking-mode-banner').scrollIntoViewIfNeeded();await guestPage.screenshot({path:path.join(captures,`${info.project.name}-recipient-guidance.png`),scale:'css'});
     await expect(page.getByLabel('Status only',{exact:true})).toHaveCount(0);
@@ -81,3 +81,6 @@ test('Driver selects Tracking privacy radius with truthful cooldown and foregrou
     checked(await service.from('provider_shipments').delete().eq('id',shipment.id).eq('cargo_summary',marker));await guest.close();
   }
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

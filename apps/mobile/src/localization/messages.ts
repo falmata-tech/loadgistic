@@ -8,6 +8,16 @@ const workflowMessages=(column:number):Messages=>Object.fromEntries(workflows.ma
 export const nativeMessages:Record<Locale,Messages>={
  en:{},
  am:{
+ "Enter a YouTube video link or clear the field to remove the cover video.":"የዩቲዩብ ቪዲዮ ማገናኛ ያስገቡ። የሽፋን ቪዲዮውን ለማስወገድ መስኩን ባዶ ይተዉ።",
+  "Next sponsor":"ቀጣዩ ስፖንሰር",
+ "Cover video":"የሽፋን ቪዲዮ",
+ "Play cover video":"የሽፋን ቪዲዮውን አጫውት",
+ "Watch on YouTube":"በዩቲዩብ ይመልከቱ",
+  "Previous sponsor":"ያለፈው ስፖንሰር",
+  "Resume rotation":"መቀያየሩን ቀጥል",
+  "Pause rotation":"መቀያየሩን አቁም",
+  "Visit page":"ገጹን ይክፈቱ",
+
   'No written comment.':'የጽሑፍ አስተያየት የለም።',
   "Choose all cities to see the coverage preview.":"የመስመሩን ወይም የአካባቢውን ቅድመ እይታ ለማየት ሁሉንም ከተሞች ይምረጡ።",
   "Coverage preview · not driving directions":"የአገልግሎት አካባቢ ቅድመ እይታ፤ የመንገድ መመሪያ አይደለም",
@@ -65,6 +75,16 @@ export const nativeMessages:Record<Locale,Messages>={
   'Your chat':'የእርስዎ ውይይት',
  },
  om:{
+ "Enter a YouTube video link or clear the field to remove the cover video.":"Hidhaa viidiyoo YouTube galchi. Viidiyoo fuula jalqabaa haquuf iddoo kana duwwaa dhiisi.",
+  "Next sponsor":"Ispoonsara itti aanu",
+ "Cover video":"Viidiyoo fuula jalqabaa",
+ "Play cover video":"Viidiyoo fuula jalqabaa taphachiisi",
+ "Watch on YouTube":"YouTube irratti ilaali",
+  "Previous sponsor":"Ispoonsara darbe",
+  "Resume rotation":"Jijijjiirama itti fufi",
+  "Pause rotation":"Jijijjiirama dhaabi",
+  "Visit page":"Fuula bani",
+
   'No written comment.':'Yaada barreeffamaa hin jiru.',
   "Choose all cities to see the coverage preview.":"Karaa ykn naannoo tajaajilaa kaartaa irratti ilaaluuf magaalota hunda filadhaa.",
   "Coverage preview · not driving directions":"Naannoo tajaajilaa dursee ilaali; qajeelfama konkolaachisuu miti",

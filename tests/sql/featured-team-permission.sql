@@ -5,7 +5,7 @@ begin
  raise exception 'EXPECTED_FEATURED_DENIAL';
 end $$;
 do $test$
-declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;account_org uuid;account_profile uuid;account_vehicle_ids uuid[];day_value date;baseline_invalid integer;
+declare admin_id uuid;staff_id uuid:=gen_random_uuid();other_id uuid:=gen_random_uuid();uid uuid;result jsonb;prior_access text;command jsonb;account_org uuid;account_profile uuid;account_vehicle_ids uuid[];day_value date;baseline_invalid integer;eligible_vehicle uuid;
 begin
  select id into strict admin_id from profiles where active and role='ADMIN' limit 1;
  foreach uid in array array[staff_id,other_id] loop
@@ -13,6 +13,29 @@ begin
   perform create_managed_support_agent(admin_id,uid,jsonb_build_object('name','Synthetic Featured staff','email',uid::text||'@example.test','max_open_conversations',3,'can_manage_support',false,'can_manage_featured',uid=staff_id));
  end loop;
  if not can_manage_featured(staff_id) or can_manage_featured(other_id) then raise exception 'CAPABILITY_DEFAULT_OR_GRANT';end if;
+ -- A granted staff member can save and change artwork. Invalid artwork rolls back
+ -- the entire edit, and the ordinary staff role cannot disable the placement.
+ declare
+   review_date date := date '2098-03-10';
+   placement uuid;
+   payload jsonb := jsonb_build_object('feature_date',review_date,'group_key',managed_featured_group_for_date(review_date),
+     'region_codes','[]'::jsonb,'sponsor_kind','ADVERTISER','position',1,'starts_on',review_date,'ends_on',review_date,
+     'business_name','Industrial test sponsor','description','Local industrial services example.',
+     'website_url','https://example.org','artwork_key','machining');
+ begin
+   placement:=save_managed_sponsorship(staff_id,payload);
+   payload:=payload||jsonb_build_object('sponsorship_id',placement,'artwork_key','motors');
+   perform save_managed_sponsorship(staff_id,payload);
+   begin
+     perform save_managed_sponsorship(staff_id,payload||'{"artwork_key":"unknown","position":2}'::jsonb);
+     raise exception 'UNKNOWN_ARTWORK_ACCEPTED';
+   exception when check_violation then null;
+   end;
+   perform pg_temp.expect_featured_denied(format('select disable_managed_sponsorship(%L,%L)',other_id,placement));
+   if not exists(select from sponsor_placements where id=placement and active and position=1 and artwork_key='motors')
+     then raise exception 'SPONSOR_EDIT_NOT_ATOMIC'; end if;
+   perform disable_managed_sponsorship(staff_id,placement);
+ end;
  result:=managed_featured_controls(staff_id);
  if result ? 'access_mode' or result ? 'updated_by' then raise exception 'UNRELATED_SETTING_EXPOSED';end if;
  perform managed_featured_overview(staff_id);
@@ -38,6 +61,17 @@ begin
 
  -- Featured now follows provider accounts across vehicle types. Removing every
  -- eligible vehicle from a scheduled account must flag that account, then recover.
+ -- MANUAL mode can legitimately have an entirely empty week on a fresh database.
+ if not exists(select 1 from featured_provider_slots s join featured_provider_days d on d.id=s.day_id
+   where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6) then
+  select vehicle_id into strict eligible_vehicle from featured_eligible_account_links()
+    where capacity_public_policy_allows(vehicle_id) order by provider_key limit 1;
+  perform save_managed_featured_provider_day(staff_id,jsonb_build_object(
+    'feature_date',(now() at time zone 'Africa/Addis_Ababa')::date+1,'target_count',1,
+    'truck_keys',jsonb_build_array('vehicle:'||eligible_vehicle::text),'schedule_mode','AUTO',
+    'schedule_config',jsonb_build_object('dayStart','22:30','dayEnd','23:59','targetCount',1,
+      'sponsorBreakCount',0,'sponsorBreakMinutes',2),'manual_schedule','[]'::jsonb,'publish',false));
+ end if;
  select s.provider_organization_id,s.provider_profile_id,d.feature_date into account_org,account_profile,day_value
  from featured_provider_slots s join featured_provider_days d on d.id=s.day_id
  where d.feature_date between (now() at time zone 'Africa/Addis_Ababa')::date and (now() at time zone 'Africa/Addis_Ababa')::date+6

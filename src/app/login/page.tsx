@@ -9,7 +9,7 @@ import {PublicHeader} from '@/components/public-header';
 import {Flash} from '@/components/flash';
 import {getCurrentUser} from '@/lib/auth';
 import {signupEntry} from '@/lib/signup-audience.js';
-import {localAuthInboxUrl,localFixturePasswordLoginEnabled,managedWorkspaceDestination} from '@/lib/auth-flow.js';
+import {localAuthInboxUrl,localFixturePasswordLoginEnabled,managedAccountLoginDestination} from '@/lib/auth-flow.js';
 import {
   MANAGED_SIGNUP_COOKIE,maskedProviderSignupEmail,readProviderSignupHandoff
 } from '@/lib/provider-signup.js';
@@ -19,26 +19,26 @@ export default async function LoginPage({
 }:{
   searchParams:Promise<Record<string,string|undefined>>;
 }){
-  const user=await getCurrentUser();
-  if(user?.active)redirect(managedWorkspaceDestination(user.role,user.selected_business_workspace));
   const query=await searchParams;
+  const from=signupEntry(query.from);
+  const user=await getCurrentUser();
+  if(user?.active)redirect(managedAccountLoginDestination(user.role,user.selected_business_workspace,from));
   const store=await cookies();
   const handoff=readProviderSignupHandoff(store.get(MANAGED_SIGNUP_COOKIE)?.value||'');
   const codeStep=query.step==='code'&&Boolean(handoff?.email);
   const localInbox=localAuthInboxUrl();
   const fixturePassword=localFixturePasswordLoginEnabled();
-  const from=signupEntry(query.from);
-  const sharedEntry=Boolean(from);
+  const sharedEntry=from==='shared-capacity';
 
   return <>
     <PublicHeader/>
     <PublicAuthShell
       variant="login"
-      taskKicker={<Text message={sharedEntry?'Shared with you':'Account'}/>}
+      taskKicker={<Text message={from==='tracking'?'Tracking':from==='support'?'Support':sharedEntry?'Private Network':'Account'}/>}
       title={codeStep?'Enter your code':'Sign in'}
       description={codeStep
         ?<Text message="We sent a six-digit code to {email}." values={{email:maskedProviderSignupEmail(handoff?.email||'')}}/>
-        :<Text message={sharedEntry?'Sign in to see vehicles shared with your account.':'Enter your email to sign in securely.'}/>}
+        :<Text message={sharedEntry?'Sign in to see vehicles your transport partners share with you.':'Enter your email to sign in securely.'}/>}
       feedback={<Flash error={query.error} success={query.success}/>}
     >
       <div className="managed-login-stack">
@@ -77,7 +77,7 @@ function EmailCodeForm({localInbox,from}:{localInbox:string|null;from:string}){
       <small id={helpId}><Text message="Codes expire after ten minutes and can be used once."/></small>
     </div>
     <button className="button auth-primary-action" type="submit"><LogIn aria-hidden="true"/><Text message="Continue"/></button>
-    <Link className="auth-inline-link" href="/login"><RotateCcw aria-hidden="true"/><Text message="Use a different email"/></Link>
+    <Link className="auth-inline-link" href={from?`/login?from=${from}`:'/login'}><RotateCcw aria-hidden="true"/><Text message="Use a different email"/></Link>
     {localInbox?<LocalInboxLink url={localInbox}/>:null}
   </form>;
 }

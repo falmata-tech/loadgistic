@@ -20,19 +20,21 @@ begin
  end loop;
  foreach role_value in array array['SHIPPER','RECEIVER'] loop
   update public.profiles set role=role_value::public.user_role,driver_portrait_preset=null where id=provider_id;
-  perform pg_temp.expect_provider_support_denied(format('select public.create_managed_support_conversation(%L,%L::jsonb)',provider_id,'{"category":"ACCOUNT","body":"Denied"}'),'FORBIDDEN');
-  perform pg_temp.expect_provider_support_denied(format('select public.send_managed_support_message(%L,%L,''Denied'')',provider_id,chat_id),'NOT_FOUND');
-  perform pg_temp.expect_provider_support_denied(format('select public.support_attachment_reply_scope(%L,%L)',provider_id,chat_id),'NOT_FOUND');
+  chat_id:=public.create_managed_support_conversation(provider_id,'{"category":"ACCOUNT","body":"Registered account support"}');
+  perform public.send_managed_support_message(provider_id,chat_id,'Registered account reply');
+  perform public.support_attachment_reply_scope(provider_id,chat_id);
+  perform public.close_managed_support_conversation(provider_id,chat_id);
  end loop;
  insert into public.guest_support_conversations(id,email,email_digest,phone,status) values(guest_id,'retained@example.test',digest,'+251911000000','OPEN');
  insert into public.guest_support_messages(conversation_id,sender_kind,body) values(guest_id,'GUEST','Retained historical message');
  perform pg_temp.expect_provider_support_denied('select public.create_managed_guest_support(''{}''::jsonb)','PUBLIC_SUPPORT_CLOSED');
  perform pg_temp.expect_provider_support_denied(format('select public.send_managed_guest_support_message(null,%L,%L,''Denied'')',guest_id,digest),'PUBLIC_SUPPORT_CLOSED');
- result:=public.managed_guest_support_conversation(null,guest_id,digest,50,false);
+ perform pg_temp.expect_provider_support_denied(format('select public.managed_guest_support_conversation(null,%L,%L,50,false)',guest_id,digest),'NOT_FOUND');
+ result:=public.managed_guest_support_conversation(admin_id,guest_id,null,50,false);
  if jsonb_array_length(result->'messages')<>1 then raise exception 'HISTORY_LOST';end if;
  perform public.send_managed_guest_support_message(admin_id,guest_id,null,'Staff can finish an existing record');
  perform public.close_managed_guest_support(admin_id,guest_id,null);
  if has_function_privilege('anon','public.create_managed_guest_support(jsonb)','execute') or has_function_privilege('authenticated','public.create_managed_support_conversation(uuid,jsonb)','execute') then raise exception 'BROWSER_COMMAND_EXPOSED';end if;
- raise notice 'Provider and staff support preserved; guest/non-provider writes denied; retained history readable';
+ raise notice 'Provider and staff support preserved; guest access denied; permitted staff can read retained history';
 end $test$;
 rollback;

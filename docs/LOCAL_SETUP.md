@@ -241,6 +241,15 @@ The explicit PostGIS owner-security step matches clean CI and is fixed to
 `supabase_db_loadgistic-local`; it does not connect to a hosted project. Keep the
 catalog/role guard independent of the PostgREST request guard.
 
+The maintained disposable GPS clone also verifies source security before cloning,
+then uses the same existing owner SQL and exact source grants on its fixed test
+database before checking the clone. A custom review clone needs equivalent
+owner-run containment and a strict catalog check on its independently verified
+target; copying data/functions alone does not prove extension security. Do not
+change ownership, initial-privilege catalogs or the active source to repair a
+clone. PostgreSQL recreates extension members during restore; see its
+[extension documentation](https://www.postgresql.org/docs/17/extend-extensions.html).
+
 | Local service | Address / identity |
 | --- | --- |
 | Web |`http://127.0.0.1:3100` |
@@ -276,6 +285,14 @@ hosted changes retain separate exact owner authority.
 Development uses `.next-dev`; production builds use `.next`; browser tests use
 `.next-e2e`. Preserve the user's generated Next metadata and settings. Keep build
 and browser wrappers sequential because both manage temporary type references.
+
+A localhost navigation can return an empty response when Next dev recycles its worker.
+During the November 17 broker workflow, the failed guest navigation coincided with
+a `server-restart-close-to-memory-threshold` event in `.next-dev/trace` at
+1,330,855,056 used heap bytes against a 1,660,944,384-byte limit. For this
+symptom, check the worker PID and trace timestamp, confirm the local health route,
+then rerun the affected journey. Keep the memory limit in place. Serialize
+full builds and browser suites on this Mac.
 
 ## Expo browser preview
 

@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { capacityStatusPresentation } from '../src/lib/capacity-status-presentation.js';
+import { capacityMapColors,capacityStatusPresentation } from '../src/lib/capacity-status-presentation.js';
 
 const css = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
 const mobileTokens = readFileSync(new URL('../apps/mobile/src/theme/capacity-status-presentation.ts', import.meta.url), 'utf8');
+const mobileMap = readFileSync(new URL('../apps/mobile/src/components/CapacityMap.tsx', import.meta.url), 'utf8');
 
 function contrast(foreground, background) {
   const luminance = color => {
@@ -16,27 +17,35 @@ function contrast(foreground, background) {
   return (values[0] + 0.05) / (values[1] + 0.05);
 }
 
-test('Empty and Partial have distinct, readable shared status colors', () => {
-  assert.deepEqual(capacityStatusPresentation, {
-    EMPTY: { color: '#155eef', soft: '#eaf1ff', text: '#155eef' },
-    PARTIAL: { color: '#667085', soft: '#f2f4f7', text: '#475467' },
-  });
-  assert.ok(contrast('#ffffff', capacityStatusPresentation.PARTIAL.color) >= 4.5);
-  assert.ok(contrast(capacityStatusPresentation.PARTIAL.text, capacityStatusPresentation.PARTIAL.soft) >= 4.5);
-
-  for (const [status, tokens] of Object.entries(capacityStatusPresentation)) {
-    const block = mobileTokens.match(new RegExp(`${status}:\\s*\\{([^}]+)\\}`))?.[1];
-    assert.ok(block, `mobile ${status} tokens exist`);
-    for (const [name, value] of Object.entries(tokens)) {
-      assert.match(block, new RegExp(`${name}:\\s*['\"]${value}['\"]`), `mobile ${status}.${name} matches web`);
-    }
+test('status and map colors have distinct meanings and readable foregrounds', () => {
+  const {selection, planned, selectedLocation, selectedPreferred}=capacityMapColors;
+  assert.equal(new Set([
+    selection, planned, selectedLocation, selectedPreferred,
+  ]).size, 4);
+  for (const {color,soft,text} of Object.values(capacityStatusPresentation)) {
+    assert.ok(contrast('#ffffff', color) >= 4.5, `White marker text on ${color}`);
+    assert.ok(contrast(text,soft) >= 4.5, `Status text on ${soft}`);
   }
+  for (const [name,color] of Object.entries(capacityMapColors)) {
+    assert.ok(contrast('#ffffff',color)>=3, `${name} outline against light surfaces`);
+  }
+  for (const color of [selection,planned,selectedLocation,selectedPreferred]) {
+    assert.ok(contrast('#e5e5e5',color)>=3, `Selected outline ${color} against a typical light map tile`);
+  }
+  assert.match(mobileTokens,/export \{capacityMapColors,capacityStatusPresentation\} from .*capacity-status-presentation\.js/);
 });
 
-test('web maps, filters, cards and map keys use the shared Partial color', () => {
+test('web maps, filters, cards and map keys use the shared theme colors', () => {
   for (const [token, value] of Object.entries({
     '--capacity-empty': capacityStatusPresentation.EMPTY.color,
     '--capacity-empty-soft': capacityStatusPresentation.EMPTY.soft,
+    '--capacity-empty-text': capacityStatusPresentation.EMPTY.text,
+    '--capacity-location': capacityMapColors.location,
+    '--capacity-preferred': capacityMapColors.preferred,
+    '--capacity-selection': capacityMapColors.selection,
+    '--capacity-planned': capacityMapColors.planned,
+    '--capacity-selected-location': capacityMapColors.selectedLocation,
+    '--capacity-selected-preferred': capacityMapColors.selectedPreferred,
     '--capacity-partial': capacityStatusPresentation.PARTIAL.color,
     '--capacity-partial-soft': capacityStatusPresentation.PARTIAL.soft,
     '--capacity-partial-text': capacityStatusPresentation.PARTIAL.text,
@@ -52,4 +61,16 @@ test('web maps, filters, cards and map keys use the shared Partial color', () =>
     '.capacity-marker-tooltip.partial',
     '.capacity-signal-inspector article.partial',
   ]) assert.match(css, new RegExp(`${selector.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\{[^}]*var\\(--capacity-partial`));
+});
+
+test('selection preserves availability and both status markers keep one vehicle shape',()=>{
+  const selected=css.match(/vehicle-image-marker\.selected:is\(\.empty,\.partial\) \.vehicle-marker-image\{([^}]+)\}/)?.[1]||'';
+  assert.match(selected,/outline:2px solid var\(--capacity-selection\)/);
+  assert.doesNotMatch(selected,/background/);
+  assert.match(css,/\.vehicle-image-marker \.vehicle-marker-image\{[^}]*border-radius:50%/);
+  assert.doesNotMatch(css,/\.vehicle-image-marker\.(?:empty|partial) \.vehicle-marker-image\{[^}]*border-radius/);
+  assert.doesNotMatch(mobileMap,/borderRadius:status===/);
+  assert.match(css,/\.public-map-legend \.privacy::before\{border:1px solid var\(--capacity-selected-location\)/);
+  assert.match(css,/\.public-map-legend \.current-route::before\{border-top:3px solid var\(--capacity-planned\)/);
+  assert.match(css,/\.public-map-legend \.corridor::before\{border-top:3px dotted var\(--capacity-selected-preferred\)/);
 });

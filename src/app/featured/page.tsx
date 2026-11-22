@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {FEATURED_PUBLIC_HEADING} from '@/lib/featured-heading-presentation.js';
 
 export const dynamic='force-dynamic';
-export const metadata:Metadata=publicPageMetadata({path:'/featured',title:FEATURED_PUBLIC_HEADING,description:'Meet today’s Transport Providers and explore the vehicles they publish on Loadgistic.'});
+export const metadata:Metadata=publicPageMetadata({path:'/featured',title:FEATURED_PUBLIC_HEADING,description:'Discover featured transport providers, view their profiles, and see the vehicles they share on Loadgistic.'});
 
 export default async function FeaturedTransportersPage(){
   let featured;

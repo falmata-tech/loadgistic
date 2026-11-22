@@ -22,7 +22,7 @@ const optional = (value: unknown) => value === null ? null : text(value, 200);
 export function parseSession(value: unknown): AccountSession {
   const data = record(value), user = record(data.user);
   const state = text(data.state), role = text(user.role);
-  if (!['ACTIVE', 'JOIN_FLEET', 'ONBOARDING'].includes(state) || ['ADMIN', 'SUPPORT'].includes(role) || (state === 'ACTIVE' && !['DRIVER', 'TRANSPORTER','CUSTOMER'].includes(role))) throw new Error('Invalid sign-in response');
+  if (!['ACTIVE', 'JOIN_FLEET', 'ONBOARDING'].includes(state) || ['ADMIN', 'SUPPORT'].includes(role) || (state === 'ACTIVE' && !['DRIVER', 'TRANSPORTER','CUSTOMER','SHIPPER','RECEIVER'].includes(role))) throw new Error('Invalid sign-in response');
   if (typeof data.expiresAt !== 'number' || !Number.isFinite(data.expiresAt) || data.expiresAt <= 0) throw new Error('Invalid sign-in response');
   const access = state === 'ACTIVE' ? record(data.access) : null;
   if (access && (typeof access.granted !== 'boolean' || typeof access.status !== 'string')) throw new Error('Invalid sign-in response');
@@ -49,7 +49,7 @@ export function parseSession(value: unknown): AccountSession {
 
 function parseBusinessIdentity(user:Record<string,unknown>,actorId:string,role:string):Pick<AccountSession['user'],'platformRole'|'providerWorkspaceAvailable'|'businessWorkspaceEligible'|'businessWorkspaces'|'businessInvitations'|'selectedBusinessWorkspace'> {
   const supplied=['platformRole','businessWorkspaces','selectedBusinessWorkspace','businessInvitations','providerWorkspaceAvailable'].some(key=>key in user);
-  if(!supplied){if(role==='CUSTOMER')throw new Error('Invalid sign-in response');return {};}
+  if(!supplied){if(['CUSTOMER','SHIPPER','RECEIVER'].includes(role))throw new Error('Invalid sign-in response');return {};}
   const platformRole=text(user.platformRole,40);
   if(['ADMIN','SUPPORT','CUSTOMER'].includes(platformRole)||typeof user.providerWorkspaceAvailable!=='boolean'||typeof user.businessWorkspaceEligible!=='boolean'||!Array.isArray(user.businessWorkspaces)||!Array.isArray(user.businessInvitations))throw new Error('Invalid sign-in response');
   const workspaces=user.businessWorkspaces.map(raw=>{
@@ -71,6 +71,7 @@ function parseBusinessIdentity(user:Record<string,unknown>,actorId:string,role:s
   if(rawSelected!==null){const row=record(rawSelected);selected=workspaces.find(item=>item.id===row.id)||null;
     if(!selected||row.actorId!==actorId||row.actorRole!=='CUSTOMER'||row.membershipRevision!==selected.membershipRevision)throw new Error('Invalid sign-in response');}
   if(role==='CUSTOMER'&&!selected||role!=='CUSTOMER'&&selected)throw new Error('Invalid sign-in response');
+  if(['SHIPPER','RECEIVER'].includes(role)&&(platformRole!==role||selected!==null||user.providerWorkspaceAvailable!==false||user.ownsProviderAccount||user.canManageFleet||user.drivesTruck||user.currentDriverId||user.currentDrivenVehicleId))throw new Error('Invalid sign-in response');
   if(role==='CUSTOMER'&&(user.ownsProviderAccount||user.canManageFleet||user.drivesTruck||user.currentDriverId||user.currentDrivenVehicleId))throw new Error('Invalid sign-in response');
   return {platformRole,providerWorkspaceAvailable:user.providerWorkspaceAvailable,businessWorkspaceEligible:user.businessWorkspaceEligible,businessWorkspaces:workspaces,businessInvitations:invitations,selectedBusinessWorkspace:selected};
 }

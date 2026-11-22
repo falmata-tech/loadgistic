@@ -11,6 +11,17 @@ rollout: Confirm the interface and open commercial decisions, implement additive
 
 # October18 business workspace plan
 
+## November17 Tracking cutover — current implementation in progress
+
+FEAT-TRK-001 / ADR-089 replace anonymous email-wide Tracking with per-load
+expiring links AND separate codes. Current Tracking permission reads authorized
+sessions; existing Team/owner authority is additionally required to create or
+share workspace sessions. Guests inherit no account, team, proof or owner action.
+Shipper/broker members may create Pending provider sessions; only authenticated
+provider acceptance connects an eligible assigned truck. Actual registered
+personal owners retain an account-scoped shipment list. Historical individual
+email-access descriptions below do not authorize the retired guest path.
+
 ### October26 concise team permissions — presentation pending
 
 Given an owner or workspace admin invites or edits a teammate\

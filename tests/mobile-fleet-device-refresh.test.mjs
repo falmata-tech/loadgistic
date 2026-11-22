@@ -6,7 +6,6 @@ import {nextCapacityPrivacyRadius} from '../src/lib/location-privacy.js';
 import {isDemoAdminSpare,gpsDeviceDisplayLabel} from '../src/lib/demo-admin-spare.js';
 import {commandStateLabel,telematicsAlarmLabel} from '../src/lib/telematics-copy.js';
 class ApiError extends Error{constructor(status){super('Synthetic read response');this.status=status;}}
-const sharedExports={};new Function('exports',ts.transpileModule(readFileSync('src/lib/telematics-workspace.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(sharedExports);
 
 // Exercise the real component hooks/handlers with a deterministic navigation,
 // native measurement, clock and authorized HTTP port. No database or timer waits.
@@ -18,7 +17,7 @@ function harness(request){
  const changed=(a,b)=>!a||a.length!==b.length||a.some((value,index)=>value!==b[index]);
  const hooks={useRef:initial=>{const index=cursor++;return slots[index]||(slots[index]={current:initial});},useState:initial=>{const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];},useCallback:(fn,deps)=>{const index=cursor++;if(!slots[index]||changed(slots[index].deps,deps))slots[index]={deps,value:fn};return slots[index].value;},useEffect:(fn,deps)=>{const index=cursor++;if(!slots[index]||changed(slots[index].deps,deps)){const previous=slots[index];slots[index]={deps,cleanup:null};pending.push(()=>{previous?.cleanup?.();slots[index].cleanup=fn();});}}};
  const AppState={currentState:'active',addEventListener:(_kind,fn)=>{appListeners.add(fn);return{remove:()=>appListeners.delete(fn)};}},Platform={OS:'android'};
- const ports={React,...hooks,ApiError,document,AppState,Platform,View:'View',Text:'Text',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',Field:'Field',Pressable:'Pressable',ActivityIndicator:'ActivityIndicator',LoadingSpinner:'LoadingSpinner',WorkspaceSection:'WorkspaceSection',WorkspaceTabs:'WorkspaceTabs',WorkspaceTaskHeader:'WorkspaceTaskHeader',WorkspaceFact:'WorkspaceFact',WorkspaceTaskPane:'WorkspaceTaskPane',AppIcon:'AppIcon',ConfirmationButton:'ConfirmationButton',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},palette:{blue:'#155eef',ink:'#0b1d3a',border:'#cbd5e1',muted:'#526375'},randomUUID:()=> 'synthetic-command-key',commandStateLabel,telematicsAlarmLabel,isDemoAdminSpare,gpsDeviceDisplayLabel,useWindowDimensions:()=>({width:390,height:844}),useLanguage:()=>({t:value=>value,locale:'en'}),useAccount:()=>({session:{user:{id:'owner'}},request}),readFleetDeviceWorkspace:value=>value,fleetManualPoint:sharedExports.fleetManualPoint,sameFleetManualPoint:sharedExports.sameFleetManualPoint,nextCapacityPrivacyRadius,useFocusEffect:fn=>{if(fn!==focusEffect){focusEffect=fn;pendingFocus=fn;}},Date:class extends Date{static now(){return clock;}},setInterval:(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key;},clearInterval:key=>timers.delete(key),setTimeout:()=>({}),clearTimeout:()=>{}};
+ const ports={React,...hooks,ApiError,document,AppState,Platform,View:'View',Text:'Text',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',Field:'Field',Pressable:'Pressable',ActivityIndicator:'ActivityIndicator',LoadingSpinner:'LoadingSpinner',WorkspaceSection:'WorkspaceSection',WorkspaceTabs:'WorkspaceTabs',WorkspaceTaskHeader:'WorkspaceTaskHeader',WorkspaceFact:'WorkspaceFact',WorkspaceTaskPane:'WorkspaceTaskPane',AppIcon:'AppIcon',ConfirmationButton:'ConfirmationButton',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},palette:{blue:'#155eef',ink:'#0b1d3a',border:'#cbd5e1',muted:'#526375'},randomUUID:()=> 'synthetic-command-key',commandStateLabel,telematicsAlarmLabel,isDemoAdminSpare,gpsDeviceDisplayLabel,useWindowDimensions:()=>({width:390,height:844}),useLanguage:()=>({t:value=>value,locale:'en'}),useAccount:()=>({session:{user:{id:'owner'}},request}),readFleetDeviceWorkspace:value=>value,nextCapacityPrivacyRadius,useFocusEffect:fn=>{if(fn!==focusEffect){focusEffect=fn;pendingFocus=fn;}},Date:class extends Date{static now(){return clock;}},setInterval:(fn,ms)=>{const key={};timers.set(key,{fn,ms});return key;},clearInterval:key=>timers.delete(key),setTimeout:()=>({}),clearTimeout:()=>{}};
  const path='apps/mobile/src/components/fleet-devices.tsx',file=readFileSync(path,'utf8'),parsed=ts.createSourceFile(path,file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))))+'\nexport {useDevices,SourceForm,SourceSummary,DeviceDetails,Choice};',code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText,exports={};
  new Function(...Object.keys(ports),'exports',code)(...Object.values(ports),exports);
  function render(name,props){cursor=0;const value=exports[name](name==='useDevices'?host:props);if(value?.props?.ref)value.props.ref.current=host.current;while(pending.length)pending.shift()();if(pendingFocus){if(focused){cleanupFocus?.();cleanupFocus=pendingFocus();}pendingFocus=null;}return value;}
@@ -26,6 +25,7 @@ function harness(request){
 }
 const settle=async()=>{for(let index=0;index<15;index++)await Promise.resolve();};
 const workspace=page=>({page,pageSize:20,pageCount:3,total:41,canManage:true,devices:[],vehicles:[],commands:[]});
+const vehicleLocation=(id,label)=>({id,label,selection:{source:'MOBILE',deviceId:null,revision:'source-revision-1',precisionKm:20,selectedAt:'2026-11-17T12:00:00Z',canChangeLocationSource:true},phone:null,published:null});
 const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flatMap(nodes):[tree,...nodes(tree.props?.children)];
 const find=(tree,type,predicate=()=>true)=>nodes(tree).find(node=>(node.type===type||node.type?.name===type)&&predicate(node));
 
@@ -59,19 +59,19 @@ test('web hidden tabs do not refresh and completed POST plus failed reread does 
 });
 
 test('source draft and its original revision survive refreshed server data until Save or Cancel',async()=>{
- const saves=[],edits=[],h=harness(async()=>workspace(1)),onEditing=(key,value)=>edits.push({key,value});let vehicle={id:'truck',selection:{source:'MOBILE',precisionKm:20,revision:'revision-1',deviceId:'device'},published:null};const props=()=>({vehicle,busy:false,onEditing,save:async(action,input)=>{saves.push({action,input});return false;}});
+ const saves=[],edits=[],h=harness(async()=>workspace(1)),onEditing=(key,value)=>edits.push({key,value});let vehicle={id:'truck',selection:{canChangeLocationSource:true,source:'MOBILE',precisionKm:20,revision:'revision-1',deviceId:'device'},published:null};const props=()=>({vehicle,busy:false,onEditing,save:async(action,input)=>{saves.push({action,input});return false;}});
  let tree=h.render('SourceForm',props());find(tree,'Choice',node=>node.props.label==='GPS device').props.onPress();tree=h.render('SourceForm',props());find(tree,'Choice',node=>node.props.label==='5 km').props.onPress();
- vehicle={...vehicle,selection:{...vehicle.selection,source:'MOBILE',precisionKm:40,revision:'revision-2'}};tree=h.render('SourceForm',props());assert.equal(find(tree,'Choice',node=>node.props.label==='GPS device').props.selected,true);assert.equal(find(tree,'Choice',node=>node.props.label==='5 km').props.selected,true);find(tree,'Button',node=>node.props.message==='Save location source').props.onPress();await settle();assert.deepEqual(saves[0],{action:'SOURCE',input:{vehicleId:'truck',source:'GPS',precisionKm:5,expectedRevision:'revision-1'}});
+ vehicle={...vehicle,selection:{canChangeLocationSource:true,...vehicle.selection,source:'MOBILE',precisionKm:40,revision:'revision-2'}};tree=h.render('SourceForm',props());assert.equal(find(tree,'Choice',node=>node.props.label==='GPS device').props.selected,true);assert.equal(find(tree,'Choice',node=>node.props.label==='5 km').props.selected,true);find(tree,'Button',node=>node.props.message==='Save location source').props.onPress();await settle();assert.deepEqual(saves[0],{action:'SOURCE',input:{vehicleId:'truck',source:'GPS',precisionKm:5,expectedRevision:'revision-1'}});
  find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=h.render('SourceForm',props());assert.equal(find(tree,'Choice',node=>node.props.label==='Driver’s phone').props.selected,true);assert.ok(edits.some(item=>item.value===false));h.unmount();
 });
 
 test('assignment edits keep the old revision instead of adopting a concurrent reassignment',async()=>{
- const saves=[],h=harness(async()=>workspace(1)),onEditing=()=>{},data={...workspace(1),vehicles:[{id:'A',label:'Truck A'},{id:'B',label:'Truck B'},{id:'C',label:'Truck C'}]};let device={id:'device',label:'Device',vehicleId:'A',revision:'revision-1',connection:'UNKNOWN',position:null,capabilities:[]};const props=()=>({device,data,busy:false,onEditing,save:async(action,input)=>{saves.push({action,input});return false;}});
+ const saves=[],h=harness(async()=>workspace(1)),onEditing=()=>{},data={...workspace(1),vehicles:[vehicleLocation('A','Truck A'),vehicleLocation('B','Truck B'),vehicleLocation('C','Truck C')]};let device={id:'device',label:'Device',vehicleId:'A',revision:'revision-1',connection:'UNKNOWN',position:null,capabilities:[]};const props=()=>({device,data,busy:false,onEditing,save:async(action,input)=>{saves.push({action,input});return false;}});
  let tree=h.render('DeviceDetails',props());find(tree,'Button',node=>node.props.label==='Truck A').props.onPress();tree=h.render('DeviceDetails',props());find(tree,'Choice',node=>node.props.label==='Truck B').props.onPress();device={...device,vehicleId:'C',revision:'revision-2'};tree=h.render('DeviceDetails',props());assert.ok(find(tree,'Button',node=>node.props.label==='Truck B'));find(tree,'Button',node=>node.props.message==='Save assignment').props.onPress();await settle();assert.deepEqual(saves[0],{action:'ASSIGN',input:{deviceId:'device',vehicleId:'B',expectedRevision:'revision-1'}});h.unmount();
 });
 
 test('only phone and an assigned GPS are offered; coordinate editing is unavailable',()=>{
- const h=harness(async()=>workspace(1)),vehicle={id:'truck',selection:{source:'GPS',precisionKm:20,revision:'r1',deviceId:null}},props={vehicle,busy:false,onEditing:()=>{},save:async()=>false};
+ const h=harness(async()=>workspace(1)),vehicle={id:'truck',selection:{canChangeLocationSource:true,source:'GPS',precisionKm:20,revision:'r1',deviceId:null}},props={vehicle,busy:false,onEditing:()=>{},save:async()=>false};
  const tree=h.render('SourceForm',props);assert.equal(find(tree,'Choice',node=>node.props.label==='Manually entered'),undefined);assert.equal(find(tree,'Map'),undefined);assert.equal(find(tree,'Field'),undefined);assert.equal(find(tree,'Button',node=>node.props.message==='Enter coordinates'),undefined);assert.equal(find(tree,'Choice',node=>node.props.label==='GPS device').props.disabled,true);assert.equal(find(tree,'Choice',node=>node.props.label==='Driver’s phone').props.disabled,false);h.unmount();
 });
 
@@ -87,41 +87,45 @@ test('a tracker with no alarm does not render an empty raw text child inside a n
 
 
 test('the device assignment chooser starts compact and opens only for an explicit change',()=>{
- const h=harness(async()=>workspace(1)),data={...workspace(1),vehicles:[{id:'A',label:'Truck A'},{id:'B',label:'Truck B'}]},device={id:'device',label:'Device',vehicleId:'A',revision:'revision-1',connection:'UNKNOWN',position:null,capabilities:[]},props={device,data,busy:false,onEditing:()=>{},save:async()=>false};
+ const h=harness(async()=>workspace(1)),data={...workspace(1),vehicles:[vehicleLocation('A','Truck A'),vehicleLocation('B','Truck B')]},device={id:'device',label:'Device',vehicleId:'A',revision:'revision-1',connection:'UNKNOWN',position:null,capabilities:[]},props={device,data,busy:false,onEditing:()=>{},save:async()=>false};
  let tree=h.render('DeviceDetails',props);assert.ok(find(tree,'Button',node=>node.props.label==='Truck A'));assert.equal(nodes(tree).filter(node=>node.type?.name==='Choice').length,0);assert.equal(find(tree,'Button',node=>node.props.message==='Save assignment'),undefined);
  find(tree,'Button',node=>node.props.label==='Truck A').props.onPress();tree=h.render('DeviceDetails',props);assert.equal(nodes(tree).filter(node=>node.type?.name==='Choice').length,3);find(tree,'Choice',node=>node.props.label==='Truck B').props.onPress();tree=h.render('DeviceDetails',props);assert.ok(find(tree,'Button',node=>node.props.label==='Truck B'));assert.equal(nodes(tree).filter(node=>node.type?.name==='Choice').length,0);assert.ok(find(tree,'Button',node=>node.props.message==='Save assignment'));find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=h.render('DeviceDetails',props);assert.ok(find(tree,'Button',node=>node.props.label==='Truck A'));assert.equal(find(tree,'Button',node=>node.props.message==='Save assignment'),undefined);h.unmount();
 });
 
 test('legacy Manual cannot be submitted through an accuracy-only edit and Cancel preserves the saved selection',async()=>{
- const h=harness(async()=>workspace(1)),saves=[],edits=[],vehicle={id:'truck',selection:{source:'MANUAL',precisionKm:20,revision:'r1',deviceId:'device',manualPoint:{latitude:40.015,longitude:-105.27}}},props={vehicle,busy:false,onEditing:(key,value)=>edits.push({key,value}),save:async(action,input)=>{saves.push({action,input});return false;}};
+ const h=harness(async()=>workspace(1)),saves=[],edits=[],vehicle={id:'truck',selection:{canChangeLocationSource:true,source:null,precisionKm:20,revision:'r1',deviceId:'device',manualPoint:{latitude:40.015,longitude:-105.27}}},props={vehicle,busy:false,onEditing:(key,value)=>edits.push({key,value}),save:async(action,input)=>{saves.push({action,input});return false;}};
  let tree=h.render('SourceForm',props);assert.equal(find(tree,'Marker'),undefined);assert.equal(find(tree,'Choice',node=>node.props.label==='Driver’s phone').props.selected,false);assert.equal(find(tree,'Choice',node=>node.props.label==='GPS device').props.selected,false);
  find(tree,'Choice',node=>node.props.label==='5 km').props.onPress();tree=h.render('SourceForm',props);const submit=find(tree,'Button',node=>node.props.message==='Save location source');assert.equal(submit.props.disabled,true);submit.props.onPress();await settle();assert.deepEqual(saves,[]);
  find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=h.render('SourceForm',props);assert.equal(find(tree,'Choice',node=>node.props.label==='20 km').props.selected,true);assert.equal(find(tree,'Button',node=>node.props.message==='Save location source').props.disabled,true);assert.ok(edits.some(value=>value.value===false));h.unmount();
 });
 
 test('legacy Manual recovery saves only an explicit allowed source and original revision',async()=>{
- const h=harness(async()=>workspace(1)),saves=[],vehicle={id:'truck',selection:{source:'MANUAL',precisionKm:5,revision:'r1',manualPoint:{latitude:40,longitude:-105},deviceId:null}},props={vehicle,busy:false,onEditing:()=>{},save:async(action,input)=>{saves.push({action,input});return false;}};
+ const h=harness(async()=>workspace(1)),saves=[],vehicle={id:'truck',selection:{canChangeLocationSource:true,source:null,precisionKm:5,revision:'r1',manualPoint:{latitude:40,longitude:-105},deviceId:null}},props={vehicle,busy:false,onEditing:()=>{},save:async(action,input)=>{saves.push({action,input});return false;}};
  let tree=h.render('SourceForm',props);find(tree,'Choice',node=>node.props.label==='Driver’s phone').props.onPress();tree=h.render('SourceForm',props);find(tree,'Button',node=>node.props.message==='Save location source').props.onPress();await settle();assert.deepEqual(saves,[{action:'SOURCE',input:{vehicleId:'truck',source:'MOBILE',precisionKm:5,expectedRevision:'r1'}}]);h.unmount();
 });
 
 test('location source opens as saved facts and requires an explicit Edit action',()=>{
- const h=harness(async()=>workspace(1)),props={vehicle:{id:'truck',selection:{source:'MANUAL',precisionKm:5,revision:'r1',manualPoint:{latitude:40,longitude:-105}}},busy:false,onEditing:()=>{},save:async()=>false};let tree=h.render('SourceSummary',props);assert.equal(find(tree,'Field'),undefined);assert.equal(find(tree,'SourceForm'),undefined);assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Location source').props.value,'Manually entered');find(tree,'Button',node=>node.props.message==='Edit location source').props.onPress();tree=h.render('SourceSummary',props);assert.ok(find(tree,'SourceForm'));find(tree,'SourceForm').props.onClose();tree=h.render('SourceSummary',props);assert.equal(find(tree,'SourceForm'),undefined);h.unmount();
+ const h=harness(async()=>workspace(1)),props={vehicle:{id:'truck',selection:{canChangeLocationSource:true,source:null,precisionKm:5,revision:'r1',manualPoint:{latitude:40,longitude:-105}}},busy:false,onEditing:()=>{},save:async()=>false};let tree=h.render('SourceSummary',props);assert.equal(find(tree,'Field'),undefined);assert.equal(find(tree,'SourceForm'),undefined);assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Location source').props.value,'Choose GPS or Phone');find(tree,'Button',node=>node.props.message==='Edit location source').props.onPress();tree=h.render('SourceSummary',props);assert.ok(find(tree,'SourceForm'));find(tree,'SourceForm').props.onClose();tree=h.render('SourceSummary',props);assert.equal(find(tree,'SourceForm'),undefined);h.unmount();
 });
 
-test('provider cannot edit a manual Capacity location chosen by the assigned driver',()=>{
- const h=harness(async()=>workspace(1)),base={id:'truck',selection:{source:'MOBILE',precisionKm:5,revision:'r1',manualPoint:null,driverSelectedManual:false}},props={vehicle:base,busy:false,onEditing:()=>{},save:async()=>false};
- let tree=h.render('SourceSummary',props);find(tree,'Button',node=>node.props.message==='Edit location source').props.onPress();
- props.vehicle={...base,selection:{...base.selection,source:'MANUAL',revision:'r2',manualPoint:{latitude:40,longitude:-105},driverSelectedManual:true}};
- tree=h.render('SourceSummary',props);
- assert.equal(find(tree,'SourceForm'),undefined,'a previously open editor closes when the driver takes manual control');
+test('provider cannot edit a legacy source locked by the assigned driver',()=>{
+ const parent=harness(async()=>workspace(1)),base=vehicleLocation('truck','Truck'),props={vehicle:base,busy:false,onEditing:()=>{},save:async()=>false};let child=null,childKey;
+ const device={id:'device',label:'Device',vehicleId:'truck',revision:'r1',connection:'UNKNOWN',position:null,capabilities:[]};
+ // Reconcile the real parent's declared child key, as React does. Directly
+ // calling SourceSummary across key changes would incorrectly retain its state.
+ function renderSource(){let tree=parent.render('DeviceDetails',{...props,device,data:{...workspace(1),vehicles:[props.vehicle]}});find(tree,'WorkspaceTabs').props.onChange('LOCATION');tree=parent.render('DeviceDetails',{...props,device,data:{...workspace(1),vehicles:[props.vehicle]}});const pane=find(tree,'WorkspaceTaskPane',node=>node.props.active),entry=find(pane,'SourceSummary');assert.ok(entry);if(!child||entry.props.key!==childKey){child?.unmount();child=harness(async()=>workspace(1));childKey=entry.props.key;}return child.render('SourceSummary',entry.props);}
+ let tree=renderSource();find(tree,'Button',node=>node.props.message==='Edit location source').props.onPress();assert.ok(find(renderSource(),'SourceForm'));
+ props.vehicle={...base,selection:{...base.selection,source:null,revision:'r2',canChangeLocationSource:false}};
+ tree=renderSource();
+ assert.equal(find(tree,'SourceForm'),undefined,'a previously open editor closes when source-change permission is revoked');
  assert.equal(find(tree,'Button',node=>node.props.message==='Edit location source'),undefined);
- assert.ok(find(tree,'Copy',node=>node.props.message==='The assigned driver chose a manual Capacity location. They can switch back to phone; GPS reports remain available in Fleet.'));
- assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Location source').props.value,'Manually entered');
+ assert.ok(find(tree,'Copy',node=>node.props.message==='Assigned driver must choose a location source.'));
+ assert.equal(find(tree,'WorkspaceFact',node=>node.props.message==='Location source').props.value,'Choose GPS or Phone');
  props.vehicle={...base,selection:{...base.selection,revision:'r3'}};
- tree=h.render('SourceSummary',props);
- assert.equal(find(tree,'SourceForm'),undefined,'the owner must reopen Edit after the driver releases manual control');
+ tree=renderSource();
+ assert.equal(find(tree,'SourceForm'),undefined,'the owner must reopen Edit after source-change permission is restored');
  assert.ok(find(tree,'Button',node=>node.props.message==='Edit location source'));
- h.unmount();
+ child.unmount();parent.unmount();
 });
 
 

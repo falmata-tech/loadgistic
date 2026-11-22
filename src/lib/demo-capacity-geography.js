@@ -190,12 +190,14 @@ export const DEMO_CITY_ROUTES=Object.freeze({
 
 export const DEMO_ROAD_ROUTES=Object.freeze({
   CENTRAL_EAST:route('CENTRAL_EAST',P.addis,P.bishoftu,P.mojo,P.adama),
+  ADDIS_DIRE:route('ADDIS_DIRE',P.addis,P.adama,P.awash,P.mieso,P.direDawa),
   EAST_TRADE:route('EAST_TRADE',P.adama,P.awash,P.mieso,P.direDawa),
   EASTERN:route('EASTERN',P.direDawa,P.harar,P.jigjiga),
   NORTH_EAST:route('NORTH_EAST',P.addis,P.debreBirhan,P.kombolcha,P.dessie,P.woldiya),
   TIGRAY:route('TIGRAY',P.woldiya,P.alamata,P.mekelle,P.adigrat),
   AFAR:route('AFAR',P.kombolcha,P.bati,P.mille,P.semera),
   SOUTH:route('SOUTH',P.mojo,P.batu,P.shashamane,P.hawassa),
+  ADDIS_HAWASSA:route('ADDIS_HAWASSA',P.addis,P.mojo,P.batu,P.shashamane,P.hawassa),
   SOUTH_DEEP:route('SOUTH_DEEP',P.hawassa,P.sodo,P.arbaMinch),
   WEST_SOUTH:route('WEST_SOUTH',P.addis,P.wolkite,P.jimma,P.mizanAman),
   WEST:route('WEST',P.addis,P.ambo,P.nekemte,P.gimbi,P.assosa),
@@ -240,9 +242,9 @@ const CITY_ROUTES_BY_BASE=Object.freeze({
 });
 
 const REGIONAL_ROUTES_BY_BASE=Object.freeze({
-  addis:[R.CENTRAL_EAST,R.NORTH_EAST,R.NORTHWEST,R.WEST_SOUTH,R.WEST],adama:[R.CENTRAL_EAST,R.EAST_TRADE],
+  addis:[R.CENTRAL_EAST,R.NORTH_EAST,R.NORTHWEST,R.WEST_SOUTH,R.WEST,R.ADDIS_DIRE,R.ADDIS_HAWASSA],adama:[R.CENTRAL_EAST,R.EAST_TRADE,R.AFAR_SOUTH,R.ADDIS_DIRE],
   bahirDar:[R.NORTHWEST,R.BAHIR_DESSIE],mekelle:[R.TIGRAY,R.NORTH_TRUNK],semera:[R.AFAR,R.AFAR_SOUTH],jigjiga:[R.EASTERN,R.SOMALI_SOUTH],
-  harar:[R.EASTERN,R.HARAR_ADAMA],direDawa:[R.EAST_TRADE,R.EASTERN],hawassa:[R.SOUTH,R.SOUTH_DEEP,R.WOLKITE_HAWASSA],
+  harar:[R.EASTERN,R.HARAR_ADAMA],direDawa:[R.EAST_TRADE,R.EASTERN,R.ADDIS_DIRE],hawassa:[R.SOUTH,R.SOUTH_DEEP,R.WOLKITE_HAWASSA,R.ADDIS_HAWASSA],
   wolkite:[R.WEST_SOUTH,R.WOLKITE_HAWASSA],arbaMinch:[R.SOUTH_DEEP,R.ARBA_YABELO],assosa:[R.WEST,R.ASSOSA_NEKEMTE],
   gambella:[R.SOUTHWEST,R.GAMBELLA_ASSOSA],mizanAman:[R.WEST_SOUTH,R.MIZAN_JIMMA],moyale:[R.MOYALE_NORTH]
 });
@@ -263,6 +265,23 @@ const RAW_SERVICE_AREAS=Object.freeze({
   gambella:[P.itang,P.abobo,P.dembiDolo,P.shebel],
   mizanAman:[P.bonga,P.tepi,P.maji,P.dima],
   moyale:[P.moyale,P.yabelo,P.konso]
+});
+
+const BROAD_SERVICE_AREAS=Object.freeze({
+  addis:[P.ambo,P.debreBirhan,P.adama,P.weliso],
+  adama:[P.bishoftu,P.awash,P.asella,P.meki],
+  bahirDar:[P.dangila,P.gondar,P.debreTabor,P.debreMarkos],
+  mekelle:[P.hagereSelam,P.adigrat,P.quiha,P.alamata],
+  semera:[P.chifra,P.mille,P.asayita,P.sardo],
+  jigjiga:[P.babile,P.chinaksen,P.togWajale,P.kebriBeyah],
+  harar:[P.direDawa,P.shinile,P.jigjiga,P.bedeno],
+  direDawa:[P.mieso,P.shinile,P.jigjiga,P.bedeno],
+  hawassa:[P.batu,P.shashamane,P.sodo,P.dilla,P.asella],
+  wolkite:[P.weliso,P.abelti,P.jimma,P.hosanna,P.butajira],
+  arbaMinch:[P.sodo,P.chencha,P.konso,P.sawla],
+  assosa:[P.menge,P.homosha,P.tongo,P.bambasi],
+  gambella:[P.itang,P.gog,P.dembiDolo,P.shebel],
+  mizanAman:[P.bonga,P.tepi,P.maji,P.dima],
 });
 
 const AREA_RADIUS_BUCKETS=Object.freeze([20,50,70,100,250,500]);
@@ -337,11 +356,18 @@ function routeChoices(base){
     .flatMap(({catalog,movementScope})=>(catalog[base.key]||catalog.addis).map(choice=>({...choice,movementScope})));
 }
 
-export function demoCurrentRouteForLocation(record,index=0){
+export function demoCurrentRouteForLocation(record,index=0,scale){
   const base=nearestDemoBase(record);
   const choices=routeChoices(base);
-  const selected=choices[(demoPlanningSeed(record)+Math.abs(index))%choices.length];
-  const points=index%2===0?[...selected.points]:[...selected.points].reverse();
+  const atScale=scale?choices.filter(choice=>{
+    const long=distanceBetweenKm(choice.points[0],choice.points.at(-1))>=100;
+    return scale==='long'?long:!long;
+  }):[];
+  const candidates=atScale.length?atScale:choices;
+  const seed=demoPlanningSeed(record);
+  const selected=candidates[(seed+Math.abs(index))%candidates.length];
+  const reversed=scale?(seed>>>8)%2!==index%2:index%2!==0;
+  const points=reversed?[...selected.points].reverse():[...selected.points];
   return {base,key:selected.key,movementScope:selected.movementScope,points};
 }
 
@@ -351,12 +377,14 @@ export function demoRegularRoutesForBase(record,count=1){
   return Array.from({length:count},(_,index)=>choices[(offset+index)%choices.length]);
 }
 
-export function demoServiceAreaForLocation(record,index=0){
+export function demoServiceAreaForLocation(record,index=0,scale){
   const base=nearestDemoBase(record);
-  const city=(demoPlanningSeed(record)+Math.abs(index))%2===0;
-  const boundary=serviceAreaBoundary(base,city);
+  const city=scale==='local'||(!scale&&(demoPlanningSeed(record)+Math.abs(index))%2===0);
+  const broad=scale==='broad'&&BROAD_SERVICE_AREAS[base.key];
+  const boundary=broad?orderedBoundary(base.place,broad):serviceAreaBoundary(base,city);
   if(!boundary)return null;
   const farthestKm=Math.max(...boundary.map(candidate=>distanceBetweenKm(base.place,candidate)));
+  if(scale&&(!surrounds(base.place,boundary)||(scale==='broad'?farthestKm<45:farthestKm>=45)))return null;
   const radiusKm=AREA_RADIUS_BUCKETS.find(bucket=>farthestKm<=bucket);
   if(radiusKm===undefined)return null;
   return {base,center:base.place,boundary,radiusKm,movementScope:radiusKm>20?'BOTH':'LOCAL'};

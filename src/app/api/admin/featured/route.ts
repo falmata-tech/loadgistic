@@ -26,16 +26,17 @@ export async function POST(request:NextRequest) {
         businessName:text(form,'businessName'),
         description:text(form,'description'),
         websiteUrl:text(form,'websiteUrl'),
+        artworkKey:form.has('artworkKey')?text(form,'artworkKey'):undefined,
         phone:text(form,'phone'),
         startsOn:text(form,'startsOn'),
         endsOn:text(form,'endsOn'),
         position:text(form,'position')
       });
-      return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success','Sponsored placement saved.');
+      return redirectWith(request,`/admin/featured?panel=sponsors&date=${encodeURIComponent(featureDate)}`,'success','Sponsored placement saved.');
     }
     if(command==='DISABLE_SPONSOR'){
       await disableProviderSponsorship(user,text(form,'sponsorshipId'));
-      return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'success','Sponsored placement disabled.');
+      return redirectWith(request,`/admin/featured?panel=sponsors&date=${encodeURIComponent(featureDate)}`,'success','Sponsored placement disabled.');
     }
     await saveFeaturedProviderDay(user,{
       featureDate,
@@ -58,6 +59,6 @@ export async function POST(request:NextRequest) {
   }catch(error){
     const diagnostic=featuredSaveDiagnosticLine(error);
     if(diagnostic)console.error(diagnostic);
-    return redirectWith(request,`/admin/featured?date=${encodeURIComponent(featureDate)}`,'error',errorMessage(error));
+    return redirectWith(request,`/admin/featured?${command==='SAVE_SPONSOR'||command==='DISABLE_SPONSOR'?'panel=sponsors&':''}date=${encodeURIComponent(featureDate)}`,'error',errorMessage(error));
   }
 }

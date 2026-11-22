@@ -16,8 +16,8 @@ contact providers and coordinate agreed shipments. Loadgistic does not own this
 fleet, publish customer demand or guarantee availability or service.
 
 - Visitors use public Capacity, Transporter search, Featured and About without
-  an account. Privately shared with you invites them to sign in or create a
-  shipper/broker account; public-link Tracking retains its email access.
+  an account. Private Network invites visitors to sign in or create a
+  business account. Guest Tracking uses a per-load link and separate code.
 - Transport Provider owners manage their vehicles, drivers, capacity, sharing,
   devices and Tracking. Locally qualified work-first Home (FEAT-UIX/MOB-001)
   opens My capacity when driving, otherwise Manage vehicles when authorized.
@@ -35,8 +35,8 @@ fleet, publish customer demand or guarantee availability or service.
 
 One application shell keeps public navigation available and adds role-appropriate
 menus after sign-in. Providers use Home tabs for their driving controls, managed
-vehicles and public market; shippers/brokers use Capacity with Openly shared and
-Privately shared with you views. Group related management within the relevant record or Account;
+vehicles and public market; shippers/brokers use Capacity with Open Market and
+Private Network views. Group related management within the relevant record or Account;
 avoid turning every database resource into another menu item. Web desktop, phone
 web and Android preserve the same task structure, essential labels, icon meanings
 and feature outcomes in layouts suited to each device. Admin and platform-staff
@@ -49,11 +49,11 @@ above phone navigation rather than covering map controls or attribution. Native
 company details remain in About. FEAT-UIX-001 controls the current local candidate;
 the release checkpoint records publication separately.
 
-Capacity opens with “The visibility you need to serve your customers reliably”
-and its public/private choice. Roomier web views add “Build trusted partnerships
-and coordinate your transport network together.” Short phone web and native keep
-the heading alone. The map takes the remaining phone space without shrinking search,
-filters or navigation to fit. Fuller benefits belong in About and signup.
+The homepage leads with “Work better with transporters to serve your customers.”
+Transporters manage their vehicles and drivers. Brokers and shipping teams use
+reported availability and space to plan freight, then follow agreed shipments.
+About and signup explain each role’s work. Use the same message in public
+metadata and marketing drafts.
 
 Team invitations use the ordinary signed-in workspace permissions. The pending
 Android invitation-entry repair in FEAT-MOB-001 preserves the invitation
@@ -80,8 +80,8 @@ search. Companies appear as profiles, never company map markers.
 Map signals represent eligible current vehicle/driver combinations. Full and
 Off Duty signals are excluded from discovery. Older Empty/Partial signals require
 truthful capacity/location age labels. Accepted-load preference remains a vehicle
-detail; the separate Space needed filter is removed. Courier cars and motorcycles
-are supported alongside vans, pickups and heavier vehicles. Use “vehicle” for
+detail; the separate Space needed filter is removed. Courier cars are
+supported alongside vans, pickups and heavier vehicles. Use “vehicle” for
 shared UI wording rather than implying every configuration is a truck.
 
 The current Capacity presentation names the vehicle's current/next-work

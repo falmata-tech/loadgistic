@@ -1,3 +1,4 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures,registeredTrackingOwner} from './tracking-session-fixtures';
 import {randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
@@ -9,7 +10,7 @@ import {chooseCapacityOptions,chooseTruckConfiguration} from './capacity-drawer-
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {setProviderVehiclePublication} from '../../src/lib/provider-authority.js';
 import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+
 
 // Ordinary disposable accounts prove the real Network path. Play-review
 // workspaces are deliberately invisible there and must stay isolated.
@@ -119,8 +120,8 @@ async function ensureWebConsent(page:Page){
  }
 }
 async function createCustomer(service:ReturnType<typeof localAuditService>,email:string,firstName:string){
- const id=checked(await service.auth.admin.createUser({email,email_confirm:true})).user.id as string;
- checked(await service.from('profiles').update({role:'SHIPPER',active:true,first_name:firstName,full_name:firstName}).eq('id',id));
+ const identity=await registeredTrackingOwner(service,email);if(!identity.created)throw Error('NEW_JOURNEY_CUSTOMER_REQUIRED');const id=identity.id;
+ checked(await service.from('profiles').update({first_name:firstName,full_name:firstName}).eq('id',id));
  return id;
 }
 
@@ -213,9 +214,9 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
    location_area:'Journey pickup area',location_lat:9.03,location_lng:38.76,location_precision_km:10,location_source:'DEVICE_OBSCURED',created_by:owned.providerId}));
 
   proof.stage='TRACKING_ATTACH';record();
-  await auditTrackingOwnerLogin(ownerWeb,ownerEmail);
-  await ownerWeb.getByRole('button',{name:'Share tracking',exact:true}).click();
-  const sharing=ownerWeb.getByRole('dialog',{name:'Share tracking'});
+  await auditTrackingOwnerLogin(ownerWeb,ownerEmail,owned.shipmentId);
+  await ownerWeb.getByRole('button',{name:'Team access',exact:true}).click();
+  const sharing=ownerWeb.getByRole('dialog',{name:'Team access'});
   await expect(sharing.getByText(`Journey broker ${nonce}`,{exact:true})).toBeVisible();
   await sharing.getByRole('button',{name:'Add to this workspace',exact:true}).click();
   await expect(sharing.getByText('Sharing updated.',{exact:true})).toBeVisible();
@@ -237,7 +238,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await expect(ownerWeb).toHaveURL(url=>url.searchParams.get('provider')===provider.organization_id||url.searchParams.get('provider')===`broker-parity-${provider.suffix}`);
   await expect(ownerWeb.locator('.capacity-truck-map-marker').first()).toBeVisible();
   await ownerWeb.locator('.capacity-truck-map-marker').first().click();
-  await ownerWeb.getByRole('button',{name:'Vehicle details',exact:true}).click();
+  await ownerWeb.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
   await expect(ownerWeb.locator('.truck-inspection')).toBeVisible();
   await ownerWeb.getByRole('button',{name:'Close map signal details'}).click();
   await ownerWeb.getByRole('button',{name:/Vehicle filters/}).click();
@@ -269,7 +270,7 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
   await ownerExpo.getByRole('button',{name:'Show vehicles on map',exact:true}).first().click();
   await expect(ownerExpo.getByRole('button',{name:/Isuzu Journey/})).toBeVisible();
   await ownerExpo.getByRole('button',{name:/Isuzu Journey/}).click();
-  await ownerExpo.getByRole('button',{name:'Vehicle details',exact:true}).click();
+  await ownerExpo.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
   await expect(ownerExpo.getByRole('heading',{name:'Vehicle details',exact:true})).toBeVisible();
   await ownerExpo.getByRole('button',{name:'Close map signal details'}).last().click();
   await ownerExpo.getByRole('button',{name:'Back to map',exact:true}).click();
@@ -352,3 +353,6 @@ test('broker owner and staff find one connected vehicle and shipment on phone we
  }
  if(initialFailure||cleanupFailure)throw new AggregateError([initialFailure,cleanupFailure].filter(Boolean),'BUSINESS_RUNTIME_PARITY_FAILED');
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

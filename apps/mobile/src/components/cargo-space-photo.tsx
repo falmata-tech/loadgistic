@@ -1,9 +1,9 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {AppState,Image,Modal,Platform,View} from 'react-native';
+import {AppState,Image,Modal,Platform,Text,View} from 'react-native';
 import {useFocusEffect} from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {cargoPhotoCollectionPath,cargoPhotoReadPath,cargoPhotoUploadCommand} from '../api/cargo-space-photo-path';
+import {cargoPhotoCollectionPath,cargoPhotoReadPath,cargoPhotoRemovePath,cargoPhotoUploadCommand} from '../api/cargo-space-photo-path';
 import {uploadLimit} from '../api/upload';
 import {useAccountQuery} from '../hooks/account-query';
 import {useLanguage} from '../localization/provider';
@@ -20,17 +20,19 @@ const imageTypes=['image/jpeg','image/png','image/webp'];
 const photoSizeLimit=Math.ceil(uploadLimit/3)*4;
 const errorMessage=(error:unknown)=>error instanceof Error?error.message:'Could not save the photo. Please try again.';
 
-export function CargoSpacePhoto({vehicleId,assignedDriverId,initiallyOpen=false}:{vehicleId:string;assignedDriverId:string;initiallyOpen?:boolean}){
+export function CargoSpacePhoto({vehicleId,assignedDriverId,canRemove=false,inSheet=false,onBusyChange}:{vehicleId:string;assignedDriverId:string;canRemove?:boolean;inSheet?:boolean;onBusyChange?:(busy:boolean)=>void}){
  const actorId=useAccount().session?.user.id||'';
  // A different actor, vehicle or assignment must never inherit a picked image.
- return <WorkspaceSection message="Cargo space photo" icon="camera" initiallyOpen={initiallyOpen}><PhotoPanel key={`${actorId}:${vehicleId}:${assignedDriverId}`} vehicleId={vehicleId} assignedDriverId={assignedDriverId}/></WorkspaceSection>;
+ const panel=<PhotoPanel key={`${actorId}:${vehicleId}:${assignedDriverId}`} vehicleId={vehicleId} assignedDriverId={assignedDriverId} canRemove={canRemove} onBusyChange={onBusyChange}/>;
+ return inSheet?panel:<WorkspaceSection message="Cargo space photo" icon="camera">{panel}</WorkspaceSection>;
 }
 
-function PhotoPanel({vehicleId,assignedDriverId}:{vehicleId:string;assignedDriverId:string}){
+function PhotoPanel({vehicleId,assignedDriverId,canRemove,onBusyChange}:{vehicleId:string;assignedDriverId:string;canRemove:boolean;onBusyChange?:(busy:boolean)=>void}){
  const {t,locale}=useLanguage(),account=useAccount();
- const actorId=account.session?.user.id||'',canUpload=Boolean(actorId&&actorId===assignedDriverId);
+ const actorId=account.session?.user.id||'',canUpload=Boolean(actorId&&actorId===assignedDriverId&&account.session?.user.role==='DRIVER');
  const query=useAccountQuery<PhotoSummary>(cargoPhotoCollectionPath(vehicleId));
  const [picked,setPicked]=useState<Picked|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[imageData,setImageData]=useState<string|null>(null),[opening,setOpening]=useState(false);
+ const [notice,setNotice]=useState('');
  const locked=useRef(false),generation=useRef(0),focused=useRef(false),blocker=useRef({});
  useFocusEffect(useCallback(()=>{focused.current=true;return()=>{focused.current=false;generation.current++;setImageData(null);setPicked(null);};},[]));
  useEffect(()=>{const listener=AppState.addEventListener('change',state=>{if(state!=='active'){generation.current++;setImageData(null);}});return()=>listener.remove();},[]);
@@ -39,7 +41,7 @@ function PhotoPanel({vehicleId,assignedDriverId}:{vehicleId:string;assignedDrive
 
  async function choose(source:'CAMERA'|'UPLOAD'){
   if(locked.current||!canUpload)return;
-  locked.current=true;setBusy(true);setError('');
+  locked.current=true;setBusy(true);setError('');setNotice('');
   try{
    // Web pickers must open directly from the button press to retain user activation.
    if(source==='CAMERA'&&Platform.OS!=='web'){
@@ -58,14 +60,24 @@ function PhotoPanel({vehicleId,assignedDriverId}:{vehicleId:string;assignedDrive
 
  async function save(){
   if(locked.current||!picked||!canUpload||picked.actorId!==actorId)return;
-  locked.current=true;setBusy(true);setError('');
+  locked.current=true;setBusy(true);onBusyChange?.(true);setError('');setNotice('');
   try{
    const {asset,source,capturedAt}=picked;
    const body=uploadBody(cargoPhotoUploadCommand(vehicleId,source,capturedAt),{uri:asset.uri,name:asset.fileName||`cargo-space-${Date.now()}.jpg`,type:asset.mimeType||asset.file?.type||'',size:asset.fileSize||asset.file?.size||0,webFile:asset.file});
    await account.request('/api/capacity/cargo-space-photos',body);
-   if(focused.current&&account.session?.user.id===actorId){setPicked(null);await query.reload();}
+   if(focused.current&&account.session?.user.id===actorId){setPicked(null);setNotice('Photo saved.');await query.reload();}
   }catch(caught){if(focused.current)setError(errorMessage(caught));}
-  finally{locked.current=false;setBusy(false);}
+  finally{locked.current=false;setBusy(false);onBusyChange?.(false);}
+ }
+
+ async function removePhoto(){
+  if(locked.current||!canRemove||!query.data?.photo)return;
+  locked.current=true;setBusy(true);onBusyChange?.(true);setError('');setNotice('');
+  try{
+   await account.request(cargoPhotoRemovePath(query.data.photo.contentPath),undefined,{method:'DELETE'});
+   setImageData(null);setNotice('Photo removed.');await query.reload();
+  }catch{setError('Could not remove the photo. Please try again.');}
+  finally{locked.current=false;setBusy(false);onBusyChange?.(false);}
  }
 
  async function openPhoto(){
@@ -85,9 +97,11 @@ function PhotoPanel({vehicleId,assignedDriverId}:{vehicleId:string;assignedDrive
   <ErrorText message={query.error?t(query.error):''}/>
   {!!query.error&&<Button secondary message="Refresh" onPress={()=>{void query.reload();}}/>}
   {query.data?.requests.length?<Copy message="New photo requested"/>:null}
-  {query.data?.photo?<View style={{gap:8}}><Copy>{t('Photo received {date}',{date:date(query.data.photo.receivedAt)})}</Copy><Button secondary message="Open photo" busy={opening} onPress={()=>{void openPhoto();}}/></View>:query.data?<Copy message="No photo yet"/>:null}
+  {!picked&&(query.data?.photo?<View style={{gap:8}}><Copy>{t('Photo received {date}',{date:date(query.data.photo.receivedAt)})}</Copy><Button secondary message="Open photo" busy={opening} onPress={()=>{void openPhoto();}}/></View>:query.data?<Copy message="No photo yet"/>:null)}
   {canUpload&&!picked&&<View style={{flexDirection:'row',flexWrap:'wrap',gap:8}}><View style={{flexGrow:1,minWidth:130}}><Button message="Take photo" busy={busy} onPress={()=>{void choose('CAMERA');}}/></View><View style={{flexGrow:1,minWidth:130}}><Button secondary message="Choose photo" disabled={busy} onPress={()=>{void choose('UPLOAD');}}/></View></View>}
-  {canUpload&&picked&&<View style={{gap:10}}><Image accessibilityLabel={t('Selected cargo space photo')} source={{uri:picked.asset.uri}} resizeMode="cover" style={{width:'100%',height:170,borderRadius:10,borderWidth:1,borderColor:palette.border}}/><View style={{flexDirection:'row',gap:8}}><View style={{flex:1}}><Button message="Save photo" busy={busy} onPress={()=>{void save();}}/></View><View style={{flex:1}}><Button secondary message="Cancel" disabled={busy} onPress={()=>setPicked(null)}/></View></View></View>}
+  {canUpload&&picked&&<View style={{gap:10}}><Image accessibilityLabel={t('Selected cargo space photo')} source={{uri:picked.asset.uri}} resizeMode="contain" style={{width:'100%',height:170,borderRadius:10,borderWidth:1,borderColor:palette.border,backgroundColor:palette.canvas}}/><View style={{flexDirection:'row',gap:8}}><View style={{flex:1}}><Button message="Save photo" busy={busy} onPress={()=>{void save();}}/></View><View style={{flex:1}}><Button secondary message="Cancel" disabled={busy} onPress={()=>setPicked(null)}/></View></View></View>}
+  {canRemove&&query.data?.photo&&!picked&&<Button secondary message="Remove photo" disabled={busy||opening} onPress={()=>{void removePhoto();}}/>}
+  {!!notice&&<Text accessibilityLiveRegion="polite" style={{color:palette.muted}}>{t(notice)}</Text>}
   <ErrorText message={error?t(error):''}/>
   <Modal visible={Boolean(imageData)} animationType="slide" onRequestClose={()=>setImageData(null)}><SafeAreaView style={{flex:1}}><Page><Title message="Cargo space photo"/><Button secondary message="Close photo" onPress={()=>setImageData(null)}/>{imageData?<Image accessibilityLabel={t('Cargo space photo')} source={{uri:imageData}} resizeMode="contain" style={{width:'100%',height:520}}/>:null}</Page></SafeAreaView></Modal>
  </View>;

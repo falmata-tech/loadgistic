@@ -8,6 +8,7 @@ config.watchFolders = [...config.watchFolders, path.resolve(__dirname, '../../sr
 // expand module lookup to another application's install or the parent tree.
 config.resolver.extraNodeModules = {
  ...config.resolver.extraNodeModules,
+ react: path.dirname(require.resolve('react/package.json',{paths:[__dirname]})),
  zod: path.dirname(require.resolve('zod/package.json', { paths: [__dirname] })),
 };
 if (process.env.LOADGISTIC_WEB_PREVIEW === '1') {

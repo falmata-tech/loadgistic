@@ -5,7 +5,7 @@ import {execFileSync} from 'node:child_process';
 import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {checkedLocalGpsPassword,checkedLocalRestoreRole,checkedMatchingPgMajor,postgresErrorCategory,runGpsClonePipeline,captureGpsCloneGraphql,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS} from './ci-disposable-gps-clone.mjs';
+import {checkedLocalGpsPassword,checkedLocalRestoreRole,checkedMatchingPgMajor,postgresErrorCategory,runGpsClonePipeline,captureGpsCloneGraphql,restoreGpsCloneArchive,GPS_CLONE_ARCHIVE_RESTORE_TIMEOUT_MS,GPS_CLONE_SPATIAL_SECURITY_SQL,parseGpsCloneSpatialSecurity,checkedGpsCloneSpatialSecurity,gpsCloneSpatialOwnerSql} from './ci-disposable-gps-clone.mjs';
 
 const container = 'supabase_db_loadgistic-local';
 const database = 'loadgistic_telematics_ci';
@@ -127,8 +127,19 @@ async function clonePg15WithGraphqlAclOrder() {
 }
 
 if (mode === 'create') {
+  const ownerQuery=(db,sql)=>localCommand('psql',['-X','-qAt','-v','ON_ERROR_STOP=1','-d',db,'-f','-'],
+    {env:restoreEnv,input:sql+'\n',timeout:30000});
+  const spatialSource=parseGpsCloneSpatialSecurity(ownerQuery('postgres',GPS_CLONE_SPATIAL_SECURITY_SQL));
+  // Refuse an unhardened primary before the expensive clone; setup owns its
+  // existing fixed owner-security step. Never repair the primary here.
+  checkedGpsCloneSpatialSecurity(spatialSource);
   localCommand('createdb', ['--owner=postgres', database], {env: pgEnv, timeout: 60_000});
   await clone();
+  const spatialClone=parseGpsCloneSpatialSecurity(ownerQuery(database,GPS_CLONE_SPATIAL_SECURITY_SQL));
+  ownerQuery(database,gpsCloneSpatialOwnerSql(spatialSource,spatialClone,
+    readFileSync(new URL('../docs/operations/spatial-reference-owner-repair.sql',import.meta.url),'utf8')));
+  checkedGpsCloneSpatialSecurity(spatialSource,
+    parseGpsCloneSpatialSecurity(ownerQuery(database,GPS_CLONE_SPATIAL_SECURITY_SQL)));
   assert.equal(localCommand('psql', [
     '-X', '-A', '-t', '-q', '-d', database, '-c', 'select current_database()',
   ], {env: pgEnv}), database, 'GPS clone identity mismatch');

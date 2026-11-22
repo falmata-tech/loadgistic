@@ -394,7 +394,9 @@ export async function getSupabasePublicProvider(handle,options={}){
   if(initialError)throw new Error('SUPABASE_PUBLIC_PROVIDER_FAILED',{cause:initialError});
   const page=pageResult.data;
   if(!page||!vehicleResult)return null;
-  const vehicles=vehicleResult.items;
+  // The map reads its own scoped Capacity feed. Keep the owner and count
+  // checks above while skipping unused vehicle, driver and capacity hydration.
+  const vehicles=options.includeVehicleDetails===false?[]:vehicleResult.items;
   const vehicleIds=vehicles.map(vehicle=>vehicle.id);
   const profileUserId=owner.profile?.user_id||null;
   const [vehicleDocumentResult,authorizationDocumentResult]=await Promise.all([
@@ -462,7 +464,7 @@ export async function getSupabasePublicProvider(handle,options={}){
   const providerName=page.account_name||page.public_name||owner.organization?.name||providerHandle;
   return {account_name:providerName,manager_name:page.manager_name||null,name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:'',
     city:owner.organization?.city||'',theme_primary:page.theme_primary,theme_accent:page.theme_accent,
-    youtube_video_id:page.youtube_video_id,contact_phone:publicContactPhone,
+    cover_video_id:page.cover_video_id,youtube_video_id:page.youtube_video_id,contact_phone:publicContactPhone,
     contact_whatsapp:page.show_contact_whatsapp?page.contact_whatsapp:null,
     contact_email:page.show_contact_email?page.contact_email:null,
     contact_website:page.show_contact_website?page.contact_website:null,
@@ -599,9 +601,19 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
   if(dayResult.error)throw new Error('SUPABASE_PUBLIC_FEATURED_FAILED',{cause:dayResult.error});
   const providers=providerRows.map(row=>decorateFeaturedCandidate(row.payload||row));
   const providerByKey=new Map(providers.map(provider=>[provider.provider_organization_id?`organization:${provider.provider_organization_id}`:`profile:${provider.provider_profile_id}`,provider]));
+  const {data:placements,error:placementError}=await client.from('sponsor_placements').select('sponsor_id,position,artwork_key').eq('expo_group_key',sponsorGroup.key).eq('active',true).lte('starts_on',featureDate).gte('ends_on',featureDate).order('position').limit(5);
+  if(placementError)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:placementError});
+  const sponsorIds=(placements||[]).map(item=>item.sponsor_id);const sponsorResult=sponsorIds.length?await client.from('sponsors').select('id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone').in('id',sponsorIds).eq('active',true):{data:[],error:null};
+  if(sponsorResult.error)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:sponsorResult.error});
+  const sponsorById=new Map((sponsorResult.data||[]).map(sponsor=>[sponsor.id,sponsor]));const sponsoredProviders=[];
+  for(const placement of placements||[]){const sponsor=sponsorById.get(placement.sponsor_id);if(!sponsor)continue;if(sponsor.sponsor_kind==='ADVERTISER'){sponsoredProviders.push({sponsor_kind:'ADVERTISER',name:sponsor.business_name,description:sponsor.description,profile_image_url:['machining','motors'].includes(placement.artwork_key)?`/marketing/sponsors/${placement.artwork_key}.webp`:null,website_url:sponsor.website_url||null,phone:sponsor.phone||null,sponsor_position:placement.position,sponsored:true});continue;}
+    const key=sponsor.provider_organization_id?`organization:${sponsor.provider_organization_id}`:`profile:${sponsor.provider_profile_id}`;const provider=providerByKey.get(key);if(!provider?.eligible)continue;
+    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,...safe}=provider;
+    sponsoredProviders.push({...safe,sponsor_kind:'TRANSPORTER',sponsor_position:placement.position,sponsored:true});
+  }
   const empty=()=>({feature_date:featureDate,base_place:theme.label,expo_group:theme,week:[],theme,
     headline:'Daily Featured Transport Providers',introduction:'Meet the transport accounts in today’s showcase.',tiktok_url:null,
-    broadcast_start_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart,broadcast_end_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd,tiktok_broadcast_status:'NOT_SCHEDULED',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:[],providers:[],published:false});
+    broadcast_start_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayStart,broadcast_end_time:DEFAULT_FEATURED_SCHEDULE_CONFIG.dayEnd,tiktok_broadcast_status:'NOT_SCHEDULED',schedule:buildFeaturedDaySchedule(featureDate,0),walkthroughs:[],sponsored_providers:sponsoredProviders,providers:[],published:false});
   const day=dayResult.data;if(!day)return empty();
   const {data:slots,error:slotError}=await client.from('featured_provider_slots').select('slot_position,provider_organization_id,provider_profile_id,vehicle_id,driver_user_id').eq('day_id',day.id).order('slot_position');
   if(slotError)throw new Error('SUPABASE_PUBLIC_FEATURED_SLOTS_FAILED',{cause:slotError});
@@ -619,16 +631,6 @@ export async function getSupabaseDailyFeaturedTrucks(date=ethiopiaDate()){
       map_href:Number(candidate.active_capacity_count)>0?`/?provider=${encodeURIComponent(candidate.handle)}`:null,
       position:slot.slot_position});
     providerKeys.push(key);aliases.set(`vehicle:${slot.vehicle_id}`,key);aliases.set(key,key);
-  }
-  const {data:placements,error:placementError}=await client.from('sponsor_placements').select('sponsor_id,position').eq('expo_group_key',sponsorGroup.key).eq('active',true).lte('starts_on',featureDate).gte('ends_on',featureDate).order('position').limit(5);
-  if(placementError)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:placementError});
-  const sponsorIds=(placements||[]).map(item=>item.sponsor_id);const sponsorResult=sponsorIds.length?await client.from('sponsors').select('id,sponsor_kind,provider_organization_id,provider_profile_id,business_name,description,website_url,phone').in('id',sponsorIds).eq('active',true):{data:[],error:null};
-  if(sponsorResult.error)throw new Error('SUPABASE_PUBLIC_SPONSORS_FAILED',{cause:sponsorResult.error});
-  const sponsorById=new Map((sponsorResult.data||[]).map(sponsor=>[sponsor.id,sponsor]));const sponsoredProviders=[];
-  for(const placement of placements||[]){const sponsor=sponsorById.get(placement.sponsor_id);if(!sponsor)continue;if(sponsor.sponsor_kind==='ADVERTISER'){sponsoredProviders.push({sponsor_kind:'ADVERTISER',name:sponsor.business_name,description:sponsor.description,website_url:sponsor.website_url||null,phone:sponsor.phone||null,sponsor_position:placement.position,sponsored:true});continue;}
-    const key=sponsor.provider_organization_id?`organization:${sponsor.provider_organization_id}`:`profile:${sponsor.provider_profile_id}`;const provider=providerByKey.get(key);if(!provider?.eligible)continue;
-    const {provider_organization_id:unusedOrganization,provider_profile_id:unusedProfile,eligible:unusedEligibility,base_region_code:unusedRegion,has_profile_image:unusedImage,profile_image_preset:unusedPreset,profile_image_updated_at:unusedUpdated,regular_signal:unusedSignal,...safe}=provider;
-    sponsoredProviders.push({...safe,sponsor_kind:'TRANSPORTER',sponsor_position:placement.position,sponsored:true});
   }
   const schedule=assignFeaturedSponsors(featuredSchedule(day,featureDate,providerKeys,aliases),sponsoredProviders);
   return {feature_date:featureDate,base_place:theme.label,expo_group:theme,week:[],theme,

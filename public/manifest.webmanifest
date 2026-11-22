@@ -12,8 +12,8 @@
   "theme_color": "#0b1d3a",
   "categories": ["business", "productivity", "navigation"],
   "shortcuts": [
-    { "name": "Public Capacity", "short_name": "Public", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Capacity shared with you", "short_name": "Shared", "url": "/?view=private", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Open Market", "short_name": "Market", "url": "/", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Private Network", "short_name": "Network", "url": "/?view=private", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Track a shipment", "short_name": "Track", "url": "/track", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Featured Transport Providers", "short_name": "Featured", "url": "/featured", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Network", "short_name": "Network", "url": "/app/network", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }

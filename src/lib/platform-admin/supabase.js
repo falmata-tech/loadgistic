@@ -65,7 +65,7 @@ function validateText(value,min,max,errorCode){
 function validateWebsite(value){
   const raw=String(value||'').trim();if(!raw)return null;
   let url;try{url=new URL(raw);}catch{throw new Error('SPONSOR_WEBSITE_INVALID');}
-  if(url.protocol!=='https:')throw new Error('SPONSOR_WEBSITE_INVALID');return url.toString();
+  if(url.protocol!=='https:'||url.username||url.password)throw new Error('SPONSOR_WEBSITE_INVALID');return url.toString();
 }
 
 function seededPortrait(filename){
@@ -179,13 +179,38 @@ export function grantSponsoredBusinessAccess(user,organizationId){
   return adminCommand(user,'WORKSPACE_SPONSOR',organizationId,{action:'GRANT'});
 }
 
-export async function getAdminFeaturedProviderDay(user,date){
+async function readFeaturedDay(user,date){
   assertFeaturedManager(user);const featureDate=validateDate(date);const expo=regionalExpoGroupForDate(featureDate);
   const client=createSupabaseAdminClient();
   const {data,error}=await client.rpc('managed_admin_featured_day',{actor_user_id:user.id,requested_date:featureDate,
     requested_group_key:expo.key,requested_region_codes:PROVIDER_REGIONS.map(region=>region.code)});
   if(error)throw managedError('SUPABASE_ADMIN_FEATURED_FAILED',error);
-  const day=data?.day||null;const slots=data?.slots||[];const providerCandidates=(data?.candidates||[]).map(decorateCandidate);
+  return {data,client,featureDate,expo};
+}
+
+function sponsorCatalogue(data){
+  const providerCandidates=(data?.candidates||[]).map(decorateCandidate);
+  const byProvider=new Map(providerCandidates.map(candidate=>[candidate.provider_key,candidate]));
+  const sponsorships=(data?.sponsorships||[]).map(sponsorship=>{
+    const provider_key=sponsorship.sponsor_kind==='TRANSPORTER'
+      ?(sponsorship.provider_organization_id?`organization:${sponsorship.provider_organization_id}`:`profile:${sponsorship.provider_profile_id}`):null;
+    const candidate=provider_key?byProvider.get(provider_key)||null:null;
+    return {...sponsorship,provider_key,candidate,
+      sponsor_name:sponsorship.sponsor_kind==='ADVERTISER'?sponsorship.business_name:candidate?.name||'Transporter unavailable',
+      eligible:sponsorship.sponsor_kind==='ADVERTISER'||Boolean(candidate?.eligible)};
+  });
+  return {providerCandidates,sponsorships};
+}
+
+export async function getAdminSponsorCatalogue(user,date){
+  const {data}=await readFeaturedDay(user,date);
+  return sponsorCatalogue(data);
+}
+
+export async function getAdminFeaturedProviderDay(user,date){
+  const {data,client,featureDate,expo}=await readFeaturedDay(user,date);
+  const {providerCandidates,sponsorships}=sponsorCatalogue(data);
+  const day=data?.day||null;const slots=data?.slots||[];
   const allCandidates=await loadFeaturedTruckCandidates(client,featureDate,providerCandidates);
   const selectedIds=new Set(slots.map(slot=>slot.vehicle_id));
   const byAccount=new Map();
@@ -194,19 +219,11 @@ export async function getAdminFeaturedProviderDay(user,date){
   }
   const candidates=[...byAccount.values()];
   const byTruck=new Map(candidates.map(candidate=>[candidate.truck_key,candidate]));
-  const byProvider=new Map(providerCandidates.map(candidate=>[candidate.provider_key,candidate]));
+
   const slotEvaluations=slots.map(slot=>{const key=`vehicle:${slot.vehicle_id}`;
     const accountKey=slot.provider_organization_id?`organization:${slot.provider_organization_id}`:`profile:${slot.provider_profile_id}`;
     const candidate=byTruck.get(key)||byAccount.get(accountKey)||null;
     return {...slot,candidate,eligible:Boolean(candidate?.eligible)};
-  });
-  const sponsorships=(data?.sponsorships||[]).map(sponsorship=>{
-    const provider_key=sponsorship.sponsor_kind==='TRANSPORTER'
-      ?(sponsorship.provider_organization_id?`organization:${sponsorship.provider_organization_id}`:`profile:${sponsorship.provider_profile_id}`):null;
-    const candidate=provider_key?byProvider.get(provider_key)||null:null;
-    return {...sponsorship,provider_key,candidate,
-      sponsor_name:sponsorship.sponsor_kind==='ADVERTISER'?sponsorship.business_name:candidate?.name||'Transporter unavailable',
-      eligible:sponsorship.sponsor_kind==='ADVERTISER'||Boolean(candidate?.eligible)};
   });
   const slotKeys=slots.filter(slot=>slot.vehicle_id).map(slot=>`vehicle:${slot.vehicle_id}`);
   const schedule=assignSponsors(scheduleForDay(day,featureDate,slotKeys),sponsorships,featureDate);
@@ -269,13 +286,14 @@ export async function saveProviderSponsorship(user,input={}){
     websiteUrl=validateWebsite(input.websiteUrl);phone=normalizeOptionalCallbackPhone(input.phone);
     if(!websiteUrl&&!phone)throw new Error('SPONSOR_CONTACT_REQUIRED');
   }
-  const client=createSupabaseAdminClient();const {error}=await client.rpc('save_managed_sponsorship',{actor_user_id:user.id,command:{
+  const client=createSupabaseAdminClient();const {data,error}=await client.rpc('save_managed_sponsorship',{actor_user_id:user.id,command:{
     feature_date:featureDate,group_key:expo.key,region_codes:expo.regionCodes,sponsorship_id:String(input.sponsorshipId||''),
     sponsor_kind:sponsorKind,provider_key:String(input.providerKey||''),business_name:businessName,description,
+    ...(input.artworkKey===undefined?{}:{artwork_key:input.artworkKey}),
     website_url:websiteUrl,phone,starts_on:startsOn,ends_on:endsOn,position
   }});
   if(error)throw managedError('SUPABASE_SPONSORSHIP_SAVE_FAILED',error);
-  return getAdminFeaturedProviderDay(user,featureDate);
+  return data;
 }
 
 export async function disableProviderSponsorship(user,sponsorshipId){

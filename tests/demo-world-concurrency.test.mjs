@@ -102,7 +102,7 @@ test('native failure evidence is sanitized and other hosts refuse before spawnin
  assert.doesNotMatch(output.join(''),/PRIVATE|CONTACT|SECRET|LOCATION/);
 });
 
-test('installed body pins match final224 and the four final197 to225 replacements',()=>{
+test('installed body pins include the profile race guards and exact Capacity seed boundary',()=>{
  const migration=prefix=>readFileSync('supabase/migrations/'+readdirSync('supabase/migrations').find(file=>file.startsWith(prefix+'_')),'utf8');
  const body=(source,name)=>{
   const match=source.match(new RegExp('create(?: or replace)? function public\\.'+name+'\\([^;]*?\\bas \\$\\$(.*?)\\$\\$;','s'));
@@ -120,6 +120,11 @@ test('installed body pins match final224 and the four final197 to225 replacement
   const key='public.demo_world_execute_profile(bigint,uuid)';
   assert.equal(definitions[key].split(before).length,2);definitions[key]=definitions[key].replace(before,after);
  }
+ const capacityPatch=migration('243').match(/previous text:=\$old\$(.*?)\$old\$;\s*requested text:=\$new\$(.*?)\$new\$;/s);
+ assert.ok(capacityPatch);
+ const capacityKey='public.demo_world_execute_capacity_step(bigint,uuid)';
+ assert.equal(definitions[capacityKey].split(capacityPatch[1]).length,2);
+ definitions[capacityKey]=definitions[capacityKey].replace(capacityPatch[1],capacityPatch[2]);
  for(const [signature,value] of Object.entries(definitions))
   assert.equal(createHash('sha256').update(value).digest('hex'),DEMO_RACE_DEFINITIONS[signature],signature);
 });

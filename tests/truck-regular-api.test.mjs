@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import {z} from 'zod';
 import {mobileCatalogPlace} from '../src/lib/mobile/place-projection.js';
+import {youtubeCoverId} from '../src/lib/provider-cover-video.js';
 import {normalizePublicAccountIdentity} from '../src/lib/provider-public-identity.js';
 
 const vehicleId='00000000-0000-4000-8000-000000000001',expectedDriverId='00000000-0000-4000-8000-000000000002',routeId='00000000-0000-4000-8000-000000000003';
@@ -80,7 +81,7 @@ test('Supabase adapter sends scoped regular commands and never sends retired Ser
  assert.deepEqual(calls.map(call=>call[0]),['add_provider_regular_capacity','replace_provider_regular_capacity','remove_provider_regular_capacity']);
  for(const [,args]of calls.slice(0,2)){assert.equal(args.actor_user_id,actor.id);assert.equal(args.command.vehicle_id,vehicleId);assert.equal(args.command.expected_driver_id,expectedDriverId);assert.deepEqual(args.command.route_places,[{place_ref:'city-a'},{place_ref:'city-b'}]);}
  assert.deepEqual(calls[2][1],{actor_user_id:actor.id,target_route_id:routeId,target_vehicle_id:vehicleId,expected_driver_user_id:expectedDriverId});
- const profile=load('src/lib/provider-profile/supabase.js',{'../private-upload-commit.js':{},'../private-storage.js':{},'../supabase-adapter.js':{createSupabaseAdminClient:()=>client},'../provider-public-identity.js':{normalizePublicAccountIdentity}});
+ const profile=load('src/lib/provider-profile/supabase.js',{'../provider-cover-video.js':{youtubeCoverId},'../private-upload-commit.js':{},'../private-storage.js':{},'../supabase-adapter.js':{createSupabaseAdminClient:()=>client},'../provider-public-identity.js':{normalizePublicAccountIdentity}});
  await profile.updateSupabaseCompanyPage(actor,{about:'Updated About',services:'OLD-CLIENT-OVERWRITE'});
  assert.equal(calls[3][0],'update_provider_profile_page');assert.equal(calls[3][1].command.about,'Updated About');assert.equal('services' in calls[3][1].command,false);
 });

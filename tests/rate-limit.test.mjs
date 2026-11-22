@@ -87,25 +87,24 @@ test('a permitted origin is consumed before request scope and its secondary buck
   ]);
 });
 
-test('Tracking guest code and review routes keep bounded shared PostgreSQL limits',()=>{
+test('Tracking link access keeps shared link-scoped limits while retired email routes do no lookup',()=>{
   const otp=fs.readFileSync(path.join(root,'src/app/api/shared-capacity/otp/route.ts'),'utf8');
   const shared=fs.readFileSync(path.join(root,'src/app/api/shared-capacity/access/route.ts'),'utf8');
   const trackingOtp=fs.readFileSync(path.join(root,'src/app/api/tracking/otp/route.ts'),'utf8');
   const tracking=fs.readFileSync(path.join(root,'src/app/api/tracking/unlock/route.ts'),'utf8');
   const reviewUnlock=fs.readFileSync(path.join(root,'src/app/api/tracking/review-unlock/route.ts'),'utf8');
   const reviewSubmit=fs.readFileSync(path.join(root,'src/app/api/tracking/[id]/review/route.ts'),'utf8');
+  const linkAccess=fs.readFileSync(path.join(root,'src/lib/tracking-sessions/http.ts'),'utf8');
   assert.match(otp,/status:410/);
   assert.match(shared,/status:410/);
   assert.doesNotMatch(otp,/requestSharedCapacityOtp|deliverTargetedAccessEmail/);
   assert.doesNotMatch(shared,/verifySharedCapacityAccess|setSharedCapacitySession/);
-  assert.match(trackingOtp,/requestKey\(request,'tracking-otp'\),originLimit:10,windowMs:10\*60_000,scopedLimit:3/);
-  assert.match(trackingOtp,/tracking-otp-recipient:\$\{email\}/);
-  assert.match(tracking,/requestKey\(request,'tracking-unlock'\),originLimit:12,windowMs:10\*60_000,scopedLimit:5/);
-  assert.match(tracking,/tracking-unlock-email:\$\{email\}/);
-  assert.match(reviewUnlock,/requestKey\(request,'tracking-review-unlock'\),originLimit:12,windowMs:10\*60_000,scopedLimit:5/);
-  assert.match(reviewUnlock,/tracking-review-unlock-shipment:\$\{shipmentId\}/);
-  assert.match(reviewSubmit,/requestKey\(request,`tracking-review-submit:\$\{id\}`\),5,60\*60_000/);
-  for(const source of [trackingOtp,tracking,reviewUnlock]){
-    assert.ok(source.indexOf('const rate=await checkOriginBeforeScopedLimit')<source.indexOf('request.formData()'));
+  assert.match(linkAccess,/requestKey\(request,'tracking-unlock'\),originLimit:12,windowMs:10\*60_000,scopedLimit:5/);
+  assert.match(linkAccess,/key:'tracking-unlock-link:'\+digests.linkDigest/);
+  assert.ok(linkAccess.indexOf('const rate=await checkOriginBeforeScopedLimit')<linkAccess.indexOf('await service.guest(rate.scope)'));
+  assert.doesNotMatch(linkAccess,/tracking-unlock-email|tracking-otp-recipient/);
+  for(const source of [trackingOtp,tracking,reviewUnlock,reviewSubmit]){
+    assert.match(source,/POST=\(\)=>retiredTrackingAccess\(\)/);
+    assert.doesNotMatch(source,/request\.formData|checkOriginBeforeScopedLimit|requestProviderTrackingOtp|verifyProviderTrackingOtp/);
   }
 });

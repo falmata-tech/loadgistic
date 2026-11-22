@@ -20,6 +20,16 @@ does not prove a running broadcast. Earlier truck-theme, morning-window and
 local/pending implementation notes below retain their dated history; they do
 not override this account-based evening contract or describe current rollout.
 
+## Eligibility recheck during preparation
+
+Given a Featured candidate has already been selected for the upcoming roster,
+when the worker rechecks eligibility under the vehicle lock, then it checks
+that vehicle and its assigned driver against the existing rules. A change in
+vehicle, driver, account, sharing or publication authority still aborts the
+operation. The private scoped query has no new caller grants. Existing
+rounds, saved days and audit outcomes keep their contracts. Migration 240
+changes the private query without changing any saved roster or receipt.
+
 ## Current programme window and identity — accepted October26
 
 Given a current Featured programme is prepared for an Ethiopia calendar date\
@@ -103,7 +113,38 @@ And timing, account order, sponsor records and permissions remain unchanged\
 And the actual REST save and administrator readback complete within the existing
 timeout with measured margin on the qualified fixture; no timeout is widened.
 
-## October18 courier configurations — planned local restoration
+### Scenario: Featured overview returns the current seven-day roster within the database deadline
+
+Given staff with Featured permission are reviewing programmes for this week
+When they open the overview or return after saving a programme or sponsor
+Then all seven days use the same current eligibility snapshot
+And their saved statuses, roster counts, invalid-slot counts and round numbers
+match the existing definitions
+And a signed-in account without Featured permission cannot run the overview.
+
+Migration 241 materializes the eligibility read for this statement. The
+existing RPC name, privileges, response and lock behavior remain the contract.
+The save uses the same vehicle-scoped predicate as Prepare for each selected
+truck and retains the separate account refresh before writing the roster.
+Each eligibility read checks publication once per account and computes the
+current driver once per candidate vehicle in the same database snapshot.
+Use the existing overview failure telemetry and a before-and-after timing on
+the same local fixture. If needed, restore the prior routine definition under
+the existing database rollback process.
+
+## November20 courier eligibility correction
+
+Given Featured computes eligibility for a new programme
+When it evaluates the courier vehicle configuration
+Then Courier car is eligible under the existing rules and Courier motorcycle is excluded
+And previously saved programmes remain intact.
+
+Migration238 aligns Tuesday and Sunday SQL themes with the shared selection
+catalogue. Sunday covers all sixteen supported types. Theme dates and identifiers,
+eligibility telemetry and roster limits stay the same. Reverting requires restoring
+the previous theme sets in source and in a forward migration.
+
+## October18 courier configurations — historical restoration
 
 Restore `Courier car` and `Courier motorcycle` to the supported vehicle catalogue
 and Featured eligibility. Keep the seven existing theme keys, dates and weekly

@@ -442,3 +442,33 @@ Given a saved account/profile is viewed\
 Then editors open only through an intentional task action and Cancel preserves
 saved values. Tests: focused role/route denial and upload contract tests, and the
 actual local read/edit/cancel checks in FEAT-UIX-001. Hosted behavior is unchanged.
+
+## November 18 public fleet map
+
+Given a public provider profile, opening its canonical URL displays the account
+identity and a large interactive map scoped to that provider. The map follows
+the public Capacity cursor independently of fleet pagination. Selecting a marker
+opens the existing vehicle and driver information. Current public location
+precision, sharing rules and eligible statuses apply on every read.
+The map is the only vehicle and driver entry point on the profile. When a
+vehicle has no public capacity marker, visitors can use the provider’s public
+contact actions to ask about it. The profile never infers a location. Account
+documents, contacts, reviews and introduction are reachable on desktop and phone.
+Loading, failure with retry and an empty map preserve the map area.
+This supersedes the earlier map-link-first and expanded-fleet presentation.
+The Expo profile requests the mobile public profile with `view=map` to get
+account details and the verified fleet count without hydrating vehicle records.
+Default mobile API responses and the public Capacity endpoint retain their contracts.
+Rollback restores the earlier layout without a database change.
+
+Given an authorized independent or fleet owner saves a YouTube watch, short or
+share URL in Edit profile, the public cover displays the video's poster with a
+Play action. Playback is user-initiated. Clearing the field removes the cover.
+Legacy hidden personal media is never published by migration. Company-page
+update audit records cover changes. Migration 237 is additive. Revert the app
+first to roll back. The local example features Yodi Yodi's Ethiopian Sinotruk
+driver, part 2 (WZMVTHGhlbg), with the original YouTube poster.
+
+Only the two public provider URL forms permit frames from www.youtube-nocookie.com
+and thumbnails from i.ytimg.com. The default content policy continues to apply
+to other screens. Provider attachments do not supply iframe or poster origins.

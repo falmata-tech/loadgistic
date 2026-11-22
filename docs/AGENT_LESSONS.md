@@ -8,6 +8,15 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+For a PostgreSQL recovery rehearsal, a database dump can omit settings stored
+at cluster scope. The Loadgistic dump restored the Data API guard function but
+omitted the authenticator's pre-request setting. A separate read-only check
+confirmed the one exact hosted setting and zero conflicts. Restore that captured
+setting during bootstrap of the network-disabled replica using its existing
+bootstrap role, then verify with the normal restored role and the unchanged
+catalog gate. Preserve the first failed receipt. Keep hosted role settings and
+privileges unchanged.
+
 November15 fixture preparation: inspect data generators as well as search
 predicates before blaming matching. The old demo generator assigned only city
 routes to small configurations and forced larger ones to Empty/100%. Preserve
@@ -155,6 +164,7 @@ retries; no production component or timeout change was needed.
 | A responsive map test checked only vertical clearance at 390px; its later 320px capture showed the action rail overlapping the location dock. | At every supported width, test actual two-dimensional overlap after each viewport resize. Keep touch targets intact and reflow controls when the smaller viewport cannot fit them. | FEAT-CAP-001; `.local/dashboard-task-fleet-20261021/manager-capacity/`. |
 | A no-build deployment omitted adapter-generated image routes; healthy APIs and valid source images hid broken optimized images. | Inspect the installed CLI's resolved configuration, preserve the exact build's required adapter routes, and test real optimized images at two widths plus private-file proxy denial after publication. Keep preview environment limits explicit. | NR-69. |
 | New instructions were sent to a completed agent with a message that did not start its next turn. | Start idle-agent work with `followup_task`; use messages for active work. Confirm the task is running before waiting for its result. | NR-68. |
+| Playwright intercepted requests to attach synthetic loopback rate-limit identities. Combined with the PWA worker, Chromium reported the redirected page's 200 on the original POST even though Next returned 303. | Keep the worker out of the routed HTTP-status tests. Opt in explicitly for install and offline browser tests, and verify installed navigation separately using real Chrome. Preserve 303 checks and saved readbacks, and check whether an actual error appeared after the redirect. | CI 44985345118; isolated Chromium redirect reproduction and focused desktop and phone checks. |
 | Old fixtures, button labels and palette assertions survived changed workflows; CI exposed them one at a time. A sandboxed browser launch failure initially obscured the real test results. | Before the long browser run, search affected E2E files for retired labels, layout bounds and colors; compare each assertion with the actual reviewed screen. Launch one bounded Chrome test first and classify a launch failure as infrastructure, then run the complete focused set. Fix all known stale assertions together without weakening behavior, privacy or save checks. | NR-21; current focused audit in [PROGRESS](PROGRESS.md). |
 | The account-network candidate reached full CI with stale browser routes, post-verification signup choices and a reused inactive demo alias; all eight shards failed. Local repair then found selected Expo controls missing web ARIA state, a saved signup leaving recovery after a transient refresh, and a native component test harness that lacked newly used React hooks. | Before the first full CI push after navigation or onboarding work, inventory affected E2E files and fixture identities, run changed tasks locally on desktop web, phone web and Expo, and require native lint/typecheck/tests/export separately. Update component harnesses when hooks change and assert the resulting behavior. Use canonical destinations, actual accessible state and scoped synthetic actors; navigate to a workspace only after the refreshed session is `ACTIVE`. Preserve the first failed CI run and rerun the complete gate only after focused failures are resolved. | PR22 CI 40173149817; FEAT-IAM-001, FEAT-CAP-001; focused evidence in [PROGRESS](PROGRESS.md). |
 | One accessibility test audited fourteen signed-in pages in a single two-minute case. It timed out before naming the slow page, while a light success button hid white-on-light text. | Keep contrast checks on real pages and make each audited role/route independently selectable. On a timeout, isolate a page and verify the product issue instead of repeatedly raising the entire test's limit. | October 22 Chrome Home, Verification and phone Home checks in [PROGRESS](PROGRESS.md). |
@@ -332,6 +342,29 @@ capture read-only, retain the one-entry flow and refuse drift/unknown shapes.
 The41-case focused check passes in5.209s; full Supabase races/restoration still
 need CI. Mark a failed proof ATTEMPTED rather than NOT_PERFORMED when it ran.
 
+November17: a disposable PG17 clone lost extension-table RLS/platform grants,
+although the shared local source passed the strict catalog check. Source and
+fresh-extension initial ACLs differed; never infer effective security from a
+successful dump/restore or rewrite `pg_init_privs`. The existing local owner
+bootstrap restored only the source grants/RLS; all8,500 reference rows and744
+PostGIS functions stayed identical. Clone strict checks and actual browser-role
+denial/service transform passed. The maintained clone now checks source security
+before creation, applies that owner bootstrap only to its fixed disposable DB,
+then verifies effective security before tests. Five focused cases pass in145ms;
+the canonical owner-step/strict verification took5.743s (210ms/447ms) without
+ownership changes. Independent static review passed; fresh maintained CI clone
+creation remains separate. Preserve the original clone failure as history.
+
+Connected Tracking needs actual SQL-to-service wire checks, not just successful
+Pending sessions or mocked fields. The broker journey returned503 after SQL
+connected because its shipment projection omitted the required saved timestamp.
+A rollback reproduction isolated the missing `updated_at`. New SQL wire checks
+cover all seven required fields/types and the actual saved value for provider,
+owner and guest reads: old projection failed in430ms; core/read/privacy passed
+after the one-field fix. The local overlay preserved owners/ACLs/data/ledger.
+Keep strict port rejection and the original503 evidence. That bounded failed
+journey stopped in25s with cleanup passing; the earlier label failure is separate.
+
 The final phone keyboard E2E reached the correct canonical filter request, but
 Next's route response took5,657ms while the URL assertion allowed5,000ms. The
 submit handler closes the dialog before navigation commits; a closed dialog is
@@ -453,6 +486,13 @@ status assertions to the active task: sponsor links, reconnect notices and map
 details can legitimately repeat the same label. These are test-harness failures,
 not evidence that the product flow failed; retain partial workflow evidence and
 verify exact synthetic cleanup before retrying.
+
+November 21's broader browser round found old selectors after renamed labels
+had already been fixed. Search for retired CSS hooks and response destinations
+when a workflow moves into a drawer, disclosure or separate page. Preview the
+real redirect before spending the whole timeout on a missing next control.
+Assert the current destination and bound the next action separately, then run
+the same affected journey on both phone and desktop before another full matrix.
 
 For installed Android tests, a successful ADB `input text` command does not prove
 the app received every character on a busy emulator. Verify the complete email

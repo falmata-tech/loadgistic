@@ -12,7 +12,7 @@ test('known public and protected destinations preserve identifiers without grant
   for (const route of ['shipment-detail','shipment-manage','visitor-shipment','support-chat']) assert.equal(normalize(`loadgistic://${route}?id=${id}`),`/${route}?id=${id}`);
   assert.equal(normalize('loadgistic:///account'),'/account');
 });
-test('the website Tracking entry opens native email verification without trusting link credentials',()=>{
+test('the website Tracking entry opens link-and-code entry without granting access',()=>{
  for(const path of ['/track','/track/','https://loadgistic.com/track','https://www.loadgistic.com/track','loadgistic://track']){
   assert.equal(normalize(path),'/visitor-tracking');
  }
@@ -90,4 +90,12 @@ test('explicit profile map links preserve bounded identities without sharing pri
  assert.equal(normalize('/?provider=rift-valley&truck='+id),'/?provider=rift-valley&truck='+id);
  assert.equal(normalize('/?view=private&provider=rift-valley'),'/?view=private&provider=rift-valley');
  for(const query of ['provider=bad%20handle','provider=','provider=one&provider=two','truck=invalid','provider=rift-valley&email=private@example.test'])assert.equal(normalize('/?'+query),'/link-unavailable');
+});
+
+test('one bounded Tracking token reaches code entry while code-in-URL and foreign destinations refuse',()=>{
+ const token='a'.repeat(43);
+ for(const prefix of ['', 'https://loadgistic.com','https://www.loadgistic.com'])assert.equal(normalize(`${prefix}/track/${token}`),`/visitor-tracking?linkToken=${token}`);
+ assert.equal(normalize(`loadgistic://track/${token}`),`/visitor-tracking?linkToken=${token}`);
+ assert.equal(normalize(`/visitor-tracking?linkToken=${token}`),`/visitor-tracking?linkToken=${token}`);
+ for(const path of [`/track/${token}?code=ABCD-EF23`,`/track/${token}#code=ABCD-EF23`,`/track/${token}/extra`,`/visitor-tracking?linkToken=${token}&code=ABCD-EF23`,`https://foreign.test/track/${token}`,`/track/${'a'.repeat(42)}`])assert.equal(normalize(path),'/link-unavailable');
 });

@@ -1,3 +1,5 @@
+import {randomUUID} from 'node:crypto';
+import {registeredTrackingOwner,cleanupTrackingOwnerFixtures} from './tracking-session-fixtures';
 import {chooseDate} from './date-picker-helper';
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
@@ -10,8 +12,8 @@ test('signed-out Shared capacity reaches account signup and retired email access
  await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();
  await page.getByRole('link',{name:'Sign up',exact:true}).click();
  await expect(page).toHaveURL(/\/signup$/);
- await expect(page.getByRole('radio',{name:/Find room for your load/})).toBeVisible();
- await page.getByRole('radio',{name:/Put your vehicles on the map/}).check();
+ await expect(page.getByRole('radio',{name:/Plan freight with your transporters/})).toBeVisible();
+ await page.getByRole('radio',{name:/Manage vehicles and share capacity/}).check();
  await page.getByLabel('Email',{exact:true}).fill('held@example.test');
  await expect(page.getByLabel('Email',{exact:true})).toHaveValue('held@example.test');
  expect((await page.request.post('/api/shared-capacity/otp',{data:{email:'held@example.test'}})).status()).toBe(410);
@@ -26,7 +28,7 @@ test('a forged verified signup URL does not reveal account continuation',async({
 });
 
 test('uncertain Tracking creation preserves the draft and prevents another save',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
- test.setTimeout(90000);const service=localAuditService();
+ test.setTimeout(90000);const service=localAuditService(),ownerEmail=`held-${randomUUID()}@example.test`;await registeredTrackingOwner(service,ownerEmail);
  const provider=await auditIdentity(service,'transporter@loadgistic.local');
  const logout=await localSupportLogin(page,provider.id);
  let calls=0,release=()=>{};const held=new Promise<void>(r=>{release=r});
@@ -34,7 +36,7 @@ test('uncertain Tracking creation preserves the draft and prevents another save'
   await page.goto('/app/provider-shipments/new');await expect(page.locator('.language-picker select:visible')).toBeEnabled();
   await page.getByLabel('Vehicle',{exact:true}).selectOption({index:1});await page.getByLabel('Cargo summary').fill('Retain this cargo draft');
   for(const [label,query] of [['Origin','Adama'],['Passing through city','Sebeta'],['Destination','Addis Ababa']]){await page.getByRole('combobox',{name:label,exact:true}).fill(query);await page.getByRole('option',{name:new RegExp(query)}).first().click();}
-  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));await page.getByLabel('Shipment owner email').fill('held@example.test');
+  await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));await page.getByLabel('Shipper or broker account email').fill(ownerEmail);
   // Let date-field validation settle before replacing browser timers. Otherwise
   // the fake clock can freeze the prior required-date validity and prevent submit.
   await expect.poll(()=>page.locator('form.form-card').evaluate(form=>form.matches(':valid')),{timeout:15000}).toBe(true);
@@ -45,3 +47,5 @@ test('uncertain Tracking creation preserves the draft and prevents another save'
   await page.screenshot({path:info.outputPath('uncertain-tracking.png'),fullPage:true});
  }finally{release();if(!page.isClosed())await page.unrouteAll({behavior:'wait'});await logout();}
 });
+
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

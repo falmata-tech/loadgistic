@@ -6,7 +6,7 @@ declare module '*location-privacy.js' {
 
 declare module '*tracking-progress.js' {
  export const TRACKING_JOURNEY: readonly string[];
- export function trackingProgress(status: string, currentStatus: string, recordedStatuses: string[], nextStatuses: string[]): string;
+ export function trackingProgress(status: string, currentStatus: string, recordedStatuses: string[], nextStatuses: string[], canUpdate?:boolean): string;
 }
 
 declare module '*tracking-location-controls.js' {

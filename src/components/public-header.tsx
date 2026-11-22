@@ -9,7 +9,7 @@ export async function PublicHeader({user:providedUser}:{user?:Awaited<ReturnType
   const user = providedUser===undefined?await getCurrentUser():providedUser;
   const capabilities=user?providerWorkspaceCapabilities(user):null;
   const navUser:SiteNavigationUser|null=user?{
-    id:user.id,role:user.role,name:user.name,active:user.active,
+    id:user.id,role:user.role,platformRole:user.platform_role||user.role,name:user.name,active:user.active,
     accountName:user.selected_business_workspace?.name||user.provider_account_name||user.organization_name||user.provider_business_name||user.name,
     canManageFleet:capabilities?.canManageFleet,drivesTruck:capabilities?.drivesTruck,
     capacityAllowed:user.selected_business_workspace?.permissions.capacity,

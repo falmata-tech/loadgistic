@@ -1,8 +1,8 @@
+import {registeredTrackingOwner,cleanupTrackingOwnerFixtures,issueTrackingFixtureLink,openTrackingFixtureLink} from './tracking-session-fixtures';
 import {expect,test} from './browser-test';
 import fs from 'node:fs';
 import path from 'node:path';
-import {localMailpitNumericCode} from './mailpit-helper';
-import {auditDeleteVehicles,auditIdentity,auditLogin,auditOpenTrackingProgress,auditProvider,checked,localAuditService} from './audit-helpers';
+import {auditDeleteVehicles,auditIdentity,auditLogin,auditTrackingOwnerLogin,auditOpenTrackingProgress,auditProvider,checked,localAuditService} from './audit-helpers';
 import {getProviderCapacityWorkspace} from '../../src/lib/provider-capacity.js';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
 import {chooseDate} from './date-picker-helper';
@@ -104,11 +104,11 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   await choosePlace(page,'Passing through city','Adama',/Adama, Ethiopia/i);
   await choosePlace(page,'Destination','Dire Dawa',/Dire Dawa, Ethiopia/i);
   await chooseDate(page,'Expected delivery',new Date(Date.now()+2*86400000).toISOString().slice(0,10));
-  ownerEmail=`shell-review-${actor.suffix}@example.test`;
-  await page.getByLabel('Shipment owner email',{exact:true}).fill(ownerEmail);
+  ownerEmail=`shell-review-${actor.suffix}@example.test`;await registeredTrackingOwner(service,ownerEmail);
+  await page.getByLabel('Shipper or broker account email',{exact:true}).fill(ownerEmail);
   await page.getByLabel('Status and approximate location').check();
   await page.getByRole('button',{name:'Start Tracking'}).click();
-  await expect(page.getByRole('button',{name:'Copy link',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Share Tracking link',exact:true})).toBeVisible();
   const tracking=page.getByRole('link',{name:'Open Tracking'}),trackingPath=await tracking.getAttribute('href');
   expect(trackingPath).toMatch(/^\/app\/provider-shipments\/[a-f0-9-]{36}$/);
   shipmentId=trackingPath!.split('/').at(-1)!;
@@ -122,13 +122,8 @@ test('capture focused responsive shell and Tracking review',async({page,context}
   const saved=await savedNavigation;expect(saved.status()).toBe(200);expect(await saved.finished()).toBeNull();
   await expect(page.getByText('Tracking status updated.')).toBeVisible();
   expect(checked(await service.from('provider_shipments').select('operational_status').eq('id',shipmentId).eq('provider_profile_id',actor.provider_profile_id).single()).operational_status).toBe('TO_PICKUP');
-  await page.goto('/track');
-  await page.getByLabel('Email',{exact:true}).fill(ownerEmail);
-
-  const requestedAt=Date.now();
-  await page.getByRole('button',{name:'Email me a code'}).click();
-  await page.getByLabel('6-digit email code').fill(await localMailpitNumericCode(ownerEmail,requestedAt,'Your Loadgistic tracking sign-in code'));
-  await page.getByRole('button',{name:'Open tracking'}).click();
+  const ownerSession=await auditTrackingOwnerLogin(page,ownerEmail,shipmentId),link=await issueTrackingFixtureLink(page,ownerSession.id,true);
+  await page.context().clearCookies();await openTrackingFixtureLink(page,link);
   await expect(page.locator('.tracking-location-map .leaflet-container')).toBeVisible({timeout:15_000});
   await waitForMapTiles(page,'.tracking-location-map');
   await settleDevelopmentOverlay(page);
@@ -144,3 +139,6 @@ test('capture focused responsive shell and Tracking review',async({page,context}
     }
   }
 });
+
+// Remove only newly created consented local CUSTOMER fixtures after shipment cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

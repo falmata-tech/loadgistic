@@ -3,6 +3,9 @@ export function getManagedWorkspaceAccess(user,_at=new Date()){
   const result={ends_at:null,days_remaining:null,subscription:null};
   if(!user?.active)return {...result,granted:false,status:'ACCOUNT_UNAVAILABLE'};
   if(user.role==='CUSTOMER'){const business=managedBusinessContext(user);return {...result,granted:Boolean(business),status:business?'BUSINESS_ACCESS':'WORKSPACE_REQUIRED'};}
+  if(['SHIPPER','RECEIVER'].includes(user.role)&&(user.platform_role||user.role)===user.role){
+    return {...result,granted:true,status:'ACCOUNT_ACCESS'};
+  }
   if(['ADMIN','SUPPORT'].includes(user.role)){
     return {...result,granted:true,status:user.role};
   }

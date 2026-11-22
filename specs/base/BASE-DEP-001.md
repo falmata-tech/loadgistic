@@ -331,7 +331,8 @@ before paying for a development resource solely for interactive review.
 ### Scenario: simulator concurrency evidence uses real native transactions
 
 Given the exact native GitHub runner owns the isolated loadgistic-local container
-and loadgistic_telematics_ci clone with final224/225 function bodies and private ACLs\
+and loadgistic_telematics_ci clone with the installed function bodies through
+migration 243 and private ACLs\
 When the bounded concurrency verifier runs after the existing rollback SQL suites\
 Then separate real sessions prove stop-first, owner-first, expiry-after-wait and
 executor-first behavior for Capacity and provider-profile work\

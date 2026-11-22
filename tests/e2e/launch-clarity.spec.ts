@@ -7,7 +7,7 @@ test('public entry stays clear of retired transport chat and GPS needs an explic
  test.setTimeout(60000);
  await page.addInitScript(()=>{(window as Window&{geoCalls?:number}).geoCalls=0;Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(_success:unknown,fail:(e:object)=>void)=>{const w=window as Window&{geoCalls?:number};w.geoCalls=(w.geoCalls||0)+1;fail({code:1,PERMISSION_DENIED:1});}}});});
  await page.goto('/',{waitUntil:'domcontentloaded'});await expect(page.locator('.leaflet-container')).toBeVisible();
- await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',exact:true})).toBeVisible();const accountEntry=page.getByTestId('public-session-action').getByRole('link',{name:'Sign in',exact:true});await expect(accountEntry).toBeVisible();await expect(accountEntry).toHaveAttribute('href','/login');
+ await expect(page.getByRole('heading',{name:'Work better with transporters to serve your customers',exact:true})).toBeVisible();const accountEntry=page.getByTestId('public-session-action').getByRole('link',{name:'Sign in',exact:true});await expect(accountEntry).toBeVisible();await expect(accountEntry).toHaveAttribute('href','/login');
  expect(await page.evaluate(()=>(window as Window&{geoCalls?:number}).geoCalls)).toBe(0);
  await expect(page.locator('.public-assistance-dock,.transport-request-form')).toHaveCount(0);
  await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
@@ -21,17 +21,19 @@ test('priority language explains public capacity and Tracking without retired tr
  for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await page.goto('/',{waitUntil:'domcontentloaded'});const picker=page.locator('.public-header-language select');await expect(picker).toHaveCount(1);await expect(picker).toBeEnabled({timeout:15000});await picker.selectOption(locale);
-  await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['The visibility you need to serve your customers reliably']);
+  await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['Work better with transporters to serve your customers']);
   await expect(page.locator('.public-assistance-dock,.transport-request-form')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath(`${locale}-public-capacity.png`)});
-  await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('label[for=tracking-email]')).toHaveText(messages['Email']);
+  await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.getByLabel(messages['Tracking link'],{exact:true})).toBeVisible();await expect(page.getByLabel(messages['Tracking code'],{exact:true})).toBeVisible();await expect(page.getByText(messages['The link and code open this load only.'],{exact:true})).toBeVisible();await expect(page.getByLabel(messages['Email'],{exact:true})).toHaveCount(0);
   await page.goto('/login',{waitUntil:'domcontentloaded'});await expect(page.locator('.auth-driver-hint')).toHaveText(messages['Added by your company? Use the email your fleet owner registered for you.']);
  }
 });
 
-test('stalled shipment email access ends its busy state and keeps the entered details',async({page}:{page:Page})=>{
- await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('.public-header-language select')).toHaveCount(1);await expect(page.locator('.public-header-language select')).toBeEnabled();await page.clock.install();
- let calls=0;await page.route('**/api/tracking/otp',async route=>{calls++;await new Promise<void>(resolve=>setTimeout(resolve,20000));await route.abort().catch(()=>{});});
- await page.getByLabel('Email',{exact:true}).fill('timeout@example.test');await page.getByRole('button',{name:'Email me a code'}).click();
- await expect.poll(()=>calls).toBe(1);await page.clock.runFor(16000);await expect(page.locator('.form-error[role=alert]')).toContainText('Try again');await expect(page.getByRole('button',{name:'Email me a code'})).toBeEnabled();await expect(page.getByLabel('Email',{exact:true})).toHaveValue('timeout@example.test');expect(calls).toBe(1);await page.unrouteAll({behavior:'ignoreErrors'});
+test('stalled Tracking unlock ends its busy state and retains both entered credentials for retry',async({page}:{page:Page})=>{
+ await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('.public-header-language select')).toHaveCount(1);await expect(page.locator('.public-header-language select')).toBeEnabled();await expect(page.locator('.tracking-entry-map .leaflet-container')).toBeVisible();await page.clock.install();
+ let calls=0;await page.route('**/api/tracking/access',async route=>{calls++;await new Promise<void>(resolve=>setTimeout(resolve,20000));await route.abort().catch(()=>{});});
+ const link='https://loadgistic.com/track/'+'a'.repeat(43),code='ABCD-EF23';
+ await page.getByLabel('Tracking link',{exact:true}).fill(link);await page.getByLabel('Tracking code',{exact:true}).fill(code);const map=await page.locator('.tracking-entry-map .leaflet-container').elementHandle();expect(map).not.toBeNull();
+ await page.getByRole('button',{name:'Open tracking',exact:true}).click();
+ await expect.poll(()=>calls).toBe(1);await page.clock.runFor(16000);await expect(page.locator('.form-error[role=alert]')).toContainText('Check both and try again.');await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();await expect(page.getByLabel('Tracking link',{exact:true})).toHaveValue(link);await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue(code);expect(await map!.evaluate(element=>element.isConnected)).toBe(true);expect(calls).toBe(1);await page.unrouteAll({behavior:'ignoreErrors'});
 });

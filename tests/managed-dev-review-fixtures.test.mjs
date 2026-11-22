@@ -99,7 +99,7 @@ function fake({occupied=false,enabled=false,catalog=2,failTable=null,places=[],d
   for(const [table,rows]of [['profiles',plan.demoUsers],['organizations',plan.organizations],
     ['provider_profiles',plan.providerProfiles],['company_pages',plan.pages],['vehicles',plan.vehicles],['capacities',plan.capacities]]){
     const properties=Object.fromEntries([...new Set(rows.flatMap(row=>Object.keys(row)))].map(key=>[key,
-      key==='id'||key.endsWith('_id')||['updated_by'].includes(key)?{format:'uuid'}:
+      key==='id'||key.endsWith('_id')||['updated_by','available_percent_reported_by'].includes(key)?{format:'uuid'}:
         ['active','drives_truck','verified','verified_identity','verified_license','vehicle_documents_verified','accepts_full_load',
           'accepts_partial_load','published','trailer_interchangeable'].includes(key)?{type:'boolean'}:
           key.endsWith('_json')?{format:'jsonb'}:{type:'string'}]));
@@ -261,8 +261,11 @@ test('explicit exact-project setup uses confirmed synthetic identities and ordin
   assert.equal(f.calls.some(call=>call[1]==='plans'),false);
   const capacities=f.saved.get('capacities').filter(row=>row.market_status==='PARTIAL');assert.equal(capacities.length,2);
   for(const capacity of capacities){
-    assert.equal(capacity.location_updated_at,plan.capacities.find(row=>managedDevFixtureUuid(row.id)===capacity.id).location_updated_at);
-    assert.equal(capacity.available_percent_reported_at,null);
+    const original=plan.capacities.find(row=>managedDevFixtureUuid(row.id)===capacity.id);
+    assert.equal(capacity.location_updated_at,original.location_updated_at);
+    assert.equal(capacity.available_percent_reported_at,original.available_percent_reported_at);
+    assert.equal(capacity.available_percent_reported_by,receipt.users.find(user=>user.fixtureKey===original.available_percent_reported_by).id);
+    assert.equal(capacity.available_percent_reported_driver_id,receipt.users.find(user=>user.fixtureKey===original.available_percent_reported_driver_id).id);
     assert.ok(Date.parse(capacity.updated_at)>Date.now()+3500000);
   }
   const report=JSON.stringify(result);

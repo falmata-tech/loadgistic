@@ -18,3 +18,9 @@ test('problem recovery and cancellation do not imply a completed journey',()=>{
   assert.equal(trackingProgress('LOADING','CANCELLED',['CREATED','LOADING'],[]),'Previously recorded');
   assert.equal(trackingProgress('COMPLETED','CANCELLED',['CREATED','LOADING'],[]),'Not reached');
 });
+
+test('customer timelines explain progress without inviting the reader to change shipment status',()=>{
+ assert.equal(trackingProgress('LOADING','CREATED',['CREATED'],['TO_PICKUP','LOADING'],false),'Upcoming');
+ assert.equal(trackingProgress('LOADING','ISSUE',['LOADING','ISSUE'],['LOADING'],false),'Previously recorded');
+ assert.equal(trackingProgress('UNLOADING','ISSUE',['ISSUE'],['UNLOADING'],false),'Remaining');
+});

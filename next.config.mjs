@@ -44,7 +44,11 @@ const nextConfig = {
             value: contentSecurityPolicy(process.env)
           }
         ]
-      }
+      },
+      ...['/@:handle','/providers/:handle'].map(source=>({
+        source,
+        headers:[{key:'Content-Security-Policy',value:contentSecurityPolicy(process.env,{providerCover:true})}]
+      }))
     ];
   }
 };

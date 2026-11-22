@@ -1,5 +1,28 @@
 -- Isolated fixture database; every test mutation rolls back.
 begin;
+-- Retained pre229 viewer history only. The live ADD_VIEWER command is denied.
+create function pg_temp.seed_legacy_tracking_viewer(target_shipment_id uuid,target_email text,target_digest text,target_name text)returns uuid language plpgsql as $$
+declare actual_owner uuid;viewer uuid;
+begin
+ select r.id into strict actual_owner from public.provider_tracking_recipients r where r.shipment_id=target_shipment_id and r.recipient_role='OWNER'and r.revoked_at is null;
+ insert into public.provider_tracking_recipients(shipment_id,recipient_role,recipient_email,recipient_email_digest,display_name,shared_by_recipient_id)
+ values(target_shipment_id,'TRACKING_PARTY',target_email,target_digest,target_name,actual_owner)returning id into viewer;
+ insert into public.tracking_sharing_controls(shipment_id,owner_recipient_id,revision)values(target_shipment_id,actual_owner,1)
+ on conflict(shipment_id)do update set revision=public.tracking_sharing_controls.revision+1;
+ return viewer;
+end$$;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['proof-owner@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 do $test$
 declare s_id uuid:=gen_random_uuid();driver_id uuid:=gen_random_uuid();admin_id uuid:=gen_random_uuid();outsider_id uuid:=gen_random_uuid();provider_id uuid:=gen_random_uuid();truck_id uuid;cities text[];e_id uuid:=gen_random_uuid();
   recipient_id uuid:=gen_random_uuid();digest text:=repeat('a',64);result jsonb;
@@ -25,7 +48,7 @@ begin
   insert into provider_shipment_events(id,shipment_id,status,event_type,created_by,proof_storage_path,proof_original_name,proof_mime_type)
     values(e_id,s_id,'LOADING','STATUS',driver_id,'supabase://shipment-proof/audit-placeholder.png','proof.png','image/png');
   select id into strict recipient_id from provider_tracking_recipients where shipment_id=s_id and recipient_role='OWNER';
-  perform tracking_owner_sharing_command(s_id,digest,clock_timestamp(),jsonb_build_object('action','ADD_VIEWER','expectedRevision',0,'name','Synthetic viewer','email','proof-viewer@example.invalid','digest',repeat('d',64)));
+  perform pg_temp.seed_legacy_tracking_viewer(s_id,'proof-viewer@example.invalid',repeat('d',64),'Synthetic viewer');
   if provider_tracking_proof_file(null,s_id,e_id,repeat('d',64)) is not null then raise exception 'VIEWER_PROOF_LEAK';end if;
   result:=provider_guest_tracking_for_recipient(s_id,repeat('d',64));
   if result is null or exists(select 1 from jsonb_array_elements(result->'events') e where(e->>'has_proof')::boolean) then raise exception 'VIEWER_STATUS_OR_PROOF_BOUNDARY';end if;

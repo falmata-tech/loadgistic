@@ -28,11 +28,12 @@ const FAILURE_CODES=new Set([
  'COMPLETE_RACE_MATRIX_REQUIRED'
 ]);
 
-// prosrc SHA256, from final224 and final197 after all four migration225 edits.
+// prosrc SHA256 of the installed simulator after migration 243, including the
+// earlier lease and profile race guards.
 // Check the installed definitions, not an earlier CREATE statement.
 export const DEMO_RACE_DEFINITIONS={
  'public.demo_world_claim_batch(uuid,integer)':'8846bc643a572e2324acc831041dfc69c721268a9f8e604969308c40d9a37fc5',
- 'public.demo_world_execute_capacity_step(bigint,uuid)':'95ebce07f01e003747efe0f1db5eefc7414d4fb9019f46c04b470740afc834c0',
+ 'public.demo_world_execute_capacity_step(bigint,uuid)':'0bf1c9195137ec29a1d79c07e7426fef984702865b6e1de6bd2d6fe08593b90a',
  'public.demo_world_claim_profile(uuid)':'f12097160c2802a17cbafdf0a3d6584541b3ad3811cb1bc40a23c1367541a48f',
  'public.demo_world_execute_profile(bigint,uuid)':'8d5080ec228c6c7d2a1327a4fa0b168d98734d35148aa9b93c681f20a4c786ca'
 };
@@ -183,7 +184,7 @@ export async function verifyDemoWorldConcurrency({environment=process.env,spawnP
    'FINAL_FUNCTION_DEFINITIONS_REQUIRED');
   requireValue(await query(`select
    (select array_agg(version::text order by version) from supabase_migrations.schema_migrations
-    where version in('221','222','223','224','225'))=array['221','222','223','224','225']::text[]
+    where version in('221','222','223','224','225','242','243'))=array['221','222','223','224','225','242','243']::text[]
    and exists(select 1 from public.demo_world_control where id=1 and not enabled and activated_at is null
     and catalog_version=2 and manifest_version=1 and last_dispatch_at is null)
    and exists(select 1 from public.demo_world_profile_control where id=1 and not enabled and manifest_version=2)

@@ -71,6 +71,7 @@ test('shipper/broker Account groups workspace and personal work without widening
 test('business Tracking keeps staff limited while the verified owner can act and view proof',()=>{
  const detail={workspaceId:workspace,isOwner:false,id:foreign,code:'SYNTHETIC',origin:'A',destination:'B',cargo:'Synthetic',status:'IN_TRANSIT',driver:'Synthetic',truck:'Synthetic',updatedAt:'',provider:'Synthetic',mode:'STATUS_ONLY',canShare:false,canApprove:false,canReview:false,canViewLocation:false,route:[],publicTruck:null,events:[],location:null,review:null};
  assert.equal(parseBusinessTrackingDetail(detail,workspace,foreign).location,null);
+ for(const source of ['MANUAL','MANUAL_ADMIN','INFERRED'])assert.equal(parseBusinessTrackingDetail({...detail,canViewLocation:true,location:{latitude:9,longitude:38,radius:10,area:'Retired',updatedAt:'2026-11-17',source}},workspace,foreign).location,null);
  assert.equal(parseBusinessTrackingDetail({...detail,isOwner:true,canApprove:true,canReview:true,canShare:true,events:[{id:foreign,status:'LOADING',note:'',createdAt:'2026-10-18',hasProof:true}]},workspace,foreign).canApprove,true);
  for(const value of [{...detail,workspaceId:foreign},{...detail,canApprove:true},{...detail,canShare:true},{...detail,location:{latitude:9,longitude:38,radius:10,area:'A',updatedAt:'2026-10-18'}},{...detail,events:[{id:'event',status:'LOADING',note:'',createdAt:'2026-10-18',hasProof:true}]}])assert.throws(()=>parseBusinessTrackingDetail(value,workspace,foreign));
 });

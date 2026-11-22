@@ -83,17 +83,17 @@
     },
     {
       "file": "cargo-photo-business-reads.spec.ts",
-      "title": "broker owner and permitted staff can read a private cargo photo until vehicle access is revoked",
+      "title": "private cargo photo request goes from a broker’s map to the assigned driver and back to permitted staff",
       "project": "mobile-chromium"
     },
     {
       "file": "driver-manual-capacity-location.spec.ts",
-      "title": "assigned driver reads a legacy Manual source, cannot edit it, and deliberately resumes phone updates",
+      "title": "retired selection stays unselected with owner lock until the assigned driver chooses Phone",
       "project": "mobile-chromium"
     },
     {
       "file": "driver-manual-mobile-preview.spec.ts",
-      "title": "assigned driver sees read-only legacy Manual in Expo and deliberately resumes phone updates",
+      "title": "Expo hides a retired selection and saves Phone only after explicit driver permission",
       "project": "mobile-chromium"
     },
     {
@@ -178,7 +178,7 @@
     },
     {
       "file": "mobile-private-entry.spec.ts",
-      "title": "private Capacity explains sign-in and keeps its destination through account creation",
+      "title": "private Capacity keeps its map until explicit sign-in or sign-up and retains the return path",
       "project": "desktop-chromium"
     },
     {
@@ -188,7 +188,7 @@
     },
     {
       "file": "mobile-tracking-map.spec.ts",
-      "title": "Expo phone verified Tracking shows only reported radius and opens private photo proof with revocation denial",
+      "title": "Expo phone link shows only the reported radius; private proof requires the registered owner and rechecks revocation",
       "project": "desktop-chromium"
     },
     {
@@ -263,12 +263,12 @@
     },
     {
       "file": "public-fleet-null-number.spec.ts",
-      "title": "existing local numbered and legacy null-number trucks keep closed maps and usable actions",
+      "title": "existing local numbered and legacy null-number trucks keep a usable profile map",
       "project": "desktop-chromium"
     },
     {
       "file": "public-fleet-null-number.spec.ts",
-      "title": "existing local numbered and legacy null-number trucks keep closed maps and usable actions",
+      "title": "existing local numbered and legacy null-number trucks keep a usable profile map",
       "project": "mobile-chromium"
     },
     {

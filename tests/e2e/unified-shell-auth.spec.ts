@@ -11,7 +11,7 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  const visitorNavigation=page.getByRole('navigation',{name:info.project.name==='mobile-chromium'?'Mobile navigation':'Site navigation'});
  await expect(visitorNavigation.getByRole('link',{name:'Track',exact:true})).toBeVisible();
  if(info.project.name==='desktop-chromium')await expect(visitorNavigation.getByRole('link',{name:'Capacity'})).toBeVisible();
- await expect(page.getByRole('link',{name:'Network'})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Network',exact:true})).toHaveCount(0);
  await expect(page.getByRole('navigation',{name:'Switch view'})).toHaveCount(0);
  await page.goto('/login');
  await expect(page.getByRole('heading',{name:'Sign in',exact:true})).toBeVisible();
@@ -19,8 +19,8 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  await expect(page.getByRole('radio',{name:/Shipper/})).toHaveCount(0);
  await page.goto('/signup');
  await expect(page.getByRole('heading',{name:'Create an account'})).toBeVisible();
- await expect(page.getByRole('radio',{name:'Find room for your load'})).toBeVisible();
- await expect(page.getByRole('radio',{name:'Put your vehicles on the map'})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Plan freight with your transporters'})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Manage vehicles and share capacity'})).toBeVisible();
  const service=localAuditService(),actor=await auditProvider(service,'shell-nav');
  try{
  await localSupportLogin(page,actor.id);
@@ -34,7 +34,7 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  await expect(accountNavigation.getByRole('link',{name:'Home'})).toHaveCount(1);
  await expect(accountNavigation.getByRole('link',{name:'Capacity'})).toHaveCount(0);
  await expect(accountNavigation.getByRole('link',{name:'Network'})).toHaveCount(1);
- for(const name of ['Shared with you','Privately shared with you'])await expect(accountNavigation.getByRole('link',{name,exact:true})).toHaveCount(0);
+ for(const name of ['Shared with you','Private Network'])await expect(accountNavigation.getByRole('link',{name,exact:true})).toHaveCount(0);
  await page.screenshot({path:info.outputPath('unified-shell-signed-in.png')});
  await expect(page.getByRole('navigation',{name:'Switch view'})).toHaveCount(0);
  await expect(page.getByRole('navigation',{name:'Capacity views'})).toHaveCount(0);
@@ -62,8 +62,8 @@ test('one shell gains account navigation after sign-in and returns to Capacity a
  await header.getByRole('button',{name:'Log out'}).click();
  await expect(page).toHaveURL(url=>url.pathname==='/',{timeout:30_000});
  await expect(header.getByRole('link',{name:'Sign in'})).toBeVisible();
- await expect(page.getByRole('navigation',{name:'Site navigation'}).getByRole('link',{name:'Network'})).toHaveCount(0);
- await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Site navigation'}).getByRole('link',{name:'Network',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Private Network'})).toBeVisible();
  await expect(visitorNavigation.getByRole('link',{name:'Track',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('unified-shell-signed-out.png')});
  }finally{

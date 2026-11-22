@@ -1,3 +1,6 @@
+--229: current registered creation queues no access email. Explicit retained
+-- pre229 sink/recipient inputs below test historical containment/resume only;
+-- reserved lanes remain unarmed outside this rollback fixture, not newly qualified.
 -- FEAT-SIM-001. Rollback-only test after migrations 191 and 193 on an isolated
 -- fixture clone. A paused exact unfinished shipment can resume; a forged or
 -- completed one cannot. No proof, OTP, email or approval leaves this test.
@@ -22,6 +25,16 @@ begin
       where id=1 and armed) then
     raise exception 'DEMO_TRACKING_BASELINE_DRIFT';
   end if;
+  -- Current creation requires actual confirmed fixture customer accounts.
+  declare fixture_email text;fixture_id uuid;
+  begin
+   foreach fixture_email in array array['demo.lifecycle.owner@example.test','outside@example.test']loop
+    if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+    fixture_id:=gen_random_uuid();
+    insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+    update public.profiles set role='SHIPPER',active=true,full_name='Synthetic reserved customer'where id=fixture_id;
+   end loop;
+  end;
   select id into strict actor_id from auth.users
   where raw_app_meta_data->>'fixture_source'='loadgistic'
     and raw_user_meta_data->>'fixture_key'='user-transporter';
@@ -48,6 +61,11 @@ begin
   update public.demo_world_tracking_lifecycle_control
     set armed=true where id=1;
   perform public.create_provider_tracking_with_recipients(actor_id,command);
+  if exists(select 1 from public.demo_world_tracking_notification_sink where shipment_id=target_id and event_kind='TRACKING_ACCESS')then raise exception 'RETIRED_CREATION_ACCESS_EMAIL_QUEUED';end if;
+  -- Synthetic retained pre229 receipt input for unchanged legacy recovery
+  -- guards, not a new delivery observation or a current worker success claim.
+  insert into public.demo_world_tracking_notification_sink(source_kind,source_key,shipment_id,event_kind,recipient_role)
+  values('EMAIL','tracking-access:'||target_id::text,target_id,'TRACKING_ACCESS','OWNER');
   update public.demo_world_tracking_lifecycle_control
     set armed=false where id=1;
 

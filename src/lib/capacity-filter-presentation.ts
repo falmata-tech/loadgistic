@@ -11,7 +11,7 @@ export const CAPACITY_FILTER_PRESENTATION={
   cityDistance:{defaultKm:50,choices:kmChoices([5,10,25,50,100,200,300])},
   nearbyDistance:{defaultKm:20,choices:kmChoices([5,10,20,50,100])},
   routeDistance:{defaultKm:50,choices:kmChoices([10,25,50,100,200])},
-  locationSource:{label:'Location source',anyLabel:'Any location source',options:[['GPS','GPS device'],['MOBILE','Driver’s phone'],['MANUAL','Manually entered']] as const},
+  locationSource:{label:'Location source',anyLabel:'Any location source',options:[['GPS','GPS device'],['MOBILE','Driver’s phone']] as const},
   availableSpace:{label:'Available space',options:[['','Any amount'],['25','25% or more'],['50','50% or more'],['75','75% or more']] as const},
   privatePhoto:{label:'Cargo space photo',options:[['','Any photo status'],['present','With photo'],['12','Within 12 hours'],['24','Within 24 hours'],['72','Within 3 days'],['168','Within 7 days']] as const},
   stops:{label:'Stops',anyLabel:'Any stop pattern',options:[['MULTI_PICK','Multiple pickups'],['MULTI_DROP','Multiple drop-offs']] as const},

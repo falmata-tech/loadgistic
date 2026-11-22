@@ -4,7 +4,7 @@ import { useLanguage } from '../localization/provider';
 type AppCopy=PropsWithChildren<{message?:string}>;
 type Label=({label:string;message?:never}|{message:string;label?:never});
 export const palette = { ink: '#0b1d3a', blue: '#155eef', blueSoft: '#eaf1ff', muted: '#526375', border: '#a7b6c9', borderSoft: '#d5deea', canvas: '#eef2f6', success: '#155eef', successSoft: '#eaf1ff' };
-export function LoadingSpinner(props: ActivityIndicatorProps) { const {t}=useLanguage();return <ActivityIndicator {...props} accessibilityLabel={props.accessibilityLabel?t(props.accessibilityLabel):undefined} color={props.color ?? palette.blue} />; }
+export function LoadingSpinner(props: ActivityIndicatorProps) { const {t}=useLanguage();return <ActivityIndicator {...props} accessibilityLabel={t(props.accessibilityLabel||'Loading…')} color={props.color ?? palette.blue} />; }
 export function Page({ children,embedded=false,...scroll }: PropsWithChildren<{embedded?:boolean}&Pick<ScrollViewProps,'onLayout'|'onScroll'|'scrollEventThrottle'>>) { return embedded?<View style={{gap:16}}>{children}</View>:<ScrollView {...scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>{children}</ScrollView>; }
 export function Title({ children,message }: AppCopy) { const {t}=useLanguage();return <Text accessibilityRole="header" style={styles.title}>{message===undefined?children:t(message)}</Text>; }
 export function Copy({ children,message }: AppCopy) { const {t}=useLanguage();return <Text style={styles.copy}>{message===undefined?children:t(message)}</Text>; }

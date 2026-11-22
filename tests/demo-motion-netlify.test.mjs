@@ -5,7 +5,7 @@ import {NETLIFY_MOTION_PATH,NETLIFY_MOTION_BACKGROUND,NETLIFY_MOTION_SCHEDULE,NE
  netlifyMotionConfiguration,authenticateNetlifyMotion,signedNetlifyMotion,netlifyMotionClient,runNetlifyMotionWindow} from '../src/lib/demo-motion-netlify.mjs';
 import {handleNetlifyDemoMotion} from '../src/lib/demo-motion-netlify-http.js';
 import {demoMotionScenarioFix} from '../src/lib/demo-motion-scenario.mjs';
-import {dispatchNetlifyMotion} from '../netlify/functions/demo-motion.mjs';
+import {dispatchNetlifyMotion,executeScheduledNetlifyMotion} from '../netlify/functions/demo-motion.mjs';
 import {executeNetlifyMotion} from '../netlify/functions/demo-motion-background.mjs';
 
 const origin='https://demo-motion.example',site=randomUUID(),at=Date.parse('2026-11-15T06:00:00Z');
@@ -19,6 +19,10 @@ const config={origin,secret:environment.HOSTED_DEMO_MOTION_SECRET};
 function request(input,{path=NETLIFY_MOTION_PATH,issuedAt=at,headers={},raw}={}){
  const body=raw??JSON.stringify(input);
  return new Request(origin+path,{method:'POST',body,headers:{...signedNetlifyMotion(config,path,body,issuedAt),...headers}});
+}
+async function captureDispatch(callback){
+ const logs=[],original=console.error;console.error=value=>logs.push(JSON.parse(value));
+ try{return{response:await callback(),logs};}finally{console.error=original;}
 }
 
 test('Netlify motion is default-off and rejects another site, preview, project or shared credential',async()=>{
@@ -90,6 +94,54 @@ test('native scheduler dispatches one signed background request and requires asy
  assert.deepEqual(Object.keys(JSON.parse(init.body)),['runId']);
  await assert.rejects(dispatchNetlifyMotion(new Request(origin+NETLIFY_MOTION_SCHEDULE),{
   environment,now:()=>at,fetchImpl:async()=>new Response(null,{status:200})}),/DISPATCH_FAILED/);
+});
+
+test('native motion schedule ignores synthetic incoming URL but retains the exact signed destination',async()=>{
+ for(const url of ['https://scheduler.invalid/','https://scheduler.invalid/internal-schedule?synthetic=1',origin+NETLIFY_MOTION_SCHEDULE]){
+  let calls=0;
+  const captured=await captureDispatch(()=>executeScheduledNetlifyMotion(new Request(url,{method:'POST',
+   body:JSON.stringify({next_run:'2026-11-15T06:01:00Z'})}),{environment,now:()=>at,fetchImpl:async(target,init)=>{
+    calls++;assert.equal(target,origin+NETLIFY_MOTION_BACKGROUND);
+    assert.equal(init.redirect,'error');assert.equal(init.credentials,'omit');
+    authenticateNetlifyMotion(new Headers(init.headers),init.body,config,NETLIFY_MOTION_BACKGROUND,at);
+    assert.deepEqual(Object.keys(JSON.parse(init.body)),['runId']);return new Response(null,{status:202});
+   }}));
+  assert.equal(calls,1);assert.equal(captured.response.status,204);assert.deepEqual(captured.logs,[]);
+ }
+});
+
+test('scheduled motion still denies wrong site/origin/project and nonproduction with no dispatch',async()=>{
+ for(const patch of [{CONTEXT:'deploy-preview'},{NODE_ENV:'development'},{SITE_ID:randomUUID()},
+  {URL:'https://other.invalid'},{NEXT_PUBLIC_SUPABASE_URL:'https://other.supabase.co'},
+  {LOADGISTIC_HOSTED_MOTION_SITE_ORIGIN:origin+'/path'},{HOSTED_DEMO_MOTION_SECRET:undefined}]){
+  const captured=await captureDispatch(()=>executeScheduledNetlifyMotion({get url(){throw Error('URL_MUST_NOT_BE_READ');}},
+   {environment:{...environment,...patch},now:()=>at,fetchImpl:async()=>{assert.fail('MUST_NOT_SEND');}}));
+  assert.equal(captured.response.status,500);
+  assert.deepEqual(captured.logs,[{event:'demo-motion-dispatch',ok:false,code:'DISPATCH_FAILED',phase:'CONFIGURATION',failure:'DEMO_HOSTED_DISABLED',httpStatus:null}]);
+ }
+ for(const patch of [{LOADGISTIC_DEMO_MOTION_NETLIFY_ENABLED:undefined},
+  {LOADGISTIC_DEMO_MOTION_NETLIFY_KILL_SWITCH:'true'},{LOADGISTIC_HOSTED_MOTION_WORKER_ENABLED:'true'}]){
+  const captured=await captureDispatch(()=>executeScheduledNetlifyMotion(undefined,{environment:{...environment,...patch},now:()=>at,
+   fetchImpl:async()=>{assert.fail('MUST_NOT_SEND');}}));
+  assert.equal(captured.response.status,204);assert.deepEqual(captured.logs,[]);
+ }
+ const closed=await captureDispatch(()=>executeScheduledNetlifyMotion(undefined,{environment,now:()=>Date.parse('2026-11-15T08:00:00Z'),
+  fetchImpl:async()=>{assert.fail('MUST_NOT_SEND');}}));
+ assert.equal(closed.response.status,204);assert.deepEqual(closed.logs,[]);
+});
+
+test('scheduled motion diagnoses HTTP/timeout/unknown failures without retries or raw private values',async()=>{
+ for(const [fetcher,failure,httpStatus] of [
+  [async()=>new Response('private@example.invalid',{status:401}),'DEMO_NETLIFY_DISPATCH_FAILED',401],
+  [async()=>new Response(null,{status:200}),'DEMO_NETLIFY_DISPATCH_FAILED',200],
+  [async()=>{throw new DOMException('secret private@example.invalid','TimeoutError');},'REQUEST_TIMEOUT',null],
+  [async()=>{throw Error('secret private@example.invalid');},'UNCLASSIFIED',null]
+ ]){
+  let calls=0;
+  const captured=await captureDispatch(()=>executeScheduledNetlifyMotion(undefined,{environment,now:()=>at,fetchImpl:async()=>{calls++;return fetcher();}}));
+  assert.equal(calls,1);assert.equal(captured.response.status,500);assert.equal(await captured.response.text(),'');
+  assert.deepEqual(captured.logs,[{event:'demo-motion-dispatch',ok:false,code:'DISPATCH_FAILED',phase:'REQUEST',failure,httpStatus}]);
+ }
 });
 
 test('client signs fresh nonces and does not automatically retry an ambiguous transport failure',async()=>{

@@ -74,7 +74,8 @@ begin
   perform refresh_provider_capacity_location(actor,jsonb_build_object('vehicle_id',truck,'approximate_lat',9,'approximate_lng',38,'location_precision_km',20));
   cap:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck,'status',case when ordinal_value%3=0 then 'PARTIAL' else 'EMPTY' end,
     'accepted_loads',case when ordinal_value%3=0 then 'PTL' else 'FTL' end,'availability_geometry','ROUTE','location_source','PRESERVE_DRIVER',
-    'current_route_places',route,'accepts_multi_pick',ordinal_value%2=0,'accepts_multi_drop',ordinal_value%2<>0,'sharing_mode','PUBLIC'));
+    'current_route_places',route,'accepts_multi_pick',ordinal_value%2=0,'accepts_multi_drop',ordinal_value%2<>0,'sharing_mode','PUBLIC')
+    ||case when ordinal_value%3=0 then '{"available_percent":45}'::jsonb else '{}'::jsonb end);
   -- Remove only this new synthetic fixture's setup reset before deliberately
   -- aging its signal. Seeded history and production timestamp rules are intact.
   delete from capacities where id=setup_capacity and vehicle_id=truck and market_status='OFF_DUTY' and id<>cap;

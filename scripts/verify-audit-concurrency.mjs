@@ -29,12 +29,13 @@ async function queued(command,lockedCommand,afterLock,expected){
   const result=await worker.done;assert.notEqual(result.code,0,'Queued stale write must fail');assert.ok(result.output.includes(expected),'Expected current-authority denial');
  }finally{lock.child.kill();worker.child.kill();}
 }
-const owner=randomUUID(),oldDriver=randomUUID(),newDriver=randomUUID(),closing=randomUUID(),org=randomUUID(),provider=randomUUID(),truck1=randomUUID(),truck2=randomUUID(),tracking=randomUUID();
-const actors=[owner,oldDriver,newDriver,closing];const ids=actors.map(literal).join(',');const suffix=randomUUID().slice(0,8);
+const shipper=randomUUID(),owner=randomUUID(),oldDriver=randomUUID(),newDriver=randomUUID(),closing=randomUUID(),org=randomUUID(),provider=randomUUID(),truck1=randomUUID(),truck2=randomUUID(),tracking=randomUUID();
+const actors=[owner,oldDriver,newDriver,closing,shipper];const ids=actors.map(literal).join(',');const suffix=randomUUID().slice(0,8);
 try{
  await sql(`begin;
  insert into auth.users(id,email,email_confirmed_at,last_sign_in_at,raw_user_meta_data) values ${actors.map(id=>`(${literal(id)},${literal('audit-concurrency-'+id+'@example.invalid')},now(),now(),'{}')`).join(',')};
  update profiles set active=true,role='DRIVER',full_name='Audit concurrency Driver' where id in (${ids});
+ update profiles set role='SHIPPER' where id=${literal(shipper)};
  update profiles set role='TRANSPORTER' where id=${literal(owner)};
  insert into organizations(id,name,handle,type) values(${literal(org)},'Audit concurrency fleet',${literal('audit-concurrency-'+suffix)},'TRANSPORT_COMPANY');
  insert into organization_members(user_id,organization_id,membership_role) values(${literal(owner)},${literal(org)},'OWNER'),(${literal(oldDriver)},${literal(org)},'DRIVER'),(${literal(newDriver)},${literal(org)},'DRIVER');
@@ -48,7 +49,7 @@ try{
  insert into driver_vehicle_assignments(driver_user_id,vehicle_id,assigned_by) values(${literal(oldDriver)},${literal(truck1)},${literal(owner)}),(${literal(newDriver)},${literal(truck2)},${literal(owner)});
  select create_provider_tracking_with_recipients(${literal(owner)},jsonb_build_object('id',${literal(tracking)},'code',${literal('LGX-'+suffix.toUpperCase())},'vehicle_id',${literal(truck1)},
  'origin_place_ref',(select id from place_catalog where normalized_name='addis ababa' limit 1),'destination_place_ref',(select id from place_catalog where normalized_name='adama' limit 1),'passing_place_ref',(select id from place_catalog where normalized_name='dire dawa' limit 1),
- 'cargo_summary','Concurrency regression','customer_email','audit-concurrency@example.invalid','customer_email_digest',repeat('c',64),'additional_recipients','[]'::jsonb,'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',repeat('d',64),'review_code_hash',repeat('e',64)));
+ 'cargo_summary','Concurrency regression','customer_email',${literal('audit-concurrency-'+shipper+'@example.invalid')},'customer_email_digest',repeat('c',64),'additional_recipients','[]'::jsonb,'expected_delivery_date',(current_date+2)::text,'tracking_mode','LOCATION_AND_STATUS','tracking_code_hash',repeat('d',64),'review_code_hash',repeat('e',64)));
  commit;`);
  const location={area:'Around Addis Ababa',lat:'9',lng:'38.7',precision_km:'10',source:'DEVICE_OBSCURED'};
  for(const kind of ['status','location']){

@@ -1,13 +1,477 @@
 # Current work and release status
 
-Updated 2026-11-16. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-22. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
 
-## Active hosting request — November15–16 (CST)
+## November 22 Capacity estimates and private cargo photos
+
+Partial markers show the reported percentage on web and in Expo. The same
+estimate appears on the Driver's Capacity home and in Vehicle and driver. Both
+editors require an integer from 1 to 99. The database protects the original
+report time and assigned-driver scope. Existing unreported customer history
+stays unknown. All 107 Partial demo records in the managed fixture have an
+attributed estimate from 20% to 90%. The simulator startup accepts only its exact
+authored seeds and retains the human-report denial.
+
+Verified a broker request from Private Network, assigned Driver preview and
+upload on phone-width web, broker and Capacity staff photo reads, denial after
+revocation, and fleet owner removal in Expo. Chrome capture and test evidence
+are in the review worktree under `.local/interactive-previews`. The installed
+Android camera and hosted deployment remain separate checks.
+
+The encrypted database restore matched 202 relations and 135 ACL entries.
+All seven private Storage objects recovered and matched their captured bytes.
+The first isolated rehearsal failed because the database dump omitted the
+cluster role setting. A read-only hosted check confirmed the exact setting and
+zero conflicts. Bootstrapping a new network-disabled restore with that captured
+setting passed the unchanged Data API and database security gates, all 16
+migrations, and six rollback-only workflow checks. Production was inspected
+read-only. Browser and deployment qualification continues in PR 42.
+
+## November 21 production recheck
+
+Netlify confirms deployment `6afbc2ee6c2aa088ac972def` is Published at
+`906a51f1`. The live Track form still asks for email. A direct request to
+`/install` returns page HTML without the install guide, and the new Tracking
+sessions API is absent. Live health returns 200 and reports warning codes for
+upload scanning, email delivery semantics and the community tile service.
+
+The retained Netlify logs from the November 17 daily window show both schedulers
+invoked. Motion recorded `DISPATCH_FAILED` repeatedly, with no corresponding
+motion background logs in the queried range. Capacity recorded
+`ADVANCE_FAILED`. The published handlers log only those general errors, so they
+do not identify the failing phase. The release candidate already contains
+scheduled-entry handling that selects the verified configured origin instead
+of the provider's synthetic Request URL, plus bounded phase and HTTP status
+diagnostics. Local tests pass for both fixed dispatchers and the existing
+site, method, signature, and schedule denials. See
+[FEAT-SIM-001](../specs/features/FEAT-SIM-001.md). A natural hosted pass still
+requires successful dispatch, accepted saved Capacity and GPS/Phone updates,
+and inactivity outside the agreed window.
+
+Draft [PR 42](https://github.com/falmata-tech/loadgistic/pull/42) opened
+against the current main and production source. Initial CI passed validation,
+the Android internal build and the standalone container. Independent operations
+proof passed. The initial browser gate exposed a Chromium interaction between
+test request interception and the service worker. The redirected GET's 200
+appeared as the original POST's response in Playwright. In a disposable browser
+without the interception the worker preserved the real 303. Normal browser
+tests now retain transport status checks with the worker disabled, and the
+install and offline suite opts in to real worker execution.
+
+The local Featured Prepare request also hit the database statement deadline.
+Migration 240 scopes each final eligibility recheck to the selected vehicle
+while retaining its lock, current driver, publication and account checks.
+A rollback benchmark prepared the same seven missing days on 145 local
+vehicles in 5.3 seconds, down from 10.6 seconds. Saved roster history remains
+under the existing checks. Driver portrait and owner-qualification tests use
+the real profile map and its vehicle drawer.
+
+The revised source passed database and simulator validation, the optimized
+web build, the Android internal-build check, the standalone container, the
+independent browser proof and all three Featured checks. The broader matrix
+identified remaining assertions for the retired provider review list, direct
+driver call and old Capacity colors. The browser tests now open the provider
+About panel or vehicle drawer where appropriate and verify the current
+map key. Local Support review passed signed-in customer and staff exchanges,
+FIFO claim and revocation on both widths, and the admin Team layouts. The
+local delivery check passed provider progress, registered owner approval,
+completion email, and the one-review limit.
+
+The sponsor save returns to its own management page. The browser test verifies
+the saved sponsor there and follows the Featured link back to the programme.
+Final rehearsal also exposed a separate Featured overview database timeout
+after successful programme writes. Migration 241 reuses one eligible-account
+query across the seven-day response. On the same local data, the RPC took
+3.1 seconds, down from 14.6 seconds, and both versions returned identical JSON.
+The overview still enforces Featured permission and reports saved rounds,
+roster counts and eligibility changes. The same migration scopes the save's
+vehicle rechecks and avoids duplicate driver lookup in the shared eligibility
+query. A rollback-only save retained eight slots and ran in 6.3 seconds, down
+from 15.6 seconds. The later driver-query change reduced one comparable read
+from 5.7 to 2.4 seconds with the same 145 vehicle and driver pairs.
+The shared query now checks publication once per account in the same statement.
+The final service-role reads returned 145 vehicle and driver pairs in 3.4 seconds
+and 32 eligible accounts in 2.3 seconds. Both requests had previously reached
+the eight-second database deadline.
+
+A Chrome installation launched the app in standalone mode and opened Track
+and About at 390 CSS pixels. Android Chrome at 412 CSS pixels had an active
+worker and no installability errors and accepted the app's install action.
+Its separate launcher launch could not be reproduced on the loopback emulator.
+The latest hosted audit passed the Data API guard and reported zero errors and
+one signed-in security-definer warning. Release review and all current
+same-source verification still apply.
+
+## November 21 installable web app and broker pilot
+
+Install app is near the bottom of the desktop navigation rail and in More on
+signed-in phones. Signed-out phones can find it on About. Supported browsers
+offer their install prompt. The install page gives browser-menu and Safari
+instructions. The service worker uses a generic offline retry page and allows
+updates after open tabs close.
+
+Reviewed the local web app at [About](http://127.0.0.1:3101/about) and
+[Install Loadgistic](http://127.0.0.1:3101/install). Chrome reported no
+installability errors in a disposable desktop profile. Desktop and phone
+Chromium exercised the install entry, prompt handoff, offline cache isolation
+and recovery to sign-in. The 390-pixel install guide was reviewed with an
+iPhone user agent, in English, Amharic and Afaan Oromo. Screenshots and test
+logs are in `.local/pwa-tracking-pilot/`.
+Browser alerts still use updates while the app is open. Installation on a
+physical phone was outside this review.
+
+Migration 239 enables two-city broker shipments and an optional stop. Broker
+job references are searchable inside the authorized workspace. Guests and
+providers see the Loadgistic reference. Providers can decline and brokers can
+withdraw a pending request. Both decisions clear the old target and reject its
+stale revision. The local rollback SQL suite passed including expiry, direct
+provider readback, unrelated actor denials and guest proof/reference privacy.
+The local catalog privilege checks passed. In phone Chromium, a broker signed
+in, created a direct shipment and found it by job reference. The guest opened
+the link with its code. The provider declined, the broker reissued and withdrew
+a request, and the provider accepted the next request. A saved Going to pickup
+update appeared to the broker and guest. At the [Expo preview](http://localhost:8084/business-tracking),
+the broker signed in through the local inbox, searched the same shipment
+reference, opened it and saw the saved Going to pickup status. The synthetic
+records were removed after the browser run.
+
+The Market keeps the map and filters in place with a retry if its first read
+fails. A local fixture run returned valid responses for four serial requests
+(median 764 ms, max 1,122 ms) and 12 requests in waves of four (median
+2,801 ms, max 3,144 ms). Production concurrency still needs measurement.
+
+The web quality gate passed 1,685 tests. Expo passed 460 tests, TypeScript
+and lint. The optimized local web build completed.
+
+The published Tracking flow still needs the exact reviewed web and database
+release. The production checklist retains external inbox, installed Android,
+closed-app notification and scanned private proof checks. The owner deferred
+physical tracker and map tile work.
+
+## November 21 pilot review
+
+[Production workflow review](PRODUCTION_WORKFLOW_REVIEW.md#november-21-broker-to-transporter-pilot-review)
+records the direct-shipment rule, request and reference gaps, published Tracking
+differences, and location, delivery and map verification needed for a pilot.
+The shorter homepage paragraph adds where transporters plan to go. Chrome
+confirmed the exact paragraph in all three supported languages at 1280px and
+390px. Screenshots are in `.local/sponsor-review/planned-journeys-copy`.
+
+## November 20 public launch copy
+
+The homepage leads with the owner's wording, “Work better with transporters to
+serve your customers.” Transporters manage their vehicles and drivers. Brokers
+and shipping teams use the capacity and planned journeys transporters share to
+plan shipments. About, signup, transporter setup, search metadata, and draft Play and
+social copy carry the same message. Private Network and Open Market describe
+the existing permissioned and public views. Tracking follows agreed work.
+
+Chrome verified the shared headline and supporting line at desktop and 390px
+phone widths in English, Amharic and Afaan Oromo. The local Open Market served
+the new copy. The signed-out Private Network, all three About roles and both
+signup choices were exercised without sending email. The Expo web preview
+verified the homepage and business signup at 320px. Screenshots are in
+`.local/sponsor-review/owner-narrative`.
+
+Courier car is the only supported courier configuration. Migration 238 removes
+motorcycle from server validation and new Featured selection. The local review
+database converted six exact synthetic vehicles to Courier cars and verified
+their assignments, location and capacity data stayed intact. Local discovery
+returned eight public Courier cars and rejected the retired filter with HTTP
+400. The rollback-only SQL check covered owner Add/Edit, retired-type denial,
+existing permission boundaries and saved Featured rosters.
+
+The preceding homepage copy and About introduction passed desktop and 390px phone
+Chrome at `http://127.0.0.1:3101/?view=private` and `/about` in all three languages.
+The Expo web preview at `http://localhost:8084/` showed the final English
+headline at 320px. Screenshots are under `.local/sponsor-review/network-copy-final`.
+The wider browser run hit a local Capacity query timeout under load and had no
+Featured account scheduled for the date it ran. The final standalone Open
+Market and Courier car HTTP rechecks returned 200. The phone browser applied
+the Courier car filter, confirmed the returned type, and reached the sign-in
+screen. The web and Expo type checks, focused catalogue and copy checks, and
+isolated loopback unit rechecks passed.
+
+The earlier copy review covered Market, About, public provider profiles, Featured,
+account entry, provider signup, Track, Support, and policy pages. The draft Play
+listing now describes business sharing and per-load tracking links. English,
+Amharic, and Afaan Oromo use the shared web and Expo catalogs for the new copy.
+Desktop and phone browsers exercised the Market views and all three About
+audiences in those languages. Expo web also passed at 320px. Narrow About
+choices stack to fit longer labels, and the phone language menu shows the
+full Afaan Oromo name. Screenshots are under `.local/sponsor-review/launch-copy-final-layout`.
+Phone web checked signup, Track, public provider, Help, Featured, and policy
+pages. The Expo preview also checked signup and Track. The focused web and
+mobile checks and both type checks passed.
+
+## November 19 local provider map recheck
+
+### Market palette and demo coverage
+
+Web and Expo use the same round vehicle marker with cobalt for Empty and
+navy for Partial. On selection, a solid cobalt line identifies a planned route
+or area for either status. Preferred coverage uses a dotted slate line.
+Approximate location uses a thin blue circle with a light fill. The circle
+disappears below an 18px diameter and the location action still opens the
+published radius. Only the visible outline accepts map clicks. Vehicle and
+driver and Approximate location use distinct truck and locator icons.
+Chrome desktop and phone checked the live radius near the vehicle and its
+removal at wider zoom, then opened the same published location details from
+the side action. The Expo preview checked Vehicle and driver on a real local
+profile at 390px and 320px. Focused map, contrast, layout and type checks passed.
+Current screenshots begin with `location-radius-`.
+
+The running local Market exposes 88 signals across all 17 vehicle
+configurations, with 37 routes whose endpoints are at least 100 km apart,
+31 shorter routes, 13 broader service areas and seven local areas. Both
+availability statuses have all four coverage types. Eight live API searches
+combined vehicle, status, load and coverage and returned the expected trucks.
+Desktop and phone also passed the filter Apply, Clear and union/intersection
+browser tests, and opened vehicle details from a live courier route and a
+live broad service area. Eight recent synthetic listings cover both statuses and all
+four coverage types. Four Partial examples report 35%, 55%, 80% and 85%
+against their actual fixture assignments. Recency follows the normal 12-hour
+window. Narrow searches can have legitimate empty results. The local dataset
+does not have public matches for the permission-to-use and vehicle operating
+licence filters.
+
+The local database applied 108 planning changes, 22 preferred-plan changes,
+five profile descriptions and eight recent synthetic listings. Their saved
+observations, location privacy and sharing choices were preserved.
+The exact simulator corridors and all 20 authored phases still match.
+Screenshots begin with `capacity-brand-` under `.local/sponsor-review`.
+The web suite passed 1,682 tests and the mobile suite passed 458.
+Both type checks and the changed Expo map's lint check passed. The full Expo
+lint still flags the Featured sponsor rotation effect and an unused import in
+the coverage preview.
+
+### Provider map follow-up
+
+Chrome at 1440px and 390px opened and closed vehicle details from the live
+local provider map. The Expo browser test exercised the same scoped map at
+390px and 320px. The local profile API returned two vehicles in both counts,
+with zero detail rows in map mode and two in the default response. Controlled
+signals verified marker, legend and selection colors separately from the live
+data. The full web gate passed 1,681 tests with local loopback sockets available.
+All 458 mobile tests and both type checks passed. Mobile test fixtures use the
+shared palette and exercise the profile map, public contacts, documents, cover
+and reviews. The profile map is the entry point to vehicle and driver details.
+The Expo profile sends the expanded state of its documents and About buttons
+to assistive technology. The Market browser check verified that an incompatible
+vehicle filter clears the previously selected vehicle details.
+The Featured card also opened the live profile and its map at 390px and 320px.
+The test supplied a browser-only programme because the local day had no
+published provider slots. Screenshots are in `artifacts/provider-profile-v4`
+and `.local/sponsor-review/double-check-featured-accessibility`.
+
+## November 18 local Featured and provider profiles
+
+Featured has two industrial demo sponsors with original workshop artwork,
+public contact actions and eight-second rotation. Admins and staff with the
+Featured grant can manage placements. Database permission and rollback checks
+passed locally for migration 236. Desktop, phone web and Expo web were exercised
+with active placements on an empty programme day.
+
+The public provider profile now opens directly on its scoped fleet map. Public
+document summaries, notes and reviews remain available. Visitors open vehicle
+and driver details from the map. Fleet and independent demo owners each saved a cover, and a
+transactional check verified removal, invalid-input rollback and staff denial.
+The sample is [Ethiopian talented sinotruck driver pt 2, by Yodi Yodi](https://www.youtube.com/watch?v=WZMVTHGhlbg).
+The image above Play is the video's original YouTube thumbnail. Chrome playback
+advanced in the embedded player on the independent driver's page. A fleet owner
+saved a share URL through Edit profile and reopened it. Public desktop (1440px),
+phone web (390px), and Expo phone preview checks exercised the map and details.
+The Admin sponsor edit/cancel/save/reload and the granted staff schedule/disable
+and revoked staff denial passed locally. Sponsor saves return the committed ID
+and redirect to the lightweight sponsor catalogue. Migration 237
+and demo data have only been applied in the local review environment.
+
+## November 18 map-only profiles and Capacity colors
+
+Web and Expo profiles now open vehicle and driver detail from the map. The
+account can still be contacted about vehicles with no published marker. The
+web profile and mobile map view skip the retired roster's detail reads. Default
+fleet API pagination stays available for existing clients.
+
+Empty uses green and a round marker. Partial uses amber and a rounded square.
+Slate marks approximate location with a dashed circle. Cyan marks preferred
+coverage with a dotted line. Planned coverage uses the availability color.
+Selection adds a blue outline and preserves availability. GPS and phone retain
+distinct icons and labels on neutral badges. Tracking uses the same slate
+location treatment.
+
+Chrome desktop (1440px), phone web (390px) and Expo web (390px) exercised
+marker selection, the map key and vehicle and driver details using scoped
+synthetic Capacity responses. Location, planned route and preferred coverage
+strokes were checked in the selected web map. Live browser runs hit local
+Capacity timeouts. After a preview restart, the real profile API returned the
+same fleet count in both modes, with detail rows only in the default mode.
+Screenshots and logs are under
+`.local/sponsor-review/capacity-colors-*` in the review worktree.
+
+## November 18 security corrections
+
+Migration 235 preserves the signed-in account RPC used by the web and Android apps.
+The local review database passed the application catalog, Data API guard,
+active/inactive/anonymous account, provider display-name and driver verification
+checks. The November 18 hosted monitor reported both the exposed definer and
+disabled leaked-password protection before these corrections. Hosted verification
+and publication are pending.
+
+## Active owner checklist — November17
+
+See the [production workflow review](PRODUCTION_WORKFLOW_REVIEW.md) for all 78 web page entries, 36 Expo screens, role boundaries and outstanding launch checks. Migration 230 implements one registered partner,
+chosen at provider start or added later. Its rollback-only SQL check and local
+installation passed. Both initiation orders passed phone-web workflows, including
+late attachment through completion/review and the broker-first provider's normal
+operational controls. The connected provider saved Going to pickup and both broker and guest timelines reflected it. Customer followers use the expiring link and separate code.
+The driver-to-guest phone-web check also passed for two saved privacy radii, cooldown and retry. Web quality passed all 1,681 tests and mobile passed all 462 tests. Migration 231 adds broker search and a targeted provider inbox. Local SQL verified driver permission defaults, manager revocation and reassignment. Phone web verified selection through the saved provider update and broker and guest readback.
+
+Migration 232 adds personal registered customer Support, fixes replies for business members and retires anonymous recovery of historical chats. Local workload, waiting, reassignment, role and attachment SQL tests passed. Migration 233 removes the open-chat ceiling. In the local six-chat test two agents shared five requests by workload. The sixth waited while both agents were paused, then assigned when one returned. One returning agent also took all 101 waiting chats in a rollback-only test. Team shows actual open chats and availability. The queued tracking and account-closure race verifier passed all six checks with a registered shipment owner.
+
+The browser run at `9579d676` found a Tracking entry page whose map no longer filled the space above the footer, old tests expecting immediate Private map sign-in or guest email access, and a guest link that survived the issuing owner's loss of access. The local correction restores the locked map layout and returns HTTP 404 for retired Support conversation links. Migration 234 passed the local Tracking SQL regression, including denied access after owner revocation. Desktop and phone browser verification, installed Android testing and production publication remain open.
+
+A desktop Tracking screenshot confirmed the map and footer geometry at 1440px but showed blocked community tiles behind the form. The tracking page’s referrer policy prevented the browser from identifying the app to the tile service. The local tile layer now sends only the origin. The page continues suppressing the private tracking URL. The focused desktop browser test intercepted the tile requests for a synthetic private link, verified the site origin as their only referrer, and confirmed the page retained no-referrer metadata. The six tile configuration tests passed. Separate Chrome views at 1280×800 and 390×844 returned HTTP 200 tile images and displayed the geographic basemap, entry form and footer.
+
+The rerun at `aa6121c` passed validation, Mobile internal-build boundaries, Operations proof, the container build, the three Featured checks and four browser groups. The other four browser groups reported two distinct failures. The Play reviewer case needed to open shipment progress to see its cargo. The Tracking submit button extended outside its card at 320×568 and 844×390. After the responsive fix, measurements at both sizes put the full action inside the card, the map above the footer and the attribution inside the map.
+
+The internal standalone Android 1.2.0/code 10 APK now includes ARM64 and x86_64. Both native libraries, signature, alignment and permissions passed. The 95,295,409-byte artifact has SHA256 `0e0fa204c5b2446f997f3c7063802f1902543fbccb9f69c9980fe101be8fdd5f`. The build used the disposable internal key. Installed journeys and Play signing have their own checks.
+
+Worktree: `.local/gps-phone-courier`, branch `feat/gps-phone-courier`, from the
+independently checked current remote main `906a51f1`. Preserve the existing dirty
+checkouts and completed simulator hosting setup. Runtime acceptance remains
+failed and visible below. This checklist includes the
+owner's location, vehicle, loading, complete-feature, mobile-parity and Play
+readiness requests. Check an item only after its relevant evidence passes.
+
+1. [x] Establish current source, installed contracts and existing assets.
+   Migration221 already refuses new Manual writes. Courier car is already a
+   supported shared web/native/filter configuration; its real image exists.
+   The bounded hosted demo audit found12 correctly configured Live cars and an
+   actual Courier car public query returned200 with a matching result. Avoid a
+   fictitious restoration or gratuitous data rewrite.
+2. [ ] Finish GPS/Phone-only product behavior across web, Expo, API, filters and
+   current database projections. Suppress retired Manual current points, retain
+   historical rows/revisions, and preserve existing driver-choice permissions.
+3. [ ] Verify Courier car selection/image/discovery on both clients and type
+   coverage in actual demo results. All17 types exist in fresh local fixtures;
+   a separately bounded hosted subset lacks motorcycle. Prepare only any
+   justified exact synthetic-data change; preserve simulator bindings/plans.
+4. [ ] Audit and repair loading states across web and mobile. Keep the map/page
+   footprint and footer position stable, with accessible placeholders and real
+   loading, empty, failure/retry and permission-denied states. Preserve the
+   existing automatic loading and complete discovery behavior.
+5. [ ] Replace email-based guest Tracking with per-shipment/session expiring
+   unique URLs and generated tracking codes. Account shippers retain their
+   authorized shipment list; brokers share links manually. Retire anonymous
+   email lookup rather than leaving it as an alternate access path. Link/code
+   access requires BOTH link and code (owner confirmed). Brokers may create
+   Pending provider sessions or share existing authorized shipments. Migration229
+   and web/native paths are implemented and in local workflow qualification. Preserve provider/source
+   consent, current role scope, grant expiry/revocation and proof-file privacy.
+6. [ ] Build and execute the feature/role and web-to-mobile parity checklist:
+   Owner addition: a signed-out visitor choosing the private map stays on that
+   selected tab with a centered Sign in/Sign up invitation in the map area;
+   authentication opens only after an explicit button click. Keep private data
+   unfetched. The web entry passed maintained desktop/phone browser checks and
+   agent-led desktop/phone review at3101: the invitation stays centered over a
+   record-free map, the footer stays below it, and only the selected account
+   button opens authentication. Actual desktop Sign up and phone Sign in
+   destinations were verified. Expo390x844 actual review found plain links;
+   these were corrected to50px primary/secondary actions, rebuilt and reviewed.
+   Actual Sign up and Sign in destinations pass there too. Native OS/device
+   qualification remains separate from the Expo browser preview.
+   The maintained Expo390/320 case passes in13.9s, including the unchanged map
+   height, selected tab, empty marker set, zero private-data requests,44px minimum
+   actions and browser-history return. This private-entry task is complete locally.
+   public discovery/profiles/Featured; identity/account security; provider/driver
+   Fleet, GPS/Phone, Capacity, routes/areas, sharing and network; customer
+   business access; Tracking/recipients/events/private proof; documents,
+   notifications and Support. Admin/platform staff management remains web-only.
+   Fix demonstrated failures together, rather than asserting that rendering or
+   a unit-test total proves all workflows.
+7. [ ] Complete focused permission/state/SQL tests, actual desktop/phone/Expo
+   task reviews, full root quality and maintained E2E gates, and mobile types,
+   lint, tests, strict translations and Android export. Verify the simulator's
+   first natural06–08UTC run and subsequent idle/stop behavior from actual
+   hosted records; the first window has now elapsed and actual aggregates show ZERO accepted GPS/Phone/Capacity activity despite enabled controls. This runtime failure is being diagnosed from provider scheduling/logs, not treated as success. Do not replay its completed
+   migrations/setup/settings/controllers or manufacture clock/ingestion proof.
+8. [ ] Prepare the exact Android/Play release candidate and readiness evidence:
+   current source/version/package/signing provenance, native permissions and
+   device workflows, store declarations/assets and release requirements.
+   Record actual device/external-provider checks separately from Expo web.
+   Publishing, hosted writes and signing retain their exact owner authority.
+
+Current evidence:228+229 initially passed29 SQL files and are installed locally;
+the connected Tracking response then exposed a missing saved `updated_at` field.
+The exact projection correction passed an observed RED→GREEN wire check, session
+core, source privacy and proof-access checks, with unchanged permissions, other
+functions, retained rows and migration ledger. The repaired broker-to-provider
+desktop browser journey passed in26.9s: pending creation, separate link/code,
+provider consent/assignment, guest refresh/reload, no guest proof/owner actions,
+and exact owned-fixture cleanup. Original failed logs remain visible. A separate
+slow preview returned200 in9.187s; its test now awaits the exact response before
+checking the saved screen, rather than racing a5s visibility assertion.
+Current root access/port checks pass19 cases; actual label repair passes6 cases.
+The preceding full local quality passed1,656 tests with zero failures/skips (tests87.956s),
+TypeScript,45 specifications,798 source files and the pinned workflow check.
+ShellCheck is still absent locally; no new local shell-analysis claim is made.
+Log SHA256 `fc310ab69cc40b7a31c9543afc70b88df905620338a01180d9c1878272dd6870`.
+The original1,655-test run's21 obsolete fixture/assertion failures remain retained
+at log SHA256 `33f0d2e4dbb8229af00b7752f102df3c6e4e570fff4dc27139c5fe244aeeb5a0`;
+all were diagnosed and passed focused repairs before this replay. Browser skip
+counts/conditions remain unchanged; only four reviewed titles were updated.
+The broker-to-provider phone workflow also passes32.0s with persisted state and
+exact cleanup. Native OS behavior, complete feature-matrix tasks and release
+qualification remain open; these local checks do not imply publication.
+The subsequent boundary review found two retained ownership gaps. Migration229
+now uses the captured account ID for business owner elevation and historical
+session binding. Only valid historical controls with an actual captured owner ID
+can enter the account list; unknown history remains unbound. Actual RED→GREEN
+SQL, seven focused route/source checks and independent review pass. Shared local
+overlays admitted zero historical rows and preserved all permissions and the
+ledger. The initial migration lock now has a measured5.006s lock timeout.
+Completion now directs registered owners through the fixed Tracking account
+entry and schedules the existing bounded delivery after committed approval.
+Its53 focused checks pass. Desktop completion/proof-backed approval/inbox/review,
+route/terminal privacy, link revocation and proof-modal revocation pass; the
+latest phone/Expo cases and updated full quality/build are being completed.
+The original revocation assertion failed because a bare status text shared its
+element with a recovery button; both were present. Its corrected semantic status
+and reachable recovery checks pass. A later connection reset coincided with the
+local Next process being replaced; no product or resource cause is inferred.
+Proof loading returned200 in5.297s and now awaits the exact response before its
+image assertion. All original failed logs remain retained.
+
+Android production JavaScript export passed in97.993s with stable inputs:
+Hermes98,31 assets and source maps. This is not an APK/AAB or native-device proof.
+The fresh dependency qualification remains FAILED:39 audit findings, including
+one new high-severity `picomatch` advisory, GHSA-fc5q-39xc-vjpf. No patched version
+is published; no package, lockfile, policy or exception was changed. Zero modules
+from that tooling package appear in the actual Android map. That is a scoped
+observation, not a waiver or Play/release approval. Private export evidence:
+`.local/android-export-20261117-4d26dddf/qualification.private.json`.
+
+The shared local catalog security check passes. One isolated dump clone lost
+extension-member RLS/ACL; its separate failure and documented owner-bootstrap
+repair are retained. No hosted mutation is implied.228 originally passed7 suites with
+history/ACL/owner preservation;160 focused source/UI checks passed. Loading8
+desktop/phone E2E passed in2.2minutes (delay/503/retry/empty/recovery, map identity
+and footer geometry retained). Actual agent-led browser/Expo task review remains
+separate. The superseded3100 process is stopped; candidate review runs at
+http://127.0.0.1:3101 against local55321 with a1536MB Node heap. Step5 follows
+ADR-089. The feature/mobile matrix is in MOBILE_IMPLEMENTATION.md.
+Heavy tests and browser work stay serial
+on this Mac. The existing pinned workflow tool and same-lockfile APFS dependency
+clone are reused. No production mutation or new publication is part of these
+local edits. New source-specific release evidence must qualify the result.
+
+## Historical hosting request — November15–16 (CST)
 
 Current next step: qualify the known-error regression correction in
 [PR40](https://github.com/falmata-tech/loadgistic/pull/40), then resume the

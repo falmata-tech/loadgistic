@@ -29,7 +29,8 @@ test('the public Capacity page uses the business workspace for Shared with you',
   assert.doesNotMatch(source,/lib\/repository\.js|lib\/private-capacity\.js/);
   assert.match(source,/listBusinessCapacity/);
   assert.match(source,/if\(privateView&&user&&user\.role!=='CUSTOMER'\)redirect\('\/'\)/);
-  assert.match(source,/if\(!user\)redirect\('\/login\?from=shared-capacity'\)/);
+  assert.match(source,/signedOutPrivate\?<PrivateCapacityEntry\/>:<PublicCapacityFeed/);
+  assert.doesNotMatch(source,/if\(!user\)redirect\('\/login\?from=shared-capacity'\)/);
 });
 
 test('retired email-only Capacity endpoints cannot issue or redeem access',async()=>{

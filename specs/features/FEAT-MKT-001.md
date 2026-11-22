@@ -3,7 +3,7 @@ id: FEAT-MKT-001
 title: Frictionless public capacity marketplace
 related_ids: [BASE-FE-001, BASE-BE-001, BASE-DEP-001, FEAT-CAP-001, FEAT-FTR-001, FEAT-PRV-001, FEAT-SPN-001, FEAT-TRK-001, FEAT-VER-001]
 problem: Manufacturers, workshops, growers, producers, and other capacity seekers need to discover legitimate road-freight options immediately without creating an account or posting demand.
-behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical capacity map with Open to the public selected by default; `/?view=private` uses the same page with an empty map until email verification; `/shared-capacity` redirects to that private view, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Capacity, Track, Featured, then About. One introduction and an Open to the public / Privately shared with you selector sit above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter search identifies public profiles backed by eligible assigned trucks; an explicit Show trucks action applies the chosen profile to the map while truck filters remain separate. Truck configurations, current load, published location source, stops and freshness support several alternative choices within each group; separate groups and all selected reviewed-document requirements still combine. The driver-selected full/shared load preference remains part of capacity matching, while the separate visitor Space needed control is absent. There is no separate Provider Market or provider map. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
+behavior: A persistent public application shell gives each primary visitor task its own route-level workspace. `/` is the canonical capacity map with Open Market selected by default; `/?view=private` uses the same page with a record-free map and a sign-in action for visitors; `/shared-capacity` redirects to that private view, `/track` is private shipment Tracking after a direct agreement, `/featured` is the seven-day Daily Featured Trucks programme, and About retains its own route. Together they present Loadgistic as a transport-capacity sharing and shipment-tracking platform without exposing internal product terminology in interface copy. Public navigation uses Capacity, Track, Featured, then About. One introduction and an Open Market / Private Network selector sit above the map. Transporter signup remains directly available from Login without consuming a primary navigation destination. The Market and Featured data trees are not rendered together. Transporter search identifies public profiles backed by eligible assigned trucks; an explicit Show trucks action applies the chosen profile to the map while truck filters remain separate. Truck configurations, current load, published location source, stops and freshness support several alternative choices within each group; separate groups and all selected reviewed-document requirements still combine. The driver-selected full/shared load preference remains part of capacity matching, while the separate visitor Space needed control is absent. There is no separate Provider Market or provider map. Detailed product education lives on About. Shipment-demand posting, a public Shipment Board, and capacity-seeker signup are absent.
 contracts: [PublicAppShell, PublicWorkspaceNavigation, PublicMarketplaceView, PublicCapacityProjection, PublicTrackingEntry, LocationConsentPrompt, ProgressiveCapacityMap]
 observability: [public_workspace_navigation, public_capacity_query, public_tracking_entry, location_consent_outcome, anonymous_projection_review]
 rollout: Release the public capacity surface with retired-route redirects, purge fake local demand records, and require a backup plus operator approval before any destructive cloud purge.
@@ -361,15 +361,23 @@ And missing/private sharing policies remain excluded by the normal public query.
 Verification: `tests/e2e/public-capacity-contract.spec.ts`. The ordinary web and
 native interfaces already use cursor results; this correction adds no UI mode.
 
+### Scenario: initial map read fails
+
+Given the public or authorized private Capacity page opens with valid filters
+When its first database read fails
+Then the map, selected workspace and filters remain in place with a retry state
+And retry uses the same authorized feed, without replaying a write or exposing
+an internal error. Invalid filters still require explicit correction.
+
 ### Scenario: capacity is useful before login
 
 Given a visitor opens Loadgistic\
 When the public application shell and default Market workspace render\
 Then the selected Capacity navigation identifies the workspace and a shared introduction explains the platform\
-And one visible “The visibility you need to serve your customers reliably” heading names the page\
-And web shows “Build trusted partnerships and coordinate your transport network together.” beneath it when vertical space permits; short phone views keep the headline and map choices while preserving usable map space\
+And one visible “Work better with transporters to serve your customers” heading names the page\
+And web shows “Transporters manage their vehicles and drivers. Their updates show which vehicles have room and where they plan to go, so you can plan more cost-effective shipments.” beneath it when vertical space permits; short phone views keep the headline and map choices while preserving usable map space\
 And native keeps the heading alone, with natural Amharic and Afaan Oromo wording rather than literal English sentence structure\
-And the two map choices are “Openly shared” and “Privately shared with you”, with natural translations that describe access without implying an exclusive vehicle booking\
+And the two map choices are “Open Market” and “Private Network”, with natural translations that describe access without implying an exclusive vehicle booking\
 And on a supported desktop or phone viewport the primary Market begins inside the initial workspace view without a website-scale hero delaying it\
 And the Market uses the viewport remaining between its application bars, with compact search, filter, view, and location controls over the Map instead of extending the page vertically\
 And the complete Market offers one Truck Map without a Map/List or Trucks/Providers mode choice\
@@ -380,7 +388,7 @@ And the persistent public navigation links directly to the separate Daily Featur
 And `/featured` renders the current programme, featured board, and clearly labeled separate Sponsored transporters panel without rendering the Truck Market\
 And `/` does not server-render or hydrate the featured programme while `/featured` does not server-render or hydrate the Truck Market\
 And repeated educational or promotional sections do not interrupt either workspace\
-And detailed market purpose, operating model, and safety education remain available on About\
+And About explains discovery and customer Tracking for brokers and shipping teams, and capacity sharing, driver assignments, and location sources for Transport Providers\
 And About explains that transporters control whether current capacity is public or shared only with trusted email contacts and that confirmed work can use private Tracking\
 And a paginated mixed result drawer accompanies the map\
 And the primary map initially centers and zooms for the current Ethiopia market while allowing unrestricted geographic exploration without a country pan lock\
@@ -519,7 +527,7 @@ And filters constrain the map without creating a ranked result list.
 Given any public page is rendered\
 When the shared public application navigation and calls to action appear\
 Then Capacity, Track, Featured, About, and the session-appropriate Transporter login or Dashboard action are available as route links
-And the map provides the Open to the public / Privately shared with you choice under FEAT-SHR-001\
+And the map provides the Open Market / Private Network choice under FEAT-SHR-001\
 And Track appears immediately before Featured in both desktop and phone public navigation\
 And one current destination is communicated visually and with `aria-current="page"`\
 And desktop uses a compact floating workspace rail while phones use the persistent bottom navigation\

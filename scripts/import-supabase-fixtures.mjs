@@ -34,7 +34,7 @@ if(!url||!serviceRoleKey)throw new Error('SUPABASE_FIXTURE_CONFIG_MISSING');
 assertLocalAuthorityFixtureTarget(url);
 if(!resetRequested)throw new Error('LOCAL_FIXTURE_RESET_CONFIRMATION_REQUIRED');
 
-const {regionalExpoGroupForDate}=await import('../src/lib/provider-regions.js');
+const {regionalExpoGroupForDate,regionalExpoWeekForDate}=await import('../src/lib/provider-regions.js');
 const {FEATURED_PROVIDER_DAY,selectFeaturedProviderAccountRows}=await import('../src/lib/featured-trucks.js');
 const {ETHIOPIA_PLACES,getPlaceCoordinate}=await import('../src/lib/ethiopia-places.js');
 const {normalizePlace}=await import('../src/lib/route-matching.js');
@@ -52,7 +52,8 @@ const fixtureOffset=Date.now()-fixtureAnchor;
 
 function rebaseFixtureRow(row){
   return Object.fromEntries(Object.entries(row).map(([key,value])=>{
-    if(value&&key.endsWith('_at')){
+    // Keep the authored report time used to distinguish simulator seeds from live reports.
+    if(value&&key.endsWith('_at')&&key!=='available_percent_reported_at'){
       const parsed=Date.parse(String(value));
       if(Number.isFinite(parsed))return [key,new Date(parsed+fixtureOffset).toISOString()];
     }
@@ -65,6 +66,9 @@ const rebasedTables=Object.fromEntries(Object.entries(excludeRetiredGuestFixture
 const authorityManifest=JSON.parse(fs.readFileSync(path.join(process.cwd(),'resources','fixtures','provider-authority.json'),'utf8'));
 const authorityPlan=prepareProviderAuthorityFixtures({...fixtureDocument,tables:rebasedTables},authorityManifest);
 const fixtureTables=authorityPlan.tables;
+for(const page of fixtureTables.company_pages||[]){
+  if(['page-transporter','page-driver'].includes(page.id))page.cover_video_id='WZMVTHGhlbg';
+}
 fixtureTables.users=assignFixtureDriverPortraits(fixtureTables.users||[]);
 fixtureTables.driver_vehicle_assignments=ensureIndependentVehicleAssignments(
   fixtureTables.vehicles||[],fixtureTables.provider_profiles||[],fixtureTables.driver_vehicle_assignments||[],
@@ -123,25 +127,26 @@ function buildFeaturedFixtureTables(){
     provider_profile_id:candidate.profile_id,business_name:null,description:null,website_url:null,phone:null,
     active:1,created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
   }));
-  const advertiser={
-    id:'sponsor-advertiser-alem-freight-supplies',sponsor_kind:'ADVERTISER',
-    provider_organization_id:null,provider_profile_id:null,business_name:'Alem Freight Supplies',
-    description:'Tyres, straps, and roadside essentials for commercial vehicles.',website_url:null,
-    phone:'+251911555019',active:1,created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
-  };
-  sponsors.push(advertiser);
-  const positions=[1,3,4,5];
-  const placements=candidates.slice(0,4).map((candidate,index)=>({
-    id:`placement-featured-demo-${today}-${index+1}`,
-    sponsor_id:candidate.organization_id?`sponsor-organization-${candidate.organization_id}`:`sponsor-profile-${candidate.profile_id}`,
-    expo_group_key:expo.key,starts_on:today,ends_on:today,position:positions[index],active:1,
-    created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
-  }));
-  placements.splice(1,0,{
-    id:`placement-sponsor-advertiser-${today}`,sponsor_id:advertiser.id,expo_group_key:expo.key,
-    starts_on:today,ends_on:today,position:2,active:1,created_by:'user-admin',updated_by:'user-admin',
-    created_at:iso,updated_at:iso
+  const examples=JSON.parse(fs.readFileSync(new URL('../resources/fixtures/industrial-sponsors.json',import.meta.url),'utf8'));
+  const endsOn=new Date(Date.parse(today+'T12:00:00Z')+29*86400000).toISOString().slice(0,10);
+  const week=regionalExpoWeekForDate(today);
+  const placements=examples.flatMap((example,index)=>{
+    const sponsorId='sponsor-demo-'+example.artwork;
+    sponsors.push({id:sponsorId,sponsor_kind:'ADVERTISER',provider_organization_id:null,provider_profile_id:null,
+      business_name:example.name,description:example.description,website_url:example.website,phone:example.phone,
+      active:1,created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso});
+    return week.map(group=>({
+      id:`placement-demo-${today}-${group.key}-${example.artwork}`,sponsor_id:sponsorId,artwork_key:example.artwork,
+      expo_group_key:group.key,starts_on:today,ends_on:endsOn,position:index+1,active:1,
+      created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso
+    }));
   });
+  for(const [index,candidate] of candidates.slice(0,3).entries()){
+    placements.push({id:`placement-featured-demo-${today}-${index+1}`,
+      sponsor_id:candidate.organization_id?`sponsor-organization-${candidate.organization_id}`:`sponsor-profile-${candidate.profile_id}`,
+      expo_group_key:expo.key,starts_on:today,ends_on:today,position:index+3,active:1,
+      created_by:'user-admin',updated_by:'user-admin',created_at:iso,updated_at:iso});
+  }
   return {featured_provider_days:[featuredDay],featured_provider_slots:slots,sponsors,sponsor_placements:placements};
 }
 

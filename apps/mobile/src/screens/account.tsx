@@ -1,6 +1,6 @@
 import FleetScreen from './fleet';
 import {DriverHome} from './driver-home';
-import {hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../navigation/destinations';
+import {hasPersonalTrackingAccount,hasProviderHome,providerMarketContext,workspaceCapabilities,workspaceHome} from '../navigation/destinations';
 import {providerHomeTab,providerHomeTabs} from '../../../../src/lib/provider-workspace.js';
 import {PublicCapacityHome} from './capacity';
 import {WorkspaceTabs} from '../components/workspace-task';
@@ -30,6 +30,7 @@ export default function AccountScreen() {
   if (account.session.state === 'ONBOARDING'&&setup==='business') return <BusinessWorkspaces startBusiness/>;
   if (account.session.state === 'ONBOARDING') return <Redirect href="/signup"/>;
   if (account.session.state === 'JOIN_FLEET') return <Invitations key={account.session.user.id} committed={committed?.actorId===account.session.user.id&&committed.kind==='JOIN_FLEET'} onCommitted={()=>setCommitted({actorId:account.session!.user.id,kind:'JOIN_FLEET'})}/>;
+  if(hasPersonalTrackingAccount(account.session))return <Redirect href="/business-tracking"/>;
   if(account.session.user.role==='CUSTOMER')return <Redirect href={businessHome(account.session.user.selectedBusinessWorkspace)}/>;
   const capabilities=workspaceCapabilities(account.session);
   if (hasProviderHome(account.session)) return <ProviderHomeScreen key={account.session.user.id} requested={tab} capabilities={capabilities} market={providerMarketContext(params)}/>;
@@ -59,12 +60,12 @@ export function AuthEntry({mode}:{mode:'LOGIN'|'SIGNUP'}) {
   const [audience,setAudience]=useState<'PROVIDER'|'BUSINESS'>(setup==='business'||from==='workspaces'?'BUSINESS':'PROVIDER');
   const [email, setEmail] = useState(''), [code, setCode] = useState(''), [handoff, setHandoff] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const submit = async () => { if (busy) return; setBusy(true); setError(''); try { if (!handoff){setHandoff(await account.requestCode(email.trim()));} else {const next=await account.verifyCode(handoff, code.trim());if(!next)throw new Error('Sign-in changed. Please try again.');const target=from==='workspaces'&&['ACTIVE','ONBOARDING'].includes(next.state)?'/workspaces':next.state==='ONBOARDING'?mode==='SIGNUP'?audience==='PROVIDER'?'/account?setup=provider':'/account?setup=business':'/signup':next.user.role==='CUSTOMER'?(from==='capacity'?'/?view=private':businessHome(next.user.selectedBusinessWorkspace)):workspaceHome(next);if(target!==path)router.replace(target);} } catch (error) { setError(message(error)); } finally { setBusy(false); } };
-  return <Page><Title message={mode==='LOGIN'?'Sign in':'Create an account'}/><Copy message={from==='workspaces'?(mode==='LOGIN'?'Sign in to view your invitations.':'Verify your email to view your invitations.'):from==='capacity'?'Sign in to see vehicles shared with your account.':mode==='LOGIN'?'Enter your email to sign in securely.':'Choose your account type, then verify your email.'}/>
+  return <Page><Title message={mode==='LOGIN'?'Sign in':'Create an account'}/><Copy message={from==='workspaces'?(mode==='LOGIN'?'Sign in to view your invitations.':'Verify your email to view your invitations.'):from==='capacity'?'Sign in to see vehicles your transport partners share with you.':mode==='LOGIN'?'Enter your email to sign in securely.':'Choose your account type, then verify your email.'}/>
     <ErrorText message={error || account.error} />
     {account.cleanupRequired && <Button secondary message="Retry sign-out" onPress={() => { void account.signOut(); }} />}
     {mode==='SIGNUP'&&!handoff?<View accessibilityRole="radiogroup" style={{gap:8}}>{([
-      ['BUSINESS','Find room for your load','Shipper / broker workspace','location'],
-      ['PROVIDER','Put your vehicles on the map','Transport Provider workspace','truck']
+      ['BUSINESS','Plan freight with your transporters','Shipper / broker workspace','location'],
+      ['PROVIDER','Manage vehicles and share capacity','Transport Provider workspace','truck']
     ] as const).map(([value,label,detail,icon])=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={t(label)} aria-checked={audience===value} accessibilityState={{checked:audience===value}} onPress={()=>setAudience(value)} style={{flexDirection:'row',alignItems:'flex-start',gap:12,minHeight:62,padding:11,borderWidth:1,borderColor:audience===value?palette.blue:palette.border,borderRadius:12,backgroundColor:audience===value?palette.blueSoft:'#fff'}}><AppIcon name={icon} color={palette.blue}/><View style={{flex:1,gap:2}}><Text style={{color:palette.ink,fontSize:15,fontWeight:'700'}}>{t(label)}</Text><Text style={{color:palette.muted,fontSize:12}}>{t(detail)}</Text>{audience===value?<View style={{gap:5,marginTop:8}}>{signupBenefits[value==='BUSINESS'?'business':'provider'].map(benefit=><View key={benefit} style={{flexDirection:'row',gap:7}}><AppIcon name="check" color={palette.blue} size={14}/><Text style={{flex:1,color:palette.ink,fontSize:12,lineHeight:17}}>{t(benefit)}</Text></View>)}</View>:null}</View><AppIcon name={audience===value?'check':'next'} color={audience===value?palette.blue:palette.muted}/></Pressable>)}</View>:null}
     {mode==='SIGNUP'&&!handoff?<AppLink href="/about" message="See how Loadgistic works"/>:null}
     {!handoff ? <Field message="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" editable={!busy} onSubmitEditing={submit} /> : <><Copy>{t('Enter the code sent to {email}.',{email})}</Copy><Field message="Sign-in code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" maxLength={6} editable={!busy} onSubmitEditing={submit} /></>}

@@ -22,7 +22,7 @@ async function currentPairModalFixture(page:any){
   checked(await db.from('company_pages').update({published:true}).eq('provider_profile_id',actor.provider_profile_id));
   const places=checked(await db.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
   const routePlaces=['addis ababa','adama'].map(name=>{const place=places.find((row:{normalized_name:string})=>row.normalized_name===name);expect(place).toBeTruthy();return {placeRef:place.id};});
-  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:routePlaces});
+  await publishProviderCapacity(actor,{vehicleId,status:'PARTIAL',availablePercent:45,acceptedLoads:'PTL',availabilityGeometry:'ROUTE',visibility:'OPEN',locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:routePlaces});
   routeId=await addProviderRegularCapacity(actor,{...scope(),geometry:'ROUTE',routePlaces,areaCenterPlaceRef:'',areaBoundaryPlaces:[]});
   const saved=checked(await db.from('profile_routes').select('assigned_vehicle_id,assigned_driver_user_id,route_points_json').eq('id',routeId).single());
   expect(saved).toMatchObject({assigned_vehicle_id:vehicleId,assigned_driver_user_id:actor.id});expect(saved.route_points_json).toHaveLength(2);
@@ -63,15 +63,15 @@ test('selected truck has centered readable modals and a separate attached exit r
  expect(Math.abs(bounds.x+bounds.width/2-mapBox.x-mapBox.width/2)).toBeLessThan(2);
  expect(Math.abs(bounds.y+bounds.height/2-mapBox.y-mapBox.height/2)).toBeLessThan(2);
  const overflow=await card.locator('.capacity-info-content').evaluate((el:HTMLElement)=>el.scrollHeight-el.clientHeight);expect(overflow).toBeLessThanOrEqual(1);
- await expect(card).toHaveCSS('border-top-color','rgb(102, 112, 133)');
+ await expect(card).toHaveCSS('border-top-color','rgb(21, 94, 239)');
  await page.screenshot({path:info.outputPath('route-modal.png')});
  // Modal traps focus and blocks background map interactions.
  await page.keyboard.press('Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
  await page.keyboard.press('Shift+Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
  await page.mouse.click(mapBox.x+5,mapBox.y+mapBox.height/2);await expect(card).toHaveCount(0);
- await location.click();await expect(card).toHaveCSS('border-top-color','rgb(120, 70, 167)');
+ await location.click();await expect(card).toHaveCSS('border-top-color','rgb(47, 112, 218)');
  await card.getByRole('button',{name:'Close map signal details'}).click();
- await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(192, 102, 32)');await expect(card).toContainText('Both directions');await expect(card.locator('.signal-route-summary')).toHaveText(/Addis Ababa.*Adama/);
+ await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(100, 123, 152)');await expect(card).toContainText('Both directions');await expect(card.locator('.signal-route-summary')).toHaveText(/Addis Ababa.*Adama/);
  await page.screenshot({path:info.outputPath('regular-modal.png')});
  await card.getByRole('button',{name:'Close map signal details'}).click();await expect(marker).toBeVisible();
  expect(await cameraView(page)).toEqual(before);

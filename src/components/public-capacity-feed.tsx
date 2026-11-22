@@ -33,11 +33,11 @@ import {CapacitySearchResults,CapacityDocumentFilters} from './capacity-search-r
 import {TRANSPORTER_SEARCH_DELAY_MS,transporterSearchQuery} from '@/lib/transporter-search.js';
 import searchStyles from './transporter-search.module.css';
 
-type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number;filterError?:string|null};
+type FeedResult={items:any[];nextCursor:string|null;hasMore:boolean;pageSize:number;filterError?:string|null;loadError?:string};
 type Point={lat:number;lng:number};
 type VisitorLocationState='idle'|'locating'|'ready'|'denied'|'timeout'|'unavailable'|'unsupported'|'insecure'|'outside'|'error';
 
-type FeedProps={initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string;searchApiPath?:string;ownSignalIds?:string[]};
+type FeedProps={profileMap?:boolean;initial:FeedResult;query:Record<string,string>;searchPath?:string;apiPath?:string;searchApiPath?:string;ownSignalIds?:string[]};
 type ProfileSearchControls={
   searchTerm:string;submittedSearch:string|null;drawerOpen:boolean;setDrawerOpen:React.Dispatch<React.SetStateAction<boolean>>;
   inputRef:React.RefObject<HTMLInputElement|null>;change:(value:string)=>void;clear:()=>void;submit:()=>void;pause:()=>void;
@@ -72,7 +72,7 @@ export function PublicCapacityFeed(props:FeedProps){
   return <CapacitySearchResults active={drawerOpen&&submittedSearch!==null} requestVersion={searchVersion} query={{q:submittedSearch||''}} mapQuery={props.query} view={props.apiPath==='/api/shared-capacity'?'private':props.apiPath==='/api/account-capacity'?'account':props.apiPath==='/api/admin/capacity-network'?'loadgistic':'open'} searchPath={props.searchPath||'/'} apiPath={props.searchApiPath} onProfileSelect={pauseSearch} render={profileResults=><CapacityFeedState key={`${queryKey}:${resetVersion}`} {...props} search={search} profileResults={profileResults} onReset={()=>setResetVersion((value:number)=>value+1)}/>}/>;
 }
 
-function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/capacity',ownSignalIds=[],onReset,search,profileResults}:FeedProps&{onReset:()=>void;search:ProfileSearchControls;profileResults:React.ReactNode}){
+function CapacityFeedState({initial,query,profileMap=false,searchPath='/',apiPath='/api/public/capacity',ownSignalIds=[],onReset,search,profileResults}:FeedProps&{onReset:()=>void;search:ProfileSearchControls;profileResults:React.ReactNode}){
   const {searchTerm,submittedSearch,drawerOpen,setDrawerOpen}=search;
   // A link to the current unfiltered URL does not navigate. Reset local drafts
   // and the map explicitly in that case; other clears use the new query key.
@@ -80,8 +80,8 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const {blocked}=useBlockedProviders(),blockKey=JSON.stringify(blocked);
   const [allItems,setItems]=React.useState(initial.items);
   const items=React.useMemo(()=>allItems.filter((item:any)=>!blocked.includes(item.provider_handle)),[allItems,blockKey]);
-  const [loading,setLoading]=React.useState(false);
-  const [error,setError]=React.useState(initial.filterError||'');
+  const [loading,setLoading]=React.useState(profileMap);
+  const [error,setError]=React.useState(initial.filterError||initial.loadError||'');
   const [selectedId,setSelectedId]:[string|null,(value:string|null)=>void]=React.useState(
     initial.items.some((item:any)=>item.id===query.truck)?query.truck
       :query.truck&&!initial.filterError&&initial.items.length===1?initial.items[0].id:null);
@@ -333,7 +333,7 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
   const overlayKind=error?'error':loading?'loading':!items.length?'empty':'';
 
   const privateAccountMap=apiPath==='/api/account-capacity'||apiPath.startsWith('/api/business-workspaces/');
-  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<>{error}{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?privateAccountMap&&activeFilterCount===0&&!query.provider&&!query.truck?<><Text message="No vehicles are shared with this account yet."/> <Link href="/app/network"><Text message="Find connections"/></Link></>:<><Text message="No matching available vehicles."/>{activeFilterCount>0?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:null}</>:locationNotice}</div>:null;
+  const feedback=overlayKind?<div className={`public-feed-overlay ${overlayKind}`} role={overlayKind==='loading'?undefined:overlayKind==='error'?'alert':'status'} aria-live={overlayKind==='loading'?undefined:overlayKind==='error'?'assertive':'polite'} data-testid="capacity-feed-state">{overlayKind==='error'?<><Text message={error}/>{initial.filterError?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:<button type="button" onClick={()=>void loadWindow()}><RefreshCw aria-hidden="true"/><Text message="Try again"/></button>}</>:overlayKind==='loading'?<LoadingIndicator label="Loading vehicles in this map area…"/>:overlayKind==='empty'?privateAccountMap&&activeFilterCount===0&&!query.provider&&!query.truck?<><Text message="No vehicles are shared with this account yet."/> <Link href="/app/network"><Text message="Find connections"/></Link></>:<><Text message="No matching available vehicles."/>{activeFilterCount>0?<button type="button" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Review filters"/></button>:null}</>:locationNotice}</div>:null;
 
   const searchControls=<form className="capacity-people-search-form" onSubmit={event=>{event.preventDefault();search.submit();}}><div className={searchStyles.field}>
     <label className="sr-only" htmlFor="capacity-market-search"><Text message="Search transporters"/></label><Search aria-hidden="true"/>
@@ -342,6 +342,11 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
     <Localized as="button" copy={["aria-label"]} type="submit" className={searchStyles.submit} aria-label="Search"><Search aria-hidden="true"/></Localized>
   </div></form>;
 
+  const mapSurface=<section id="capacity-map-view" className="public-map-shell">
+        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={!profileMap&&apiPath==='/api/public/capacity'} items={items} ownSignalIds={ownSignalIds} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected} privatePhoto={businessWorkspaceId&&selected.vehicle_id?{workspaceId:businessWorkspaceId,vehicleId:selected.vehicle_id}:undefined}/>:null}/></div>
+        {feedback}
+      </section>;
+  if(profileMap)return <div className="provider-map-workbench capacity-drawer-workbench">{mapSurface}</div>;
   return <div className="market-workbench market-map-view capacity-drawer-workbench">
     <Form action={searchPath} prefetch={false} scroll={false} className="capacity-discovery-form" onSubmit={closeFilters}>
     {query.view==='private'?<input type="hidden" name="view" value="private"/>:null}
@@ -433,9 +438,6 @@ function CapacityFeedState({initial,query,searchPath='/',apiPath='/api/public/ca
       <Localized as="button" copy={["aria-label","title"]} ref={drawerTrigger} onPointerDown={(event:React.PointerEvent<HTMLButtonElement>)=>{swipeStart.current={x:event.clientX,y:event.clientY};swipeOpened.current=false;event.currentTarget.setPointerCapture(event.pointerId);}} onPointerUp={(event:React.PointerEvent<HTMLButtonElement>)=>finishSwipe(event,false)} onPointerCancel={()=>{swipeStart.current=null;swipeOpened.current=false;}} type="button" disabled={!controlsReady} aria-expanded={drawerOpen} aria-controls="capacity-filter-drawer" aria-label="Search transporters" title="Search transporters" onClick={()=>{if(swipeOpened.current){swipeOpened.current=false;return;}if(drawerOpen)closeDrawer();else if(selected)closeTruck();else openDrawer();}}><Search aria-hidden="true"/><Text message="Search"/></Localized>
       <Localized as="button" copy={["aria-label","title"]} type="button" className="capacity-filter-trigger" disabled={!controlsReady} aria-haspopup="dialog" aria-label="Vehicle filters" title="Vehicle filters" onClick={()=>setFilterOpen(true)}><SlidersHorizontal aria-hidden="true"/><Text message="Filter"/>{activeFilterCount?<span>{activeFilterCount}</span>:null}</Localized>
     </div>
-      <section id="capacity-map-view" className="public-map-shell">
-        <div className="public-map-canvas"><PublicCapacityMap rememberPublicView={apiPath==='/api/public/capacity'} items={items} ownSignalIds={ownSignalIds} viewer={viewer} selectedId={selectedId} keepItemsInView={Boolean(query.provider||query.truck)} onSelect={selectTruck} onDeselect={()=>setSelectedId(null)} onExplore={explore} truckDetails={selected?<MapTruckDetails truck={selected} privatePhoto={businessWorkspaceId&&selected.vehicle_id?{workspaceId:businessWorkspaceId,vehicleId:selected.vehicle_id}:undefined}/>:null}/></div>
-        {feedback}
-      </section>
+      {mapSurface}
     </div>;
 }

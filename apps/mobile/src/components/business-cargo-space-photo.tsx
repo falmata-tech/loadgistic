@@ -1,12 +1,13 @@
 import {randomUUID} from 'expo-crypto';
 import {useEffect,useRef,useState} from 'react';
-import {View} from 'react-native';
+import {Text,View} from 'react-native';
 import {useAccountQuery} from '../hooks/account-query';
 import {useLanguage} from '../localization/provider';
 import {useAccount} from '../session/provider';
 import {PrivateFile} from './private-file';
-import {Button,Copy,ErrorText,LoadingSpinner} from './ui';
-import {WorkspaceSection} from './workspace-section';
+import {Button,Card,Copy,ErrorText,LoadingSpinner,palette} from './ui';
+import {AppIcon} from './app-icon';
+import {ApiError} from '../api/response';
 
 type Photo={id:string;vehicleId:string;receivedAt:string;contentPath:string};
 type BusinessPhotoState={photo:Photo|null;request:{id:string;status:string;requestedAt:string}|null};
@@ -37,7 +38,7 @@ export function BusinessCargoSpacePhoto({workspaceId,vehicleId}:{workspaceId:str
    requested.current={id:reply.id,requestedAt:reply.requestedAt};setLocalPending(reply.status==='PENDING');
    if(reply.status!=='PENDING'){key.current=null;requested.current=null;}
    await query.reload();
-  }catch{setError('Could not request a photo. Please try again.');}
+  }catch(caught){setError(caught instanceof ApiError&&caught.status===429?'A new photo was requested recently.':'Could not request a photo. Please try again.');}
   finally{lock.current=false;setBusy(false);}
  }
 
@@ -47,12 +48,13 @@ export function BusinessCargoSpacePhoto({workspaceId,vehicleId}:{workspaceId:str
  }
 
  const received=photo?.receivedAt?new Date(photo.receivedAt).toLocaleString(locale==='om'?'en-ET':locale):'';
- return <WorkspaceSection message="Cargo space photo" icon="camera"><View testID="business-cargo-space-photo" style={{gap:10}}>
+ return <Card><View testID="business-cargo-space-photo" style={{gap:10}}>
+  <View style={{flexDirection:'row',alignItems:'center',gap:8}}><AppIcon name="camera" size={18} color={palette.blue}/><Text accessibilityRole="header" style={{fontSize:16,fontWeight:'700',color:palette.ink}}>{t('Cargo space photo')}</Text></View>
   {query.loading&&<LoadingSpinner accessibilityLabel={t('Loading photo')}/>}
   <ErrorText message={query.error?t(query.error):''}/>
   {!!query.error&&<Button secondary message="Refresh" onPress={()=>{void query.reload();}}/>}
   {photo?<View style={{gap:8}}><Copy>{t('Photo received {date}',{date:received})}</Copy><PrivateFile label={t('Open photo')} title={t('Cargo space photo')} imageLabel={t('Cargo space photo')} closeLabel={t('Close photo')} load={readPhoto}/></View>:query.data?<Copy message="No photo yet"/>:null}
-  {query.data&&(pending?<Copy message="Photo requested"/>:<Button secondary message={photo?'Request new photo':'Request photo'} busy={busy} onPress={()=>{void requestPhoto();}}/>)}
+  {query.data&&(pending?<><Text accessibilityLiveRegion="polite" style={{color:palette.ink,fontWeight:'600'}}>{t('Photo requested')}</Text><Button secondary message="Refresh" disabled={query.refreshing} onPress={()=>{void query.reload();}}/></>:<Button secondary message={photo?'Request new photo':'Request photo'} busy={busy} disabled={query.refreshing} onPress={()=>{void requestPhoto();}}/>)}
   <ErrorText message={error?t(error):''}/>
- </View></WorkspaceSection>;
+ </View></Card>;
 }

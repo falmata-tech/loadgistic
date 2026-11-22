@@ -132,3 +132,7 @@ reviewed tooling advisories. Final evidence: `.local/mobile-audit-sdk-final.json
 `.local/mobile-runtime-dependency-review-final.json`, `.local/mobile-sdk-final-android-export/`.
 The CI mobile job retains the raw audit exit/status and report, exports the real
 Android runtime, and applies the same gate before declaring internal-build eligibility.
+
+## November 17 Android tooling review
+
+The mobile audit reports 27 high and 12 moderate entries. Picomatch is used by the local bundler and file-discovery tools. The reviewed build takes its glob patterns from the checked-out project and installed tools. The Android gate now checks the exact four audit and lockfile paths, their reviewed versions (2.3.2 and 4.0.7), and the absence of every picomatch copy from the compiled Android source map. CI retains the original audit. The advisory has no patched version. The mobile release maintainer must reassess these pins when upstream publishes a fix or the build inputs change. This disposition applies only to internal builds. [GitHub advisory](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)

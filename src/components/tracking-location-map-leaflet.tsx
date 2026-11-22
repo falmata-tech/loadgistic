@@ -1,4 +1,5 @@
 "use client";
+import {capacityMapColors} from '@/lib/capacity-status-presentation';
 
 
 import {Text,useTranslation} from '@/components/localization';
@@ -46,7 +47,10 @@ export default function TrackingLocationMapLeaflet({route,location,truck,onTruck
     <FitShipment route={route} location={location}/>
     <Polyline positions={positions} pathOptions={{className:'tracking-planned-route',color:'#155eef',weight:4,dashArray:'9 8'}} interactive={false}/>
     {route.map((point,index)=><CircleMarker key={`${point.placeRef}-${index}`} center={positions[index]} radius={8} pathOptions={{className:'tracking-city-marker',color:'#fff',weight:3,fillColor:index===route.length-1?'#f2b01e':'#155eef',fillOpacity:1}}><Tooltip direction="top" permanent><span className="tracking-city-label">{index+1}. {point.label}</span></Tooltip></CircleMarker>)}
-    {location?<Circle center={[location.coordinate[1],location.coordinate[0]]} radius={location.radiusKm*1000} pathOptions={{className:'tracking-approximate-circle',color:'#7846a7',weight:3,dashArray:'8 7',fillColor:'#7846a7',fillOpacity:.1}}><Tooltip direction="top"><strong>{location.label}</strong><br/><Text message="Within {radius} km" values={{radius:location.radiusKm}}/></Tooltip></Circle>:null}
+    {location?<Circle center={[location.coordinate[1],location.coordinate[0]]} radius={location.radiusKm*1000} pathOptions={{className:'tracking-approximate-circle',color:capacityMapColors.location,weight:3,dashArray:'8 7',fillColor:capacityMapColors.location,fillOpacity:.1}}><Tooltip direction="top"><strong>{location.label}</strong><br/><Text message="Within {radius} km" values={{radius:location.radiusKm}}/></Tooltip></Circle>:null}
+    {location&&!truck&&publishedSource?<CircleMarker center={[location.coordinate[1],location.coordinate[0]]} radius={6} pathOptions={{className:'tracking-reported-center',color:'#fff',weight:2,fillColor:capacityMapColors.location,fillOpacity:1}}>
+      <Tooltip direction="top"><Text message="Reported vehicle area"/><br/><Text message={publishedSource}/></Tooltip>
+    </CircleMarker>:null}
     {location&&truck?<Marker position={[location.coordinate[1],location.coordinate[0]]} icon={icon} alt={markerLabel} title={markerLabel} keyboard eventHandlers={{click:onTruckClick}}><Tooltip direction="top"><Text message="Reported vehicle area"/>{publishedSource?<><br/><Text message={publishedSource}/></>:null}{location.demo===true?<><br/><Text message="Demo location"/></>:null}{location.updatedAt?<><br/>{new Date(location.updatedAt).toLocaleString()}</>:null}</Tooltip></Marker>:null}
   </MapContainer></div>;
 }

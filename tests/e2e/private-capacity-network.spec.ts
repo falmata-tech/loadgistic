@@ -2,13 +2,16 @@ import {expect,test} from './browser-test';
 import {auditProvider,checked,localAuditService} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 
-test('signed-out visitors cannot open Network or Privately shared with you',async({page,request})=>{
+test('signed-out visitors can open the Private invitation without accessing Network or shared vehicles',async({page,request})=>{
   test.setTimeout(60_000);
   await page.goto('/');
-  await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'})).toBeVisible();
-  await page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Privately shared with you'}).click();
-  await expect(page).toHaveURL(/\/login\?from=shared-capacity/,{timeout:30_000});
-  await expect(page.getByText('Sign in to see vehicles shared with your account.')).toBeVisible();
+  await expect(page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Private Network'})).toBeVisible();
+  await page.getByRole('navigation',{name:'Capacity views'}).getByRole('link',{name:'Private Network'}).click();
+  await expect(page).toHaveURL(/\/\?view=private$/,{timeout:30_000});
+  const entry=page.getByTestId('private-capacity-entry');
+  await expect(entry.getByText('Sign in to see vehicles your transport partners share with you.')).toBeVisible();
+  await entry.getByRole('link',{name:'Sign in',exact:true}).click();
+  await expect(page).toHaveURL(/\/login\?from=shared-capacity/);
   await page.goto('/app/network');
   await expect(page).toHaveURL(/\/login/,{timeout:30_000});
   for(const url of ['/api/account-directory','/api/account-connections','/api/account-capacity']){

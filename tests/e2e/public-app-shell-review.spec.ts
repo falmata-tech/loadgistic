@@ -24,7 +24,7 @@ test('one company footer reserves map space and stays above phone navigation',as
   await expect(page.locator('body>.site-copyright')).toHaveCount(1);
   await expect(page.getByRole('link',{name:'MarketVision Technology',exact:true})).toHaveCount(1);
   await page.goto('/track',{waitUntil:'domcontentloaded'});
-  const action=page.getByRole('button',{name:'Email me a code',exact:true});
+  const action=page.getByRole('button',{name:'Open tracking',exact:true});
   await expect(action).toBeVisible();
   expect(await page.evaluate(()=>{
     const button=document.querySelector('.tracking-unlock-panel .auth-primary-action')?.getBoundingClientRect();
@@ -61,8 +61,8 @@ test('capture focused public application shell review',async({page}:{page:any})=
   const project=test.info().project.name;
 
   await page.goto('/');
-  await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1,exact:true})).toHaveCount(1);
-  await expect(page.getByRole('heading',{name:'The visibility you need to serve your customers reliably',level:1,exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Work better with transporters to serve your customers',level:1,exact:true})).toHaveCount(1);
+  await expect(page.getByRole('heading',{name:'Work better with transporters to serve your customers',level:1,exact:true})).toBeVisible();
   await expect(page.locator('.map-workspace-heading')).toHaveCount(0);
   await expect(page.locator('.public-capacity-map')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

@@ -50,6 +50,21 @@ And retries with the same key return the same request, while repeated fresh requ
 Given the current driver adds a photo after a pending request
 Then the request is marked fulfilled and its new photo may be opened only while the recipient's live grant remains valid.
 
+Given a permitted broker or shipper opens Vehicle and driver on Private Network
+Then the photo controls appear before vehicle documents on web and Expo
+And a confirmed request immediately shows its pending status and a way to refresh
+And retrying an ambiguous request within the open record reuses the same key.
+
+Given the assigned driver opens the photo action from their Capacity Home
+Then a pending request is visible from the Home action
+And the driver can preview and cancel a selected photo before it is uploaded
+And a successful upload reports the saved result and refreshes the request state.
+
+Given the fleet owner opens a vehicle's Capacity tools
+Then web and Expo can view and remove its current photo using the existing
+owner-authorized endpoint, and the assigned driver cannot remove another
+owner's photo.
+
 Given the business workspace selects the optional private-map photo filter
 Then `photoPresent` matches only a currently visible photo, and `photoMaxAgeHours` compares server `receivedAt` with the server clock
 And the filter composes with the existing vehicle and route matching before pagination; device camera time never qualifies freshness.

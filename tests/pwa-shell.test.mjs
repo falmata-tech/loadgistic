@@ -15,7 +15,7 @@ test('PWA launches into public discovery and keeps private pages network-first',
     ['/', '/?view=private', '/track', '/featured', '/app/network']
   );
   assert.deepEqual(manifest.shortcuts.map(shortcut=>shortcut.name),[
-    'Public Capacity','Capacity shared with you','Track a shipment','Featured Transport Providers','Network'
+    'Open Market','Private Network','Track a shipment','Featured Transport Providers','Network'
   ]);
   assert.deepEqual(manifest.screenshots.map(screenshot=>screenshot.src),[
     '/landing/capacity-map-wide.png','/landing/capacity-map-phone.png'
@@ -25,6 +25,13 @@ test('PWA launches into public discovery and keeps private pages network-first',
     assert.equal(image.subarray(1,4).toString(),'PNG');
   }
   assert.match(worker, /event\.request\.mode === 'navigate'/);
+  assert.match(worker, /fetch\(event\.request\)\.catch/);
+  assert.match(worker, /cache\.match\(OFFLINE\)/);
+  assert.doesNotMatch(worker, /skipWaiting/);
+  assert.match(worker, /key\.startsWith\('loadgistic-static-'\)/);
+  const registration=await readFile(new URL('../public/register-sw.js', import.meta.url),'utf8');
+  assert.match(registration,/beforeinstallprompt/);
+  assert.doesNotMatch(registration,/location\.reload|controllerchange/);
   assert.doesNotMatch(worker, /pathname\.startsWith\('\/_next\/'\)/);
   assert.doesNotMatch(worker, /pathname\.startsWith\('\/app\/'\)/);
   const headers=await nextConfig.headers();

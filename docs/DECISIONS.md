@@ -1,5 +1,48 @@
 # Architecture Decisions
 
+## ADR-092 — Public provider fleet maps and video covers
+
+The provider profile uses the public Capacity feed filtered by its canonical handle, including all cursor pages. The fleet directory retains entries without a public map location. Independent and fleet owners can explicitly attach a YouTube cover. A separate optional ID preserves the privacy of historical personal media. Migration 237 adds that field to the existing profile commands.
+
+## ADR-091 — Sponsor schedules on Featured
+
+A regional sponsor placement can appear on its scheduled dates even when the provider roster is empty. Web and Expo show one placement at a time. Admins and staff with the Featured grant manage the same catalogue. Migration 236 adds optional artwork to a placement. FEAT-SPN-001 covers public fields, expiry and playback.
+
+## ADR-090 — Route signed-in Support by open workload
+
+Registered shippers, broker workspace members and Transport Providers can contact Support. New conversations use the active workspace or the member’s own account. An available agent with Support permission receives the next conversation according to their open-chat count. The longest idle agent wins a tie. There is no per-agent ceiling. When no eligible agent is available, conversations wait in arrival order and assign when staff return. Admins manage team availability and permissions. FEAT-SUP-001 and migrations 232–233 cover this change.
+
+## ADR-089 — Per-load links and codes replace anonymous email Tracking (2026-11-17)
+
+FEAT-TRK/SHP/ENT/IAM/MOB-001 / BASE-FE/BE/DEP-001. The owner requires BOTH an
+expiring unique URL and a separate generated code. Brokers can create Pending
+provider sessions or share existing authorized shipments. Pending sessions have
+no vehicle position and are private agreed-work preparation, never demand posts.
+The broker selects a discoverable assigned truck through network-first search. Migration 231 binds a request to the truck and its current driver. The signed-in authorized fleet owner or assigned driver with Tracking permission can accept it. Guest credentials grant viewing only. New fleet drivers start with Tracking permission enabled. Fleet owners retain control of it.
+
+Migration229 adds private sessions and hash-only revocable links. Tokens and
+codes are independent random credentials with separate keyed digests. Link life
+defaults to7days, bounded30days; unlock grants only that session for at most
+5minutes, with saved expiry/revocation/consent rechecked on every read. Guest
+grants carry no proof, approval, review, sharing or account ownership. Anonymous
+email OTP/lookup and old email-wide grants are retired; account sign-in stays.
+
+Actual registered customer owners and authorized business members retain account
+shipment lists. A provider can select one registered shipper or broker at creation, or add that
+single partner later under migration230. Only new explicitly unpartnered records
+accept that command. It locks the shipment/session, binds the account ID once and
+preserves operational history. A broker's customer follows the guest link on an
+external record. Broker-first connection opens the same provider shipment detail,
+with the same assignment, location and status permissions. Neither starting order
+queues anonymous Tracking mail. Broker sessions retain actual account owner
+IDs and separate proof-backed authenticated approval/review. No fake email,
+recipient digest or customer account satisfies a historical command.
+
+NR-13/36/61/76 require actual desktop/phone/Expo tasks, denial checks, current
+installed definitions and bounded diagnosed fixture repair. Qualify228+229 locally
+before exact hosted source/SQL/backup/rollback review. Rollback disables new link
+use while retaining history; old clients cannot reopen anonymous email access.
+
 ## ADR-088 — Demo planning is independent of vehicle size (2026-11-15)
 
 FEAT-CAP-001 / FEAT-MAT-001 / FEAT-SIM-001. The owner explicitly removes the
@@ -2449,3 +2492,10 @@ Saved and manual days remain intact. A saved day imported after the schema
 change is counted before the next automatic selection. The additive local schema
 and web/Expo implementation are specified in [FEAT-CON-001](../specs/features/FEAT-CON-001.md);
 this decision does not claim a hosted rollout.
+
+## November 18 — Signed-in account identity
+
+Web and Expo continue to call the same no-argument public identity RPC. Migration
+235 runs that entry point with the caller’s privileges and confines its privileged
+read to the unexposed loadgistic_identity schema. The underlying projection still
+resolves account and organization from the authenticated session. See FEAT-SEC-001.

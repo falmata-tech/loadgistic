@@ -15,7 +15,7 @@ function managedAuthOrigin(environment){
   }
 }
 
-export function contentSecurityPolicy(environment=process.env){
+export function contentSecurityPolicy(environment=process.env,{providerCover=false}={}){
   const scriptPolicy=environment.NODE_ENV!=='production'
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : "script-src 'self' 'unsafe-inline'";
@@ -24,5 +24,7 @@ export function contentSecurityPolicy(environment=process.env){
   const formAction=authOrigin
     ?`form-action 'self' ${authOrigin} https://accounts.google.com`
     :"form-action 'self'";
-  return `default-src 'self'; img-src 'self' data: blob: ${tileOrigin}; style-src 'self' 'unsafe-inline'; ${scriptPolicy}; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; ${formAction}`;
+  const coverImage=providerCover?' https://i.ytimg.com':'';
+  const coverFrame=providerCover?"frame-src 'self' https://www.youtube-nocookie.com; ":'';
+  return `default-src 'self'; img-src 'self' data: blob: ${tileOrigin}${coverImage}; style-src 'self' 'unsafe-inline'; ${scriptPolicy}; connect-src 'self'; ${coverFrame}frame-ancestors 'none'; base-uri 'self'; ${formAction}`;
 }

@@ -72,7 +72,7 @@ test('admin team controls and review queues retain their bounded forms and navig
   await expect(create.getByLabel('Name',{exact:true})).toBeVisible();await expect(create.getByLabel('Sign-in email',{exact:true})).toBeVisible();
   for(const name of ['Customers','Operations','Trust','Support','Featured'])await expect(create.getByRole('checkbox',{name,exact:true})).toBeVisible();
   await expect(create.getByRole('checkbox',{name:'Brokerage',exact:true})).toHaveCount(0);
-  await expect(create.getByLabel('Max open chats')).toHaveAttribute('min','1');await expect(create.getByLabel('Max open chats')).toHaveAttribute('max','20');
+  await expect(create.getByLabel('Max open chats')).toHaveCount(0);
   const box=await create.boundingBox();expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await capture(page,info,`admin-team-form-${width}.png`);

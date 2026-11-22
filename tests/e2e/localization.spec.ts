@@ -38,7 +38,9 @@ test('language control remains separate from phone map filters and account actio
 test('profile headings and filter distances translate without rewriting transporter content',async({page}:{page:import('playwright-core').Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(120000);await page.goto('/@rift-valley-haulage-02');
  const name=await page.locator('.provider-site-identity h1').innerText();
- const about=await page.locator('.provider-about-card .lede').innerText();
+ const aboutPanel=page.locator('.provider-profile-information');
+ await aboutPanel.locator('summary').click();
+ const about=await aboutPanel.locator('p').first().innerText();
  const picker=page.locator('.language-picker select');
  for(const [locale] of languages){
   const messages=locale==='en'?{}:JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
@@ -48,13 +50,11 @@ test('profile headings and filter distances translate without rewriting transpor
   await expect(page.locator('.provider-site-identity h1')).toHaveText(name);
   await expect(page.locator('.provider-handle')).toHaveText(t('Transport Provider'));
   await expect(page.locator('.provider-hero-facts')).toContainText(t('New to Loadgistic'));
-  await expect(page.locator('.provider-about-card .lede')).toHaveText(about);
+  if(await aboutPanel.getAttribute('open')===null)await aboutPanel.locator('summary').click();await expect(aboutPanel).toContainText(about);
   await expect(page.locator('.provider-services,.provider-corridor-list,.provider-microsite-safety')).toHaveCount(0);
-  const mapAction=page.getByRole('link',{name:t('See vehicles on the map'),exact:true});
-  await expect(mapAction).toHaveAttribute('href','/?provider=rift-valley-haulage-02');
-  await mapAction.scrollIntoViewIfNeeded();await mapAction.click({trial:true});
+  await expect(page.locator('.provider-map-workbench .leaflet-container')).toBeVisible();
   await expect(page.getByRole('heading',{name:t('Verified shipment reviews'),exact:true})).toBeVisible();
-  await expect(page.locator('.fleet-open-label')).toHaveText(t('View vehicles and drivers'));
+  await expect(page.locator('.provider-fleet-disclosure')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
   await page.screenshot({path:info.outputPath(`profile-${locale}.png`),fullPage:true});
  }

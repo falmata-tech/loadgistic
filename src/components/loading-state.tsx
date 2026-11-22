@@ -6,6 +6,13 @@ export function LoadingIndicator({label='Loading…',className=''}:{label?:strin
   </span>;
 }
 
+export function MapWorkspaceSkeleton({label='Loading capacity workspace'}:{label?:string}){
+  return <Localized as="section" copy={["aria-label"]} className="map-workspace-skeleton" aria-label={label} aria-busy="true">
+    <aside className="skeleton-map-command" aria-hidden="true"><i/><i/><i/></aside>
+    <SurfaceSkeleton kind="map" label={label}/>
+  </Localized>;
+}
+
 export function SurfaceSkeleton({kind='records',label='Loading content',className=''}:{kind?:'records'|'map'|'form'|'chat';label?:string;className?:string}){
   return <Localized as="section" copy={["aria-label"]} className={`surface-skeleton skeleton-${kind} ${className}`} aria-busy="true" aria-label={label}>
     <span className="sr-only" role="status"><Text message={label}/></span>

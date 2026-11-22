@@ -18,7 +18,21 @@ providers and organizations. Migration180 repairs the older sharing predicate;
 cover explicit sharing-mode saves rather than only legacy capacity payloads.
 No employee fleet-management or document-review permission is added.
 
-## October18 courier configurations — planned local restoration
+## November20 courier catalogue correction
+
+Given an authorized provider opens Add vehicle or Edit vehicle on web or Expo
+When they choose a configuration
+Then Courier car is available with the existing car artwork
+And Courier motorcycle is absent and both database commands reject it
+And registration, publication, driver pairing and Tracking permissions still apply.
+
+Migration238 updates the installed command allowlists and does not rewrite saved
+vehicles or past work. Verification uses the owner Add/Edit and denied fleet
+mutations in the rollback-only freight catalogue SQL test. SQL error telemetry
+continues to use `INVALID_VEHICLE_CONFIGURATION`. Reversion requires a forward
+migration restoring the previous allowlists and a matching client rollback.
+
+## October18 courier configurations — historical restoration
 
 The latest owner request supersedes the September25 courier retirement below.
 `Courier car` and `Courier motorcycle` are supported fixed configurations with
@@ -376,7 +390,7 @@ Given an active Fleet transporter owner, Owner-operator, or Self-managed Driver 
 When they add a truck from My Fleet or My trucks\
 Then one active truck is created for only that organization or independent provider profile\
 And make, model, standardized cargo configuration, private plate, and a server-generated immutable Loadgistic truck number are recorded\
-And the standardized configuration catalogue offers courier cars, courier motorcycles, cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations\
+And the standardized configuration catalogue offers courier cars, cargo vans, pickups, mini, light, medium, heavy rigid, heavy rigid-with-trailer, and tractor-with-trailer configurations\
 And a rigid vehicle records exactly one fixed configuration\
 And a tractor records one or more compatible trailer configurations from Container trailer, Dry van trailer, and Heavy equipment trailer\
 And the tractor's currently attached trailer must be one of that same registered compatible set\

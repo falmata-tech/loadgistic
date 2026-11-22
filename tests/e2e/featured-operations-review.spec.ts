@@ -36,7 +36,9 @@ test('Featured explains automatic operation and persists a manual draft and publ
   expect((await getDailyFeaturedProviders(date)).providers).toHaveLength(0);
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();const publish=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:'Publish this day',exact:true}).click();expect((await publish).status()).toBe(303);await expect(page.getByText('Daily feature published.',{exact:true})).toBeVisible({timeout:30000});
   row=checked(await service.from('featured_provider_days').select('id,status,selection_source,target_count').eq('feature_date',date).single());expect(row.status).toBe('PUBLISHED');const publicDay=await getDailyFeaturedProviders(date);expect(publicDay.providers).toHaveLength(1);expect(publicDay.headline).toBe(`Featured review ${suffix}`);
-  await page.getByRole('link',{name:'Edit programme',exact:true}).click();await expect(editor).toBeVisible();
+  await page.getByRole('link',{name:'Edit programme',exact:true}).click();
+  await expect(page).toHaveURL(url=>url.searchParams.get('edit')==='day',{timeout:20000});
+  await expect(editor).toBeVisible({timeout:20000});
   await editor.getByRole('button',{name:'Manual',exact:true}).click();await expect(editor.getByLabel('Starts',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('featured-manual-day.png'),fullPage:true});
  }finally{
@@ -68,14 +70,17 @@ test('copy polish keeps admin, member and transporter profile controls usable',a
  try{
   await login('ADMIN');await page.goto('/admin');await expect(page.getByRole('heading',{name:'Platform overview',exact:true})).toBeVisible();await expect(page.getByText('Platform data',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('admin-overview.png'),fullPage:true});
   await page.goto('/admin/operations');await expect(page.getByText(/Credentials, sessions, tracking secrets/)).toHaveCount(0);await page.screenshot({path:info.outputPath('admin-records.png'),fullPage:true});
-  await page.goto('/admin/support');await expect(page.getByRole('heading',{name:'Provider support',exact:true})).toBeVisible();await expect(page.getByText('Assisted matching capacity',{exact:true})).toHaveCount(0);
+  await page.goto('/admin/support');await expect(page.getByRole('heading',{name:'Support',exact:true})).toBeVisible();await expect(page.getByText('Assisted matching capacity',{exact:true})).toHaveCount(0);
   await login('TRANSPORTER');await page.goto('/app/home/vehicles');await expect(page.getByRole('navigation',{name:'Home views'}).getByRole('link',{name:'Manage vehicles',exact:true})).toHaveAttribute('aria-current','page');await expect(page.getByRole('region',{name:'Vehicles'}).getByRole('link',{name:'View vehicle'}).first()).toBeVisible();await expect(page.getByText('Operating priorities',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-home.png'),fullPage:true});
   await page.goto('/app/network');await expect(page.getByText('Lets our Assisted matching team consider this truck when a visitor asks for help.',{exact:true})).toHaveCount(0);await page.screenshot({path:info.outputPath('provider-network.png'),fullPage:true});
   // Use the managed seed, not an arbitrary published synthetic profile left by a manual preview.
   const org=checked(await service.from('organizations').select('id,handle').eq('handle','blueline-transport').single());
   expect(checked(await service.from('company_pages').select('published').eq('organization_id',org.id).single()).published).toBe(true);
-  await page.goto(`/@${org.handle}`);const disclosure=page.locator('#provider-trucks.provider-fleet-disclosure');if(await disclosure.count()){if(!await disclosure.evaluate((element:HTMLElement)=>(element as HTMLDetailsElement).open))await disclosure.locator('summary').click();await expect(disclosure).toHaveJSProperty('open',true);}await expect(page.locator('.provider-fleet-showcase')).toBeVisible();await expect(page.getByText('Active fleet',{exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:'View capacity on map',exact:true}).first().click();await expect(page.getByText('Blue outlines show the driver’s approximate location. Confirm availability directly with the transporter.',{exact:true})).toBeVisible();await expect(page.locator('.ethiopia-map-label')).toHaveCount(0);
+  await page.goto(`/@${org.handle}`);
+  await expect(page.locator('.provider-map-workbench .leaflet-container')).toBeVisible();
+  await expect(page.locator('.provider-fleet-disclosure')).toHaveCount(0);
+  await expect(page.getByText('Active fleet',{exact:true})).toHaveCount(0);
+  await expect(page.locator('.ethiopia-map-label')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath('provider-map.png'),fullPage:true});
  }finally{for(const session of sessions)await session.auth.signOut({scope:'local'});}
 });

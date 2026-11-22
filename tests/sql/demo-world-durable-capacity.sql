@@ -128,7 +128,10 @@ begin
  begin
   update public.vehicle_capacity_sharing set mode='PUBLIC' where vehicle_id=v_vehicle_id;
   perform public.demo_world_execute_capacity_step(first_step,first_token);
- exception when others then refused:=sqlerrm='DEMO_WORLD_SHARING_REFUSED';end;
+ exception when others then
+  if sqlerrm<>'DEMO_WORLD_SHARING_REFUSED' then raise;end if;
+  refused:=true;
+ end;
  if not refused then raise exception 'DEMO_WORLD_SHARING_DRIFT_ACCEPTED';end if;
  refused:=false;
  begin
@@ -136,7 +139,10 @@ begin
    from jsonb_array_elements(capacity.current_route_points_json) with ordinality as point(value,ordinality)) where id=(
    select id from public.capacities where vehicle_id=v_vehicle_id order by updated_at desc,id desc limit 1);
   perform public.demo_world_execute_capacity_step(first_step,first_token);
- exception when others then refused:=sqlerrm='DEMO_WORLD_ROUTE_REFUSED';end;
+ exception when others then
+  if sqlerrm<>'DEMO_WORLD_ROUTE_REFUSED' then raise;end if;
+  refused:=true;
+ end;
  if not refused then raise exception 'DEMO_WORLD_ROUTE_DRIFT_ACCEPTED';end if;
  refused:=false;
  begin

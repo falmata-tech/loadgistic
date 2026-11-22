@@ -23,7 +23,7 @@ function cameraScreen(platform,granted=true){
   launchCameraAsync:async()=>{calls.push('camera');return{canceled:true};},
   launchImageLibraryAsync:async()=>{calls.push('gallery');return{canceled:true};},
  };
- const account={session:{user:{id:actorId}},request:async()=>{throw Error('Unexpected API request');}};
+ const account={session:{user:{id:actorId,role:'DRIVER'}},request:async()=>{throw Error('Unexpected API request');}};
  const hosts=Object.fromEntries(['AppState','Image','Modal','SafeAreaView','View','Button','Copy','ErrorText','LoadingSpinner','Page','Title','WorkspaceSection'].map(name=>[name,name]));
  const args={React,...hooks,...hosts,AppState:{currentState:'active'},Platform:{OS:platform},ImagePicker,
   useFocusEffect:callback=>callback(),useAccount:()=>account,useAccountQuery:()=>({data:{photo:null,requests:[]},loading:false,error:'',reload:async()=>{}}),

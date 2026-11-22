@@ -1,3 +1,5 @@
+-- Historical private expiry/supersession/retention helpers only. Migration229
+-- removes public/service issuance; new guest access uses a single link+code.
 begin;
 do $test$
 declare ids uuid[]; s uuid; actor uuid; challenge uuid; newer uuid; digest text:=repeat('c',64);
@@ -76,5 +78,8 @@ begin
  foreach signature in array array['request_tracking_email_session(uuid,text,text,text,timestamptz)','consume_tracking_email_session(uuid,text,text)','list_tracking_email_shipments(text,integer)','submit_tracking_email_review(uuid,text,integer,text)'] loop
  if has_function_privilege(role_name,'public.'||signature,'execute') then raise exception 'BROWSER_RPC_ACCESS';end if;
  end loop;end loop;
+ foreach signature in array array['request_tracking_email_session(uuid,text,text,text,timestamptz)','consume_tracking_email_session(uuid,text,text)','list_tracking_email_shipments(text,integer)']loop
+ if has_function_privilege('service_role','public.'||signature,'execute')then raise exception 'RETIRED_EMAIL_GUEST_SERVICE_ACCESS';end if;
+ end loop;
 end;$test$;
 rollback;

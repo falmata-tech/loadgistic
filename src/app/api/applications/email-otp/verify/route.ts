@@ -1,5 +1,5 @@
 import {NextRequest,NextResponse} from 'next/server.js';
-import {isNumericEmailOtp,MANAGED_AUTH_ERROR,managedWorkspaceDestination} from '@/lib/auth-flow.js';
+import {isNumericEmailOtp,MANAGED_AUTH_ERROR,managedAccountLoginDestination} from '@/lib/auth-flow.js';
 import {getManagedCurrentUser} from '@/lib/identity/supabase';
 import {hasJoinableFleetInvitation} from '@/lib/fleet-driver-management';
 import {
@@ -65,7 +65,7 @@ export async function POST(request:NextRequest){
       return response;
     }
     if(projection.active){
-      response.headers.set('Location',from&&projection.role==='CUSTOMER'?'/?view=private':managedWorkspaceDestination(projection.role,projection.selected_business_workspace));
+      response.headers.set('Location',from==='shared-capacity'&&projection.role==='CUSTOMER'?'/?view=private':managedAccountLoginDestination(projection.role,projection.selected_business_workspace,from));
       clearSignupCookie(response);
       clearOAuthCookie(response);
       return response;

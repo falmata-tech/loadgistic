@@ -17,7 +17,8 @@ const tracking:Destination={href:'/shipments',label:'Tracking',icon:'tracking'};
 const network:Destination={href:'/network',label:'Network',icon:'network'};
 const support:Destination={href:'/support',label:'Support',icon:'help'};
 const workspacePaths=new Set(['/account','/account-settings','/account-details','/account-security','/driver-photo','/fleet','/manage-capacity','/regular-service','/shipments','/shipment-detail','/shipment-manage','/network','/directory','/shared-capacity','/support','/support-chat','/billing','/documents','/profile','/workspaces','/business-capacity','/business-tracking','/business-account','/business-shipment']);
-export function hasWorkspace(session:AccountSession|null){return session?.state==='ACTIVE'&&(['TRANSPORTER','DRIVER'].includes(session.user.role)||session.user.role==='CUSTOMER'&&Boolean(session.user.selectedBusinessWorkspace));}
+export function hasPersonalTrackingAccount(session:AccountSession|null|undefined){const user=session?.user;return session?.state==='ACTIVE'&&Boolean(user&&['SHIPPER','RECEIVER'].includes(user.role)&&user.platformRole===user.role&&user.selectedBusinessWorkspace===null&&user.providerWorkspaceAvailable===false&&!user.ownsProviderAccount&&!user.canManageFleet&&!user.drivesTruck&&!user.currentDriverId&&!user.currentDrivenVehicleId);}
+export function hasWorkspace(session:AccountSession|null){return hasPersonalTrackingAccount(session)||session?.state==='ACTIVE'&&(['TRANSPORTER','DRIVER'].includes(session.user.role)||session.user.role==='CUSTOMER'&&Boolean(session.user.selectedBusinessWorkspace));}
 export function hasProviderHome(session:AccountSession|null){return session?.state==='ACTIVE'&&session.access?.granted===true&&['TRANSPORTER','DRIVER'].includes(session.user.role);}
 export function providerMarketContext(params:Record<string,unknown>={}){return {initialQuery:transporterSearchQuery(params.q)||'',initialFilters:initialCapacityIdentity(params)};}
 export function providerHomeHref(session:AccountSession|null,params:Record<string,unknown>={}){
@@ -28,7 +29,7 @@ export function providerHomeHref(session:AccountSession|null,params:Record<strin
  for(const key of ['provider','truck'] as const)if(initialFilters[key])query.set(key,initialFilters[key]!);
  return `/account?${query}`;
 }
-export function workspaceHome(session:AccountSession|null){const workspace=session?.user.role==='CUSTOMER'?session.user.selectedBusinessWorkspace:null;return workspace?(workspace.permissions.capacity?'/business-capacity':workspace.permissions.tracking?'/business-tracking':'/business-account'):hasProviderHome(session)?providerHomeHref(session):'/account';}
+export function workspaceHome(session:AccountSession|null){if(hasPersonalTrackingAccount(session))return '/business-tracking';const workspace=session?.user.role==='CUSTOMER'?session.user.selectedBusinessWorkspace:null;return workspace?(workspace.permissions.capacity?'/business-capacity':workspace.permissions.tracking?'/business-tracking':'/business-account'):hasProviderHome(session)?providerHomeHref(session):'/account';}
 export function navigationTarget(path:string,href:string,session:AccountSession|null){
  if(href==='/account'&&hasProviderHome(session))return path==='/account'?null:providerHomeHref(session);
  return path===href?null:href;
@@ -41,13 +42,15 @@ export function workspaceCapabilities(session:AccountSession|null){
 }
 export function workspaceRoleLabel(session:AccountSession|null):string{
  if(!hasWorkspace(session))return '';
+ if(hasPersonalTrackingAccount(session))return session!.user.role==='SHIPPER'?'Shipper':'Receiver';
  if(session!.user.role==='CUSTOMER')return session!.user.selectedBusinessWorkspace?.membershipRole==='OWNER'?'Owner':session!.user.selectedBusinessWorkspace?.membershipRole==='ADMIN'?'Workspace admin':'Team member';
  if(session!.user.operatingModel==='COMPANY_DRIVER')return 'Fleet driver';
  return 'Transport Provider';
 }
-export function isWorkspace(path:string,session:AccountSession|null){return hasWorkspace(session)&&workspacePaths.has(path);}
+export function isWorkspace(path:string,session:AccountSession|null){return hasPersonalTrackingAccount(session)?['/account','/account-settings','/account-details','/account-security','/workspaces','/business-tracking','/support','/support-chat'].includes(path):hasWorkspace(session)&&workspacePaths.has(path);}
 export function workspaceDestinations(session:AccountSession|null):Destination[]{
  if(!hasWorkspace(session))return [];
+ if(hasPersonalTrackingAccount(session))return [{href:'/business-tracking',label:'Tracking',icon:'tracking'},support,settings];
  if(session!.user.role==='CUSTOMER'){
   const permissions=session!.user.selectedBusinessWorkspace!.permissions;
   return [{href:'/directory',label:'Network',icon:'network'},...(permissions.tracking?[{href:'/business-tracking',label:'Tracking',icon:'tracking'} as Destination]:[]),{href:'/business-account',label:'Account',icon:'user'}];
@@ -58,6 +61,7 @@ export function workspaceDestinations(session:AccountSession|null):Destination[]
 export function phoneDestinations(session:AccountSession|null):Destination[]{
  if(!hasWorkspace(session))return visitorDestinations;
  const workspace=workspaceDestinations(session);
+ if(hasPersonalTrackingAccount(session))return [publicDestinations[0],workspace[0],{href:'#menu',label:'More',icon:'more'}];
  if(hasWorkspace(session)&&['TRANSPORTER','DRIVER'].includes(session!.user.role))return [workspace.find(item=>item.href==='/account'),workspace.find(item=>item.href==='/network'),workspace.find(item=>item.href==='/shipments'),{href:'#menu',label:'More',icon:'more'}].filter(Boolean) as Destination[];
  if(hasWorkspace(session)&&session!.user.role==='CUSTOMER')return [publicDestinations[0],workspace.find(item=>item.href==='/directory'),workspace.find(item=>item.href==='/business-tracking'),{href:'#menu',label:'More',icon:'more'}].filter(Boolean) as Destination[];
  return [publicDestinations[0],publicDestinations[1],{href:'#menu',label:'More',icon:'more'}];
@@ -71,6 +75,8 @@ export function accountSections(session:AccountSession|null):AccountSection[]{
 }
 export function activeDestination(path:string,workspace:boolean,session?:AccountSession|null):string{
  if(!workspace){if(['/visitor-tracking','/visitor-shipment'].includes(path))return '/visitor-tracking';if(path==='/featured')return '/featured';if(path==='/about')return '/about';return path==='/'||path==='/transporter'?'/':'';}
+ if(hasPersonalTrackingAccount(session)&&['/support','/support-chat'].includes(path))return '/support';
+ if(hasPersonalTrackingAccount(session))return path==='/business-tracking'?'/business-tracking':'/account-settings';
  if(session?.user.role==='CUSTOMER')return path==='/directory'?'/directory':['/shared-capacity','/business-capacity'].includes(path)?'/':['/business-tracking','/business-shipment'].includes(path)?'/business-tracking':'/business-account';
  if(['/shipments','/shipment-detail','/shipment-manage'].includes(path))return '/shipments';
  if(['/support','/support-chat'].includes(path))return '/support';

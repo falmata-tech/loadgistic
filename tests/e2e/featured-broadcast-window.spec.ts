@@ -8,6 +8,7 @@ import {getDailyFeaturedProviders} from '../../src/lib/public-featured.js';
 import {getAdminFeaturedProviderDay} from '../../src/lib/platform-admin.js';
 import {featuredRangeLabel} from '../../src/lib/featured-time-presentation.js';
 const expect=baseExpect.configure({timeout:30000});
+test.use({actionTimeout:15000,navigationTimeout:30000});
 
 test('eight showcases reserve four mentions and manual times persist through publication',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(180000);const service=localAuditService(),suffix=randomUUID().slice(0,8);
@@ -20,7 +21,15 @@ test('eight showcases reserve four mentions and manual times persist through pub
   if(!candidate.day&&new Set(candidate.candidates.filter((c:any)=>c.eligible).map((c:any)=>c.provider_key)).size>=8){date=candidateDate;break;}
  }
  expect(date).not.toBe('');
- async function save(button:string,message:string){const response=page.waitForResponse(r=>r.url().includes('/api/admin/featured')&&r.request().method()==='POST');await page.getByRole('button',{name:button,exact:true}).click();const result=await response;expect(result.status()).toBe(303);expect(new URL(result.headers().location,'http://127.0.0.1:3100').searchParams.get('error')).toBeNull();await expect(page.getByText(message,{exact:true})).toBeVisible();if(button!=='Save')await page.getByRole('link',{name:'Edit programme',exact:true}).click();}
+ async function save(button:string,message:string){
+  const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/featured'&&r.request().method()==='POST',{timeout:20000});
+  await page.getByRole('button',{name:button,exact:true}).click({noWaitAfter:true});
+  const result=await response;
+  expect(result.status()).toBe(303);
+  expect(new URL(result.headers().location,result.url()).searchParams.get('error')).toBeNull();
+  await expect(page.getByText(message,{exact:true})).toBeVisible();
+  if(button!=='Save')await page.getByRole('link',{name:'Edit programme',exact:true}).click();
+ }
  try{
   const identity=checked(await service.auth.admin.getUserById(admin.id)).user,link=checked(await service.auth.admin.generateLink({type:'magiclink',email:identity.email!})),url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
   client=createClient(url,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -66,7 +75,10 @@ test('eight showcases reserve four mentions and manual times persist through pub
   await page.screenshot({path:info.outputPath('broadcast-manual.png'),fullPage:true});
   await save('Publish this day','Daily feature published.');await expect(editor.getByLabel('Ends',{exact:true}).first()).toHaveValue('22:40');
   // Schedule one actual sponsor via the staff form; all four slots receive its name.
-  await page.getByRole('link',{name:'Cancel editing',exact:true}).click();await page.getByRole('button',{name:'Schedule sponsor',exact:true}).click();await page.getByLabel('Sponsor type',{exact:true}).selectOption('ADVERTISER');
+  await page.getByRole('link',{name:'Cancel editing',exact:true}).click();
+  await page.locator(`a[href="/admin/featured?date=${date}&panel=sponsors"]`).click();
+  await page.getByRole('button',{name:'Schedule sponsor',exact:true}).click();
+  await page.getByLabel('Sponsor type',{exact:true}).selectOption('ADVERTISER');
   await page.getByLabel('Business name',{exact:true}).fill(`Broadcast sponsor ${suffix}`);
   await page.getByLabel('Short description',{exact:true}).fill('Synthetic local sponsor for timetable verification.');
   await page.getByLabel('Website (optional)',{exact:true}).fill('https://example.test');
@@ -74,6 +86,10 @@ test('eight showcases reserve four mentions and manual times persist through pub
   await save('Save','Sponsored placement saved.');
   const sponsored=await getDailyFeaturedProviders(date);
   expect(sponsored.schedule.entries.filter((e:any)=>e.type==='PROGRAMME_BREAK').every((e:any)=>e.label===`Sponsor · Broadcast sponsor ${suffix}`)).toBe(true);
+  await expect(page.locator('#sponsors').getByText(`Broadcast sponsor ${suffix}`,{exact:true})).toBeVisible();
+  const featuredBack=page.locator(`a[href="/admin/featured?date=${date}"]`);
+  await expect(featuredBack).toHaveText('Featured');
+  await featuredBack.click();
   await page.getByRole('link',{name:'Edit programme',exact:true}).click();
   await expect(editor.locator('.featured-schedule-timeline>li.programme-break')).toHaveCount(4);
   await expect(editor.locator('.featured-schedule-timeline>li.programme-break').last()).toContainText(`Broadcast sponsor ${suffix}`);

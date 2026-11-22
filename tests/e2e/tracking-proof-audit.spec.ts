@@ -1,16 +1,18 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures,issueTrackingFixtureLink,openTrackingFixtureLink} from './tracking-session-fixtures';
 import {auditOpenTrackingProgress} from './audit-helpers';
-import {auditIdentity,auditLogin,checked,localAuditService} from './audit-helpers';
+import {auditIdentity,auditLogin,auditTrackingOwnerLogin,checked,localAuditService} from './audit-helpers';
 import {test,expect} from './browser-test';
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {createProviderShipment,getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
-import {localMailpitNumericCode} from './mailpit-helper';
+import {getProviderTrackingWorkspace} from '../../src/lib/provider-tracking.js';
 
 async function login(page:any,email:string){
  await page.context().clearCookies();await auditLogin(page,email);
 }
 
-test('uploaded Tracking proof opens for provider, admin and email-verified guest only',async({page,browser}:{page:any;browser:any},info:any)=>{
+test.use({actionTimeout:15_000,trace:'off',screenshot:'off'});
+
+test('uploaded Tracking proof opens for provider, admin and registered owner while link guests remain read-only',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(180000);
   const service=localAuditService();
   const actor=await auditIdentity(service,'driver@loadgistic.local');
@@ -21,6 +23,7 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
   const marker=`Synthetic proof audit ${randomUUID()}`;
   const shipment=await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:workspace.vehicles[0].id,originPlaceRef:origin.data!.id,destinationPlaceRef:destination.data!.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:marker,customerEmail:email,trackingMode:'STATUS_ONLY'});
   const guest=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.243'}});
+  const ownerContext=await browser.newContext({baseURL:info.project.use.baseURL,viewport:page.viewportSize(),extraHTTPHeaders:{'x-forwarded-for':'127.0.0.244'}});
   try{
     await login(page,'driver@loadgistic.local');
     await page.goto(`/app/provider-shipments/${shipment.id}`);
@@ -43,17 +46,31 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
     expect((await guest.request.get(href)).status()).toBe(404);
     await page.screenshot({path:info.outputPath('provider-proof.png')});
 
-    const guestPage=await guest.newPage();await guestPage.goto('/track');
-    await guestPage.getByLabel('Email',{exact:true}).fill(email);
-    const requestedAt=Date.now();await guestPage.getByRole('button',{name:'Email me a code'}).click();
-    await guestPage.getByLabel('6-digit email code').fill(await localMailpitNumericCode(email,requestedAt,'Your Loadgistic tracking sign-in code'));
-    await guestPage.getByRole('button',{name:'Open tracking'}).click();
-    await expect(guestPage.getByRole('button',{name:'Shipment progress',exact:true})).toBeVisible({timeout:30000});
-    await expect(guestPage.getByRole('button',{name:'Open proof',exact:true})).toBeVisible();
-    expect((await guest.request.get(href)).status()).toBe(200);
-    await guestPage.screenshot({path:info.outputPath('guest-proof.png')});
+    const ownerPage=await ownerContext.newPage(),ownerSession=await auditTrackingOwnerLogin(ownerPage,email,shipment.id);
+    await expect(ownerPage.getByRole('button',{name:'Open proof',exact:true})).toBeVisible();
+    await ownerPage.getByRole('button',{name:'Open proof',exact:true}).click();
+    await expect(ownerPage.getByRole('dialog',{name:'Shipment proof'}).getByRole('img',{name:'Shipment proof photo'})).toBeVisible();
+    await ownerPage.getByRole('button',{name:'Close proof'}).click();
+    const accountHref=`/api/tracking/sessions/${ownerSession.id}/proof/${event.id}`,ownerFile=await ownerContext.request.get(accountHref);
+    expect(ownerFile.status()).toBe(200);expect((await ownerFile.body()).equals(bytes)).toBe(true);
+    expect(ownerFile.headers()['content-type']).toContain('image/png');expect(ownerFile.headers()['cache-control']).toContain('no-store');expect(ownerFile.headers()['x-content-type-options']).toBe('nosniff');
+    const link=await issueTrackingFixtureLink(ownerPage,ownerSession.id),guestPage=await guest.newPage();
+    const shared=await openTrackingFixtureLink(guestPage,link);expect(shared.tracking.events.some((event:any)=>event.hasProof)).toBe(false);
+    await expect(guestPage.getByRole('button',{name:'Open proof',exact:true})).toHaveCount(0);
+    expect((await guest.request.get(accountHref)).status()).toBe(401);expect((await guest.request.get(href)).status()).toBe(404);
+    const detailUrl=`/api/tracking/sessions/${ownerSession.id}`;
+    expect((await guest.request.get(detailUrl+'?view=manager')).status()).toBe(401);
+    const guestDetail=await guest.request.get(detailUrl);
+    expect(guestDetail.status()).toBe(200);
+    const guestProjection=(await guestDetail.json()).data;
+    expect(guestProjection).toMatchObject({id:ownerSession.id,workspaceId:null,links:[]});
+    expect(Object.values(guestProjection.capabilities).some(Boolean)).toBe(false);
+    expect(guestProjection.tracking.events.some((entry:any)=>entry.hasProof)).toBe(false);
+    await guestPage.screenshot({path:info.outputPath('link-guest-no-proof.png')});
     expect((await service.from('provider_tracking_recipients').update({revoked_at:new Date().toISOString()}).eq('shipment_id',shipment.id).eq('recipient_email',email)).error).toBeNull();
-    expect((await guest.request.get(href)).status()).toBe(404);
+    expect((await ownerContext.request.get(accountHref)).status()).toBe(404);
+    expect((await guest.request.get(detailUrl)).status()).toBe(401);
+    expect((await guest.request.get(detailUrl+'?view=manager')).status()).toBe(401);
 
     await login(guestPage,'transporter@loadgistic.local');
     expect((await guest.request.get(href)).status()).toBe(404);
@@ -73,5 +90,9 @@ test('uploaded Tracking proof opens for provider, admin and email-verified guest
     expect((await service.from('audit_logs').delete().eq('entity_id',shipment.id).eq('entity_type','provider_shipment')).error).toBeNull();
     expect((await service.from('provider_shipments').delete().eq('id',shipment.id).eq('cargo_summary',marker)).error).toBeNull();
     await guest.close();
+    await ownerContext.close();
   }
 });
+
+// Only newly created local SHIPPER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

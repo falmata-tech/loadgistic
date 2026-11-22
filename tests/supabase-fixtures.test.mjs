@@ -139,13 +139,13 @@ test('managed vehicle policy restores twelve exact courier fixtures and preserve
   const assignmentByVehicle=new Map(assignments.filter(row=>Number(row.active)!==0)
     .map(row=>[row.vehicle_id,row.driver_user_id]));
   const userById=new Map(users.map(user=>[user.id,user]));
-  const courier=vehicles.filter(vehicle=>['Courier car','Courier motorcycle'].includes(vehicle.cargo_configuration));
+  const courier=vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
   const tractors=vehicles.filter(vehicle=>String(vehicle.cargo_configuration).startsWith('Tractor + '));
 
   assert.equal(vehicles.length,143);
   assert.equal(courier.length,12);
-  assert.equal((counts['Courier car']||[]).length,6);
-  assert.equal((counts['Courier motorcycle']||[]).length,6);
+  assert.equal((counts['Courier car']||[]).length,12);
+  assert.equal((counts['Courier motorcycle']||[]).length,0);
   assert.equal(tractors.length,6);
   assert.equal((counts['Cargo van']||[]).length+(counts['Pickup truck']||[]).length
     +(counts['Pickup stake body']||[]).length+(counts['Mini Open Body Truck']||[]).length

@@ -11,6 +11,44 @@ rollout: Implement and negatively test local contracts and exact synthetic targe
 
 # Demo movement and device attribution
 
+## Scheduled invocation boundary — November17 local repair
+
+The retained first06–08UTC window has125 Capacity `ADVANCE_FAILED` entries and
+125 motion `DISPATCH_FAILED` entries, with no motion-background invocation or
+saved demo reports/receipts in the corresponding bounded audit. The previous
+handlers hid the failing phase. An incoming synthetic URL/path mismatch is a
+hypothesis, not an observed production root cause; no hosted repair or accepted
+natural-window execution is claimed by the source change.
+
+Netlify's [Scheduled Functions contract](https://docs.netlify.com/build/functions/scheduled-functions/)
+provides a Request with a generated `next_run` body and does not expose a public
+URL invocation. It does not promise our configured canonical incoming URL.
+
+Given the native Capacity or motion schedule is enabled for its exact Production site\
+When Netlify invokes it with a synthetic request URL/path and `next_run` metadata\
+Then the scheduled adapter derives its one fixed dispatch destination from the
+already exact configured canonical site origin, never from that request URL\
+And existing site/context/project, independent kill switches, alternative-worker
+exclusion, current-clock06–08UTC checks and purpose-specific HMAC remain enforced\
+And the Capacity request still budgets at most two actors and motion still
+requires202 asynchronous acceptance, without redirect, retry or caller data forwarding\
+And strict exported HTTP helpers, signed application/background receivers and
+database control/identity/normal-command guards are unchanged.
+
+Given configuration, invocation, signature, transport or response handling fails\
+When a scheduled adapter records the failure\
+Then it retains the existing event/failure category with a fixed phase, allowlisted
+cause or `UNCLASSIFIED`, and bounded HTTP status or null\
+And it never records raw URLs, headers, credentials, error text or response bodies.
+
+Focused tests: `tests/demo-capacity-netlify.test.mjs` and
+`tests/demo-motion-netlify.test.mjs`, including synthetic origin/path plus
+documented body, denied site/preview/project/stop/hour gates, strict receiver
+denials and downstream HTTP/timeout/unknown failures. Reuse unchanged SQL/cohort
+qualification; release/runtime success still requires the exact deployed source
+and actual scheduled accepted results. Rollback restores only these adapters;
+no stored data or control setting is changed by this local repair.
+
 ## Netlify-only demo — November15 owner decision
 
 ### Existing hosted pilot bindings — November15 preflight
@@ -205,9 +243,12 @@ arbitrary percentages and new targets are not added. Fleet-04 may toggle its
 approved planned corridor only in
 an Empty phase on odd cycles, about sixteen nominal minutes between changes.
 
-Given a new target's first phase has a fully unreported legacy estimate\
+Given a new target's first phase has a fully unreported legacy estimate or its
+exact authored demo report\
 When the exact current demo actor publishes the authored 80% value\
 Then the normal command creates real report time, actor and driver provenance.
+The local fixture importer preserves the authored report time while rebasing
+operational dates, so the same exact seed check applies after a fresh CI import.
 Any already reported human value, including 80%, refuses first bootstrap. Later
 phases require the immediate epoch/cycle/phase receipt and its exact current
 Capacity ID. A same-percentage human republication also pauses that target.

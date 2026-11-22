@@ -25,6 +25,12 @@ test('malformed source metadata fails without a fabricated fallback',async()=>{
  const client=createClient('https://telematics.test.invalid','test-key',{global:{fetch:async()=>Response.json([{vehicle_id:'own',source:'GPS',selected_at:'invalid',precision_km:20,revision:stamp}])},auth:{persistSession:false,autoRefreshToken:false}});
  await assert.rejects(()=>getAuthorizedVehicleLocationSelections(client,['own']),/SUPABASE_PROVIDER_CAPACITY_WORKSPACE_FAILED/);
 });
+test('authorized retired selections retain optimistic metadata without a current point or Phone label',async()=>{
+ for(const source of ['MANUAL','MANUAL_ADMIN']){
+  const client=createClient('https://telematics.test.invalid','test-key',{global:{fetch:async()=>Response.json([{vehicle_id:'own',source,selected_at:stamp,precision_km:5,revision:stamp,manual_latitude:9,manual_longitude:38}])},auth:{persistSession:false,autoRefreshToken:false}});
+  assert.deepEqual((await getAuthorizedVehicleLocationSelections(client,['own'])).get('own'),{source:null,selectedAt:stamp,precisionKm:5,revision:stamp});
+ }
+});
 test('pending selected source remains an actionable safe domain error',async()=>{
  const prior={fetch:globalThis.fetch,log:console.error,url:process.env.NEXT_PUBLIC_SUPABASE_URL,key:process.env.SUPABASE_SERVICE_ROLE_KEY},logs=[];
  process.env.NEXT_PUBLIC_SUPABASE_URL='https://telematics.test.invalid';process.env.SUPABASE_SERVICE_ROLE_KEY='test-key';console.error=(...args)=>logs.push(args);

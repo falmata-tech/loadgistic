@@ -7,7 +7,8 @@ test('canonical group values retain scalars and deduplicate sorted bounded selec
  assert.equal(capacityFilterValue('vehicleCategory',['Pickup truck','Cargo van','Pickup truck']),'Cargo van,Pickup truck');
  assert.equal(capacityFilterValue('status',[]),'');assert.equal(parseCapacityFilterValues('', 'status'),null);
  assert.equal(parseCapacityFilterValues('EMPTY','status'),'EMPTY');
- assert.deepEqual(capacityFilterValues('locationSource',' manual,GPS,mobile,GPS '),['GPS','MANUAL','MOBILE']);
+ assert.deepEqual(capacityFilterValues('locationSource',' mobile,GPS,mobile,GPS '),['GPS','MOBILE']);
+ for(const retired of ['MANUAL','GPS,MANUAL','MANUAL_ADMIN'])assert.throws(()=>capacityFilterValues('locationSource',retired),/INVALID_CAPACITY_FILTER/);
  for(const [key,value]of [['status','EMPTY,FULL'],['vehicleCategory','Cargo van,Unknown'],['loadType','FTL,'],['freshness',true],['locationSource','GPS,DEVICE_OBSCURED'],['locationSource','GPS,'],['status',['EMPTY',null]],['status','EMPTY,'.repeat(40)],['status','x'.repeat(2049)],['status',' '.repeat(2049)],['unknown','EMPTY']])assert.throws(()=>capacityFilterValues(key,value),/INVALID_CAPACITY_FILTER/);
 });
 test('HTTP group parsing rejects repeated keys and only the sole incompatible full/partial pair',()=>{
@@ -26,6 +27,8 @@ test('bounded configuration allowlist exactly matches the established catalog',(
  const catalog=readFileSync(new URL('../src/lib/vehicle-configurations.ts',import.meta.url),'utf8').matchAll(/\{ name: '([^']+)', image:/g);
  assert.deepEqual([...CAPACITY_FILTER_CHOICES.vehicleCategory].sort(),[...catalog].map(match=>match[1]).sort());
  const migration=readFileSync(new URL('../supabase/migrations/168_restore_courier_configurations.sql',import.meta.url),'utf8');
- const sql=migration.match(/when 'vehicle_category' then array\[([\s\S]*?)\]/)[1];
+ const retirement=readFileSync(new URL('../supabase/migrations/238_retire_courier_motorcycle.sql',import.meta.url),'utf8');
+ const retiredEntry=retirement.match(/\$entry\$('.*?',)\$entry\$/)[1];
+ const sql=migration.match(/when 'vehicle_category' then array\[([\s\S]*?)\]/)[1].replace(retiredEntry,'');
  assert.deepEqual([...CAPACITY_FILTER_CHOICES.vehicleCategory].sort(),[...sql.matchAll(/'([^']+)'/g)].map(match=>match[1]).sort());
 });

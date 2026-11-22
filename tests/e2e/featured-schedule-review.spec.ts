@@ -9,18 +9,21 @@ test('Sponsors stay separate, compact, and schedule-attributed',async({page}:{pa
   test.setTimeout(45_000);
   const cleanups:Array<()=>Promise<void>>=[],marker=randomUUID().slice(0,8);
   try{
-  for(let position=1;position<=4;position++)cleanups.push(await addLocalSmokeSponsor({position,name:`Schedule sponsor ${marker} ${position}`}));
+  // Reuse the current day's catalogue when the local example sponsors are scheduled.
   await page.goto('/featured');
+  if(!await page.getByRole('button',{name:'Next sponsor'}).count()){
+    for(const position of [4,5])cleanups.push(await addLocalSmokeSponsor({position,name:`Schedule sponsor ${marker} ${position}`}));
+    await page.reload();
+  }
   const sponsors=page.locator('.expo-sponsored-rail');
   await expect(sponsors.getByRole('heading',{name:'Sponsors'})).toBeVisible();
-  const phone=(page.viewportSize()?.width||1280)<=620;
-  if(phone)await expect.poll(()=>sponsors.locator('.expo-sponsored-card').count()).toBe(2);
-  else await expect.poll(()=>sponsors.locator('.expo-sponsored-card').count()).toBeGreaterThan(2);
-  if(phone){
-    const firstPair=await sponsors.locator('.expo-sponsored-card').allTextContents();
-    await expect.poll(async()=>JSON.stringify(await sponsors.locator('.expo-sponsored-card').allTextContents()),{timeout:12_000}).not.toBe(JSON.stringify(firstPair));
-  }else await expect(sponsors.getByText('Advertiser',{exact:true}).first()).toBeVisible();
-  await expect(sponsors.getByRole('button',{name:/next|previous|pause/i})).toHaveCount(0);
+  await expect(sponsors.locator('.expo-sponsored-card')).toHaveCount(1);
+  const name=sponsors.locator('.expo-sponsored-card strong');
+  const first=await name.innerText();
+  await expect(name).not.toHaveText(first,{timeout:12000});
+  await sponsors.getByRole('button',{name:'Previous sponsor'}).click();
+  await expect(name).toHaveText(first);
+  await expect(sponsors.getByRole('button',{name:'Resume rotation'})).toBeVisible();
 
   await auditLogin(page,'admin@loadgistic.local');
   await page.goto('/admin/featured');

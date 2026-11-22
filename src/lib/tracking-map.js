@@ -25,6 +25,7 @@ export function trackingMapLocation(value){
  if(!coordinate(location.location_lat,location.location_lng)||![1,3,5,10,20].includes(location.location_precision_km))return null;
  const updatedAt=text(location.updated_at)||text(location.created_at);
  const source=locationSourceKind(location.location_source);
+ if(location.location_source!=null&&!source)return null;
  return updatedAt?{latitude:location.location_lat,longitude:location.location_lng,area:text(location.location_area),radius:location.location_precision_km,updatedAt,...(source?{source}:{}),...(location.is_demo===true?{demo:true}:{})}:null;
 }
 export function trackingPublicTruck(value){

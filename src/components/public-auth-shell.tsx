@@ -36,7 +36,7 @@ export function PublicAuthShell({
           <div className="auth-task-content">{children}</div>
           <footer className="auth-task-footer">
             {footerNote?<p>{typeof footerNote==='string'?<Text message={footerNote}/>: footerNote}</p>:null}
-            <Link className="auth-market-link" href="/"><ArrowLeft aria-hidden="true"/><Text message="Back to Open capacity"/></Link>
+            <Link className="auth-market-link" href="/"><ArrowLeft aria-hidden="true"/><Text message="Back to Open Market"/></Link>
           </footer>
         </div>
         {variant!=='login'?<Localized as="aside" copy={["aria-label"]} className="auth-context-panel" aria-label="About Loadgistic transporter access">

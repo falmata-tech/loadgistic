@@ -1,10 +1,13 @@
+import {createRegisteredTrackingShipment as createProviderShipment} from './tracking-session-fixtures';
 import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {localAuditService,checked,auditProvider,auditAssignAndPublishSelfDrivenVehicle,auditDeleteVehicles} from './audit-helpers';
 import {createProviderVehicle} from '../../src/lib/fleet.js';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
-import {localMailpitNumericCode} from './mailpit-helper';
+
+import {issueNativeTrackingLink,openNativeTrackingLink,registerNativeTrackingCleanup,cleanupNativeTrackingFixtures} from './native-tracking-fixtures';
 const preview='http://localhost:8084';
+// One-load credentials are never retained in automatic traces or failure images.
+test.use({trace:'off',screenshot:'off'});
 
 test('mobile Featured recovers from unavailable and malformed responses without losing navigation',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(90000);let failure:'unavailable'|'empty'|'whitespace'|'malformed'|'healthy'='empty';const errors:string[]=[];
@@ -29,8 +32,8 @@ test('mobile Featured recovers from unavailable and malformed responses without 
  await page.getByRole('button',{name:'View schedule',exact:true}).click();
  await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-restored.png')});
- await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Your email',{exact:true})).toBeVisible();
- await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toBeVisible();
+ await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
+ await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toBeVisible();
  expect(errors).toEqual([]);
 });
 
@@ -57,65 +60,79 @@ for(const [name,message] of [['empty',''],['whitespace',' \t\n ']]){
   await page.screenshot({path:info.outputPath(`featured-${name}-refresh-restored.png`)});
   state='failed';await refresh();
   await expect(page.getByRole('alert')).toHaveText('Please try again.');
-  await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Your email',{exact:true})).toBeVisible();
-  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toBeVisible();
+  await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
+  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toBeVisible();
   expect(errors).toEqual([]);
  });
 }
 
-test('mobile real email access restores Tracking, opens updates, recovers bad data and closes safely',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
+test('mobile link and code open one load, survive recoverable reads and clear on reload or close',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(120000);const service=localAuditService(),actor=await auditProvider(service,'native-track-crash');
  const email=`native-track-${actor.suffix}@example.test`,errors:string[]=[];let vehicle='',shipment='';
+ registerNativeTrackingCleanup(async()=>{
+  checked(await service.from('access_email_deliveries').delete().eq('recipient_email',email));
+  if(shipment){checked(await service.from('access_email_deliveries').delete().eq('entity_id',shipment));checked(await service.from('audit_logs').delete().eq('entity_id',shipment));checked(await service.from('provider_shipments').delete().eq('id',shipment));}
+  if(vehicle){checked(await service.from('audit_logs').delete().eq('entity_id',vehicle));checked(await auditDeleteVehicles(service,'id',vehicle));}
+  checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
+ });
  page.on('pageerror',error=>errors.push(error.name));
  page.on('console',message=>{if(message.type()==='error'&&/Unexpected text node|Text strings must be rendered/.test(message.text()))errors.push('INVALID_NATIVE_TEXT');});
- try{
+ {
   const origin=checked(await service.from('place_catalog').select('id').eq('normalized_name','addis ababa').limit(1).single());
   const destination=checked(await service.from('place_catalog').select('id').eq('normalized_name','adama').limit(1).single());
   vehicle=(await createProviderVehicle(actor,{useBasis:'OWNED',make:'Demo',model:'Tracking test',plate:`NTRK-${actor.suffix}`,cargoConfiguration:'Pickup truck',trailerInterchangeable:false})).id;
   await auditAssignAndPublishSelfDrivenVehicle(service,actor,vehicle);
   shipment=(await createProviderShipment(actor,{expectedDeliveryDate:new Date(Date.now()+2*86400000).toISOString().slice(0,10),vehicleId:vehicle,originPlaceRef:origin.id,destinationPlaceRef:destination.id,passingPlaceRef:checked(await service.from('place_catalog').select('id').eq('normalized_name','dire dawa').limit(1).single()).id,cargoSummary:'Synthetic shipment runtime check',customerEmail:email,trackingMode:'STATUS_ONLY'})).id;
-  await page.goto(preview+'/about');await page.getByRole('tab',{name:'Track',exact:true}).click();
-  await page.getByLabel('Your email',{exact:true}).fill(email);const since=Date.now();
-  const requested=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/mobile/visitor/tracking/request'&&response.request().method()==='POST');
-  await page.getByRole('button',{name:'Send email code',exact:true}).click();
-  expect((await requested).status()).toBe(200);
-  await expect(page.getByLabel('Email verification code',{exact:true})).toBeVisible();
-  const code=await localMailpitNumericCode(email,since,'Your Loadgistic tracking sign-in code');
-  await page.getByLabel('Email verification code',{exact:true}).fill(code);await page.getByRole('button',{name:'Open private access',exact:true}).click();
-  await expect(page.getByText('Your shipments',{exact:true})).toBeVisible();await page.reload();
-  await expect(page.getByText('Your shipments',{exact:true})).toBeVisible();
-  await page.getByRole('link',{name:'View updates',exact:true}).click();
+  const access=await issueNativeTrackingLink(page,email,shipment);
+  await openNativeTrackingLink(page,access.link);
+  const progress=page.getByRole('button',{name:/^(Open|Close) shipment progress$/});await expect(progress).toBeVisible({timeout:30000});if(await progress.getAttribute('aria-label')==='Open shipment progress')await progress.click();
+  await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Close shipment progress',exact:true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();
+  await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toHaveCount(0);
+  await expect(page.locator('[data-marker-id="tracking-reported-truck"]')).toHaveCount(0);
+  // Native grants are memory-only: a reload requires the same separate code,
+  // rather than silently restoring an old email or stored visitor token.
+  await openNativeTrackingLink(page,access.link);
+  {const progress=page.getByRole('button',{name:/^(Open|Close) shipment progress$/});await expect(progress).toBeVisible({timeout:30000});if(await progress.getAttribute('aria-label')==='Open shipment progress')await progress.click();}
+  await page.screenshot({path:info.outputPath('tracking-link-code-updates.png')});
+  const detail=`**/api/tracking/sessions/${access.sessionId}`;
+  await page.route(detail,route=>route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+  await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
+  await expect(page.getByText('Could not refresh Tracking. Please try again.',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toHaveCount(0);
+  await page.unroute(detail);await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
   {const progress=page.getByRole('button',{name:/^(Open|Close) shipment progress$/});await expect(progress).toBeVisible({timeout:30000});if(await progress.getAttribute('aria-label')==='Open shipment progress')await progress.click();}
   await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toBeVisible();
-  await expect(page.getByText('Shipment progress',{exact:true})).toBeVisible();
-  await page.screenshot({path:info.outputPath('tracking-verified-updates.png')});
-  await page.route(`**/api/mobile/visitor/tracking/shipments/${shipment}`,route=>route.fulfill({status:200,contentType:'application/json',body:'{}'}));
+  const canvas=await page.getByTestId('tracking-native-map-workspace').locator('canvas').elementHandle();expect(canvas).not.toBeNull();
+  await page.route(detail,route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'UNAVAILABLE',message:'Please try again.'}})}));
   await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
-  await expect(page.getByText('Could not load shipment updates. Please try again.',{exact:true})).toBeVisible();
-  await page.unroute(`**/api/mobile/visitor/tracking/shipments/${shipment}`);
-  await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
-  {const progress=page.getByRole('button',{name:/^(Open|Close) shipment progress$/});await expect(progress).toBeVisible({timeout:30000});if(await progress.getAttribute('aria-label')==='Open shipment progress')await progress.click();}
+  await expect(page.getByText('Could not refresh Tracking. Please try again.',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toBeVisible();expect(await canvas!.evaluate(element=>element.isConnected)).toBe(true);
+  await page.unroute(detail);await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
   await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Close private access',exact:true}).click();
-  await expect(page.getByLabel('Your email',{exact:true}).filter({visible:true})).toHaveCount(1);
-  await page.getByRole('tab',{name:'Featured',exact:true}).click();await expect(page.getByRole('button',{name:'View schedule',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Close Tracking',exact:true}).click();
+  await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue('');
+  await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toHaveCount(0);
+  const featured=page.getByRole('tab',{name:'Featured',exact:true});
+  await featured.click();await expect(featured).toHaveAttribute('aria-selected','true');
+  await expect(page.getByRole('button',{name:'View schedule',exact:true}).or(page.getByRole('heading',{name:'No Transport Providers are scheduled today.',exact:true}))).toBeVisible();
+  await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toHaveCount(0);
   expect(errors).toEqual([]);
- }finally{
-  checked(await service.from('access_email_deliveries').delete().eq('recipient_email',email));
-  if(shipment){checked(await service.from('audit_logs').delete().eq('entity_id',shipment));checked(await service.from('provider_shipments').delete().eq('id',shipment));}
-  if(vehicle){checked(await service.from('audit_logs').delete().eq('entity_id',vehicle));checked(await auditDeleteVehicles(service,'id',vehicle));}
-  checked(await service.from('audit_logs').delete().eq('actor_user_id',actor.id));checked(await service.auth.admin.deleteUser(actor.id));
  }
 });
 
-test('mobile private-capacity deep entry requires account sign-in and preserves public Capacity',async({page}:{page:Page})=>{
+test('mobile Private map stays selected with explicit sign-in/sign-up and preserves public Capacity',async({page}:{page:Page})=>{
  await page.goto(preview+'/?view=private');
- await expect(page).toHaveURL(/\/account/);
- await expect(page.getByText('Sign in',{exact:true}).first()).toBeVisible();
- await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();
- expect(await page.locator('[data-marker-id]').count()).toBe(0);
+ await expect(page).toHaveURL(/view=private/);await expect(page.getByRole('tab',{name:'Private Network',exact:true})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByText('Sign in to see vehicles your transport partners share with you.',{exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:'Sign up',exact:true})).toBeVisible();expect(await page.locator('[data-marker-id]').count()).toBe(0);
+ await page.getByRole('link',{name:'Sign in',exact:true}).click();await expect(page).toHaveURL(/\/account\?from=capacity/);await expect(page.getByLabel('Email',{exact:true})).toBeVisible();
  await page.getByRole('tab',{name:'Capacity',exact:true}).click();
  await expect(page).toHaveURL(/localhost:8084\/$/);
- await expect(page.getByRole('tab',{name:'Openly shared',exact:true})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toHaveAttribute('aria-selected','true');
  await expect(page.getByRole('link',{name:'Sign up',exact:true})).toHaveCount(0);
 });
+
+test.afterEach(async({page})=>{await cleanupNativeTrackingFixtures(page);});

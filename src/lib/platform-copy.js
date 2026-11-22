@@ -1,40 +1,40 @@
 // Shared app-owned copy. Do not translate transporter records or recipient names.
 export const capacityIntroduction = Object.freeze({
-  title: 'The visibility you need to serve your customers reliably',
-  webDescription: 'Build trusted partnerships and coordinate your transport network together.',
+  title: 'Work better with transporters to serve your customers',
+  webDescription: 'Transporters manage their vehicles and drivers. Their updates show which vehicles have room and where they plan to go, so you can plan more cost-effective shipments.',
 });
 
 export const signupBenefits = Object.freeze({
   business: [
-    'Search space for today’s load by route and vehicle type.',
-    'Build a private map from transporters who share with your team.',
-    'Keep staff in step on shared capacity and agreed shipments.',
+    'See the capacity your transporters share in your Private Network.',
+    'Follow agreed shipments with your team.',
+    'Find other transporters in the Open Market.',
   ],
   provider: [
-    'One vehicle is enough—even one you drive with the owner’s permission.',
-    'Show available space and routes to the customers you choose.',
-    'Manage vehicles and drivers; add compatible GPS with our help.',
+    'Start with one vehicle you own or have permission to operate.',
+    'Share available space and routes with customers you choose.',
+    'Manage vehicles and drivers. Use phone location or compatible GPS.',
   ],
 });
 
 export const platformAbout = Object.freeze({
-  title: 'Put your transport network to work.',
-  body: 'One vehicle or a growing fleet, make your available space easier to find. Brokers and shippers can bring the transporters they trust into one working network.',
+  title: 'How Loadgistic works',
+  body: 'Transporters manage their vehicles and drivers on Loadgistic and choose who can see their capacity. Brokers and shipping teams use those updates to plan freight, then follow shipments once the work is agreed.',
   audiences: [
-    {id:'shipping',label:'Brokers & shippers',heading:'Find room for the next load.',facts:[
-      ['Search the market', 'Filter public Capacity by vehicle type, route and current load. Contact the provider to confirm the job.'],
-      ['Keep trusted transporters close', 'When a provider shares with your business, your team sees its available space and approximate location on one private map.'],
-      ['Follow agreed work', 'Once Tracking is shared, authorized staff can follow shipment steps and view loading and unloading proof.'],
+    {id:'shipping',label:'Brokers & shippers',heading:'Work with your transporters',facts:[
+      ['See what partners share', 'When a provider shares a vehicle with your business, authorized teammates can see its available space and approximate location in your Private Network.'],
+      ['Follow shipments and share updates', 'Follow shipment progress and any proof shared with your team. Brokers can give customers an expiring tracking link and code.'],
+      ['Find available vehicles', 'Search the Open Market by route, vehicle type, or available space. Confirm availability and terms with the provider.'],
     ],action:'Find capacity',href:'/'},
-    {id:'individual',label:'Drivers & owners',heading:'Make one vehicle count.',facts:[
-      ['Start with the vehicle you run', 'Own it or manage it with the owner’s permission: post its open space, preferred routes and approximate location.'],
-      ['Choose who sees it', 'Share with selected customers, show it on the public map, or do both.'],
-      ['Show what is verified', 'Submit documents for review so customers can distinguish checked facts from information you entered yourself.'],
-    ],action:'Transporter login',href:'/login'},
-    {id:'company',label:'Transport companies',heading:'Keep the whole fleet in view.',facts:[
-      ['Run the fleet in one place', 'Manage vehicle and driver assignments, capacity and location sources in one workspace.'],
-      ['Add GPS on your terms', 'Ask us to connect a compatible tracker, then assign it to a vehicle. Phone location is also available.'],
-      ['Give customers a clear view', 'Choose which vehicles each connected customer can see, and share Tracking after the work is agreed.'],
-    ],action:'Transporter login',href:'/login'},
+    {id:'individual',label:'Drivers & owners',heading:'Share your vehicle’s availability',facts:[
+      ['Publish available space', 'List available space and preferred routes for a vehicle you own or have permission to operate.'],
+      ['Choose who can see it', 'Share with your Private Network, publish to the Open Market, or do both.'],
+      ['Submit documents for review', 'Document review is optional. Customers can see which checks were completed.'],
+    ],action:'Create a provider account',href:'/signup?audience=PROVIDER'},
+    {id:'company',label:'Fleet operators',heading:'Manage your fleet and customer access',facts:[
+      ['Manage vehicles and drivers', 'Assign drivers, publish vehicle availability, and manage preferred routes from one workspace.'],
+      ['Choose a location source', 'Use phone location or ask Loadgistic to help connect a compatible GPS tracker.'],
+      ['Share with each customer', 'Choose which vehicles each business sees. Share private tracking once the work is agreed.'],
+    ],action:'Create a provider account',href:'/signup?audience=PROVIDER'},
   ],
 });

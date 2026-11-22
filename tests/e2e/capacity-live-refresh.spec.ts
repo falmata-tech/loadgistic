@@ -9,7 +9,7 @@ test.use({channel:process.env.CI?undefined:'chrome',trace:'off',video:'off'});
 // FEAT-CAP/SIM-001 / NR-81: use actual publications and discovery permissions.
 // No route interception, shortened poll interval or manual page refresh.
 test('selected Capacity follows a new publication and disappears when sharing becomes private',async({page},info)=>{
- test.setTimeout(120_000);
+ test.setTimeout(process.env.CI?120_000:240_000);
  const db=localAuditService(),actor=await auditProvider(db,'live-refresh');
  let vehicleId='';
  const started=Date.now(),traffic:unknown[]=[];
@@ -31,7 +31,12 @@ test('selected Capacity follows a new publication and disappears when sharing be
    return (await response.json()).items.filter((item:any)=>item.vehicle_id===vehicleId);
   };
   const [original]=await current();expect(original).toBeTruthy();
-  await page.goto(`/?provider=live-refresh-${actor.suffix}&truck=${encodeURIComponent(original.id)}`,{waitUntil:'domcontentloaded'});
+  await page.goto(`/?provider=live-refresh-${actor.suffix}`,{waitUntil:'domcontentloaded'});
+  const standardMarker=page.locator('.capacity-truck-map-marker').filter({has:page.locator('.vehicle-marker-space',{hasText:/^80%$/})});
+  await expect(standardMarker).toBeVisible({timeout:30_000});
+  await expect(standardMarker).toHaveAttribute('title',/Available space: 80%/);
+  await page.screenshot({path:info.outputPath('market-percent-marker.png')});
+  await standardMarker.click();
   const marker=page.locator('.capacity-truck-map-marker.selected'),card=page.locator('.capacity-info-card');
   await expect(marker).toBeVisible({timeout:30_000});
   await page.locator('.map-info-bubble.truck').click();
@@ -43,10 +48,11 @@ test('selected Capacity follows a new publication and disappears when sharing be
   const [replacement]=await current();expect(replacement.id).not.toBe(original.id);
   expect(replacement.available_percent).toBe(60);
   await expect(card).toContainText('Available space: 60%',{timeout:35_000});
+  await expect(marker.locator('.vehicle-marker-space')).toHaveText('60%');
   await expect(marker).toHaveCount(1);
   expect(await page.locator('.leaflet-proxy').getAttribute('style')).toBe(camera);
   await page.screenshot({path:info.outputPath('selected-after-publication.png')});
-  await page.reload({waitUntil:'domcontentloaded'});
+  await page.goto(`/?provider=live-refresh-${actor.suffix}&truck=${encodeURIComponent(original.id)}`,{waitUntil:'domcontentloaded'});
   await expect(marker).toBeVisible({timeout:30_000});
   await page.locator('.map-info-bubble.truck').click();
   await expect(card).toContainText('Available space: 60%');
@@ -61,7 +67,7 @@ test('selected Capacity follows a new publication and disappears when sharing be
   writeFileSync(info.outputPath('refresh-traffic.json'),JSON.stringify({visibility,traffic},null,2));
   throw error;
  }finally{
-  await page.goto('about:blank');
+  await page.goto('about:blank').catch(()=>{});
   if(vehicleId){
    checked(await db.from('capacities').delete().eq('vehicle_id',vehicleId));
    checked(await auditDeleteVehicles(db,'id',vehicleId));

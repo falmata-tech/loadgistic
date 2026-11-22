@@ -10,6 +10,7 @@ import sharp from 'sharp';
 import {FEATURED_PROVIDER_DAY} from '../../src/lib/featured-trucks.js';
 import {PROVIDER_REGIONS} from '../../src/lib/provider-regions.js';
 import {removePrivateUpload} from '../../src/lib/private-storage.js';
+import {publishProviderCapacity} from '../../src/lib/provider-capacity.js';
 
 function localService(){
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
@@ -164,14 +165,29 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     await card.getByRole('button',{name:'Remove Driver photo',exact:true}).scrollIntoViewIfNeeded();
     await page.screenshot({path:path.join(dir,`${info.project.name}-${kind}-account.png`),fullPage:true,scale:'css'});
     await tile.screenshot({path:path.join(dir,`${info.project.name}-${kind}-featured.png`),scale:'css'});
+    const places=checked(await service.from('place_catalog').select('id,normalized_name').in('normalized_name',['addis ababa','adama']));
+    const route=['addis ababa','adama'].map(name=>{
+      const place=places.find((item:{normalized_name:string})=>item.normalized_name===name);
+      expect(place).toBeTruthy();
+      return {placeRef:place.id};
+    });
+    await publishProviderCapacity({id:actorId,role:'DRIVER',driver_kind:orgId?'COMPANY':'INDEPENDENT',organization_id:orgId||null},{
+      vehicleId,status:'EMPTY',acceptedLoads:'BOTH',availabilityGeometry:'ROUTE',visibility:'OPEN',
+      locationSource:'DEVICE_OBSCURED',approximateLat:9.03,approximateLng:38.76,locationPrecisionKm:10,currentRoutePlaces:route
+    });
     await publicPage.goto(`/@portrait-${suffix}`);
     await expect(publicPage.getByRole('heading',{name:kind==='company'?`Portrait Fleet ${suffix}`:driverName,exact:true})).toBeVisible();
     const providerIdentity=publicPage.locator('.provider-profile-image');await expect(providerIdentity).toHaveAttribute('data-identity-kind',kind==='company'?'company':'person');
-    await expect(publicPage.locator('.public-truck-driver img')).toHaveAttribute('src',firstUrl);
+    await publicPage.getByRole('button',{name:/Mini Box Truck · Empty vehicle/}).click();
+    await publicPage.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
+    const vehicleDetails=publicPage.getByRole('dialog',{name:'Vehicle details',exact:true});
+    await expect(vehicleDetails.locator('.truck-inspection-person.driver img')).toHaveAttribute('src',firstUrl);
+    await vehicleDetails.getByRole('button',{name:'Close map signal details',exact:true}).click();
     expect(await publicPage.content()).not.toContain('PrivateSurname');
     if(kind==='company'){
       await expect(providerIdentity.locator('img')).toHaveAttribute('alt',`Portrait Fleet ${suffix} transporter profile`);
       await expect.poll(()=>providerIdentity.locator('img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
+      await publicPage.getByText('About this transporter',{exact:true}).click();
       await expect(publicPage.getByText('Road freight across regional routes.',{exact:true})).toBeVisible();
       await expect(publicPage.locator('#provider-contacts').getByRole('link',{name:/Email/})).toHaveAttribute('href',`mailto:portrait-office-${suffix}@example.invalid`);
     }else{

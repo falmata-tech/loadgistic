@@ -30,9 +30,7 @@ begin
   (select count(*) from guest_support_conversations where assigned_agent_user_id=agent_id and status='OPEN') into baseline_open;
  select (select count(*) from support_conversations where assigned_agent_user_id=competitor and status='OPEN')+
   (select count(*) from guest_support_conversations where assigned_agent_user_id=competitor and status='OPEN') into competitor_open;
- if greatest(baseline_open,competitor_open)>18 then raise exception 'FIXTURE_CAPACITY_REQUIRED';end if;
- update support_agent_profiles set active=true,available=true,can_manage_support=true,max_open_conversations=baseline_open+2 where user_id=agent_id;
- update support_agent_profiles set active=true,available=true,can_manage_support=true,max_open_conversations=competitor_open+2 where user_id=competitor;
+ update support_agent_profiles set active=true,available=true,can_manage_support=true,max_open_conversations=1 where user_id in(agent_id,competitor);
  result:=managed_support_inbox(agent_id,'WAITING',0,15);baseline_total:=(result->>'total')::integer;baseline_waiting:=(result->'counts'->>'waiting')::integer;
  select coalesce(min(created_at),now())-interval '1 day' into first_time from support_conversations where status='WAITING';
  if first_id>second_id then swap_id:=first_id;first_id:=second_id;second_id:=swap_id;end if;
@@ -67,16 +65,12 @@ begin
  if not exists(select 1 from support_conversations where id=first_id and status='OPEN' and assigned_agent_user_id=competitor) then raise exception 'COMPETING_CLAIM_OWNERSHIP';end if;
  result:=managed_support_inbox(agent_id,'WAITING',0,15);
  if result->'items'->0->>'id'<>second_id::text or result->'items'->0->>'can_claim'<>'true' then raise exception 'NEXT_FIFO_ELIGIBILITY';end if;
- -- One member and one retained-guest OPEN assignment together consume capacity.
+ -- Open assignments count toward workload, but never disqualify the oldest waiting claim.
  insert into support_conversations(id,customer_user_id,assigned_agent_user_id,category,status) values(member_open,members[17],agent_id,'ACCOUNT','OPEN');
  insert into guest_support_conversations(id,email,email_digest,phone,status,assigned_agent_user_id)
  values(guest_open,'support-claim@example.test',md5(guest_open::text)||md5(member_open::text),'+251911000000','OPEN',agent_id);
  result:=managed_support_inbox(agent_id,'WAITING',0,15);
- if (result->'agent'->>'open_count')::integer<>baseline_open+2 or exists(select 1 from jsonb_array_elements(result->'items') item where (item->>'can_claim')::boolean) then raise exception 'SHARED_CAPACITY_CLAIM_OFFERED';end if;
- perform pg_temp.expect_claim_denied(format('select claim_managed_support_conversation(%L,%L)',agent_id,second_id),'SUPPORT_AGENT_AT_CAPACITY');
- update guest_support_conversations set status='CLOSED' where id=guest_open;
- result:=managed_support_inbox(agent_id,'WAITING',0,15);
- if result->'items'->0->>'can_claim'<>'true' then raise exception 'FREED_SHARED_CAPACITY_NOT_VISIBLE';end if;
+ if (result->'agent'->>'open_count')::integer<>baseline_open+2 or result->'items'->0->>'can_claim' is distinct from 'true' then raise exception 'BUSY_AGENT_CANNOT_CLAIM';end if;
  perform claim_managed_support_conversation(agent_id,second_id);
  if not exists(select 1 from support_conversations where id=second_id and status='OPEN' and assigned_agent_user_id=agent_id)
   or (select count(*) from support_events where conversation_id=second_id and event_type='CLAIMED')<>1 then raise exception 'CLAIM_NOT_PERSISTED';end if;
@@ -101,6 +95,54 @@ begin
  if has_function_privilege('anon','public.managed_support_inbox(uuid,text,integer,integer)','execute')
   or has_function_privilege('authenticated','public.managed_support_inbox(uuid,text,integer,integer)','execute')
   or not has_function_privilege('service_role','public.managed_support_inbox(uuid,text,integer,integer)','execute') then raise exception 'INBOX_EXECUTE_GRANT_DRIFT';end if;
- raise notice 'Support FIFO, tie order, pagination, shared capacity, competing claim, authority and grants passed';
+ raise notice 'Support FIFO, tie order, pagination, uncapped workload, competing claim, authority and grants passed';
 end $test$;
+rollback;
+
+-- Exercise automatic routing through the member's ordinary create and close commands.
+begin;
+do $workload$
+declare staff uuid[]:=array[gen_random_uuid(),gen_random_uuid()]; members uuid[]; chats uuid[]:='{}';
+ worker uuid; expected uuid; actual uuid; n integer; state text;
+begin
+ update support_agent_profiles set available=false where available;
+ update support_conversations set status='CLOSED' where status='WAITING';
+ select array_agg(id order by id) into members from (select p.id from profiles p where p.active and p.role='DRIVER'
+  and not exists(select from support_conversations c where c.customer_user_id=p.id and c.status='OPEN')
+  order by p.id limit 6) eligible;
+ if cardinality(members) is distinct from 6 then raise exception 'WORKLOAD_FIXTURE_REQUIRED';end if;
+ foreach worker in array staff loop
+  insert into auth.users(id,email,email_confirmed_at) values(worker,worker||'@example.test',now());
+  insert into profiles(id,email,full_name,role,active) values(worker,worker||'@example.test','Synthetic workload agent','SUPPORT',true)
+   on conflict(id) do update set role='SUPPORT',active=true;
+  insert into support_agent_profiles(user_id,active,available,can_manage_support,max_open_conversations,last_assigned_at)
+   values(worker,true,true,true,2,case when worker=staff[1] then now()-interval '2 days' else now()-interval '1 day' end);
+ end loop;
+ for n in 1..5 loop
+  -- Make the busier agent the longest idle. Current workload must still take precedence.
+  if n=2 then update support_agent_profiles set last_assigned_at=now()-interval '4 days' where user_id=staff[1];end if;
+  chats:=array_append(chats,create_managed_support_conversation(members[n],'{"category":"ACCOUNT","body":"Synthetic routing check"}'));
+  select assigned_agent_user_id,status into actual,state from support_conversations where id=chats[n];
+  expected:=case n when 1 then staff[1] when 2 then staff[2] when 3 then staff[1] when 4 then staff[2] when 5 then staff[1] end;
+  if actual is distinct from expected or state<>'OPEN' then raise exception 'AUTOMATIC_WORKLOAD_ASSIGNMENT_%',n;end if;
+ end loop;
+ perform update_managed_support_availability(staff[1],false);
+ perform update_managed_support_availability(staff[2],false);
+ chats:=array_append(chats,create_managed_support_conversation(members[6],'{"category":"ACCOUNT","body":"Synthetic waiting request"}'));
+ if not exists(select from support_conversations where id=chats[6] and status='WAITING' and assigned_agent_user_id is null) then raise exception 'UNSTAFFED_QUEUE_FAILED';end if;
+ perform update_managed_support_availability(staff[1],true);
+ if not exists(select from support_conversations where id=chats[6] and status='OPEN' and assigned_agent_user_id=staff[1]) then raise exception 'AVAILABLE_BUSY_AGENT_DID_NOT_DRAIN_WAITING';end if;
+ -- A single return to Available must also empty a backlog larger than one
+ -- assignment batch, even with an old per-agent setting of two.
+ perform update_managed_support_availability(staff[1],false);
+ create temporary table workload_backlog on commit drop as select gen_random_uuid() actor_id,gen_random_uuid() chat_id from generate_series(1,101);
+ insert into auth.users(id,email,email_confirmed_at) select actor_id,actor_id||'@example.test',now() from workload_backlog;
+ update profiles set role='SHIPPER',active=true where id in(select actor_id from workload_backlog);
+ insert into support_conversations(id,customer_user_id,personal_request,category,status)
+  select chat_id,actor_id,true,'ACCOUNT','WAITING' from workload_backlog;
+ perform update_managed_support_availability(staff[1],true);
+ if (select count(*) from support_conversations c join workload_backlog b on b.chat_id=c.id
+     where c.status='OPEN' and c.assigned_agent_user_id=staff[1])<>101 then raise exception 'LARGE_BACKLOG_STRANDED';end if;
+ raise notice 'PASS: least open workload, oldest assignment tiebreaker, assignment above previous limit, unstaffed waiting and all 101 backlogged chats assigned on availability';
+end $workload$;
 rollback;

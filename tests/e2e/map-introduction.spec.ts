@@ -2,7 +2,7 @@ import {test,expect} from './browser-test';
 import type {Browser,Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
 import {openCapacityFilterDialog} from './capacity-drawer-helper';
-const heading='The visibility you need to serve your customers reliably';
+const heading='Work better with transporters to serve your customers';
 
 test('introduction stays above a usable map across screen sizes and languages',async({page}:{page:Page},info:{project:{name:string};outputPath:(name:string)=>string})=>{
  test.setTimeout(150000);
@@ -44,14 +44,14 @@ test('introduction stays above a usable map across screen sizes and languages',a
 test('server response contains the introduction and search metadata before JavaScript runs',async({browser}:{browser:Browser})=>{
  const context=await browser.newContext({javaScriptEnabled:false});
  try{
-  const page=await context.newPage();await page.goto('http://127.0.0.1:3100/');
+  const page=await context.newPage();await page.goto('/');
   // Next's streamed route is hidden until its reveal script runs; content must
   // already exist as real HTML. Visibility is checked in the browser workflow.
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('.market-introduction h1')).toHaveText(heading);
   await expect(page.locator('.market-introduction p')).toHaveCount(1);
-  await expect(page.locator('.market-introduction p')).toHaveText('Build trusted partnerships and coordinate your transport network together.');
-  await expect(page).toHaveTitle('Vehicle Capacity & Transporter Networks | Loadgistic');
-  await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/Find vehicle space and routes/);
+  await expect(page.locator('.market-introduction p')).toHaveText('Transporters manage their vehicles and drivers. Their updates show which vehicles have room and where they plan to go, so you can plan more cost-effective shipments.');
+  await expect(page).toHaveTitle('Freight Collaboration and Transport Networks | Loadgistic');
+  await expect(page.locator('meta[name=description]')).toHaveAttribute('content',/which vehicles have room and where they plan to go/);
  }finally{await context.close();}
 });

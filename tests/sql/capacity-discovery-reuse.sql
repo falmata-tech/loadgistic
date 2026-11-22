@@ -84,6 +84,32 @@ begin
  end loop;
 end $fixture$;
 
+-- Preserve the original214 reference and legacy rows. Only the expected
+-- reference adopts228's retired-point suppression; count/order/cursor and
+-- one-anchor-per-vehicle assertions below still compare the complete output.
+do $expected228$
+declare definition text;old_text text;new_text text;
+begin
+ if (select md5(prosrc) from pg_proc where oid='public.public_capacity_clusters_pre_perf214(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'5e18257dafa48584b16cb9628d258cc3'
+  then raise exception 'DISCOVERY214_REFERENCE_SOURCE_DRIFT';end if;
+ definition:=pg_get_functiondef('public.public_capacity_clusters_pre_perf214(jsonb,timestamptz,uuid,integer)'::regprocedure);
+ if (length(definition)-length(replace(definition,'FUNCTION public.public_capacity_clusters_pre_perf214(','')))/length('FUNCTION public.public_capacity_clusters_pre_perf214(')<>1
+  then raise exception 'DISCOVERY214_REFERENCE_NAME_DRIFT';end if;
+ definition:=replace(definition,'FUNCTION public.public_capacity_clusters_pre_perf214(', 'FUNCTION pg_temp.clusters_expected228(');
+ for old_text,new_text in values
+  ('candidate.location_lat is not null and candidate.location_lng is not null',
+   'candidate.location_source in(''TELEMATICS'',''DEVICE_OBSCURED'') and candidate.location_lat is not null and candidate.location_lng is not null'),
+  ('''location_lat'',candidate.location_lat,''location_lng'',candidate.location_lng',
+   '''location_lat'',case when candidate.location_source in(''TELEMATICS'',''DEVICE_OBSCURED'') then candidate.location_lat end,''location_lng'',case when candidate.location_source in(''TELEMATICS'',''DEVICE_OBSCURED'') then candidate.location_lng end')
+ loop
+  if (length(definition)-length(replace(definition,old_text,'')))/length(old_text)<>2
+   then raise exception 'DISCOVERY214_REFERENCE_ANCHOR_DRIFT';end if;
+  definition:=replace(definition,old_text,new_text);
+ end loop;
+ execute definition;
+ revoke all on function pg_temp.clusters_expected228(jsonb,timestamptz,uuid,integer) from public,anon,authenticated,service_role;
+end $expected228$;
+
 do $parity$
 declare ids jsonb;query jsonb;overview_query jsonb;old_rows jsonb;new_rows jsonb;
  old_search jsonb;new_search jsonb;expected_search jsonb;selected_handle text;selected_capacity uuid;
@@ -99,7 +125,7 @@ begin
   '{"geometry":"RADIUS"}'::jsonb,'{"geometry":"ROUTE"}'::jsonb,
   '{"load_type":"FTL"}'::jsonb,'{"load_type":"PTL"}'::jsonb,
   '{"vehicle_category":"Cargo van"}'::jsonb,'{"vehicle_category":"Pickup truck"}'::jsonb,
-  '{"location_source":"MANUAL"}'::jsonb,'{"location_source":"MOBILE"}'::jsonb,
+  '{"location_source":"MOBILE"}'::jsonb,
   '{"location_source":"GPS"}'::jsonb,'{"owner_docs":"IDENTITY"}'::jsonb,
   '{"driver_docs":"DRIVER_IDENTITY"}'::jsonb,'{"truck_docs":"VEHICLE_OWNERSHIP"}'::jsonb,
   '{"area_lat":9.03,"area_lng":38.74,"area_radius_km":5}'::jsonb,
@@ -108,12 +134,12 @@ begin
  ] loop
   overview_query:=query||jsonb_build_object('vehicle_ids',ids,'viewport',jsonb_build_array(38,8,40,10));
   select coalesce(jsonb_agg(payload order by ordinal),'[]') into old_rows
-   from public.public_capacity_clusters_pre_perf214(overview_query,null,null,14) with ordinality as result(payload,ordinal);
+   from pg_temp.clusters_expected228(overview_query,null,null,14) with ordinality as result(payload,ordinal);
   select coalesce(jsonb_agg(payload order by ordinal),'[]') into new_rows
    from public.public_capacity_clusters(overview_query,null,null,14) with ordinality as result(payload,ordinal);
   if old_rows is distinct from new_rows then raise exception 'DISCOVERY214_OVERVIEW_JSON_COUNT_OR_ORDER_DRIFT';end if;
   select coalesce(jsonb_agg(payload order by ordinal),'[]') into old_rows
-   from public.public_capacity_clusters_pre_perf214(overview_query,cursor_stamp,cursor_id,14) with ordinality as result(payload,ordinal);
+   from pg_temp.clusters_expected228(overview_query,cursor_stamp,cursor_id,14) with ordinality as result(payload,ordinal);
   select coalesce(jsonb_agg(payload order by ordinal),'[]') into new_rows
    from public.public_capacity_clusters(overview_query,cursor_stamp,cursor_id,14) with ordinality as result(payload,ordinal);
   if old_rows is distinct from new_rows then raise exception 'DISCOVERY214_OVERVIEW_CURSOR_DRIFT';end if;
@@ -123,8 +149,7 @@ begin
    when query->>'status'='PARTIAL' or query->>'geometry'='RADIUS' or query->>'load_type'='PTL'
     or query->>'location_source'='MOBILE'
     or query ? 'owner_docs' or query ? 'provider' or query ? 'capacity_id' then 1
-   when query->>'status'='EMPTY' or query->>'geometry'='ROUTE' or query->>'load_type'='FTL'
-    or query->>'location_source'='MANUAL' then 3
+   when query->>'status'='EMPTY' or query->>'geometry'='ROUTE' or query->>'load_type'='FTL' then 3
    else 4 end;
   for page in 1..2 loop
    old_search:=public.capacity_search_results_public_fast_pre_perf214(query||jsonb_build_object('vehicle_ids',ids,'q','reuse214'),page);

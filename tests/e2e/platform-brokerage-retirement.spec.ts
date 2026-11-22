@@ -58,7 +58,7 @@ test('platform team cannot grant Brokerage while administrator retains software 
   await expect(form.getByRole('checkbox',{name:'Support',exact:true})).toBeVisible();
   await expect(form.getByRole('checkbox',{name:'Brokerage',exact:true})).toHaveCount(0);
   await page.goto('/admin/support');
-  await expect(page.getByRole('heading',{name:'Provider support'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Support'})).toBeVisible();
   await expect(page.getByRole('link',{name:'Brokerage',exact:true})).toHaveCount(0);
  }finally{await logout();}
 });

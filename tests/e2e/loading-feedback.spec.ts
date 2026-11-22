@@ -5,6 +5,17 @@ import path from 'node:path';
 
 const folder=path.resolve('artifacts/loading-review-2026-09-21');
 
+async function mapFrame(page:any){
+  return page.evaluate(()=>{
+    const map=document.querySelector('.public-map-shell')!.getBoundingClientRect();
+    const footer=document.querySelector('body>.site-copyright')!.getBoundingClientRect();
+    const navigation=document.querySelector('.public-mobile-nav');
+    const bottom=navigation&&getComputedStyle(navigation).display!=='none'?navigation.getBoundingClientRect().top:innerHeight;
+    return {mapHeight:map.height,footerTop:footer.top,mapClear:map.bottom<=footer.top+1,
+      footerClear:footer.bottom<=bottom+1,noOverflow:document.documentElement.scrollHeight<=innerHeight+2};
+  });
+}
+
 test('map loading placeholder resembles the map before its client code arrives',async({page}:{page:any},info:any)=>{
   test.setTimeout(60000);mkdirSync(folder,{recursive:true});
   let release:()=>void=()=>{};
@@ -18,6 +29,10 @@ test('map loading placeholder resembles the map before its client code arrives',
     await expect(skeleton.locator('.skeleton-map-canvas')).toBeVisible();
     await expect(skeleton.locator('.skeleton-map-zoom')).toBeVisible();
     await expect(skeleton.locator('.skeleton-map-road')).toHaveCount(0);
+    const bounds=await skeleton.boundingBox();
+    expect(bounds!.height).toBeGreaterThan(250);
+    const footer=await page.locator('body>.site-copyright').boundingBox();
+    expect(bounds!.y+bounds!.height).toBeLessThanOrEqual(footer!.y+1);
     await page.screenshot({path:path.join(folder,`${info.project.name}-map-skeleton.png`),scale:'css'});
     release();
     await expect(page.locator('.leaflet-container')).toBeVisible({timeout:30000});
@@ -31,6 +46,9 @@ test('map refresh uses a horizontal activity bar without hiding controls or anno
   await page.goto('/');
   await initialCapacity;
   await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+  const originalMap=await page.locator('.leaflet-container').elementHandle();
+  const frame=await mapFrame(page);
+  expect(frame).toMatchObject({mapClear:true,footerClear:true,noOverflow:true});
   let release:()=>void=()=>{};let held=false;
   const ready=new Promise<void>(resolve=>{release=resolve;});
   await page.route('**/api/public/capacity?**',async(route:any)=>{held=true;await ready;await route.continue();});
@@ -42,6 +60,8 @@ test('map refresh uses a horizontal activity bar without hiding controls or anno
     await expect(track).toBeVisible();
     await expect(feedback.getByRole('status')).toContainText('Loading vehicles');
     await expect(feedback.locator('[aria-valuenow]')).toHaveCount(0);
+    expect(await page.locator('.leaflet-container').evaluate((element:HTMLElement,original:HTMLElement)=>element===original,originalMap)).toBe(true);
+    expect(await mapFrame(page)).toEqual(frame);
     const box=await track.boundingBox();expect(box.width).toBeGreaterThan(box.height*10);
     expect(await feedback.locator('.sr-only').evaluate((el:HTMLElement)=>getComputedStyle(el).position)).toBe('absolute');
     const activity=await feedback.boundingBox();
@@ -54,7 +74,45 @@ test('map refresh uses a horizontal activity bar without hiding controls or anno
     expect(await track.locator('span').evaluate((el:HTMLElement)=>getComputedStyle(el).animationName)).toBe('none');
     await page.locator('.leaflet-control-zoom-out').click();
     release();await expect(feedback).toHaveCount(0,{timeout:30000});
-  }finally{release();await page.unrouteAll({behavior:'wait'});}
+  }finally{release();await page.unrouteAll({behavior:'wait'}).catch(()=>{});}
+});
+
+test('map failure, retry and empty responses retain the map and footer geometry',async({page}:{page:any},info:any)=>{
+  test.setTimeout(60000);
+  const initial=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/public/capacity');
+  await page.goto('/');await initial;
+  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});
+  const map=page.locator('.leaflet-container');
+  const originalMap=await map.elementHandle(),frame=await mapFrame(page);
+  expect(frame).toMatchObject({mapClear:true,footerClear:true,noOverflow:true});
+  let mode='failure',held=false,release:()=>void=()=>{};
+  const ready=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/api/public/capacity?**',async(route:any)=>{
+    if(mode==='failure'){held=true;await ready;await route.fulfill({status:503,json:{error:'Temporary outage'}});}
+    else if(mode==='empty')await route.fulfill({status:200,json:{items:[],hasMore:false,nextCursor:null,pageSize:14}});
+    else await route.continue();
+  });
+  async function stable(){
+    expect(await map.evaluate((element:HTMLElement,original:HTMLElement)=>element===original,originalMap)).toBe(true);
+    expect(await mapFrame(page)).toEqual(frame);
+    await expect(page.locator('.capacity-map-controls')).toBeVisible();
+  }
+  try{
+    await page.locator('.leaflet-control-zoom-in').click();await expect.poll(()=>held).toBe(true);
+    await expect(page.getByTestId('capacity-feed-state').getByRole('status')).toBeVisible();await stable();
+    release();
+    const failure=page.getByTestId('capacity-feed-state');
+    await expect(failure).toHaveAttribute('role','alert');
+    await expect(failure).toContainText('Capacity could not be loaded.');await stable();
+    mode='empty';await failure.getByRole('button',{name:'Try again',exact:true}).click();
+    await expect(page.getByTestId('capacity-feed-state')).toHaveAttribute('role','status');
+    await expect(page.getByTestId('capacity-feed-state')).toContainText('No matching available vehicles.');await stable();
+    mode='success';
+    const recovered=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/public/capacity'&&response.ok());
+    await page.locator('.leaflet-control-zoom-out').click();await recovered;
+    await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:30000});await stable();
+    await page.screenshot({path:info.outputPath('map-recovered-stable-layout.png'),scale:'css'});
+  }finally{release();await page.unrouteAll({behavior:'wait'}).catch(()=>{});}
 });
 
 

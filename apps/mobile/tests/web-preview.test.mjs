@@ -27,6 +27,10 @@ test('local preview forwards only exact provider and business cargo-photo paths'
   `/api/business-workspaces/not-an-id/capacity/photos?vehicleId=${id}`,
   `https://evil.example${provider}`,`//evil.example${provider}`
  ])assert.equal(proxy.allowedPath(path),false,`should reject ${path}`);
+ assert.equal(proxy.allowedPath(`${provider}/${id}`,'DELETE'),true);
+ assert.equal(proxy.allowedPath(`${provider}/${id}`,'GET'),false);
+ assert.equal(proxy.allowedPath(`${provider}/${id}?format=base64`,'DELETE'),false);
+ assert.equal(proxy.allowedPath(provider,'DELETE'),false);
 });
 
 test('web preview uses tab storage and rejects hosted or production session persistence',async()=>{

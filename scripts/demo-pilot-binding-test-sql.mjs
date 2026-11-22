@@ -14,6 +14,12 @@ const markerKeys=[...new Set(plan.filter(p=>p.eligible).flatMap(p=>[p.ownerKey,.
 const migration=readFileSync(new URL('../supabase/migrations/227_netlify_demo_pilot_binding.sql',import.meta.url),'utf8');
 if((migration.match(/^do \$pilot227\$/gm)||[]).length!==1)throw Error('PILOT_MIGRATION_TEST_BOUNDARY_DRIFT');
 const callable=migration.replace(/^do \$pilot227\$/m,'create function pg_temp.apply_pilot227() returns void language plpgsql as $pilot227$');
+const originalExecutor=readFileSync(new URL('../supabase/migrations/224_curated_demo_capacity_catalog.sql',import.meta.url),'utf8')
+ .match(/^create or replace function public\.demo_world_execute_capacity_step\(step_id bigint,lease_token uuid\)\n[\s\S]*?^end \$\$;/m)?.[0];
+if(!originalExecutor)throw Error('PILOT_ORIGINAL_CAPACITY_EXECUTOR_REQUIRED');
+const seedMigration=readFileSync(new URL('../supabase/migrations/243_demo_seeded_space_bootstrap.sql',import.meta.url),'utf8');
+const seededBootstrap=seedMigration.replace(/^begin;\n/m,'').replace(/\ncommit;\s*$/,'');
+if(seededBootstrap===seedMigration||/^begin;|^commit;/m.test(seededBootstrap))throw Error('PILOT_SEED_TEST_BOUNDARY_DRIFT');
 
 const verificationSql=`begin;
 set local statement_timeout='120s';
@@ -24,6 +30,7 @@ do $guard$ begin
  if not exists(select 1 from public.vehicles where id='caf1d0db-4d8e-4ce9-a879-6c7b6017de3a')
   then raise exception 'LOCAL_FIXTURE_COPY_REQUIRED';end if;
 end $guard$;
+${originalExecutor}
 ${migration}
 ${callable}
 create function pg_temp.expect_pilot_denial(expected text) returns void language plpgsql as $fn$
@@ -136,6 +143,7 @@ declare owner_id uuid;coowner_id uuid;before_state jsonb;old_meta jsonb;original
 end $negative$;
 create temp table pilot_public_before as select pg_temp.pilot_public_facts() as facts;
 select pg_temp.apply_pilot227();
+${seededBootstrap}
 do $positive$
 declare administrator uuid;gateway uuid:=gen_random_uuid();wrong_gateway uuid:=gen_random_uuid();normal_owner uuid:=gen_random_uuid();
  result jsonb;run_id uuid:=gen_random_uuid();item record;nonce uuid;report jsonb;provision_command jsonb;before_provision jsonb;

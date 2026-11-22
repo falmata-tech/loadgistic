@@ -59,7 +59,7 @@ test('managed fixture presents a busy, supply-only Ethiopian freight market',()=
 
 test('compact freight leads a mixed market with restored couriers and ten heavy pairs',()=>{
   const small=tables.vehicles.filter(vehicle=>smallVehicleTypes.has(vehicle.cargo_configuration));
-  const courier=tables.vehicles.filter(vehicle=>['Courier car','Courier motorcycle'].includes(vehicle.cargo_configuration));
+  const courier=tables.vehicles.filter(vehicle=>vehicle.cargo_configuration==='Courier car');
   assert.equal(small.length,94);
   assert.equal(courier.length,12);
   assert.ok((small.length+courier.length)/tables.vehicles.length>=2/3);
@@ -75,8 +75,8 @@ test('compact freight leads a mixed market with restored couriers and ten heavy 
   assert.equal(counts['Tractor + Container Trailer'],2);
   assert.equal(counts['Tractor + Dry Van Trailer'],2);
   assert.equal(counts['Tractor + Heavy Equipment Trailer'],2);
-  assert.equal(counts['Courier motorcycle'],6);
-  assert.equal(counts['Courier car'],6);
+  assert.equal(counts['Courier motorcycle'],undefined);
+  assert.equal(counts['Courier car'],12);
   assert.equal(tables.vehicles.filter(vehicle=>vehicle.trailer_interchangeable).every(vehicle=>
     /^(FAW J6P|Shacman X3000|Sinotruk HOWO)$/.test(`${vehicle.make} ${vehicle.model}`)
   ),true);
@@ -117,7 +117,7 @@ test('smaller vehicle signals include local and regional plans with saved availa
     assert.equal(capacity.location_precision_km,discoveryByCapacity.get(capacity.id)?.location_precision_km??saved.location_precision_km,capacity.id);
     const vehicle=vehiclesById.get(capacity.vehicle_id);
     if(!smallVehicleTypes.has(vehicle?.cargo_configuration)
-      &&!['Courier car','Courier motorcycle'].includes(vehicle?.cargo_configuration))continue;
+      &&vehicle?.cargo_configuration!=='Courier car')continue;
     if(capacity.availability_geometry==='ROUTE'){
       const points=json(capacity.current_route_points_json);
       spans.push(points.slice(1).reduce((total,point,index)=>total+distanceBetweenKm(points[index],point),0));

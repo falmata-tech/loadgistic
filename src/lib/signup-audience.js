@@ -3,5 +3,5 @@ export function signupAudience(value){
 }
 
 export function signupEntry(value){
-  return value==='shared-capacity'?'shared-capacity':'';
+  return value==='shared-capacity'||value==='tracking'||value==='support'?value:'';
 }

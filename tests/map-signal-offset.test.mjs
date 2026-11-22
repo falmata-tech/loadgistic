@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {offsetSignalPath,signalLaneZoom,signalLaneLimit,signalLaneDisplay} from '../src/lib/map-signal-offset.js';
+import {locationRadiusMinimumZoom,offsetSignalPath,signalLaneZoom,signalLaneLimit,signalLaneDisplay} from '../src/lib/map-signal-offset.js';
+
+test('a public location radius appears at the same screen size on Leaflet and MapLibre',()=>{
+ const leaf=locationRadiusMinimumZoom(9,20,256),native=locationRadiusMinimumZoom(9,20,512);
+ assert.ok(leaf>6&&leaf<7);
+ assert.equal(leaf,native+1);
+ assert.ok(locationRadiusMinimumZoom(9,3,256)>leaf);
+ assert.ok(locationRadiusMinimumZoom(9,40,256)<leaf);
+});
 
 test('MapLibre and Leaflet lanes stay geographically bounded at world zoom without limiting the camera',()=>{
  for(const tileSize of [256,512])for(const zoom of [0,1,3,5,8,12,13,20]){

@@ -36,6 +36,7 @@ const fields={
     'cargo_configuration','trailer_interchangeable','supported_trailer_configurations','publication_status','use_basis'],
   company_pages:['id','organization_id','provider_profile_id','headline','about','services','published','base_region_code','account_name'],
   capacities:['id','provider_organization_id','provider_profile_id','vehicle_id','status','market_status','available_percent',
+    'available_percent_reported_at','available_percent_reported_by','available_percent_reported_driver_id',
     'origin','destination','corridor','visibility','location_lat','location_lng','location_precision_km','location_source',
     'updated_by','updated_at','expires_at','movement_scope','local_place_ref','local_place_label','local_center_lat','local_center_lng',
     'local_radius_km','availability_geometry','work_radius_km','location_area','location_updated_at','location_place_ref',
@@ -293,8 +294,10 @@ export async function prepareManagedDevReviewFixtures({manifest,credentials,appl
         ||saved.available_percent!==expected.available_percent||Date.parse(saved.updated_at)<=Date.parse(assignmentResets[index].updated_at)
         ||!Number.isFinite(Date.parse(saved.updated_at))||!Number.isFinite(Date.parse(saved.expires_at))
         ||Date.parse(saved.expires_at)<=Date.parse(saved.updated_at)
-        ||saved.location_updated_at!==expected.location_updated_at||saved.available_percent_reported_at!==null
-        ||saved.available_percent_reported_by!==null||saved.available_percent_reported_driver_id!==null)fail('CAPACITY_READBACK_FAILED');
+        ||saved.location_updated_at!==expected.location_updated_at
+        ||Date.parse(saved.available_percent_reported_at)!==Date.parse(expected.available_percent_reported_at)
+        ||saved.available_percent_reported_by!==userIds.get(expected.available_percent_reported_by)
+        ||saved.available_percent_reported_driver_id!==userIds.get(expected.available_percent_reported_driver_id))fail('CAPACITY_READBACK_FAILED');
     }
     await insert('vehicle_capacity_sharing',plan.sharing.map(row=>({...row,vehicle_id:managedDevFixtureUuid(row.vehicle_id)})));
     const normalEmail=`normal-review-${randomBytes(8).toString('hex')}@example.test`,normalPassword=randomBytes(24).toString('base64url');

@@ -1,5 +1,5 @@
 import {after} from 'next/server.js';
-import {businessActorIdentity,businessBody,businessFailure,businessJson,businessLimit} from '@/lib/business-workspaces/http';
+import {businessActorIdentity,businessBody,businessFailure,businessJson,businessLimit,BusinessHttpError} from '@/lib/business-workspaces/http';
 import {trackingSharingFailure,trackingSharingId} from '@/lib/tracking-sharing/http';
 import {getBusinessTrackingDetail,trackingSharingService} from '@/lib/tracking-sharing/server';
 import {accountOwnerVerification} from '@/lib/tracking-sharing/account-owner';
@@ -20,7 +20,9 @@ export async function GET(request:Request,context:Context){try{
 export async function POST(request:Request,context:Context){try{
  const {actor,shipment,proof}=await owner(request,context);
  await businessLimit(actor,`tracking-sharing:${shipment}`,20);
- const input=await businessBody(request),result=await trackingSharingService().command(shipment,proof,input);
+ const input=await businessBody(request);
+ if(input.action==='ADD_VIEWER')throw new BusinessHttpError(410,'TRACKING_LINK_REQUIRED');
+ const result=await trackingSharingService().command(shipment,proof,input);
  if(input.action==='ADD_VIEWER')after(async()=>{try{await deliverPendingShipmentEmails(5);}catch{/* The committed outbox remains retryable. */}});
  return businessJson(result);
 }catch(error){return trackingSharingFailure(error)||businessFailure(error);}}

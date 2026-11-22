@@ -24,7 +24,7 @@ export const capacityCommand = z.discriminatedUnion('action', [
   }).strict(),
   z.object({ action: z.literal('PUBLISH'), vehicleId,
     status: z.enum(['EMPTY', 'PARTIAL', 'OFF_DUTY']),
-    availablePercent: z.number().int().min(1).max(99).nullable().optional(),
+    availablePercent: z.number().int().min(1).max(99).optional(),
     acceptedLoads: z.enum(['FTL', 'PTL', 'BOTH']), availabilityGeometry: z.enum(['ROUTE', 'RADIUS']),
     visibility: z.enum(['PRIVATE', 'OPEN']).default('PRIVATE'),
     sharingMode: z.enum(['PUBLIC','PRIVATE','BOTH']).optional(),
@@ -61,7 +61,8 @@ export function projectMobileCapacity(workspace: unknown, actorId: string, role:
       const availablePercent=currentStatus==='EMPTY'?100:currentStatus==='PARTIAL'&&reportedAt
         &&Number.isFinite(Date.parse(reportedAt))&&Number.isInteger(storedPercent)
         &&storedPercent>=1&&storedPercent<=99?storedPercent:null;
-      const selection=object(row.location_selection),published=current?.location_updated_at?approximateLocation(current,true):null;
+      const selection=object(row.location_selection),published=current?.location_updated_at&&locationSourceKind(current.location_source)
+        ?approximateLocation(current,true):null;
       const phone=location.updatedAt?approximateLocation(location):null;
       const chosen=selectedCapacityLocation({selection,published,phone});
       const isCurrentDriver=['DRIVER','TRANSPORTER'].includes(role)&&driver.id===actorId;
@@ -72,7 +73,7 @@ export function projectMobileCapacity(workspace: unknown, actorId: string, role:
         configuration:text(row.cargo_configuration),
         id: text(row.id), label: [row.make, row.model].filter(Boolean).join(' '), plate: text(row.plate),
         driver: text(driver.name), driverId:text(driver.id), canLocate: capacityLocationSource(selection)==='MOBILE' && isCurrentDriver,
-        canSetManualLocation:false,canSetPhoneLocation:isCurrentDriver,
+        canSetPhoneLocation:isCurrentDriver,
         regularServices:regularService({corridors:list(data.corridors).map(object).filter(signal=>signal.vehicle_id===row.id&&signal.driver_user_id===driver.id)}).slice(0,1),
         dutyConfigured: row.duty_configuration_available === true,
         location:chosen,

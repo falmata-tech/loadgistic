@@ -24,7 +24,7 @@ function migrationSection(start,end){
   return migration.slice(from,to<0?migration.length:to);
 }
 
-test('Tracking recipient and OTP tables are private and every active RPC is service-role-only',()=>{
+test('historical migration062 keeps recipient and OTP tables private and its RPCs service-role-only',()=>{
   assert.match(migration,/create table if not exists public\.provider_tracking_recipients/i);
   assert.match(migration,/create table if not exists public\.provider_tracking_email_otps/i);
   assert.match(migration,/alter table public\.provider_tracking_recipients enable row level security/i);
@@ -47,7 +47,7 @@ test('Tracking recipient and OTP tables are private and every active RPC is serv
   assert.match(migration,/revoke execute on function public\.provider_guest_tracking\(uuid,text\) from service_role/i);
 });
 
-test('OTP issuance requires one exact active recipient and shipment-code match before writing a challenge or delivery',()=>{
+test('historical OTP issuance requires one exact active recipient and shipment-code match before writing a challenge or delivery',()=>{
   const request=migrationSection(
     'create or replace function public.request_provider_tracking_otp',
     'create or replace function public.consume_provider_tracking_otp'
@@ -63,7 +63,7 @@ test('OTP issuance requires one exact active recipient and shipment-code match b
   assert.match(request,/pg_catalog\.pg_advisory_xact_lock/i);
 });
 
-test('OTP consumption is single-use, bounded, and rechecks revocation and the shipment code',()=>{
+test('historical OTP consumption is single-use, bounded, and rechecks revocation and the shipment code',()=>{
   const consume=migrationSection(
     'create or replace function public.consume_provider_tracking_otp',
     'create or replace function public.provider_guest_tracking_for_recipient'
@@ -106,27 +106,24 @@ test('historical parties remain bounded while current creation accepts only the 
   assert.match(providerRecipientRoute,/revokeProviderTrackingRecipient/);
 });
 
-test('public Tracking uses a staged email OTP and a recipient-bound short session',()=>{
-  assert.match(requestRoute,/requestTrackingEmailSession\(email\)/);
-  assert.match(requestRoute,/if\(challenge\.deliveryQueued\)/);
-  assert.match(requestRoute,/deliverTargetedAccessEmail\('TRACKING_OTP',challenge\.challengeId\)/);
-  assert.match(requestRoute,/tracking-otp-recipient:/);
-  assert.match(verifyRoute,/verifyTrackingEmailSession/);
-  assert.match(verifyRoute,/setTrackingEmailSession\(shipment\.recipientDigest\)/);
-  assert.match(auth,/provider-tracking:\$\{shipmentId\}:\$\{recipientDigest\}/);
-  assert.match(auth,/\(\[a-f0-9\]\{64\}\)/);
-  assert.match(publicForm,/message="Email"/);
-  assert.match(publicForm,/6-digit email code/);
-  assert.match(publicForm,/autoComplete="one-time-code"/);
-  assert.match(publicForm,/\/api\/tracking\/otp/);
-  assert.match(publicForm,/\/api\/tracking\/unlock/);
-  assert.match(publicTrackingPage,/isCustomerOwner=shipment\.recipient_role==='OWNER'/);
-  assert.match(publicTrackingPage,/canReview=Boolean\(isCustomerOwner&&shipment\.can_review\)/);
-  assert.doesNotMatch(publicForm,/Shipment access code/);
+test('public Tracking retires email lookup and opens only one saved link with its separate code',()=>{
+  for(const source of [requestRoute,verifyRoute]){
+    assert.match(source,/retiredTrackingAccess/);
+    assert.doesNotMatch(source,/requestTrackingEmailSession|verifyTrackingEmailSession|setTrackingEmailSession|deliverTargetedAccessEmail/);
+  }
+  assert.match(auth,/getTrackingEmailSession\([^)]*\)[^{]*\{\s*return null;/);
+  assert.match(auth,/setTrackingEmailSession\([^{]+\{\s*throw new Error\('TRACKING_LINK_REQUIRED'\)/);
+  assert.match(publicForm,/\/api\/tracking\/access/);
+  assert.match(publicForm,/JSON\.stringify\(\{linkToken:token,code:secret\}\)/);
+  assert.match(publicForm,/message="Tracking code"/);
+  assert.doesNotMatch(publicForm,/type="email"|message="Email"|6-digit email code|one-time-code|\/api\/tracking\/(?:otp|unlock)/);
+  assert.match(publicTrackingPage,/trackingLinkToken\.safeParse\(id\)/);
+  assert.match(publicTrackingPage,/grant.linkDigest===trackingSessionCredentialDigests\(id,'00000000'\).linkDigest/);
+  assert.doesNotMatch(publicTrackingPage,/recipient_role|canReview|TrackingReviewForm|TrackingProofLink/);
   assert.doesNotMatch(facade,/unlockSupabaseProviderTracking|unlockProviderTracking/);
 });
 
-test('managed access email treats Tracking OTP as a challenge-fenced short delivery',()=>{
+test('historical managed email template retains its challenge-fenced OTP delivery semantics',()=>{
   assert.match(migration,/delivery_kind in \('SHARED_CAPACITY','GUEST_SUPPORT','TRACKING_OTP'\)/i);
   assert.match(migration,/delivery\.delivery_kind='TRACKING_OTP'[\s\S]*provider_tracking_email_otps/i);
   assert.match(migration,/delivery\.delivery_kind in \('SHARED_CAPACITY','TRACKING_OTP'\)/i);

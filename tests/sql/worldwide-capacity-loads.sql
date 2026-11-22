@@ -1,5 +1,17 @@
 -- Exact local managed database only. All fixture changes are rolled back.
 begin;
+--229 fixture: real confirmed synthetic customer accounts; no product auto-registration.
+do $registered229$
+declare fixture_email text;fixture_id uuid;
+begin
+ foreach fixture_email in array array['world-tracking-audit@example.invalid']loop
+  if exists(select 1 from auth.users u where lower(trim(u.email))=fixture_email)then raise exception 'REGISTERED_TRACKING_FIXTURE_COLLISION';end if;
+  fixture_id:=gen_random_uuid();
+  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data)
+  values(fixture_id,fixture_email,clock_timestamp(),'{}','{"fixture_key":"sql229-registered-customer"}');
+  update public.profiles set role='SHIPPER',active=true,full_name='Synthetic registered customer'where id=fixture_id;
+ end loop;
+end $registered229$;
 do $test$
 declare owner_id uuid:=gen_random_uuid();driver_id uuid:=gen_random_uuid();other_driver uuid:=gen_random_uuid();
   broker_id uuid:=gen_random_uuid();broker_workspace uuid;connection_id uuid;
@@ -64,7 +76,7 @@ begin
   if exists(select 1 from account_capacity_filtered_page(other_driver,recipient_digest) p where p.payload->>'id'=saved_id::text) then raise exception 'FOREIGN_ACCOUNT_EXPOSED';end if;
  end loop;
  -- The database itself overrides a forged Partial/BOTH full-load claim.
- saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','PARTIAL','availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads','BOTH','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
+ saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','PARTIAL','available_percent',45,'availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads','BOTH','current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
  if (select id from capacities where vehicle_id=truck_id order by updated_at desc,id desc limit 1) is distinct from saved_id
  then raise exception 'LATEST_PARTIAL_REPORT_LOST';end if;
  if not exists(select 1 from capacities where id=saved_id and not accepts_full_load and accepts_partial_load) then raise exception 'PARTIAL_FULL_LOAD_SAVED';end if;

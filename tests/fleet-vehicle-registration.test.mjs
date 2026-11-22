@@ -71,7 +71,6 @@ test('the public catalogue includes courier configurations and distinct trailers
   const registration=fs.readFileSync(path.join(root,'src/components/vehicle-registration-fields.tsx'),'utf8');
   for(const [name,file] of [
     ['Courier car','courier-car.jpg'],
-    ['Courier motorcycle','courier-motorcycle.jpg'],
     ['Tractor + Container Trailer','tractor-container-flatbed.jpg'],
     ['Tractor + Dry Van Trailer','tractor-dry-van-trailer.jpg'],
     ['Tractor + Heavy Equipment Trailer','tractor-heavy-equipment-trailer.jpg']
@@ -82,7 +81,7 @@ test('the public catalogue includes courier configurations and distinct trailers
   assert.match(registration,/Interchangeable tractor/);
   assert.match(registration,/Compatible trailers/);
   assert.match(registration,/Currently attached trailer/);
-  assert.match(catalog,/Courier car/);assert.match(catalog,/Courier motorcycle/);
+  assert.match(catalog,/Courier car/);assert.doesNotMatch(catalog,/Courier motorcycle/);
 });
 
 test('fleet pages expose add and detail destinations while company drivers are filtered out',()=>{

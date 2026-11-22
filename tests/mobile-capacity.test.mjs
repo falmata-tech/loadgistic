@@ -28,7 +28,7 @@ test('published source and demo label follow the chosen fix rather than a pendin
  let item=projectMobileCapacity({vehicles:[vehicle],capacities:[old]},'driver','DRIVER').vehicles[0];
  assert.equal(item.publishedLocationSource,'MOBILE');assert.equal(item.locationIsDemo,false);assert.equal(item.configuration,'Mini Box Truck');assert.deepEqual(item.location.coordinate,[38,9]);
  item=projectMobileCapacity({vehicles:[{...vehicle,location_selection:{source:'GPS'}}],capacities:[old]},'driver','DRIVER').vehicles[0];
- assert.equal(item.publishedLocationSource,'MANUAL');assert.equal(item.locationIsDemo,true);
+ assert.equal(item.publishedLocationSource,null);assert.equal(item.locationIsDemo,false);assert.equal(item.location,null);
  item=projectMobileCapacity({vehicles:[vehicle],capacities:[]},'driver','DRIVER').vehicles[0];assert.equal(item.publishedLocationSource,'MOBILE');
  assert.equal(JSON.stringify(item).includes('PRIVATE_'),false);
 });
@@ -50,32 +50,31 @@ test('legacy Manual history keeps deliberate Phone recovery without manual write
  const base={id,assigned_driver:{id:'driver',name:'Driver'},location_selection:{source:'MANUAL',selectedAt:'2026-10-18T12:00:00Z'},driver_location:{lat:9,lng:38,radius:10,updatedAt:'2026-10-18T11:00:00Z'}};
  const capacity={vehicle_id:id,location_lat:9.1,location_lng:38.1,location_precision_km:10,location_updated_at:'2026-10-18T12:00:00Z',location_source:'MANUAL_ADMIN'};
  const manual=projectMobileCapacity({vehicles:[base],capacities:[capacity]},'driver','DRIVER').vehicles[0];
- assert.equal(manual.selectedLocationSource,'MANUAL');assert.equal(manual.canLocate,false);
- assert.equal(manual.canSetManualLocation,false);assert.equal(manual.canSetPhoneLocation,true);
+ assert.equal(manual.selectedLocationSource,null);assert.equal(manual.canLocate,false);assert.equal(manual.location,null);
+ assert.equal(Object.hasOwn(manual,'canSetManualLocation'),false);assert.equal(manual.canSetPhoneLocation,true);
  assert.equal(manual.canLocate||manual.canSetPhoneLocation,true,'Driver Home must keep deliberate Phone recovery reachable');
  const phone=projectMobileCapacity({vehicles:[{...base,location_selection:{source:'MOBILE',selectedAt:'2026-10-18T13:00:00Z'}}],capacities:[capacity]},'driver','DRIVER').vehicles[0];
  assert.equal(phone.selectedLocationSource,'MOBILE');assert.equal(phone.canLocate,true);
- assert.equal(phone.canSetManualLocation,false);assert.equal(phone.canSetPhoneLocation,true);
+ assert.equal(Object.hasOwn(phone,'canSetManualLocation'),false);assert.equal(phone.canSetPhoneLocation,true);assert.equal(phone.location,null);
  const provider=projectMobileCapacity({vehicles:[base],capacities:[capacity]},'owner','TRANSPORTER').vehicles[0];
  const formerDriver=projectMobileCapacity({vehicles:[base],capacities:[capacity]},'other','DRIVER').vehicles[0];
- for(const viewer of [provider,formerDriver]){assert.equal(viewer.canLocate,false);assert.equal(viewer.canSetManualLocation,false);assert.equal(viewer.canSetPhoneLocation,false);}
+ for(const viewer of [provider,formerDriver]){assert.equal(viewer.canLocate,false);assert.equal(Object.hasOwn(viewer,'canSetManualLocation'),false);assert.equal(viewer.canSetPhoneLocation,false);}
  const selfDrivingOwner=projectMobileCapacity({vehicles:[{...base,assigned_driver:{id:'owner',name:'Owner'}}],capacities:[capacity]},'owner','TRANSPORTER').vehicles[0];
- assert.equal(selfDrivingOwner.canSetManualLocation,false);assert.equal(selfDrivingOwner.canSetPhoneLocation,true);
+ assert.equal(Object.hasOwn(selfDrivingOwner,'canSetManualLocation'),false);assert.equal(selfDrivingOwner.canSetPhoneLocation,true);
 });
 test('saved approximate map coordinates validate presence, bounds and privacy radius',()=>{
  const project=driver_location=>projectMobileCapacity({vehicles:[{id,driver_location}]},'driver','DRIVER').vehicles[0].location;
  const saved={lat:9,lng:38,radius:20,updatedAt:'2026-10-15T12:00:00Z',area:'Around city'};
  assert.deepEqual(project(saved).coordinate,[38,9]);
  for(const change of [{lat:null},{lng:null},{lat:NaN},{lng:Infinity},{lat:91},{lng:-181},{radius:0},{radius:2}]) assert.equal(project({...saved,...change}).coordinate,null);
- assert.deepEqual(projectMobileCapacity({vehicles:[{id}],capacities:[{vehicle_id:id,location_lat:9,location_lng:38,location_precision_km:20,location_updated_at:'saved'}]},'driver','DRIVER').vehicles[0].location.coordinate,[38,9]);
+ assert.deepEqual(projectMobileCapacity({vehicles:[{id}],capacities:[{vehicle_id:id,location_source:'DEVICE_OBSCURED',location_lat:9,location_lng:38,location_precision_km:20,location_updated_at:saved.updatedAt}]},'driver','DRIVER').vehicles[0].location.coordinate,[38,9]);
 });
 test('capacity publication defaults private and never accepts direct device coordinates or actor fields', () => {
  const value = { action: 'PUBLISH', vehicleId: id, status: 'EMPTY', acceptedLoads: 'FTL', availabilityGeometry: 'ROUTE', currentRoutePlaces: [{ placeRef: 'place-a' }, { placeRef: 'place-b' }], capacityAreaCenterPlaceRef: '', capacityAreaBoundaryPlaces: [], acceptsMultiPick: false, acceptsMultiDrop: false };
  assert.equal(capacityCommand.parse(value).visibility, 'PRIVATE');
  assert.equal(capacityCommand.parse({...value,status:'PARTIAL',availablePercent:40}).availablePercent,40);
- assert.equal(capacityCommand.parse({...value,status:'PARTIAL',availablePercent:null}).availablePercent,null);
  assert.equal(capacityCommand.parse({...value,status:'PARTIAL'}).availablePercent,undefined);
- for(const availablePercent of [0,100,40.5,'40']) assert.equal(
+ for(const availablePercent of [null,0,100,40.5,'40']) assert.equal(
   capacityCommand.safeParse({...value,status:'PARTIAL',availablePercent}).success,false
  );
  assert.equal(capacityCommand.safeParse({...value,status:'PARTIAL',availablePercent:0}).error.issues[0].path[0],

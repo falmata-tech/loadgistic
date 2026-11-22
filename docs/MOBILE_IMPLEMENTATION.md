@@ -1,3 +1,113 @@
+## Feature-to-mobile verification matrix — November 17
+
+This is the current task/evidence index for the GPS/Phone, Courier and loading
+worktree based on main `906a51f`. It records source and existing test coverage,
+not a completed audit of every screen. The dated sections below retain earlier
+release and device evidence; they do not qualify newly changed executable inputs.
+Use [PROGRESS](PROGRESS.md) for the ordered work checklist and actual run results,
+[FEAT-MOB-001](../specs/features/FEAT-MOB-001.md) for the parity contract, and
+[Android testing](operations/ANDROID_DEVICE_TESTING.md) for binary/device gates.
+
+Web and Android must preserve the same authorized task, saved result, privacy,
+recovery and return path. Phone layout is the stricter case. Transport Provider
+owners, driving owners, employed drivers, shippers, brokers and business team
+members are shared product roles. Platform Admin and staff/Support management
+remain web-only; a business workspace Admin is an ordinary customer-workspace
+role, not a platform administrator. Member-facing software Support is shared.
+Retired platform Brokerage, payment plans and email-only private Capacity are
+not missing native features to restore.
+
+In the matrix, **tests mapped** means the named maintained tests exist, not that
+all mapped workflows passed. Current root evidence is19 Tracking access tests (including the required saved-timestamp wire negative),
+47 combined identity/private/Tracking checks in8.36s, and six connect-label
+component checks in1.06s. The final mobile source gate passes458 tests, clean
+mobile types/lint and822/822 Amharic/Afaan Oromo strings; its protected receipt is
+`.local/mobile-final-gates/final-e_7ug8uq/receipt.private.json`, SHA256
+`46a8f9da041984b7b398226967f709e7032bab00fb05a11924d4660650a5db05`.
+These source checks do not establish installed-device, OS or external delivery.
+
+The signed-out web Private-map entry now has maintained desktop/phone E2E passes
+and actual agent-led desktop/phone Chrome review: the selected tab remains over
+a record-free basemap, the centered invitation/footer stay intact, and only an
+explicit Sign in/Sign up action opens Auth. No private Capacity API is called.
+The [private entry Chrome receipt](../.local/visual-review/private-map-entry-cua.private.json)
+also records actual Expo web review at390×844 after correcting the primary and
+secondary button styling: the map remains, and deliberate Sign up and Sign in
+reach their correct destinations. The maintained Expo private-entry test passes
+at390/320 in13.9s. Its [combined phone log](../.local/tracking-tests/browser-1794936917508.private.log)
+also records the broker journey. These Expo-web results do not qualify native OS
+behavior. Earlier failed logs remain history; older default automatic images
+were overwritten and are not all retained.
+
+The maintained broker link/code journey now passes on desktop in26.9s
+([log](../.local/tracking-tests/browser-1794936655403.private.log)) and phone
+in32.0s ([log](../.local/tracking-tests/browser-1794936917508.private.log)):
+pending creation, separate link/code, normal provider consent and persisted
+assignment/connect, guest refresh/reload, no guest proof or owner actions, and
+exact fixture cleanup. The missing saved `updated_at` correction and explicit
+preview-response synchronization are qualified by those successful runs; older
+failed attempts are not relabelled. Two separately marked manual-review accounts
+were deliberately prepared and remain available, with no cleanup yet, for the
+upcoming hands-on Tracking review; their [protected fixture receipt](../.local/tracking-manual-review/run-IskCO8/intent.private.json)
+is separate from the cleaned E2E fixtures. This does not complete every feature,
+all Tracking roles/actions, installed-device evidence or a release gate.
+
+| Person's task / contract | Web and Expo entry / implementation | Existing automated coverage to reuse or update | Required actual task evidence for the changed candidate |
+| --- | --- | --- | --- |
+| Visitor finds available vehicles, filters and selects a complete map result (MKT/LST/CAP) | Web `/`; Expo marketplace `/`, `capacity.tsx`, `CapacityMap.tsx` | `capacity-multiple-options.spec.ts`, `capacity-filter-drawer.spec.ts`, `map-cluster-transition.spec.ts`; mobile `multiple-truck-filters`, `visible-query`, `capacity-map-stability` tests | Desktop/phone apply and clear filters, pan/zoom, selected vehicle exit, live refresh, empty/error/retry; confirm complete eligible results and no private rows. Native map/gesture behavior needs the actual installed renderer. |
+| Visitor recognizes vehicle types and opens a public provider/Featured record (FLT/MKT/FTR) | Shared 17-type catalogue/artwork; web public profile/Featured; Expo `transporter.tsx`, `featured.tsx` | `capacity-configuration-picker.spec.ts`, `freight-catalogue.spec.ts`, `public-card-presentation.spec.ts`; mobile `public-card-presentation`, `public-capacity`, `native-link` | Select pictured types, open an eligible vehicle and return without losing map context. Courier car already has an actual asset, 12 cars in the bounded marked hosted cohort and a successful public filter result; no restoration/data edit is needed. This is not all-type installed-device acceptance. |
+| New provider, shipper or broker signs up and returns to the intended workspace (IAM/MOB) | Web `/login`, `/signup`; Expo `/account`, `/signup`, `/workspaces` | `provider-native-onboarding.spec.ts`, `mobile-private-entry.spec.ts`, `auth-role-language.spec.ts`; mobile `account-session`, `session-contract` | Real local inbox/code entry, terms, chosen account type, failed/expired verification, sign-out and safe return. Google must reach its intended visible callback on the relevant runtime; review-account access does not qualify ordinary signup. |
+| Provider/driving owner or employed driver uses Home and changes duty/capacity (CAP/FLT) | Web `/app/home`; Expo provider Home in `account.tsx` / `driver-home.tsx`, `manage-capacity.tsx` | `provider-native-assignment.spec.ts`, `driver-off-duty-first-location.spec.ts`, `capacity-live-refresh.spec.ts`; mobile `provider-home-entry`, `foreground-capacity` | Start from saved assignment; exercise permitted duty/capacity changes, reload, Cancel, first use and no assigned vehicle. Limited drivers must retain their actual permissions; no stale truck or another actor's facts after refresh. |
+| Owner adds and manages vehicles/drivers, assignment and lifecycle (FLT/IAM/VER) | Web Fleet; Expo `/fleet`, shared vehicle details/lifecycle | `fleet-vehicle-registration.spec.ts`, `fleet-task-workspace.spec.ts`, `fleet-driver-off-page.spec.ts`, `mobile-confirmation-actions.spec.ts`; SQL `provider-owner-fleets`, `fleet-driver-onboarding` | Draft add, explicit Go Live, permission/ownership checks, assign/replace/end assignment, retire/restore, safe cancellation and persisted readback. Multiple Live vehicles must keep the exact qualifying authority rule and unfinished-Tracking denials. |
+| Provider or assigned driver chooses GPS or Phone and understands current location (GPS/CAP/MOB) | Web fleet/location editors; Expo `fleet-devices.tsx`, `driver-location-editor.tsx`; migration228 projection contract | `capacity-location-source.spec.ts`, `fleet-location-map-resize.spec.ts`, retained Manual-denial cases; mobile `driver-manual-location`, `location-privacy`, `tracking-area`; SQL `telematics`, `driver-manual-capacity-location`, `capacity-published-location-source-filter` | Current-role save/reload, source change lock, no fix/stale fix, denial/retry, Phone obscuring and GPS source. Historical Manual data stays history, never a current point. Changed application/228 fields must be qualified together; neither source inspection nor a prior seven-device simulator proves a real Android location permission flow. |
+| Provider publishes a plan/regular area or corridor and later corrects it (CAP/CAL/GEO) | Web capacity/regular-service editors; Expo `/manage-capacity`, `/regular-service` | `preferred-corridor-parity.spec.ts`, `truck-regular-editors.spec.ts`, `capacity-load-needs.spec.ts`; mobile `truck-regular-editors`, `coverage-preview` | Save/cancel and reload correct route/radius/times in both views; distinguish draft preview, published plan, current approximate area and age. No extra confirmation/manual load step or loss of automatic map coverage. |
+| Provider connects a shipper/broker account and shares specific vehicles (NET/SHR) | Web Network/private map; Expo `/network`, `/directory`, `/?view=private` | `private-capacity-network.spec.ts`, `mobile-private-entry.spec.ts`, `business-runtime-parity.spec.ts`; mobile `network-read-first`, `business-workspaces`; SQL `account-only-private-capacity`, `business-capacity-sharing` | Normal connection and exact vehicle grant, recipient sign-in, revoked grant, foreign account and public denial; reload each side. Private Capacity is account-based, with no restored email-only access path. |
+| Visitor chooses the Private map while signed out (SHR/UIX) | Web `/?view=private`, record-free `PrivateCapacityEntry`; matching Expo PrivateMap invitation | `private-capacity-entry.test.mjs`, maintained desktop/phone `private-capacity-entry.spec.ts`, private-network API denials; native PrivateMap component checks | Web desktop/phone maintained tests and actual Chrome task review pass: selected tab/map stays, zero private requests or markers, explicit Sign in/Sign up and correct destination. Expo390/320 maintained test13.9s and actual390×844 task review also pass; native installed-device behavior remains separate; private grants and account/workspace authorization are unchanged. |
+| Shipper/broker owner or authorized teammate changes workspace and team permissions (IAM/ENT/MOB) | Web business workspace/account; Expo `/workspaces`, `/business-account`, `/business-capacity`, `/business-tracking` | `business-runtime-parity.spec.ts`, `team-dashboard-cleanup.spec.ts`; mobile `business-workspaces`, `business-tracking-transport`; SQL `customer-business-workspaces` | Separate owner/Admin/staff journeys: invitation acceptance, workspace switch, permission reduction/revocation, ownership/leave controls and fresh authoritative readback. The runtime parity test is local opt-in; its presence is not ordinary-CI or installed-device evidence. |
+| Provider/assigned driver manages a load's Tracking route, progress and authorized corrections (TRK) | Web Tracking; Expo `/shipments`, `/shipment-detail`, `/shipment-manage` | `tracking-progress.spec.ts`, `tracking-recovery-permissions.spec.ts`, `mobile-tracking-map.spec.ts`; mobile `shipment-management-presentation`, `tracking-workspace`, `tracking-camera` | Saved route/progress, explicit pending choice, permitted update/proof, correction/reassignment denials, completion/stop and independent persisted result. Provider Start names an existing registered owner account; this email selects that account and never becomes a guest access credential. |
+| Broker shares an expiring per-load link/code; guest opens only that load (TRK) | New web `/track/{token}`, `/api/tracking/access`, `tracking-sessions` ports and229; Expo link/code entry and session controller. Source is in progress, not a deployed qualification. | New `tracking-session-access.test.mjs`19 focused cases pass; native access/controller tests and `tracking-session-link.spec.ts`, `tracking-parties.spec.ts`, retired-email410 cases map the new contract. SQL229 permission/expiry evidence is separately recorded. | Both43-character link token and separate8-character code are required. Exercise broker pending creation, manual sharing, provider connect, distinct-load denial, expiry/revocation, readonly/no-proof guest, native cold/warm entry and memory-only grant loss. Maintained desktop26.9s/phone32.0s pending→persisted connect→guest refresh/reload and exact cleanup now pass. Additional hands-on roles/actions and installed-native behavior remain open. |
+| Registered shipper/broker sees owned shipments and performs owner actions (TRK/ENT) | Web `/app/tracking`, business Tracking and account-only session proof/approval/review; corresponding Expo Manager | `tracking-completion-review.spec.ts`, `tracking-proof-audit.spec.ts`, `business-runtime-parity.spec.ts`, `mobile-tracking-map.spec.ts`; new NR87 HTTP negatives and SQL229 captured-account/recycled-email negatives | Actual registered account list, saved proof and binary/base64 file bytes, unloading approval, one review with reload, and owner vs readable teammate denials. Guest link access must never supply owner, Team or review authority. Persisted SHIPPER/RECEIVER identity and selected-workspace CUSTOMER presentation remain distinct. |
+| Provider/driver uploads and later opens the correctly scoped document/photo (VER/CSP/FLT) | Web documents/photo panels; Expo `/documents`, `/driver-photo`, private-file components | `review-workflows.spec.ts`, `driver-document-clarity.spec.ts`, `driver-portraits.spec.ts`, `tracking-proof-audit.spec.ts`; mobile `upload`, `document-scope`, `cargo-space-photo-camera` | Actual picker/camera bytes, upload result, saved reload and authorized download; cancel, ambiguous-save recovery, unsupported/oversize and foreign/anonymous denial. Platform staff review remains web-only; synthetic evidence is never represented as a real person's verification. |
+| Member gets software Support and receives replies/files (SUP/NOT) | Web member Support; Expo `/support`, `/support-chat`; assigned staff queue on web | `provider-support.spec.ts`, `support-attachments.spec.ts`, `support-polling.spec.ts`; mobile `chat-alerts`, `account-query` | Member and web staff round trip, waiting/claim/reassignment, read receipts, private attachment access after reassignment, empty/offline/retry and resolved history. Do not restore retired transport-arrangement chat. |
+| Member manages identity, privacy, account security and deletion (IAM/PLY/PRV) | Web account/security; Expo account settings/details/security, provider profile, driver photo | `mobile-personal-identity.spec.ts`, `account-security.spec.ts`, `play-policy-workflows.spec.ts`; mobile `personal-identity-editors`, `account-security-presentation`, `button-accessibility` | Normal save/cancel/reload; current-email verification, rejected/expired challenges, deactivation blockers, exact synthetic deletion cleanup and other-account preservation. Never use Auth reset/impersonation to make a check pass. |
+| Driver receives native notifications and authorized automatic location updates (GPS/NOT/PLY) | Native foreground/background location, consent notice, push registration/destinations; web has its own browser lifecycle | `mobile-session-recovery.spec.ts`, `tracking-location-controls.spec.ts`; mobile `background-location`, `background-consent`, `location-service-lifecycle`, `native-push-destination`, `foreground-permission` | Current installed binary: disclosure/permission grant-denial-return, foreground and background/closed-app delivery, stop/unassign/sign-out cleanup, revoked credentials, notification destination and no duplicate reporting. Browser/component tests cannot establish Android OS, GMS/FCM or physical/OEM behavior. |
+| Every role waits, retries, encounters no records and returns without layout loss (UIX/LNG/MOB) | Shared route/surface skeletons/footer and Expo shared loading/query controls | `loading-feedback.spec.ts`, `public-app-shell-review.spec.ts`, `unified-shell-auth.spec.ts`, `localization.spec.ts`; new `loading-surfaces` and mobile `loading-feedback`, `account-query` tests | Fresh navigation plus background refresh,503/retry/empty, saved edits, expired access and permission denial; actual desktop/phone/Expo map/footer/control geometry. English/Amharic/Afaan Oromo fit and reduced motion/assistive action names remain actual review items. |
+| Platform Admin/staff performs moderation, review, account and Support management (ADM/SEC) | **Web-only by contract.** Native member APIs must not become a staff console | `staff-admin-account.spec.ts`, `admin-connected-queues.spec.ts`, `review-workflows.spec.ts`, `platform-brokerage-retirement.spec.ts`; mobile `session-contract`, `brokerage-session` | Actual authorized web role and denied ordinary/native caller. Business workspace Admin must not gain platform tools; preserved historical billing/Brokerage routes do not imply an active native feature. |
+
+### Highest-priority uncovered contracts and evidence
+
+1. **The new Tracking contract is implemented; remaining role/device evidence stays open.** The
+   owner requires both the unique expiring per-load link and its separate code;
+   an authorized broker may create a pending session before a provider connects.
+   New guest access is five-minute, exact-session, read-only and rechecks saved
+   expiry/revocation. Email OTP/list access is retired, with410/denial coverage.
+   Actual registered customer account lists, proof, unloading approval, review
+   and authorized Team attachment remain separate. The maintained desktop/phone
+   pending-create/connect/guest-refresh journey passes with persisted state and
+   cleanup. The deliberately prepared manual accounts support the next hands-on
+   review; proof/approval/review/Team roles, broader feature journeys and actual
+   installed-device evidence are not completed by this result.
+2. **Current native executable/runtime qualification is not established by the
+   older binary.** The November14 code10 receipt below identifies its exact old
+   graph and explicitly leaves installation, rendering and OS capabilities
+   untested. The current GPS/Phone projection and loading changes need a new
+   source-bound native build/reuse assessment and actual role tasks. Preserve
+   permission, background/closed-app, camera/file and notification checks as
+   separate installed-device evidence, not Expo-web passes.
+3. **Changed source/permission and loading paths still need current integrated
+   workflows.** Migration228, the two editors and their current API projections
+   are a coordinated in-progress repair. Loading's focused component checks do
+   not prove a stable footer/map on all route transitions. Run the changed local
+   role journeys and states before complete release gates, then reuse unchanged
+   evidence with its limits. No additional parity defect is inferred solely from
+   an old TODO, a test filename or an absent current runtime receipt.
+
+Record each actual review with exact source/binary and adapter/environment,
+role and owned fixture, desktop/phone/native dimensions, action/save/reload,
+authoritative result/denial, screenshot/evidence path and remaining limitation.
+Serialize heavy browser/native gates on this Mac. Owner-phone access and any
+remote signing, upload or publication keep their separate authority requirements.
+
 ## Native Android test APK — November 14
 
 The standalone ARM64 **1.2.0/code 10** local test APK is built and statically

@@ -14,7 +14,7 @@ import {
 const trackingSecret='tracking-code-secret-for-tests-with-more-than-32-characters';
 const production={NODE_ENV:'production',SESSION_SECRET:'session-secret-a-with-more-than-32-characters',TRACKING_CODE_SECRET:trackingSecret};
 
-test('Tracking owner and review codes contain 80 deterministic bits in readable distinct formats',()=>{
+test('retained legacy Tracking owner and review derivations preserve their distinct80-bit formats',()=>{
   const owner=trackingAccessCode('shipment-one',production);
   const review=reviewAccessCode('shipment-one',production);
   assert.match(owner,/^LG-[0-9A-HJKMNP-TV-Z]{4}(?:-[0-9A-HJKMNP-TV-Z]{4}){3}$/);
@@ -27,7 +27,7 @@ test('Tracking owner and review codes contain 80 deterministic bits in readable 
   assert.equal(verifyReviewAccessCode('shipment-two',review,production),false);
 });
 
-test('Tracking codes and digests do not change when SESSION_SECRET rotates',()=>{
+test('retained legacy Tracking codes and digests survive SESSION_SECRET rotation',()=>{
   const rotated={...production,SESSION_SECRET:'session-secret-b-with-more-than-32-characters'};
   const owner=trackingAccessCode('shipment-one',production);
   assert.equal(trackingAccessCode('shipment-one',rotated),owner);
@@ -39,7 +39,7 @@ test('Tracking codes and digests do not change when SESSION_SECRET rotates',()=>
   );
 });
 
-test('Tracking email OTPs are numeric and deterministic per challenge',()=>{
+test('historical Tracking email OTP helper remains numeric and challenge-bound',()=>{
   const challenge='11111111-1111-4111-8111-111111111111';
   assert.match(providerTrackingOtpCode(challenge),/^\d{6}$/);
   assert.equal(providerTrackingOtpCode(challenge),providerTrackingOtpCode(challenge));
@@ -59,13 +59,17 @@ test('Tracking code derivation fails closed without a dedicated strong Productio
   assert.match(trackingAccessCode('shipment-one',{NODE_ENV:'development'}),/^LG-/);
 });
 
-test('Tracking uses an email OTP and owner reviews require no reusable code',()=>{
+test('public Tracking requires a per-load link and separate code without email or owner-review authority',()=>{
   const root=process.cwd();
   const trackingForm=fs.readFileSync(path.join(root,'src/components/tracking-unlock-form.tsx'),'utf8');
   const reviewPage=fs.readFileSync(path.join(root,'src/app/track/[id]/page.tsx'),'utf8');
-  assert.match(trackingForm,/autoComplete="one-time-code"/);
-  assert.match(trackingForm,/maxLength=\{6\}/);
-  assert.doesNotMatch(trackingForm,/LG-XXXX|Shipment access code/);
-  assert.doesNotMatch(reviewPage,/LG-RV-|Review access code/);
-  assert.match(reviewPage,/recipient_role==='OWNER'/);
+  assert.match(trackingForm,/trackingLinkToken\(linkToken\|\|link/);
+  assert.match(trackingForm,/trackingAccessCode\(code\)/);
+  assert.match(trackingForm,/JSON\.stringify\(\{linkToken:token,code:secret\}\)/);
+  assert.match(trackingForm,/maxLength=\{9\} placeholder="XXXX-XXXX"/);
+  assert.match(trackingForm,/autoComplete="off"/);
+  assert.doesNotMatch(trackingForm,/one-time-code|type="email"|6-digit email code|\/api\/tracking\/(?:otp|unlock)/);
+  assert.match(reviewPage,/trackingLinkToken\.safeParse\(id\)/);
+  assert.match(reviewPage,/parseTrackingLinkGrant/);
+  assert.doesNotMatch(reviewPage,/recipient_role|TrackingReviewForm|TrackingProofLink|Review access code|LG-RV-/);
 });

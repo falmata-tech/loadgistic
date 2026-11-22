@@ -1,8 +1,9 @@
+import {createRegisteredTrackingShipment as createProviderShipment,cleanupTrackingOwnerFixtures} from './tracking-session-fixtures';
 import {test,expect} from './browser-test';
 import {localAuditService,checked,auditProvider,auditFleetProvider,auditFleetDriver,auditDeleteVehicles} from './audit-helpers';
 import {localSupportLogin} from './provider-support-helper';
 import {createProviderVehicle,updateFleetDriverAccess} from '../../src/lib/fleet.js';
-import {createProviderShipment} from '../../src/lib/provider-tracking.js';
+
 import {getTrackingRecovery} from '../../src/lib/lifecycle.js';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import path from 'node:path';
@@ -71,3 +72,6 @@ test('real provider and Operations recovery controls match their authoritative a
   if(!evidence.cleanup)throw Error('Tracking recovery exact fixture cleanup could not be confirmed.');
  }
 });
+
+// Only newly created local CUSTOMER fixtures are removed after shipment/proof cleanup.
+test.afterEach(async()=>{await cleanupTrackingOwnerFixtures();});

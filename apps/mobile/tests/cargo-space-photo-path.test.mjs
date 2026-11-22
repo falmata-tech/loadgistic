@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cargoPhotoApiPathAllowed,cargoPhotoCollectionPath,cargoPhotoReadPath,cargoPhotoUploadCommand} from '../src/api/cargo-space-photo-path.ts';
+import {cargoPhotoApiPathAllowed,cargoPhotoCollectionPath,cargoPhotoReadPath,cargoPhotoRemovePath,cargoPhotoUploadCommand} from '../src/api/cargo-space-photo-path.ts';
 
 const vehicle='aa3b1729-2761-4ff8-9988-2bb7a46741e1';
 const photo='1c3a2187-8a94-4ed4-b13c-a41eb4b9be9b';
@@ -18,4 +18,16 @@ test('gallery photos never claim an unverified camera timestamp',()=>{
  const capturedAt='2026-10-26T12:15:00.000Z';
  assert.deepEqual(cargoPhotoUploadCommand(vehicle,'CAMERA',capturedAt),{vehicleId:vehicle,source:'CAMERA',cameraCapturedAt:capturedAt});
  assert.deepEqual(cargoPhotoUploadCommand(vehicle,'UPLOAD',capturedAt),{vehicleId:vehicle,source:'UPLOAD'});
+});
+
+test('native removal accepts only the exact authenticated provider photo path',()=>{
+ const path=`/api/capacity/cargo-space-photos/${photo}`;
+ assert.equal(cargoPhotoRemovePath(path),path);
+ assert.equal(cargoPhotoApiPathAllowed(path,'DELETE'),true);
+ for(const invalid of [cargoPhotoCollectionPath(vehicle),cargoPhotoReadPath(path),
+  `https://loadgistic.com${path}`,`/api/business-workspaces/${vehicle}/capacity/photos/${photo}`,
+  `/api/capacity/cargo-space-photos/${photo}/`]){
+  assert.equal(cargoPhotoApiPathAllowed(invalid,'DELETE'),false,invalid);
+  assert.throws(()=>cargoPhotoRemovePath(invalid),/Invalid photo/);
+ }
 });
