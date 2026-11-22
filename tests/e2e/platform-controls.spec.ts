@@ -85,11 +85,11 @@ test('map-module loading uses a bounded reduced-motion skeleton',async({page}:{p
     await route.continue();
   });
   try{
-    await page.goto('/',{waitUntil:'domcontentloaded'});
+    await page.goto('/',{waitUntil:'commit'});
     const skeleton=page.locator('.public-capacity-map.surface-skeleton');
     await expect(skeleton).toBeVisible();await expect(skeleton).toHaveAttribute('aria-busy','true');
     await expect(skeleton.locator('.skeleton-decoration')).toHaveAttribute('aria-hidden','true');
-    expect(await skeleton.locator('i').first().evaluate((element:HTMLElement)=>getComputedStyle(element).animationName)).toBe('none');
+    await expect(skeleton.locator('i').first()).toHaveCSS('animation-name','none');
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath('map-loading.png')});
   }finally{release();}

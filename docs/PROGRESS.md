@@ -23,12 +23,14 @@ revocation, and fleet owner removal in Expo. Chrome capture and test evidence
 are in the review worktree under `.local/interactive-previews`. The installed
 Android camera and hosted deployment remain separate checks.
 
-The preceding PR 42 source's encrypted database restore matched 202 relations
-and 135 ACL entries. Its isolated migration rehearsal initially failed the
-Data API guard because the restored catalog lacked the cluster role setting.
-A scoped hosted read confirmed one exact setting and zero conflicts. The
-restore role could not reapply it. The private Storage recovery and final
-release checks are still open. Production was inspected read-only.
+The encrypted database restore matched 202 relations and 135 ACL entries.
+All seven private Storage objects recovered and matched their captured bytes.
+The first isolated rehearsal failed because the database dump omitted the
+cluster role setting. A read-only hosted check confirmed the exact setting and
+zero conflicts. Bootstrapping a new network-disabled restore with that captured
+setting passed the unchanged Data API and database security gates, all 16
+migrations, and six rollback-only workflow checks. Production was inspected
+read-only. Browser and deployment qualification continues in PR 42.
 
 ## November 21 production recheck
 

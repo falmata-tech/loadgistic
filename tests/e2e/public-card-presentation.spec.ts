@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {translateMessage} from '../../src/lib/i18n/core';
 import {workflowRows} from '../../apps/mobile/src/localization/workflow-messages';
 import {locationSourceLabel} from '../../src/lib/location-source.js';
+import {reportedSpacePercent} from '../../src/lib/capacity-space-estimate.js';
 import {FEATURED_PUBLIC_HEADING} from '../../src/lib/featured-heading-presentation.js';
 const preview='http://127.0.0.1:8084';
 async function bounded(page:Page,target:Locator){const box=await target.boundingBox(),viewport=page.viewportSize()!;expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width+.5);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
@@ -86,12 +87,16 @@ test('native Featured board and detail fit an English 320px phone',async({page},
 
 test('native Capacity facts remain readable while details close and selected exit preserves applied filters',async({page},info)=>{
  test.setTimeout(150_000);const response=await page.request.get('/api/public/capacity');expect(response.ok()).toBe(true);const payload=await response.json(),signal=payload.items.find((item:{current_signal_geometry_visible?:boolean;assigned_driver_portrait_url?:string})=>item.current_signal_geometry_visible!==false&&item.assigned_driver_portrait_url)||payload.items.find((item:{current_signal_geometry_visible?:boolean})=>item.current_signal_geometry_visible!==false);expect(signal).toBeTruthy();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
+ const percent=reportedSpacePercent(signal.status,signal.available_percent,signal.available_percent_reported_at);
  for(const width of info.project.name==='mobile-chromium'?[390,320]:[1280]){
   await page.setViewportSize({width,height:width===320?640:width===1280?900:844});const params=new URLSearchParams({truck:signal.id});await page.goto(`${preview}/?${params}`);await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible({timeout:45_000});
   await page.getByRole('button',{name:/^Vehicle filters/}).click();await page.getByRole('button',{name:'All vehicle types',exact:true}).click();await page.getByRole('checkbox',{name:signal.cargo_configuration,exact:true}).check();await page.getByRole('button',{name:'Close',exact:true}).click();
   const applied=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('vehicleCategory')===signal.cargo_configuration;});await page.getByRole('button',{name:'Show vehicles',exact:true}).click();expect((await applied).ok()).toBe(true);await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
   const sourceLabel=locationSourceLabel(signal.location_source),demo=signal.current_signal_geometry_visible!==false&&signal.location_lat!==null&&signal.location_lng!==null&&signal.location_is_demo===true;
-  const markerName=`${[signal.vehicle_make,signal.vehicle_model].filter(Boolean).join(' ')}, ${signal.assigned_driver_first_name}, ${signal.status==='EMPTY'?'Empty':'Partial'}${sourceLabel?', '+sourceLabel:''}${demo?', Demo location':''}`;await expect(page.getByRole('button',{name:markerName,exact:true})).toBeVisible();
+  const markerName=`${[signal.vehicle_make,signal.vehicle_model].filter(Boolean).join(' ')}, ${signal.assigned_driver_first_name}, ${signal.status==='EMPTY'?'Empty':'Partial'}${percent===null?'':`, Available space: ${percent}%`}${sourceLabel?', '+sourceLabel:''}${demo?', Demo location':''}`;
+  const marker=page.getByRole('button',{name:markerName,exact:true});
+  await expect(marker).toBeVisible();
+  if(percent!==null)await expect(marker).toContainText(`${percent}%`);
   // The explicit truck query already selected this vehicle; inspect its control once.
   await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Vehicle and driver',exact:true}).click();await settledNativeModal(page);const title=page.getByRole('heading',{name:'Vehicle details',exact:true});await expect(title).toBeVisible();await bounded(page,title);

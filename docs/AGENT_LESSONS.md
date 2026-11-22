@@ -8,6 +8,15 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+For a PostgreSQL recovery rehearsal, a database dump can omit settings stored
+at cluster scope. The Loadgistic dump restored the Data API guard function but
+omitted the authenticator's pre-request setting. A separate read-only check
+confirmed the one exact hosted setting and zero conflicts. Restore that captured
+setting during bootstrap of the network-disabled replica using its existing
+bootstrap role, then verify with the normal restored role and the unchanged
+catalog gate. Preserve the first failed receipt. Keep hosted role settings and
+privileges unchanged.
+
 November15 fixture preparation: inspect data generators as well as search
 predicates before blaming matching. The old demo generator assigned only city
 routes to small configurations and forced larger ones to Empty/100%. Preserve
