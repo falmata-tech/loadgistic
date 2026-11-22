@@ -52,7 +52,8 @@ const fixtureOffset=Date.now()-fixtureAnchor;
 
 function rebaseFixtureRow(row){
   return Object.fromEntries(Object.entries(row).map(([key,value])=>{
-    if(value&&key.endsWith('_at')){
+    // Keep the authored report time used to distinguish simulator seeds from live reports.
+    if(value&&key.endsWith('_at')&&key!=='available_percent_reported_at'){
       const parsed=Date.parse(String(value));
       if(Number.isFinite(parsed))return [key,new Date(parsed+fixtureOffset).toISOString()];
     }

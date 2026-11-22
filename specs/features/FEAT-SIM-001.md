@@ -243,9 +243,12 @@ arbitrary percentages and new targets are not added. Fleet-04 may toggle its
 approved planned corridor only in
 an Empty phase on odd cycles, about sixteen nominal minutes between changes.
 
-Given a new target's first phase has a fully unreported legacy estimate\
+Given a new target's first phase has a fully unreported legacy estimate or its
+exact authored demo report\
 When the exact current demo actor publishes the authored 80% value\
 Then the normal command creates real report time, actor and driver provenance.
+The local fixture importer preserves the authored report time while rebasing
+operational dates, so the same exact seed check applies after a fresh CI import.
 Any already reported human value, including 80%, refuses first bootstrap. Later
 phases require the immediate epoch/cycle/phase receipt and its exact current
 Capacity ID. A same-percentage human republication also pauses that target.
