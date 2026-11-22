@@ -25,6 +25,8 @@ declare start_day date;day_value date;response jsonb;existing_days integer;exist
   first_draw text[];second_draw text[];retry_before jsonb;retry_after jsonb;
   legacy_vehicle_before jsonb;legacy_theme_before jsonb;observed_before bigint;
   scoped_sample record;
+  overview jsonb;denied_actor uuid;overview_mismatch boolean;
+  overview_start date:=(now() at time zone 'Africa/Addis_Ababa')::date;
 begin
   select max(feature_date)+1 into start_day from public.featured_provider_days;
   if start_day is null then start_day:=(now() at time zone 'Africa/Addis_Ababa')::date+30;end if;
@@ -54,6 +56,37 @@ begin
     or has_function_privilege('authenticated','public.featured_eligible_truck_links_scoped(text[],uuid)','EXECUTE')
     or has_function_privilege('service_role','public.featured_eligible_truck_links_scoped(text[],uuid)','EXECUTE')
     then raise exception 'FEATURED_SCOPED_ELIGIBILITY_EXPOSED';end if;
+  select id into strict admin_id from public.profiles where active and role='ADMIN' limit 1;
+  overview:=public.managed_featured_overview(admin_id);
+  if jsonb_array_length(overview->'days')<>7 or (overview->>'eligible')::integer<>eligible_count
+    then raise exception 'FEATURED_OVERVIEW_WINDOW_CHANGED';end if;
+  with eligible as materialized (
+    select provider_organization_id,provider_profile_id from public.featured_eligible_account_links()
+  )
+  select exists(
+    select 1 from jsonb_array_elements(overview->'days') with ordinality result(day,position)
+    left join public.featured_provider_days saved on saved.feature_date=overview_start+(result.position::integer-1)
+    where (result.day->>'date')::date is distinct from overview_start+(result.position::integer-1)
+      or result.day->>'status' is distinct from saved.status::text
+      or result.day->>'source' is distinct from saved.selection_source::text
+      or (result.day->>'selected')::integer is distinct from (
+        select count(*) from public.featured_provider_slots slot where slot.day_id=saved.id
+      )
+      or (result.day->>'invalid')::integer is distinct from (
+        select count(*) from public.featured_provider_slots slot where slot.day_id=saved.id
+          and not exists(select 1 from eligible
+            where eligible.provider_organization_id=slot.provider_organization_id
+              or eligible.provider_profile_id=slot.provider_profile_id)
+      )
+  ) into overview_mismatch;
+  if overview_mismatch then raise exception 'FEATURED_OVERVIEW_ROSTER_CHANGED';end if;
+  select id into strict denied_actor from public.profiles where active and role='DRIVER' limit 1;
+  begin
+    perform public.managed_featured_overview(denied_actor);
+    raise exception 'FEATURED_OVERVIEW_DRIVER_ALLOWED';
+  exception when raise_exception then
+    if sqlerrm<>'FORBIDDEN' then raise;end if;
+  end;
   update public.platform_controls set featured_mode='AUTO',featured_target_count=8 where singleton;
   for week_value in 0..3 loop
     day_value:=start_day+week_value*7;
@@ -160,7 +193,6 @@ begin
       next_day_repeat_count,current_round,next_day_repeat_round;
     end if;
   end if;
-  select id into admin_id from public.profiles where active and role='ADMIN' limit 1;
   select vehicle_id into representative from public.featured_eligible_account_links() limit 1;
   if admin_id is null or representative is null then raise exception 'FEATURED_ADMIN_FIXTURE_MISSING';end if;
   day_value:=start_day+28;

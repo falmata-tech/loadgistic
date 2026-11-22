@@ -113,6 +113,25 @@ And timing, account order, sponsor records and permissions remain unchanged\
 And the actual REST save and administrator readback complete within the existing
 timeout with measured margin on the qualified fixture; no timeout is widened.
 
+### Scenario: Featured overview returns the current seven-day roster within the database deadline
+
+Given staff with Featured permission are reviewing programmes for this week
+When they open the overview or return after saving a programme or sponsor
+Then all seven days use the same current eligibility snapshot
+And their saved statuses, roster counts, invalid-slot counts and round numbers
+match the existing definitions
+And a signed-in account without Featured permission cannot run the overview.
+
+Migration 241 materializes the eligibility read for this statement. The
+existing RPC name, privileges, response and lock behavior remain the contract.
+The save uses the same vehicle-scoped predicate as Prepare for each selected
+truck and retains the separate account refresh before writing the roster.
+Each eligibility read checks publication once per account and computes the
+current driver once per candidate vehicle in the same database snapshot.
+Use the existing overview failure telemetry and a before-and-after timing on
+the same local fixture. If needed, restore the prior routine definition under
+the existing database rollback process.
+
 ## November20 courier eligibility correction
 
 Given Featured computes eligibility for a new programme

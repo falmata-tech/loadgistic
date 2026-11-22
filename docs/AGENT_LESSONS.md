@@ -478,6 +478,13 @@ details can legitimately repeat the same label. These are test-harness failures,
 not evidence that the product flow failed; retain partial workflow evidence and
 verify exact synthetic cleanup before retrying.
 
+November 21's broader browser round found old selectors after renamed labels
+had already been fixed. Search for retired CSS hooks and response destinations
+when a workflow moves into a drawer, disclosure or separate page. Preview the
+real redirect before spending the whole timeout on a missing next control.
+Assert the current destination and bound the next action separately, then run
+the same affected journey on both phone and desktop before another full matrix.
+
 For installed Android tests, a successful ADB `input text` command does not prove
 the app received every character on a busy emulator. Verify the complete email
 and masked password length before submission; keep secrets out of exceptions and

@@ -46,6 +46,34 @@ vehicles in 5.3 seconds, down from 10.6 seconds. Saved roster history remains
 under the existing checks. Driver portrait and owner-qualification tests use
 the real profile map and its vehicle drawer.
 
+The revised source passed database and simulator validation, the optimized
+web build, the Android internal-build check, the standalone container, the
+independent browser proof and all three Featured checks. The broader matrix
+identified remaining assertions for the retired provider review list, direct
+driver call and old Capacity colors. The browser tests now open the provider
+About panel or vehicle drawer where appropriate and verify the current
+map key. Local Support review passed signed-in customer and staff exchanges,
+FIFO claim and revocation on both widths, and the admin Team layouts. The
+local delivery check passed provider progress, registered owner approval,
+completion email, and the one-review limit.
+
+The sponsor save returns to its own management page. The browser test verifies
+the saved sponsor there and follows the Featured link back to the programme.
+Final rehearsal also exposed a separate Featured overview database timeout
+after successful programme writes. Migration 241 reuses one eligible-account
+query across the seven-day response. On the same local data, the RPC took
+3.1 seconds, down from 14.6 seconds, and both versions returned identical JSON.
+The overview still enforces Featured permission and reports saved rounds,
+roster counts and eligibility changes. The same migration scopes the save's
+vehicle rechecks and avoids duplicate driver lookup in the shared eligibility
+query. A rollback-only save retained eight slots and ran in 6.3 seconds, down
+from 15.6 seconds. The later driver-query change reduced one comparable read
+from 5.7 to 2.4 seconds with the same 145 vehicle and driver pairs.
+The shared query now checks publication once per account in the same statement.
+The final service-role reads returned 145 vehicle and driver pairs in 3.4 seconds
+and 32 eligible accounts in 2.3 seconds. Both requests had previously reached
+the eight-second database deadline.
+
 A Chrome installation launched the app in standalone mode and opened Track
 and About at 390 CSS pixels. Android Chrome at 412 CSS pixels had an active
 worker and no installability errors and accepted the app's install action.

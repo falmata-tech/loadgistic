@@ -69,9 +69,9 @@ test('selected truck has centered readable modals and a separate attached exit r
  await page.keyboard.press('Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
  await page.keyboard.press('Shift+Tab');expect(await card.evaluate((el:HTMLElement)=>el.contains(document.activeElement))).toBe(true);
  await page.mouse.click(mapBox.x+5,mapBox.y+mapBox.height/2);await expect(card).toHaveCount(0);
- await location.click();await expect(card).toHaveCSS('border-top-color','rgb(120, 70, 167)');
+ await location.click();await expect(card).toHaveCSS('border-top-color','rgb(47, 112, 218)');
  await card.getByRole('button',{name:'Close map signal details'}).click();
- await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(192, 102, 32)');await expect(card).toContainText('Both directions');await expect(card.locator('.signal-route-summary')).toHaveText(/Addis Ababa.*Adama/);
+ await regular.click();await expect(card).toHaveCSS('border-top-color','rgb(100, 123, 152)');await expect(card).toContainText('Both directions');await expect(card.locator('.signal-route-summary')).toHaveText(/Addis Ababa.*Adama/);
  await page.screenshot({path:info.outputPath('regular-modal.png')});
  await card.getByRole('button',{name:'Close map signal details'}).click();await expect(marker).toBeVisible();
  expect(await cameraView(page)).toEqual(before);

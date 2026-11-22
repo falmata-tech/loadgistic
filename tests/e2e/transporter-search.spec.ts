@@ -3,7 +3,10 @@ import {chooseTruckConfiguration} from './capacity-drawer-helper';
 
 test('web transporter search coalesces issued work, composes text safely and clears without changing the map',async({page},info)=>{
  test.setTimeout(90000);
- const current=await page.request.get('/api/public/capacity');expect(current.ok()).toBe(true);const signal=(await current.json()).items[0];expect(signal).toBeTruthy();
+ const current=await page.request.get('/api/public/capacity?status=EMPTY');
+ expect(current.status()).toBe(200);
+ const signal=(await current.json()).items[0];
+ expect(signal,'Fixture must include an active Empty signal').toBeTruthy();
  const seen:{q:string;page:string|null}[]=[],errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
  let releaseFirst=()=>{},releaseClear=()=>{};
  const first=new Promise<void>(resolve=>{releaseFirst=resolve;}),clearPending=new Promise<void>(resolve=>{releaseClear=resolve;});

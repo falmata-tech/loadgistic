@@ -187,6 +187,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     if(kind==='company'){
       await expect(providerIdentity.locator('img')).toHaveAttribute('alt',`Portrait Fleet ${suffix} transporter profile`);
       await expect.poll(()=>providerIdentity.locator('img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
+      await publicPage.getByText('About this transporter',{exact:true}).click();
       await expect(publicPage.getByText('Road freight across regional routes.',{exact:true})).toBeVisible();
       await expect(publicPage.locator('#provider-contacts').getByRole('link',{name:/Email/})).toHaveAttribute('href',`mailto:portrait-office-${suffix}@example.invalid`);
     }else{

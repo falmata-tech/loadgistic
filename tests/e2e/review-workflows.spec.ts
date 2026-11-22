@@ -221,9 +221,13 @@ test('independent content holds survive rating decisions and revoked Trust canno
     expect(data.reviews.some((review:{id:string})=>review.id===reviewIds[2])).toBe(true);
     operation='PUBLIC_PAGE_NAVIGATION';const document=await page.goto(`/providers/${handle}`,{waitUntil:'domcontentloaded'});expect(document?.status()).toBe(200);
     operation='PUBLIC_VISIBLE_REVIEWS';
-    await expect(page.locator('.provider-review-list').getByText(noteA,{exact:true})).toHaveCount(a?1:0);
-    await expect(page.locator('.provider-review-list').getByText(noteB,{exact:true})).toHaveCount(b?1:0);
-    await expect(page.locator('.provider-review-list').getByText(controlNote,{exact:true})).toHaveCount(1);
+    await page.getByText('About this transporter',{exact:true}).click();
+    const reviews=page.locator('.provider-profile-review');
+    if(a)await expect(reviews.getByText(noteA,{exact:true})).toBeVisible();
+    else await expect(reviews.getByText(noteA,{exact:true})).toHaveCount(0);
+    if(b)await expect(reviews.getByText(noteB,{exact:true})).toBeVisible();
+    else await expect(reviews.getByText(noteB,{exact:true})).toHaveCount(0);
+    await expect(reviews.getByText(controlNote,{exact:true})).toBeVisible();
     await expect(page.locator('.provider-hero-facts')).toContainText(`${average} · ${count} verified shipment reviews`);
   }
   async function contentForm(control:Page,id:string){

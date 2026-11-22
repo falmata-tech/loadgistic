@@ -35,8 +35,10 @@ test('member Waiting offers only the authoritative FIFO claim and repeats curren
   expect(rows.every(row=>memberChats.includes(row.id))).toBe(true);
  }
  async function rejectedClaim(id:string){
-  await ownWaitingOnly();const response=await page.request.post(`/api/support/conversations/${id}/claim`,{headers:{Origin:'http://127.0.0.1:3100'},maxRedirects:0,timeout:15000});
-  const destination=new URL(response.headers().location||'/', 'http://127.0.0.1:3100');
+  await ownWaitingOnly();
+  const origin=new URL(page.url()).origin;
+  const response=await page.request.post(`/api/support/conversations/${id}/claim`,{headers:{Origin:origin},maxRedirects:0,timeout:15000});
+  const destination=new URL(response.headers().location||'/',origin);
   const rejected=response.status()===303&&destination.pathname==='/support'&&destination.searchParams.get('view')==='WAITING'&&Boolean(destination.searchParams.get('error'));
   diagnostics.reads.push({stage,status:response.status(),rejected});expect(rejected).toBe(true);
   expect(checked<SavedChat>(await db.from('support_conversations').select('status,assigned_agent_user_id').eq('id',id).single())).toEqual({status:'WAITING',assigned_agent_user_id:null});
