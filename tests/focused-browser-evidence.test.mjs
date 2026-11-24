@@ -13,6 +13,11 @@ test('focused CI evidence retains the exact cleanup stage and known failure code
  for(const input of [{...value,file:'constructor'},{...value,file:'PRIVATE'},{...value,project:'PRIVATE'},{...value,stage:'PRIVATE'},{...value,scenario:'TRACKING_PROOF'},'PRIVATE',' '.repeat(5000)])assert.equal(parseFocusedBrowserEvidence(input),null);
  const sanitized=parseFocusedBrowserEvidence({...value,errorCode:'TOKEN',errorClass:'PRIVATE',errorStatus:0,elapsedMs:-1,line:0});
  assert.equal(sanitized.errorCode,null);assert.equal(sanitized.errorClass,'OTHER');assert.equal(sanitized.errorStatus,null);assert.equal(sanitized.elapsedMs,null);assert.equal(sanitized.line,null);
+ const navigation=focusedBrowserEvidence({title:'fleet assigns an unverified driver, then email-code login unlocks the same assignment',
+  project:'desktop-chromium',stage:'FIRST_CAPACITY',error:{name:'TimeoutError',message:'PRIVATE'},elapsedMs:45000});
+ assert.equal(navigation.scenario,'FLEET_ASSIGNMENT');
+ assert.equal(navigation.stage,'FIRST_CAPACITY');
+ assert.doesNotMatch(JSON.stringify(navigation),/PRIVATE/);
 });
 test('browser artifacts retain bounded primary and cleanup evidence bound to the exact source case',()=>{
  const result={status:'failed',stdout:[{text:'CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(evidence())+'\n'}]};

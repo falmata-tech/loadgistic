@@ -47,6 +47,8 @@ async function showVehicleDetails(page:any){
 
 test('fleet assigns an unverified driver, then email-code login unlocks the same assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(420_000);
+  const started=Date.now();
+  page.setDefaultNavigationTimeout(45_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
   if(!['localhost','127.0.0.1'].includes(new URL(endpoint).hostname)||new URL(endpoint).port!=='55321')throw new Error('REMOTE_FLEET_TEST_REFUSED');
@@ -59,6 +61,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     permissions:['geolocation'],geolocation:{latitude:9.03,longitude:38.76},
     extraHTTPHeaders:{'x-forwarded-for':'127.0.0.241'}});
   const driverPage=await driverContext.newPage();
+  driverPage.setDefaultNavigationTimeout(45_000);
   // Keep the onboarding gate independent of public tile-provider availability.
   // Actual tile delivery is checked separately; this fixture exercises map rendering.
   await driverContext.route('https://tile.openstreetmap.org/**',async(route:any)=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/></svg>'}));
@@ -376,8 +379,13 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.goto('/app/home');
     await expect(driverPage).toHaveURL(/\/login\?error=/);
     complete=true;checkpoint('COMPLETE');
-  }catch(error){primaryFailure=error;throw error;}finally{
+  }catch(error){
+    primaryFailure=error;
+    console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(focusedBrowserEvidence({title:info.title,project:info.project.name,stage,error,elapsedMs:Date.now()-started})));
+    throw error;
+  }finally{
     await driverContext.close().catch(()=>{});
+    await page.context().close().catch(()=>{});
     try{
     cleanupStage='VERIFY_SYNTHETIC_SCOPE';evidence();
     // Exact local test identities only; never reset shared demo fixtures.
@@ -505,6 +513,8 @@ for(const useBasis of ['OWNED','PERMISSION']){
   }catch(error){primaryFailure=error;failureEvidence(workflowStage,error);throw error;}finally{
    console.log(`DRIVING_PROVIDER_STAGE basis=${useBasis} stage=${workflowStage} elapsed_ms=${Date.now()-workflowStarted}`);
    try{
+    cleanupStage='CLOSE_BROWSER';
+    await context.close();
     // Exact synthetic identities only, including a partially completed signup.
     cleanupStage='FIND_IDENTITY';
     if(!userId)userId=(await service.from('profiles').select('id').eq('email',email).maybeSingle()).data?.id||'';
@@ -523,7 +533,16 @@ for(const useBasis of ['OWNED','PERMISSION']){
      }
      cleanupStage='DELETE_AUTH';
      const deletion=await service.auth.admin.deleteUser(userId);
-     if(deletion.error)throw deletion.error;
+     if(deletion.error?.name==='AuthRetryableFetchError'){
+      const remaining=await service.auth.admin.getUserById(userId);
+      if(remaining.data.user){
+       if(remaining.data.user.id!==userId||remaining.data.user.email!==email)throw new Error('LOCAL_FIXTURE_IDENTITY_CHANGED');
+       const retried=await service.auth.admin.deleteUser(userId);
+       if(retried.error)throw retried.error;
+      }else if(remaining.error?.status!==404){
+       throw remaining.error||deletion.error;
+      }
+     }else if(deletion.error)throw deletion.error;
     }
     cleanupStage='COMPLETE';cleanupEvidence('complete');
    }catch(error){cleanupEvidence('failed',error);failureEvidence('CLEANUP_'+cleanupStage,error);if(!primaryFailure)throw error;}
