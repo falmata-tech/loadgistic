@@ -8,10 +8,9 @@ declare definition text;anchor text;start_at integer;end_at integer;
 begin
  if (select md5(prosrc) from pg_proc where oid='public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure)<>'ae6155282f29ad40f599798657b4477a'
   or (select md5(prosrc) from pg_proc where oid='public.capacity_search_matches(jsonb,jsonb)'::regprocedure)<>'7a4ca944e31f1989d522e11d4f1d8f52'
-  -- 218 adds the reported-space projection and minimum filter to these two
-  -- current producers. Migration 228 also excludes retired Manual positions from public rows.
-  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'d98a54c5d109cd293bc989255cb26332'
-  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_profile_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'dc244f78d7035c55debec8f242664e0b'
+  -- Both current producers apply the journey filter installed by migration 244.
+  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'a05a35dd2bb86806e6ae1a869c938413'
+  or (select md5(prosrc) from pg_proc where oid='public.capacity_search_public_profile_rows(jsonb,timestamptz,uuid,integer)'::regprocedure)<>'f16fb60e7ac2d4059890f2093454f080'
   then raise exception 'CURRENT_ACCOUNT_REFERENCE_SOURCE_DRIFT';end if;
  definition:=pg_get_functiondef('public.capacity_search_results_public_fast(jsonb,integer)'::regprocedure);
  anchor:='public.capacity_search_public_profile_rows(';
@@ -211,16 +210,22 @@ begin
  old_result:=pg_temp.search177_full_results('{}',2);
  new_result:=public.capacity_search_results('{}','PUBLIC',null,null,2);
  if old_result is distinct from new_result then raise exception 'PROFILE_SEARCH_SECOND_PAGE_DRIFT';end if;
- -- The normal map projection retains its historical rich keys and exact row
- -- order. Migration 218 intentionally adds two reported-space keys; their
- -- semantics are checked in capacity-reported-space.sql.
+ -- Retain exact row and field parity outside the explicit projection changes.
+ -- Separate rollback suites verify the new reported-space and journey values.
  if exists(select 1 from public.capacity_search_public_rows('{}')
    where not (payload ? 'available_percent' and payload ? 'available_percent_reported_at'))
   then raise exception 'PROFILE_SEARCH_REPORTED_SPACE_KEYS_MISSING';end if;
- if (select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at' order by payload->>'id')
+ if exists(select 1 from public.capacity_search_public_rows('{}')
+   where not (payload ? 'journey_start_at' and payload ? 'journey_end_at'))
+  then raise exception 'PROFILE_SEARCH_JOURNEY_KEYS_MISSING';end if;
+ if (select jsonb_agg(payload - array['available_percent','available_percent_reported_at','journey_start_at','journey_end_at'] order by payload->>'id')
     from public.capacity_search_public_rows('{}'))
   is distinct from
-  (select jsonb_agg(payload order by payload->>'id') from public.capacity_search_public_rows_pre_perf177('{}'))
+  (select jsonb_agg(payload||jsonb_build_object(
+    'availability_geometry',case when payload->>'availability_geometry'='ROUTE' then 'ROUTE' end,
+    'capacity_area_center_place_ref',null,'capacity_area_center_label',null,
+    'capacity_area_center_lat',null,'capacity_area_center_lng',null,'capacity_area_boundary','[]'::jsonb
+   ) order by payload->>'id') from public.capacity_search_public_rows_pre_perf177('{}'))
   then raise exception 'PROFILE_SEARCH_MAP_PROJECTION_DRIFT';end if;
  -- An unknown private recipient stays denied; the old private query remains the
  -- implementation for EMAIL and does not acquire the public fast path.
