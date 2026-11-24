@@ -56,6 +56,10 @@ test('public profile trucks without current capacity use actual employee/owner d
    if(call.path==='/rest/v1/verification_requests'){const type=call.query.get('subject_type'),ids=call.query.get('subject_id')||'';return documents.filter(row=>type==='eq.'+row.subject_type&&ids.includes(row.subject_id));}
    if(call.path==='/rest/v1/rpc/public_provider_page_details')return {public_name:'First',show_contact_phone:false};
    if(call.path==='/rest/v1/rpc/public_provider_review_summary')return {review_count:0,average_rating:null};
+   if(call.path==='/rest/v1/rpc/capacity_owner_documents'){
+    assert.deepEqual(call.body,{organization_ids:company?[providerId]:[],provider_ids:company?[]:[providerId]});
+    return [{subject_id:providerId,subject_type:kind,documents:[reviewed('IDENTITY')],account_is_demo:!company}];
+   }
    if(call.path==='/rest/v1/rpc/public_person_identities')return [{id:assigned,first_name:'Assigned',callback_phone:null,portrait_url:null}];
    if(call.path==='/rest/v1/rpc/public_provider_fleet_page')return {items:[{id:vehicleId,platform_number:'LG-TEST',make:'Truck',model:'Example',category:'Light',cargo_configuration:'Mini Box Truck',assigned_driver_id:assigned,authority:emptyTruckAuthority()}],total:1,page:1,page_count:1,page_size:12,owner_operator:false,evidence:null,authority_summary:{total:1,ownershipVerified:0,operatingLicenceVerified:0,financedVerified:0,permissionVerified:0,notYetVerified:1}};
    if(call.path==='/rest/v1/rpc/public_capacity_page')return [];
@@ -63,6 +67,7 @@ test('public profile trucks without current capacity use actual employee/owner d
   },async calls=>{
    const provider=await getSupabasePublicProvider('provider');assert.equal(provider.provider_kind_label,'Transport Provider');assert.equal(provider.trucks[0].driver_kind_label,'Driver');assert.equal(provider.trucks[0].assigned_driver_first_name,'Assigned');assert.equal(provider.trucks[0].driver_verification_badges.find(badge=>badge.type==='DRIVER_IDENTITY').verified,true);assert.equal(provider.trucks[0].driver_verification_badges.find(badge=>badge.type==='IDENTITY').verified,false);
    assert.equal(provider.trucks[0].truck_verification_badges.find(badge=>badge.type==='VEHICLE_OWNERSHIP').verified,false,'Profile badges use current authority');
+   assert.equal(provider.account_is_demo,!company,'Read the example label from the exact profile owner');
    assert.equal(calls.filter(call=>call.path==='/rest/v1/rpc/public_person_identities').length,1,'Existing bounded identity batch remains the only identity read');assert.equal(calls.some(call=>call.path==='/rest/v1/profiles'||call.path==='/rest/v1/drivers'),false);
   });
  }
