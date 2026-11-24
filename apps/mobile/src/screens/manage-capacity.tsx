@@ -23,7 +23,7 @@ import { Redirect, useFocusEffect } from 'expo-router';
 import { useAccountQuery } from '../hooks/account-query';
 import { useAccount } from '../session/provider';
 import { Page, Card, Title, Copy, Button, ErrorText, Field, palette, LoadingSpinner } from '../components/ui';
-import { emptyPlace, PlacePicker } from '../components/place-picker';
+import { emptyPlace } from '../components/place-picker';
 import { captureCapacityLocation } from '../location/capture';
 import { privacyRadii, type ApproximateFix } from '../location/privacy';
 import RegularService from './regular-service';

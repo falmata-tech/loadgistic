@@ -87,7 +87,7 @@ export function CapacityTruckDetails({truck,privatePhoto}:{truck:CapacitySignal;
     <AppIcon name="profile" size={18} color={palette.blue}/>
     <View style={styles.identity}>
      <Text style={styles.personLabel}>{t('Transport Provider')}</Text><Text style={styles.personName}>{truck.provider}</Text>
-     {truck.accountIsDemo===true&&<Text style={styles.personLabel}>{t('Demo account')}</Text>}
+     {truck.accountIsDemo===true&&<Text style={styles.personLabel}>{t('Example account')}</Text>}
      {!truck.driverPhone&&!!truck.providerPhone&&<Text selectable style={styles.meta}>{truck.providerPhone}</Text>}
     </View>
    </View>

@@ -43,7 +43,7 @@ function publicCapacityMapHref(handle,capacity){
 export function nativePublicProvider(value){
  if(!value)return null;
  const row=object(value),fleet=object(row.fleet_page),company=row.provider_kind==='FLEET_TRANSPORTER'||Boolean(row.provider_organization_id);
- return {accountName:text(row.account_name||row.name),managerName:text(row.manager_name),name:text(row.account_name||row.name),handle:text(row.handle),kind:text(row.provider_kind_label),isCompany:company,headline:company?text(row.headline):'',about:company?text(row.about):'',services:'',city:company?text(row.city):'',image:publicAsset(row.profile_image_url),
+ return {accountName:text(row.account_name||row.name),managerName:text(row.manager_name),name:text(row.account_name||row.name),handle:text(row.handle),kind:text(row.provider_kind_label),exampleAccount:row.account_is_demo===true,isCompany:company,headline:company?text(row.headline):'',about:company?text(row.about):'',services:'',city:company?text(row.city):'',image:publicAsset(row.profile_image_url),
  contacts:{phone:phone(row.contact_phone),whatsapp:company?phone(row.contact_whatsapp):'',email:company?email(row.contact_email):'',website:company?publicWebsite(row.contact_website):''},
  youtubeId:/^[A-Za-z0-9_-]{11}$/.test(text(row.cover_video_id))?row.cover_video_id:row.cover_video_id===undefined&&company&&/^[A-Za-z0-9_-]{11}$/.test(text(row.youtube_video_id))?row.youtube_video_id:'',
  badges:publicBadges(row.verification_badges),regular:null,...(row.authoritySummary?{authoritySummary:publicProviderAuthoritySummary(row.authoritySummary)}:{}),

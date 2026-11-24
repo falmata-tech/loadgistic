@@ -63,6 +63,7 @@ function Profile({handle}:{handle:string}){
       <Text style={styles.kind}>{t('Transport Provider')}</Text>
       <Text accessibilityRole="header" style={styles.title}>{provider.accountName||provider.name}</Text>
       <Text style={styles.caption}>@{provider.handle}</Text>
+      {provider.exampleAccount===true&&<Text style={styles.caption}>{t('Example account')}</Text>}
      </View>
     </View>
     {!!provider.headline&&<Text style={styles.introduction}>{provider.headline}</Text>}

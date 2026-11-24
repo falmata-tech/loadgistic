@@ -49,6 +49,7 @@ export default async function ProviderPage({params}:{params:Promise<{handle:stri
           </div>
           {isCompany&&provider.headline?<p className="provider-profile-headline">{provider.headline}</p>:null}
           <div className="provider-profile-facts">
+            {provider.account_is_demo===true?<span><Text message="Example account"/></span>:null}
             {isCompany&&provider.city?<span><MapPin aria-hidden="true"/>{provider.city}</span>:null}
             <span><Truck aria-hidden="true"/>{provider.fleet_page.total===1?<Text message="{count} active vehicle" values={{count:1}}/>:<Text message="{count} active vehicles" values={{count:provider.fleet_page.total}}/>}</span>
             {provider.manager_name?<span><Text message="Account manager"/> · {provider.manager_name}</span>:null}

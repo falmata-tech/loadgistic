@@ -59,7 +59,7 @@ export function MapTruckDetails({truck,privatePhoto}:{truck:TruckDetails;private
     <div className="truck-inspection-people">
       <div className="truck-inspection-person transporter">
         <Building2 aria-hidden="true"/>
-        <div><small><Text message="Transport Provider"/></small><strong>{truck.provider_name}</strong>{truck.account_is_demo===true?<small><Text message="Demo account"/></small>:null}</div>
+        <div><small><Text message="Transport Provider"/></small><strong>{truck.provider_name}</strong>{truck.account_is_demo===true?<small><Text message="Example account"/></small>:null}</div>
         <div className="truck-inspection-person-actions"><a className="truck-inspection-action profile" href={`/@${truck.provider_handle}`}><Text message="Profile"/><span aria-hidden="true">↗</span></a>{!truck.assigned_driver_phone&&truck.contact_phone?<a className="truck-inspection-action call" href={`tel:${truck.contact_phone}`}><Phone aria-hidden="true"/><Text message="Call"/></a>:null}</div>
       </div>
       <div className="truck-inspection-person driver">

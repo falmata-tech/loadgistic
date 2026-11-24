@@ -5,11 +5,11 @@ import {LogoutButton} from './logout-button';
 import Link from 'next/link';
 import styles from './staff-account.module.css';
 
-export function StaffAccount({name,href,ariaLabel='Staff account',documentNavigation=false}:{name:string;href?:string;ariaLabel?:string;documentNavigation?:boolean}){
+export function StaffAccount({name,href,ariaLabel='Staff account',documentNavigation=false,exampleAccount=false}:{name:string;href?:string;ariaLabel?:string;documentNavigation?:boolean;exampleAccount?:boolean}){
   const {t}=useTranslation();
   const AccountLink=documentNavigation?'a':Link;
   return <details className={styles.account}>
     <summary aria-label={t(ariaLabel)}><UserRound aria-hidden="true"/><span className={styles.label}><Text message="Account"/></span></summary>
-    <div className={styles.panel}><strong>{name}</strong>{href?<AccountLink href={href}><Text message="Account"/></AccountLink>:null}<LogoutButton compact/></div>
+    <div className={styles.panel}><strong>{name}</strong>{exampleAccount?<small><Text message="Example account"/></small>:null}{href?<AccountLink href={href}><Text message="Account"/></AccountLink>:null}<LogoutButton compact/></div>
   </details>;
 }

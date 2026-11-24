@@ -13,7 +13,7 @@ export function SiteTopbar({user,documentNavigation=false}:{user:SiteNavigationU
   {user&&(!['SUPPORT','ADMIN'].includes(user.role)||user.canManageSupport)?<ChatAlerts identity={user.id} allowHandoverAlerts={user.active===true&&['DRIVER','TRANSPORTER'].includes(user.role)} documentNavigation={documentNavigation}/>:null}
   <div className="public-header-language"><LanguagePicker/></div>
   <div className="public-session-compact" data-testid="public-session-action">
-   {user?<StaffAccount name={user.accountName||user.name} href={accountHref(user)} ariaLabel="Account" documentNavigation={documentNavigation}/>
+   {user?<StaffAccount name={user.accountName||user.name} exampleAccount={user.exampleAccount} href={accountHref(user)} ariaLabel="Account" documentNavigation={documentNavigation}/>
     :<Localized as={documentNavigation?'a':'link'} copy={["aria-label","title"]} className="button secondary public-login-action" href="/login" aria-label="Sign in" title="Sign in"><UserRound aria-hidden="true"/><span><Text message="Sign in"/></span></Localized>}
   </div>
  </div></header>;

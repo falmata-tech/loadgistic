@@ -9,7 +9,7 @@ import type {SiteNavigationUser} from './site-navigation';
 export function AppShell({user,children}:{user:any;children:React.ReactNode}){
  const capabilities=providerWorkspaceCapabilities(user);
  const navUser:SiteNavigationUser={
-  id:user.id,role:user.role,platformRole:user.platform_role||user.role,name:user.name,active:user.active,
+  id:user.id,role:user.role,platformRole:user.platform_role||user.role,name:user.name,active:user.active,exampleAccount:user.exampleAccount===true,
   accountName:user.selected_business_workspace?.name||user.provider_account_name||user.organization_name||user.provider_business_name||user.name,
   canManageFleet:capabilities.canManageFleet,drivesTruck:capabilities.drivesTruck,
   capacityAllowed:user.selected_business_workspace?.permissions.capacity,

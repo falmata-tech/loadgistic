@@ -41,7 +41,7 @@ test('selected Capacity follows a new publication and disappears when sharing be
   await expect(marker).toBeVisible({timeout:30_000});
   await page.locator('.map-info-bubble.truck').click();
   await expect(card).toContainText('Available space: 80%');
-  await expect(card).not.toContainText('Demo account');
+  await expect(card).not.toContainText('Example account');
   await page.screenshot({path:info.outputPath('selected-before-publication.png')});
   const camera=await page.locator('.leaflet-proxy').getAttribute('style');
   await publishProviderCapacity(actor,{...input,availablePercent:60});

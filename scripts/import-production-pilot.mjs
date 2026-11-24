@@ -154,7 +154,8 @@ async function preflightPilotCollisions(){
 await preflightPilotCollisions();
 
 const aliases={full_name:'name',business_organization_id:'owner_organization_id',photo_storage_path:'photo_path',proof_storage_path:'proof_path',storage_path:'file_path'};
-const safePhone='+251900000000';
+const safePhone=process.env.LOADGISTIC_EXAMPLE_PHONE||'+251900000000';
+if(!/^\+[1-9][0-9]{7,14}$/.test(safePhone))throw Error('EXAMPLE_PHONE_INVALID');
 function convertValue(value,property){
   if(value===null||value===undefined)return null;
   if(property.format==='uuid')return mapUuid(value);
@@ -174,7 +175,9 @@ function projectRow(sourceTable,targetTable,row){
     if(sourceTable==='users'&&column==='email')value=pilotEmail(row.id,existingPilotUsers.get(row.id));
     if(sourceTable==='subscriptions'&&column==='plan_id')value=planIds.get(String(value))||value;
     if(sourceTable==='verification_requests'&&column==='storage_path'&&value)value=`supabase://verification/${PRODUCTION_PILOT_SOURCE}/verification-placeholder.jpg`;
-    if(['phone','contact_phone','contact_whatsapp'].includes(column)&&value)value=safePhone;
+    if((['phone','contact_phone'].includes(column)||value&&['contact_whatsapp','public_callback_phone'].includes(column))
+      &&['users','organizations','provider_profiles','company_pages','drivers'].includes(sourceTable))value=safePhone;
+    if(column==='contact_website'&&sourceTable==='company_pages'&&value)value='https://example.com';
     if(value!==undefined)result[column]=convertValue(value,property);
   }
   if(sourceTable==='capacities'&&(result.market_status||result.status)==='PARTIAL'){

@@ -48,15 +48,15 @@ test('phone details keep separate public identities, portrait, profile destinati
  assert.ok(text(tree).includes('Confirm availability directly.'));
  assert.ok(text(c.CapacityTruckDetails({truck:fixture({assigned_driver_phone:''})})).includes('Phone not published'));
 });
-test('provider details identify only a trusted Demo account without inferring synthetic location',()=>{
+test('provider details identify only a trusted Example account without inferring synthetic location',()=>{
  const c=components();
- assert.ok(text(c.CapacityTruckDetails({truck:fixture({account_is_demo:true,location_is_demo:false})})).includes('Demo account'));
+ assert.ok(text(c.CapacityTruckDetails({truck:fixture({account_is_demo:true,location_is_demo:false})})).includes('Example account'));
  for(const account_is_demo of [false,undefined,'true',1]){
-  assert.equal(text(c.CapacityTruckDetails({truck:fixture({account_is_demo,location_is_demo:true})})).includes('Demo account'),false);
+  assert.equal(text(c.CapacityTruckDetails({truck:fixture({account_is_demo,location_is_demo:true})})).includes('Example account'),false);
  }
  for(const locale of ['am','om']){
-  const translated=components({locale}),label=translated.t('Demo account');
-  assert.notEqual(label,'Demo account');
+  const translated=components({locale}),label=translated.t('Example account');
+  assert.notEqual(label,'Example account');
   assert.ok(text(translated.CapacityTruckDetails({truck:fixture({account_is_demo:true})})).includes(label));
  }
 });

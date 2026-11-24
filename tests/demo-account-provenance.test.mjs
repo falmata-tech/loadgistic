@@ -33,11 +33,26 @@ new Function('require','exports',compiled)(name=>{
 },exported);
 const base={provider_name:'Public provider',provider_handle:'public-provider',status:'EMPTY',assigned_driver_first_name:'Assigned',capacity_updated_label:'Updated today',location_updated_label:'Location updated today'};
 
-test('web details display trusted Demo account separately from a saved synthetic location',()=>{
+test('web details display trusted Example account separately from a saved synthetic location',()=>{
  const html=renderToStaticMarkup(jsxRuntime.jsx(exported.MapTruckDetails,{truck:{...base,account_is_demo:true,location_is_demo:false}}));
- assert.match(html,/Demo account/);assert.match(html,/Public provider/);assert.match(html,/Assigned/);
+ assert.match(html,/Example account/);assert.match(html,/Public provider/);assert.match(html,/Assigned/);
  for(const account_is_demo of [false,undefined,null,'true',1]){
   const normal=renderToStaticMarkup(jsxRuntime.jsx(exported.MapTruckDetails,{truck:{...base,account_is_demo,location_is_demo:true,user_metadata:{is_demo:true}}}));
-  assert.doesNotMatch(normal,/Demo account/);
+  assert.doesNotMatch(normal,/Example account/);
+ }
+});
+
+test('only the two trusted fixture namespaces identify an example account',async()=>{
+ const {isExampleAccountMetadata}=await import('../src/lib/identity/example-account.js');
+ const {nativePublicProvider}=await import('../src/lib/mobile/public-contract.js');
+ for(const fixture_source of ['loadgistic','loadgistic-production-pilot-v1']){
+  assert.equal(isExampleAccountMetadata({fixture_source}),true);
+ }
+ for(const metadata of [undefined,{fixture_source:'loadgistic-other'},{is_demo:true},{user_metadata:{fixture_source:'loadgistic'}}]){
+  assert.equal(isExampleAccountMetadata(metadata),false);
+ }
+ assert.equal(nativePublicProvider({account_is_demo:true}).exampleAccount,true);
+ for(const flag of ['true',1,false,null]){
+  assert.equal(nativePublicProvider({account_is_demo:flag}).exampleAccount,false);
  }
 });
