@@ -546,6 +546,9 @@ jobs:
       - name: Verify plan-free access and automatic Featured with rollback
         run: docker exec -i supabase_db_loadgistic-local psql -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/platform-controls.sql
 
+      - name: Verify planned journey timing and access with rollback
+        run: docker exec -i supabase_db_loadgistic-local psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < tests/sql/capacity-journey-times.sql
+
       - name: Verify audit authorization and privacy regressions with rollback
         run: |
           for suite in worldwide-capacity-loads capacity-sharing-policy tracking-owner-handover tracking-owner-retention tracking-device-location capacity-launch-matching capacity-offer-union capacity-reported-space cargo-space-photos cargo-space-photo-filter capacity-discovery-reuse capacity-discovery-noop-guards capacity-discovery-input-projection \
