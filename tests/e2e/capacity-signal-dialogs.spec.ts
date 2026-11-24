@@ -39,7 +39,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   const rail=page.getByRole('navigation',{name:'Edit capacity signals',exact:true});
   await expect(rail.locator('button, a')).toHaveCount(4);
   await expect(rail.getByRole('button',{name:/^Edit current coverage:/})).toHaveCount(0);
-  await expect(rail.getByRole('button',{name:/^Edit load preferences:/})).toHaveCount(0);
+  await expect(rail.getByRole('button',{name:/^Edit shipment preferences:/})).toHaveCount(0);
   const mapHeader=page.locator('.capacity-summary-map-header');
   await capacity.click();
   const previewDialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
@@ -50,7 +50,7 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   });
   expect(statusPrecedesLoad).toBe(true);
   const coveragePrecedesStops=await previewDialog.evaluate((dialog:HTMLElement)=>{
-    const coverage=[...dialog.querySelectorAll('h3')].find(node=>node.textContent?.includes('Where is this vehicle available?'));
+    const coverage=[...dialog.querySelectorAll('h3')].find(node=>node.textContent?.includes('Planned route'));
     const stops=[...dialog.querySelectorAll('h4')].find(node=>node.textContent?.trim()==='Stops');
     return Boolean(coverage&&stops&&(coverage.compareDocumentPosition(stops)&Node.DOCUMENT_POSITION_FOLLOWING));
   });
@@ -86,21 +86,22 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await expect(dialog.getByRole('combobox',{name:'City 1',exact:true})).toHaveValue(/Addis Ababa/);
   await expect(dialog.getByRole('combobox',{name:'City 2',exact:true})).toHaveValue(/Adama/);
   const originalStatus=await dialog.locator('input[name="status"]').inputValue();
+  const originalSpace=originalStatus==='PARTIAL'?await dialog.getByLabel('Available space',{exact:true}).inputValue():'100';
   await expect(dialog.getByRole('button',{name:'Empty',exact:true})).toBeVisible();
   await expect(dialog.getByRole('button',{name:'Partial',exact:true})).toBeVisible();
   await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toBeVisible();
   const originalPick=await dialog.getByLabel('Multiple pickups').isChecked();
   const originalDrop=await dialog.getByLabel('Multiple drop-offs').isChecked();
-  await expect(dialog.getByRole('radio',{name:'Full or shared',exact:true})).toBeVisible();
+  await expect(dialog.getByRole('radio',{name:'Partial or full vehicle shipments',exact:true})).toBeVisible();
   const invalidArea=await page.request.post('/api/capacity',{headers:{Accept:'application/json'},form:{vehicleId:await dialog.locator('input[name="vehicleId"]').inputValue(),status:'PARTIAL',availablePercent:'45',availabilityGeometry:'RADIUS'}});
   expect(invalidArea.status()).toBe(400);
-  expect(await invalidArea.json()).toEqual({error:'Choose an Ethiopian city, town, or local area from the search results.'});
+  expect(await invalidArea.json()).toEqual({error:'Choose the cities for a planned route.'});
   const nextStatus=originalStatus==='PARTIAL'?'Empty':'Partial';
   await dialog.getByRole('button',{name:nextStatus,exact:true}).click();
   if(nextStatus==='Partial')await dialog.getByLabel('Available space',{exact:true}).fill('45');
   await save(page,dialog);
   await expect(capacity).toBeEnabled({timeout:15000});
-  await expect(capacity).toHaveAttribute('aria-label',`Edit planned capacity: ${nextStatus}`);
+  await expect(capacity).toHaveAccessibleName(`Edit planned capacity: Available space: ${nextStatus==='Partial'?45:100}%`);
   await sharing.click();
   dialog=page.getByRole('dialog',{name:'Capacity sharing',exact:true});
   await expect(dialog.getByRole('button',{name:'Empty',exact:true})).toHaveCount(0);
@@ -148,10 +149,11 @@ test('focused capacity dialogs keep map, discard drafts, save preferences and re
   await capacity.click();
   dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
   await dialog.getByRole('button',{name:originalStatus==='PARTIAL'?'Partial':'Empty',exact:true}).click();
-  if(originalStatus==='EMPTY')await dialog.getByRole('radio',{name:'Full or shared',exact:true}).check();
+  if(originalStatus==='PARTIAL')await dialog.getByLabel('Available space',{exact:true}).fill(originalSpace);
+  if(originalStatus==='EMPTY')await dialog.getByRole('radio',{name:'Partial or full vehicle shipments',exact:true}).check();
   await save(page,dialog);
   await expect(capacity).toBeEnabled({timeout:15000});
-  await expect(capacity).toHaveAttribute('aria-label',`Edit planned capacity: ${originalStatus==='PARTIAL'?'Partial':'Empty'}`);
+  await expect(capacity).toHaveAccessibleName(`Edit planned capacity: Available space: ${originalSpace}%`);
   }finally{
     const capacityIds=vehicleId?checked(await service.from('capacities').select('id').eq('vehicle_id',vehicleId)):[];
     const ids=[vehicleId,...capacityIds.map((row:{id:string})=>row.id)].filter(Boolean);
@@ -176,8 +178,8 @@ test('regular service and location edit in bounded dialogs with real saves',asyn
   const map=page.getByTestId('capacity-summary').locator('.leaflet-container');
   await expect(map).toBeVisible();
   await map.evaluate((element:HTMLElement)=>element.setAttribute('data-original-map','yes'));
-  await page.getByRole('button',{name:/^Edit preferred corridor:/}).click();
-  const regular=page.getByRole('dialog',{name:'Preferred corridor',exact:true});
+  await page.getByRole('button',{name:/^Edit preferred route:/}).click();
+  const regular=page.getByRole('dialog',{name:'Preferred route',exact:true});
   await expect(regular.locator('input[name="vehicleId"]')).toHaveValue(vehicleId);
   await expect(regular.locator('input[name="expectedDriverId"]')).toHaveValue(actor.id);
   await expect(regular.getByRole('combobox').first()).toHaveValue('');
@@ -285,7 +287,7 @@ test('anonymous JSON capacity mutations stay denied',async({request}:{request:an
   }
 });
 
-test('first capacity publishes from its modal and Empty area changes to Partial route',async({page,context}:{page:any;context:any},testInfo:any)=>{
+test('first capacity publishes from its modal and Partial keeps its planned route',async({page,context}:{page:any;context:any},testInfo:any)=>{
   test.setTimeout(90_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
@@ -314,47 +316,30 @@ test('first capacity publishes from its modal and Empty area changes to Partial 
       await dialog.getByRole('combobox',{name:label,exact:true}).fill(query);
       await dialog.getByRole('option',{name:new RegExp(`^${query}, Ethiopia`)}).first().click();
     }
-    await choose('Area center','Sebeta');
-    await choose('Boundary city 1','Alem Gena');
-    await choose('Boundary city 2','Teji');
-    await choose('Boundary city 3','Boneya');
+    await choose('City 1','Sebeta');
+    await choose('City 2','Alem Gena');
     await dialog.getByRole('button',{name:'Use my location'}).click();
     await expect(dialog.getByRole('status')).toContainText('Location ready');
     await save(page,dialog);
-    await expect(page.getByRole('button',{name:'Edit planned capacity: Empty',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled({timeout:15000});
     await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
-    await page.getByRole('button',{name:'Edit planned capacity: Empty',exact:true}).click();
+    await page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await dialog.getByRole('button',{name:'Partial',exact:true}).click();
-    await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
-    await expect(dialog.locator('input[name="availabilityGeometry"]')).toHaveValue('RADIUS');
-    await expect(dialog.getByRole('button',{name:'Save',exact:true})).toBeEnabled();
-    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
-    await expect(dialog.locator('input[name="availabilityGeometry"]')).toHaveValue('RADIUS');
-    await dialog.getByRole('button',{name:'Partial',exact:true}).click();
+    await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveCount(0);
+    await expect(dialog.getByRole('combobox',{name:'City 1',exact:true})).toHaveValue(/Sebeta/);
+    await expect(dialog.getByRole('combobox',{name:'City 2',exact:true})).toHaveValue(/Alem Gena/);
     const availableSpace=dialog.getByRole('spinbutton',{name:'Available space',exact:true});
     await expect(availableSpace).toHaveAttribute('required','');
+    await expect(availableSpace).toHaveValue('');
     await dialog.getByRole('button',{name:'Save',exact:true}).click();
     await expect(availableSpace).toBeFocused();
-    await expect(availableSpace).toHaveValue('');
     await availableSpace.fill('65');
     await save(page,dialog);
-    const partialArea=checked(await service.from('capacities').select('market_status,available_percent,availability_geometry,capacity_area_center_label,capacity_area_boundary_json').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1))[0];
-    expect(partialArea).toMatchObject({market_status:'PARTIAL',available_percent:65,availability_geometry:'RADIUS',capacity_area_center_label:expect.stringMatching(/Sebeta/)});
-    expect(partialArea.capacity_area_boundary_json.map((point:{label:string})=>point.label)).toEqual([expect.stringMatching(/Alem Gena/),expect.stringMatching(/Teji/),expect.stringMatching(/Boneya/)]);
-    await page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true}).click();
-    dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
-    await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
-    await expect(dialog.getByRole('combobox',{name:'Area center',exact:true})).toHaveValue(/Sebeta/);
-    await dialog.getByRole('button',{name:'Route',exact:true}).click();
-    await choose('City 1','Sebeta');
-    await choose('City 2','Alem Gena');
-    await save(page,dialog);
-    await expect(page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true})).toBeVisible();
-    const {data,error}=await service.from('capacities').select('market_status,availability_geometry,visibility').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1);
-    expect(error).toBeNull();
-    expect(data?.[0]).toMatchObject({market_status:'PARTIAL',availability_geometry:'ROUTE',visibility:'PRIVATE'});
-    await page.getByRole('button',{name:'Edit planned capacity: Partial',exact:true}).click();
+    const partialRoute=checked(await service.from('capacities').select('market_status,available_percent,availability_geometry,current_route_points_json,visibility').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1).single());
+    expect(partialRoute).toMatchObject({market_status:'PARTIAL',available_percent:65,availability_geometry:'ROUTE',visibility:'PRIVATE'});
+    expect(partialRoute.current_route_points_json.map((point:{label:string})=>point.label)).toEqual([expect.stringMatching(/Sebeta/),expect.stringMatching(/Alem Gena/)]);
+    await page.getByRole('button',{name:'Edit planned capacity: Available space: 65%',exact:true}).click();
     dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
     await dialog.getByRole('button',{name:'Off Duty',exact:true}).click();
     await save(page,dialog);

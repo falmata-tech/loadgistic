@@ -10,6 +10,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   const safeUser = {
     id: user.id,
     name: user.name,
+    exampleAccount:user.exampleAccount,
     role: user.role,
     active: user.active,
     selected_business_workspace:user.selected_business_workspace,

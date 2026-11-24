@@ -29,7 +29,7 @@ test('retired selection stays unselected with owner lock until the assigned driv
   await expect(dialog.getByLabel('Latitude')).toHaveCount(0);await expect(dialog.getByLabel('Longitude')).toHaveCount(0);
   await expect(dialog.getByRole('button',{name:'Use my phone'})).toHaveAttribute('aria-pressed','false');
   await expect(dialog.getByRole('button',{name:'Save location'})).toBeDisabled();
-  await expect(dialog.getByText('Last map report:')).toContainText('Not reported yet');
+  await expect(dialog.getByText('No driver location shared yet',{exact:true})).toBeVisible();
   await expect(dialog.getByText('Manually entered',{exact:true})).toHaveCount(0);
   const driverSelection=await page.request.get(`/api/capacity/manual-location?vehicleId=${vehicles[0]}`);expect(driverSelection.status()).toBe(200);
   const driverProjection=await driverSelection.json();expect(driverProjection).toMatchObject({source:null,precisionKm:5,canSetPhoneLocation:true,canChangeLocationSource:true});

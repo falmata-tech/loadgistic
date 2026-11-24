@@ -251,8 +251,9 @@ The source inventory is not a claim that all screens or native capabilities pass
 
 Given a visitor selects an eligible public vehicle\
 When its Vehicle details opens in Expo Web or the Android client\
-Then the published Driver callback and the three entity document-review groups
-support the same contact and evidence-inspection tasks as the web details\
+Then the published Driver callback and the Driver and Vehicle document-review
+groups support the same contact and evidence-inspection tasks as the web details\
+And the Profile action provides access to the Transport Provider's account documents\
 And application labels, review states and count/date explanations use the
 selected English, Amharic or Afaan Oromo language while public names stay intact\
 And Call uses only the validated published phone through the normal phone link\
@@ -467,19 +468,19 @@ clusters and nearby truck markers remain separately touchable. Source-local
 cluster IDs cannot collide; expansion uses the source that produced that cluster.
 Selection still removes all other trucks/clusters and closing restores the map.
 
-Given an Empty truck accepts full-truck loads only, shared loads only, or either
+Given an Empty truck accepts full-truck loads only, partial loads only, or either
 Then its unselected marker and on-demand details expose that saved preference;
 unknown flags never default to a full-load claim. Native public/private parsing
 retains only the authorized accepted-load flags, not private contacts.
 
 Given an authorized provider sets Empty capacity on Home or fleet capacity
 Then the three accepted-load choices are visible beside current space, not
-hidden among optional stop preferences. Partial exposes remaining shared space
+hidden among optional stop preferences. Partial exposes the remaining space for partial loads
 without a full-load option. Saving uses the same command and permissions as web.
 
 Given a visitor uses Space needed and Truck's current load
-Then full truck matches only Empty records accepting full loads; shared space
-matches Empty shared-only/either and Partial shared records. Physical occupancy
+Then a full-load query matches only Empty records accepting full loads; a partial-load query
+matches Empty or Partial records accepting partial loads. Physical occupancy
 is labeled separately, never presented as the driver's accepted-load preference.
 The existing contradictory-filter repair and scoped public/private search remain.
 All fixed labels are translated in English, Amharic and Afaan Oromo; user data is not.
@@ -952,7 +953,7 @@ And the old link returns to Account; stale billing writes are rejected before up
 And workspace access depends on current identity/ownership/driver permissions,
 not billing status (FEAT-BIL-001). Historical records remain protected and retained.
 
-Given a transporter owner manages their preferred corridor on mobile
+Given a transporter owner manages their preferred route on mobile
 When adding, replacing or removing its route or service area
 Then the existing single-service limit and atomic replacement apply; real catalog
 cities are required and company drivers cannot change the owner's service even
@@ -1158,11 +1159,12 @@ Invalid filters produce a visible error, never silently broader results.
 
 Given a truck is selected
 Then approximate location is violet, current capacity geometry uses its status colour
-and the Preferred corridor is muted orange with its separate meaning. Existing display-only
+and the Preferred route is muted orange with its separate meaning. Existing display-only
 parallel-path separation also handles partially shared legs and closed boundaries;
 it cannot change coordinates sent to matching or persistence. Cluster counts and
 truck configuration images replace placeholder-only markers. Cluster taps zoom
-automatically; coincident trucks remain individually selectable at maximum zoom.
+automatically. At maximum zoom, a cluster that remains grouped opens a scrollable
+truck chooser without spreading markers or drawing connector lines.
 All scoped cursor pages load automatically without an arbitrary discovery cap.
 Native marker views must stay clipped to the map while panning/zooming; an offscreen
 cluster cannot paint over the search input, sharing tabs or navigation.

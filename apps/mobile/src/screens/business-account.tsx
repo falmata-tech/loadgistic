@@ -35,6 +35,7 @@ function Account({workspaceId}:{workspaceId:string}){
  },[task,refreshTeam]);
  let data:BusinessWorkspaceDirectory|null=null;let invalid='';try{if(query.data)data=parseBusinessDirectory(query.data,actorId,workspaceId);}catch{invalid=t('Could not load this workspace. Please try again.');}
  const labels:Record<string,string>={TEAM:'Team',DETAILS:'Workspace details',DOCUMENTS:'Documents',PERSONAL:'Account details',SECURITY:'Email and account security',INVITE:'Invite teammate',EDIT:'Team member',TRANSFER:'Transfer ownership',LEAVE:'Leave workspace'};
+ const identity=data?.workspace||account.session?.user.selectedBusinessWorkspace;
  const actionGroups=businessAccountGroups(data?.workspace.permissions??null);
  function openAccountAction(action:BusinessAccountActionId){
   setError('');
@@ -48,7 +49,14 @@ function Account({workspaceId}:{workspaceId:string}){
   else if(action==='SWITCH')router.push('/workspaces');
  }
  async function changed(){await query.reloadConfirmed();await account.reload();setTask(current=>['TEAM','INVITE','EDIT','TRANSFER'].includes(current)?'TEAM':'');setMember(null);}
- return <Page>{task?<WorkspaceTaskHeader title={t(labels[task]||'Account')} backMessage="Back to account" onBack={()=>{setTask(task==='INVITE'||task==='EDIT'?'TEAM':'');setMember(null);setError('');}}/>:<><Title message="Account"/><Copy>{data?.workspace.name||account.session?.user.selectedBusinessWorkspace?.name}</Copy></>}
+ return <Page>{task?<WorkspaceTaskHeader title={t(labels[task]||'Account')} backMessage="Back to account" onBack={()=>{setTask(task==='INVITE'||task==='EDIT'?'TEAM':'');setMember(null);setError('');}}/>:<><Title message="Account"/>{identity?<View style={styles.profile}>
+    <View style={styles.profileIcon}><AppIcon name="profile" size={22} color={palette.blue}/></View>
+    <View style={styles.profileIdentity}>
+     <Text style={styles.profileKind}>{t(identity.kind==='BROKER'?'Broker':identity.kind==='SHIPPER'?'Shipper':'Receiver')}</Text>
+     <Text accessibilityRole="header" style={styles.profileName}>{identity.name}</Text>
+     <Text style={styles.note}>@{identity.handle}{identity.city?' · '+identity.city:''}</Text>
+    </View>
+   </View>:null}</>}
   <ErrorText message={error||query.error||invalid}/>{query.loading&&<LoadingSpinner/>}
   {!task&&<>
    {actionGroups.map(group=><View key={group.id} testID={`business-account-group-${group.id}`} style={styles.actionGroup}>
@@ -137,4 +145,7 @@ function Transfer({data,onChanged}:{data:BusinessWorkspaceDirectory;onChanged:()
 }
 function LeaveBusiness({data,onChanged}:{data:BusinessWorkspaceDirectory;onChanged:()=>Promise<void>}){const operation=useCommand(data,onChanged);return <><Copy message="You will lose access to this workspace's shared capacity and shipments."/><ErrorText message={operation.error}/><Button message={operation.saved?'Refresh':'Leave workspace'} busy={operation.busy} onPress={()=>{void operation.command({action:'LEAVE'});}}/></>;}
 function Toggle({message,value,onChange,disabled}:{message:string;value:boolean;onChange:(value:boolean)=>void;disabled:boolean}){const {t}=useLanguage();return <View style={styles.row}><Text style={[styles.name,{flex:1}]}>{t(message)}</Text><Switch accessibilityLabel={t(message)} value={value} onValueChange={onChange} disabled={disabled}/></View>;}
-const styles=StyleSheet.create({actionGroup:{borderWidth:1,borderColor:palette.border,borderRadius:14,backgroundColor:'#fff',paddingHorizontal:14,paddingTop:8,paddingBottom:12,gap:2},actionGroupHeading:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10,borderBottomWidth:1,borderColor:palette.borderSoft},actionGroupTitle:{fontSize:15,fontWeight:'700',color:palette.ink,flex:1},teamHeading:{alignItems:'flex-start',gap:12},row:{flexDirection:'row',alignItems:'center',gap:12,minHeight:54},networkVisibility:{paddingVertical:14,borderTopWidth:1,borderBottomWidth:1,borderColor:palette.borderSoft,gap:6},member:{flexDirection:'row',alignItems:'center',gap:12,paddingVertical:16,borderBottomWidth:1,borderColor:palette.border},name:{fontSize:16,fontWeight:'600',color:palette.ink},note:{fontSize:13,lineHeight:19,color:palette.muted},subheading:{fontSize:17,fontWeight:'700',color:palette.ink,marginTop:12}});
+const styles=StyleSheet.create({profile:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderWidth:1,borderColor:palette.border,borderRadius:13,backgroundColor:'#fff'},
+ profileIcon:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:10,backgroundColor:'#eaf1ff'},
+ profileIdentity:{flex:1,minWidth:0,gap:2},profileKind:{fontSize:12,fontWeight:'700',color:palette.blue},profileName:{fontSize:18,fontWeight:'700',color:palette.ink},
+ actionGroup:{borderWidth:1,borderColor:palette.border,borderRadius:14,backgroundColor:'#fff',paddingHorizontal:14,paddingTop:8,paddingBottom:12,gap:2},actionGroupHeading:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10,borderBottomWidth:1,borderColor:palette.borderSoft},actionGroupTitle:{fontSize:15,fontWeight:'700',color:palette.ink,flex:1},teamHeading:{alignItems:'flex-start',gap:12},row:{flexDirection:'row',alignItems:'center',gap:12,minHeight:54},networkVisibility:{paddingVertical:14,borderTopWidth:1,borderBottomWidth:1,borderColor:palette.borderSoft,gap:6},member:{flexDirection:'row',alignItems:'center',gap:12,paddingVertical:16,borderBottomWidth:1,borderColor:palette.border},name:{fontSize:16,fontWeight:'600',color:palette.ink},note:{fontSize:13,lineHeight:19,color:palette.muted},subheading:{fontSize:17,fontWeight:'700',color:palette.ink,marginTop:12}});

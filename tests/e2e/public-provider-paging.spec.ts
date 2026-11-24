@@ -106,11 +106,11 @@ for(const kind of ['large','company','single'])test(`public ${kind} profile uses
     }
     checkpoint('PUBLIC_PROFILE');
     await page.goto(`/@${handle}`);
-    await expect(page.locator('.provider-hero-facts')).toContainText(`${count} active ${count===1?'vehicle':'vehicles'}`);
+    await expect(page.locator('.provider-profile-facts')).toContainText(`${count} active ${count===1?'vehicle':'vehicles'}`);
     await expect(page.locator('.provider-map-workbench .leaflet-container')).toBeVisible();
     await expect(page.locator('.provider-fleet-disclosure,.provider-truck-card,.provider-corridor-list')).toHaveCount(0);
     const information=page.locator('.provider-profile-documents');
-    await information.getByText('Account documents',{exact:true}).click();
+    await expect(information.getByRole('heading',{name:'Account documents',exact:true})).toBeVisible();
     await expect(information.locator('.verification-group.rows')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     const html=await page.content();

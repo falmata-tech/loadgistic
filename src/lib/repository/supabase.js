@@ -381,11 +381,15 @@ export async function getSupabasePublicProvider(handle,options={}){
     ?{requested_organization_id:owner.id,requested_provider_profile_id:null}
     :{requested_organization_id:null,requested_provider_profile_id:owner.id};
   const reviewOwnerColumn=owner.kind==='ORGANIZATION'?'provider_organization_id':'provider_profile_id';
-  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,providerVerificationResult]=await Promise.all([
+  const [pageResult,vehicleResult,reviewResult,reviewSummaryResult,ownerEvidence,providerVerificationResult]=await Promise.all([
     client.rpc('public_provider_page_details',reviewOwner),
     loadPublicProviderFleet(client,owner,options.truckPage),
     client.from('provider_reviews').select('id,rating,note,created_at,dispute_status').eq(reviewOwnerColumn,owner.id).eq('status','PUBLISHED').order('created_at',{ascending:false}).limit(20),
     client.rpc('public_provider_review_summary',reviewOwner),
+    capacityOwnerEvidence(client,[{
+      provider_organization_id:reviewOwner.requested_organization_id,
+      provider_profile_id:reviewOwner.requested_provider_profile_id
+    }]),
     client.from('verification_requests').select('subject_type,subject_id,verification_type,reviewed_at,expires_on,related_vehicle_id')
       .eq('subject_type',owner.kind).eq('subject_id',owner.id).eq('status','APPROVED')
       .order('reviewed_at',{ascending:false,nullsFirst:false})
@@ -462,7 +466,7 @@ export async function getSupabasePublicProvider(handle,options={}){
   const providerBadges=verificationBadges(owner.kind,providerVerificationResult.data||[]);
   const providerHandle=owner.organization?.handle||owner.profile?.handle;
   const providerName=page.account_name||page.public_name||owner.organization?.name||providerHandle;
-  return {account_name:providerName,manager_name:page.manager_name||null,name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:'',
+  return {account_is_demo:ownerEvidence.get(owner.id)?.accountIsDemo===true,account_name:providerName,manager_name:page.manager_name||null,name:providerName,handle:providerHandle,headline:page.headline,about:page.about,services:'',
     city:owner.organization?.city||'',theme_primary:page.theme_primary,theme_accent:page.theme_accent,
     cover_video_id:page.cover_video_id,youtube_video_id:page.youtube_video_id,contact_phone:publicContactPhone,
     contact_whatsapp:page.show_contact_whatsapp?page.contact_whatsapp:null,

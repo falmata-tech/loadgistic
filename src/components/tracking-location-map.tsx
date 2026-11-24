@@ -2,7 +2,6 @@
 
 
 import React from 'react';
-import Link from 'next/link';
 import {Text,useTranslation} from '@/components/localization';
 import dynamic from 'next/dynamic';
 import {Building2,LocateFixed,Phone,Truck,UserRound} from 'lucide-react';
@@ -20,7 +19,7 @@ function TrackingTruckSummary({truck}:{truck:TrackingPublicTruck}){
   return <section className="tracking-truck-summary">
     <div className="tracking-truck-identity"><img src={vehicleConfigurationImage(truck.configuration)} alt=""/><div><small>{truck.platformNumber}</small><h3>{[truck.make,truck.model].filter(Boolean).join(' ')||<Text message="Vehicle"/>}</h3>{truck.configuration?<p><Text message={truck.configuration}/></p>:null}</div></div>
     <TruckAuthorityBadges authority={truck.authority}/>
-    <div className="tracking-truck-person"><Building2 aria-hidden="true"/><div><small><Text message="Transport Provider"/></small><strong>{truck.providerName}</strong>{truck.contactPhone?<span>{truck.contactPhone}</span>:null}</div>{truck.providerHandle?<Link className="button secondary small" href={`/@${encodeURIComponent(truck.providerHandle)}`}><Text message="Profile"/></Link>:null}{truck.contactPhone?<a className="button secondary small" href={`tel:${truck.contactPhone}`}><Phone aria-hidden="true"/><Text message="Call"/></a>:null}</div>
+    <div className="tracking-truck-person"><Building2 aria-hidden="true"/><div><small><Text message="Transport Provider"/></small><strong>{truck.providerName}</strong>{truck.contactPhone?<span>{truck.contactPhone}</span>:null}</div>{truck.providerHandle?<a className="button secondary small" href={`/@${encodeURIComponent(truck.providerHandle)}`}><Text message="Profile"/></a>:null}{truck.contactPhone?<a className="button secondary small" href={`tel:${truck.contactPhone}`}><Phone aria-hidden="true"/><Text message="Call"/></a>:null}</div>
     <div className="tracking-truck-person"><UserRound aria-hidden="true"/><div><small><Text message="Driver"/></small><strong>{truck.driverName||<Text message="Driver not named"/>}</strong><span>{truck.driverPhone||<Text message="Phone not published"/>}</span></div>{truck.driverPhone?<a className="button secondary small" href={`tel:${truck.driverPhone}`}><Phone aria-hidden="true"/><Text message="Call driver"/></a>:null}</div>
   </section>;
 }

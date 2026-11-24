@@ -47,12 +47,16 @@ test('Expo Tracking entry has an empty map behind verification without private s
   await page.setViewportSize({width,height:width===320?640:844});await page.goto(preview+'/about');
   await page.getByRole('tab',{name:'Track',exact:true}).click();
   await expect(page.getByText('Follow your shipment',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Sign in to view your shipments'})).toBeVisible();
+  await expect(page.getByLabel('Tracking link',{exact:true})).toHaveCount(0);
+  await expect(page.getByLabel('Tracking ID',{exact:true})).toBeVisible();
+  await page.goto(preview+'/visitor-tracking?linkToken='+'a'.repeat(43));
+  await expect(page.getByLabel('Tracking ID',{exact:true})).toHaveCount(0);
   const map=await paintedMap(page);
   await expect(map.locator('[data-marker-id]')).toHaveCount(0);
-  const [frame,input,tabs]=await Promise.all([map.boundingBox(),page.getByLabel('Tracking link',{exact:true}).boundingBox(),page.getByRole('tab',{name:'Track',exact:true}).boundingBox()]);
+  const [frame,input,tabs]=await Promise.all([map.boundingBox(),page.getByLabel('Tracking code',{exact:true}).boundingBox(),page.getByRole('tab',{name:'Track',exact:true}).boundingBox()]);
   expect(frame&&input&&tabs).toBeTruthy();expect(Math.abs(frame!.y+frame!.height-tabs!.y)).toBeLessThan(12);
   expect(input!.y).toBeGreaterThan(frame!.y);expect(input!.y+input!.height).toBeLessThan(frame!.y+frame!.height);
-  await page.getByLabel('Tracking link',{exact:true}).fill('https://loadgistic.com/track/'+'a'.repeat(43));
   await page.getByLabel('Tracking code',{exact:true}).fill('0000-0000');
   await page.getByRole('button',{name:'Open tracking',exact:true}).click({trial:true});
   await page.screenshot({path:info.outputPath(`expo-tracking-entry-map-${width}.png`),scale:'css'});

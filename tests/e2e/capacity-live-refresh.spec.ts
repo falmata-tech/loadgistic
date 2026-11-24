@@ -34,14 +34,14 @@ test('selected Capacity follows a new publication and disappears when sharing be
   await page.goto(`/?provider=live-refresh-${actor.suffix}`,{waitUntil:'domcontentloaded'});
   const standardMarker=page.locator('.capacity-truck-map-marker').filter({has:page.locator('.vehicle-marker-space',{hasText:/^80%$/})});
   await expect(standardMarker).toBeVisible({timeout:30_000});
-  await expect(standardMarker).toHaveAttribute('title',/Available space: 80%/);
+  await expect(standardMarker).toHaveAccessibleName(/Available space: 80%/);
   await page.screenshot({path:info.outputPath('market-percent-marker.png')});
   await standardMarker.click();
   const marker=page.locator('.capacity-truck-map-marker.selected'),card=page.locator('.capacity-info-card');
   await expect(marker).toBeVisible({timeout:30_000});
   await page.locator('.map-info-bubble.truck').click();
   await expect(card).toContainText('Available space: 80%');
-  await expect(card).not.toContainText('Demo account');
+  await expect(card).not.toContainText('Example account');
   await page.screenshot({path:info.outputPath('selected-before-publication.png')});
   const camera=await page.locator('.leaflet-proxy').getAttribute('style');
   await publishProviderCapacity(actor,{...input,availablePercent:60});

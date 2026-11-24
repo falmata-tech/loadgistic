@@ -62,6 +62,21 @@ And only separate keyed digests are persisted\
 And expiry defaults to seven days, is bounded to thirty days, and is revocable\
 And a view-only actor cannot issue a more powerful link.
 
+Given a visitor opens Track without a shipment link\
+When they enter the opaque Tracking ID copied from the shared link and its separate code\
+Then the same per-link checks authorize their guest view without exposing an internal shipment ID\
+And successful manual entry adopts the shared link URL so the same short-lived browser grant can be resumed on reload\
+And signed-in account holders can open their authorized shipment list.
+
+Given a guest opens a shared Tracking link\
+When the code entry opens\
+Then the URL carries the Tracking ID and the only visible input is the code.
+
+Given the Tracking manager issues a link on a maintained local web preview\
+When the manager validates the response in development\
+Then it displays the one-time link and code for that loopback preview\
+And production continues to reject absolute loopback links.
+
 Given a guest opens a unique link\
 When the separate code is absent or incorrect, or access is expired/revoked\
 Then no route, status, contact, vehicle or position is disclosed\

@@ -1,5 +1,6 @@
 // Fixed diagnostic fields only. Never retain API messages, identity data or URLs.
 const cases=new Map([
+ ['fleet assigns an unverified driver, then email-code login unlocks the same assignment',{file:'fleet-onboarding.spec.ts',scenario:'FLEET_ASSIGNMENT'}],
  ['driving Transport Provider OWNED signs up, explicitly assigns a truck and publishes after location permission',{file:'fleet-onboarding.spec.ts',scenario:'DRIVING_OWNED'}],
  ['driving Transport Provider PERMISSION signs up, explicitly assigns a truck and publishes after location permission',{file:'fleet-onboarding.spec.ts',scenario:'DRIVING_PERMISSION'}],
  ['Tracking proof modal fetches authorized images and rechecks revoked access when reopened',{file:'tracking-route-map.spec.ts',scenario:'TRACKING_PROOF'}],
@@ -7,7 +8,8 @@ const cases=new Map([
 ]);
 const stages={
  'fleet-onboarding.spec.ts':new Set(['VERIFY_EMAIL','CREATE_WORKSPACE','ADD_VEHICLE','ASSIGN_AND_PUBLISH','PUBLISH_CAPACITY','COMPLETE',
-  'CLEANUP_FIND_IDENTITY','CLEANUP_DELETE_SIGNUP_INTENT','CLEANUP_DELETE_AUDIT','CLEANUP_FIND_PROVIDER','CLEANUP_DELETE_CAPACITY','CLEANUP_DELETE_VEHICLES','CLEANUP_DELETE_AUTH']),
+  'SIGNUP','EMPLOYEE_ASSIGNMENT','FIRST_CAPACITY','REASSIGNMENT','DRIVER_OFFBOARD',
+  'CLEANUP_CLOSE_BROWSER','CLEANUP_FIND_IDENTITY','CLEANUP_DELETE_SIGNUP_INTENT','CLEANUP_DELETE_AUDIT','CLEANUP_FIND_PROVIDER','CLEANUP_DELETE_CAPACITY','CLEANUP_DELETE_VEHICLES','CLEANUP_DELETE_AUTH']),
  'tracking-route-map.spec.ts':new Set(['FIXTURE','PROVIDER_SIGN_IN','PROVIDER_PROOF_OPEN','PROVIDER_PROOF_CLOSE','OWNER_SIGN_IN','OWNER_PROOF_OPEN',
   'OWNER_PROOF_CLOSE','REVOKE','REOPEN_DENIED','CLOSE_DENIED','COMPLETE','CLEANUP']),
  'capacity-multiple-options.spec.ts':new Set(['VIEWPORT_TICK','INVALID_REAPPLY'])

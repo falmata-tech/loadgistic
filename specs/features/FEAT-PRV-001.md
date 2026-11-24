@@ -11,6 +11,26 @@ rollout: Add profile presentation fields and actor-scoped managed profile comman
 
 # Transporter public presence
 
+## November 23 Profile layout and Open Market return — implemented locally
+
+Given a visitor opens a public transporter profile on phone or desktop,
+when account details, documents and optional cover media are displayed,
+then the cover, About and reviews, and the profile map share the same outside
+edges. With no video, account documents use the second desktop column. A cover
+video uses that column when present, with documents directly below. On phone,
+these sections stack in reading order within the same gutters.
+
+Given the provider's vehicles are visible in its profile map,
+when the visitor chooses Back to Open Market,
+then public Capacity loads without the provider or truck identity filter, at
+`/` for the public and at `/app/home/market` for signed-in drivers and
+transporters with workspace access. The profile map continues to request vehicles for its provider. Publication,
+documents, contact destinations and private access contracts are unaffected.
+
+The change is local UI and navigation. The existing profile page and capacity
+request URLs supply the verification evidence. A rollback restores the prior
+page link and layout CSS without database or provider configuration changes.
+
 ## October18 chosen account identity — planned local implementation
 
 All provider owners use the public label Transport Provider. A chosen Account
@@ -336,7 +356,8 @@ And a visible Call action displays the public phone number while retaining its `
 Given Loadgistic staff has saved one valid allowlisted YouTube video identifier for a provider\
 When the microsite first renders\
 Then a lightweight thumbnail and Play action appear without loading the player iframe\
-And pressing Play loads the privacy-aware embed\
+And pressing Play replaces the poster in place with the privacy-aware embed\
+And the player starts inline with its fullscreen control available\
 And arbitrary embed HTML or non-allowlisted hosts are rejected.
 
 ## Contract ownership
@@ -466,9 +487,46 @@ share URL in Edit profile, the public cover displays the video's poster with a
 Play action. Playback is user-initiated. Clearing the field removes the cover.
 Legacy hidden personal media is never published by migration. Company-page
 update audit records cover changes. Migration 237 is additive. Revert the app
-first to roll back. The local example features Yodi Yodi's Ethiopian Sinotruk
-driver, part 2 (WZMVTHGhlbg), with the original YouTube poster.
+first to roll back.
+
+Given a local reset imports the synthetic demo providers, every demo profile
+comes with an example cover about [Daniel Musyoka Yatta’s freight work on the
+Nairobi–Addis Ababa route](https://www.youtube.com/watch?v=yEJMXHO8rt4), produced
+by the African Development Bank.
+Profiles created through ordinary signup keep the optional owner-controlled
+cover. Removing a saved cover leaves the production profile without one.
+
+Given the transporter profile opens on web or Expo, the heading and public
+contacts share a header with the optional Cover video. On wider screens the
+poster is to the right. On phones the layout stacks with the account name
+before the cover. Account document names and review statuses are visible in
+the header. About and verified shipment reviews follow immediately, including
+the zero-review state. Document metadata can still be opened by category. The
+scope of public information and the interactive fleet map stay the same.
+
+Given a visitor presses Play on the web or Expo profile, the player takes the
+same space as its poster. A play icon identifies the action. The poster and
+loading status stay visible until the embedded video begins or offers its own
+play controls. An error or fifteen seconds without a usable player shows Retry
+and Watch on YouTube in the same space.
+Fullscreen is an explicit choice in the player's controls and exiting it
+returns to the same profile and player. The native player uses Expo's pinned
+WebView dependency with a fixed YouTube origin, sandboxed iframe and denied
+camera, microphone, geolocation and file access. Playback signals are accepted
+from the active YouTube frame and used to update only cover presentation. The
+existing saved cover ID and profile update audit are
+the data and observability contracts. Web rollout uses the app deploy. Native
+rollout requires a rebuilt client. Reverting the presentation and native
+dependency restores the previous playback surface and keeps the saved IDs.
 
 Only the two public provider URL forms permit frames from www.youtube-nocookie.com
 and thumbnails from i.ytimg.com. The default content policy continues to apply
 to other screens. Provider attachments do not supply iframe or poster origins.
+
+Given a visitor opens a provider profile from a market marker, search result,
+network, or Featured link, the browser loads a new document and enforces the
+provider policy before showing its poster or player. Back to Open Market and
+the profile's site navigation also load a new document so the destination
+receives its own policy. The document response and a real link click are the
+browser acceptance checks. The saved cover and market API contracts are
+unchanged. Rollout and rollback use the web artifact.

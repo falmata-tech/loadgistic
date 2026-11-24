@@ -1,3 +1,4 @@
+import * as journey from '../src/lib/capacity-journey.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -23,7 +24,7 @@ function harness(name){
   useEffect(create,deps){const index=effectIndex++,previous=effects[index];if(!previous||deps.some((value,position)=>!Object.is(value,previous.deps[position])))effects[index]={deps,create,cleanup:previous?.cleanup,pending:true};}
  };
  const node=(type,props,key)=>({type,props:props||{},key}),simple=new Proxy({},{get:(_target,key)=>key});
- const imports={react:{__esModule:true,default:react},'react/jsx-runtime':{jsx:node,jsxs:node,Fragment:'Fragment'},'next/link':{__esModule:true,default:'Link'},'next/form':{__esModule:true,default:'form'},'lucide-react':simple,
+ const imports={'@/lib/capacity-journey.js':journey,react:{__esModule:true,default:react},'react/jsx-runtime':{jsx:node,jsxs:node,Fragment:'Fragment'},'next/link':{__esModule:true,default:'Link'},'next/form':{__esModule:true,default:'form'},'lucide-react':simple,
   '@/components/localization':{Text:'Text',Localized:'Localized'},'./localization':{Text:'Text',Localized:'Localized'},'./content-safety':{useBlockedProviders:()=>({blocked:[]})},
   '@/lib/transporter-search.js':searchContract,'@/lib/capacity-filter-presentation':filterPresentation,'./transporter-search.module.css':{__esModule:true,default:simple},
   '@/lib/capacity-map-loading.js':{capacityVehicleIdentity,currentCapacitySelection,loadCapacityMapWindow:()=>{throw Error('Unexpected map fetch');},reconcileCapacityMapWindow:()=>{throw Error('Unexpected map reconciliation');}},
@@ -77,7 +78,7 @@ test('provider result links the account and all matching vehicles without a driv
   view.requests[0].resolve({ok:true,json:async()=>({items:[{key:'provider',kind:'COMPANY',accountName:'Blue Road',managerName:'Meron',title:'Blue Road',handle:'blue-road',capacity_id:null,matching_trucks:2}],total:1,hasMore:false})});await settle();tree=view.render();
   assert.equal(text(find(tree,'h3')),'Blue Road');assert.ok(text(tree).includes('Transport Provider'));assert.ok(!text(tree).includes('Dawit'));
   const map=new URL(find(tree,'Link',node=>text(node).includes('Show vehicles on map')).props.href,'http://localhost');assert.equal(map.searchParams.get('provider'),'blue-road');assert.equal(map.searchParams.has('truck'),false);
-  assert.equal(find(tree,'Link',node=>text(node)==='Profile').props.href,'/@blue-road');
+  assert.equal(find(tree,'a',node=>text(node)==='Profile').props.href,'/@blue-road');
  }finally{view.close();}
 });
 
@@ -210,7 +211,12 @@ test('the profile worker retains its page and result without another request whe
 test('web availability query mode changes only successful form fields and leaves reported location independent',()=>{
  const view=harness('public-capacity-feed');try{
   const props={...feedProps,query:{currentAreaPlaceRef:'area-ref',currentArea:'Addis Ababa',currentAreaRadiusKm:'50',originPlaceRef:'origin-ref',origin:'Adama',destinationPlaceRef:'destination-ref',destination:'Dire Dawa',directionMode:'EITHER',truckCityPlaceRef:'point-ref',truckCity:'Sebeta',locationSource:'GPS'}};
-  let tree=view.render(props);const groups=nodes(tree).filter(node=>node.type==='details'&&node.props['data-filter-section']);assert.deepEqual(groups.map(node=>node.props['data-filter-section']),['vehicle','availability','location','more']);assert.equal(groups[1].props.open,true);assert.equal(groups[2].props.open,true,'active physical location filters stay visible');
+  let tree=view.render(props);
+  const groups=nodes(tree).filter(node=>node.type==='details'&&node.props['data-filter-section']);
+  assert.deepEqual(groups.map(node=>node.props['data-filter-section']),['vehicle','location','availability','more']);
+  assert.deepEqual(groups.map(node=>Boolean(node.props.open)),[true,false,false,false]);
+  assert.ok(nodes(groups[0]).includes(groups[1]),'Vehicle location sits inside Vehicle');
+  assert.equal(find(groups[1],'Place',node=>node.props.placeRefName==='truckCityPlaceRef').props.defaultPlaceRef,'point-ref');
   const mode=value=>find(tree,'button',node=>nodes(node).some(child=>child.type==='Text'&&child.props.message===value));
   assert.equal(mode('Route').props['aria-pressed'],true,'existing route links open their route query');
   let area=find(tree,'fieldset',node=>node.props['data-query-shape']==='AREA'),route=find(tree,'fieldset',node=>node.props['data-query-shape']==='ROUTE');assert.equal(area.props.disabled,true);assert.equal(route.props.disabled,false);
@@ -220,5 +226,5 @@ test('web availability query mode changes only successful form fields and leaves
  }finally{view.close();}
 });
 test('web starts with an Area query and collapses unused physical vehicle location',()=>{
- const view=harness('public-capacity-feed');try{const tree=view.render({...feedProps,query:{}});assert.equal(find(tree,'button',node=>nodes(node).some(child=>child.type==='Text'&&child.props.message==='Area'))?.props['aria-pressed'],true);assert.equal(find(tree,'details',node=>node.props['data-filter-section']==='location').props.open,false);}finally{view.close();}
+ const view=harness('public-capacity-feed');try{const tree=view.render({...feedProps,query:{}});assert.equal(find(tree,'button',node=>nodes(node).some(child=>child.type==='Text'&&child.props.message==='Area'))?.props['aria-pressed'],true);assert.ok(!find(tree,'details',node=>node.props['data-filter-section']==='location').props.open);}finally{view.close();}
 });

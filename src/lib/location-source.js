@@ -20,5 +20,5 @@ export function locationSourceSvg(value){
     GPS:'<path d="m5 3 4 4-3 3-4-4zM15 14l4 4-3 3-4-4zM8 9l7 7M13 4a7 7 0 0 1 7 7M13 8a3 3 0 0 1 3 3"/>',
     MOBILE:'<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/>'
   };
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]}</svg>`;
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind]}</svg>`;
 }

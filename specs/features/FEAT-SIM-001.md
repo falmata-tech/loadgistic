@@ -11,6 +11,31 @@ rollout: Implement and negatively test local contracts and exact synthetic targe
 
 # Demo movement and device attribution
 
+## Example account identity and contacts — November 24
+
+Given an active individual whose verified Auth app metadata identifies a Loadgistic
+fixture or the existing synthetic production pilot\
+When they open Account or their public transporter profile\
+Then the interface shows **Example account** in the selected language.
+A mixed-owner fleet receives the label only if all current owners are trusted
+active fixtures. The read publishes one boolean through the existing projection.
+
+Given the release owner has reviewed the fingerprint of all eligible example
+contact records and the requested replacement phone\
+When the guarded contact correction applies against that same fingerprint\
+Then example contact records use the replacement phone and existing example
+websites use `https://example.com`\
+And existing contact visibility, login identity, and real or mixed-owner
+organization records are preserved. A changed fingerprint aborts the operation.
+
+The migration expands the bounded read by one fixture namespace. It leaves
+simulator write authority under the existing scope checks. NR-83 still governs
+mixed ownership. The contact operation is rehearsed separately from schema,
+requires a protected before-state backup, and emits only a fingerprint and
+counts. Local/additive fixture imports can take `LOADGISTIC_EXAMPLE_PHONE`
+without embedding the number in the client or repository. Restore exact
+contact fields from the reviewed backup if the contact operation needs rollback.
+
 ## Scheduled invocation boundary — November17 local repair
 
 The retained first06–08UTC window has125 Capacity `ADVANCE_FAILED` entries and

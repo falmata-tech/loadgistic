@@ -7,5 +7,4 @@
 .company{border-radius:12px}
 .person{border-radius:50%}
 .fleetRow.fleetRow{grid-template-columns:40px minmax(0,1fr) auto}
-.mapPerson.mapPerson{grid-template-columns:40px minmax(0,1fr)}
 @media(max-width:760px){.fleetRow.fleetRow{grid-template-columns:40px minmax(0,1fr)}}

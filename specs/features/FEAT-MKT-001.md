@@ -436,7 +436,7 @@ And truck-only facts, private plate, login/contact data and inactive assignments
 
 ### Scenario: shipment needs determine matching trucks
 
-Given an existing API caller supplies a full-truck or shared-space requirement and optional pickup/delivery locations\
+Given an existing API caller supplies a full-load or partial-load requirement and optional pickup/delivery locations\
 When filtering public or authorized private capacity (the current visitor UI offers current load but no separate Space needed control)\
 Then the system checks accepted load types and both current and regular routes/service areas without asking the visitor to choose a signal geometry\
 And route matching evaluates every ordered segment and the selected direction/tolerances\

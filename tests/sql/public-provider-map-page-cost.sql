@@ -72,7 +72,8 @@ begin
   jsonb_build_object('vehicle_ids',all_ids,'viewport',jsonb_build_array(38,8,40,10)),
   jsonb_build_object('vehicle_ids',all_ids,'capacity_id',first_row->>'id')
  ] loop
-  select jsonb_agg(payload order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
+  select jsonb_agg(payload || '{"journey_start_at":null,"journey_end_at":null}'::jsonb
+   order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
    into old_rows from public.public_capacity_page_pre_perf178(query,null,null,14);
   select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at'
    order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
@@ -80,7 +81,8 @@ begin
   if old_rows is distinct from new_rows then raise exception 'PUBLIC_MAP_RESULT_DRIFT: %',query;end if;
  end loop;
  query:=jsonb_build_object('vehicle_ids',all_ids);
- select jsonb_agg(payload order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
+ select jsonb_agg(payload || '{"journey_start_at":null,"journey_end_at":null}'::jsonb
+  order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)
   into old_rows from public.public_capacity_page_pre_perf178(query,cursor_time,cursor_id,14);
  select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at'
   order by (payload->>'updated_at')::timestamptz desc,(payload->>'id')::uuid desc)

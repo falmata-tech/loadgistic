@@ -9,6 +9,14 @@ are historical, not the status of today's source or hosted release.
 
 ## Current audit evidence
 
+- November 23 cluster navigation and profile alignment (FEAT-CAP-001,
+  FEAT-MOB-001, FEAT-MKT-001, FEAT-PRV-001): the local review and remaining
+  gates are in [PROGRESS](../docs/PROGRESS.md#november-23-cluster-zoom-and-provider-profiles).
+  Focused browser coverage is in [cluster picker](../tests/e2e/capacity-cluster-picker.spec.ts)
+  and [provider profile return](../tests/e2e/public-profile-cleanup.spec.ts).
+  Native camera and picker behavior use [selected truck exit](../apps/mobile/tests/selected-truck-exit.test.mjs)
+  and [camera stability](../apps/mobile/tests/capacity-map-stability.test.mjs).
+
 - November 12 housekeeping (BASE-DEP-001 / FEAT-SEC-001 / FEAT-CON-001 /
   FEAT-FTR-001): [PROGRESS](../docs/PROGRESS.md) records fresh 1,334 root and 424
   mobile tests, types/lint, 802 strict translations, workflow validation and the
@@ -36,7 +44,7 @@ convert browser/emulator results into installed-phone proof.
 
 - FEAT-CAP-001 adjacent map-signal inspection: [the focused browser workflow](../tests/e2e/map-shared-segment.spec.ts)
   now measures actual route movement while panning and checks that consecutive
-  Planned route/Preferred corridor inspections leave the camera unchanged,
+  Planned route/Preferred route inspections leave the camera unchanged,
   followed by working background double-click zoom. Six repeated desktop/phone
   browser runs and an installed-Chrome desktop/phone run passed locally on
   November 11; desktop and phone captures are in

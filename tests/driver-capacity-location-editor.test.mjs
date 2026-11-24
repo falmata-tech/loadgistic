@@ -1,3 +1,4 @@
+import {localizedSavedUpdate} from '../src/lib/i18n/update-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -20,7 +21,7 @@ function editorHarness(source,onDuty,capture=async()=>savedPhone,override={}){
  const parsed=ts.createSourceFile('driver-capacity-location-editor.tsx',file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const sourceCode=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))));
  const code=ts.transpileModule(sourceCode,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.React}}).outputText;
- const exports={},ports={React,parseDriverLocationSelection,fetch:async(_url,options)=>{calls.push(options?.method||'GET');return {ok:true,json:async()=>options?.method==='POST'?{ok:true,result:{revision:'2026-10-18T12:02:00Z'}}:{...snapshot(source),...override}};},
+ const exports={},ports={React,localizedSavedUpdate,parseDriverLocationSelection,fetch:async(_url,options)=>{calls.push(options?.method||'GET');return {ok:true,json:async()=>options?.method==='POST'?{ok:true,result:{revision:'2026-10-18T12:02:00Z'}}:{...snapshot(source),...override}};},
   readDriverLocation:async()=>{calls.push('CAPTURE');return capture();},saveDriverLocation:async()=>{calls.push('PHONE_REPORT');return savedPhone;},
   capacityPrivacyRadii:()=>[1,3,5,10,20],nextCapacityPrivacyRadius:value=>value||10,locationSourceLabel:()=>'',
   useTranslation:()=>({t:value=>value}),Text:'Text',ManualTruckLocation:'ManualTruckLocation',

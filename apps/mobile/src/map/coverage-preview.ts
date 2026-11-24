@@ -26,7 +26,7 @@ export function coverageBounds(feature:Feature<LineString|Polygon>):[number,numb
 }
 
 /** MapLibre offsets follow line direction. Normalize display geometry so a
- * reverse two-way corridor stays on the opposite lane from current Capacity. */
+ * reverse two-way preferred route stays on the opposite lane from current Capacity. */
 export function canonicalRouteGeometry(feature:Feature<LineString|Polygon>):Feature<LineString|Polygon>{
  if(feature.geometry.type!=='LineString')return feature;
  const points=feature.geometry.coordinates;

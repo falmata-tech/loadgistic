@@ -9,6 +9,38 @@ observability: [ui_audit_unlabeled_control_count, ui_audit_overflow_count, brows
 rollout: Apply shared primitives before page-specific simplification; retain privacy and verification explanations; validate public, provider, Driver, support, and admin views at desktop and mobile sizes.
 ---
 
+## November 24 Somali interface
+
+Given a visitor or signed-in user opens Language on web or Expo\
+When they select Soomaali\
+Then the app uses the Somali catalog and retains the preference after reload
+or reopening the app\
+And typed fields, saved records, people, place names, identifiers and messages
+keep their original values.
+
+Given a user compares capacity options or opens shipment Tracking\
+Then the wording distinguishes the space available, the route a vehicle has
+planned, the places it prefers to work, and the private progress of one
+shipment\
+And wording about who can see an exact location or shared shipment preserves
+the same access limits in Somali\
+And the label for a reviewed document describes the review.
+
+Use **Booska bannaan** for available space, **Jidka la qorsheeyey** for a planned
+route, **Shuraako gaar ah** for Private Network, and **La socodka rarka** for
+Tracking. **Gaadiidle** identifies the provider, **Darawal** identifies the
+driver, and **Qabanqaabiyaha rarka** identifies the person arranging the load.
+Use phrases that distinguish a shipment needing part of a vehicle from one
+needing the entire vehicle.
+
+Web persists `so` in the existing language cookie. Expo bundles the catalog
+and uses its existing saved preference. The push worker uses the same locale
+for its built-in notice text. Coverage uses the shared locale list and the
+web and native copy audits. Browser review checks persistent selection, form
+values, and phone fit. Rollout uses the web artifact and the next installed
+app build. A build with an older allowlist uses its existing fallback for a
+saved locale it cannot load.
+
 ## Featured remaining-viewport correction — October20
 
 Given Featured opens on desktop or a phone with the public header and navigation\
@@ -526,12 +558,12 @@ And supporting prose remains only when it explains a material rule, privacy boun
 Given a provider successfully saves capacity\
 When the save completes\
 Then the editor collapses after a visible success message\
-And one summary shows how the truck appears publicly together with the same current Empty Service area or Empty-or-Partial Capacity route map and the provider's one Preferred service area or Preferred corridor\
+And one summary shows how the truck appears publicly together with the same current Empty Service area or Empty-or-Partial Capacity route map and the provider's one Preferred service area or Preferred route\
 And the privacy-obscured truck-area marker remains obvious above overlapping area polygons and routes\
 And each summary section has a focused Edit action that opens only that section\
 And regular Capacity route controls live inside that same capacity console rather than in a second planning block\
 And each edit opens only the selected signal's inputs over the still-mounted map, with no Edit all action\
-And Capacity, Coverage, Sharing, Loads, Preferred corridor, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
+And Capacity, Coverage, Sharing, Loads, Preferred route, and Location have distinct controls; the status dialog does not also contain visibility or load-preference inputs\
 And the selected truck, focused Edit actions, visible map key, and combined location controls occupy distinct top-left, top-right, bottom-left, and bottom-right map zones\
 And location refresh remains a direct action while the radius shortcut opens the focused Location modal.
 

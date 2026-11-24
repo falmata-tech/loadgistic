@@ -16,17 +16,18 @@ function takeAppInstallPrompt(){
  return prompt;
 }
 
-export function AppInstallLink({className,onOpen}:{className?:string;onOpen?:()=>void}){
+export function AppInstallLink({className,onOpen,documentNavigation=false}:{className?:string;onOpen?:()=>void;documentNavigation?:boolean}){
  const router=useRouter();
  const pathname=usePathname();
- return <Link href="/install" className={className} data-pwa-install-link="" aria-current={pathname==='/install'?'page':undefined} onClick={(event:React.MouseEvent<HTMLAnchorElement>)=>{
+ const NavigationLink=documentNavigation?'a':Link;
+ return <NavigationLink href="/install" className={className} data-pwa-install-link="" aria-current={pathname==='/install'?'page':undefined} onClick={(event:React.MouseEvent<HTMLAnchorElement>)=>{
   onOpen?.();
   if(event.defaultPrevented||event.button!==0||event.altKey||event.metaKey||event.ctrlKey||event.shiftKey)return;
   const prompt=takeAppInstallPrompt();
   if(!prompt)return;
   event.preventDefault();
   void prompt.prompt().catch(()=>router.push('/install'));
- }}><Download aria-hidden="true"/><span><Text message="Install app"/></span></Link>;
+ }}><Download aria-hidden="true"/><span><Text message="Install app"/></span></NavigationLink>;
 }
 
 export function AppInstall(){

@@ -1,11 +1,71 @@
 # Current work and release status
 
-Updated 2026-11-22. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
+Updated 2026-11-24. Start with the [product brief](PRODUCT_MASTER_PROMPT.md),
 [feature/test index](../specs/TRACEABILITY.md) and [local setup](LOCAL_SETUP.md).
 The [preserved November 11 checklist](PROGRESS_HISTORY_20261112.md) retains the
 original source-bound results, failures, artifact hashes and private receipt
 references byte for byte. Its local-only and pending statements are historical;
 the source, hosted schema, web publication and installed Android are separate.
+
+## November 24 Somali localization
+
+Soomaali is the fourth language in web and Expo. The existing language
+preferences store the selection, and built-in push messages use the same
+catalog. Use short labels for navigation and explain what people can see or
+share in the workflow itself. Available space is **Booska bannaan**, a broker
+is **Qabanqaabiyaha rarka**, and shipment tracking is **La socodka rarka**.
+
+Both audits include Somali from the shared supported-language list. The web
+audit covered 1,694 fixed messages and its separately checked conditional
+labels. The Expo audit covered 859 fixed messages. Local Chrome review
+captures and browser results are under `.local/somali-review` and
+`.local/mobile-language-review` in the working checkout. The implementation
+uses the existing cookie and app storage with no database migration.
+
+## November 23 Cluster zoom and provider profiles
+
+Truck clusters zoom toward their location on web and Expo. Clusters that
+remain at maximum zoom open a scrollable vehicle picker. Selecting a vehicle
+uses the usual details and Back restores the prior market camera. The old
+display offsets and connector lines for cluster members were removed.
+
+The public provider cover, About and reviews, and scoped map share the same
+outside edges. Account documents fill the unused right column on desktop
+when there is no cover video. On phones the profile stacks within a common
+gutter. Back to Open Market opens the unrestricted feed at `/` for visitors
+and at `/app/home/market` for active drivers and transporters with workspace
+access. The map inside the profile continues to fetch only that provider's
+vehicles.
+
+Chrome at 1440px and 320px confirmed the cover, About/reviews and map edges
+align. Awash's profile map returned only Awash vehicles. Back opened the
+public Market and its viewport response included other providers. Desktop and
+phone web exercised clusters of two and five co-located trucks, including
+the maximum-zoom picker, vehicle details and camera return. Expo phone-width
+Chrome verified the same cluster sequence and the ordinary Capacity tab
+after leaving the scoped profile. Captures and local browser traces are in
+`.local/profile-cluster-review` inside the worktree. The Awash fixture has no
+cover video. The browser proof is separate from installed Android acceptance.
+This preserves the meaningful map interactions under NR-13.
+
+Web and Expo type checks passed. All 463 mobile tests passed. The first
+full root quality run had 1,684
+passes, one skip and 12 failures. Eleven relay cases failed with loopback
+sockets denied by the sandbox, and all 12 relay tests passed when rerun with
+loopback available. The other failure was an obsolete desktop-only browser
+skip on the cluster hover test. The revised test checks the accessible
+label and activation on both widths and keeps pointer-hover checks on
+desktop. All 37 browser-gate tests and the spec, source and workflow checks
+then passed. These individual reruns are separate from a fresh full quality
+run or a release build.
+
+Local handoff is in `.local/planned-route-window` at base `9db3644`. The
+existing worktree contains additional local changes. The current previews are
+`http://127.0.0.1:3112/`, `http://127.0.0.1:3112/@awash-fleet-services-04`
+and Expo `http://localhost:8087/`. The older root checkout also has the
+initial cluster and profile-return changes, without this profile layout.
+The full workflow matrix, release build, and installed Android review are
+handed off. No hosted changes or Android artifact were made.
 
 ## November 22 Capacity estimates and private cargo photos
 

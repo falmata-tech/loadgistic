@@ -4,7 +4,7 @@ const choices = {
  directionMode: ['', 'DIRECT', 'EITHER'],
 };
 const documents = { ownerDocs: ['IDENTITY','BUSINESS_LICENSE','BUSINESS_ADDRESS'], driverDocs: ['IDENTITY','DRIVER_IDENTITY'], truckDocs: ['VEHICLE_OWNERSHIP','VEHICLE_AUTHORIZATION','VEHICLE_OPERATING_LICENSE'] };
-const strings = ['q','provider','truck','truckCityPlaceRef','currentAreaPlaceRef','originPlaceRef','destinationPlaceRef'];
+const strings = ['q','provider','truck','truckCityPlaceRef','currentAreaPlaceRef','originPlaceRef','destinationPlaceRef','departAfter','arriveBy'];
 const numbers = { page:[1,10000], truckLocationRadiusKm:[5,300], currentAreaRadiusKm:[5,300], originRadiusKm:[5,300], destinationRadiusKm:[5,300], nearLat:[-90,90], nearLng:[-180,180], nearRadiusKm:[5,300] };
 export function discoveryFilters(params) {
  const result = {};

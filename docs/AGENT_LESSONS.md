@@ -8,6 +8,30 @@ read the current accepted spec before applying a lesson.
 
 ## Mistakes to check before repeating work
 
+Map marker review (November 23): a selected vehicle and its hover card can
+pass while ordinary vehicle markers deform. Open a fresh public map at desktop
+and phone widths for changes that touch map code or styles, including wording
+changes. Check individual vehicles and clusters before choosing a vehicle, then
+zoom once and check again. Keep both captures with the interaction evidence.
+The browser regression measures round vehicle artwork, location badge size and
+percentage placement on the ordinary map. Keep marker styles with the map
+shell and give SVGs in Leaflet markup explicit dimensions.
+
+Cluster hover review (November 23): the card stayed inside the map while its
+text collapsed to one letter per line. The marker's HTML title also showed a
+second tooltip. The cluster hover browser test now checks a single readable
+line at desktop and 360px widths, no HTML title, the accessible marker name,
+and normal marker separation on click.
+
+Review the complete scoped diff before testing a terminology change. Retain
+existing styles, selectors and wire contracts when their behavior is outside
+the request. Verify the changed text in each affected surface and exercise saved
+results, existing interactions and permission denials alongside the main case.
+When changing where map CSS loads, also run the production build and exercise
+the cold map with its built assets. Run the unit gate without integration
+credentials, then supply the exact local database target to browser and SQL
+tests so mock failures cannot accidentally reach a live adapter.
+
 For a PostgreSQL recovery rehearsal, a database dump can omit settings stored
 at cluster scope. The Loadgistic dump restored the Data API guard function but
 omitted the authenticator's pre-request setting. A separate read-only check

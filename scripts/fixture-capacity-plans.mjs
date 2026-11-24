@@ -37,19 +37,6 @@ function resolvedArea(record,resolve,scale){
 
 function capacityPlan(capacity,resolve,scale){
  const record={...capacity,id:capacity.vehicle_id};
- const area=resolvedArea(record,resolve,scale);
- if(area){
-  const {center,boundary}=area;
-  return {...capacity,availability_geometry:'RADIUS',movement_scope:area.movementScope,
-   origin:center.label,destination:center.label,corridor:`${center.label} service area`,
-   ...pointFields('origin',center),...pointFields('destination',center),
-   current_route_origin:null,current_route_destination:null,current_route_points_json:'[]',
-   ...pointFields('current_origin',null),...pointFields('current_destination',null),
-   local_place_ref:center.place_ref,local_place_label:center.label,local_center_lat:center.lat,local_center_lng:center.lng,
-   local_radius_km:Math.min(50,area.radiusKm),work_radius_km:area.radiusKm,
-   capacity_area_center_place_ref:center.place_ref,capacity_area_center_label:center.label,
-   capacity_area_center_lat:center.lat,capacity_area_center_lng:center.lng,capacity_area_boundary_json:JSON.stringify(boundary)};
- }
  const chosen=demoCurrentRouteForLocation(record,0,scale==='short'||scale==='local'?'short':'long');
  const points=routePoints(chosen.points,resolve),first=points[0],last=points.at(-1);
  return {...capacity,availability_geometry:'ROUTE',movement_scope:chosen.movementScope,

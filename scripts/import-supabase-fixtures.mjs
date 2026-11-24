@@ -8,6 +8,7 @@ import {
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 import {readFixtureSchema} from './lib/fixture-schema.mjs';
+import {exampleCover} from '../src/lib/provider-cover-video.js';
 import {
   assertLocalAuthorityFixtureTarget,prepareProviderAuthorityFixtures,
   uploadAuthorityFixtureDocuments,confirmAuthorityFixtureReviews
@@ -29,6 +30,8 @@ const url=String(process.env.SUPABASE_SEED_URL||'').trim();
 const serviceRoleKey=String(process.env.SUPABASE_SEED_SERVICE_ROLE_KEY||'').trim();
 const fixturePassword=String(process.env.SUPABASE_FIXTURE_PASSWORD||'Loadgistic123!');
 const resetRequested=process.argv.includes('--reset-local');
+const examplePhone=process.env.LOADGISTIC_EXAMPLE_PHONE;
+if(examplePhone&&!/^\+[1-9][0-9]{7,14}$/.test(examplePhone))throw Error('EXAMPLE_PHONE_INVALID');
 
 if(!url||!serviceRoleKey)throw new Error('SUPABASE_FIXTURE_CONFIG_MISSING');
 assertLocalAuthorityFixtureTarget(url);
@@ -67,7 +70,7 @@ const authorityManifest=JSON.parse(fs.readFileSync(path.join(process.cwd(),'reso
 const authorityPlan=prepareProviderAuthorityFixtures({...fixtureDocument,tables:rebasedTables},authorityManifest);
 const fixtureTables=authorityPlan.tables;
 for(const page of fixtureTables.company_pages||[]){
-  if(['page-transporter','page-driver'].includes(page.id))page.cover_video_id='WZMVTHGhlbg';
+  page.cover_video_id??=exampleCover.id;
 }
 fixtureTables.users=assignFixtureDriverPortraits(fixtureTables.users||[]);
 fixtureTables.driver_vehicle_assignments=ensureIndependentVehicleAssignments(
@@ -343,6 +346,9 @@ function projectRow(sourceTable,targetTable,row){
     let sourceColumn=aliases[column]||column;
     let value=row[sourceColumn];
     if(sourceTable==='users'&&column==='id')value=userIds.get(row.id);
+    if(examplePhone&&(['phone','contact_phone'].includes(column)||value&&['contact_whatsapp','public_callback_phone'].includes(column))
+      &&['users','organizations','provider_profiles','company_pages','drivers'].includes(sourceTable))value=examplePhone;
+    if(column==='contact_website'&&sourceTable==='company_pages'&&value)value='https://example.com';
     if(sourceTable==='verification_requests'&&column==='storage_path'&&value&&!String(value).startsWith('supabase://verification/fixture-authority/'))value='supabase://verification/demo/verification-document.jpg';
     if(value!==undefined)result[column]=convertValue(value,property);
   }

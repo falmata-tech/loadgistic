@@ -15,4 +15,4 @@ const rows:readonly (readonly [string,string,string])[]=[
  ['That business handle is already in use.','ይህ የድርጅት መለያ ስም ተይዟል።','Maqaan adda baastuu dhaabbataa kun qabameera.'],
  ['This invitation is no longer available.','ይህ ግብዣ ከእንግዲህ ወዲህ አይሠራም።','Affeerraan kun amma hin hojjetu.']
 ];
-export const businessWorkspaceMessages:Record<Locale,Messages>={en:{},am:Object.fromEntries(rows.map(r=>[r[0],r[1]])),om:Object.fromEntries(rows.map(r=>[r[0],r[2]]))};
+export const businessWorkspaceMessages:Record<Locale,Messages>={en:{},so:{},am:Object.fromEntries(rows.map(r=>[r[0],r[1]])),om:Object.fromEntries(rows.map(r=>[r[0],r[2]]))};

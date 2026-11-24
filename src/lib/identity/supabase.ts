@@ -4,6 +4,7 @@ import {supabaseBusinessWorkspacePort} from '../business-workspaces/supabase';
 import {BusinessWorkspaceError} from '../business-workspaces/domain.js';
 import type {BusinessWorkspaceSummary,BusinessInvitation} from '../business-workspaces/contracts';
 import {independentOperatingModel} from '../independent-driver.js';
+import {isExampleAccountMetadata} from './example-account.js';
 
 export type WorkspaceSubscription = {
   id:string;
@@ -27,6 +28,7 @@ export type ManagedCurrentUser = {
   firstName?:string|null;
   lastName?:string|null;
   publicCallbackPhone?:string|null;
+  exampleAccount?:boolean;
   role:string;
   platform_role?:string;
   provider_workspace_available?:boolean;
@@ -79,11 +81,11 @@ function isManagedCurrentUser(value:unknown):value is ManagedCurrentUser{
     &&typeof projection.active==='boolean';
 }
 
-export async function getManagedCurrentUser(client:SupabaseClient,authUser:{id:string}):Promise<ManagedCurrentUser|null>{
+export async function getManagedCurrentUser(client:SupabaseClient,authUser:{id:string;app_metadata?:Record<string,unknown>}):Promise<ManagedCurrentUser|null>{
   const {data,error}=await client.rpc('current_user_projection');
   if(error)throw new Error('MANAGED_IDENTITY_PROJECTION_FAILED',{cause:error});
   if(!isManagedCurrentUser(data)||data.id!==authUser.id)return null;
-  const base={...data,provider_operating_model:independentOperatingModel(data.provider_operating_model) as ManagedCurrentUser['provider_operating_model']};
+  const base={...data,exampleAccount:isExampleAccountMetadata(authUser.app_metadata),provider_operating_model:independentOperatingModel(data.provider_operating_model) as ManagedCurrentUser['provider_operating_model']};
   if(['ADMIN','SUPPORT'].includes(base.role))return withBusinessContext(base,null);
   try{return withBusinessContext(base,await supabaseBusinessWorkspacePort().context(base.id));}
   catch(error){

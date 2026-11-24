@@ -31,7 +31,7 @@ test('unexpected capacity database failures retain only safe diagnostic codes',a
   console.error=(...values)=>logs.push(values);
   globalThis.fetch=async()=>new Response(JSON.stringify({code:'PGRST202',message:'private database details',details:'sensitive submitted value'}),{status:400,headers:{'Content-Type':'application/json'}});
   try{
-    await assert.rejects(()=>publishSupabaseProviderCapacity({id:'test-user'},{vehicleId:'test-vehicle',status:'EMPTY'}),/SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED/);
+    await assert.rejects(()=>publishSupabaseProviderCapacity({id:'test-user'},{vehicleId:'test-vehicle',status:'EMPTY',availabilityGeometry:'ROUTE'}),/SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED/);
     assert.deepEqual(logs,[['[provider-capacity]',{operation:'SUPABASE_PROVIDER_CAPACITY_PUBLISH_FAILED',databaseCode:'PGRST202'}]]);
   }finally{
     globalThis.fetch=originalFetch;console.error=originalLog;
@@ -46,7 +46,7 @@ test('Draft and additional-truck denials remain actionable rather than becoming 
   try{
     for(const code of ['TRUCK_NOT_LIVE','PROVIDER_VERIFICATION_REQUIRED']){
       globalThis.fetch=async()=>new Response(JSON.stringify({code:'P0001',message:code,details:'Private submitted details'}),{status:400,headers:{'Content-Type':'application/json'}});
-      await assert.rejects(()=>publishSupabaseProviderCapacity({id:'test-user'},{vehicleId:'test-vehicle',status:'EMPTY'}),error=>error.message===code);
+      await assert.rejects(()=>publishSupabaseProviderCapacity({id:'test-user'},{vehicleId:'test-vehicle',status:'EMPTY',availabilityGeometry:'ROUTE'}),error=>error.message===code);
       assert.doesNotMatch(errorMessage(new Error(code)),/Something went wrong|Private submitted|P0001/);
     }
     assert.match(errorMessage(new Error('TRUCK_NOT_LIVE')),/choose Go live/);assert.deepEqual(logs,[]);
@@ -86,9 +86,9 @@ test('provider Capacity workspace projection keeps only canonical current geomet
   assert.equal(workspace.capacities[0].proof_available,true);
   assert.equal(workspace.capacities[0].expiry_state,'CURRENT');
   assert.equal(workspace.capacities[0].isOwn,true);
-  assert.equal(workspace.corridors[0].geometry,'RADIUS');
-  assert.deepEqual(workspace.corridors[0].route_points,[]);
-  assert.equal(workspace.corridors[0].area_boundary.length,3);
+  assert.equal(workspace.preferredCoverage[0].geometry,'RADIUS');
+  assert.deepEqual(workspace.preferredCoverage[0].route_points,[]);
+  assert.equal(workspace.preferredCoverage[0].area_boundary.length,3);
   assert.deepEqual(workspace.access,{kind:'SELF_MANAGED',can_manage_capacity:true});
 });
 test('space estimates hide legacy Partial50 and expose only a reported value',()=>{
@@ -116,7 +116,7 @@ test('publish command keeps legacy omission, refuses clear and never trusts clie
     return new Response(JSON.stringify('capacity-id'),{status:200,headers:{'Content-Type':'application/json'}});
   };
   try{
-    const base={vehicleId:'vehicle',status:'PARTIAL'};
+    const base={vehicleId:'vehicle',status:'PARTIAL',availabilityGeometry:'ROUTE'};
     await publishSupabaseProviderCapacity({id:'actor'},base);
     await publishSupabaseProviderCapacity({id:'actor'},{...base,availablePercent:40,availablePercentReportedAt:'2000-01-01T00:00:00Z',availablePercentReportedBy:'other-user'});
     assert.equal(Object.hasOwn(commands[0],'available_percent'),false);
@@ -128,6 +128,12 @@ test('publish command keeps legacy omission, refuses clear and never trusts clie
     }
     await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,status:'EMPTY',availablePercent:40}),/INVALID_AVAILABLE_PERCENT/);
     assert.equal(commands.length,2);
+    await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,availabilityGeometry:'RADIUS'}),/PLANNED_ROUTE_REQUIRED/);
+    await assert.rejects(()=>publishSupabaseProviderCapacity({id:'actor'},{...base,journeyStartAt:'2027-02-03T11:00',journeyEndAt:'2027-02-03T10:00'}),/INVALID_CAPACITY_JOURNEY_RANGE/);
+    await publishSupabaseProviderCapacity({id:'actor'},{...base,journeyStartAt:'2027-02-03T07:30',journeyEndAt:''});
+    assert.equal(commands[2].journey_start_at,'2027-02-03T04:30:00.000Z');
+    assert.equal(commands[2].journey_end_at,null);
+    assert.equal(Object.hasOwn(commands[0],'journey_start_at'),false);
   }finally{
     globalThis.fetch=previous.fetch;
     for(const [key,value] of [['NEXT_PUBLIC_SUPABASE_URL',previous.url],['SUPABASE_SERVICE_ROLE_KEY',previous.key]]) {
@@ -138,7 +144,7 @@ test('publish command keeps legacy omission, refuses clear and never trusts clie
 test('provider workspace returns each authorized current pair without inheriting legacy or stale routes',()=>{
  const route=(id,vehicle_id,driver_user_id)=>({id,vehicle_id,driver_user_id,geometry:'ROUTE'});
  const workspace=projectSupabaseProviderCapacityWorkspace({vehicles:[{id:'one',assigned_driver:{id:'driver-one'}},{id:'two',assigned_driver:{id:'driver-two'}}],corridors:[route('legacy'),route('first','one','driver-one'),route('old','one','driver-two'),route('second','two','driver-two'),route('foreign','other','driver-one')]});
- assert.deepEqual(workspace.corridors.map(signal=>signal.id),['first','second']);
+ assert.deepEqual(workspace.preferredCoverage.map(signal=>signal.id),['first','second']);
 });
 
 test('historical migration043 repeats its original scope, subscription and permission checks',()=>{

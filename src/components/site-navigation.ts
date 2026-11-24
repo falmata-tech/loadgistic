@@ -2,7 +2,7 @@ import {ClipboardCheck, Headphones, Home, Info, MapPinned, Network, Route, Spark
 import type {LucideIcon} from 'lucide-react';
 
 export type SiteNavigationUser={
- id:string;role:string;platformRole?:string;name:string;active?:boolean;accountName?:string;
+ id:string;role:string;platformRole?:string;name:string;active?:boolean;accountName?:string;exampleAccount?:boolean;
  canManageFleet?:boolean;drivesTruck?:boolean;
  capacityAllowed?:boolean;trackingAllowed?:boolean;
  canManageSupport?:boolean;canManageFeatured?:boolean;

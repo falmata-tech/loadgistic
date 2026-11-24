@@ -34,4 +34,4 @@ const rows:readonly (readonly [string,string,string])[]=[
  ['This business or team member is no longer available.','ይህ ድርጅት ወይም የቡድን አባል አሁን ይህን መረጃ መቀበል አይችልም።','Dhaabbatichi ykn miseensi garee kun amma odeeffannoo kana fudhachuu hin dandaʼu.'],
  ['This shipment is not available. Please refresh and try again.','የዚህ ጭነት መረጃ አሁን አይገኝም። ገጹን ያድሱና እንደገና ይሞክሩ።','Odeeffannoon feʼumsa kanaa amma hin argamu. Fuula haaromsiitii irra deebiʼii yaali.'],
 ];
-export const trackingSharingMessages:Record<Locale,Messages>={en:{},am:Object.fromEntries(rows.map(row=>[row[0],row[1]])),om:Object.fromEntries(rows.map(row=>[row[0],row[2]]))};
+export const trackingSharingMessages:Record<Locale,Messages>={en:{},so:{},am:Object.fromEntries(rows.map(row=>[row[0],row[1]])),om:Object.fromEntries(rows.map(row=>[row[0],row[2]]))};

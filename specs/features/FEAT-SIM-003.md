@@ -87,7 +87,7 @@ on Hawassa → Shashamane → Batu → Adama, and it has no active GPS, Tracking
 private grant\
 When that driver selects one clearly synthetic manual point near Hawassa and
 publishes Partial on the same Open route through the ordinary actor commands\
-Then the new signal is Partial and accepts shared loads, with a manual-source
+Then the new signal is Partial and accepts partial loads, with a manual-source
 icon, actual save timestamps, and no claim of GPS or real-world movement\
 And O10 stays Empty; the other three heavy/trailer signals retain their states
 and timestamps; saved Featured slots, assignments, vehicle type, documents,
@@ -118,7 +118,7 @@ passed the exact guarded transaction and no-op replay. That clone predates
 O10's fresh save, so the immediate preview preflight separately proved O10's
 new Empty/manual signal and the exact five-vehicle mix. A fresh protected
 preview backup preceded the atomic O09 apply. Independent local DB readback
-showed O09 Partial/Open/Route/manual 5 km, shared loads only, two unchanged
+showed O09 Partial/Open/Route/manual 5 km, partial loads only, two unchanged
 Featured slots, one unchanged driver assignment, zero active GPS/Tracking or
 business grants and one receipt; O10 and the other three remained Empty. The
 public API returned Partial one (O09 first) and Empty four. Actual Chrome

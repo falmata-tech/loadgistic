@@ -203,6 +203,10 @@ test('private cargo photo request goes from a broker’s map to the assigned dri
   const brokerPage=await browserPage(1280);businessContexts.push(brokerPage.context());await localSupportLogin(brokerPage,owned.ownerId);
   const brokerPanel=await openPrivatePanel(brokerPage,owned.workspaceId,owned.vehicleId);
   await expect(brokerPage.locator('.truck-inspection').getByText('Available space: 65%',{exact:true})).toBeVisible();
+  const summary=brokerPage.locator('.truck-inspection');
+  await expect(summary.locator('.capacity-coverage-indicators')).toHaveText('Planned route');
+  await expect(summary).toContainText('Capacity updated:');
+  await expect(summary).toContainText('Location updated:');
   await expect(brokerPanel.getByText('No photo yet',{exact:true})).toBeVisible({timeout:35000});
   const requestResponse=brokerPage.waitForResponse(response=>new URL(response.url()).pathname.endsWith('/capacity/photo-requests')&&response.request().method()==='POST');
   await brokerPanel.getByRole('button',{name:'Request photo',exact:true}).click();
@@ -248,7 +252,12 @@ test('private cargo photo request goes from a broker’s map to the assigned dri
    return url.pathname==='/api/capacity/cargo-space-photos'&&url.searchParams.get('vehicleId')===owned.vehicleId;
   },{timeout:45000});
   await driverPage.goto('/app/home',{waitUntil:'domcontentloaded'});
-  await expect(driverPage.locator('.capacity-space-summary')).toHaveText('Available space: 65%');
+  const plannedCapacity=driverPage.getByTestId('capacity-summary')
+   .getByRole('button',{name:'Edit planned capacity: Available space: 65%',exact:true});
+  await plannedCapacity.click();
+  const editor=driverPage.getByRole('dialog',{name:'Planned capacity',exact:true});
+  await expect(editor.getByRole('spinbutton',{name:'Available space',exact:true})).toHaveValue('65');
+  await editor.getByRole('button',{name:'Cancel',exact:true}).click();
   const driverPanel=driverPage.locator('details.cargo-photo-panel');
   const capacityPhoto=await driverSummary;
   expect(capacityPhoto.status()).toBe(200);

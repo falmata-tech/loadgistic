@@ -1,3 +1,5 @@
+import {capacityCoverageLabel} from '../src/lib/capacity-coverage-label.js';
+import {localizedSavedUpdate} from '../src/lib/i18n/update-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,7 +12,8 @@ import {providerHomeTab,providerHomeTabs,providerWorkspaceCapabilities} from '..
 import {paginateResults} from '../src/lib/pagination.js';
 import {capacityLocationSource,selectedCapacityLocation} from '../src/lib/capacity-location-selection.js';
 import {locationSourceLabel} from '../src/lib/location-source.js';
-import {reportedSpacePercent} from '../src/lib/capacity-space-estimate.js';
+import {availableSpacePercent,emptyShipmentPreferenceLabel} from '../src/lib/capacity-space-estimate.js';
+import {capacityLoadPreference} from '../src/lib/capacity-load-preferences.js';
 import {CAPACITY_FILTER_CHOICES,capacityFilterRecord,canonicalCapacityFilters} from '../src/lib/capacity-filter-values.js';
 
 // Run the actual presentation/submit handlers. Database authority, HTTP adapters,
@@ -21,7 +24,7 @@ function runtime(){
  const hooks={useState:initial=>{const state=slots,index=cursor++;if(!(index in state))state[index]=typeof initial==='function'?initial():initial;return[state[index],value=>{state[index]=typeof value==='function'?value(state[index]):value;}];},useRef:initial=>{const index=cursor++;return slots[index]||(slots[index]={current:initial});},useMemo:compute=>compute(),useEffect(){},useId:()=> 'scoped-field'};
  Object.assign(React,hooks);
  const hosts=Object.fromEntries(['Localized','Text','View','Pressable','AppIcon','Button','Copy','ErrorText','Link','KeyRound','ShieldCheck','BadgeCheck','Check','Truck','Page','Title','Card','Field','ActivityIndicator','Image','Modal','ScrollView','Switch','SafeAreaView','Redirect','WorkspaceSection','WorkspaceTabs','WorkspaceTaskHeader','WorkspaceFact','WorkspaceAction','TruckControls','Documents','CapacityManagement','VehicleLifecycle','DriverContact','TrailerSetup','FleetInvitation','PublicCapacityMap','FleetDevices','TruckLocationSource','CapacityLocationMap','LocateFixed','Power','PowerOff','CapacityForm','CargoSpacePhoto','ProviderCargoSpacePhoto'].map(name=>[name,name]));
- const common={React,...hooks,...hosts,reportedSpacePercent,workspaceCapabilities,fleetDriverEditorKey,palette:{ink:'#0b1d3a',blue:'#155eef',muted:'#526375',border:'#cbd5e1'},apiOrigin:'http://local.test',StyleSheet:{create:value=>value},useLanguage:()=>({t:(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match))}),styles:new Proxy({},{get:(_value,key)=>key})};
+ const common={capacityCoverageLabel,localizedSavedUpdate,CapacityCoverageIndicators:'CoverageIndicators',React,...hooks,...hosts,availableSpacePercent,emptyShipmentPreferenceLabel,capacityLoadPreference,workspaceCapabilities,fleetDriverEditorKey,palette:{ink:'#0b1d3a',blue:'#155eef',muted:'#526375',border:'#cbd5e1'},apiOrigin:'http://local.test',StyleSheet:{create:value=>value},useLanguage:()=>({t:(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match))}),styles:new Proxy({},{get:(_value,key)=>key})};
  function compile(path,ports={}){const file=readFileSync(path,'utf8'),parsed=ts.createSourceFile(path,file,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX),source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node)))),code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={},args={...common,...ports};if(/\bconst styles\s*=/.test(source))delete args.styles;new Function(...Object.keys(args),'exports',code)(...Object.values(args),exports);return exports;}
  function resolve(tree,path='root'){if(Array.isArray(tree))return tree.map((child,index)=>resolve(child,`${path}/${index}`));if(!tree||typeof tree!=='object')return tree;if(typeof tree.type==='function'){const key=`${path}:${tree.type.name}:${tree.key||''}`;slots=stores.get(key)||[];stores.set(key,slots);cursor=0;return resolve(tree.type(tree.props),`${key}/children`);}return{...tree,props:{...tree.props,children:resolve(tree.props.children,`${path}/children`)}};}
  common.WorkspaceTaskPane=compile('apps/mobile/src/components/workspace-task.tsx',{useEffect:callback=>callback()}).WorkspaceTaskPane;
@@ -119,9 +122,9 @@ test('native self-assignment preserves owner authority and omits employee remova
 });
 test('web driving-owner Home selects their exact driver assignment while fleet-only owners retain the fleet Home',async()=>{
  const view=runtime();let user={id:'owner',active:true,role:'TRANSPORTER',organization_id:'fleet',owns_provider_account:true,can_manage_fleet:true,drives_truck:true,current_driver_id:'owner',current_driven_vehicle_id:'mine'};
- const vehicles=[{id:'employee-truck',assigned_driver:{id:'employee'}},{id:'mine',assigned_driver:{id:'owner'}}],capacities=vehicles.map(vehicle=>({vehicle_id:vehicle.id})),corridors=vehicles.map(vehicle=>({vehicle_id:vehicle.id}));
- const screen=view.compile('src/components/provider-home.tsx',{providerWorkspaceCapabilities,providerHomeTab,providerHomeTabs,requireUser:async()=>user,getWorkspaceAccess:async()=>({granted:true}),getProviderCapacityWorkspace:async()=>({vehicles,capacities,corridors,access:{kind:'OWNER',can_manage_capacity:true}}),DriverCapacityHome:'DriverCapacityHome',FleetWorkspace:'FleetWorkspace',redirect(){throw Error('REDIRECT');}}).ProviderHome;
- let tree=await screen({searchParams:Promise.resolve({})}),panel=find(tree,'DriverCapacityHome');assert.ok(panel);assert.deepEqual(panel.props.vehicles.map(vehicle=>vehicle.id),['mine']);assert.deepEqual(panel.props.capacities.map(capacity=>capacity.vehicle_id),['mine']);assert.deepEqual(panel.props.corridors.map(corridor=>corridor.vehicle_id),['mine']);assert.equal(panel.props.ownsFleet,true);
+ const vehicles=[{id:'employee-truck',assigned_driver:{id:'employee'}},{id:'mine',assigned_driver:{id:'owner'}}],capacities=vehicles.map(vehicle=>({vehicle_id:vehicle.id})),preferredCoverage=vehicles.map(vehicle=>({vehicle_id:vehicle.id}));
+ const screen=view.compile('src/components/provider-home.tsx',{providerWorkspaceCapabilities,providerHomeTab,providerHomeTabs,requireUser:async()=>user,getWorkspaceAccess:async()=>({granted:true}),getProviderCapacityWorkspace:async()=>({vehicles,capacities,preferredCoverage,access:{kind:'OWNER',can_manage_capacity:true}}),DriverCapacityHome:'DriverCapacityHome',FleetWorkspace:'FleetWorkspace',redirect(){throw Error('REDIRECT');}}).ProviderHome;
+ let tree=await screen({searchParams:Promise.resolve({})}),panel=find(tree,'DriverCapacityHome');assert.ok(panel);assert.deepEqual(panel.props.vehicles.map(vehicle=>vehicle.id),['mine']);assert.deepEqual(panel.props.capacities.map(capacity=>capacity.vehicle_id),['mine']);assert.deepEqual(panel.props.preferredCoverage.map(corridor=>corridor.vehicle_id),['mine']);assert.equal(panel.props.ownsFleet,true);
  vehicles[1].assigned_driver.id='someone-else';tree=await screen({searchParams:Promise.resolve({})});panel=find(tree,'DriverCapacityHome');assert.deepEqual(panel.props.vehicles,[],'a stale current-truck ID cannot replace proof of the current assigned driver');
  user={...user,drives_truck:false,current_driver_id:null,current_driven_vehicle_id:null};await assert.rejects(screen({searchParams:Promise.resolve({})}),/REDIRECT/);tree=await screen({requested:'vehicles',searchParams:Promise.resolve({})});assert.ok(find(tree,'FleetWorkspace'));
 });
@@ -175,9 +178,9 @@ test('native fleet separates tasks and opens saved details before any editor',()
 test('restricted web employees keep a map with duty/location actions and no capacity editor',()=>{
  const view=runtime(),screen=view.compile('src/components/driver-capacity-home.tsx',{useRouter:()=>({refresh(){}}),useTranslation:()=>({t:(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match))}),StatusPill:'StatusPill',capacityLocationSource,selectedCapacityLocation,locationSourceLabel,relativeTime:()=> 'Today'}).DriverCapacityHome;
  const vehicle={id:'truck',make:'Make',model:'Model',platform_number:'TRUCK',assigned_driver:{id:'employee'},driver_location:{lat:9,lng:39,radius:20,area:'Approximate area',updatedAt:'2026-10-15'}};
- let tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY'}],corridors:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
+ let tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY'}],preferredCoverage:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
  assert.ok(find(tree,'section',node=>node.props['data-testid']==='restricted-driver-map'));assert.ok(find(tree,'CapacityLocationMap'));assert.equal(find(tree,'CapacityForm'),undefined);assert.equal(find(tree,'button',node=>node.props['aria-label']==='Available').props.disabled,true);assert.ok(find(tree,'Localized',node=>node.props.as==='button'&&node.props['aria-label']==='Edit capacity location'));
- tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'EMPTY',availability_geometry:'ROUTE',current_route_points:[{lat:9,lng:39,label:'A'},{lat:10,lng:40,label:'B'}]}],corridors:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
+ tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'EMPTY',availability_geometry:'ROUTE',current_route_points:[{lat:9,lng:39,label:'A'},{lat:10,lng:40,label:'B'}]}],preferredCoverage:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
  assert.equal(find(tree,'button',node=>node.props['aria-label']==='Off Duty').props.disabled,false);assert.equal(find(tree,'CapacityLocationMap').props.routePoints.length,2);
 });
 
@@ -185,7 +188,7 @@ test('retired Manual is unselected, hides its point and cannot resume duty witho
  const view=runtime(),screen=view.compile('src/components/driver-capacity-home.tsx',{useRouter:()=>({refresh(){}}),useTranslation:()=>({t:value=>value}),StatusPill:'StatusPill',capacityLocationSource,selectedCapacityLocation,locationSourceLabel,relativeTime:()=> 'Earlier'}).DriverCapacityHome;
  for(const source of ['MANUAL','MANUAL_ADMIN',null]){
   const vehicle={id:'truck',make:'Make',model:'Model',platform_number:'TRUCK',assigned_driver:{id:'employee'},duty_configuration_available:true,location_selection:{source}};
-  const tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY',location_source:'MANUAL_ADMIN',location_lat:40,location_lng:-105,location_precision_km:5,location_updated_at:'2026-10-15'}],corridors:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
+  const tree=view.render(screen,{vehicles:[vehicle],capacities:[{vehicle_id:'truck',status:'OFF_DUTY',location_source:'MANUAL_ADMIN',location_lat:40,location_lng:-105,location_precision_km:5,location_updated_at:'2026-10-15'}],preferredCoverage:[],access:{kind:'COMPANY',can_manage_capacity:false},query:{},renderedAt:0});
   assert.equal(find(tree,'button',node=>node.props['aria-label']==='Available').props.disabled,true);
   assert.equal(find(tree,'Text',node=>node.props.message==='Manually entered'),undefined);
   assert.ok(find(tree,'Text',node=>node.props.message==='Choose GPS or Phone'));

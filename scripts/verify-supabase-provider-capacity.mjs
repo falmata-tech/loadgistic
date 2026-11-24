@@ -34,9 +34,13 @@ async function expectRejected(action,code){
 
 function publishInput(current,vehicleId){
   const status=current.status==='EMPTY'?'EMPTY':'PARTIAL';
-  const geometry=current.availability_geometry==='RADIUS'?'RADIUS':'ROUTE';
+  const savedRoute=(current.current_route_points||[]).filter(point=>point.place_ref);
   const input={
-    vehicleId,status,acceptedLoads:status==='EMPTY'?'BOTH':'PTL',availabilityGeometry:geometry,
+    vehicleId,status,acceptedLoads:status==='EMPTY'?'BOTH':'PTL',availabilityGeometry:'ROUTE',
+    currentRoutePlaces:(savedRoute.length>=2?savedRoute:[
+      {place_ref:'builtin:addis ababa',label:'Addis Ababa'},
+      {place_ref:'builtin:adama',label:'Adama'}
+    ]).map(point=>({placeRef:point.place_ref,label:point.label})),
     ...(status==='PARTIAL'?{availablePercent:current.available_percent??45}:{}),
     visibility:current.visibility==='PRIVATE'?'PRIVATE':'OPEN',locationSource:'DEVICE_OBSCURED',
     approximateLat:Number(current.location_lat),approximateLng:Number(current.location_lng),
@@ -44,11 +48,6 @@ function publishInput(current,vehicleId){
   };
   if(!Number.isFinite(input.approximateLat)||!Number.isFinite(input.approximateLng)||!Number.isFinite(input.locationPrecisionKm)){
     throw new Error('SUPABASE_PROVIDER_CAPACITY_FIXTURE_LOCATION_MISSING');
-  }
-  if(geometry==='ROUTE')input.currentRoutePlaces=current.current_route_points.map(point=>({placeRef:point.place_ref,label:point.label}));
-  else{
-    input.capacityAreaCenterPlaceRef=current.capacity_area_center_place_ref;
-    input.capacityAreaBoundaryPlaces=current.capacity_area_boundary.map(point=>({placeRef:point.place_ref,label:point.label}));
   }
   return input;
 }
@@ -124,6 +123,9 @@ const companyCreated=[];
 const {data:permission,error:permissionError}=await service.from('driver_permissions').select('can_manage_capacity').eq('user_id',companyDriver.id).maybeSingle();
 if(permissionError||!permission)throw new Error('SUPABASE_PROVIDER_CAPACITY_PERMISSION_FIXTURE_MISSING');
 try{
+  // An imported historical area can still be displayed. Resume requires a
+  // saved planned route, so publish one before testing limited driver access.
+  companyCreated.push(await publishProviderCapacity(companyDriver,publishInput(companyCurrent,companyVehicle.id)));
   await service.from('driver_permissions').update({can_manage_capacity:false}).eq('user_id',companyDriver.id).throwOnError();
   await expectRejected(()=>publishProviderCapacity(companyDriver,publishInput(companyCurrent,companyVehicle.id)),'FORBIDDEN');
   companyCreated.push(await setProviderAssignedVehicleDuty(companyDriver,companyVehicle.id,false));
@@ -132,7 +134,7 @@ try{
     approximateLng:Number(companyCurrent.location_lng),locationPrecisionKm:Number(companyCurrent.location_precision_km)
   }));
   const dutyWorkspace=await getProviderCapacityWorkspace(companyDriver);
-  if(dutyWorkspace.capacities[0]?.id!==companyCreated[1]||dutyWorkspace.capacities[0]?.status==='OFF_DUTY')throw new Error('SUPABASE_PROVIDER_CAPACITY_DUTY_FAILED');
+  if(dutyWorkspace.capacities[0]?.id!==companyCreated.at(-1)||dutyWorkspace.capacities[0]?.status==='OFF_DUTY')throw new Error('SUPABASE_PROVIDER_CAPACITY_DUTY_FAILED');
 }finally{
   await service.from('driver_permissions').update({can_manage_capacity:permission.can_manage_capacity}).eq('user_id',companyDriver.id);
   await restoreVehicleCapacity(companySnapshot,companyCreated);
@@ -153,7 +155,7 @@ let createdRouteId=null;
 const createdRouteIds=[];
 try{
   if(originalPairRoutes.length)await service.from('profile_routes').delete().in('id',originalPairRoutes.map(route=>route.id)).throwOnError();
-  const source=originalRoutes?.[0]||selfWorkspace.corridors[0];
+  const source=originalRoutes?.[0]||selfWorkspace.preferredCoverage[0];
   if(!source)throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_FIXTURE_MISSING');
   const input=source.geometry==='RADIUS'?{
     ...regularScope,geometry:'RADIUS',areaCenterPlaceRef:source.area_center_place_ref,
@@ -163,17 +165,17 @@ try{
   };
   createdRouteId=await addProviderRegularCapacity(selfDriver,input);
   createdRouteIds.push(createdRouteId);
-  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_ADD_FAILED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_ADD_FAILED');
   await expectRejected(()=>addProviderRegularCapacity(transporter,input,createdRouteId),'NOT_FOUND');
   await expectRejected(()=>addProviderRegularCapacity(selfDriver,{...regularScope,geometry:'ROUTE',routePlaces:[]},createdRouteId),'CAPACITY_ROUTE_POINTS_REQUIRED');
-  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_ROLLBACK_FAILED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_ROLLBACK_FAILED');
   const {error:anonReplaceError}=await anon.rpc('replace_provider_regular_capacity',{actor_user_id:selfDriver.id,target_route_id:createdRouteId,command:{}});
   if(!anonReplaceError)throw new Error('SUPABASE_REGULAR_REPLACE_ANONYMOUS_ALLOWED');
   createdRouteId=await addProviderRegularCapacity(selfDriver,input,createdRouteId);
   createdRouteIds.push(createdRouteId);
-  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_FAILED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_FAILED');
   await removeProviderRegularCapacity(selfDriver,createdRouteId,regularScope);
-  if((await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_REMOVE_FAILED');
+  if((await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_REMOVE_FAILED');
 }finally{
   if(createdRouteIds.length){
     await service.from('profile_routes').delete().in('id',createdRouteIds);

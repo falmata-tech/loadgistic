@@ -39,7 +39,7 @@ test('map automatically loads all viewport pages and a cluster zoom needs one ac
   page.on('response',async(response:any)=>{const u=new URL(response.url());if(u.pathname==='/api/public/capacity'&&response.ok()){
     try{const data=await response.json();responses.push({viewport:u.searchParams.get('viewport'),hasMore:data.hasMore});}catch{}
   }});
-  await page.goto('/');
+  await page.goto('/',{waitUntil:'domcontentloaded'});
   await expect.poll(()=>responses.length,{timeout:30000}).toBeGreaterThan(0);
   await settled(page);
   await expect.poll(()=>responses.at(-1)?.hasMore).toBe(false);

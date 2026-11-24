@@ -4,7 +4,7 @@ import {openCapacityFilterDialog} from './capacity-drawer-helper';
 test('place keyboard selection preserves the filter form and submits canonical route references only on Show vehicles',async({page})=>{
  test.setTimeout(90000);
  await page.goto('/',{waitUntil:'domcontentloaded'});
- const dialog=await openCapacityFilterDialog(page);
+ const dialog=await openCapacityFilterDialog(page,'availability');
  await dialog.getByRole('button',{name:'Route',exact:true}).click();
  const origin=dialog.getByRole('combobox',{name:'Origin (optional)',exact:true});
  const initialUrl=page.url();
@@ -37,7 +37,7 @@ test('place keyboard selection preserves the filter form and submits canonical r
  ]);
  await expect(dialog).not.toBeVisible();
  await expect(page).toHaveURL(url=>url.searchParams.get('originPlaceRef')===originRef&&url.searchParams.get('destinationPlaceRef')===destinationRef);
- await page.reload({waitUntil:'domcontentloaded'});await openCapacityFilterDialog(page);
+ await page.reload({waitUntil:'domcontentloaded'});await openCapacityFilterDialog(page,'availability');
  await expect(origin).toHaveValue('Addis Ababa, Ethiopia');await expect(destination).toHaveValue('Assosa, Ethiopia');
  await expect(dialog.locator('input[name="originPlaceRef"]')).toHaveValue(originRef);
  await expect(dialog.locator('input[name="destinationPlaceRef"]')).toHaveValue(destinationRef);

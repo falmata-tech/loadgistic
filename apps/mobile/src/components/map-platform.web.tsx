@@ -10,7 +10,7 @@ import {loadBrowserRaster,rasterProtocol} from '../map/browser-raster-request';
 type Coordinate=[number,number];
 export type ViewState={center:Coordinate;zoom:number;bearing:number;pitch:number;userInteraction?:boolean};
 type RegionEvent={nativeEvent:ViewState};
-export type MapRef={queryRenderedFeatures:(options:{layers:string[]})=>Promise<Feature[]>;project:(point:Coordinate)=>Promise<Coordinate>;unproject:(point:Coordinate)=>Promise<Coordinate>};
+export type MapRef={queryRenderedFeatures:(options:{layers:string[]})=>Promise<Feature[]>};
 export type CameraRef={fitBounds:(bounds:[number,number,number,number],options:FitBoundsOptions)=>void;jumpTo:(options:CameraOptions)=>void;easeTo:(options:EaseToOptions)=>void};
 export type GeoJSONSourceRef={getClusterExpansionZoom:(id:number)=>Promise<number>;getClusterLeaves:(id:number,limit:number,offset:number)=>Promise<Feature[]>};
 type PressEvent={nativeEvent:{features:Feature[]};stopPropagation:()=>void};
@@ -25,7 +25,7 @@ export const Map=forwardRef<MapRef,MapProps>(function BrowserMapView(props,ref){
  useImperativeHandle(ref,()=>({queryRenderedFeatures:async({layers})=>{
   const map=instance.current;if(!map)return [];
   return map.queryRenderedFeatures(undefined,{layers:layers.filter(id=>Boolean(map.getLayer(id)))});
- },project:async point=>{const map=instance.current;if(!map)throw Error('Map not ready');const pixel=map.project(point);return[pixel.x,pixel.y];},unproject:async point=>{const map=instance.current;if(!map)throw Error('Map not ready');const coordinate=map.unproject(point);return[coordinate.lng,coordinate.lat];}}),[]);
+ }}),[]);
  useEffect(()=>{
   if(!node.current)return;
   let map:BrowserMap;
@@ -53,14 +53,14 @@ export const Camera=forwardRef<CameraRef,CameraProps>(function BrowserCamera({in
  return null;
 });
 
-type SourceProps=PropsWithChildren<{id:string;data:GeoJSON;cluster?:boolean;clusterRadius?:number;clusterMaxZoom?:number;onPress?:(event:PressEvent)=>void}>;
+type SourceProps=PropsWithChildren<{id:string;data:GeoJSON;cluster?:boolean;clusterRadius?:number;clusterMaxZoom?:number;maxzoom?:number;onPress?:(event:PressEvent)=>void}>;
 export const GeoJSONSource=forwardRef<GeoJSONSourceRef,SourceProps>(function BrowserGeoJSON(props,ref){
  const map=useContext(Context),[ready,setReady]=useState(false),initial=useRef(props),latest=useRef(props);
  useLayoutEffect(()=>{latest.current=props;},[props]);
  useImperativeHandle(ref,()=>({getClusterExpansionZoom:async id=>{const source=map?.getSource(props.id) as BrowserSource|undefined;if(!source)throw Error('Map not ready');return source.getClusterExpansionZoom(id);},getClusterLeaves:async(id,limit,offset)=>{const source=map?.getSource(props.id) as BrowserSource|undefined;if(!source)throw Error('Map not ready');return source.getClusterLeaves(id,limit,offset);}}),[map,props.id]);
  useEffect(()=>{
   if(!map)return;const p=initial.current;
-  map.addSource(props.id,{type:'geojson',data:p.data,cluster:p.cluster,clusterRadius:p.clusterRadius,clusterMaxZoom:p.clusterMaxZoom,maxzoom:Math.max(18,(p.clusterMaxZoom||17)+1)});let active=true;queueMicrotask(()=>{if(active)setReady(true);});
+  map.addSource(props.id,{type:'geojson',data:p.data,cluster:p.cluster,clusterRadius:p.clusterRadius,clusterMaxZoom:p.clusterMaxZoom,maxzoom:p.maxzoom??Math.max(18,(p.clusterMaxZoom??17)+1)});let active=true;queueMicrotask(()=>{if(active)setReady(true);});
   const click=(event:maplibre.MapMouseEvent)=>{const layers=map.getStyle().layers.filter(layer=>'source' in layer&&layer.source===props.id).map(layer=>layer.id);if(!layers.length)return;const features=map.queryRenderedFeatures(event.point,{layers});if(features.length)latest.current.onPress?.({nativeEvent:{features},stopPropagation:()=>event.originalEvent.stopPropagation()});};
   map.on('click',click);
   return()=>{active=false;map.off('click',click);if(map.getStyle()){for(const layer of map.getStyle().layers)if('source' in layer&&layer.source===props.id)map.removeLayer(layer.id);if(map.getSource(props.id))map.removeSource(props.id);}};

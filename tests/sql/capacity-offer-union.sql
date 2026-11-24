@@ -1,5 +1,5 @@
 -- FEAT-CAP-001 / FEAT-GEO-001: one vehicle, complete current/Preferred offers,
--- Partial service areas, older private visibility and unchanged tenant scope.
+-- Preferred areas and retired Planned areas, older private visibility and unchanged tenant scope.
 begin;
 set local statement_timeout='30s';
 do $offers$
@@ -14,8 +14,8 @@ begin
     'recurring_corridors',jsonb_build_array(jsonb_build_object('geometry','ROUTE','route_points',current_route)),
     'updated_at',now(),'accepts_full_load',false,'accepts_partial_load',true);
   query:='{"origin_lat":9.006,"origin_lng":38.732,"destination_lat":8.919,"destination_lng":38.600,"origin_radius_km":5,"destination_radius_km":5}';
-  if not public.capacity_payload_matches(item,query) then raise exception 'PARTIAL_CURRENT_AREA_REJECTED';end if;
-  if not public.capacity_payload_matches(item,query||'{"geometry":"RADIUS"}') then raise exception 'PARTIAL_AREA_GEOMETRY_REJECTED';end if;
+  if public.capacity_payload_matches(item,query) then raise exception 'RETIRED_PLANNED_AREA_MATCHED';end if;
+  if public.capacity_payload_matches(item,query||'{"geometry":"RADIUS"}') then raise exception 'RETIRED_AREA_GEOMETRY_MATCHED';end if;
   if public.capacity_payload_matches(item,query||'{"load_type":"FTL"}') then raise exception 'FULL_LOAD_FILTER_BYPASSED';end if;
   item:=item||jsonb_build_object('availability_geometry','ROUTE','current_route_points',current_route,
     'capacity_area_boundary','[]'::jsonb,'recurring_corridors',jsonb_build_array(jsonb_build_object('geometry','RADIUS','area_boundary',eastern_area)));
@@ -92,7 +92,7 @@ do $published$
 declare
  owner_id uuid:=gen_random_uuid();driver_id uuid:=gen_random_uuid();broker_id uuid:=gen_random_uuid();foreign_id uuid:=gen_random_uuid();
  organization_id uuid:=gen_random_uuid();vehicle_id uuid;workspace_id uuid;connection_id uuid;grant_id uuid;capacity_id uuid;route_id uuid;
- digest text:=encode(gen_random_bytes(32),'hex');query jsonb;profile_query jsonb;area_places jsonb;route_places jsonb;route_first jsonb;
+ digest text:=encode(gen_random_bytes(32),'hex');query jsonb;profile_query jsonb;area_places jsonb;route_places jsonb;route_first jsonb;local_route_first jsonb;local_route_last jsonb;
 begin
  insert into auth.users(id,email,email_confirmed_at,raw_app_meta_data,raw_user_meta_data) values
  (owner_id,'offer-owner-'||owner_id||'@example.invalid',now(),'{"fixture_source":"loadgistic"}','{}'),
@@ -123,25 +123,28 @@ begin
   perform publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
    'availability_geometry','RADIUS','capacity_area_center_place_ref','builtin:addis ababa',
    'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
-  raise exception 'MALFORMED_PARTIAL_AREA_ACCEPTED';
- exception when others then if sqlerrm<>'CAPACITY_AREA_BOUNDARY_REQUIRED' then raise;end if;end;
+  raise exception 'RETIRED_PLANNED_AREA_ACCEPTED';
+ exception when others then if sqlerrm<>'PLANNED_ROUTE_REQUIRED' then raise;end if;end;
  capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
-   'availability_geometry','RADIUS','capacity_area_center_place_ref','builtin:addis ababa','capacity_area_boundary_places',area_places,
+   'availability_geometry','ROUTE',
+   'current_route_places','[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:sebeta"}]'::jsonb,
    'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
- if (select availability_geometry from capacities where id=capacity_id) is distinct from 'RADIUS' then raise exception 'PARTIAL_AREA_PUBLICATION_NOT_SAVED';end if;
+ if (select availability_geometry from capacities where id=capacity_id) is distinct from 'ROUTE' then raise exception 'PARTIAL_ROUTE_PUBLICATION_NOT_SAVED';end if;
  route_id:=add_provider_regular_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'expected_driver_id',driver_id,
    'geometry','ROUTE','route_places',route_places));
- query:=jsonb_build_object('capacity_id',capacity_id,'status','PARTIAL','geometry','RADIUS',
-   'origin_lat',9.006,'origin_lng',38.732,'destination_lat',8.919,'destination_lng',38.600,
+ select current_route_points_json->0,current_route_points_json->1 into local_route_first,local_route_last from capacities where id=capacity_id;
+ query:=jsonb_build_object('capacity_id',capacity_id,'status','PARTIAL','geometry','ROUTE',
+   'origin_lat',(local_route_first->>'lat')::float8,'origin_lng',(local_route_first->>'lng')::float8,
+   'destination_lat',(local_route_last->>'lat')::float8,'destination_lng',(local_route_last->>'lng')::float8,
    'origin_radius_km',5,'destination_radius_km',5);
- if (select count(*) from public_capacity_page(query,null,null,14))<>1 then raise exception 'PARTIAL_AREA_PUBLIC_PAGE';end if;
- if (select count(*) from capacity_search_public_rows(query,null,null,14))<>1 then raise exception 'PARTIAL_AREA_PUBLIC_SEARCH';end if;
+ if (select count(*) from public_capacity_page(query,null,null,14))<>1 then raise exception 'PARTIAL_ROUTE_PUBLIC_PAGE';end if;
+ if (select count(*) from capacity_search_public_rows(query,null,null,14))<>1 then raise exception 'PARTIAL_ROUTE_PUBLIC_SEARCH';end if;
  if (select count(*) from public_capacity_clusters(query||'{"viewport":[38.4,8.7,39.1,9.3]}'::jsonb))<>1
-   then raise exception 'PARTIAL_AREA_CLUSTER';end if;
- if (select count(*) from account_capacity_filtered_page(broker_id,digest,null,null,100,query))<>1 then raise exception 'PARTIAL_AREA_ACCOUNT_PAGE';end if;
- if (select count(*) from business_capacity_filtered_page(broker_id,workspace_id,null,null,100,query))<>1 then raise exception 'PARTIAL_AREA_BUSINESS_PAGE';end if;
+   then raise exception 'PARTIAL_ROUTE_CLUSTER';end if;
+ if (select count(*) from account_capacity_filtered_page(broker_id,digest,null,null,100,query))<>1 then raise exception 'PARTIAL_ROUTE_ACCOUNT_PAGE';end if;
+ if (select count(*) from business_capacity_filtered_page(broker_id,workspace_id,null,null,100,query))<>1 then raise exception 'PARTIAL_ROUTE_BUSINESS_PAGE';end if;
  profile_query:=query||jsonb_build_object('q','offer-'||organization_id);
- perform pg_temp.assert_public_profile_offer217(profile_query,1,'PARTIAL_PLANNED_AREA',true);
+ perform pg_temp.assert_public_profile_offer217(profile_query,1,'PARTIAL_PLANNED_ROUTE');
  perform pg_temp.assert_public_profile_offer217(profile_query||'{"status":"EMPTY"}',0,'STATUS_AND');
  perform pg_temp.assert_public_profile_offer217(profile_query||'{"load_type":"FTL"}',0,'LOAD_AND');
  perform pg_temp.assert_public_profile_offer217(profile_query||'{"vehicle_category":"Pickup truck"}',0,'TYPE_AND');
@@ -178,13 +181,13 @@ begin
  -- Current and Preferred offers remain one vehicle even when both cover the same place.
  perform replace_provider_regular_capacity(owner_id,route_id,jsonb_build_object('vehicle_id',vehicle_id,'expected_driver_id',driver_id,
    'geometry','RADIUS','area_center_place_ref','builtin:addis ababa','area_boundary_places',area_places));
- query:=jsonb_build_object('capacity_id',capacity_id,'status','PARTIAL','geometry','RADIUS',
+ query:=jsonb_build_object('capacity_id',capacity_id,'status','PARTIAL',
    'origin_lat',9.006,'origin_lng',38.732,'destination_lat',8.919,'destination_lng',38.600,
    'origin_radius_km',5,'destination_radius_km',5);
  if (select count(*) from public_capacity_page(query,null,null,14))<>1
    or (select count(*) from business_capacity_filtered_page(broker_id,workspace_id,null,null,100,query))<>1
  then raise exception 'DUPLICATED_MATCHING_VEHICLE';end if;
- perform pg_temp.assert_public_profile_offer217(query||jsonb_build_object('q','offer-'||organization_id),1,'DUPLICATE_OFFERS_COUNT_ONCE',true);
+ perform pg_temp.assert_public_profile_offer217(query||jsonb_build_object('q','offer-'||organization_id),1,'DUPLICATE_OFFERS_COUNT_ONCE');
  capacity_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',vehicle_id,'status','PARTIAL','available_percent',45,'accepted_loads','PTL',
    'availability_geometry','ROUTE','current_route_places',route_places,'location_source','PRESERVE_DRIVER','sharing_mode','BOTH'));
  select current_route_points_json->0 into route_first from capacities where id=capacity_id;

@@ -1,3 +1,4 @@
+import {localizedSavedUpdate} from '../../../../src/lib/i18n/update-label.js';
 import {useState} from 'react';
 import { AppState, Pressable, Text, View } from 'react-native';
 import {AppIcon} from './app-icon';
@@ -52,7 +53,7 @@ function LocationForm({truck,selection,onSaved,onBusy,reload}:{truck:CapacityTru
   finally{setBusy(false);onBusy?.(false);}
  }
  return <View style={{gap:14}}>
-  <View style={{padding:12,borderRadius:12,backgroundColor:palette.canvas,gap:3}}><Text style={{fontSize:12,color:palette.muted}}>{t('Capacity map location')}</Text><Text style={{fontSize:16,fontWeight:'700',color:palette.ink}}>{sourceName(selection.source)}</Text>{selection.source!==null&&locationSourceKind(truck.publishedLocationSource)&&!!truck.location?.updatedAt&&<Text style={{fontSize:12,color:palette.muted}}>{t('Location updated {date}',{date:new Date(truck.location.updatedAt).toLocaleString()})}</Text>}</View>
+  <View style={{padding:12,borderRadius:12,backgroundColor:palette.canvas,gap:3}}><Text style={{fontSize:12,color:palette.muted}}>{t('Capacity map location')}</Text><Text style={{fontSize:16,fontWeight:'700',color:palette.ink}}>{sourceName(selection.source)}</Text>{selection.source!==null&&locationSourceKind(truck.publishedLocationSource)&&!!truck.location?.updatedAt&&<Text style={{fontSize:12,color:palette.muted}}>{localizedSavedUpdate(truck.location.updatedAt,t,'location')}</Text>}</View>
   <Text style={{fontSize:15,fontWeight:'700',color:palette.ink}}>{t('Location source')}</Text>
   {canPhone&&<SourceChoice label={t('Driver’s phone')} detail={t('Phone location updates while Home is open.')} icon="phone" selected={source==='MOBILE'} disabled={busy} onPress={()=>{if(sourceSaved)setError(t('Refresh location settings before changing the source.'));else setSource('MOBILE');}}/>}
   {canPhone&&<><Text style={{fontSize:14,fontWeight:'700',color:palette.ink}}>{t('Shared location accuracy')}</Text><View style={{flexDirection:'row',flexWrap:'wrap',gap:7}}>{privacyRadii.map(value=><Pressable key={value} accessibilityRole="radio" accessibilityLabel={`${value} km`} accessibilityState={{checked:radius===value,disabled:busy||sourceSaved}} aria-checked={radius===value} aria-disabled={busy||sourceSaved} disabled={busy||sourceSaved} onPress={()=>setRadius(value)} style={{minWidth:56,minHeight:44,borderRadius:10,borderWidth:1,borderColor:radius===value?palette.blue:palette.border,backgroundColor:radius===value?'#eaf1ff':'#fff',alignItems:'center',justifyContent:'center'}}><Text style={{color:palette.ink,fontWeight:radius===value?'700':'500'}}>{value} km</Text></Pressable>)}</View></>}

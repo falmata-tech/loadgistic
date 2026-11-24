@@ -16,7 +16,7 @@ export async function getProviderRegularCapacity(user,/** @type {RegularCapacity
   const vehicle=workspace.vehicles.find(vehicle=>vehicle.id===scope.vehicleId);
   if(!vehicle)throw new Error('NOT_FOUND');
   if(!scope.expectedDriverId||vehicle.assigned_driver?.id!==scope.expectedDriverId)throw new Error('TRUCK_DRIVER_CHANGED');
-  return {corridors:workspace.corridors.filter(signal=>signal.vehicle_id===scope.vehicleId&&signal.driver_user_id===scope.expectedDriverId).slice(0,1)};
+  return {preferredCoverage:workspace.preferredCoverage.filter(signal=>signal.vehicle_id===scope.vehicleId&&signal.driver_user_id===scope.expectedDriverId).slice(0,1)};
 }
 
 export async function publishProviderCapacity(user,input,photo=/** @type {any} */(null)){

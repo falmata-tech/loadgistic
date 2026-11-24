@@ -1,3 +1,4 @@
+import {localizedSavedUpdate} from '../../../src/lib/i18n/update-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -13,7 +14,7 @@ function harness({selection,request=async()=>({}),capture=async()=>({approximate
  const useState=initial=>{const index=cursor++;if(!(index in slots))slots[index]=typeof initial==='function'?initial():initial;return[slots[index],value=>{slots[index]=typeof value==='function'?value(slots[index]):value;}];};
  const useRef=initial=>{const index=cursor++;return slots[index]||(slots[index]={current:initial});};
  const input={vehicleId,source:'MOBILE',precisionKm:10,revision:'2026-10-18T12:00:00Z',manualPoint:null,canSetPhoneLocation:true,...selection};
- const ports={React,parseDriverLocationSelection,locationSourceKind,LoadingSpinner:'LoadingSpinner',useState,useRef,useCallback:callback=>callback,AppState:{currentState:'active'},ActivityIndicator:'ActivityIndicator',Pressable:'Pressable',Text:'Text',View:'View',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},AppIcon:'AppIcon',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useLanguage:()=>({t:value=>value}),useAccountQuery:()=>({data:input,error:'',loading:false,reload:async()=>{}}),useAccount:()=>({request:requestPort}),privacyRadii:[1,3,5,10,20],captureCapacityLocation:capture};
+ const ports={React,localizedSavedUpdate,parseDriverLocationSelection,locationSourceKind,LoadingSpinner:'LoadingSpinner',useState,useRef,useCallback:callback=>callback,AppState:{currentState:'active'},ActivityIndicator:'ActivityIndicator',Pressable:'Pressable',Text:'Text',View:'View',Map:'Map',Camera:'Camera',Marker:'Marker',mapStyle:{},AppIcon:'AppIcon',Button:'Button',Copy:'Copy',ErrorText:'ErrorText',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useLanguage:()=>({t:value=>value}),useAccountQuery:()=>({data:input,error:'',loading:false,reload:async()=>{}}),useAccount:()=>({request:requestPort}),privacyRadii:[1,3,5,10,20],captureCapacityLocation:capture};
  const path=new URL('../src/components/driver-location-editor.tsx',import.meta.url),parsed=ts.createSourceFile(path.pathname,readFileSync(path,'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const source=ts.createPrinter().printFile(ts.factory.updateSourceFile(parsed,parsed.statements.filter(node=>!ts.isImportDeclaration(node))))+'\nexport {LocationForm};';
  const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.React}}).outputText,exports={};

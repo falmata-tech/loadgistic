@@ -17,7 +17,7 @@ declare n integer;actor uuid;provider uuid;vehicle uuid;capacity uuid;handle tex
  route jsonb:=public.provider_capacity_place_points('[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:bishoftu"}]',2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
  east_route jsonb:=public.provider_capacity_place_points('[{"place_ref":"builtin:harar"},{"place_ref":"builtin:jigjiga"}]',2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
  current_route jsonb;
- area_places jsonb:='[{"place_ref":"builtin:holeta"},{"place_ref":"builtin:sebeta"},{"place_ref":"builtin:bishoftu"},{"place_ref":"builtin:sululta"}]';
+ local_route_places jsonb:='[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:bishoftu"}]';
 begin
  for n in 1..8 loop
   current_route:=case when n=4 then east_route else route end;
@@ -64,11 +64,11 @@ begin
    returning id into capacity;
   if n=3 then
    capacity:=public.publish_provider_capacity(actor,jsonb_build_object('vehicle_id',vehicle,
-    'status','EMPTY','accepted_loads','FTL','availability_geometry','RADIUS',
-    'capacity_area_center_place_ref','builtin:addis ababa','capacity_area_boundary_places',area_places,
+    'status','EMPTY','accepted_loads','FTL','availability_geometry','ROUTE',
+    'current_route_places',local_route_places,
     'location_source','DEVICE_OBSCURED','approximate_lat',9.03,'approximate_lng',38.74,
     'location_precision_km',5,'sharing_mode','PUBLIC'));
-   -- A valid saved point outside the viewport leaves the matching Area to
+   -- A valid saved point outside the viewport leaves the matching Planned route to
    -- supply the anchor, while respecting the installed public-live contract.
    update public.capacities set location_lat=9.35,location_lng=42.1 where id=capacity;
   elsif n=4 then
@@ -159,7 +159,7 @@ begin
       or item->>'status'='PARTIAL' and item->>'available_percent' is not null
    ) then raise exception 'DISCOVERY215_REPORTED_SPACE_PROJECTION_DRIFT: % / %',entry.name,mode;end if;
    if pg_temp.expected_location228(old_rows) is distinct from (case when new_rows is null then null else (
-     select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal),'[]')
+     select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' - 'journey_start_at' - 'journey_end_at' order by ordinal),'[]')
      from jsonb_array_elements(new_rows) with ordinality current_row(item,ordinal)
    ) end) or old_state is distinct from new_state or old_error is distinct from new_error
     then raise exception 'DISCOVERY215_COMPLETE_PAYLOAD_ORDER_OR_FAILURE_DRIFT: % / %',entry.name,mode;end if;
@@ -178,7 +178,7 @@ begin
     from public.public_capacity_page(query,case when mode=1 then cursor_stamp end,
      case when mode=1 then cursor_id end,page_size) with ordinality result(payload,ordinal);
    if pg_temp.expected_location228(old_rows) is distinct from (
-     select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal),'[]')
+     select coalesce(jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' - 'journey_start_at' - 'journey_end_at' order by ordinal),'[]')
      from jsonb_array_elements(new_rows) with ordinality current_row(item,ordinal)
    ) or jsonb_array_length(new_rows) is distinct from (case when mode=0 then 4 else 3 end)
     then raise exception 'DISCOVERY215_CURSOR_OR_PAGE_BOUND_DRIFT';end if;

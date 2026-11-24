@@ -18,20 +18,3 @@
   outline: 2px solid rgba(180,35,24,.22);
   animation: none;
 }
-@media (max-width: 480px) {
-  .summary:global(.truck-inspection) :global(.truck-inspection-people) {
-    grid-template-columns: minmax(0,1fr);
-    gap: 10px;
-  }
-  .summary:global(.truck-inspection) :global(.truck-inspection-person) {
-    grid-template-columns: 20px minmax(0,1fr);
-    column-gap: 8px;
-  }
-  .summary:global(.truck-inspection) :global(.truck-inspection-person-actions),
-  .summary:global(.truck-inspection) :global(.truck-inspection-action) {
-    grid-column: 2;
-  }
-  .summary:global(.truck-inspection) :global(.truck-inspection-person-actions) {
-    justify-self: start;
-  }
-}

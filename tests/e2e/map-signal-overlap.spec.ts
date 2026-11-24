@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 
 // Renderer stress fixture only: the local server supplies the selected truck;
 // its viewport response gets coincident geometry. No stored geography is changed.
-test('coincident closed areas and routes remain separately tappable through zoom',async({page}:{page:any},info:any)=>{
+test('coincident Planned routes and Preferred coverage remain separately tappable through zoom',async({page}:{page:any},info:any)=>{
   test.setTimeout(90000);
   const initial=await page.request.get('/api/public/capacity');
   expect(initial.status(),'PUBLIC_CAPACITY_INITIAL_HTTP_STATUS').toBe(200);
@@ -20,24 +20,24 @@ test('coincident closed areas and routes remain separately tappable through zoom
   await page.route('**/api/public/capacity?**',(route:any)=>{
     const loop=[...points,points[0]],reverseLoop=[...loop].reverse();
     const truck={...original,id:rendererId,provider_name:'Synthetic overlap renderer',status:'EMPTY',current_signal_geometry_visible:true,location_precision_km:20,work_radius_km:20,
-      availability_geometry:routeMode?'ROUTE':'RADIUS',capacity_area_boundary:routeMode?[]:points,current_route_points:routeMode?loop:[],
+      availability_geometry:'ROUTE',current_route_points:loop,
       recurring_corridors:[{id:'overlap-renderer-fixture',geometry:routeMode?'ROUTE':'RADIUS',area_boundary:[...points].reverse(),route_points:reverseLoop,area_center_label:'Synthetic overlap test'}]};
     return route.fulfill({json:{items:[truck],hasMore:false,nextCursor:null}});
   });
   for(const mode of ['area','closed-route']){
     routeMode=mode==='closed-route';
     // A distinct renderer identity cannot reuse the initial Leaflet marker's
-    // immutable title. Verify the viewport fixture before selecting its marker.
+    // accessible marker name. Verify the viewport fixture before selecting its marker.
     const loaded=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/public/capacity'&&response.request().method()==='GET');
     await page.goto('/',{waitUntil:'domcontentloaded'});
     const response=await loaded;expect(response.ok()).toBe(true);
-    expect(await response.json()).toMatchObject({items:[{id:rendererId,provider_name:'Synthetic overlap renderer',availability_geometry:routeMode?'ROUTE':'RADIUS'}],hasMore:false,nextCursor:null});
+    expect(await response.json()).toMatchObject({items:[{id:rendererId,provider_name:'Synthetic overlap renderer',availability_geometry:'ROUTE'}],hasMore:false,nextCursor:null});
     await closeCapacityFilters(page);
-    await page.locator('.capacity-truck-map-marker[title*="Synthetic overlap renderer"]').click();
+    await page.locator('.capacity-truck-map-marker[aria-label*="Synthetic overlap renderer"]').click();
     await closeCapacityFilters(page);
     await expect(page.locator('.map-regular-corridor')).toHaveAttribute('aria-label',/Test boundary/);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:20000});
-    const current=mode==='area'?'.map-service-area':'.map-current-route';
+    const current='.map-current-route';
     await expect(page.locator(current)).toBeVisible();
     // The approximate location outline is intentionally hidden when it would
     // be too small to distinguish from the vehicle marker.
@@ -70,7 +70,7 @@ test('coincident closed areas and routes remain separately tappable through zoom
         await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touch.detach();
         await expect(pane).not.toHaveAttribute('style',before!);await expect(page.locator('.leaflet-pan-anim')).toHaveCount(0);
       }
-      for(const [selector,label] of [[current,mode==='area'?'Planned area':'Planned route'],['.map-regular-corridor',mode==='area'?'Preferred area':'Preferred corridor'],['.map-location-privacy-circle','approximate location']]){
+      for(const [selector,label] of [[current,'Planned route'],['.map-regular-corridor',mode==='area'?'Preferred area':'Preferred route'],['.map-location-privacy-circle','approximate location']]){
         const signal=page.locator(selector);
         await expect.poll(()=>signal.evaluate(async(element:SVGPathElement)=>{
           const signature=()=>{const m=element.getScreenCTM();return JSON.stringify([element.getAttribute('d'),m?.a,m?.d,m?.e,m?.f]);};

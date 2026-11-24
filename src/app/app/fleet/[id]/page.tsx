@@ -46,7 +46,7 @@ export default async function FleetTruckPage({params,searchParams}:{params:Promi
   </Localized>
   {view==='signals'?<>
    {publication?<ProviderPublicationNotice publication={publication}/>:null}
-   <section className={'capacity-home-page fleet-truck-capacity-workspace '+styles.signalMap}><CapacityForm vehicles={[option]} initialVehicleId={id} allowDeviceLocation={selfAssigned} lockVehicleSelection showTruckIdentity={false} corridors={JSON.parse(JSON.stringify(workspace.corridors))} returnTo={path} allowCorridors canUploadPhoto={selfAssigned&&user.role==='DRIVER'} canRemovePhoto renderedAt={Date.now()}/></section>
+   <section className={'capacity-home-page fleet-truck-capacity-workspace '+styles.signalMap}><CapacityForm vehicles={[option]} initialVehicleId={id} allowDeviceLocation={selfAssigned} lockVehicleSelection showTruckIdentity={false} preferredCoverage={JSON.parse(JSON.stringify(workspace.preferredCoverage))} returnTo={path} canManagePreferredCoverage canUploadPhoto={selfAssigned&&user.role==='DRIVER'} canRemovePhoto renderedAt={Date.now()}/></section>
   </>:null}
   {view==='details'?<>
    <section className={styles.surface}><div className={styles.sectionHeading}><h2><Text message="Vehicle details"/></h2><TruckDetailsEditor vehicle={vehicle}/></div>

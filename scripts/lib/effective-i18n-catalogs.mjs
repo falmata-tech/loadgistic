@@ -1,5 +1,6 @@
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
+import {LANGUAGES} from '../../src/lib/i18n/core.js';
 
 // Audit/test access to the same trusted, data-only overlays used by catalogs.ts.
 // Transpiling them keeps the audit's ordinary Node22 CLI independent of a
@@ -13,7 +14,7 @@ export async function loadEffectiveWebCatalogs(){
     const {outputText}=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}});
     overlays.push((await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`))[name]);
   }
-  return Object.fromEntries(['am','om'].map(locale=>[locale,Object.assign(
+  return Object.fromEntries(LANGUAGES.filter(({code})=>code!=='en').map(({code:locale})=>[locale,Object.assign(
     JSON.parse(readFileSync(new URL(`../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),
     ...overlays.map(messages=>messages[locale]))]));
 }

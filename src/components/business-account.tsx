@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {Building2,Check,Headphones,Mail,MoreHorizontal,Pencil,Plus,Shield,UserRound,Users,X} from 'lucide-react';
+import {Building2,Check,Headphones,Mail,MapPin,MoreHorizontal,Pencil,Plus,Shield,UserRound,Users,X} from 'lucide-react';
 import type {BusinessCommand,BusinessMember,BusinessPendingInvitation,BusinessWorkspaceDirectory} from '@/lib/business-workspaces/contracts';
 import {AccountDetailsForm} from './account-details-form';
 import {BusinessDocuments} from './business-documents';
@@ -12,7 +12,7 @@ import styles from './business-workspace.module.css';
 
 type Task={kind:'PERSONAL'}|{kind:'DETAILS'}|{kind:'INVITE'}|{kind:'MEMBER';member:BusinessMember}|{kind:'ARCHIVE'}|{kind:'LEAVE'}|{kind:'TRANSFER';member:BusinessMember}|null;
 const roleLabel=(role:string)=>role==='OWNER'?'Owner':role==='ADMIN'?'Workspace admin':'Team member';
-export function BusinessAccount({initial,name,email,firstName,lastName,phone}:{initial:BusinessWorkspaceDirectory;name:string;email:string;firstName?:string;lastName?:string;phone?:string|null}){
+export function BusinessAccount({initial,name,email,firstName,lastName,phone,exampleAccount}:{initial:BusinessWorkspaceDirectory;name:string;email:string;firstName?:string;lastName?:string;phone?:string|null;exampleAccount?:boolean}){
  const router=useRouter();
  const [directory,setDirectory]:[BusinessWorkspaceDirectory,(value:BusinessWorkspaceDirectory)=>void]=React.useState(initial);
  const [task,setTask]:[Task,(value:Task)=>void]=React.useState(null);
@@ -54,10 +54,24 @@ export function BusinessAccount({initial,name,email,firstName,lastName,phone}:{i
  return <div>
   {notice?<p role="status" className={styles.feedback}><Text message={notice}/></p>:null}
   {error&&!task?<p role="alert" className="alert error"><FeedbackText message={error} fallback="The change could not be saved. Please try again."/></p>:null}
+  <header className={styles.accountProfile}>
+   <div className={styles.accountIdentity}>
+    <span className={styles.accountMark}><Building2 aria-hidden="true"/></span>
+    <div>
+     <span className={styles.accountKind}><Text message={workspace.kind==='BROKER'?'Broker':workspace.kind==='SHIPPER'?'Shipper':'Receiver'}/></span>
+     <h2>{workspace.name}</h2>
+     <div className={styles.accountFacts}>
+      <span>@{workspace.handle}</span>
+      {workspace.city?<span><MapPin aria-hidden="true"/>{workspace.city}</span>:null}
+      <span><Text message={roleLabel(workspace.membershipRole)}/></span>
+     </div>
+    </div>
+   </div>
+   {workspace.permissions.team?<button type="button" className="button secondary small" onClick={()=>setTask({kind:'DETAILS'})}><Pencil aria-hidden="true"/><Text message="Edit workspace details"/></button>:null}
+  </header>
   <div className={styles.accountGrid}>
    <section className={styles.accountCard}>
-    <div className={styles.sectionHeading}><h2><Building2 aria-hidden="true"/> <Text message="Workspace details"/></h2>{workspace.permissions.team?<button className="button secondary small" onClick={()=>setTask({kind:'DETAILS'})}><Pencil aria-hidden="true"/><Text message="Edit"/></button>:null}</div>
-    <dl><div><dt><Text message="Account name"/></dt><dd>{workspace.name}</dd></div><div><dt><Text message="Handle"/></dt><dd>@{workspace.handle}</dd></div>{workspace.city?<div><dt><Text message="Office city"/></dt><dd>{workspace.city}</dd></div>:null}<div><dt><Text message="Your access"/></dt><dd><Text message={roleLabel(workspace.membershipRole)}/></dd></div></dl>
+    <div className={styles.sectionHeading}><h2><Building2 aria-hidden="true"/> <Text message="Workspace details"/></h2></div>
     {workspace.permissions.owner?<NetworkVisibility key={workspace.id} workspaceId={workspace.id}/>:null}
     <BusinessDocuments key={workspace.id+workspace.membershipRole} workspaceId={workspace.id} canManage={workspace.permissions.owner}/>
     <div className={styles.accountLinks}>{workspace.permissions.owner?<button type="button" className="button secondary small" onClick={()=>setTask({kind:'ARCHIVE'})}><Text message="Archive workspace"/></button>:<button type="button" className="button secondary small" onClick={()=>setTask({kind:'LEAVE'})}><Text message="Leave workspace"/></button>}</div>
@@ -73,7 +87,7 @@ export function BusinessAccount({initial,name,email,firstName,lastName,phone}:{i
    {directory.members.map(member=><div key={member.userId} className={styles.member}><UserRound aria-hidden="true"/><div className={styles.memberMain}><strong>{member.erased?<Text message="Former team member"/>:member.firstName}{member.userId===workspace.actorId?<> · <Text message="You"/></>:null}</strong>{member.email?<small>{member.email}</small>:null}<div className={styles.memberAccess}>{member.capacity?<span><Text message="Capacity"/></span>:null}{member.tracking?<span><Text message="Tracking"/></span>:null}{!member.active&&!member.erased?<span><Text message="Suspended"/></span>:null}</div></div><span className={styles.role}><Text message={roleLabel(member.role)}/></span>{!member.erased&&workspace.permissions.team&&(workspace.permissions.owner||member.role==='STAFF')&&member.role!=='OWNER'&&member.userId!==workspace.actorId?<button type="button" className="button secondary small" onClick={()=>setTask({kind:'MEMBER',member})}><Text message="Manage"/></button>:null}</div>)}
    {workspace.permissions.team&&directory.invitations.length?<div className={styles.invite}><h3><Text message="Invitations"/></h3>{directory.invitations.map(invitation=><InvitationRow key={invitation.id} invitation={invitation} canManage={workspace.permissions.owner||invitation.role==='STAFF'} busy={busy} resend={()=>void command({action:'RESEND_INVITATION',invitationId:invitation.id})} revoke={()=>void command({action:'REVOKE_INVITATION',expectedVersion:workspace.version,invitationId:invitation.id})}/>)}</div>:null}
   </section>
-  {task?.kind==='PERSONAL'?<dialog className={styles.dialog} ref={dialog} aria-labelledby="business-account-dialog-title" onCancel={event=>{event.preventDefault();setTask(null);}}><div className={styles.sectionHeading}><h2 id="business-account-dialog-title"><Text message="Your account"/></h2><button type="button" className="button secondary icon-button" aria-label="Close" onClick={()=>setTask(null)}><X aria-hidden="true"/></button></div><AccountDetailsForm name={name} firstName={firstName} lastName={lastName} phone={phone||null}/></dialog>:task?<dialog className={styles.dialog} ref={dialog} aria-labelledby="business-account-dialog-title" onCancel={event=>{event.preventDefault();if(!busy){setTask(null);setError('');}}}>
+  {task?.kind==='PERSONAL'?<dialog className={styles.dialog} ref={dialog} aria-labelledby="business-account-dialog-title" onCancel={event=>{event.preventDefault();setTask(null);}}><div className={styles.sectionHeading}><div><h2 id="business-account-dialog-title"><Text message="Your account"/></h2>{exampleAccount?<p className="meta"><Text message="Example account"/></p>:null}</div><button type="button" className="button secondary icon-button" aria-label="Close" onClick={()=>setTask(null)}><X aria-hidden="true"/></button></div><AccountDetailsForm name={name} firstName={firstName} lastName={lastName} phone={phone||null}/></dialog>:task?<dialog className={styles.dialog} ref={dialog} aria-labelledby="business-account-dialog-title" onCancel={event=>{event.preventDefault();if(!busy){setTask(null);setError('');}}}>
    <form onSubmit={event=>void submit(event)}>
     <div className={styles.sectionHeading}><h2 id="business-account-dialog-title"><Text message={task.kind==='DETAILS'?'Edit workspace details':task.kind==='INVITE'?'Invite teammate':task.kind==='MEMBER'?'Team member access':task.kind==='TRANSFER'?'Transfer ownership':task.kind==='LEAVE'?'Leave workspace':'Archive workspace'}/></h2><button className="button secondary icon-button" aria-label="Close" type="button" disabled={busy} onClick={()=>{setTask(null);setError('');}}><X aria-hidden="true"/></button></div>
     {task.kind==='DETAILS'?<><label><Text message="Account name"/><input name="name" defaultValue={workspace.name} minLength={2} maxLength={100} required/></label><label><Text message="Office city"/><input name="city" defaultValue={workspace.city||''} maxLength={100}/></label></>:null}

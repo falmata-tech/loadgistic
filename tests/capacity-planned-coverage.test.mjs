@@ -1,3 +1,5 @@
+import {capacityCoverageLabel} from '../src/lib/capacity-coverage-label.js';
+import {localizedSavedUpdate} from '../src/lib/i18n/update-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -5,7 +7,8 @@ import ts from 'typescript';
 import {capacityMapColors,capacityStatusPresentation} from '../src/lib/capacity-status-presentation.js';
 import * as selection from '../src/lib/capacity-location-selection.js';
 import * as sharing from '../src/lib/capacity-sharing.js';
-import {reportedSpacePercent} from '../src/lib/capacity-space-estimate.js';
+import * as capacitySpace from '../src/lib/capacity-space-estimate.js';
+import * as loadPreferences from '../src/lib/capacity-load-preferences.js';
 
 const nodes=value=>!value||typeof value!=='object'?[]:Array.isArray(value)?value.flatMap(nodes):[value,...nodes(value.props?.children)];
 const point=(lat,lng,label)=>({lat,lng,label});
@@ -20,7 +23,8 @@ function load(file,extra={}){
   '@/components/localization':{Text:'Text',FeedbackText:'FeedbackText',Localized:'Localized',useTranslation:()=>({t:message=>message})},
   '@/components/base-map-tiles':{BaseMapTiles:'Tiles'},'@/lib/capacity-status-presentation':{capacityStatusPresentation,capacityMapColors},'@/components/offset-signal-polyline':{OffsetSignalPolyline:'OffsetPolyline'},
   '@/lib/capacity-location-selection.js':selection,'@/lib/capacity-sharing':sharing,'@/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/vehicle.jpg'},'@/lib/location-privacy.js':{nextCapacityPrivacyRadius:()=>5},
-  '@/lib/capacity-space-estimate.js':{reportedSpacePercent},
+  '@/lib/capacity-coverage-label.js':{capacityCoverageLabel},'@/lib/i18n/update-label.js':{localizedSavedUpdate},'./capacity-coverage-indicators':{CapacityCoverageIndicators:'CoverageIndicators'},
+  '@/lib/capacity-space-estimate.js':capacitySpace,'@/lib/capacity-load-preferences':loadPreferences,
   '@/lib/ui':{relativeTime:()=>''},'@/lib/capacity-editor-client':{},'@/lib/location-source.js':{locationSourceLabel:()=>''},
   './capacity-location-map':{CapacityLocationMap:'CoverageMap'},'./capacity-form':{CapacityForm:'Form'},'./cargo-space-photo-panel':{ProviderCargoSpacePhoto:'PhotoPanel'},'./public-capacity-map':{PublicCapacityMap:'PublicMap'},'./status-pill':{StatusPill:'StatusPill'},'./capacity-market-planning':{CapacityMarketPlanning:'Planning'},'./capacity-edit-dialog':{CapacityEditDialog:'Dialog'},'./capacity-signal-editor':{CapacitySignalEditor:'SignalEditor'},'./driver-capacity-location-editor':{DriverCapacityLocationEditor:'LocationEditor'},...extra};
  const code=ts.transpileModule(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,exports={};
@@ -33,7 +37,7 @@ test('saved Planned/Preferred coverage renders without inventing a reported vehi
  assert.equal(all.filter(node=>node.type==='Circle'||node.type==='CircleMarker').length,0,'No GPS/phone/manual point or uncertainty circle is fabricated');
  assert.deepEqual(all.find(node=>node.type==='MapContainer').props.center,[9,38]);
  assert.equal(all.some(node=>node.props.message==='Planned route'),true);
- assert.equal(all.some(node=>node.props.message==='Preferred corridor'),true);
+ assert.equal(all.some(node=>node.props.message==='Preferred route'),true);
  assert.equal(tree.props['aria-label'],'Capacity coverage');
 });
 test('reported location keeps its separate uncertainty circle alongside Planned and Preferred coverage',()=>{
@@ -47,7 +51,7 @@ test('reported location keeps its separate uncertainty circle alongside Planned 
 test('provider Home keeps saved coverage visible before a reported location exists',()=>{
  const render=load('src/components/capacity-form.tsx').CapacityForm;
  for(const current of [null,{status:'EMPTY',availability_geometry:'ROUTE',current_route_points:route}]){
-  const tree=render({vehicles:[{id:'vehicle',label:'Vehicle',make:'Example',model:'Van',driver:{id:'driver',name:'Driver'},current}],corridors:[preferred],allowCorridors:true,canUploadPhoto:true,renderedAt:0});
+  const tree=render({vehicles:[{id:'vehicle',label:'Vehicle',make:'Example',model:'Van',driver:{id:'driver',name:'Driver'},current}],preferredCoverage:[preferred],canManagePreferredCoverage:true,canUploadPhoto:true,renderedAt:0});
   const map=nodes(tree).find(node=>node.type==='CoverageMap');assert.ok(map);
   assert.equal(map.props.center,null);assert.equal(map.props.regularSignals.length,1);
   assert.deepEqual(map.props.routePoints,current?route:[]);
@@ -55,8 +59,37 @@ test('provider Home keeps saved coverage visible before a reported location exis
 });
 test('a fleet driver without publishing permission also sees saved coverage without a reported marker',()=>{
  const render=load('src/components/driver-capacity-home.tsx').DriverCapacityHome;
- const tree=render({vehicles:[{id:'vehicle',assigned_driver:{id:'driver'}}],capacities:[],corridors:[preferred],access:{kind:'COMPANY',can_manage_capacity:false},canUploadPhoto:true,query:{},renderedAt:0});
+ const tree=render({vehicles:[{id:'vehicle',assigned_driver:{id:'driver'}}],capacities:[],preferredCoverage:[preferred],access:{kind:'COMPANY',can_manage_capacity:false},canUploadPhoto:true,query:{},renderedAt:0});
  const task=nodes(tree).find(node=>typeof node.type==='function'&&node.type.name==='RestrictedAvailability');assert.ok(task);
  const map=nodes(task.type(task.props)).find(node=>node.type==='CoverageMap');assert.ok(map);
  assert.equal(map.props.center,null);assert.equal(map.props.regularSignals.length,1);
+});
+
+test('capacity display uses a percentage when the space is known and load preferences only at 100%',()=>{
+ const {availableSpacePercent,emptyShipmentPreferenceLabel}=capacitySpace;
+ assert.equal(availableSpacePercent('EMPTY',null,null),100);
+ assert.equal(availableSpacePercent('PARTIAL',35,'2026-11-23T09:00:00Z'),35);
+ assert.equal(availableSpacePercent('PARTIAL',50,null),null);
+ assert.equal(availableSpacePercent('PARTIAL',100,'2026-11-23T09:00:00Z'),null);
+ assert.equal(availableSpacePercent('OFF_DUTY',0,null),null);
+ assert.equal(emptyShipmentPreferenceLabel(100,'FTL'),'Full vehicle shipments only');
+ assert.equal(emptyShipmentPreferenceLabel(100,'BOTH'),'Partial or full vehicle shipments');
+ assert.equal(emptyShipmentPreferenceLabel(100,'PTL'),'Partial Shipments Only');
+ for(const preference of ['FTL','PTL','BOTH']){
+  assert.equal(emptyShipmentPreferenceLabel(35,preference),null);
+  assert.equal(emptyShipmentPreferenceLabel(null,preference),null);
+ }
+ assert.equal(emptyShipmentPreferenceLabel(100,null),null);
+ assert.equal(emptyShipmentPreferenceLabel(100,'UNKNOWN'),null);
+});
+
+test('coverage labels require saved route stops or area boundaries in the correct scope',()=>{
+ assert.equal(capacityCoverageLabel('planned','ROUTE',route),'Planned route');
+ assert.equal(capacityCoverageLabel('preferred','ROUTE',route),'Preferred route');
+ const boundary=[...route,point(10,38,'C')];
+ assert.equal(capacityCoverageLabel('planned','RADIUS',boundary),null);
+ assert.equal(capacityCoverageLabel('preferred','RADIUS',boundary),'Preferred area');
+ assert.equal(capacityCoverageLabel('planned','RADIUS',route),null);
+ assert.equal(capacityCoverageLabel('planned','ROUTE',[]),null);
+ assert.equal(capacityCoverageLabel('preferred',undefined,boundary),null);
 });

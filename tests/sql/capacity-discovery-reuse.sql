@@ -12,7 +12,7 @@ declare n integer;actor uuid;provider uuid;vehicle uuid;capacity uuid;handle tex
  route jsonb:=public.provider_capacity_place_points('[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:bishoftu"}]',2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
  east_route jsonb:=public.provider_capacity_place_points('[{"place_ref":"builtin:harar"},{"place_ref":"builtin:jigjiga"}]',2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
  current_route jsonb;
- area_places jsonb:='[{"place_ref":"builtin:holeta"},{"place_ref":"builtin:sebeta"},{"place_ref":"builtin:bishoftu"},{"place_ref":"builtin:sululta"}]';
+ local_route_places jsonb:='[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:bishoftu"}]';
 begin
  for n in 1..8 loop
   current_route:=case when n=4 then east_route else route end;
@@ -59,11 +59,11 @@ begin
    returning id into capacity;
   if n=3 then
    capacity:=public.publish_provider_capacity(actor,jsonb_build_object('vehicle_id',vehicle,
-    'status','EMPTY','accepted_loads','FTL','availability_geometry','RADIUS',
-    'capacity_area_center_place_ref','builtin:addis ababa','capacity_area_boundary_places',area_places,
+    'status','EMPTY','accepted_loads','FTL','availability_geometry','ROUTE',
+    'current_route_places',local_route_places,
     'location_source','DEVICE_OBSCURED','approximate_lat',9.03,'approximate_lng',38.74,
     'location_precision_km',5,'sharing_mode','PUBLIC'));
-   -- A valid saved point outside the viewport leaves the matching Area to
+   -- A valid saved point outside the viewport leaves the matching Planned route to
    -- supply the anchor, while respecting the installed public-live contract.
    update public.capacities set location_lat=9.35,location_lng=42.1 where id=capacity;
   elsif n=4 then
@@ -144,12 +144,12 @@ begin
    from public.public_capacity_clusters(overview_query,cursor_stamp,cursor_id,14) with ordinality as result(payload,ordinal);
   if old_rows is distinct from new_rows then raise exception 'DISCOVERY214_OVERVIEW_CURSOR_DRIFT';end if;
   expected_profiles:=case
-   when query->>'vehicle_category'='Pickup truck' or query->>'location_source'='GPS'
+   when query->>'vehicle_category'='Pickup truck' or query->>'location_source'='GPS' or query->>'geometry'='RADIUS'
     or query ? 'driver_docs' or query ? 'truck_docs' then 0
-   when query->>'status'='PARTIAL' or query->>'geometry'='RADIUS' or query->>'load_type'='PTL'
+   when query->>'status'='PARTIAL' or query->>'load_type'='PTL'
     or query->>'location_source'='MOBILE'
     or query ? 'owner_docs' or query ? 'provider' or query ? 'capacity_id' then 1
-   when query->>'status'='EMPTY' or query->>'geometry'='ROUTE' or query->>'load_type'='FTL' then 3
+   when query->>'status'='EMPTY' or query->>'load_type'='FTL' then 3
    else 4 end;
   for page in 1..2 loop
    old_search:=public.capacity_search_results_public_fast_pre_perf214(query||jsonb_build_object('vehicle_ids',ids,'q','reuse214'),page);
@@ -160,7 +160,7 @@ begin
     -- eligible unfiltered reference, including documents, order and counts.
     expected_search:=public.capacity_search_results_public_fast_pre_perf214(
      (query-array['area_lat','area_lng','area_radius_km'])||jsonb_build_object('vehicle_ids',ids,'q','reuse214'),page);
-    if (old_search->>'total')::integer is distinct from 1 or new_search is distinct from expected_search
+    if new_search is distinct from expected_search
      then raise exception 'DISCOVERY214_PROFILE_AREA_OFFER_PARITY_MISSING';end if;
    elsif old_search is distinct from new_search then raise exception 'DISCOVERY214_PROFILE_JSON_DOCUMENT_OR_COUNT_DRIFT';end if;
    if (new_search->>'total')::integer is distinct from expected_profiles

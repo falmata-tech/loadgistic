@@ -1,3 +1,6 @@
+import {capacityJourneyInput} from '../src/lib/capacity-journey.js';
+import {capacityCoverageLabel} from '../src/lib/capacity-coverage-label.js';
+import {localizedSavedUpdate} from '../src/lib/i18n/update-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -9,7 +12,7 @@ import {DEFAULT_CAPACITY_CAMERA,initialCapacityCamera} from '../src/lib/map-init
 import {capacityVehicleIdentity} from '../src/lib/capacity-map-loading.js';
 import {capacityMapColors,capacityStatusPresentation} from '../src/lib/capacity-status-presentation.js';
 import {locationRadiusMinimumZoom} from '../src/lib/map-signal-offset.js';
-import {reportedSpacePercent} from '../src/lib/capacity-space-estimate.js';
+import {availableSpacePercent,emptyShipmentPreferenceLabel} from '../src/lib/capacity-space-estimate.js';
 
 function renderer(){
  const stores=new Map();let slots=[],cursor=0;
@@ -23,40 +26,40 @@ const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flat
 const find=(tree,type,match=()=>true)=>nodes(tree).find(node=>node.type===type&&match(node));
 const vehicleA='11111111-1111-4111-8111-111111111111',vehicleB='22222222-2222-4222-8222-222222222222',driverA='33333333-3333-4333-8333-333333333333',driverB='44444444-4444-4444-8444-444444444444';
 const point=label=>({place_ref:label,label,lat:9,lng:38.7});
-test('preferred corridor denials name the saved preference and its recovery action',()=>{
+test('preferred route denials name the saved preference and its recovery action',()=>{
  for(const code of ['CORRIDOR_ALREADY_EXISTS','CAPACITY_ROUTE_ALREADY_EXISTS','REGULAR_CAPACITY_LIMIT','REGULAR_TRUCK_DRIVER_REQUIRED','SUPABASE_PROVIDER_REGULAR_CAPACITY_ADD_FAILED','SUPABASE_PROVIDER_REGULAR_CAPACITY_REMOVE_FAILED']){
-  const message=errorMessage(Error(code));assert.match(message,/preferred corridor/i,code);assert.doesNotMatch(message,/usual routes|regular service|regular capacity route/i,code);
+  const message=errorMessage(Error(code));assert.match(message,/preferred route/i,code);assert.doesNotMatch(message,/usual routes|regular service|regular capacity route/i,code);
  }
  assert.match(errorMessage(Error('REGULAR_CAPACITY_LIMIT')),/Edit or remove it first/);
- assert.match(errorMessage(Error('REGULAR_TRUCK_DRIVER_REQUIRED')),/Open Preferred corridor from your vehicle/);
+ assert.match(errorMessage(Error('REGULAR_TRUCK_DRIVER_REQUIRED')),/Open Preferred route from your vehicle/);
 });
 const corridor=(vehicle_id=vehicleA,driver_user_id=driverA)=>({id:vehicle_id,vehicle_id,driver_user_id,geometry:'ROUTE',route_points:[point('Adama'),point('Addis Ababa')],area_boundary:[]});
 const vehicle=(id=vehicleA,driverId=driverA)=>({id,label:id,make:'Local',model:'Truck',cargoConfiguration:'Cargo van',plate:'LOCAL',driver:driverId?{id:driverId,name:'Assigned driver'}:null,driverLocation:{lat:9,lng:38.7,radius:20,area:'Adama',updatedAt:'2026-10-13'},current:{status:'EMPTY',availability_geometry:'ROUTE',current_route_points:[point('Adama'),point('Addis Ababa')]}});
 const hosts=Object.fromEntries(['Text','Localized','Image','Link','Boxes','Gauge','MapPinned','RefreshCw','Repeat2','Route','Save','Shield','Truck','CircleDotDashed','MapPin','Plus','Trash2','CapacityLocationMap','CapacityMarketPlanning','CapacityEditDialog','CapacitySignalEditor','ProviderCargoSpacePhoto','EthiopiaPlaceInput','SubjectDocuments','PageHeader','Flash','AlignLeft','Building2','Eye','ExternalLink','ImageIcon','Mail','MessageCircle','MessageSquare','Phone','Upload'].map(name=>[name,name]));
-const common={...hosts,reportedSpacePercent,LocateFixed:'LocateFixed',locationRadiusMinimumZoom,capacityVehicleIdentity,PublicIdentityImage:'PublicIdentityImage',WorkspaceTaskDialog:'WorkspaceTaskDialog',PublicHandleInput:'PublicHandleInput',styles:new Proxy({},{get:(_target,key)=>key}),useTranslation:()=>({t:value=>value}),useRouter:()=>({refresh(){}}),capacitySharingLabel:value=>value,capacitySharingMode:()=> 'PUBLIC',capacityLocationSource,selectedCapacityLocation,locationSourceLabel,vehicleConfigurationImage:()=>'/truck.jpg',capacityPrivacyRadii:()=>[20],relativeTime:()=> 'Today',capacityLoadPreference:()=> 'FTL',capacityLoadLabel:value=>value,readDriverLocation:async()=>{},saveDriverLocation:async()=>{}};
+const common={capacityJourneyInput,capacityCoverageLabel,localizedSavedUpdate,CapacityCoverageIndicators:'CoverageIndicators',...hosts,availableSpacePercent,emptyShipmentPreferenceLabel,LocateFixed:'LocateFixed',locationRadiusMinimumZoom,capacityVehicleIdentity,PublicIdentityImage:'PublicIdentityImage',WorkspaceTaskDialog:'WorkspaceTaskDialog',PublicHandleInput:'PublicHandleInput',styles:new Proxy({},{get:(_target,key)=>key}),useTranslation:()=>({t:value=>value}),useRouter:()=>({refresh(){}}),capacitySharingLabel:value=>value,capacitySharingMode:()=> 'PUBLIC',capacityLocationSource,selectedCapacityLocation,locationSourceLabel,vehicleConfigurationImage:()=>'/truck.jpg',capacityPrivacyRadii:()=>[20],relativeTime:()=> 'Today',capacityLoadPreference:()=> 'FTL',capacityLoadLabel:value=>value,readDriverLocation:async()=>{},saveDriverLocation:async()=>{}};
 
 test('web selected truck regular map and editor ignore provider-wide and other-pair routes',()=>{
- const view=renderer(),component=view.compile('../src/components/capacity-form.tsx',common).CapacityForm,props={vehicles:[vehicle(),vehicle(vehicleB,driverB)],corridors:[{...corridor(),vehicle_id:undefined,driver_user_id:undefined,id:'legacy'},corridor(vehicleA,driverB),corridor(),corridor(vehicleB,driverB)],allowCorridors:true,renderedAt:1};
- let tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[corridor()]);find(tree,'button',node=>node.props['aria-label']?.startsWith('Edit preferred corridor:')).props.onClick();tree=view.render(component,props);let editor=find(tree,'CapacityMarketPlanning');assert.equal(editor.props.vehicleId,vehicleA);assert.equal(editor.props.expectedDriverId,driverA);assert.deepEqual(editor.props.corridors,[corridor()]);
- editor.props.onRemoved(vehicleA);tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[],'confirmed removal immediately clears this vehicle map');assert.deepEqual(find(tree,'CapacityMarketPlanning').props.corridors,[],'the reopened editor cannot reuse the removed record');
- find(tree,'select',node=>node.props.id==='capacity-vehicle').props.onChange({target:{value:vehicleB}});tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[corridor(vehicleB,driverB)]);editor=find(tree,'CapacityMarketPlanning');assert.equal(editor.props.vehicleId,vehicleB);assert.equal(editor.props.expectedDriverId,driverB);assert.deepEqual(editor.props.corridors,[corridor(vehicleB,driverB)]);
+ const view=renderer(),component=view.compile('../src/components/capacity-form.tsx',common).CapacityForm,props={vehicles:[vehicle(),vehicle(vehicleB,driverB)],preferredCoverage:[{...corridor(),vehicle_id:undefined,driver_user_id:undefined,id:'legacy'},corridor(vehicleA,driverB),corridor(),corridor(vehicleB,driverB)],canManagePreferredCoverage:true,renderedAt:1};
+ let tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[corridor()]);find(tree,'button',node=>node.props['aria-label']?.startsWith('Edit preferred route:')).props.onClick();tree=view.render(component,props);let editor=find(tree,'CapacityMarketPlanning');assert.equal(editor.props.vehicleId,vehicleA);assert.equal(editor.props.expectedDriverId,driverA);assert.deepEqual(editor.props.preferredCoverage,[corridor()]);
+ editor.props.onRemoved(vehicleA);tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[],'confirmed removal immediately clears this vehicle map');assert.deepEqual(find(tree,'CapacityMarketPlanning').props.preferredCoverage,[],'the reopened editor cannot reuse the removed record');
+ find(tree,'select',node=>node.props.id==='capacity-vehicle').props.onChange({target:{value:vehicleB}});tree=view.render(component,props);assert.deepEqual(find(tree,'CapacityLocationMap').props.regularSignals,[corridor(vehicleB,driverB)]);editor=find(tree,'CapacityMarketPlanning');assert.equal(editor.props.vehicleId,vehicleB);assert.equal(editor.props.expectedDriverId,driverB);assert.deepEqual(editor.props.preferredCoverage,[corridor(vehicleB,driverB)]);
  const unassigned=view.render(component,{...props,vehicles:[vehicle(vehicleA,'')]});assert.equal(find(unassigned,'CapacityMarketPlanning'),undefined);assert.deepEqual(find(unassigned,'CapacityLocationMap').props.regularSignals,[]);
 });
 
 test('web regular save and remove forms bind the same truck and driver and never reuse legacy IDs',()=>{
  const view=renderer(),component=view.compile('../src/components/capacity-market-planning.tsx',{...common,submitCapacityForm:async()=>{}}).CapacityMarketPlanning;
- const props={vehicleId:vehicleA,expectedDriverId:driverA,corridors:[{...corridor(),vehicle_id:undefined,driver_user_id:undefined,id:'legacy'},corridor(vehicleB,driverB),corridor()],returnTo:'/app/home',onBusyChange(){},onSaved(){},onRemoved(){},onCancel(){}};
+ const props={vehicleId:vehicleA,expectedDriverId:driverA,preferredCoverage:[{...corridor(),vehicle_id:undefined,driver_user_id:undefined,id:'legacy'},corridor(vehicleB,driverB),corridor()],returnTo:'/app/home',onBusyChange(){},onSaved(){},onRemoved(){},onCancel(){}};
  const tree=view.render(component,props),forms=nodes(tree).filter(node=>node.type==='form');assert.equal(forms.length,2);
  for(const form of forms){const values=Object.fromEntries(nodes(form).filter(node=>node.type==='input'&&node.props.type==='hidden').map(node=>[node.props.name,node.props.value]));assert.equal(values.vehicleId,vehicleA);assert.equal(values.expectedDriverId,driverA);assert.equal(values.id,vehicleA);assert.equal(values.returnTo,'/app/home');}
 });
 
-test('failed preferred corridor removal leaves the saved signal visible',async()=>{
+test('failed preferred route removal leaves the saved signal visible',async()=>{
  let removed=false;
  const view=renderer(),component=view.compile('../src/components/capacity-market-planning.tsx',{
   ...common,FormData:class{get(name){return name==='action'?'REMOVE':null;}},
   submitCapacityForm:async()=>{throw Error('Local test failure');}
  }).CapacityMarketPlanning;
- const props={vehicleId:vehicleA,expectedDriverId:driverA,corridors:[corridor()],returnTo:'/app/home',onBusyChange(){},onSaved(){},onRemoved(){removed=true;},onCancel(){}};
+ const props={vehicleId:vehicleA,expectedDriverId:driverA,preferredCoverage:[corridor()],returnTo:'/app/home',onBusyChange(){},onSaved(){},onRemoved(){removed=true;},onCancel(){}};
  let tree=view.render(component,props);
  const removal=nodes(tree).filter(node=>node.type==='form').find(form=>nodes(form).some(node=>node.props?.name==='action'&&node.props.value==='REMOVE'));
  assert.ok(removal);
@@ -74,81 +77,105 @@ test('web profile editor omits retired Services while retaining authored About a
 
 const messageButton=(tree,message)=>find(tree,'button',node=>nodes(node.props.children).some(child=>child.props?.message===message));
 const hiddenValue=(tree,name)=>find(tree,'input',node=>node.props.name===name).props.value;
-function currentEditor(current){
+function currentEditor(current,section='CAPACITY'){
  const view=renderer(),submitted=[];
  const component=view.compile('../src/components/capacity-signal-editor.tsx',{...common,PowerOff:'PowerOff',Users:'Users',FeedbackText:'FeedbackText',nextCapacityPrivacyRadius:()=>10,CAPACITY_SHARING_CHOICES:[],CAPACITY_LOAD_CHOICES:[],capacityLoadExplanation:value=>value,submitCapacityForm:async form=>submitted.push(form)}).CapacitySignalEditor;
- const props={section:'CAPACITY',vehicleId:vehicleA,hasAssignedDriver:true,current,location:{lat:9,lng:38.7,radius:10,area:'Saved reported point',updatedAt:'2026-10-26'},allowDeviceLocation:false,onBusyChange(){},onSaved(){},onCancel(){}};
+ const props={section,vehicleId:vehicleA,hasAssignedDriver:true,current,location:{lat:9,lng:38.7,radius:10,area:'Saved reported point',updatedAt:'2026-10-26'},allowDeviceLocation:false,onBusyChange(){},onSaved(){},onCancel(){}};
  return {render:()=>view.render(component,props),submitted};
 }
 const areaCapacity=status=>({status,availability_geometry:'RADIUS',capacity_area_center_place_ref:'Addis Ababa',capacity_area_center_label:'Addis Ababa',capacity_area_boundary:[point('Sululta'),point('Bishoftu'),point('Sebeta')],current_route_points:[point('Adama'),point('Addis Ababa')]});
 
-test('web current capacity defaults to Area and status changes preserve the chosen geometry',()=>{
+test('web publishing offers Planned route and keeps it across status choices',()=>{
  const editor=currentEditor(null);let tree=editor.render();
- assert.equal(hiddenValue(tree,'availabilityGeometry'),'RADIUS');
- assert.equal(messageButton(tree,'Area')?.props['aria-pressed'],true);
+ assert.equal(hiddenValue(tree,'availabilityGeometry'),'ROUTE');
+ assert.equal(messageButton(tree,'Area'),undefined);
  messageButton(tree,'Partial').props.onClick();tree=editor.render();
  assert.equal(hiddenValue(tree,'status'),'PARTIAL');
- assert.equal(messageButton(tree,'Area')?.props['aria-pressed'],true,'Partial keeps Area available and selected');
- assert.equal(hiddenValue(tree,'availabilityGeometry'),'RADIUS');
- messageButton(tree,'Route').props.onClick();tree=editor.render();
- messageButton(tree,'Empty').props.onClick();tree=editor.render();
- assert.equal(hiddenValue(tree,'availabilityGeometry'),'ROUTE','changing status must not overwrite an explicit route choice');
+ assert.equal(hiddenValue(tree,'availabilityGeometry'),'ROUTE');
+ assert.equal(nodes(tree).filter(node=>node.type==='EthiopiaPlaceInput').length,2);
+ assert.ok(find(tree,'input',node=>node.props.name==='journeyStartAt'));
+ assert.ok(find(tree,'input',node=>node.props.name==='journeyEndAt'));
 });
 
-test('web saved Partial Area reopens and saves its existing towns without replacing reported location',async()=>{
- const editor=currentEditor(areaCapacity('PARTIAL'));const tree=editor.render();
- assert.equal(hiddenValue(tree,'availabilityGeometry'),'RADIUS');
- assert.equal(messageButton(tree,'Area')?.props['aria-pressed'],true);
- assert.equal(find(tree,'EthiopiaPlaceInput',node=>node.props.name==='capacityAreaCenter').props.defaultPlaceRef,'Addis Ababa');
- assert.deepEqual(nodes(tree).filter(node=>node.type==='EthiopiaPlaceInput'&&node.props.name==='capacityAreaBoundary').map(node=>node.props.defaultPlaceRef),['Sululta','Bishoftu','Sebeta']);
- assert.equal(hiddenValue(tree,'locationSource'),'PRESERVE_DRIVER');assert.equal(hiddenValue(tree,'approximateLat'),'');
- assert.equal(messageButton(tree,'Save').props.disabled,false);
+test('web legacy area requires route cities while a saved route reopens with both times and the existing location',async()=>{
+ const legacy=currentEditor(areaCapacity('PARTIAL')).render();
+ assert.equal(messageButton(legacy,'Save').props.disabled,true);
+ assert.equal(find(legacy,'EthiopiaPlaceInput',node=>node.props.name==='capacityAreaCenter'),undefined);
+ const current={...areaCapacity('EMPTY'),availability_geometry:'ROUTE',current_route_points:[point('Addis Ababa'),point('Adama')],
+  journey_start_at:'2027-02-03T04:30:00Z',journey_end_at:'2027-02-03T08:00:00Z'};
+ const editor=currentEditor(current),tree=editor.render();
+ assert.equal(find(tree,'input',node=>node.props.name==='journeyStartAt').props.defaultValue,'2027-02-03T07:30');
+ assert.equal(find(tree,'input',node=>node.props.name==='journeyEndAt').props.defaultValue,'2027-02-03T11:00');
+ assert.equal(hiddenValue(tree,'locationSource'),'PRESERVE_DRIVER');
+ assert.equal(hiddenValue(tree,'approximateLat'),'');
  const form={existingRenderedForm:true};await find(tree,'form').props.onSubmit({preventDefault(){},currentTarget:form});assert.deepEqual(editor.submitted,[form]);
+});
+
+test('web Partial sharing requires a distinct destination when an old route has only one city',async()=>{
+ const editor=currentEditor({...areaCapacity('PARTIAL'),availability_geometry:'ROUTE',current_route_points:[point('Adama')]},'SHARING');
+ let tree=editor.render();
+ const fields=()=>nodes(tree).filter(node=>node.type==='EthiopiaPlaceInput');
+ assert.deepEqual(fields().map(node=>node.props.defaultPlaceRef),['Adama','']);
+ const submit=()=>find(tree,'form').props.onSubmit({preventDefault(){},currentTarget:{}});
+ await submit();
+ assert.equal(editor.submitted.length,0);
+ fields()[1].props.onPlaceSelect({id:'Adama',display_name:'Adama'});
+ tree=editor.render();
+ assert.equal(messageButton(tree,'Save').props.disabled,true);
+ await submit();
+ assert.equal(editor.submitted.length,0);
+ fields()[1].props.onPlaceSelect({id:'Addis Ababa',display_name:'Addis Ababa'});
+ tree=editor.render();
+ assert.equal(messageButton(tree,'Save').props.disabled,false);
+ await submit();
+ assert.equal(editor.submitted.length,1);
 });
 
 test('web saved Preferred Area names the area in its action and dialog while retaining pair scope',()=>{
  const view=renderer(),component=view.compile('../src/components/capacity-form.tsx',common).CapacityForm;
  const preferred={...corridor(),geometry:'RADIUS',route_points:[],area_boundary:[point('Sululta'),point('Bishoftu'),point('Sebeta')]};
- const props={vehicles:[vehicle()],corridors:[preferred],allowCorridors:true,renderedAt:1};let tree=view.render(component,props);
+ const props={vehicles:[vehicle()],preferredCoverage:[preferred],canManagePreferredCoverage:true,renderedAt:1};let tree=view.render(component,props);
  const action=find(tree,'button',node=>node.props['aria-label']?.startsWith('Edit preferred area:'));assert.ok(action);action.props.onClick();tree=view.render(component,props);
  assert.equal(find(tree,'CapacityEditDialog').props.title,'Preferred area');assert.equal(find(tree,'CapacityMarketPlanning').props.expectedDriverId,driverA);
 });
 
-test('provider map separates Partial Area towns from ordered routes without altering saved geometry or lanes',()=>{
+test('provider map preserves Preferred area and Planned route lanes and ignores legacy Planned area',()=>{
  const view=renderer(),component=view.compile('../src/components/capacity-location-map-leaflet.tsx',{...common,MapContainer:'MapContainer',Circle:'Circle',CircleMarker:'CircleMarker',Tooltip:'Tooltip',BaseMapTiles:'BaseMapTiles',OffsetSignalPolyline:'OffsetSignalPolyline',useMap:()=>({}),capacityStatusPresentation,capacityMapColors}).CapacityLocationMapLeaflet;
  const boundary=[point('Sululta'),point('Bishoftu'),point('Sebeta')],route=[point('Addis Ababa'),point('Adama')],regular={id:'preferred-area',geometry:'RADIUS',area_boundary:boundary,route_points:[],area_center_label:'Addis Ababa'};
  const props={center:{lat:40.015,lng:-105.27},radiusKm:10,areaBoundary:boundary,availabilityStatus:'PARTIAL',regularSignals:[regular]};
  let tree=view.render(component,props),area=find(tree,'OffsetSignalPolyline',node=>node.props.pathOptions.className==='capacity-setting-current-area');
- assert.deepEqual(area.props.positions,boundary.map(city=>[city.lat,city.lng]));assert.equal(area.props.offset,-12);assert.equal(area.props.pathOptions.color,capacityStatusPresentation.PARTIAL.color);assert.equal(find(area,'ol'),undefined);assert.equal(nodes(find(area,'ul')).filter(node=>node.type==='li').length,3);
+ assert.equal(area,undefined);
+ // A legacy Planned area must not become a current layer.
  const preferred=find(tree,'OffsetSignalPolyline',node=>node.props.pathOptions.className==='capacity-setting-corridor-area');assert.equal(preferred.props.offset,12);assert.equal(preferred.props.pathOptions.dashArray,'6 7');assert.ok(find(preferred,'Text',node=>node.props.message==='Preferred area'));assert.equal(find(preferred,'ol'),undefined);
  assert.deepEqual(find(tree,'Circle').props.center,[40.015,-105.27],'valid reported point stays independent of the Ethiopian offer towns');
  tree=view.render(component,{...props,areaBoundary:[],routePoints:route,regularSignals:[]});const path=find(tree,'OffsetSignalPolyline',node=>node.props.pathOptions.className==='capacity-setting-current-route');assert.deepEqual(path.props.positions,route.map(city=>[city.lat,city.lng]));assert.equal(path.props.offset,-6);assert.equal(nodes(find(path,'ol')).filter(node=>node.type==='li').length,2);assert.ok(find(path,'span',node=>node.props['aria-hidden']==='true'&&node.props.children.includes('↓')));
 });
 
-test('public selected Partial Area renders its saved polygon and Area details without inventing a vehicle point',()=>{
+test('public legacy Planned area omits the area and any invented vehicle point',()=>{
  const view=renderer(),map={getZoom:()=>6,getBounds:()=>({pad:()=>({contains:()=>true})})};
  const component=view.compile('../src/components/public-capacity-map-leaflet.tsx',{...common,Localized:({as,...props})=>({type:as||'div',props}),MapContainer:'MapContainer',Circle:'Circle',CircleMarker:'CircleMarker',Tooltip:'Tooltip',Marker:'Marker',Popup:'Popup',BaseMapTiles:'BaseMapTiles',OffsetPolyline:'OffsetPolyline',L:{divIcon:()=>({})},useMap:()=>map,useMapEvents(){},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,capacityStatusPresentation,capacityMapColors,localizedUpdateLabel:value=>value||'Reported earlier'}).PublicCapacityMapLeaflet;
  const boundary=[point('Sululta'),point('Bishoftu'),point('Sebeta')],item={id:'partial-area',provider_name:'Synthetic provider',status:'PARTIAL',availability_geometry:'RADIUS',location_lat:null,location_lng:null,capacity_area_boundary:boundary,current_route_points:[],recurring_corridors:[]};
  const props={items:[item],viewer:null,selectedId:item.id,onSelect(){},onDeselect(){}};let tree=view.render(component,props);
- const area=find(tree,'OffsetPolyline',node=>node.props.pathOptions.className.includes('map-service-area'));assert.ok(area,'a permitted Partial Area is a visible area');assert.deepEqual(area.props.positions,boundary.map(place=>[place.lat,place.lng]));assert.equal(area.props.pathOptions.color,capacityMapColors.planned);assert.equal(area.props.offset,-12);
- assert.equal(find(tree,'Circle'),undefined);assert.equal(find(tree,'Marker'),undefined);assert.equal(find(tree,'button',node=>node.props['aria-label']==='Location'),undefined);
- const action=find(tree,'button',node=>node.props['aria-label']==='Planned area');assert.ok(action,'Planned area action');action.props.onClick();tree=view.render(component,props);const detail=find(tree,'dialog');assert.equal(detail.props['aria-label'],'Planned area');assert.ok(find(detail,'ul'));assert.equal(find(detail,'ol'),undefined);assert.equal(nodes(detail).filter(node=>node.type==='li').length,3);
+ assert.equal(find(tree,'OffsetPolyline',node=>node.props.pathOptions.className.includes('map-service-area')),undefined);
+ assert.equal(find(tree,'Circle'),undefined);assert.equal(find(tree,'Marker'),undefined);
+ assert.equal(find(tree,'button',node=>node.props['aria-label']==='Location'),undefined);
+ assert.equal(find(tree,'button',node=>node.props['aria-label']==='Planned area'),undefined);
 });
 
 
 test('public map names planned and preferred coverage separately while retaining geometry and location privacy',()=>{
- for(const plannedGeometry of ['ROUTE','RADIUS'])for(const preferredGeometry of ['ROUTE','RADIUS']){
+ for(const plannedGeometry of ['ROUTE'])for(const preferredGeometry of ['ROUTE','RADIUS']){
   const view=renderer(),map={getZoom:()=>6,getBounds:()=>({pad:()=>({contains:()=>true})})};
   const component=view.compile('../src/components/public-capacity-map-leaflet.tsx',{...common,Localized:({as,...props})=>({type:as||'div',props}),MapContainer:'MapContainer',Circle:'Circle',CircleMarker:'CircleMarker',Tooltip:'Tooltip',Marker:'Marker',Popup:'Popup',BaseMapTiles:'BaseMapTiles',OffsetPolyline:'OffsetPolyline',isTrailerVehicleConfiguration:()=>false,L:{divIcon:()=>({}),latLng:(lat,lng)=>({lat,lng,distanceTo:other=>Math.hypot(lat-other.lat,lng-other.lng)})},useMap:()=>map,useMapEvents(){},DEFAULT_CAPACITY_CAMERA,initialCapacityCamera,capacityStatusPresentation,capacityMapColors,localizedUpdateLabel:value=>value||'Reported earlier'}).PublicCapacityMapLeaflet;
   const boundary=[{...point('Sululta'),lat:9.18,lng:38.75},{...point('Bishoftu'),lat:8.75,lng:38.98},{...point('Sebeta'),lat:8.91,lng:38.62}],route=[{...point('Addis Ababa'),lat:9.03,lng:38.75},{...point('Adama'),lat:8.54,lng:39.27}];
   const item={id:'planned-preferred',provider_name:'Synthetic provider',status:'EMPTY',availability_geometry:plannedGeometry,current_signal_geometry_visible:true,location_lat:null,location_lng:null,capacity_area_boundary:boundary,current_route_points:route,recurring_corridors:[{id:'regular',geometry:preferredGeometry,route_points:route,area_boundary:boundary}]},original=structuredClone(item);
-  const props={items:[item],viewer:null,selectedId:item.id,onSelect(){},onDeselect(){}},planned=plannedGeometry==='ROUTE'?'Planned route':'Planned area',preferred=preferredGeometry==='ROUTE'?'Preferred corridor':'Preferred area';let tree=view.render(component,props);
+  const props={items:[item],viewer:null,selectedId:item.id,onSelect(){},onDeselect(){}},planned=plannedGeometry==='ROUTE'?'Planned route':'Planned area',preferred=preferredGeometry==='ROUTE'?'Preferred route':'Preferred area';let tree=view.render(component,props);
   for(const label of [planned,preferred]){
    const action=find(tree,'button',node=>node.props['aria-label']===label);assert.ok(action,label);action.props.onClick();tree=view.render(component,props);
    const dialog=find(tree,'dialog');assert.equal(dialog.props['aria-label'],label);assert.ok(find(dialog,'Text',node=>node.props.message===label));
    if(label==='Planned route')assert.equal(nodes(find(dialog,'ol')).filter(node=>node.type==='li').length,2);
    if(label.endsWith('area'))assert.equal(nodes(find(dialog,'ul')).filter(node=>node.type==='li').length,3);
-   if(label==='Preferred corridor')assert.ok(find(dialog,'Text',node=>node.props.message==='Both directions'));
+   if(label==='Preferred route')assert.ok(find(dialog,'Text',node=>node.props.message==='Both directions'));
   }
   assert.equal(find(tree,'Circle'),undefined);assert.equal(find(tree,'button',node=>node.props['aria-label']==='Location'),undefined);
   assert.deepEqual(item,original,'presentation cannot rewrite a saved offer or reported position');
@@ -160,7 +187,7 @@ test('public map names planned and preferred coverage separately while retaining
 test('vehicle detail labels the existing planned timestamp separately from reported location',()=>{
  const view=renderer(),component=view.compile('../src/components/map-truck-details.tsx',{...common,CalendarClock:'CalendarClock',presentation:{summary:'summary'},identity:{mapPerson:'map-person'},TruckAuthorityBadges:'TruckAuthorityBadges',TruckDocumentSummary:'TruckDocumentSummary',localizedUpdateLabel:value=>value}).MapTruckDetails;
  const truck={provider_name:'Synthetic provider',provider_handle:'synthetic-provider',status:'PARTIAL',capacity_updated_label:'Saved offer age',location_updated_label:'Reported position age',current_signal_geometry_visible:true};
- let tree=view.render(component,{truck});assert.equal(nodes(tree).filter(node=>node.type==='Text'&&node.props.message==='Planned capacity').length,1);assert.ok(find(tree,'p',node=>nodes(node).some(child=>child.props?.message==='Planned capacity')));assert.ok(find(tree,'p',node=>node.props.children.includes('Reported position age')));
- tree=view.render(component,{truck:{...truck,current_signal_geometry_visible:false}});assert.equal(find(tree,'p',node=>node.props.children.includes('Reported position age')),undefined);assert.ok(find(tree,'Text',node=>node.props.message==='Preferred corridor—not current location'));
- tree=view.render(component,{truck:{...truck,current_signal_geometry_visible:false,recurring_corridors:[{geometry:'RADIUS'}]}});assert.ok(find(tree,'Text',node=>node.props.message==='Preferred area—not current location'));assert.equal(find(tree,'Text',node=>node.props.message==='Preferred corridor—not current location'),undefined);assert.equal(find(tree,'p',node=>node.props.children.includes('Reported position age')),undefined);
+ let tree=view.render(component,{truck});assert.ok(find(tree,'p',node=>node.props.children.includes('Saved offer age')));assert.ok(find(tree,'p',node=>node.props.children.includes('Reported position age')));
+ tree=view.render(component,{truck:{...truck,current_signal_geometry_visible:false}});assert.equal(find(tree,'p',node=>node.props.children.includes('Reported position age')),undefined);assert.equal(find(tree,'CoverageIndicators').props.planned,null);
+ tree=view.render(component,{truck:{...truck,current_signal_geometry_visible:false,recurring_corridors:[{geometry:'RADIUS',area_boundary:[{},{},{}]}]}});assert.equal(find(tree,'CoverageIndicators').props.preferred,'Preferred area');assert.ok(find(tree,'Text',node=>node.props.message==='Current vehicle location isn’t shared.'));assert.equal(find(tree,'p',node=>node.props.children.includes('Reported position age')),undefined);
 });

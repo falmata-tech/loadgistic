@@ -4,6 +4,10 @@ import {fileURLToPath} from 'node:url';
 import ts from 'typescript';
 import {gpsMessages} from '../../../src/lib/i18n/gps-messages.ts';
 import {nativeMessages} from '../src/localization/messages.ts';
+import {LANGUAGES} from '../../../src/lib/i18n/core.js';
+import {trackingSharingMessages} from '../../../src/lib/i18n/tracking-sharing-messages.ts';
+import {businessWorkspaceMessages} from '../../../src/lib/i18n/business-workspace-messages.ts';
+const locales=LANGUAGES.map(({code})=>code).filter(code=>code!=='en');
 
 // Counts explicit copy boundaries only. Dynamic labels, server errors and raw
 // Text nodes still need manual coverage review; this is not a fluency check.
@@ -44,9 +48,12 @@ export function inventoryFixedMessages(sources){
  return messages;
 }
 export function auditTranslationSources(sources,catalogs,{strict=false}={}){
- const messages=inventoryFixedMessages(sources),locales=['am','om'];
+ const messages=inventoryFixedMessages(sources);
  const missing=[...messages].flatMap(([message,locations])=>{
- const absent=locales.filter(locale=>typeof catalogs[locale][message]!=='string'||!catalogs[locale][message].trim());
+  const absent=locales.filter(locale=>{
+   const value=catalogs[locale]?.[message];
+   return typeof value!=='string'||!value.trim();
+  });
  return absent.length?[{message,locales:absent,locations:[...locations]}]:[];
 }).sort((a,b)=>a.message.localeCompare(b.message));
  const report={boundary:'Explicit fixed messages only; manual dynamic/remaining raw text and fluency review required',messages:messages.size,fullyCovered:messages.size-missing.length,missing:missing.length,items:missing};
@@ -54,9 +61,8 @@ export function auditTranslationSources(sources,catalogs,{strict=false}={}){
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const sources=files(root).map(name=>[name,fs.readFileSync(name,'utf8')]);
- const locales=['am','om'];
- const catalogs=Object.fromEntries(locales.map(locale=>[locale,{...JSON.parse(fs.readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale],...gpsMessages[locale]}]));
+ const catalogs=Object.fromEntries(locales.map(locale=>[locale,{...JSON.parse(fs.readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale],...gpsMessages[locale],...trackingSharingMessages[locale],...businessWorkspaceMessages[locale]}]));
  const {report,exitCode}=auditTranslationSources(sources,catalogs,{strict:process.argv.includes('--strict')});
- console.log(process.argv.includes('--json')?JSON.stringify(report,null,2):`${report.fullyCovered}/${report.messages} explicit native messages have both supported translations; ${report.missing} remain. Use --json for locations. Dynamic/raw text still needs manual review.`);
+ console.log(process.argv.includes('--json')?JSON.stringify(report,null,2):`${report.fullyCovered}/${report.messages} explicit native messages have all supported translations; ${report.missing} remain. Use --json for locations. Dynamic/raw text still needs manual review.`);
  process.exitCode=exitCode;
 }

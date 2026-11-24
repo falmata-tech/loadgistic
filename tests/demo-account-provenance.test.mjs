@@ -1,19 +1,22 @@
+import {capacityCoverageLabel} from '../src/lib/capacity-coverage-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as jsxRuntime from 'react/jsx-runtime';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {capacityLoadPreference,capacityLoadLabel} from '../src/lib/capacity-load-preferences.js';
+import {capacityLoadPreference} from '../src/lib/capacity-load-preferences.js';
+import * as capacitySpace from '../src/lib/capacity-space-estimate.js';
 import {localizedUpdateLabel} from '../src/lib/i18n/update-label.js';
 
 const t=(message,values={})=>message.replace(/\{([^}]+)\}/g,(_,key)=>String(values[key]??''));
 const dependencies={
+ '@/lib/capacity-coverage-label.js':{capacityCoverageLabel},'./capacity-coverage-indicators':{CapacityCoverageIndicators:()=>null},
  'react/jsx-runtime':jsxRuntime,'next/link':{__esModule:true,default:'a'},
  'lucide-react':{Building2:()=>null,CalendarClock:()=>null,MapPinned:()=>null,Phone:()=>null},
  './localization':{Text:({message,values})=>t(message,values),useTranslation:()=>({t})},
  '@/lib/capacity-sharing':{capacitySharingLabel:()=>''},'@/lib/i18n/update-label.js':{localizedUpdateLabel},
- '@/lib/capacity-load-preferences':{capacityLoadPreference,capacityLoadLabel},
+ '@/lib/capacity-load-preferences':{capacityLoadPreference},'@/lib/capacity-space-estimate.js':capacitySpace,
  './truck-document-summary':{TruckDocumentSummary:()=>null},
  '@/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/vehicle-configurations/cargo-van.jpg'},
  './public-truck-presentation.module.css':{__esModule:true,default:{summary:'summary'}},
@@ -30,11 +33,26 @@ new Function('require','exports',compiled)(name=>{
 },exported);
 const base={provider_name:'Public provider',provider_handle:'public-provider',status:'EMPTY',assigned_driver_first_name:'Assigned',capacity_updated_label:'Updated today',location_updated_label:'Location updated today'};
 
-test('web details display trusted Demo account separately from a saved synthetic location',()=>{
+test('web details display trusted Example account separately from a saved synthetic location',()=>{
  const html=renderToStaticMarkup(jsxRuntime.jsx(exported.MapTruckDetails,{truck:{...base,account_is_demo:true,location_is_demo:false}}));
- assert.match(html,/Demo account/);assert.match(html,/Public provider/);assert.match(html,/Assigned/);
+ assert.match(html,/Example account/);assert.match(html,/Public provider/);assert.match(html,/Assigned/);
  for(const account_is_demo of [false,undefined,null,'true',1]){
   const normal=renderToStaticMarkup(jsxRuntime.jsx(exported.MapTruckDetails,{truck:{...base,account_is_demo,location_is_demo:true,user_metadata:{is_demo:true}}}));
-  assert.doesNotMatch(normal,/Demo account/);
+  assert.doesNotMatch(normal,/Example account/);
+ }
+});
+
+test('only the two trusted fixture namespaces identify an example account',async()=>{
+ const {isExampleAccountMetadata}=await import('../src/lib/identity/example-account.js');
+ const {nativePublicProvider}=await import('../src/lib/mobile/public-contract.js');
+ for(const fixture_source of ['loadgistic','loadgistic-production-pilot-v1']){
+  assert.equal(isExampleAccountMetadata({fixture_source}),true);
+ }
+ for(const metadata of [undefined,{fixture_source:'loadgistic-other'},{is_demo:true},{user_metadata:{fixture_source:'loadgistic'}}]){
+  assert.equal(isExampleAccountMetadata(metadata),false);
+ }
+ assert.equal(nativePublicProvider({account_is_demo:true}).exampleAccount,true);
+ for(const flag of ['true',1,false,null]){
+  assert.equal(nativePublicProvider({account_is_demo:flag}).exampleAccount,false);
  }
 });

@@ -46,10 +46,10 @@ test('small long-distance routes match ordered endpoints and refuse reversed or 
  }
 });
 
-test('Empty and Partial areas support both endpoints and reject an endpoint outside the actual polygon',()=>{
+test('Empty and Partial trucks with Preferred areas support both endpoints and reject an endpoint outside the actual polygon',()=>{
  const area=demoServiceAreaForLocation(record,0),inside=place(area.boundary[0]);
  for(const status of ['EMPTY','PARTIAL'])for(const cargo_configuration of configs){
-  const item={status,cargo_configuration,availability_geometry:'RADIUS',capacity_area_boundary:area.boundary};
+  const item={status,cargo_configuration,recurring_corridors:[{geometry:'RADIUS',area_boundary:area.boundary}]};
   assert.equal(capacityGeographicMatch(item,{originRadiusKm:1,destinationRadiusKm:1},inside,inside).matched,true);
   assert.equal(capacityGeographicMatch(item,{originRadiusKm:1,destinationRadiusKm:1},inside,place(DEMO_PLACES.mekelle)).matched,false);
  }
@@ -110,6 +110,10 @@ test('fixture planning preserves authority, location observations, privacy choic
  for(const [table,rows] of Object.entries(original))if(!['capacities','profile_routes'].includes(table))assert.equal(result[table],rows,table);
  for(let index=0;index<original.capacities.length;index++){
   const before=original.capacities[index],after=result.capacities[index];
+  if(!AUTHORED_DEMO_PLAN_VEHICLES.has(before.vehicle_id)&&!DEMO_CORRIDOR_CATALOG.routes.some(route=>route.evidence.id===before.id)){
+    assert.equal(after.availability_geometry,'ROUTE');
+    assert.equal(after.capacity_area_boundary_json,'[]');
+  }
   if(AUTHORED_DEMO_PLAN_VEHICLES.has(before.vehicle_id))assert.deepEqual(after,before);
   for(const field of ['id','vehicle_id','provider_organization_id','provider_profile_id','status','market_status','available_percent',
    'accepts_full_load','accepts_partial_load','visibility','location_lat','location_lng','location_source','location_updated_at','location_precision_km','updated_at','updated_by','photo_path'])

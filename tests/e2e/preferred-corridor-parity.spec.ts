@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {test,expect} from './browser-test';
 
-const preview='http://127.0.0.1:8084';
+const preview=process.env.PLAYWRIGHT_EXPO_BASE_URL||'http://127.0.0.1:8084';
 async function settledModal(page:import('playwright-core').Page,label:string){
  await expect.poll(()=>page.getByRole('heading',{name:label,exact:true}).evaluate(element=>{for(let node:Element|null=element;node;node=node.parentElement)if(Number(getComputedStyle(node).opacity)<1)return false;return true;})).toBe(true);
 }
@@ -20,21 +20,21 @@ async function preferredSignals(page:import('playwright-core').Page){
   expect(payload.nextCursor).toBeTruthy();expect(seen.has(payload.nextCursor)).toBe(false);
   seen.add(payload.nextCursor);cursor=payload.nextCursor;
  }
- expect(route,'public capacity must include a saved preferred corridor').toBeTruthy();
+ expect(route,'public capacity must include a saved preferred route').toBeTruthy();
  return {route:route!,area};
 }
 
-test('preferred corridor keeps planned capacity distinct on phone web and Expo',async({page},info)=>{
+test('preferred route keeps planned capacity distinct on phone web and Expo',async({page},info)=>{
  test.skip(info.project.name!=='mobile-chromium','The terminology review targets phone layouts.');
  test.setTimeout(150_000);await page.setViewportSize({width:390,height:844});
  const {route:signal,area}=await preferredSignals(page);
 
- await page.goto(`/?truck=${encodeURIComponent(signal.id)}`);
+ await page.goto(`/?truck=${encodeURIComponent(signal.id)}`,{waitUntil:'domcontentloaded',timeout:60_000});
  await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible({timeout:45_000});
  await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:45_000});
  const legend=page.locator('.public-map-legend');await expect(legend).toBeVisible();
  if(await legend.getAttribute('open')===null)await legend.locator('summary').click();
- await expect(legend.locator('.preferred-area,.corridor')).toHaveText(['Preferred area','Preferred corridor']);
+ await expect(legend.locator('.preferred-area,.corridor')).toHaveText(['Preferred area','Preferred route']);
  await expect(legend.locator('.current-route')).toHaveText('Planned route');
  await expect.poll(()=>page.locator('.leaflet-tile-loaded').count(),{timeout:30_000}).toBeGreaterThan(5);
  await page.screenshot({path:info.outputPath('web-preferred-corridor-phone.png'),scale:'css'});
@@ -42,12 +42,12 @@ test('preferred corridor keeps planned capacity distinct on phone web and Expo',
  if(area){await page.goto(`/?truck=${encodeURIComponent(area.id)}`);
   await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible({timeout:45_000});
   const areaLegend=page.locator('.public-map-legend');if(await areaLegend.getAttribute('open')===null)await areaLegend.locator('summary').click();
-  await expect(areaLegend.locator('.preferred-area,.corridor')).toHaveText(['Preferred area','Preferred corridor']);}
+  await expect(areaLegend.locator('.preferred-area,.corridor')).toHaveText(['Preferred area','Preferred route']);}
 
  await page.goto(`${preview}/?truck=${encodeURIComponent(signal.id)}`);
- const corridor=page.getByRole('button',{name:'Preferred corridor',exact:true});
+ const corridor=page.getByRole('button',{name:'Preferred route',exact:true});
  await expect(corridor).toBeVisible({timeout:45_000});await corridor.click();
- await expect(page.getByRole('heading',{name:'Preferred corridor',exact:true})).toBeVisible();await settledModal(page,'Preferred corridor');
+ await expect(page.getByRole('heading',{name:'Preferred route',exact:true})).toBeVisible();await settledModal(page,'Preferred route');
  await expect(page.getByText('Both directions',{exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('expo-preferred-corridor-phone-en.png'),scale:'css'});
  await page.getByRole('button',{name:'Close map signal details',exact:true}).last().click();
@@ -60,9 +60,9 @@ test('preferred corridor keeps planned capacity distinct on phone web and Expo',
   await page.getByRole('radio',{name,exact:true}).click();
   await page.getByRole('dialog').getByRole('button').click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  const localized=page.getByRole('button',{name:messages['Preferred corridor'],exact:true});
+  const localized=page.getByRole('button',{name:messages['Preferred route'],exact:true});
   await expect(localized).toBeVisible();await localized.click();
-  await expect(page.getByRole('heading',{name:messages['Preferred corridor'],exact:true})).toBeVisible();await settledModal(page,messages['Preferred corridor']);
+  await expect(page.getByRole('heading',{name:messages['Preferred route'],exact:true})).toBeVisible();await settledModal(page,messages['Preferred route']);
   await page.screenshot({path:info.outputPath(`expo-preferred-corridor-phone-${locale}.png`),scale:'css'});
   await page.getByRole('button',{name:messages['Close map signal details'],exact:true}).last().click();
   priorLabel=messages.Language;

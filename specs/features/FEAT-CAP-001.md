@@ -3,13 +3,63 @@ id: FEAT-CAP-001
 title: Public truck-capacity signals and provider publication
 related_ids: [BASE-FE-001, BASE-BE-001, FEAT-IAM-001, FEAT-FLT-001, FEAT-GEO-001, FEAT-MAT-001, FEAT-MKT-001, FEAT-PRV-001, FEAT-SHR-001]
 problem: Capacity seekers need immediate, public, location-relevant truck discovery while transport providers need a small set of honest availability signals they can keep current.
-behavior: Providers publish one latest Empty or Partial signal with public or explicitly shared account visibility. Planned and Preferred routes/areas are OR availability offers within the same vehicle, permission and status filters; reported approximate location is separate. Both statuses support Area or Route. Area queries compare advertised routes and areas; older visible signals carry honest capacity/location ages for either audience. Migrations211/213/217 are recorded on the hosted ledger through220; ledger presence does not establish current end-to-end qualification. No email guest Capacity or exact-coordinate disclosure is supported.
+behavior: Providers publish one latest Empty or Partial signal with public or explicitly shared account visibility. Planned routes and Preferred routes/areas are OR availability offers within the same vehicle, permission and status filters; reported approximate location is separate. Published Planned routes support optional journey timestamps. Area queries compare advertised routes and areas; older visible signals carry honest capacity/location ages for either audience. Migrations211/213/217 are recorded on the hosted ledger through220; ledger presence does not establish current end-to-end qualification. No email guest Capacity or exact-coordinate disclosure is supported.
 contracts: [CurrentCapacitySignal, CapacityStatus, AvailabilityGeometry, CapacityPlaceSequence, CapacityAreaBoundary, RegularCapacitySignal, CapacityFreshnessStage, CapacityFreshnessPresentation, PublicCapacityProjection, PublicMicrositeTruckProjection, CapacityCursorPage, VisitorLocationQuery, CapacityMapProjection, CapacityProof, DutyCommand]
 observability: [capacity_audit, capacity_route_audit, public_capacity_query, cursor_outcome, location_query_outcome, freshness]
-rollout: Replace all pre-customer demo radius and endpoint-only route fixtures with multi-city Service areas and Capacity routes, keep no compatibility projection for the retired demo geometry, and move provider publication through additive server-only Supabase RPCs before enabling managed traffic. Roll back by disabling capacity mutations while preserving the append-only capacity and audit history; never fall back to SQLite while the managed backend is selected.
+rollout: Apply the additive journey migration after testing publication and search on a local restore. Retain historical Planned area data while limiting active publication to ordered routes. Roll back by restoring the previous publication and discovery functions while preserving capacity, journey and audit history. Use the managed backend for the entire workflow.
 ---
 
 # Public truck-capacity signals
+
+## Planned routes and optional journey times — November 23 owner decision
+
+This supersedes the older Planned area publishing and matching scenarios.
+Providers and authorized drivers publish a Planned route with two to five
+ordered cities or towns. Preferred route and Preferred area remain separate
+saved coverage for the current vehicle and driver.
+
+Given a provider or authorized driver sets capacity to Partial\
+When they publish or update sharing without at least two distinct catalog cities
+or towns on the Planned route\
+Then the editor requires the missing route and the database rejects publication
+without expiring the previous signal\
+And a valid saved Planned route can be reused with or without journey dates.
+
+Given a provider or authorized driver publishes a Planned route\
+When they enter a departure, an arrival, or both\
+Then times are entered in Ethiopia time and stored as optional timestamps on
+that exact publication\
+And the API and database reject invalid dates, reversed times and new Planned
+area publications without expiring or changing the previous signal.
+
+Given a broker searches by origin, destination, Depart after or Arrive by\
+When either time filter is set\
+Then the authorized current Planned route must satisfy every endpoint and time
+constraint on that same route before ranking, counts, clustering or pagination\
+And an undated or Preferred-only match cannot satisfy the time filter\
+And a hidden or revoked publication exposes neither its schedule nor location.
+
+Given a saved Planned area predates this change\
+When the vehicle is read on the map or in the workspace\
+Then its historical area stays stored and its current vehicle signal remains
+available through the existing audience and status rules\
+And its Planned area does not appear or match as advertised coverage\
+And its next capacity publication requires an explicit Planned route.
+
+Without time filters, search can match any one visible complete Planned route,
+Preferred route or Preferred area. Area search continues to compare their
+geography. Older apps can omit the schedule, and an edit that keeps the same
+eligible route and driver preserves its times unless the caller explicitly
+clears them. A different route or driver never inherits the old schedule.
+
+Changed contracts are the server publication command, current Capacity
+projection and geographic query. The database stores finite timestamps and
+preserves historical geometry. Rollout uses the additive migration, a local
+restore rehearsal, API privacy denials and web/Expo save and search evidence.
+Rollback restores the prior write and discovery functions while retaining saved
+timestamps for recovery. Audit records and public responses follow the
+existing Capacity access boundary and avoid printing schedule or identity
+records in operational logs.
 
 ## Demo planning diversity — November15 owner correction
 
@@ -117,10 +167,15 @@ stress qualification remain pending.
 
 ## October 21 filter and posting hierarchy — presentation-only
 
-### October26 Planned Capacity and Preferred Corridor — presentation locally qualified
+Given a visitor opens the Capacity filter drawer on web or Expo\
+When filters are shown, including after applying a route or location filter\
+Then Vehicle starts open and every other section starts collapsed\
+And opening a section restores the filter values without applying a new search.
+
+### October26 Planned Capacity and Preferred Route — presentation locally qualified
 
 Planned Capacity is the vehicle's current/next-work offer: its Empty/Partial
-status, accepted loads and one Area or ordered Route. Preferred Corridor is the
+status, accepted loads and one Area or ordered Route. Preferred Route is the
 separately saved regular two-way route for the current vehicle/driver pair;
 its Area variant is called Preferred area. Neither is a booking or a reported
 vehicle position. This clarification adds no date scheduler or multi-plan model.
@@ -128,7 +183,7 @@ vehicle position. This clarification adds no date scheduler or multi-plan model.
 Given a provider edits or someone inspects these signals on web/native\
 When their controls, saved facts, map layers or result reasons are shown\
 Then the offer is named Planned capacity, with Planned area or Planned route
-where geometry matters, while the regular signal is Preferred corridor/area\
+where geometry matters, while the regular signal is Preferred route/area\
 And current load status and GPS/phone/manual location retain separate meanings\
 And concise headings, distinct existing styles and clear actions carry the
 explanation rather than adding paragraphs to dialogs.
@@ -236,8 +291,8 @@ Chrome saves/reopens cover Empty/Partial × Area/Route; installed Android Staff
 Area search finds the existing route vehicle and retains its filter on reopen.
 Hosted rollout and final release-APK qualification remain separate pending gates.
 
-The October26 filter presentation supersedes the older four-group order below:
-Vehicle first, Area or route second, Vehicle location third, then More filters.
+Capacity filters place Vehicle first, followed by Area or route and More filters.
+Vehicle location is a collapsed section inside Vehicle, below Available space.
 An Area query matches a current or Preferred route passing within its chosen
 radius, as well as a current or Preferred service area reaching that location.
 Use the same route-point distance rule as a single Route endpoint query; the
@@ -456,7 +511,7 @@ Do not apply the fixed-height map container to this non-map panel.
 ### Scenario: map overview keeps load preferences in details
 
 Given public or private capacity discovery renders web or mobile markers
-Then do not print Full only, Shared only or Full or shared beneath truck icons
+Then do not print shipment acceptance labels beneath vehicle icons
 And preserve Empty/Partial status colors and separate clusters
 And selecting a truck still shows its saved accepted loads in truck details
 And shipment-space filters continue matching the saved preference, including
@@ -684,10 +739,11 @@ hosted apply. Rollback should first roll back the application; a bounds rollback
 cannot invalidate retained worldwide records and is not an automatic data deletion.
 
 Given an authorized provider sets Empty in the main capacity editor
-Then show Full loads only, Shared loads only and Full or shared as its three
-accepted-load choices, with a short explanation of the selected choice.
-The Loads editor uses the same values and wording. Partial means remaining
-space for shared loads and cannot accept a full-truck load. Optional multiple
+Then show Full vehicle shipments only, Partial Shipments Only and Partial or full vehicle shipments
+under Shipments accepted, with a short explanation of the selected choice.
+The saved acceptance values are the same on web and Expo. Partial capacity is
+remaining space for a partial shipment and cannot accept a shipment that needs
+the whole vehicle. Optional multiple
 pickup/drop-off choices remain separate and are preserved by focused saves.
 
 Given a visitor reads an Empty marker or truck details on web or native
@@ -695,7 +751,7 @@ Then show its actual saved load preference as well as physical capacity status;
 do not infer full-load acceptance from Empty alone or missing/invalid flags.
 Clusters remain status-separated and colored/text-labeled Empty or Partial.
 
-| Saved status / accepted loads | Full-truck search | Shared-space search |
+| Saved status / accepted loads | Full-truck search | Partial-load search |
 | --- | --- | --- |
 | Empty / FTL | included | excluded |
 | Empty / PTL | excluded | included |
@@ -704,13 +760,13 @@ Clusters remain status-separated and colored/text-labeled Empty or Partial.
 | Off Duty | excluded | excluded |
 
 The visitor Truck filters show current load and the published location source,
-but no separate Space needed control. Driver-selected full/shared load acceptance
+but no separate Space needed control. Driver-selected full or partial load acceptance
 remains authoritative and existing callers may still submit load-type filters.
 Existing full-versus-partial contradiction handling remains explicit. The
 accepted multi-selection contract (FEAT-MKT-001) permits multiple occupancy,
 location-source, configuration, stop and freshness choices. Match any selected
 option within each group and every supplied group against the same authorized
-truck. Partial remains shared-load/route-only; a combination with another valid
+truck. Partial remains partial-load/route-only; a combination with another valid
 alternative must not be erased by singleton-only contradiction handling. Every
 selected reviewed document remains required. Canonical bounded lists preserve
 existing scalar clients, pagination, privacy and independent profile search.
@@ -776,9 +832,34 @@ Then the truck summary shows the reported available-space percentage without req
 
 Given a Capacity map displays an individual Partial vehicle with a reported estimate\
 When an authorized visitor sees its marker\
-Then the marker shows the same percentage as the vehicle details and includes its meaning in the accessible name\
+Then the marker, hover preview and vehicle details use the same percentage and the marker includes its meaning in the accessible name\
+And hover previews fit on the available side of the marker within the visible map and browser viewport, without moving the map\
+And an Empty vehicle displays 100% and shows its saved shipment preference when known, using one of the three editor labels\
+And an individual vehicle below 100% omits the shipment preference and duplicate Partial badge\
 And a cluster shows its vehicle count without an aggregate percentage\
-And Empty vehicles and Partial vehicles without a report keep their existing markers.
+And a historical unreported estimate stays unknown on all surfaces.
+
+Given a Capacity map is visible\
+When the Map key is open during a viewport refresh\
+Then the progress line stays at the top and the map and legend stay readable.
+
+Given a public capacity or location freshness bucket\
+When its age is shown in a map preview or detail\
+Then Capacity updated and Location updated label the existing freshness buckets separately
+And the same labels apply to public, shared and authorized fleet Capacity summaries.
+
+Given the viewer may see the saved coverage for this vehicle
+When inspecting the map preview or vehicle summary
+Then check indicators identify each complete Planned route or area and Preferred route or area
+And hidden, absent and incomplete coverage does not appear as saved.
+
+The data contract keeps current coverage on the capacity record and Preferred
+coverage scoped to the assigned vehicle and driver. ROUTE is an ordered path.
+The legacy RADIUS value stores a polygon in these coverage fields. The
+approximate GPS or phone radius and its observation time are separate.
+Backend match reasons and messages use Preferred route as well. The application
+workspace uses preferredCoverage for both route and area. Existing RPC keys and
+public/mobile payloads retain their wire contracts for installed clients.
 
 Given a Partial signal predates the required estimate and already contains the historical default of 50\
 Then its numeric storage value is legacy and its report time is absent\
@@ -794,6 +875,18 @@ Given a fleet-managed driver resumes a truck's saved Partial plan\
 When the plan still has a report for that same assigned driver\
 Then the new duty publication retains the saved estimate and original report time\
 And a missing report tells the driver to ask their fleet manager to set the space first.
+
+Given a database contains older synthetic demo fixtures loaded before percentage reports were seeded\
+When the reviewed backfill matches the exact current Partial row, vehicle, synthetic owner scope, publisher and assigned Driver\
+Then it writes only the authored illustrative estimate and report provenance\
+And it preserves the capacity ID, publication time, location, route, sharing and existing reports\
+And a changed identity, real account or superseded publication is ineligible.
+
+The operation defaults to rollback. It reports eligible and applied row counts;
+any unexpected field change aborts the transaction. The pilot candidate requires
+all exact reviewed rows to qualify before it can apply. Record the target, before
+values and readback before any hosted execution. A selective rollback must
+verify the repaired rows still match the recorded after-values.
 
 Demo fixture seeds contain a dated illustrative estimate for every Partial truck.
 The Capacity simulator accepts an exact seeded baseline for its own allowlisted
@@ -818,24 +911,24 @@ And both use green for Empty and amber for Partial\
 And color is reinforced by text and shape rather than being the only meaning\
 And the dashed slate privacy circle remains distinct from every capacity, trip, and recurring signal.
 
-### Scenario: a preferred corridor belongs to one truck and its current driver
+### Scenario: a preferred route belongs to one truck and its current driver
 
 Given an assigned truck has a preferred service area or two-way corridor\
-When an authorized fleet owner or independent driver maintains its preferred corridor\
+When an authorized fleet owner or independent driver maintains its preferred route\
 Then the selected truck and expected current driver are required and rechecked
 inside the command\
 And that truck-and-driver pair may retain exactly zero or one regular-service signal\
 And that signal is either a structured Service area with one center plus three through five surrounding cities or a structured two-way Capacity route with two through five ordered cities\
 And another addition is rejected without changing the saved signal\
-And a preferred corridor asks for no date and never claims that a truck is currently available\
+And a preferred route asks for no date and never claims that a truck is currently available\
 And the selected-truck map card exposes the complete saved signal immediately without a disclosure control or line clamping\
-And a Preferred corridor joins its cities with ↔ while a Preferred area names its center and boundary cities\
+And a Preferred route joins its cities with ↔ while a Preferred area names its center and boundary cities\
 And both state Confirm availability\
 And the selected map uses dotted slate for Preferred coverage, solid cobalt for Planned coverage, and a lightly shaded blue radius for approximate location.
 
-### Scenario: preferred corridor removal updates the selected vehicle
+### Scenario: preferred route removal updates the selected vehicle
 
-Given a vehicle has a saved preferred corridor or area\
+Given a vehicle has a saved preferred route or area\
 When its authorized manager removes that signal successfully\
 Then its saved summary and map stop showing the signal immediately\
 And other vehicles' preferred signals remain unchanged.\
@@ -1000,7 +1093,8 @@ And no ranked or paginated truck-list surface is offered\
 And before selection the map clusters crowded signals that separate as the visitor zooms\
 And each cluster contains only Empty trucks or only Partial trucks, names that status, and is visibly offset from an opposite-status cluster occupying the same map cell\
 And clustering uses a screen cell at least as wide as the corresponding unselected marker so neighboring full-size pins are not rendered on top of one another\
-And a cluster that remains crowded at maximum zoom stays a single bounded cluster and opens an accessible truck chooser instead of exploding its members into an overlapping ring\
+And activating a cluster below maximum zoom zooms into its geographic location\
+And any cluster still grouped at maximum zoom opens an accessible truck chooser while leaving its members at their map locations, without connector lines\
 And the complete map key remains visible without another action and uses pointed pins for capacity status, a polygon for Service area, and solid or dashed polylines for Capacity routes rather than repeating same-shaped color bars\
 And each unclustered truck marker is a sufficiently large pointed map-pin shape using the existing cargo-configuration image so visitors can distinguish vehicle body types before selecting it\
 And the vehicle artwork fills the true circular head without becoming egg-shaped or competing with an in-marker status word, while every rigid or tractor trailer configuration keeps its cab and enough of the attached trailer visible to distinguish it\
@@ -1061,13 +1155,13 @@ Given a truck has saved capacity facts\
 When its authorized provider opens the editor\
 Then a map-centered summary appears before the full editor\
 And one compact selected-truck control occupies the map's reserved top-left zone without repeating a Capacity title\
-And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Preferred corridor and Location\
-And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Preferred corridor and Location stay separate\
+And four focused actions remain in one aligned top-right rail: Capacity, Sharing, Preferred route and Location\
+And Capacity groups current availability, coverage and accepted-load preferences in one focused editor, while Sharing, Preferred route and Location stay separate\
 And the complete map key remains visible in the reserved bottom-left zone while one combined approximate-location, accuracy-radius, and refresh dock occupies the bottom-right zone\
-And the Driver map uses the same Empty green, Partial amber, Approximate location slate, and Preferred corridor cyan signal language and readable hover summaries as the public Market\
+And the Driver map uses the same Empty green, Partial amber, Approximate location slate, and Preferred route cyan signal language and readable hover summaries as the public Market\
 And the four zones do not overlap one another, required map attribution, or essential capacity geometry at supported desktop and phone widths\
 And the approximate truck marker and Truck area label remain high contrast above overlapping area polygons and routes\
-And Capacity, Sharing, Preferred corridor, and Location each open only their relevant editor\
+And Capacity, Sharing, Preferred route, and Location each open only their relevant editor\
 And no separate future-or-recurring planning section appears below the capacity console\
 And every edit opens a native modal over the still-mounted map with only that signal's inputs, while regular service retains its own explicit save\
 And focused saves preserve unopened values\
@@ -1081,7 +1175,7 @@ Given an authorized Driver opens Capacity management on a supported phone\
 When published capacity exists\
 Then the map occupies the primary remaining workspace beneath the compact application bars\
 And the current truck selector remains compact in the reserved top-left map zone instead of becoming a page-sized card\
-And a compact top-right rail has four recognizable, accessibly named actions: Capacity, Sharing, Preferred corridor and Location\
+And a compact top-right rail has four recognizable, accessibly named actions: Capacity, Sharing, Preferred route and Location\
 And Capacity opens one editor for availability, coverage and accepted-load preferences; the other three actions open only sharing, regular-service and location controls\
 And the complete map key remains visible at bottom-left while Approximate location radius and Refresh truck location share one bottom-right dock\
 And every floating zone stays aligned, distinct, and clear of the other zones, required attribution, and essential map interaction\
@@ -1093,10 +1187,10 @@ And the page does not repeat a visible Capacity title, detached Updating card, s
 ### Scenario: a focused edit is isolated and reversible
 
 Given an authorized provider is viewing a saved truck on Driver Home or its Fleet detail\
-When Capacity, Sharing, Preferred corridor, or Location is selected\
+When Capacity, Sharing, Preferred route, or Location is selected\
 Then only the selected group's inputs open in a labelled modal with trapped keyboard focus\
 And Capacity contains Empty, Partial, and Off Duty choices, current route or area inputs, accepted load types, and multiple pickup/drop-off preferences\
-And Sharing owns public/private visibility, Preferred corridor owns the separate undated preference, and Location owns the approximate point and privacy radius\
+And Sharing owns public/private visibility, Preferred route owns the separate undated preference, and Location owns the approximate point and privacy radius\
 And each available group has its own compact, labelled floating button, with no duplicate action or Edit all control\
 And a first publication defaults to Private with a concise visible notice; changing Capacity does not silently change Sharing\
 And the underlying map remains mounted at its current pan and zoom\
@@ -1299,9 +1393,11 @@ information, and compact entity-specific document summaries on web and native.
 Native uses the same already-authorized public callback phone and document-review
 metadata from the existing Capacity API; it does not invent missing evidence or
 widen server authorization.
-Keep all existing profile/call/document actions and hidden-location safeguards.
-Ordinary collapsed content should use horizontal space before requiring scrolling;
-long names, translations and expanded evidence must wrap/scroll without clipping.
+Keep the profile and call actions and hidden-location safeguards. Put Driver
+and Vehicle documents beside one another in the overview. Account documents
+are available through the Transport Provider profile. The collapsed overview
+fits the ordinary desktop and phone dialog without scrolling. Long names,
+translations and expanded evidence may wrap and scroll without clipping.
 Preserve the centered modal, dismiss/return behavior and unchanged map camera.
 Focused desktop/phone review plus native static checks precede owner visual review.
 
@@ -1313,8 +1409,9 @@ Then the assigned Driver's published first name and valid public callback phone
 appear with a reachable Call driver action\
 And only when that phone is absent may an explicitly published provider phone
 offer the existing provider Call action\
-And Owner or Transport Provider, Driver and Vehicle document groups show the
-same available review counts, categories, dates and expired/unreviewed states\
+And Driver and Vehicle document groups show the same available review counts,
+categories, dates and expired/unreviewed states\
+And the Profile action leads to the Transport Provider's account documents\
 And each group expands inside the bounded modal without hiding its close action\
 And missing contacts or reviews remain unavailable rather than invented\
 And surnames, private account contacts, internal IDs, document numbers, file paths
@@ -1343,7 +1440,7 @@ separation and touchability at successive explicit zoom levels. No new map mode,
 layout or user action is introduced.
 
 
-### Scenario: demo import preserves Preferred corridor vehicle and driver scope
+### Scenario: demo import preserves Preferred route vehicle and driver scope
 
 Given a production-pilot fixture contains truck/driver-bound route preferences\
 When its importer reads the target schema before writing any pilot record\

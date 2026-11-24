@@ -32,7 +32,7 @@ const rows=[
  ['Viewers can follow the route and shipment status. Vehicle location stays private.','ተከታታዮች የጭነቱን መስመርና ሁኔታ ማየት ይችላሉ። የመኪናው ቦታ በግል ይቀራል።','Namoonni hordofan karaa fi haala feʼumsaa ni argu. Bakki konkolaataa dhuunfaa taʼee hafa.']
 ] as const;
 
-export const businessFollowupMessages:Record<Locale,Messages>={en:{},am:{},om:{}};
+export const businessFollowupMessages:Record<Locale,Messages>={en:{},so:{},am:{},om:{}};
 for(const [key,am,om] of rows){
  businessFollowupMessages.am[key]=am;
  businessFollowupMessages.om[key]=om;

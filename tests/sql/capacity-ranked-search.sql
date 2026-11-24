@@ -60,23 +60,22 @@ begin
  end loop;
 end $test$;
 do $load_matching$
-declare shape text; item jsonb; points jsonb; query jsonb; selected_load text;
+declare item jsonb; points jsonb; query jsonb; selected_load text;
 begin
- foreach shape in array array['ROUTE','RADIUS'] loop
-  select payload into strict item from capacity_search_public_rows('{}',null,null,14)
-   where payload->>'availability_geometry'=shape
-    and ((payload->>'accepts_full_load')::boolean or (payload->>'accepts_partial_load')::boolean)
-   limit 1;
-  points:=case when shape='ROUTE' then item->'current_route_points' else item->'capacity_area_boundary' end;
-  perform pg_temp.assert_search(jsonb_array_length(points)>=2,'LOAD_MATCHING_GEOMETRY_FIXTURE');
-  selected_load:=case when (item->>'accepts_full_load')::boolean then 'FTL' else 'PTL' end;
-  query:=jsonb_build_object('load_type',selected_load,'origin_lat',points->0->'lat','origin_lng',points->0->'lng',
-   'destination_lat',points->1->'lat','destination_lng',points->1->'lng','origin_radius_km',5,'destination_radius_km',5);
-  perform pg_temp.assert_search(exists(select 1 from capacity_search_public_rows(query,null,null,14) r where r.payload->>'id'=item->>'id'),'AUTOMATIC_PUBLIC_LOAD_AND_'||shape);
-  perform pg_temp.assert_search(capacity_payload_matches(item,query),'PRIVATE_MATCHER_LOAD_AND_'||shape);
- end loop;
+ select payload into strict item from capacity_search_public_rows('{}',null,null,14)
+  where payload->>'availability_geometry'='ROUTE'
+   and ((payload->>'accepts_full_load')::boolean or (payload->>'accepts_partial_load')::boolean)
+  limit 1;
+ points:=item->'current_route_points';
+ perform pg_temp.assert_search(jsonb_array_length(points)>=2,'LOAD_MATCHING_ROUTE_FIXTURE');
+ selected_load:=case when (item->>'accepts_full_load')::boolean then 'FTL' else 'PTL' end;
+ query:=jsonb_build_object('load_type',selected_load,'origin_lat',points->0->'lat','origin_lng',points->0->'lng',
+  'destination_lat',points->1->'lat','destination_lng',points->1->'lng','origin_radius_km',5,'destination_radius_km',5);
+ perform pg_temp.assert_search(exists(select 1 from capacity_search_public_rows(query,null,null,14) r where r.payload->>'id'=item->>'id'),'AUTOMATIC_PUBLIC_LOAD_AND_ROUTE');
+ perform pg_temp.assert_search(capacity_payload_matches(item,query),'PRIVATE_MATCHER_LOAD_AND_ROUTE');
+ perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows('{}',null,null,14) r where r.payload->>'availability_geometry'='RADIUS'),'RETIRED_PLANNED_AREA_NOT_PUBLISHED');
  perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows('{"load_type":"FTL"}',null,null,14) r where not (r.payload->>'accepts_full_load')::boolean or r.payload->>'status'<>'EMPTY'),'FULL_TRUCK_AVAILABILITY');
- perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows('{"load_type":"PTL"}',null,null,14) r where not (r.payload->>'accepts_partial_load')::boolean),'SHARED_LOAD_ACCEPTANCE');
+ perform pg_temp.assert_search(not exists(select 1 from capacity_search_public_rows('{"load_type":"PTL"}',null,null,14) r where not (r.payload->>'accepts_partial_load')::boolean),'PARTIAL_SHIPMENT_ACCEPTANCE');
 end $load_matching$;
 
 rollback;

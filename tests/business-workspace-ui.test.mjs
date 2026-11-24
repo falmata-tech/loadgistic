@@ -22,7 +22,7 @@ function harness(file,name,props){
 test('business Account opens saved records before any edit form and cancel never writes',()=>{
  const h=harness('src/components/business-account.tsx','BusinessAccount',{initial:directory,name:'Owner',email:'owner@example.test'});
  try{let tree=h.render();assert.equal(tree.filter(node=>node.type==='input').length,0);assert.equal(tree.filter(node=>node.type==='select').length,0);
-  tree.find(node=>node.type==='button'&&message(node,'Edit')).props.onClick();tree=h.render();assert.ok(tree.some(node=>node.type==='input'&&node.props.name==='name'));
+  tree.find(node=>node.type==='button'&&message(node,'Edit workspace details')).props.onClick();tree=h.render();assert.ok(tree.some(node=>node.type==='input'&&node.props.name==='name'));
   tree.find(node=>node.type==='button'&&message(node,'Cancel')).props.onClick();tree=h.render();assert.equal(tree.filter(node=>node.type==='input').length,0);assert.equal(h.requests.length,0);
  }finally{h.restore();}
 });
@@ -40,7 +40,7 @@ test('business invitation submits exact current business version and permitted f
 test('staff business Account hides team mutations and private teammate emails',()=>{
  const readonly={...directory,workspace:{...workspace,membershipRole:'STAFF',permissions:{capacity:true,tracking:false,team:false,owner:false}},members:directory.members.map(({email,...member})=>member)};
  const h=harness('src/components/business-account.tsx','BusinessAccount',{initial:readonly,name:'Team',email:'team@example.test'});
- try{const tree=h.render();for(const label of ['Edit','Invite teammate','Manage','Archive workspace'])assert.equal(tree.some(node=>node.type==='button'&&message(node,label)),false);
+ try{const tree=h.render();for(const label of ['Edit workspace details','Invite teammate','Manage','Archive workspace'])assert.equal(tree.some(node=>node.type==='button'&&message(node,label)),false);
   assert.equal(tree.some(node=>node.type==='input'),false);
  }finally{h.restore();}
 });
@@ -110,7 +110,9 @@ test('demand-side labels distinguish Shippers/brokers from receivers across navi
  assert.match(adminDetail,/record\.type==='ENTERPRISE_SHIPPER'\?'Shipper \/ broker workspace'/);
  assert.match(adminDetail,/record\.type==='ENTERPRISE_RECEIVER'\?'Receiver workspace'/);
  assert.match(documents,/message=\{user\.organization_id\?'Workspace documents'/);
- assert.match(vehicleDetails,/label=\{truck\.provider_organization_id\?'Transport Provider documents'/);
+ assert.match(vehicleDetails,/label="Driver documents"/);
+ assert.match(vehicleDetails,/label="Vehicle documents"/);
+ assert.doesNotMatch(vehicleDetails,/(Owner|Transport Provider) documents/);
  assert.doesNotMatch(documents,/Company documents/);
  assert.doesNotMatch(vehicleDetails,/Company documents/);
 });

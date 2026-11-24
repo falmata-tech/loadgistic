@@ -17,6 +17,9 @@ const callable=migration.replace(/^do \$pilot227\$/m,'create function pg_temp.ap
 const originalExecutor=readFileSync(new URL('../supabase/migrations/224_curated_demo_capacity_catalog.sql',import.meta.url),'utf8')
  .match(/^create or replace function public\.demo_world_execute_capacity_step\(step_id bigint,lease_token uuid\)\n[\s\S]*?^end \$\$;/m)?.[0];
 if(!originalExecutor)throw Error('PILOT_ORIGINAL_CAPACITY_EXECUTOR_REQUIRED');
+const originalOwnerProjection=readFileSync(new URL('../supabase/migrations/222_demo_account_provenance.sql',import.meta.url),'utf8')
+ .match(/^create or replace function public\.capacity_owner_documents\(organization_ids uuid\[\],provider_ids uuid\[\]\)\n[\s\S]*?^\$\$;/m)?.[0];
+if(!originalOwnerProjection)throw Error('PILOT_ORIGINAL_OWNER_PROJECTION_REQUIRED');
 const seedMigration=readFileSync(new URL('../supabase/migrations/243_demo_seeded_space_bootstrap.sql',import.meta.url),'utf8');
 const seededBootstrap=seedMigration.replace(/^begin;\n/m,'').replace(/\ncommit;\s*$/,'');
 if(seededBootstrap===seedMigration||/^begin;|^commit;/m.test(seededBootstrap))throw Error('PILOT_SEED_TEST_BOUNDARY_DRIFT');
@@ -31,6 +34,7 @@ do $guard$ begin
   then raise exception 'LOCAL_FIXTURE_COPY_REQUIRED';end if;
 end $guard$;
 ${originalExecutor}
+${originalOwnerProjection}
 ${migration}
 ${callable}
 create function pg_temp.expect_pilot_denial(expected text) returns void language plpgsql as $fn$

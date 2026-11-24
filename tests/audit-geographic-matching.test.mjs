@@ -9,12 +9,14 @@ const area=[{lat:8.95,lng:37.95},{lat:9.15,lng:37.95},{lat:9.15,lng:38.15},{lat:
 const truck={status:'PARTIAL',availability_geometry:'ROUTE',current_route_points:route,recurring_corridors:[]};
 const filters={originRadiusKm:5,destinationRadiusKm:5,currentAreaRadiusKm:5,nearLat:'',nearLng:''};
 
-test('match reasons distinguish Planned route/area from Preferred coverage without substituting a reported point',()=>{
+test('match reasons distinguish Planned routes from Preferred coverage without substituting a reported point',()=>{
  const planned=match(truck,filters,a,b);assert.equal(planned.matched,true);assert.match(planned.label,/^Planned route aligns/);
  const preferred=match({...truck,current_route_points:[],recurring_corridors:[{geometry:'ROUTE',route_points:route}]},filters,a,b);
- assert.equal(preferred.matched,true);assert.match(preferred.label,/^Preferred corridor aligns/);
+ assert.equal(preferred.matched,true);assert.match(preferred.label,/^Preferred route aligns/);
  const plannedArea=match({status:'PARTIAL',availability_geometry:'RADIUS',capacity_area_boundary:area},filters,a,b);
- assert.equal(plannedArea.matched,true);assert.match(plannedArea.label,/^Planned area covers both/);
+ assert.deepEqual(plannedArea,{matched:false,label:null});
+ const preferredArea=match({status:'PARTIAL',recurring_corridors:[{geometry:'RADIUS',area_boundary:area}]},filters,a,b);
+ assert.equal(preferredArea.matched,true);assert.match(preferredArea.label,/^Preferred area covers both/);
  assert.deepEqual(match({...truck,current_route_points:[],location_lat:a.center_lat,location_lng:a.center_lng},filters,a,b),{matched:false,label:null});
 });
 
@@ -35,7 +37,7 @@ test('shipment endpoints and independent area filter are conjunctive',()=>{
   assert.equal(match(empty,{...filters,geometry:'ROUTE'},a,b,a).matched,true);
 });
 
-test('direction, every route segment, and Partial area evidence are retained',()=>{
+test('direction, every route segment, and Preferred areas are retained',()=>{
   assert.equal(match(truck,filters,b,a).matched,false);
   assert.equal(match(truck,{...filters,directionMode:'EITHER'},b,a).matched,true);
   const regular={...truck,current_route_points:[],recurring_corridors:[{geometry:'ROUTE',route_points:route}]};
@@ -43,8 +45,8 @@ test('direction, every route segment, and Partial area evidence are retained',()
   const multi={...truck,current_route_points:[{lat:8,lng:37},...route,{lat:10,lng:39}]};
   assert.equal(match(multi,filters,a,b).matched,true);
   const areaTruck={status:'EMPTY',availability_geometry:'RADIUS',capacity_area_boundary:area};
-  assert.equal(match(areaTruck,filters,a,b).matched,true);
-  assert.equal(match({...areaTruck,status:'PARTIAL'},filters,a,b).matched,true);
+  assert.equal(match(areaTruck,filters,a,b).matched,false);
+  assert.equal(match({...areaTruck,status:'PARTIAL'},filters,a,b).matched,false);
   assert.equal(match({...truck,recurring_corridors:[{geometry:'RADIUS',area_boundary:area}]},filters,a,b).matched,true);
   assert.equal(match({...truck,recurring_corridors:[{geometry:'RADIUS',area_boundary:area}]},filters,a,far).matched,false);
 });
@@ -78,7 +80,7 @@ for(const status of ['EMPTY','PARTIAL'])for(const source of ['current','Preferre
       const result=match(item,filters,null,null,queryPlace);
       assert.equal(result.matched,true);
       assert.equal(result.label,match(item,filters,queryPlace).label);
-      assert.match(result.label,source==='current'?/^Planned route passes within /:/^Preferred corridor passes within /);
+      assert.match(result.label,source==='current'?/^Planned route passes within /:/^Preferred route passes within /);
     });
   }
   test(`Area query excludes ${status} ${source} Route outside the chosen radius`,()=>{
@@ -103,7 +105,8 @@ test('Area query retains explicit legacy geometry constraints on current and Pre
     assert.deepEqual(match(item,{...filters,geometry:'RADIUS'},null,null,place(9,38.5)),{matched:false,label:null});
   }
   const areaOnly={status:'PARTIAL',availability_geometry:'RADIUS',current_signal_geometry_visible:true,capacity_area_boundary:area,recurring_corridors:[]};
-  assert.equal(match(areaOnly,{...filters,geometry:'RADIUS'},null,null,a).matched,true);
+  assert.equal(match(areaOnly,{...filters,geometry:'RADIUS'},null,null,a).matched,false);
+  assert.equal(match({...areaOnly,recurring_corridors:[{geometry:'RADIUS',area_boundary:area}]},{...filters,geometry:'RADIUS'},null,null,a).matched,true);
   assert.deepEqual(match(areaOnly,{...filters,geometry:'ROUTE'},null,null,a),{matched:false,label:null});
 });
 
@@ -114,4 +117,19 @@ test('a matching Area query cannot rescue paired endpoints split across current 
   assert.equal(match(item,filters,null,null,nearPreferred).matched,true);
   assert.deepEqual(match(item,filters,nearCurrent,nearPreferred,nearCurrent),{matched:false,label:null});
   assert.deepEqual(match(item,filters,nearCurrent,nearPreferred,nearPreferred),{matched:false,label:null});
+});
+
+
+test('journey time and both endpoints match the same visible Planned route',()=>{
+  const window={...filters,departAfter:'2027-02-03T07:30',arriveBy:'2027-02-03T11:00'};
+  const dated={...truck,journey_start_at:'2027-02-03T04:30:00Z',journey_end_at:'2027-02-03T08:00:00Z'};
+  assert.equal(match(dated,window,a,b).matched,true);
+  assert.equal(match(dated,{...window,departAfter:'2027-02-03T07:31'},a,b).matched,false);
+  assert.equal(match(dated,{...window,arriveBy:'2027-02-03T10:59'},a,b).matched,false);
+  assert.equal(match(truck,window,a,b).matched,false);
+  assert.equal(match({...dated,current_signal_geometry_visible:false},window,a,b).matched,false);
+  const matchingPreferred={...dated,current_route_points:[{lat:12,lng:41},{lat:12,lng:42}],
+    recurring_corridors:[{geometry:'ROUTE',route_points:route}]};
+  assert.equal(match(matchingPreferred,filters,a,b).matched,true);
+  assert.equal(match(matchingPreferred,window,a,b).matched,false);
 });

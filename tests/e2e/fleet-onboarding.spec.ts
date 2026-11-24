@@ -47,6 +47,8 @@ async function showVehicleDetails(page:any){
 
 test('fleet assigns an unverified driver, then email-code login unlocks the same assignment',async({page,browser}:{page:any;browser:any},info:any)=>{
   test.setTimeout(420_000);
+  const started=Date.now();
+  page.setDefaultNavigationTimeout(45_000);
   nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
   const endpoint=process.env.NEXT_PUBLIC_SUPABASE_URL||'';
   if(!['localhost','127.0.0.1'].includes(new URL(endpoint).hostname)||new URL(endpoint).port!=='55321')throw new Error('REMOTE_FLEET_TEST_REFUSED');
@@ -59,6 +61,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     permissions:['geolocation'],geolocation:{latitude:9.03,longitude:38.76},
     extraHTTPHeaders:{'x-forwarded-for':'127.0.0.241'}});
   const driverPage=await driverContext.newPage();
+  driverPage.setDefaultNavigationTimeout(45_000);
   // Keep the onboarding gate independent of public tile-provider availability.
   // Actual tile delivery is checked separately; this fixture exercises map rendering.
   await driverContext.route('https://tile.openstreetmap.org/**',async(route:any)=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#eef3f1"/></svg>'}));
@@ -220,8 +223,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     if(info.project.name.includes('mobile'))await driverPage.setViewportSize({width:320,height:640});
     await firstAction.scrollIntoViewIfNeeded();
     expect(await driverPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    const box=await firstAction.boundingBox();
-    expect(await driverPage.evaluate(({x,y}:any)=>Boolean(document.elementFromPoint(x,y)?.closest('.capacity-summary-toolrail button')),{x:box.x+box.width/2,y:box.y+box.height/2})).toBe(true);
+    if(info.project.name.includes('mobile'))await firstAction.tap({trial:true});else await firstAction.click({trial:true});
     await driverPage.screenshot({path:info.outputPath('new-driver-ready-to-set-capacity.png')});
     if(info.project.name.includes('mobile'))await firstAction.tap();else await firstAction.click();
     const capacity=driverPage.getByRole('dialog',{name:'Planned capacity',exact:true});
@@ -238,7 +240,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await expect(capacity).toBeVisible();
     await expect(capacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await capacity.getByRole('button',{name:'Empty',exact:true}).click();
-    await capacity.getByRole('button',{name:'Route',exact:true}).click();
+    await expect(capacity.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
     await selectPlace(driverPage,'City 1','Addis Ababa');
     await selectPlace(driverPage,'City 2','Sebeta');
     await capacity.getByRole('button',{name:'Use my location',exact:true}).click();
@@ -250,9 +252,9 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     const stored=await service.from('capacities').select('market_status,visibility,vehicle_id,updated_by').eq('vehicle_id',truckId).order('updated_at',{ascending:false}).limit(1).single();
     expect(stored.error).toBeNull();
     expect(stored.data).toMatchObject({market_status:'EMPTY',visibility:'PRIVATE',vehicle_id:truckId,updated_by:identity.data!.id});
-    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeVisible();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeVisible();
     await expect(driverPage.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
-    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled();
     if(info.project.name.includes('mobile'))await driverPage.setViewportSize(page.viewportSize()!);
     await expect(driverPage.locator('.capacity-location-map img.leaflet-tile-loaded').first()).toBeVisible({timeout:15000});
     await driverPage.screenshot({path:info.outputPath('new-driver-published-capacity.png')});
@@ -323,11 +325,11 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
     await expect(ownerCapacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await ownerCapacity.getByRole('button',{name:'Empty',exact:true}).click();
-    await ownerCapacity.getByRole('button',{name:'Route',exact:true}).click();
+    await expect(ownerCapacity.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
     await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
     await ownerCapacity.getByRole('button',{name:'Save',exact:true}).click();
     await expect(ownerCapacity).toHaveCount(0);
-    await expect(page.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled();
     const ownerSignal=await service.from('capacities').select('updated_by,market_status,visibility,location_lat,location_lng').eq('vehicle_id',secondId).order('updated_at',{ascending:false}).limit(1).single();
     expect(ownerSignal.error).toBeNull();expect(ownerSignal.data).toMatchObject({updated_by:owner.data!.id,market_status:'EMPTY',visibility:'PRIVATE',location_lat:firstFix.data!.latitude,location_lng:firstFix.data!.longitude});
     await expect.poll(async()=>{
@@ -377,8 +379,13 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await driverPage.goto('/app/home');
     await expect(driverPage).toHaveURL(/\/login\?error=/);
     complete=true;checkpoint('COMPLETE');
-  }catch(error){primaryFailure=error;throw error;}finally{
+  }catch(error){
+    primaryFailure=error;
+    console.log('CI_BROWSER_FOCUSED_EVIDENCE '+JSON.stringify(focusedBrowserEvidence({title:info.title,project:info.project.name,stage,error,elapsedMs:Date.now()-started})));
+    throw error;
+  }finally{
     await driverContext.close().catch(()=>{});
+    await page.context().close().catch(()=>{});
     try{
     cleanupStage='VERIFY_SYNTHETIC_SCOPE';evidence();
     // Exact local test identities only; never reset shared demo fixtures.
@@ -485,7 +492,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    const dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
    await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
-   await dialog.getByRole('button',{name:'Route',exact:true}).click();
+   await expect(dialog.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
    await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
    // A denied sensor is a recoverable draft error; it must never publish.
    await context.clearPermissions();
@@ -496,7 +503,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.evaluate(()=>(window as any).restoreGps());await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.76});
    await dialog.getByRole('button',{name:'Use my location',exact:true}).click();await expect(dialog.getByText(/Location ready/)).toBeVisible();
    await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
-   await expect(page.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
+   await expect(page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled();
    const published=await service.from('capacities').select('updated_by,visibility,location_lat,location_precision_km').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1).single();
    expect(published.error).toBeNull();expect(published.data).toMatchObject({updated_by:userId,visibility:'PRIVATE',location_precision_km:10});expect(published.data!.location_lat).not.toBe(9.03);
    await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
@@ -506,6 +513,8 @@ for(const useBasis of ['OWNED','PERMISSION']){
   }catch(error){primaryFailure=error;failureEvidence(workflowStage,error);throw error;}finally{
    console.log(`DRIVING_PROVIDER_STAGE basis=${useBasis} stage=${workflowStage} elapsed_ms=${Date.now()-workflowStarted}`);
    try{
+    cleanupStage='CLOSE_BROWSER';
+    await context.close();
     // Exact synthetic identities only, including a partially completed signup.
     cleanupStage='FIND_IDENTITY';
     if(!userId)userId=(await service.from('profiles').select('id').eq('email',email).maybeSingle()).data?.id||'';
@@ -524,7 +533,16 @@ for(const useBasis of ['OWNED','PERMISSION']){
      }
      cleanupStage='DELETE_AUTH';
      const deletion=await service.auth.admin.deleteUser(userId);
-     if(deletion.error)throw deletion.error;
+     if(deletion.error?.name==='AuthRetryableFetchError'){
+      const remaining=await service.auth.admin.getUserById(userId);
+      if(remaining.data.user){
+       if(remaining.data.user.id!==userId||remaining.data.user.email!==email)throw new Error('LOCAL_FIXTURE_IDENTITY_CHANGED');
+       const retried=await service.auth.admin.deleteUser(userId);
+       if(retried.error)throw retried.error;
+      }else if(remaining.error?.status!==404){
+       throw remaining.error||deletion.error;
+      }
+     }else if(deletion.error)throw deletion.error;
     }
     cleanupStage='COMPLETE';cleanupEvidence('complete');
    }catch(error){cleanupEvidence('failed',error);failureEvidence('CLEANUP_'+cleanupStage,error);if(!primaryFailure)throw error;}

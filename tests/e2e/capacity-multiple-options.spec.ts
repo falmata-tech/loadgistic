@@ -9,7 +9,7 @@ const selection=(page:Page,key:string)=>page.locator(`.capacity-filter-dialog in
 
 test('five current multi-option filter groups remain draft until apply and clear back to the map',async({page},info)=>{
  test.setTimeout(90_000);await page.goto('/');await expect(page.locator('.leaflet-container')).toBeVisible();
- const before=page.url(),dialog=await openCapacityFilterDialog(page);
+ const before=page.url(),dialog=await openCapacityFilterDialog(page,'availability');
  await chooseTruckConfiguration(dialog,configurations);
  await expect(selection(page,'loadType')).toHaveCount(0);
  await chooseCapacityOptions(dialog,'status',['EMPTY','PARTIAL']);await chooseCapacityOptions(dialog,'locationSource',['GPS','MOBILE']);

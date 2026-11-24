@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import {translateMessage} from '../../src/lib/i18n/core';
 import {workflowRows} from '../../apps/mobile/src/localization/workflow-messages';
 import {locationSourceLabel} from '../../src/lib/location-source.js';
-import {reportedSpacePercent} from '../../src/lib/capacity-space-estimate.js';
+import {availableSpacePercent,emptyShipmentPreferenceLabel} from '../../src/lib/capacity-space-estimate.js';
+import {capacityLoadPreference} from '../../src/lib/capacity-load-preferences.js';
 import {FEATURED_PUBLIC_HEADING} from '../../src/lib/featured-heading-presentation.js';
 const preview='http://127.0.0.1:8084';
 async function bounded(page:Page,target:Locator){const box=await target.boundingBox(),viewport=page.viewportSize()!;expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(viewport.width+.5);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
@@ -61,8 +62,8 @@ test('native Featured account and transporter cards retain real facts and destin
   const providerResponse=await page.request.get(`/api/mobile/public/providers/${encodeURIComponent(truck.handle)}?view=map`);expect(providerResponse.ok()).toBe(true);const provider=await providerResponse.json();expect(provider.trucks).toEqual([]);await expect(page.getByRole('heading',{name:provider.name,exact:true})).toBeVisible({timeout:30_000});await bounded(page,page.getByRole('heading',{name:provider.name,exact:true}));
   for(const [field,label] of [['phone','Call transporter'],['whatsapp','WhatsApp'],['email','Email transporter'],['website','Website']] as const)expect(await page.getByRole('button',{name:label,exact:true}).count()).toBe(provider.contacts[field]?1:0);
   await actualPortrait(page.locator('body'),provider.name,provider.image);
-  const documents=page.getByRole('button',{name:'Account documents',exact:true});
-  await expect(documents).toHaveAttribute('aria-expanded','false');await documents.click();await expect(documents).toHaveAttribute('aria-expanded','true');
+  await expect(page.getByRole('heading',{name:'Account documents',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Account documents',exact:true})).toHaveCount(0);
   const map=page.getByTestId('profile-fleet-map');await expect(map.locator('.maplibregl-canvas')).toBeVisible();await bounded(page,map);
   await expect(page.getByTestId('provider-fleet-disclosure')).toHaveCount(0);
   await page.screenshot({path:info.outputPath(`native-transporter-${width}.png`),scale:'css'});
@@ -87,13 +88,14 @@ test('native Featured board and detail fit an English 320px phone',async({page},
 
 test('native Capacity facts remain readable while details close and selected exit preserves applied filters',async({page},info)=>{
  test.setTimeout(150_000);const response=await page.request.get('/api/public/capacity');expect(response.ok()).toBe(true);const payload=await response.json(),signal=payload.items.find((item:{current_signal_geometry_visible?:boolean;assigned_driver_portrait_url?:string})=>item.current_signal_geometry_visible!==false&&item.assigned_driver_portrait_url)||payload.items.find((item:{current_signal_geometry_visible?:boolean})=>item.current_signal_geometry_visible!==false);expect(signal).toBeTruthy();const errors:string[]=[];page.on('pageerror',error=>errors.push(error.name));
- const percent=reportedSpacePercent(signal.status,signal.available_percent,signal.available_percent_reported_at);
+ const percent=availableSpacePercent(signal.status,signal.available_percent,signal.available_percent_reported_at);
  for(const width of info.project.name==='mobile-chromium'?[390,320]:[1280]){
   await page.setViewportSize({width,height:width===320?640:width===1280?900:844});const params=new URLSearchParams({truck:signal.id});await page.goto(`${preview}/?${params}`);await expect(page.getByRole('button',{name:'Vehicle and driver',exact:true})).toBeVisible({timeout:45_000});
   await page.getByRole('button',{name:/^Vehicle filters/}).click();await page.getByRole('button',{name:'All vehicle types',exact:true}).click();await page.getByRole('checkbox',{name:signal.cargo_configuration,exact:true}).check();await page.getByRole('button',{name:'Close',exact:true}).click();
   const applied=page.waitForResponse(response=>{const url=new URL(response.url());return url.pathname==='/api/public/capacity'&&url.searchParams.get('vehicleCategory')===signal.cargo_configuration;});await page.getByRole('button',{name:'Show vehicles',exact:true}).click();expect((await applied).ok()).toBe(true);await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
   const sourceLabel=locationSourceLabel(signal.location_source),demo=signal.current_signal_geometry_visible!==false&&signal.location_lat!==null&&signal.location_lng!==null&&signal.location_is_demo===true;
-  const markerName=`${[signal.vehicle_make,signal.vehicle_model].filter(Boolean).join(' ')}, ${signal.assigned_driver_first_name}, ${signal.status==='EMPTY'?'Empty':'Partial'}${percent===null?'':`, Available space: ${percent}%`}${sourceLabel?', '+sourceLabel:''}${demo?', Demo location':''}`;
+  const preference=emptyShipmentPreferenceLabel(percent,capacityLoadPreference(signal.status,signal.accepts_full_load,signal.accepts_partial_load));
+  const markerName=`${[signal.vehicle_make,signal.vehicle_model].filter(Boolean).join(' ')}, ${signal.assigned_driver_first_name}, ${percent===null?'Available space not reported':`Available space: ${percent}%`}${preference?', '+preference:''}${sourceLabel?', '+sourceLabel:''}${demo?', Demo location':''}`;
   const marker=page.getByRole('button',{name:markerName,exact:true});
   await expect(marker).toBeVisible();
   if(percent!==null)await expect(marker).toContainText(`${percent}%`);
@@ -140,7 +142,7 @@ test('web Featured account facts keep existing actions with readable phone typog
   expect(await card.locator('.featured-card-details small').last().evaluate(element=>parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
   await page.screenshot({path:info.outputPath(`web-featured-${width}.png`),scale:'css'});await card.click();await expect(page.locator('.featured-truck-dialog')).toBeVisible();await expect(page.locator('.featured-truck-dialog').getByRole('link',{name:'Transporter profile',exact:true})).toBeVisible();await page.getByRole('button',{name:'Close featured account details',exact:true}).click();await expect(page.locator('.featured-truck-dialog')).toHaveCount(0);
   const response=await page.request.get('/api/public/capacity'),payload=await response.json(),signal=payload.items.find((item:{current_signal_geometry_visible?:boolean})=>item.current_signal_geometry_visible!==false);expect(response.ok()&&signal).toBeTruthy();await page.goto(`/?truck=${encodeURIComponent(signal.id)}`);await page.getByRole('button',{name:'Vehicle and driver',exact:true}).click();await expect(page.locator('.truck-inspection')).toBeVisible();await bounded(page,page.locator('.truck-inspection'));
-  if(width<=480)expect(await page.locator('.truck-inspection-people').evaluate(element=>getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(1);
+  if(width<=480)expect(await page.locator('.truck-inspection-people').evaluate(element=>getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
   await expect(page.locator('.truck-inspection').getByRole('link',{name:'Profile',exact:true})).toBeVisible();await page.screenshot({path:info.outputPath(`web-truck-details-${width}.png`),scale:'css'});
  }
  expect(errors).toEqual([]);

@@ -73,6 +73,7 @@ test('Expo multi-option controls keep drafts and submit canonical groups plus do
  await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:8084/?q=Preserved%20people%20draft');
  await expect(page.getByRole('button',{name:'Vehicle filters',exact:true})).toBeVisible({timeout:45_000});await expect(page.getByRole('progressbar',{name:'Loading vehicle availability',exact:true})).toHaveCount(0,{timeout:30_000});
  await page.getByRole('button',{name:'Vehicle filters',exact:true}).click();await configs(page,info);
+ await page.getByRole('button',{name:'Area or route',exact:true}).click();
  await page.getByRole('radio',{name:'Route',exact:true}).click();await page.getByRole('button',{name:'Vehicle location',exact:true}).click();await page.getByRole('button',{name:'More filters',exact:true}).click();
  for(const label of ['Full truck','Shared space','Manually entered','Manual capacity location'])await expect(page.getByRole('checkbox',{name:label,exact:true})).toHaveCount(0);
  for(const label of ['Empty vehicle','Partly loaded','GPS device','Driver’s phone','Multiple pickups','Multiple drop-offs','Within 12 hours','More than 12 hours ago']){await page.getByRole('checkbox',{name:label,exact:true}).check();await expect(page.getByRole('checkbox',{name:label,exact:true})).toBeChecked();}
@@ -115,6 +116,7 @@ test('Expo route and nearby filters use the same ranges and defaults as web',asy
   const result=placeDialog.getByRole('button',{name:new RegExp(city,'i')}).first();await expect(result).toBeVisible({timeout:20_000});await result.click();
   await expect(picker.getByRole('button',{name:new RegExp(city,'i')})).toBeVisible();
  };
+ await page.getByRole('button',{name:'Area or route',exact:true}).click();
  await page.getByRole('radio',{name:'Route',exact:true}).click();
  await chooseCity('Addis Ababa','Origin');await chooseCity('Adama','Destination');
  const range=(label:string)=>page.getByText(label,{exact:true}).locator('..');

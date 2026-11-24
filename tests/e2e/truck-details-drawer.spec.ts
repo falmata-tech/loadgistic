@@ -48,6 +48,27 @@ test('selected truck has centered readable modals and a separate attached exit r
  test.setTimeout(120000);
  const {truck,cleanup}=await currentPairModalFixture(page);
  try{
+ if(info.project.name==='desktop-chromium'){
+  await page.goto(`/?status=PARTIAL&provider=${encodeURIComponent(truck.provider_handle)}`);
+  const truckMarker=page.getByRole('button',{name:/Available space: 45%/}).first();
+  await expect(truckMarker).toBeVisible({timeout:30000});
+  await truckMarker.hover();
+  const preview=page.locator('.capacity-marker-preview');
+  await expect(preview).toContainText('Available space: 45%');
+  const coverage=preview.locator('.capacity-coverage-indicators');
+  await expect(coverage.getByText('Planned route',{exact:true})).toBeVisible();
+  await expect(coverage.getByText('Preferred route',{exact:true})).toBeVisible();
+  await expect(preview).toContainText('Capacity updated:');
+  await expect(preview).toContainText('Location updated:');
+  await expect(preview).not.toContainText('Capacity route');
+  await expect(preview).not.toContainText('Partial capacity');
+  await expect(preview).not.toContainText('Partial Shipments Only');
+  await expect.poll(()=>preview.evaluate((element:HTMLElement)=>{
+   const hover=element.getBoundingClientRect(),map=element.closest('.leaflet-container')!.getBoundingClientRect();
+   return hover.left>=map.left&&hover.top>=map.top&&hover.right<=map.right&&hover.bottom<=map.bottom;
+  })).toBe(true);
+  await page.screenshot({path:info.outputPath('truck-marker-hover.png')});
+ }
  await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
  const drawer=page.locator('#capacity-filter-drawer'),card=page.locator('.capacity-info-card'),marker=page.locator('.capacity-truck-map-marker.selected'),exit=page.locator('.capacity-truck-exit');
  await expect(marker).toBeVisible({timeout:30000});await expect(drawer).toBeHidden();await expect(card).toHaveCount(0);
@@ -56,9 +77,10 @@ test('selected truck has centered readable modals and a separate attached exit r
  await truckControl.click();await expect(card).toHaveClass(/truck/);await expect(card.getByRole('link',{name:'Profile',exact:true})).toHaveCount(1);
  await expect(card).toHaveAttribute('open','');await expect(card).toHaveRole('dialog');
  await expect(card).not.toContainText('share private capacity with your email');
+ await expect(card).toContainText('Available space: 45%');await expect(card).not.toContainText('Partial capacity');
  await page.screenshot({path:info.outputPath('truck-modal.png')});
  await page.keyboard.press('Escape');await expect(card).toHaveCount(0);await expect(truckControl).toBeFocused();await expect(marker).toBeVisible();
- await capacity.click();await expect(card.locator('.signal-route-stops li')).toHaveCount(2);await expect(card).toContainText('Partial capacity');
+ await capacity.click();await expect(card.locator('.signal-route-stops li')).toHaveCount(2);await expect(card).toContainText('Available space: 45%');
  const bounds=await card.boundingBox(),mapBox=await page.locator('.public-capacity-map').boundingBox();
  expect(Math.abs(bounds.x+bounds.width/2-mapBox.x-mapBox.width/2)).toBeLessThan(2);
  expect(Math.abs(bounds.y+bounds.height/2-mapBox.y-mapBox.height/2)).toBeLessThan(2);

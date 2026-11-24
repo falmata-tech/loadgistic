@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
-import {coverPosterPath,exampleCover} from '../../../src/lib/provider-cover-video.js';
+import {coverEmbedUrl,coverPlayerOrigin,coverPlayerPermissions,coverPlayerResult,coverPlayerSubscription,coverPosterPath,exampleCover} from '../../../src/lib/provider-cover-video.js';
 import {featuredTikTokPresentation} from '../../../src/lib/featured-tiktok-presentation.js';
 import {featuredClock,featuredRange,featuredRangeLabel} from '../../../src/lib/featured-time-presentation.js';
 import {FEATURED_PUBLIC_HEADING,curatedFeaturedHeadline} from '../../../src/lib/featured-heading-presentation.js';
@@ -13,7 +13,7 @@ function compile(path,parameters){const parsed=ts.createSourceFile(path,readFile
 const presentation=compile('../src/components/public-card.tsx',host);
 function nodes(root){if(root===null||root===undefined||root===false)return[];if(Array.isArray(root))return root.flatMap(nodes);if(typeof root!=='object')return[{text:String(root)}];if(typeof root.type==='function')return nodes(root.type(root.props));return[root,...root.children.flatMap(nodes)];}
 function renderedText(tree){return nodes(tree).filter(node=>'text'in node).map(node=>node.text).join(' ');}
-function screen(path,query,extra={}){return compile(path,{...host,...presentation,coverPosterPath,exampleCover,useWindowDimensions:()=>({width:390,height:844}),ProviderFleetMap:'ProviderFleetMap',FeaturedSponsors:'FeaturedSponsors',ImageBackground:'ImageBackground',Page:'Page',Copy:props=>React.createElement('Text',{},props.message||props.children),Button:'Button',ErrorText:'ErrorText',LoadingSpinner:'LoadingSpinner',ActivityIndicator:'ActivityIndicator',ExternalButton:'ExternalButton',PublicBadges:'PublicBadges',ContentSafety:'ContentSafety',usePublicQuery:()=>({data:query,error:'',loading:false,refresh(){},reload(){}}),useForegroundRefresh(){},useFocusEffect(){},useBlockedProviders:()=>({blocked:[]}),parseFeatured:value=>value,programmeState:()=> 'Finished',...extra});}
+function screen(path,query,extra={}){return compile(path,{...host,...presentation,coverPosterPath,CoverVideoPlayer:'CoverVideoPlayer',useWindowDimensions:()=>({width:390,height:844}),ProviderFleetMap:'ProviderFleetMap',FeaturedSponsors:'FeaturedSponsors',ImageBackground:'ImageBackground',Page:'Page',Copy:props=>React.createElement('Text',{},props.message||props.children),Button:'Button',ErrorText:'ErrorText',LoadingSpinner:'LoadingSpinner',ActivityIndicator:'ActivityIndicator',ExternalButton:'ExternalButton',PublicBadges:'PublicBadges',ContentSafety:'ContentSafety',usePublicQuery:()=>({data:query,error:'',loading:false,refresh(){},reload(){}}),useForegroundRefresh(){},useFocusEffect(){},useBlockedProviders:()=>({blocked:[]}),parseFeatured:value=>value,programmeState:()=> 'Finished',...extra});}
 
 test('public card actions retain destinations and full touch targets, with bounded media',()=>{
  const tree=presentation.PublicCardAction({href:{pathname:'/',params:{provider:'long-company'}},message:'View available trucks',icon:'truck'}),all=nodes(tree),link=all.find(node=>node.type==='Link'),target=all.find(node=>node.type==='Pressable');
@@ -63,7 +63,6 @@ test('transporter profile retains public contacts, documents and reviews beside 
  const translated=[],paths=[];
  const component=screen('../src/screens/transporter.tsx',publicProvider,{
   useLocalSearchParams:()=>({handle:publicProvider.handle}),
-  useState:()=>[true,()=>{}],
   usePublicQuery:path=>{paths.push(path);return {data:publicProvider,error:'',loading:false};},
   useLanguage:()=>({t:(message,values={})=>{translated.push(message);return message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match));}})
  }).default;
@@ -80,14 +79,69 @@ test('transporter profile retains public contacts, documents and reviews beside 
  for(const value of [publicProvider.name,publicProvider.about,publicProvider.headline,'Original customer note /reference',publicProvider.city])assert.ok(!translated.includes(value),value+' remains unaltered record content');
 });
 
-test('transporter cover keeps its public video action and the profile map without fleet rows',()=>{
+test('transporter cover starts on its poster and plays in the profile on demand',()=>{
+ let stage='poster';
  const component=screen('../src/screens/transporter.tsx',{...publicProvider,youtubeId:exampleCover.id,trucks:[]},{
-  useLocalSearchParams:()=>({handle:publicProvider.handle})
+  useLocalSearchParams:()=>({handle:publicProvider.handle}),
+  useState:()=>[stage,next=>{stage=next;}],
+  useEffect:()=>{},
  }).default;
- const tree=component(),all=nodes(tree);
- assert.equal(all.find(node=>node.type==='Link').props.href,`https://www.youtube.com/watch?v=${exampleCover.id}`);
- assert.equal(all.find(node=>node.type==='ImageBackground').props.source.uri,'https://local.test'+exampleCover.poster);
+ let tree=component(),all=nodes(tree);
+ assert.equal(all.find(node=>node.type==='ImageBackground').props.source.uri,exampleCover.poster);
+ assert.doesNotMatch(renderedText(tree),/Cover video|Example video|African Development Bank/);
+ assert.ok(!all.some(node=>node.type==='CoverVideoPlayer'));
+ const play=all.find(node=>node.props?.accessibilityLabel==='Play cover video');
+ assert.equal(play.props.accessibilityRole,'button');
+ play.props.onPress();
+ tree=component();
+ all=nodes(tree);
+ let player=all.find(node=>node.type==='CoverVideoPlayer');
+ assert.equal(player.props.videoId,exampleCover.id);
+ assert.equal(player.props.loading,true);
+ assert.ok(all.some(node=>node.type==='ImageBackground'));
+ assert.ok(renderedText(tree).includes('Loading video…'));
+ player.props.onResult('failed');
+ tree=component();
+ all=nodes(tree);
+ assert.ok(!all.some(node=>node.type==='CoverVideoPlayer'));
+ assert.ok(renderedText(tree).includes('Video couldn’t load.'));
+ assert.equal(all.find(node=>node.props?.label==='Watch on YouTube').props.url,`https://www.youtube.com/watch?v=${exampleCover.id}`);
+ all.find(node=>node.props?.message==='Try again').props.onPress();
+ player=nodes(component()).find(node=>node.type==='CoverVideoPlayer');
+ player.props.onResult('ready');
+ tree=component();
+ all=nodes(tree);
+ assert.equal(all.find(node=>node.type==='CoverVideoPlayer').props.loading,false);
+ assert.ok(!all.some(node=>node.type==='ImageBackground'||node.type==='Link'));
  assert.ok(all.some(node=>node.type==='ProviderFleetMap'));
  assert.ok(!all.some(node=>node.props?.testID==='provider-fleet-disclosure'));
- assert.ok(!renderedText(tree).includes('Original customer note /reference'),'reviews open on request');
+ assert.ok(renderedText(tree).includes('Original customer note /reference'),'reviews are visible on entry');
+});
+
+test('native cover player isolates the YouTube frame and supports inline and fullscreen playback',()=>{
+ const {CoverVideoPlayer}=compile('../src/components/cover-video-player.tsx',{
+  ...host,WebView:'WebView',coverEmbedUrl,coverPlayerOrigin,coverPlayerPermissions,coverPlayerResult,coverPlayerSubscription,Platform:{OS:'android'},
+  Constants:{expoConfig:{android:{package:'com.loadgistic.app'}}}
+ });
+ const videoId=exampleCover.id,uri=coverEmbedUrl(videoId,'https://com.loadgistic.app');
+ const results=[];
+ const {props}=CoverVideoPlayer({videoId,title:'Cover video',loading:true,onResult:result=>results.push(result)});
+ assert.equal(props.source.baseUrl,'https://com.loadgistic.app/');
+ assert.ok(props.source.html.includes(uri.replaceAll('&','&amp;')));
+ assert.match(props.source.html,/sandbox="allow-scripts allow-same-origin"/);
+ assert.match(props.source.html,/camera 'none'; microphone 'none'; geolocation 'none'/);
+ assert.equal(props.allowsInlineMediaPlayback,true);
+ assert.equal(props.allowsFullscreenVideo,true);
+ assert.equal(props.allowFileAccess,false);
+ assert.equal(props.geolocationEnabled,false);
+ assert.equal(props.onShouldStartLoadWithRequest({url:'about:blank',isTopFrame:true}),true);
+ assert.equal(props.onShouldStartLoadWithRequest({url:uri,isTopFrame:false}),true);
+ assert.equal(props.onShouldStartLoadWithRequest({url:uri,isTopFrame:true}),false);
+ assert.equal(props.onShouldStartLoadWithRequest({url:'https://example.test/',isTopFrame:false}),false);
+ assert.match(props.source.html,/message\.origin!==origin\|\|message\.source!==frame\.contentWindow/);
+ for(const data of ['garbage','{"event":"onStateChange","info":3}','{"event":"onStateChange","info":1}','{"event":"onError"}']){
+  props.onMessage({nativeEvent:{data}});
+ }
+ assert.deepEqual(results,['ready','failed']);
+ assert.equal(CoverVideoPlayer({videoId:'<script>',title:'Cover video'}),null);
 });
