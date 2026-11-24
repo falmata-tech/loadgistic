@@ -107,7 +107,9 @@ test('two colocated vehicles zoom in before offering a picker with ordinary truc
  await page.locator('.capacity-truck-exit').click();
  await expect(cluster).toBeVisible();
  await expect(zoomIn).toHaveClass(/leaflet-disabled/);
- await cluster.click();
+ await expect(cluster.locator('span').first()).toHaveText('2');
+ await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0);
+ if(info.project.name==='mobile-chromium')await cluster.tap();else await cluster.click();
  await expect(picker).toBeVisible();
  await page.keyboard.press('Escape');
  await expect(picker).toHaveCount(0);

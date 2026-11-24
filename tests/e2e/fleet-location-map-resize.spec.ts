@@ -14,14 +14,14 @@ test('truck location remains in view after owner map container resizes',async({p
  await page.getByRole('button',{name:'Edit planned capacity: Off Duty',exact:true}).click();
  const firstCapacity=page.getByRole('dialog',{name:'Planned capacity',exact:true});
  await firstCapacity.getByRole('button',{name:'Empty',exact:true}).click();
- await firstCapacity.getByRole('button',{name:'Route',exact:true}).click();
+ await expect(firstCapacity.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
  for(const [label,name] of [['City 1','Addis Ababa'],['City 2','Sebeta']]){
   await firstCapacity.getByRole('combobox',{name:label,exact:true}).fill(name);
   await firstCapacity.getByRole('option',{name:new RegExp(`^${name}, Ethiopia`)}).first().click();
  }
  const saved=page.waitForResponse((response:any)=>response.url().endsWith('/api/capacity')&&response.request().method()==='POST');
  await firstCapacity.getByRole('button',{name:'Save',exact:true}).click();expect(await (await saved).json()).toMatchObject({ok:true});
- await expect(firstCapacity).toHaveCount(0);await expect(page.getByRole('button',{name:'Edit planned capacity: Empty',exact:true})).toBeEnabled({timeout:15000});
+ await expect(firstCapacity).toHaveCount(0);await expect(page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled({timeout:15000});
  const map=page.getByTestId('capacity-summary').locator('.leaflet-container');await expect(map).toBeVisible();
  const marker=map.locator('.capacity-setting-truck-marker');await expect(marker).toBeVisible();
  async function inView(){

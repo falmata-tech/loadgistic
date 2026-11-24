@@ -228,7 +228,7 @@ test('independent content holds survive rating decisions and revoked Trust canno
     if(b)await expect(reviews.getByText(noteB,{exact:true})).toBeVisible();
     else await expect(reviews.getByText(noteB,{exact:true})).toHaveCount(0);
     await expect(reviews.getByText(controlNote,{exact:true})).toBeVisible();
-    await expect(page.locator('.provider-hero-facts')).toContainText(`${average} · ${count} verified shipment reviews`);
+    await expect(page.locator('.provider-profile-rating')).toHaveText(`${average} / 5 · ${count} reviews`);
   }
   async function contentForm(control:Page,id:string){
     operation='CONTENT_QUEUE_NAVIGATION';await control.goto('/admin/reviews/content?page=999999',{waitUntil:'domcontentloaded'});await expect(control.getByRole('heading',{name:'Content reports',exact:true})).toBeVisible();

@@ -220,8 +220,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     if(info.project.name.includes('mobile'))await driverPage.setViewportSize({width:320,height:640});
     await firstAction.scrollIntoViewIfNeeded();
     expect(await driverPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-    const box=await firstAction.boundingBox();
-    expect(await driverPage.evaluate(({x,y}:any)=>Boolean(document.elementFromPoint(x,y)?.closest('.capacity-summary-toolrail button')),{x:box.x+box.width/2,y:box.y+box.height/2})).toBe(true);
+    if(info.project.name.includes('mobile'))await firstAction.tap({trial:true});else await firstAction.click({trial:true});
     await driverPage.screenshot({path:info.outputPath('new-driver-ready-to-set-capacity.png')});
     if(info.project.name.includes('mobile'))await firstAction.tap();else await firstAction.click();
     const capacity=driverPage.getByRole('dialog',{name:'Planned capacity',exact:true});

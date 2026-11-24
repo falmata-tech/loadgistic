@@ -138,7 +138,7 @@ test('Expo personal account edits and separate profile and Driver photos preserv
    await expect(publicPage.getByRole('heading',{name:chosenAccountName,exact:true})).toBeVisible({timeout:30_000});
    await expect(publicPage.getByRole('button',{name:'Call transporter',exact:true})).toBeVisible();
    const fleetMap=publicPage.getByTestId('profile-fleet-map');
-   await fleetMap.getByRole('button',{name:/^Regional Cargo van, Abdi Ali, Empty/}).click();
+   await fleetMap.getByRole('button',{name:/^Regional Cargo van, Abdi Ali, Available space: 100%/}).click();
    await fleetMap.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
    await expect(publicPage.getByRole('heading',{name:'Vehicle details',exact:true})).toBeVisible();
    await expect(publicPage.getByRole('button',{name:'Call driver',exact:true})).toBeVisible();

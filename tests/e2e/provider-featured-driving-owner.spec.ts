@@ -33,7 +33,7 @@ test('an organization owner who drives qualifies without an employee row and app
   await page.goto(`/transporter?handle=${encodeURIComponent(candidate.handle)}`,{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
   const fleetMap=page.getByTestId('profile-fleet-map');
-  await fleetMap.getByRole('button',{name:/^Isuzu Featured owner, Aster, Empty/}).click();
+  await fleetMap.getByRole('button',{name:/^Isuzu Featured owner, Aster, Available space: 100%/}).click();
   await fleetMap.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Vehicle details',exact:true})).toBeVisible();
   await expect(page.getByText('Aster',{exact:true}).last()).toBeVisible();

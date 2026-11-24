@@ -91,7 +91,7 @@ test('profile headings and filter distances translate without rewriting transpor
 test('Somali guidance explains the two tracking fields and an invalid ID',async({page},info)=>{
  const messages=JSON.parse(readFileSync('src/lib/i18n/messages/so.json','utf8'));
  await page.goto('/track');
- const picker=page.locator('.language-picker select');
+ const picker=page.locator('.public-header-language select');
  await expect(picker).toBeEnabled();
  await picker.selectOption('so');
  await expect(page.locator('html')).toHaveAttribute('lang','so');
