@@ -1172,7 +1172,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
   await expect(page.getByRole('heading',{name:'Availability'})).toBeVisible();
   await expect(page.getByRole('group',{name:'Shipments accepted'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Where is this vehicle available?'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Planned route'})).toBeVisible();
   await page.getByRole('button',{name:'Partial',exact:true}).click();
   const availableSpace=page.getByLabel('Available space',{exact:true});
   await expect(availableSpace).toBeVisible();

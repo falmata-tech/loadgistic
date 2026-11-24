@@ -34,9 +34,13 @@ async function expectRejected(action,code){
 
 function publishInput(current,vehicleId){
   const status=current.status==='EMPTY'?'EMPTY':'PARTIAL';
-  const geometry=current.availability_geometry==='RADIUS'?'RADIUS':'ROUTE';
+  const savedRoute=(current.current_route_points||[]).filter(point=>point.place_ref);
   const input={
-    vehicleId,status,acceptedLoads:status==='EMPTY'?'BOTH':'PTL',availabilityGeometry:geometry,
+    vehicleId,status,acceptedLoads:status==='EMPTY'?'BOTH':'PTL',availabilityGeometry:'ROUTE',
+    currentRoutePlaces:(savedRoute.length>=2?savedRoute:[
+      {place_ref:'builtin:addis ababa',label:'Addis Ababa'},
+      {place_ref:'builtin:adama',label:'Adama'}
+    ]).map(point=>({placeRef:point.place_ref,label:point.label})),
     ...(status==='PARTIAL'?{availablePercent:current.available_percent??45}:{}),
     visibility:current.visibility==='PRIVATE'?'PRIVATE':'OPEN',locationSource:'DEVICE_OBSCURED',
     approximateLat:Number(current.location_lat),approximateLng:Number(current.location_lng),
@@ -44,11 +48,6 @@ function publishInput(current,vehicleId){
   };
   if(!Number.isFinite(input.approximateLat)||!Number.isFinite(input.approximateLng)||!Number.isFinite(input.locationPrecisionKm)){
     throw new Error('SUPABASE_PROVIDER_CAPACITY_FIXTURE_LOCATION_MISSING');
-  }
-  if(geometry==='ROUTE')input.currentRoutePlaces=current.current_route_points.map(point=>({placeRef:point.place_ref,label:point.label}));
-  else{
-    input.capacityAreaCenterPlaceRef=current.capacity_area_center_place_ref;
-    input.capacityAreaBoundaryPlaces=current.capacity_area_boundary.map(point=>({placeRef:point.place_ref,label:point.label}));
   }
   return input;
 }
@@ -124,6 +123,9 @@ const companyCreated=[];
 const {data:permission,error:permissionError}=await service.from('driver_permissions').select('can_manage_capacity').eq('user_id',companyDriver.id).maybeSingle();
 if(permissionError||!permission)throw new Error('SUPABASE_PROVIDER_CAPACITY_PERMISSION_FIXTURE_MISSING');
 try{
+  // An imported historical area can still be displayed. Resume requires a
+  // saved planned route, so publish one before testing limited driver access.
+  companyCreated.push(await publishProviderCapacity(companyDriver,publishInput(companyCurrent,companyVehicle.id)));
   await service.from('driver_permissions').update({can_manage_capacity:false}).eq('user_id',companyDriver.id).throwOnError();
   await expectRejected(()=>publishProviderCapacity(companyDriver,publishInput(companyCurrent,companyVehicle.id)),'FORBIDDEN');
   companyCreated.push(await setProviderAssignedVehicleDuty(companyDriver,companyVehicle.id,false));
@@ -132,7 +134,7 @@ try{
     approximateLng:Number(companyCurrent.location_lng),locationPrecisionKm:Number(companyCurrent.location_precision_km)
   }));
   const dutyWorkspace=await getProviderCapacityWorkspace(companyDriver);
-  if(dutyWorkspace.capacities[0]?.id!==companyCreated[1]||dutyWorkspace.capacities[0]?.status==='OFF_DUTY')throw new Error('SUPABASE_PROVIDER_CAPACITY_DUTY_FAILED');
+  if(dutyWorkspace.capacities[0]?.id!==companyCreated.at(-1)||dutyWorkspace.capacities[0]?.status==='OFF_DUTY')throw new Error('SUPABASE_PROVIDER_CAPACITY_DUTY_FAILED');
 }finally{
   await service.from('driver_permissions').update({can_manage_capacity:permission.can_manage_capacity}).eq('user_id',companyDriver.id);
   await restoreVehicleCapacity(companySnapshot,companyCreated);
