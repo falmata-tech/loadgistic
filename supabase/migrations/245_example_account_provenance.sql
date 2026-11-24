@@ -10,8 +10,14 @@ declare
  definition text:=pg_get_functiondef('public.capacity_owner_documents(uuid[],uuid[])'::regprocedure);
  anchor constant text:=$old$identity.raw_app_meta_data->>'fixture_source'='loadgistic'$old$;
  replacement constant text:=$new$identity.raw_app_meta_data->>'fixture_source' in ('loadgistic','loadgistic-production-pilot-v1')$new$;
+ bound_pilot constant text:=$bound$identity.raw_app_meta_data->>'fixture_source' in('loadgistic','loadgistic-production-pilot-v1')$bound$;
+ normalized text:=replace(definition,bound_pilot,replacement);
+ previous_count integer:=(length(definition)-length(replace(definition,anchor,'')))/length(anchor);
+ applied_count integer:=(length(normalized)-length(replace(normalized,replacement,'')))/length(replacement);
 begin
- if (length(definition)-length(replace(definition,anchor,'')))/length(anchor)<>2 then
+ -- Existing pilot installations already received both read namespaces from 227.
+ if previous_count=0 and applied_count=2 then return;end if;
+ if previous_count<>2 or applied_count<>0 then
   raise exception 'EXAMPLE_ACCOUNT_PROVENANCE_DRIFT';
  end if;
  execute replace(definition,anchor,replacement);
