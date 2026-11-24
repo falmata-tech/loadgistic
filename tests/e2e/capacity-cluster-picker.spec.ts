@@ -69,7 +69,14 @@ test('two colocated vehicles zoom in before offering a picker with ordinary truc
   if(!anchor){
    anchor={lat:(bounds[1]+bounds[3])/2,lng:(bounds[0]+bounds[2])/2};
   }
-  const vehicles=names.map((provider_name,index)=>({...original,id:ids[index],provider_name,location_lat:anchor!.lat,location_lng:anchor!.lng,current_signal_geometry_visible:true}));
+  // Give both colocated vehicles a matching local plan. A seeded route on
+  // the other side of the map would change the selected vehicle's camera.
+  const {lat,lng}=anchor;
+  const routePoints=[{label:'Test route origin',lat,lng},{label:'Test route destination',lat:lat+.005,lng:lng+.005}];
+  const vehicles=names.map((provider_name,index)=>({...original,id:ids[index],provider_name,
+   location_lat:lat,location_lng:lng,location_precision_km:5,current_signal_geometry_visible:true,
+   availability_geometry:'ROUTE',current_route_points:routePoints,recurring_corridors:[],
+  }));
   return syntheticGate.then(()=>route.fulfill({json:{items:vehicles,hasMore:false,nextCursor:null}}));
  });
  await page.goto('/',{waitUntil:'domcontentloaded'});
@@ -109,6 +116,7 @@ test('two colocated vehicles zoom in before offering a picker with ordinary truc
  await expect(zoomIn).toHaveClass(/leaflet-disabled/);
  await expect(cluster.locator('span').first()).toHaveText('2');
  await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0);
+ await expect(picker).toHaveCount(0);
  if(info.project.name==='mobile-chromium')await cluster.tap();else await cluster.click();
  await expect(picker).toBeVisible();
  await page.keyboard.press('Escape');
