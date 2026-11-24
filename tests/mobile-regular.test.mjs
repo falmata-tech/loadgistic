@@ -17,8 +17,8 @@ test('regular service requires explicit truck and current-driver expectations wi
  assert.equal(regularCommand.safeParse({action:'REMOVE',id:remove.id,confirm:true}).success,false);
 });
 test('regular service editor projection includes catalog references but no account internals', () => {
- const projected = regularService({ corridors: [{ id: 'one',vehicle_id:vehicleId,driver_user_id:expectedDriverId, geometry: 'ROUTE', organization_id: 'secret', route_points: [{ place_ref: 'city', label: 'City', lat: 9, lng: 38, secret: 'secret' }] }] });
+ const projected = regularService({ preferredCoverage: [{ id: 'one',vehicle_id:vehicleId,driver_user_id:expectedDriverId, geometry: 'ROUTE', organization_id: 'secret', route_points: [{ place_ref: 'city', label: 'City', lat: 9, lng: 38, secret: 'secret' }] }] });
  assert.deepEqual(projected[0].route, [{ placeRef: 'city', label: 'City',coordinate:[38,9] }]); assert.equal(JSON.stringify(projected).includes('secret'), false);
  assert.equal(projected[0].vehicleId,vehicleId);assert.equal(projected[0].driverId,expectedDriverId);
- assert.deepEqual(regularService({corridors:[{id:'legacy',geometry:'ROUTE',route_points:[] }]}),[]);
+ assert.deepEqual(regularService({preferredCoverage:[{id:'legacy',geometry:'ROUTE',route_points:[] }]}),[]);
 });

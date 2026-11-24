@@ -1,9 +1,11 @@
 export const LOCALE_COOKIE='loadgistic_language';
+/** @type {ReadonlyArray<{code:'en'|'am'|'om'|'so',name:string}>} */
 export const LANGUAGES=Object.freeze([
   {code:'en',name:'English'}, {code:'am',name:'አማርኛ'},
-  {code:'om',name:'Afaan Oromo'}
+  {code:'om',name:'Afaan Oromo'}, {code:'so',name:'Soomaali'}
 ]);
-export function supportedLocale(value){return LANGUAGES.some(language=>language.code===value)?value:'en';}
+/** @param {unknown} value */
+export function supportedLocale(value){return LANGUAGES.find(language=>language.code===value)?.code??'en';}
 /** Only call at an explicit application-owned copy boundary, never on record data. */
 export function translateMessage(messages,message,values={}){
   const key=message.trim();

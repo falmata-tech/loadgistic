@@ -221,7 +221,7 @@ test('independent content holds survive rating decisions and revoked Trust canno
     expect(data.reviews.some((review:{id:string})=>review.id===reviewIds[2])).toBe(true);
     operation='PUBLIC_PAGE_NAVIGATION';const document=await page.goto(`/providers/${handle}`,{waitUntil:'domcontentloaded'});expect(document?.status()).toBe(200);
     operation='PUBLIC_VISIBLE_REVIEWS';
-    await page.getByText('About this transporter',{exact:true}).click();
+    await expect(page.getByRole('heading',{name:'Verified shipment reviews',exact:true})).toBeVisible();
     const reviews=page.locator('.provider-profile-review');
     if(a)await expect(reviews.getByText(noteA,{exact:true})).toBeVisible();
     else await expect(reviews.getByText(noteA,{exact:true})).toHaveCount(0);

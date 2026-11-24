@@ -2,7 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
-import {Building2,Check,Headphones,Mail,MoreHorizontal,Pencil,Plus,Shield,UserRound,Users,X} from 'lucide-react';
+import {Building2,Check,Headphones,Mail,MapPin,MoreHorizontal,Pencil,Plus,Shield,UserRound,Users,X} from 'lucide-react';
 import type {BusinessCommand,BusinessMember,BusinessPendingInvitation,BusinessWorkspaceDirectory} from '@/lib/business-workspaces/contracts';
 import {AccountDetailsForm} from './account-details-form';
 import {BusinessDocuments} from './business-documents';
@@ -54,10 +54,24 @@ export function BusinessAccount({initial,name,email,firstName,lastName,phone}:{i
  return <div>
   {notice?<p role="status" className={styles.feedback}><Text message={notice}/></p>:null}
   {error&&!task?<p role="alert" className="alert error"><FeedbackText message={error} fallback="The change could not be saved. Please try again."/></p>:null}
+  <header className={styles.accountProfile}>
+   <div className={styles.accountIdentity}>
+    <span className={styles.accountMark}><Building2 aria-hidden="true"/></span>
+    <div>
+     <span className={styles.accountKind}><Text message={workspace.kind==='BROKER'?'Broker':workspace.kind==='SHIPPER'?'Shipper':'Receiver'}/></span>
+     <h2>{workspace.name}</h2>
+     <div className={styles.accountFacts}>
+      <span>@{workspace.handle}</span>
+      {workspace.city?<span><MapPin aria-hidden="true"/>{workspace.city}</span>:null}
+      <span><Text message={roleLabel(workspace.membershipRole)}/></span>
+     </div>
+    </div>
+   </div>
+   {workspace.permissions.team?<button type="button" className="button secondary small" onClick={()=>setTask({kind:'DETAILS'})}><Pencil aria-hidden="true"/><Text message="Edit workspace details"/></button>:null}
+  </header>
   <div className={styles.accountGrid}>
    <section className={styles.accountCard}>
-    <div className={styles.sectionHeading}><h2><Building2 aria-hidden="true"/> <Text message="Workspace details"/></h2>{workspace.permissions.team?<button className="button secondary small" onClick={()=>setTask({kind:'DETAILS'})}><Pencil aria-hidden="true"/><Text message="Edit"/></button>:null}</div>
-    <dl><div><dt><Text message="Account name"/></dt><dd>{workspace.name}</dd></div><div><dt><Text message="Handle"/></dt><dd>@{workspace.handle}</dd></div>{workspace.city?<div><dt><Text message="Office city"/></dt><dd>{workspace.city}</dd></div>:null}<div><dt><Text message="Your access"/></dt><dd><Text message={roleLabel(workspace.membershipRole)}/></dd></div></dl>
+    <div className={styles.sectionHeading}><h2><Building2 aria-hidden="true"/> <Text message="Workspace details"/></h2></div>
     {workspace.permissions.owner?<NetworkVisibility key={workspace.id} workspaceId={workspace.id}/>:null}
     <BusinessDocuments key={workspace.id+workspace.membershipRole} workspaceId={workspace.id} canManage={workspace.permissions.owner}/>
     <div className={styles.accountLinks}>{workspace.permissions.owner?<button type="button" className="button secondary small" onClick={()=>setTask({kind:'ARCHIVE'})}><Text message="Archive workspace"/></button>:<button type="button" className="button secondary small" onClick={()=>setTask({kind:'LEAVE'})}><Text message="Leave workspace"/></button>}</div>

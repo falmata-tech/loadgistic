@@ -178,7 +178,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     await publicPage.goto(`/@portrait-${suffix}`);
     await expect(publicPage.getByRole('heading',{name:kind==='company'?`Portrait Fleet ${suffix}`:driverName,exact:true})).toBeVisible();
     const providerIdentity=publicPage.locator('.provider-profile-image');await expect(providerIdentity).toHaveAttribute('data-identity-kind',kind==='company'?'company':'person');
-    await publicPage.getByRole('button',{name:/Mini Box Truck · Empty vehicle/}).click();
+    await publicPage.getByRole('button',{name:/Mini Box Truck · Available space: 100%/}).click();
     await publicPage.getByRole('button',{name:'Vehicle and driver',exact:true}).click();
     const vehicleDetails=publicPage.getByRole('dialog',{name:'Vehicle details',exact:true});
     await expect(vehicleDetails.locator('.truck-inspection-person.driver img')).toHaveAttribute('src',firstUrl);
@@ -187,7 +187,7 @@ for(const kind of ['independent','company'])test(`${kind} Driver controls their 
     if(kind==='company'){
       await expect(providerIdentity.locator('img')).toHaveAttribute('alt',`Portrait Fleet ${suffix} transporter profile`);
       await expect.poll(()=>providerIdentity.locator('img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
-      await publicPage.getByText('About this transporter',{exact:true}).click();
+      await expect(publicPage.getByRole('heading',{name:'About this transporter',exact:true})).toBeVisible();
       await expect(publicPage.getByText('Road freight across regional routes.',{exact:true})).toBeVisible();
       await expect(publicPage.locator('#provider-contacts').getByRole('link',{name:/Email/})).toHaveAttribute('href',`mailto:portrait-office-${suffix}@example.invalid`);
     }else{

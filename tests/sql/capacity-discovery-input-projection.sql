@@ -21,7 +21,7 @@ declare n integer;actor uuid;provider uuid;vehicle uuid;capacity uuid;handle tex
  route jsonb:=public.provider_capacity_place_points('[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:bishoftu"}]',2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
  east_route jsonb:=public.provider_capacity_place_points('[{"place_ref":"builtin:harar"},{"place_ref":"builtin:jigjiga"}]',2,5,'CAPACITY_ROUTE_POINTS_REQUIRED');
  current_route jsonb;
- area_places jsonb:='[{"place_ref":"builtin:holeta"},{"place_ref":"builtin:sebeta"},{"place_ref":"builtin:bishoftu"},{"place_ref":"builtin:sululta"}]';
+ local_route_places jsonb:='[{"place_ref":"builtin:addis ababa"},{"place_ref":"builtin:bishoftu"}]';
 begin
  for n in 1..8 loop
   current_route:=case when n=4 then east_route else route end;
@@ -68,11 +68,11 @@ begin
    returning id into capacity;
   if n=3 then
    capacity:=public.publish_provider_capacity(actor,jsonb_build_object('vehicle_id',vehicle,
-    'status','EMPTY','accepted_loads','FTL','availability_geometry','RADIUS',
-    'capacity_area_center_place_ref','builtin:addis ababa','capacity_area_boundary_places',area_places,
+    'status','EMPTY','accepted_loads','FTL','availability_geometry','ROUTE',
+    'current_route_places',local_route_places,
     'location_source','DEVICE_OBSCURED','approximate_lat',9.03,'approximate_lng',38.74,
     'location_precision_km',5,'sharing_mode','PUBLIC'));
-   -- A valid saved point outside the viewport leaves the matching Area to
+   -- A valid saved point outside the viewport leaves the matching Planned route to
    -- supply the anchor, while respecting the installed public-live contract.
    update public.capacities set location_lat=9.35,location_lng=42.1 where id=capacity;
   elsif n=4 then

@@ -40,7 +40,7 @@ export function FeaturedSponsors({providers}:{providers:Sponsor[]}){
     <section className={styles.card+' expo-sponsored-card'} aria-live="off">
       {advertiser?(sponsor.profile_image_url?<img className={styles.art} src={sponsor.profile_image_url} alt=""/>:<Building2 className={styles.placeholder} aria-hidden="true"/>):<PublicIdentityImage path={sponsor.profile_image_url} kind="company" label={sponsor.name}/>}
       <div className={styles.copy}><strong>{sponsor.name}</strong>{sponsor.description&&<p>{sponsor.description}</p>}
-        <div className={styles.links}>{advertiser?<>{sponsor.phone&&<a href={`tel:${sponsor.phone}`}><Phone/><Text message="Call"/></a>}{sponsor.website_url&&<a href={sponsor.website_url} target="_blank" rel="noopener noreferrer"><ExternalLink/><Text message="Visit page"/></a>}</>:<><Link href={`/@${encodeURIComponent(sponsor.handle||'')}`}><Text message="Profile"/></Link><Link href={`/?provider=${encodeURIComponent(sponsor.handle||'')}`}><Text message="Vehicles"/></Link></>}</div>
+        <div className={styles.links}>{advertiser?<>{sponsor.phone&&<a href={`tel:${sponsor.phone}`}><Phone/><Text message="Call"/></a>}{sponsor.website_url&&<a href={sponsor.website_url} target="_blank" rel="noopener noreferrer"><ExternalLink/><Text message="Visit page"/></a>}</>:<><a href={`/@${encodeURIComponent(sponsor.handle||'')}`}><Text message="Profile"/></a><Link href={`/?provider=${encodeURIComponent(sponsor.handle||'')}`}><Text message="Vehicles"/></Link></>}</div>
       </div>
     </section>
     <p className={styles.note}><Text message="Confirm sponsor claims and terms directly."/></p>

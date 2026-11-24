@@ -6,14 +6,24 @@ create temporary table map179_fixture(
 ) on commit drop;
 create function pg_temp.assert_map179(ok boolean,label text) returns void language plpgsql as $$
 begin if ok is not true then raise exception '%',label;end if;end $$;
--- The179 reference retains Manual history. Adapt only its expected current
--- location fields for228; actual results and all other JSON/order stay exact.
-create function pg_temp.expected_map_location228(input_rows jsonb) returns jsonb language sql immutable as $$
+-- The historical reference retains Manual location and predates journey times.
+-- Broad queries can include dated demo rows. Read their expected public times
+-- from the saved records and keep the rest of the JSON and order exact.
+create function pg_temp.expected_map_payload244(input_rows jsonb) returns jsonb language sql stable as $$
  select case when $1 is null then null else (
-  select coalesce(jsonb_agg(case when item->>'location_source'='MANUAL_ADMIN' then
+  select coalesce(jsonb_agg((case when item->>'location_source'='MANUAL_ADMIN' then
    item||'{"location_source":null,"location_lat":null,"location_lng":null,"location_area":null}'::jsonb
-   else item end order by ordinal),'[]'::jsonb)
+   else item end)||jsonb_build_object(
+    'journey_start_at',case when dates_public then capacity.journey_start_at end,
+    'journey_end_at',case when dates_public then capacity.journey_end_at end
+   ) order by ordinal),'[]'::jsonb)
   from jsonb_array_elements($1) with ordinality original_row(item,ordinal)
+  left join public.capacities capacity on capacity.id=(item->>'id')::uuid
+  cross join lateral (select
+   (capacity.journey_start_at is not null or capacity.journey_end_at is not null)
+   and capacity.visibility='OPEN' and capacity.availability_geometry='ROUTE'
+   and capacity.updated_at>=public.provider_capacity_pair_started_at(capacity.vehicle_id) as dates_public
+  ) visibility
  ) end;
 $$;
 
@@ -126,7 +136,7 @@ begin
    into old_rows from public.public_capacity_page_pre_perf179(query,null,null,14) with ordinality as page(payload,ordinal);
   select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at' order by ordinal)
    into new_rows from public.public_capacity_page(query,null,null,14) with ordinality as page(payload,ordinal);
-  perform pg_temp.assert_map179(pg_temp.expected_map_location228(old_rows) is not distinct from new_rows,'MAP179_EXACT_JSON_OR_ORDER_DRIFT');
+  perform pg_temp.assert_map179(pg_temp.expected_map_payload244(old_rows) is not distinct from new_rows,'MAP179_EXACT_JSON_OR_ORDER_DRIFT');
   perform pg_temp.assert_map179(not exists(select 1 from jsonb_array_elements(coalesce(new_rows,'[]')) item
    where item ? '_map_driver_id179' or item ? 'driver_scoped179'),'MAP179_INTERNAL_CACHE_EXPOSED');
  end loop;
@@ -138,7 +148,7 @@ begin
    into old_rows from public.public_capacity_page_pre_perf179(query,null,null,14) with ordinality as page(payload,ordinal);
   select jsonb_agg(payload - 'available_percent' - 'available_percent_reported_at' order by ordinal)
    into new_rows from public.public_capacity_page(query,null,null,14) with ordinality as page(payload,ordinal);
-  perform pg_temp.assert_map179(pg_temp.expected_map_location228(old_rows) is not distinct from new_rows and jsonb_array_length(new_rows)>0,
+  perform pg_temp.assert_map179(pg_temp.expected_map_payload244(old_rows) is not distinct from new_rows and jsonb_array_length(new_rows)>0,
    'MAP179_REVIEWED_DOCUMENT_PARITY_LOST');
  end loop;
  query:=jsonb_build_object('vehicle_ids',fixture_ids);
@@ -150,7 +160,7 @@ begin
   into old_rows from public.public_capacity_page_pre_perf179(query,cursor_time,cursor_id,14) with ordinality as page(payload,ordinal);
  select array_agg(payload order by ordinal)
   into later_rows from public.public_capacity_page(query,cursor_time,cursor_id,14) with ordinality as page(payload,ordinal);
- perform pg_temp.assert_map179(pg_temp.expected_map_location228(old_rows) is not distinct from (
+ perform pg_temp.assert_map179(pg_temp.expected_map_payload244(old_rows) is not distinct from (
   select jsonb_agg(item - 'available_percent' - 'available_percent_reported_at' order by ordinal)
   from unnest(later_rows) with ordinality current_row(item,ordinal)
  ),'MAP179_LATER_CURSOR_JSON_DRIFT');

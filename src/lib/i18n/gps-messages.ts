@@ -142,4 +142,4 @@ const rows:readonly (readonly [string,string,string])[]=[
  ['Set your location using Vehicle location on Home before publishing.','ከማጋራትዎ በፊት በመነሻ ገጹ ላይ የመኪናውን ቦታ ይምረጡ።','Qooduu dura fuula jalqabaa irratti bakka konkolaataa kaaʼi.'],
  ['Phone location is not selected for this vehicle.','ለዚህ ተሽከርካሪ የስልክ ቦታ አልተመረጠም።','Konkolaataa kanaaf bakki bilbilaa hin filatamne.'],
 ];
-export const gpsMessages:Record<Locale,Messages>={en:{},am:Object.fromEntries(rows.map(r=>[r[0],r[1]])),om:Object.fromEntries(rows.map(r=>[r[0],r[2]]))};
+export const gpsMessages:Record<Locale,Messages>={en:{},so:{},am:Object.fromEntries(rows.map(r=>[r[0],r[1]])),om:Object.fromEntries(rows.map(r=>[r[0],r[2]]))};

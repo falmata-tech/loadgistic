@@ -1,5 +1,17 @@
 # Security failures we must not repeat
 
+## November 24 profile navigation retained the previous document policy
+
+The owner's Chrome session reached `/@fikru-desta-transport` from the market.
+Chrome rejected the YouTube frame and CDN image under the market document's
+policy. Direct profile visits passed and missed the failing interaction.
+Browser enforcement follows the document response. Provider entry and exit
+links now load a document with its own policy so the exception applies only
+to the provider profile. The web release maintainer owns a browser check
+that opens a real marker's Profile link, verifies the provider policy and
+player request, and verifies the stricter policy on return. Repeat it on the
+release target.
+
 ## November 22 database recovery omitted the Data API role setting
 
 The encrypted ledger 227 database archive produced a network-isolated restore

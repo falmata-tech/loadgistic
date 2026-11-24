@@ -37,19 +37,15 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ብዙ ጊዜ የሚያገለግሉባቸው መስመሮች ወይም አካባቢ",
     "Karaawwan ykn naannoo yeroo baayʼee tajaajiltan"],
   [
-    "Load preferences",
+    "Shipment preferences",
     "የጭነት ምርጫዎች",
     "Filannoo feʼumsaa"],
   [
-    "Shared space",
-    "ከሌላ ጭነት ጋር የሚጋራ ቦታ",
-    "Iddoo feʼumsaa waliin qoodamu"],
-  [
-    "Set the space available now and where you can take a load.",
+    "Set your available space and where you can take a shipment.",
     "አሁን ያለውን የጭነት ቦታና ጭነት የሚወስዱበትን መስመር ይግለጹ።",
     "Iddoo feʼumsaa amma jiru fi gara eessaatti feʼumsa geessuu dandeessan ibsaa."],
   [
-    "Where can you take a load?",
+    "Where can you take a shipment?",
     "ጭነት ወደየት መውሰድ ይችላሉ?",
     "Feʼumsa gara eessaatti geessuu dandeessu?"],
   [
@@ -692,7 +688,7 @@ export const workflowRows: readonly (readonly string[])[] = [
     "ይህ የሥራ ቦታ የተሽከርካሪ አቅምና የጭነት ክትትል ማግኘቱን ያቆማል። የቡድኑ አባላት መዳረሻ ያጣሉ። ያለው ታሪክ ግን ይቀራል።",
     "Iddoon hojii kun dandeettii geejjibaa fi hordoffii qoodamu argachuu ni dhaaba. Miseensonni garee isaa seensa ni dhabu. Seenaan duraan jiru garuu ni tura."],
   [
-    "Tell us where your load is going. We’ll help you find a transporter and discuss the details.",
+    "Tell us where your shipment is going. We’ll help you find a transporter and discuss the details.",
     "ጭነትዎ ወዴት እንደሚሄድ ይንገሩን። አጓጓዥ ለማግኘትና ዝርዝሮቹን ለመወያየት እናግዝዎታለን።",
     "Feʼumsi keessan eessa akka deemu nutti himaa. Geejjibaa argachuu fi balʼina irratti mariʼachuuf isin gargaarra."],
   [

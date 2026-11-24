@@ -1,3 +1,5 @@
+import {capacityJourneyWindow} from './capacity-journey.js';
+
 // FEAT-MKT-001: one bounded canonical value per OR group; groups remain ANDed.
 export const CAPACITY_FILTER_CHOICES=Object.freeze({
  vehicleCategory:Object.freeze(['Courier car','Cargo van','Pickup truck','Pickup stake body','Mini Open Body Truck','Mini Stake Body Truck','Mini Box Truck','Light Stake Body Truck','Light Box Truck','Medium Stake Body Truck','Medium Box Truck','Heavy Rigid Stake Body Truck','Heavy Rigid Stake Body Truck + Trailer','Tractor + Container Trailer','Tractor + Dry Van Trailer','Tractor + Heavy Equipment Trailer']),
@@ -33,6 +35,11 @@ export function parseCapacityFilterValues(value,key){return capacityFilterValue(
 export function canonicalCapacityFilters(filters={}){
  const result=Object.fromEntries(Object.keys(CAPACITY_FILTER_CHOICES).map(key=>[key,capacityFilterValue(key,filters[key])]));
  result.minAvailablePercent=minimumAvailablePercent(filters.minAvailablePercent);
+ try{
+  const journey=capacityJourneyWindow(filters.departAfter,filters.arriveBy);
+  if(journey.start)result.departAfter=journey.start;
+  if(journey.end)result.arriveBy=journey.end;
+ }catch{return fail();}
  if(result.loadType==='FTL'&&result.status==='PARTIAL')fail();
  return result;
 }
@@ -44,6 +51,8 @@ export function capacityFilterParams(params){
  }
  const minimum=params.getAll('minAvailablePercent');if(minimum.length>1)fail();
  input.minAvailablePercent=minimum[0]||'';
+ input.departAfter=params.get('departAfter')||'';
+ input.arriveBy=params.get('arriveBy')||'';
  return canonicalCapacityFilters(input);
 }
 export function capacityFilterRecord(record){

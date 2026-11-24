@@ -14,6 +14,7 @@ const sources=[['fixture.tsx',source]];
 const translated={
  am:{'Loading the fleet':'ጭነት መኪኖች እየተጫኑ ነው','Enable sharing':'ማጋራትን አብራ','Disable sharing':'ማጋራትን አጥፋ'},
  om:{'Loading the fleet':'Konkolaattota feʼumsaa feʼaa jira','Enable sharing':'Qooduu bani','Disable sharing':'Qooduu dhaamsi'},
+ so:{'Loading the fleet':'Gaadiidka waa la soo furayaa','Enable sharing':'Oggolow wadaagidda','Disable sharing':'Jooji wadaagidda'},
 };
 
 test('strict native translation audit inventories fixed spinner and switch labels, but excludes dynamic content',()=>{
@@ -25,6 +26,7 @@ test('strict native translation audit inventories fixed spinner and switch label
  const missing=auditTranslationSources(sources,{
   am:{...translated.am,'Loading the fleet':''},
   om:{...translated.om,'Enable sharing':undefined,'Disable sharing':''},
+  so:translated.so,
  },{strict:true});
  assert.equal(missing.exitCode,1);
  assert.deepEqual(missing.report.items.map(({message,locales})=>[message,locales]),[

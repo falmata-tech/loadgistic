@@ -105,7 +105,7 @@ export function capacityRouteAlignmentMatch(query,routePoints,options={}){
   return {
     matched,
     score:matched?2:withinTolerance?1:0,
-    label:matched?`Capacity route alignment · ${Math.round(originEvidence.distance_km)} km / ${Math.round(destinationEvidence.distance_km)} km`:withinTolerance?'Capacity route direction differs':'Outside route tolerance',
+    label:matched?`Route alignment · ${Math.round(originEvidence.distance_km)} km / ${Math.round(destinationEvidence.distance_km)} km`:withinTolerance?'Route direction differs':'Outside route tolerance',
     direction:direct?'DIRECT':'REVERSE',
     origin_distance_km:originEvidence.distance_km,
     destination_distance_km:destinationEvidence.distance_km,
@@ -122,15 +122,15 @@ export function capacityRoutePointMatch(point,routePoints,options={}){
   const valid=point?.lat!==null&&point?.lat!==undefined&&point?.lat!==''&&point?.lng!==null&&point?.lng!==undefined&&point?.lng!=='';
   const query={lat:Number(point?.lat),lng:Number(point?.lng)};
   const points=validGeometryPoints(routePoints);
-  if(!valid||!isValidCoordinate(query.lat,query.lng)||points.length<2)return {matched:false,label:'Capacity route needs confirmation',distance_km:null,segment_index:null};
+  if(!valid||!isValidCoordinate(query.lat,query.lng)||points.length<2)return {matched:false,label:'Route needs confirmation',distance_km:null,segment_index:null};
   const evidence=pointToPolyline(query,points);
-  if(!evidence)return {matched:false,label:'Capacity route needs confirmation',distance_km:null,segment_index:null};
+  if(!evidence)return {matched:false,label:'Route needs confirmation',distance_km:null,segment_index:null};
   const radiusKm=boundedRadius(options.radiusKm);
   const matched=evidence.distance_km<=radiusKm;
   return {
     matched,
     score:matched?1:0,
-    label:matched?`Near Capacity route · ${Math.round(evidence.distance_km)} km`:'Outside route tolerance',
+    label:matched?`Near route · ${Math.round(evidence.distance_km)} km`:'Outside route tolerance',
     distance_km:evidence.distance_km,
     progress:evidence.progress,
     segment_index:evidence.segment_index,
@@ -173,7 +173,7 @@ export function serviceAreaGeometryMatch(point,boundary,options={}){
   const valid=point?.lat!==null&&point?.lat!==undefined&&point?.lat!==''&&point?.lng!==null&&point?.lng!==undefined&&point?.lng!=='';
   const query={lat:Number(point?.lat),lng:Number(point?.lng)};
   const points=validGeometryPoints(boundary);
-  if(!valid||!isValidCoordinate(query.lat,query.lng)||!validAreaBoundary(points))return {matched:false,label:'Service area needs confirmation',inside:false,distance_km:null};
+  if(!valid||!isValidCoordinate(query.lat,query.lng)||!validAreaBoundary(points))return {matched:false,label:'Area needs confirmation',inside:false,distance_km:null};
   const inside=pointInsidePolygon(query,points);
   const referenceLatitude=(query.lat+points.reduce((sum,item)=>sum+item.lat,0)/points.length)/2;
   const closed=[...points,points[0]];
@@ -185,7 +185,7 @@ export function serviceAreaGeometryMatch(point,boundary,options={}){
   const distanceKm=distances.length?Math.min(...distances):null;
   const searchRadiusKm=boundedRadius(options.searchRadiusKm);
   const matched=inside||(distanceKm!==null&&distanceKm<=searchRadiusKm);
-  return {matched,score:matched?2:0,label:inside?'Inside Service area':matched?`Near Service area · ${Math.round(distanceKm)} km`:'Outside Service area',inside,distance_km:distanceKm,search_radius_km:searchRadiusKm};
+  return {matched,score:matched?2:0,label:inside?'Inside area':matched?`Near area · ${Math.round(distanceKm)} km`:'Outside area',inside,distance_km:distanceKm,search_radius_km:searchRadiusKm};
 }
 
 export function corridorAlignmentMatch(query,candidate,options={}){

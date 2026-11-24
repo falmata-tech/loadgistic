@@ -2,7 +2,8 @@ import {test,expect} from './browser-test';
 import type {Page} from 'playwright-core';
 import {readFileSync} from 'node:fs';
 import {openCapacityFilterDialog,chooseCapacityOptions} from './capacity-drawer-helper';
-import {capacityLoadPreference,capacityLoadLabel} from '../../src/lib/capacity-load-preferences.js';
+import {capacityLoadPreference} from '../../src/lib/capacity-load-preferences.js';
+import {availableSpacePercent,emptyShipmentPreferenceLabel} from '../../src/lib/capacity-space-estimate.js';
 
 test('current load filters vehicles without retaining the removed space filter',async({page}:{page:Page},info:{outputPath:(name:string)=>string})=>{
  test.setTimeout(150000);
@@ -28,22 +29,24 @@ test('current load filters vehicles without retaining the removed space filter',
  const full=await (await page.request.get('/api/public/capacity?loadType=FTL')).json();
  expect(full.items.length).toBeGreaterThan(0);
  expect(full.items.every((item:{accepts_full_load:boolean;status:string})=>item.accepts_full_load&&item.status==='EMPTY')).toBe(true);
- const shared=await (await page.request.get('/api/public/capacity?loadType=PTL')).json();
- expect(shared.items.length).toBeGreaterThan(0);
- expect(shared.items.every((item:{accepts_partial_load:boolean})=>item.accepts_partial_load)).toBe(true);
+ const partialLoads=await (await page.request.get('/api/public/capacity?loadType=PTL')).json();
+ expect(partialLoads.items.length).toBeGreaterThan(0);
+ expect(partialLoads.items.every((item:{accepts_partial_load:boolean})=>item.accepts_partial_load)).toBe(true);
  await openCapacityFilterDialog(page);await dialog.getByRole('link',{name:'Clear',exact:true}).click();
  await expect(page).toHaveURL((url:URL)=>url.pathname==='/'&&!url.search);
  await openCapacityFilterDialog(page);await expect(dialog.locator('input[type="hidden"][name="status"]')).toHaveValue('');await page.keyboard.press('Escape');
  const selected=full.items[0];
  await page.goto(`/?truck=${encodeURIComponent(selected.id)}`);
  await page.locator('.map-info-bubble.truck').click();
- await expect(page.locator('.map-capacity-sheet .truck-load-preference')).toHaveText(capacityLoadLabel(capacityLoadPreference(selected.status,selected.accepts_full_load,selected.accepts_partial_load)));
+ const preference=capacityLoadPreference(selected.status,selected.accepts_full_load,selected.accepts_partial_load);
+ const percent=availableSpacePercent(selected.status,selected.available_percent,selected.available_percent_reported_at);
+ await expect(page.locator('.map-capacity-sheet .truck-load-preference')).toHaveText(emptyShipmentPreferenceLabel(percent,preference)!);
  await page.keyboard.press('Escape');
  for(const locale of ['am','om']){
   const messages=JSON.parse(readFileSync(`src/lib/i18n/messages/${locale}.json`,'utf8'));
   await page.locator('.language-picker select:visible').selectOption(locale);
   await openCapacityFilterDialog(page);
-  await expect(dialog.locator('[data-filter-group="status"] legend')).toHaveText(messages['Load status']);
+  await expect(dialog.locator('[data-filter-group="status"] legend')).toHaveText(messages['Vehicle availability']);
   await expect(dialog.getByRole('checkbox',{name:messages['Empty vehicle'],exact:true})).toBeVisible();
   await expect(dialog.getByRole('checkbox',{name:messages['Partly loaded'],exact:true})).toBeVisible();
   await expect(dialog.locator('[name="loadType"]')).toHaveCount(0);await page.keyboard.press('Escape');

@@ -36,7 +36,7 @@ test('pending selected source remains an actionable safe domain error',async()=>
  process.env.NEXT_PUBLIC_SUPABASE_URL='https://telematics.test.invalid';process.env.SUPABASE_SERVICE_ROLE_KEY='test-key';console.error=(...args)=>logs.push(args);
  globalThis.fetch=async()=>Response.json({code:'P0001',message:'LOCATION_SOURCE_PENDING',details:'private device coordinates'},{status:400});
  try{
-  await assert.rejects(()=>publishSupabaseProviderCapacity({id:'owner'},{vehicleId:'own',status:'EMPTY'}),error=>error.message==='LOCATION_SOURCE_PENDING');assert.deepEqual(logs,[]);
+  await assert.rejects(()=>publishSupabaseProviderCapacity({id:'owner'},{vehicleId:'own',status:'EMPTY',availabilityGeometry:'ROUTE'}),error=>error.message==='LOCATION_SOURCE_PENDING');assert.deepEqual(logs,[]);
   const source=await readFile(new URL('../src/lib/errors.ts',import.meta.url),'utf8');
   const {errorMessage}=await import(`data:text/javascript,${encodeURIComponent(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText)}`);
   assert.match(errorMessage(new Error('LOCATION_SOURCE_PENDING')),/GPS device needs a new location/);assert.doesNotMatch(errorMessage(new Error('LOCATION_SOURCE_PENDING')),/P0001|private|LOCATION_SOURCE_PENDING/);

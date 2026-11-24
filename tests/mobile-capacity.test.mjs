@@ -94,7 +94,7 @@ test('truck regular editor data stays with the selected current-driver pair',()=
  const drivers=['00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000003'];
  const second='00000000-0000-4000-8000-000000000004';
  const signal=(name,vehicle_id,driver_user_id)=>({id:name,vehicle_id,driver_user_id,geometry:'ROUTE',route_points:[]});
- const projected=projectMobileCapacity({vehicles:[{id,assigned_driver:{id:drivers[0],name:'First'}},{id:second,assigned_driver:{id:drivers[1],name:'Second'}}],corridors:[signal('legacy'),signal('first',id,drivers[0]),signal('stale',id,drivers[1]),signal('second',second,drivers[1])]},'owner','TRANSPORTER');
+ const projected=projectMobileCapacity({vehicles:[{id,assigned_driver:{id:drivers[0],name:'First'}},{id:second,assigned_driver:{id:drivers[1],name:'Second'}}],preferredCoverage:[signal('legacy'),signal('first',id,drivers[0]),signal('stale',id,drivers[1]),signal('second',second,drivers[1])]},'owner','TRANSPORTER');
  assert.equal(projected.vehicles[0].driverId,drivers[0]);assert.deepEqual(projected.vehicles[0].regularServices.map(item=>item.id),['first']);
  assert.deepEqual(projected.vehicles[1].regularServices.map(item=>item.id),['second']);
 });

@@ -26,5 +26,5 @@ const rows=[
  ['Transporters','አጓጓዦች','Geejjibdoota'],
  ['Partial capacity','ቀሪ የጭነት ቦታ አለ','Iddoo feʼumsaa hafe qaba'],
 ] as const;
-export const navigationMessages:Record<Locale,Messages>={en:{},am:{},om:{}};
+export const navigationMessages:Record<Locale,Messages>={en:{},so:{},am:{},om:{}};
 for(const [key,am,om] of rows){navigationMessages.am[key]=am;navigationMessages.om[key]=om;}

@@ -8,6 +8,7 @@ import {
 } from './fixture-market-policy.mjs';
 import {assignFixtureDriverPortraits} from './fixture-driver-portraits.mjs';
 import {readFixtureSchema} from './lib/fixture-schema.mjs';
+import {exampleCover} from '../src/lib/provider-cover-video.js';
 import {
   assertLocalAuthorityFixtureTarget,prepareProviderAuthorityFixtures,
   uploadAuthorityFixtureDocuments,confirmAuthorityFixtureReviews
@@ -67,7 +68,7 @@ const authorityManifest=JSON.parse(fs.readFileSync(path.join(process.cwd(),'reso
 const authorityPlan=prepareProviderAuthorityFixtures({...fixtureDocument,tables:rebasedTables},authorityManifest);
 const fixtureTables=authorityPlan.tables;
 for(const page of fixtureTables.company_pages||[]){
-  if(['page-transporter','page-driver'].includes(page.id))page.cover_video_id='WZMVTHGhlbg';
+  page.cover_video_id??=exampleCover.id;
 }
 fixtureTables.users=assignFixtureDriverPortraits(fixtureTables.users||[]);
 fixtureTables.driver_vehicle_assignments=ensureIndependentVehicleAssignments(

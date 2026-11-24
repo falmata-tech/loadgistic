@@ -27,7 +27,8 @@ const fixtureAnchor=Date.parse(fixtureDocument.captured_at);
 if(!Number.isFinite(fixtureAnchor))throw new Error('MANAGED_FIXTURE_ANCHOR_INVALID');
 const fixtureOffset=Date.now()-fixtureAnchor;
 const rebaseRow=row=>Object.fromEntries(Object.entries(row).map(([key,value])=>{
-  if(value&&key.endsWith('_at')){
+  // Simulator bootstrap recognizes the exact authored report timestamp.
+  if(value&&key.endsWith('_at')&&key!=='available_percent_reported_at'){
     const parsed=Date.parse(String(value));
     if(Number.isFinite(parsed))return [key,new Date(parsed+fixtureOffset).toISOString()];
   }

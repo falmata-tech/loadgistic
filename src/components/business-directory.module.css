@@ -4,3 +4,13 @@
 .tabs svg{width:17px;height:17px;margin-right:7px;vertical-align:-3px}.search{min-width:0}.search input{width:100%;min-width:0}.search>svg{width:20px;min-width:20px;flex-shrink:0}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.actions svg{width:16px;height:16px}
 @media(max-width:700px){.directory{min-width:0}.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%;min-width:0}.tabs button{min-width:0;padding:10px 4px;font-size:.75rem;line-height:1.2;white-space:normal;overflow-wrap:anywhere}.tabs svg{display:block;margin:0 auto 4px}}
 .statusBadge{display:inline-flex;align-items:center;min-height:27px;margin-top:8px;padding:4px 9px;border:1px solid #b8ccf6;border-radius:999px;background:#eaf1ff;color:#17468f;font-size:.72rem;font-weight:800}
+
+
+.business{padding:16px;border-color:var(--line)}
+.business header{align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.business header>svg{width:43px;height:43px;padding:10px;border-radius:10px;background:var(--blue-soft)}
+.business header>div{min-width:0}
+.business h2{margin:2px 0;font-size:1.05rem;line-height:1.25}
+.business .handle{font-size:.78rem}
+.business p{margin:8px 0 0;font-size:.86rem}
+.business .actions button,.business .actions a{min-height:44px}

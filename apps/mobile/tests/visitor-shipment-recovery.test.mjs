@@ -20,9 +20,10 @@ const nodes=tree=>!tree||typeof tree!=='object'?[]:Array.isArray(tree)?tree.flat
 const find=(tree,type,message)=>nodes(tree).find(node=>node.type===type&&(!message||node.props.message===message));
 const settle=async()=>{for(let i=0;i<16;i++)await Promise.resolve();};
 test('link entry exposes failure/retry and never an email form or private map before both credentials succeed',async()=>{
- const h=screen();let tree=h.render();assert.equal(find(tree,'TrackingWorkspace'),undefined);assert.equal(find(tree,'Field','Your email'),undefined);
- find(tree,'Field','Tracking link').props.onChangeText(`https://loadgistic.com/track/${linkToken}`);find(tree,'Field','Tracking code').props.onChangeText('ABCD-EF23');tree=h.render();
- const original=h.port.request;h.port.request=async()=>{throw Error('Unavailable');};find(tree,'Button','Open tracking').props.onPress();await settle();tree=h.render();assert.ok(find(tree,'ErrorText').props.message);assert.equal(h.controller.snapshot().session,null);assert.equal(find(tree,'Button','Open tracking').props.busy,false);
+ const h=screen();let tree=h.render();assert.equal(find(tree,'Field','Tracking link'),undefined);assert.ok(find(tree,'Field','Tracking ID'));assert.ok(find(tree,'Field','Tracking code'));
+ tree=h.render('TrackingLinkAccess',{linkToken});assert.equal(find(tree,'Field','Tracking ID'),undefined);assert.equal(find(tree,'TrackingWorkspace'),undefined);assert.equal(find(tree,'Field','Your email'),undefined);
+ find(tree,'Field','Tracking code').props.onChangeText('ABCD-EF23');tree=h.render('TrackingLinkAccess',{linkToken});
+ const original=h.port.request;h.port.request=async()=>{throw Error('Unavailable');};find(tree,'Button','Open tracking').props.onPress();await settle();tree=h.render('TrackingLinkAccess',{linkToken});assert.ok(find(tree,'ErrorText').props.message);assert.equal(h.controller.snapshot().session,null);assert.equal(find(tree,'Button','Open tracking').props.busy,false);
  h.port.request=original;find(tree,'Button','Open tracking').props.onPress();await settle();assert.equal(h.controller.snapshot().session.id,id);
 });
 test('malformed refresh hides private content and a valid retry restores the exact session',async()=>{
@@ -41,4 +42,13 @@ test('pending sessions have a route but no current location or started shipment 
 test('a different link entry never renders the previous load while its access is being cleared',async()=>{
  const h=screen();await h.controller.open(linkToken,'ABCD-EF23');const tree=h.render('TrackingLinkAccess',{linkToken:'b'.repeat(43)});
  assert.equal(find(tree,'TrackingWorkspace'),undefined);assert.equal(find(tree,'TrackingMap'),undefined);assert.ok(find(tree,'Field','Tracking code'));assert.equal(h.controller.snapshot().session,null);assert.equal(h.controller.matchesLink(linkToken),false);
+});
+
+test('the public Track tab sends the copied ID and code through the same access endpoint',async()=>{
+ const h=screen();let tree=h.render();
+ find(tree,'Field','Tracking ID').props.onChangeText(linkToken);
+ find(tree,'Field','Tracking code').props.onChangeText('ABCD-EF23');
+ tree=h.render();find(tree,'Button','Open tracking').props.onPress();await settle();
+ assert.deepEqual(h.calls[0],{path:'/api/tracking/access',options:{body:{linkToken,code:'ABCDEF23'}}});
+ assert.equal(h.controller.snapshot().session.id,id);
 });

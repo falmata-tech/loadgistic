@@ -26,9 +26,11 @@ export async function issueNativeTrackingLink(page:Page,email:string,shipmentId:
  finally{await owner.close();}
 }
 export async function openNativeTrackingLink(page:Page,link:{url:string;code:string}){
+ const trackingId=decodeURIComponent(new URL(link.url).pathname.split('/').pop()||'');
+ expect(trackingId.length).toBeGreaterThan(0);
  await page.goto(preview+'/visitor-tracking',{waitUntil:'domcontentloaded'});
  await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
- await page.getByLabel('Tracking link',{exact:true}).fill(link.url);
+ await page.getByLabel('Tracking ID',{exact:true}).fill(trackingId);
  await page.getByLabel('Tracking code',{exact:true}).fill(link.code);
  const opened=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
  await page.getByRole('button',{name:'Open tracking',exact:true}).click();const response=await opened;expect(response.status()).toBe(200);

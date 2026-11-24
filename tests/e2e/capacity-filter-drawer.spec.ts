@@ -27,26 +27,34 @@ async function exercise(page:any,info:any,path:string,api:string){
   page.setDefaultTimeout(15000);
   const windows:string[]=[];
   page.on('request',(r:any)=>{const u=new URL(r.url());if(u.pathname===api&&u.searchParams.has('viewport'))windows.push(u.searchParams.get('viewport')!);});
-  await page.goto(path);await expect(page.locator('.leaflet-container')).toBeVisible();
+  await page.goto(path,{waitUntil:'domcontentloaded',timeout:30_000});
+  await expect(page.locator('.leaflet-container')).toBeVisible({timeout:30_000});
   const mobile=info.project.name.includes('mobile');
   await expect(page.getByRole('button',{name:'Search transporters',exact:true})).toBeVisible();
   await expect(page.getByRole('complementary',{name:'Transporter search'})).toBeHidden();
   await page.locator('.leaflet-container').evaluate((el:any)=>{el.__drawerMapIdentity=true;});
   const drawer=await openDrawer(page);
   const dialog=await openCapacityFilterDialog(page);
-  expect(await dialog.locator('[data-filter-section]').evaluateAll((sections:HTMLElement[])=>sections.map(section=>section.dataset.filterSection))).toEqual(['vehicle','availability','location','more']);
+  expect(await dialog.locator('[data-filter-section]').evaluateAll((sections:HTMLElement[])=>sections.map(section=>section.dataset.filterSection))).toEqual(['vehicle','location','availability','more']);
   await expectDomOrder(dialog.locator('[data-filter-section="vehicle"] .capacity-primary-selects'),['.capacity-configuration-picker legend','[data-filter-group="status"] legend']);
   await expectDomOrder(dialog.locator('[data-filter-section="location"] .capacity-truck-location-filter'),['#capacity-truck-city','#capacity-near-enabled','[data-filter-group="locationSource"]']);
   await expect(dialog.locator('[data-filter-section] > summary > svg')).toHaveCount(8);
   await expect(dialog.locator('[data-filter-section="vehicle"] > summary')).toContainText('Vehicle');
-  await expect(dialog.locator('[data-filter-section="location"] > summary')).toContainText('Vehicle location');
-  await expect(dialog.locator('[data-filter-section="availability"]')).toHaveAttribute('open','');
-  await expect(dialog.locator('[data-filter-section="location"]')).not.toHaveAttribute('open','');
-  await expect(dialog.locator('[data-filter-section="more"]')).not.toHaveAttribute('open','');
-  await expect(dialog.getByRole('group',{name:'Load status',exact:true})).toBeVisible();
+  const vehicle=dialog.locator('details[data-filter-section="vehicle"]');
+  const location=vehicle.locator('details[data-filter-section="location"]');
+  await expect(location.locator('summary')).toHaveText('Vehicle location');
+  await expect(location).not.toHaveAttribute('open','');
+  await vehicle.locator(':scope > summary').click();
+  await expect(location).toBeHidden();
+  await vehicle.locator(':scope > summary').click();
+  await expect(location).toBeVisible();
+  await expect(dialog.locator('details[data-filter-section][open]')).toHaveCount(1);
+  await expect(dialog.locator('[data-filter-section="vehicle"]')).toHaveAttribute('open','');
+  await expect(dialog.getByRole('group',{name:'Vehicle availability',exact:true})).toBeVisible();
   await expect(dialog.getByRole('group',{name:'Location source',exact:true})).toBeHidden();
   await dialog.evaluate((element:HTMLElement)=>{element.scrollTop=0;});
   await page.screenshot({path:info.outputPath(`${path==='/'?'open':'private'}-filter-groups.png`),scale:'css'});
+  await openCapacityFilterDialog(page,'availability');
   const routeSection=dialog.locator('[data-query-shape="ROUTE"]');
   await dialog.getByRole('button',{name:'Route',exact:true}).click();
   await expectDomOrder(routeSection,['#capacity-route-origin','#capacity-route-destination','#capacity-origin-radius','#capacity-destination-radius','#capacity-route-direction']);
@@ -56,7 +64,9 @@ async function exercise(page:any,info:any,path:string,api:string){
   await chooseCapacityOptions(dialog,'status',['EMPTY']);
   await chooseTruckConfiguration(dialog,'Mini Box Truck');
   await dialog.getByLabel('In or near a city',{exact:true}).fill('Addis Ababa');
-  await dialog.locator('#capacity-truck-city-results .place-result').first().click();
+  const citySuggestion=dialog.locator('#capacity-truck-city-results .place-result').first();
+  await expect(citySuggestion).toBeVisible({timeout:30_000});
+  await citySuggestion.click();
   const city=await dialog.locator('input[name="truckCityPlaceRef"]').inputValue();expect(city).toBeTruthy();
   await dialog.locator('#capacity-truck-location-radius').selectOption('25');
   await dialog.getByRole('button',{name:'Route',exact:true}).click();
@@ -70,7 +80,7 @@ async function exercise(page:any,info:any,path:string,api:string){
   const destinationRadius=dialog.locator('#capacity-destination-radius');
   expect(await destinationRadius.locator('option').evaluateAll((options:any[])=>options.map(option=>option.value))).toEqual(['10','25','50','100','200']);
   await expect(destinationRadius).toHaveValue('50');await destinationRadius.selectOption('100');
-  await expect(drawer.getByLabel('Load status',{exact:true})).toHaveCount(0);
+  await expect(drawer.getByLabel('Vehicle availability',{exact:true})).toHaveCount(0);
   await chooseCapacityOptions(dialog,'locationSource',['MOBILE']);
   await dialog.getByRole('combobox',{name:'Direction',exact:true}).selectOption('EITHER');
   if(path==='/'){
@@ -123,6 +133,10 @@ async function exercise(page:any,info:any,path:string,api:string){
   const result=await page.request.get(`${api}?${url.searchParams}`);expect(result.status()).toBe(200);const body=await result.json();expect(body.filterError).toBeFalsy();if(api==='/api/shared-capacity')expect(body.items).toHaveLength(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await openCapacityFilterDialog(page);
+  await expect(dialog.locator('details[data-filter-section][open]')).toHaveCount(1);
+  await expect(dialog.locator('[data-filter-section="vehicle"]')).toHaveAttribute('open','');
+  await openCapacityFilterDialog(page,'location');
+  await expect(dialog.getByLabel('In or near a city',{exact:true})).toHaveValue(/Addis Ababa/);
   await expect(dialog.locator('input[type="hidden"][name="locationSource"]')).toHaveValue('MOBILE');
   if(path==='/')await expect(dialog.locator('input[type="hidden"][name="ownerDocs"]')).toHaveValue('BUSINESS_LICENSE');
   await dialog.getByRole('link',{name:'Clear',exact:true}).click();await expect(page).toHaveURL(new RegExp(`${path==='/'?'/$':'/\\?view=private$'}`));
@@ -149,7 +163,7 @@ test('private Capacity entry has no email-code drawer',async({page}:{page:any})=
 });
 
 test('Area and Route query drafts stay editable but only the applied shape reaches the map',async({page})=>{
- await page.goto('/');const dialog=await openCapacityFilterDialog(page);
+ await page.goto('/');const dialog=await openCapacityFilterDialog(page,'availability');
  await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
  await dialog.getByRole('combobox',{name:'Area',exact:true}).fill('Addis Ababa');
  const choices=dialog.locator('#capacity-area-city-results');await expect(choices).toBeVisible();
@@ -173,5 +187,5 @@ test('Area and Route query drafts stay editable but only the applied shape reach
  await expect(page).toHaveURL(url=>url.searchParams.get('currentAreaPlaceRef')===areaRef&&url.searchParams.get('currentAreaRadiusKm')==='50'&&!url.searchParams.has('originPlaceRef')&&!url.searchParams.has('destinationPlaceRef')&&!url.searchParams.has('directionMode')&&url.searchParams.get('stopOption')==='MULTI_PICK');
  const query=new URL(page.url()).searchParams;expect(query.has('availabilityGeometry')).toBe(false);expect(query.has('preferredOnly')).toBe(false);
  const response=await page.request.get(`/api/public/capacity?${query}`);expect(response.ok()).toBe(true);expect((await response.json()).filterError).toBeFalsy();
- await openCapacityFilterDialog(page);await expect(dialog.getByRole('combobox',{name:'Area',exact:true})).toHaveValue(/Addis Ababa/);await expect(dialog.locator('input[name="currentAreaPlaceRef"]')).toHaveValue(areaRef);await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
+ await openCapacityFilterDialog(page,'availability');await expect(dialog.getByRole('combobox',{name:'Area',exact:true})).toHaveValue(/Addis Ababa/);await expect(dialog.locator('input[name="currentAreaPlaceRef"]')).toHaveValue(areaRef);await expect(dialog.getByRole('button',{name:'Area',exact:true})).toHaveAttribute('aria-pressed','true');
 });

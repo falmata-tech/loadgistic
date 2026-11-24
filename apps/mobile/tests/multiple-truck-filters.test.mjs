@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as discovery from '../src/api/discovery.ts';
+import * as journey from '../../../src/lib/capacity-journey.js';
 import * as filterPresentation from '../../../src/lib/capacity-filter-presentation.ts';
 const {CAPACITY_FILTER_PRESENTATION:presentation}=filterPresentation;
 
@@ -23,7 +24,7 @@ const find=(tree,match)=>{const node=nodes(tree).find(match);assert.ok(node,'exp
 const native=Object.fromEntries(['Modal','Pressable','ScrollView','Image','Text','View'].map(name=>[name,name]));
 const ui=Object.fromEntries(['Page','Title','Button','Copy','ErrorText'].map(name=>[name,name]));
 ui.palette={ink:'#0b1d3a',border:'#cbd5e1'};
-const common={'../theme/capacity-status-presentation':{capacityStatusPresentation},'react-native':native,'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/discovery':discovery,'./ui':ui,'./app-icon':{AppIcon:'AppIcon'},'../../../../src/lib/capacity-filter-presentation':filterPresentation};
+const common={'./journey-time-fields':{JourneyTimeFields:'JourneyTimeFields'},'../../../../src/lib/capacity-journey.js':journey,'../theme/capacity-status-presentation':{capacityStatusPresentation},'react-native':native,'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'../localization/provider':{useLanguage:()=>({t:message=>message})},'../api/discovery':discovery,'./ui':ui,'./app-icon':{AppIcon:'AppIcon'},'../../../../src/lib/capacity-filter-presentation':filterPresentation};
 
 test('native courier pickers preserve Courier car artwork and canonical values behind translated labels',()=>{
  const options=[{name:'Courier car',image:'/vehicle-configurations/courier-car.jpg'},{name:'Cargo van',image:'/vehicle-configurations/cargo-van.jpg'}];
@@ -61,11 +62,11 @@ test('native option groups combine in a draft, preserve all document requirement
  const screen=component('../src/components/discovery-filters.tsx',{...common,'../location/capture':{captureNearbyLocation:async()=>{throw new Error('unused GPS');}},'./place-picker':{PlacePicker:'PlacePicker'},'./multiple-configuration-picker':{MultipleConfigurationPicker:'MultipleConfigurationPicker'}});
  const applied=[],initial={originPlaceRef:'city',originLabel:'User city',originRadiusKm:'25',truckDocs:'VEHICLE_OWNERSHIP',loadType:'FTL'};
  const render=()=>screen.render('DiscoveryFilters',{initial,configurations:[],onApply:filters=>applied.push(filters),onClose(){}});
- const expand=key=>{const button=find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel===presentation.groups[key].label);if(!button.props.accessibilityState.expanded)button.props.onPress();};
+ const expand=key=>{const button=find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel===presentation.groups[key].label);if(!button.props['aria-expanded'])button.props.onPress();};
  const choose=(label,title)=>{const group=find(render(),node=>typeof node.type==='function'&&node.props.label===label);const options=group.type(group.props);find(options,node=>node.type==='Pressable'&&node.props.accessibilityLabel===title).props.onPress();};
  assert.equal(nodes(render()).some(node=>node.props?.label==='Space needed'),false,'Retired space filter is absent');
  expand('availability');expand('location');expand('more');
- for(const [group,a,b]of [['Load status','Empty vehicle','Partly loaded'],['Location source','GPS device','Driver’s phone'],['Stops','Multiple pickups','Multiple drop-offs'],['Updated','Within 12 hours','More than 12 hours ago']]){choose(group,a);choose(group,b);}
+ for(const [group,a,b]of [['Vehicle availability','Empty vehicle','Partly loaded'],['Location source','GPS device','Driver’s phone'],['Stops','Multiple pickups','Multiple drop-offs'],['Updated','Within 12 hours','More than 12 hours ago']]){choose(group,a);choose(group,b);}
  choose('Available space','50% or more');
  find(render(),node=>node.type==='MultipleConfigurationPicker').props.onChange('Cargo van,Pickup truck');
  const documents=find(render(),node=>typeof node.type==='function'&&node.props.label==='Vehicle documents');
@@ -98,15 +99,16 @@ test('native filter groups are ordered, icon-led, accessible and keep hidden dra
  const screen=component('../src/components/discovery-filters.tsx',{...common,'../location/capture':{captureNearbyLocation:async()=>{throw new Error('unused GPS');}},'./place-picker':{PlacePicker:'PlacePicker'},'./multiple-configuration-picker':{MultipleConfigurationPicker:'MultipleConfigurationPicker'}});
  const render=()=>screen.render('DiscoveryFilters',{initial:{originPlaceRef:'origin-ref',originLabel:'Addis Ababa',originRadiusKm:'25',destinationPlaceRef:'destination-ref',destinationLabel:'Adama',destinationRadiusKm:'50'},configurations:[],onApply(){},onClose(){}});
  const headings=()=>nodes(render()).filter(node=>node.type==='Pressable'&&node.props.testID===undefined&&Object.values(presentation.groups).some(group=>group.label===node.props.accessibilityLabel));
- assert.deepEqual(headings().map(node=>node.props.accessibilityLabel),['Vehicle','Area or route','Vehicle location','More filters']);
- assert.deepEqual(headings().map(node=>node.props.accessibilityState.expanded),[true,true,false,false]);
+ assert.deepEqual(headings().map(node=>node.props.accessibilityLabel),['Vehicle','Vehicle location','Area or route','More filters']);
+ assert.deepEqual(headings().map(node=>node.props['aria-expanded']),[true,false,false,false]);
  const vehicle=nodes(find(render(),node=>node.props?.testID==='capacity-filter-vehicle'));
  const vehicleTypeIndex=vehicle.findIndex(node=>node.type==='MultipleConfigurationPicker');
- const loadStatusIndex=vehicle.findIndex(node=>node.type?.name==='Options'&&node.props.label==='Load status');
+ const loadStatusIndex=vehicle.findIndex(node=>node.type?.name==='Options'&&node.props.label==='Vehicle availability');
  const availableSpaceIndex=vehicle.findIndex(node=>node.type?.name==='Options'&&node.props.label==='Available space');
- assert.ok(vehicleTypeIndex>=0&&vehicleTypeIndex<loadStatusIndex&&loadStatusIndex<availableSpaceIndex,'vehicle type, load status and available space follow the matching decision');
+ const locationIndex=vehicle.findIndex(node=>node.props?.testID==='capacity-filter-location');
+ assert.ok(vehicleTypeIndex>=0&&vehicleTypeIndex<loadStatusIndex&&loadStatusIndex<availableSpaceIndex&&availableSpaceIndex<locationIndex,'location is inside Vehicle below available space');
  const chevrons=()=>headings().map(header=>nodes(header).filter(node=>node.type==='AppIcon').at(-1)?.props.name);
- assert.deepEqual(chevrons(),['chevronUp','chevronUp','chevronDown','chevronDown']);
+ assert.deepEqual(chevrons(),['chevronUp','chevronDown','chevronDown','chevronDown']);
  assert.equal(nodes(render()).some(node=>node.type==='PlacePicker'&&node.props.label==='Vehicle in or near a city'),false);
  headings().find(node=>node.props.accessibilityLabel==='Vehicle location').props.onPress();
  const location=nodes(find(render(),node=>node.props?.testID==='capacity-filter-location'));
@@ -115,7 +117,9 @@ test('native filter groups are ordered, icon-led, accessible and keep hidden dra
  const sourceIndex=location.findIndex(node=>node.type?.name==='Options'&&node.props.label==='Location source');
  assert.ok(cityIndex>=0&&cityIndex<nearbyIndex&&nearbyIndex<sourceIndex,'location proceeds from city to nearby area to source');
  assert.ok(nodes(render()).some(node=>node.type==='AppIcon'&&node.props.name==='truck'));
- assert.equal(nodes(render()).some(node=>node.type==='PlacePicker'&&node.props.label==='Origin'),true,'existing endpoint links open their Route query');
+ assert.equal(nodes(render()).some(node=>node.type==='PlacePicker'&&node.props.label==='Origin'),false);
+ headings().find(node=>node.props.accessibilityLabel==='Area or route').props.onPress();
+ assert.equal(find(render(),node=>node.type==='PlacePicker'&&node.props.label==='Origin').props.value.label,'Addis Ababa','expanding the group reveals the saved route');
  const routeNodes=nodes(find(render(),node=>node.props?.testID==='capacity-filter-availability'));
  const routeIndex=predicate=>routeNodes.findIndex(predicate);
  const routeOrder=[
@@ -145,8 +149,10 @@ test('native filter controls consume the shared web/Expo labels, radii and defau
  assert.deepEqual(presentation.routeDistance,{defaultKm:50,choices:[['10','10 km'],['25','25 km'],['50','50 km'],['100','100 km'],['200','200 km']]});
  const screen=component('../src/components/discovery-filters.tsx',{...common,'../location/capture':{captureNearbyLocation:async()=>({approximateLat:9.1,approximateLng:38.8})},'./place-picker':{PlacePicker:'PlacePicker'},'./multiple-configuration-picker':{MultipleConfigurationPicker:'MultipleConfigurationPicker'}});
  const render=(initial={originPlaceRef:'origin-id',originLabel:'Addis Ababa',truckCityPlaceRef:'city-id',truckCityLabel:'Adama'})=>screen.render('DiscoveryFilters',{initial,configurations:[],onApply(){},onClose(){}});
- const expand=label=>{const button=find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel===label);if(!button.props.accessibilityState.expanded)button.props.onPress();};
- expand('Area or route');expand('More filters');
+ const expand=label=>{const button=find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel===label);if(!button.props['aria-expanded'])button.props.onPress();};
+ const locationHeader=find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Vehicle location');
+ assert.equal(locationHeader.props['aria-expanded'],false,'a saved city keeps its filter section collapsed');
+ expand('Area or route');expand('Vehicle location');expand('More filters');
  const optionGroups=()=>nodes(render()).filter(node=>typeof node.type==='function'&&Array.isArray(node.props.choices)).map(node=>node.type(node.props));
  const radioLabels=tree=>nodes(tree).filter(node=>node.type==='Pressable'&&node.props.accessibilityRole==='radio').map(node=>node.props.accessibilityLabel);
  assert.deepEqual(radioLabels(optionGroups().find(group=>nodes(group).some(node=>node.type==='Text'&&node.props.children==='Origin range'))),presentation.routeDistance.choices.map(([,label])=>label));
@@ -170,10 +176,14 @@ test('native Area/Route query drafts survive switching while Apply prunes only t
  const screen=component('../src/components/discovery-filters.tsx',{...common,'../location/capture':{captureNearbyLocation:async()=>{throw new Error('unused GPS');}},'./place-picker':{PlacePicker:'PlacePicker'},'./multiple-configuration-picker':{MultipleConfigurationPicker:'MultipleConfigurationPicker'}}),applied=[];
  const initial={currentAreaPlaceRef:'area-ref',currentAreaLabel:'Addis Ababa',currentAreaRadiusKm:'25',originPlaceRef:'origin-ref',originLabel:'Adama',originRadiusKm:'50',destinationPlaceRef:'destination-ref',destinationLabel:'Dire Dawa',directionMode:'EITHER',stopOption:'MULTI_PICK',truckCityPlaceRef:'point-ref',truckCityLabel:'Sebeta',locationSource:'GPS',status:'PARTIAL'};
  const render=()=>screen.render('DiscoveryFilters',{initial,configurations:[],onApply:value=>applied.push(value),onClose(){}});
+ find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Area or route').props.onPress();
  const mode=label=>find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel===label&&node.props.accessibilityRole==='radio');
  assert.equal(mode('Route').props.accessibilityState.checked,true);mode('Area').props.onPress();
  let area=find(render(),node=>node.type==='PlacePicker'&&node.props.label==='Area');assert.deepEqual(area.props.value,{placeRef:'area-ref',label:'Addis Ababa'});area.props.onChange({placeRef:'second-area',label:'Bishoftu'});
  mode('Route').props.onPress();assert.equal(find(render(),node=>node.type==='PlacePicker'&&node.props.label==='Origin').props.value.placeRef,'origin-ref');
+ const timeFields=()=>find(render(),node=>node.type==='JourneyTimeFields');
+ timeFields().props.onDeparture('2027-02-03 07:30');timeFields().props.onArrival('2027-02-03 11:00');
  find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Show vehicles').props.onPress();assert.equal(applied[0].currentAreaPlaceRef,undefined);assert.equal(applied[0].currentAreaLabel,undefined);assert.equal(applied[0].currentAreaRadiusKm,undefined);assert.equal(applied[0].originPlaceRef,'origin-ref');assert.equal(applied[0].truckCityPlaceRef,'point-ref');assert.equal(applied[0].locationSource,'GPS');
+ assert.equal(applied[0].departAfter,'2027-02-03T04:30:00.000Z');assert.equal(applied[0].arriveBy,'2027-02-03T08:00:00.000Z');
  mode('Area').props.onPress();assert.equal(find(render(),node=>node.type==='PlacePicker'&&node.props.label==='Area').props.value.placeRef,'second-area');find(render(),node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Show vehicles').props.onPress();assert.equal(applied[1].currentAreaPlaceRef,'second-area');assert.equal(applied[1].currentAreaRadiusKm,'25');for(const key of ['originPlaceRef','originLabel','originRadiusKm','destinationPlaceRef','destinationLabel','directionMode'])assert.equal(applied[1][key],undefined,key);assert.equal(applied[1].stopOption,'MULTI_PICK','stop preferences remain independent of query shape');assert.equal(applied[1].status,'PARTIAL');assert.equal(applied[1].truckCityPlaceRef,'point-ref');assert.equal(initial.currentAreaPlaceRef,'area-ref');
 });

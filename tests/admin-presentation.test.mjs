@@ -64,7 +64,7 @@ test('Capacity details humanize enum display while preserving status and Off Dut
  const record={id,view:'CAPACITY',platform_number:'LG-002',status:'PARTIAL',visibility:'PRIVATE_NETWORK',availability_geometry:'ROUTE',make:'Make',model:'Model',owner_name:'Fleet'};
  const page=load('src/app/admin/operations/[view]/[id]/page.tsx',{'@/lib/platform-admin.js':{hasPlatformPermission:()=>true,PLATFORM_PERMISSIONS:{OPERATIONS:'OPERATIONS'},getAdminOperationRecord:async()=>record}});
  const tree=await page({params:Promise.resolve({view:'capacity',id}),searchParams:Promise.resolve({})});
- assert.equal(text(all(tree,'PageHeader')[0].props.title).replace(/\s+/g,' ').trim(),'LG-002 · Partial');assert.ok(text(tree).includes('Private capacity'));assert.equal(all(tree,'StatusPill')[0].props.status,'PARTIAL');
+ assert.equal(text(all(tree,'PageHeader')[0].props.title).replace(/\s+/g,' ').trim(),'LG-002 · Partial');assert.ok(text(tree).includes('Private Network'));assert.equal(all(tree,'StatusPill')[0].props.status,'PARTIAL');
  const form=all(tree,'form').find(n=>n.props.action===`/api/admin/records/capacity/${id}`);assert.ok(form);assert.ok(all(form,'button').some(n=>n.props.name==='command'&&n.props.value==='OFF_DUTY'));
 });
 test('Driver Open owner names the exact organization kind missing from the bounded Driver projection',async()=>{
@@ -179,7 +179,7 @@ test('content review humanizes display but retains exact moderation command valu
   const client={from:()=>({select:()=>({order:()=>({range:async()=>({data:[request],error:null,count:1})})})})};
   const page=load('src/app/admin/reviews/content/page.tsx',{'@/lib/supabase-adapter.js':{createSupabaseAdminClient:()=>client}});
   const tree=await page({searchParams:Promise.resolve({})});assert.ok(text(tree).includes('Picture'));assert.equal(all(tree,'StatusPill')[0].props.status,status);
-  assert.ok(all(tree,'Link').some(n=>n.props.href==='/providers/provider'));
+  assert.ok(all(tree,'a').some(n=>n.props.href==='/providers/provider'));
   const decisions=all(tree,'button').filter(n=>n.props.name==='decision').map(n=>n.props.value);
   assert.deepEqual(decisions,status==='PENDING'?['HIDE','DISMISS']:status==='HIDDEN'?['RESTORE']:[]);
  }

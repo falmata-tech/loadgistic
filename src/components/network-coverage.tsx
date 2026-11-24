@@ -20,12 +20,12 @@ export function NetworkCoverage({ coverage }: { coverage: any }) {
     </Localized>
     {coverage.routes?.length?<RouteCoverageMap routes={[]} comparisonRoutes={coverage.routes}/>:null}
     <div className="coverage-businesses">
-      {coverage.businesses.map((business:any) => <Link href={`/app/providers/${business.handle}`} className="coverage-business" key={business.id}>
+      {coverage.businesses.map((business:any) => <a href={`/app/providers/${business.handle}`} className="coverage-business" key={business.id}>
         <Building2 aria-hidden="true"/>
         <span><strong>{business.name}</strong><small><MapPin aria-hidden="true"/>{business.operating_regions || business.city || 'Locations not added'}</small></span>
         <span className={`status ${business.matched_places.length ? 'green' : 'expired'}`}>{business.coverage_label}</span>
         {business.matched_places.length ? <span className="coverage-match">{business.matched_places.map(titleCase).join(' · ')}</span> : null}
-      </Link>)}
+      </a>)}
       {!coverage.businesses.length ? <div className="empty-state compact"><Text message="Shippers and brokers who save this fleet as a partner will appear here."/></div> : null}
     </div>
     <p className="meta"><Text message="Coordinate and activity match. Not a service guarantee."/></p>

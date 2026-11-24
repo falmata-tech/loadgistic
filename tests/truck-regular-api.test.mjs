@@ -1,3 +1,4 @@
+import * as journey from '../src/lib/capacity-journey.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -15,7 +16,7 @@ function nativeRoute(actor={id:'actor',driver_kind:'COMPANY'},application={}){
  const calls=[];
  const route=load('src/app/api/mobile/regular-service/route.ts',{
   '@/lib/mobile/server':{MobileError,mobileActor:async()=>{if(!actor)throw new MobileError(401,'UNAUTHORIZED','Sign in');return actor;},mobileBody:request=>request.json(),mobileJson:value=>Response.json(value),mobileFailure:error=>Response.json({error:{code:error.code||'UNAVAILABLE'}},{status:error.status||500})},
-  '@/lib/provider-capacity.js':{getProviderRegularCapacity:async(user,input)=>{calls.push(['read',user,input]);return {corridors:[]};},getProviderCapacityWorkspace:async()=>({corridors:[]}),addProviderRegularCapacity:async(...args)=>calls.push(['save',...args]),removeProviderRegularCapacity:async(...args)=>calls.push(['remove',...args]),...application},
+  '@/lib/provider-capacity.js':{getProviderRegularCapacity:async(user,input)=>{calls.push(['read',user,input]);return {preferredCoverage:[]};},getProviderCapacityWorkspace:async()=>({preferredCoverage:[]}),addProviderRegularCapacity:async(...args)=>calls.push(['save',...args]),removeProviderRegularCapacity:async(...args)=>calls.push(['remove',...args]),...application},
   '@/lib/mobile/regular-contract':regular(),'@/lib/errors':{errorMessage:()=> 'Please retry'},
  });return {route,calls};
 }
@@ -40,9 +41,9 @@ test('old native route mutation and unauthenticated requests fail closed',async(
  const anonymous=nativeRoute(null);assert.equal((await anonymous.route.POST(post(command))).status,401);assert.equal((await anonymous.route.GET(new Request('http://localhost/api/mobile/regular-service'))).status,401);assert.equal(anonymous.calls.length,0);
 });
 test('application scoped read never chooses an unrelated, unbound or stale provider route',async()=>{
- const workspace={vehicles:[{id:vehicleId,assigned_driver:{id:expectedDriverId}}],corridors:[{id:'legacy'},{id:'stale',vehicle_id:vehicleId,driver_user_id:'other-driver'},{id:routeId,vehicle_id:vehicleId,driver_user_id:expectedDriverId}]};
+ const workspace={vehicles:[{id:vehicleId,assigned_driver:{id:expectedDriverId}}],preferredCoverage:[{id:'legacy'},{id:'stale',vehicle_id:vehicleId,driver_user_id:'other-driver'},{id:routeId,vehicle_id:vehicleId,driver_user_id:expectedDriverId}]};
  const application=load('src/lib/provider-capacity.js',{'./provider-capacity/supabase.js':{getSupabaseProviderCapacityWorkspace:async()=>workspace}});
- const scoped=await application.getProviderRegularCapacity({id:'actor'},{vehicleId,expectedDriverId});assert.deepEqual(scoped.corridors.map(item=>item.id),[routeId]);
+ const scoped=await application.getProviderRegularCapacity({id:'actor'},{vehicleId,expectedDriverId});assert.deepEqual(scoped.preferredCoverage.map(item=>item.id),[routeId]);
  await assert.rejects(()=>application.getProviderRegularCapacity({id:'actor'},{vehicleId,expectedDriverId:'other-driver'}),/TRUCK_DRIVER_CHANGED/);
  await assert.rejects(()=>application.getProviderRegularCapacity({id:'actor'},{vehicleId:'foreign',expectedDriverId}),/NOT_FOUND/);
 });
@@ -73,7 +74,7 @@ test('web regular forms retain exact truck context and reject repeated or missin
 });
 test('Supabase adapter sends scoped regular commands and never sends retired Services',async()=>{
  const calls=[],client={rpc:async(name,args)=>{calls.push([name,args]);return {data:routeId,error:null};}};
- const capacity=load('src/lib/provider-capacity/supabase.js',{'../private-capacity-contact.js':{},'../security.js':{},'../domain.js':{},'../supabase-adapter.js':{createSupabaseAdminClient:()=>client},'../independent-driver.js':{},'../phone-location-command.js':{},'../provider-authority.js':{}});
+ const capacity=load('src/lib/provider-capacity/supabase.js',{'../capacity-journey.js':journey,'../private-capacity-contact.js':{},'../security.js':{},'../domain.js':{},'../supabase-adapter.js':{createSupabaseAdminClient:()=>client},'../independent-driver.js':{},'../phone-location-command.js':{},'../provider-authority.js':{}});
  const actor={id:'authenticated-actor'};
  await capacity.addSupabaseProviderRegularCapacity(actor,command);
  await capacity.addSupabaseProviderRegularCapacity(actor,command,routeId);

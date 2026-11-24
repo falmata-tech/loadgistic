@@ -54,7 +54,7 @@ test('opening configuration choices loads their pictures without changing the su
 
 test('multi option groups toggle independently, preserve malformed input for denial and clear explicitly',()=>{
  const {CapacityMultiOptions}=component('capacity-multi-options');let value='EMPTY';
- const props={name:'status',label:"Truck's current load",anyLabel:'Any available truck',options:[['EMPTY','Empty truck'],['PARTIAL','Partly loaded']],onChange:next=>{value=next;}};
+ const props={name:'status',label:"Vehicle availability",anyLabel:'Any available truck',options:[['EMPTY','Empty truck'],['PARTIAL','Partly loaded']],onChange:next=>{value=next;}};
  const render=()=>CapacityMultiOptions({...props,value});
  let tree=render();inputs(tree).find(item=>item.props.value==='PARTIAL').props.onChange({target:{checked:true}});assert.equal(value,'EMPTY,PARTIAL');
  tree=render();inputs(tree).find(item=>item.props.value==='EMPTY').props.onChange({target:{checked:false}});assert.equal(value,'PARTIAL');

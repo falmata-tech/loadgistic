@@ -24,16 +24,17 @@ test('priority language explains public capacity and Tracking without retired tr
   await expect(page.locator('html')).toHaveAttribute('lang',locale);await expect(page.locator('.market-introduction h1')).toHaveText(messages['Work better with transporters to serve your customers']);
   await expect(page.locator('.public-assistance-dock,.transport-request-form')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:info.outputPath(`${locale}-public-capacity.png`)});
-  await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.getByLabel(messages['Tracking link'],{exact:true})).toBeVisible();await expect(page.getByLabel(messages['Tracking code'],{exact:true})).toBeVisible();await expect(page.getByText(messages['The link and code open this load only.'],{exact:true})).toBeVisible();await expect(page.getByLabel(messages['Email'],{exact:true})).toHaveCount(0);
+  await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.getByRole('link',{name:messages['Sign in to view your shipments'],exact:true})).toBeVisible();await page.goto('/track/'+'b'.repeat(43));await expect(page.getByLabel(messages['Tracking link'],{exact:true})).toHaveCount(0);await expect(page.getByLabel(messages['Tracking code'],{exact:true})).toBeVisible();await expect(page.getByText(messages['The link and code open this shipment only.'],{exact:true})).toBeVisible();await expect(page.getByLabel(messages['Email'],{exact:true})).toHaveCount(0);
   await page.goto('/login',{waitUntil:'domcontentloaded'});await expect(page.locator('.auth-driver-hint')).toHaveText(messages['Added by your company? Use the email your fleet owner registered for you.']);
  }
 });
 
-test('stalled Tracking unlock ends its busy state and retains both entered credentials for retry',async({page}:{page:Page})=>{
- await page.goto('/track',{waitUntil:'domcontentloaded'});await expect(page.locator('.public-header-language select')).toHaveCount(1);await expect(page.locator('.public-header-language select')).toBeEnabled();await expect(page.locator('.tracking-entry-map .leaflet-container')).toBeVisible();await page.clock.install();
+test('stalled Tracking unlock retains the entered code for the same link',async({page}:{page:Page})=>{
+ const link='/track/'+'a'.repeat(43);
+ await page.goto(link,{waitUntil:'domcontentloaded'});await expect(page.locator('.public-header-language select')).toHaveCount(1);await expect(page.locator('.public-header-language select')).toBeEnabled();await expect(page.locator('.tracking-entry-map .leaflet-container')).toBeVisible();await page.clock.install();
  let calls=0;await page.route('**/api/tracking/access',async route=>{calls++;await new Promise<void>(resolve=>setTimeout(resolve,20000));await route.abort().catch(()=>{});});
- const link='https://loadgistic.com/track/'+'a'.repeat(43),code='ABCD-EF23';
- await page.getByLabel('Tracking link',{exact:true}).fill(link);await page.getByLabel('Tracking code',{exact:true}).fill(code);const map=await page.locator('.tracking-entry-map .leaflet-container').elementHandle();expect(map).not.toBeNull();
+ const code='ABCD-EF23';
+ await page.getByLabel('Tracking code',{exact:true}).fill(code);const map=await page.locator('.tracking-entry-map .leaflet-container').elementHandle();expect(map).not.toBeNull();
  await page.getByRole('button',{name:'Open tracking',exact:true}).click();
- await expect.poll(()=>calls).toBe(1);await page.clock.runFor(16000);await expect(page.locator('.form-error[role=alert]')).toContainText('Check both and try again.');await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();await expect(page.getByLabel('Tracking link',{exact:true})).toHaveValue(link);await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue(code);expect(await map!.evaluate(element=>element.isConnected)).toBe(true);expect(calls).toBe(1);await page.unrouteAll({behavior:'ignoreErrors'});
+ await expect.poll(()=>calls).toBe(1);await page.clock.runFor(16000);await expect(page.locator('.form-error[role=alert]')).toContainText('Check both and try again.');await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();await expect(page).toHaveURL(new RegExp(link+'$'));await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue(code);expect(await map!.evaluate(element=>element.isConnected)).toBe(true);expect(calls).toBe(1);await page.unrouteAll({behavior:'ignoreErrors'});
 });

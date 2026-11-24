@@ -45,7 +45,7 @@ test('city and distance filter matches reported truck locations without GPS perm
   const invalid=await (await page.request.get('/api/public/capacity?truckCityPlaceRef=missing-city')).json();
   expect(invalid.items).toEqual([]);expect(invalid.filterError).toContain('Choose a suggested place');
   expect((await page.request.get(`/api/shared-capacity?truckCityPlaceRef=${encodeURIComponent(cityRef)}`)).status()).toBe(410);
-  await openCapacityFilterDialog(page);
+  await openCapacityFilterDialog(page,'location');
   await expect(page.getByLabel('In or near a city',{exact:true})).not.toHaveValue('');
   await expect(page.getByRole('group',{name:'Vehicle location'}).getByLabel('Distance from city',{exact:true})).toHaveValue('25');
 });

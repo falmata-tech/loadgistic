@@ -1,18 +1,23 @@
+import {capacityJourneyWindow} from './capacity-journey.js';
 import {capacityRouteAlignmentMatch,capacityRoutePointMatch,serviceAreaGeometryMatch} from './route-matching.js';
 
 // Eligibility is separate from its presentation: every supplied criterion must pass.
 export function capacityGeographicMatch(item,filters={},originPlace=null,destinationPlace=null,areaPlace=null){
   const geometry=String(filters.geometry||'').toUpperCase();
   const recurring=item.recurring_corridors||[];
+  const window=capacityJourneyWindow(filters.departAfter,filters.arriveBy);
+  const timed=Boolean(window.start||window.end);
+  const timingMatches=(!window.start||Date.parse(item.journey_start_at)>=Date.parse(window.start))&&
+    (!window.end||Date.parse(item.journey_end_at)<=Date.parse(window.end));
   const routes=[],areas=[];
   if(!geometry||geometry==='ROUTE'){
-    if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='ROUTE')routes.push({points:item.current_route_points,source:'Planned route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
-    for(const signal of recurring.filter(entry=>entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Preferred corridor',directionMode:'EITHER'});
+    if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='ROUTE'&&timingMatches)routes.push({points:item.current_route_points,source:'Planned route',directionMode:filters.directionMode==='EITHER'?'EITHER':'DIRECT'});
+    for(const signal of recurring.filter(entry=>!timed&&entry.geometry==='ROUTE'))routes.push({points:signal.route_points,source:'Preferred route',directionMode:'EITHER'});
   }
-  if((item.status==='EMPTY'||item.status==='PARTIAL')&&(!geometry||geometry==='RADIUS')){
-    if(item.current_signal_geometry_visible!==false&&item.availability_geometry==='RADIUS')areas.push({points:item.capacity_area_boundary,source:'Planned area'});
+  if(!timed&&(item.status==='EMPTY'||item.status==='PARTIAL')&&(!geometry||geometry==='RADIUS')){
     for(const signal of recurring.filter(entry=>entry.geometry==='RADIUS'))areas.push({points:signal.area_boundary,source:'Preferred area'});
   }
+  if(timed&&!routes.length)return {matched:false,label:null};
   const labels=[];
   const point=place=>({lat:place.center_lat,lng:place.center_lng});
   const areaMatches=(place,radius)=>areas.map(area=>({...area,...serviceAreaGeometryMatch(point(place),area.points,{searchRadiusKm:radius})})).filter(area=>area.matched);

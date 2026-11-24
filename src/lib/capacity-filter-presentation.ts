@@ -27,17 +27,22 @@ export const CAPACITY_FILTER_PRESENTATION={
   },
 } as const;
 
+type CapacityFilterGroup=keyof typeof CAPACITY_FILTER_PRESENTATION.groups;
+export const CAPACITY_FILTER_DEFAULT_SECTIONS:Readonly<Record<CapacityFilterGroup,boolean>>={
+  vehicle:true,availability:false,location:false,more:false,
+};
+
 export type CapacityQueryShape='AREA'|'ROUTE';
-type RouteQuery={origin?:string;originLabel?:string;originPlaceRef?:string;destination?:string;destinationLabel?:string;destinationPlaceRef?:string};
+type RouteQuery={origin?:string;originLabel?:string;originPlaceRef?:string;destination?:string;destinationLabel?:string;destinationPlaceRef?:string;departAfter?:string;arriveBy?:string};
 /** This selects a search shape, never the vehicle offer's geometry or source. */
 export function initialCapacityQueryShape(query:RouteQuery):CapacityQueryShape{
-  return [query.originPlaceRef,query.origin,query.originLabel,query.destinationPlaceRef,query.destination,query.destinationLabel].some(value=>Boolean(value?.trim()))?'ROUTE':'AREA';
+  return [query.departAfter,query.arriveBy,query.originPlaceRef,query.origin,query.originLabel,query.destinationPlaceRef,query.destination,query.destinationLabel].some(value=>Boolean(value?.trim()))?'ROUTE':'AREA';
 }
 /** Keep inactive drafts locally, while sending only the applied query shape. */
 export function capacityQueryForShape<T extends object>(draft:T,shape:CapacityQueryShape):Partial<T>{
   const next={...draft};
   const inactive=shape==='AREA'
-    ?['origin','originLabel','originPlaceRef','originRadiusKm','destination','destinationLabel','destinationPlaceRef','destinationRadiusKm','directionMode']
+    ?['origin','originLabel','originPlaceRef','originRadiusKm','destination','destinationLabel','destinationPlaceRef','destinationRadiusKm','directionMode','departAfter','arriveBy']
     :['currentArea','currentAreaLabel','currentAreaPlaceRef','currentAreaRadiusKm'];
   for(const field of inactive)Reflect.deleteProperty(next,field);
   return next;

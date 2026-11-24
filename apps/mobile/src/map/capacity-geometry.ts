@@ -29,9 +29,9 @@ export function signalPaths(item:CapacitySignal,zoom:number):{kind:'location'|'c
  const paths:{kind:'location'|'current'|'regular';points:LngLat[]}[]=[],ring=locationRing(item);
  if(ring.length)paths.push({kind:'location',points:ring});
  let reference:{x:number;y:number}[]=[];
- if(item.currentVisible&&item.currentPoints.length>=(item.geometry==='RADIUS'?3:2)){
-  const closed=item.geometry==='RADIUS'; const points=coordinates(item.currentPoints);
-  reference=offsetSignalPath((closed?close(points):points).map(p=>project(p,laneZoom)),closed?-12:-6,closed,[],limit);
+ if(item.currentVisible&&item.geometry==='ROUTE'&&item.currentPoints.length>=2){
+  const points=coordinates(item.currentPoints);
+  reference=offsetSignalPath(points.map(p=>project(p,laneZoom)),-6,false,[],limit);
   paths.push({kind:'current',points:reference.map(p=>unproject(p,laneZoom))});
  }
  for(const regular of item.regular){const closed=regular.geometry==='RADIUS',points=coordinates(regular.points);if(points.length<(closed?3:2))continue;
@@ -41,7 +41,7 @@ export function signalPaths(item:CapacitySignal,zoom:number):{kind:'location'|'c
  return paths;
 }
 export function signalBounds(items:CapacitySignal[]):[number,number,number,number]|null {
- const points=items.flatMap(item=>[...(markerLocation(item)?[markerLocation(item)!]:[]),...(item.currentVisible?coordinates(item.currentPoints):[]),...item.regular.flatMap(row=>coordinates(row.points)),...locationRing(item)]);
+ const points=items.flatMap(item=>[...(markerLocation(item)?[markerLocation(item)!]:[]),...(item.currentVisible&&item.geometry==='ROUTE'?coordinates(item.currentPoints):[]),...item.regular.flatMap(row=>coordinates(row.points)),...locationRing(item)]);
  if(!points.length)return null;
  let west=Infinity,south=Infinity,east=-Infinity,north=-Infinity;
  for(const [lng,lat]of points){west=Math.min(west,lng);south=Math.min(south,lat);east=Math.max(east,lng);north=Math.max(north,lat);}

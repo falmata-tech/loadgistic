@@ -5,7 +5,7 @@ import {SiteTopbar} from './site-topbar';
 import {providerWorkspaceCapabilities} from '@/lib/provider-workspace.js';
 import type {SiteNavigationUser} from './site-navigation';
 
-export async function PublicHeader({user:providedUser}:{user?:Awaited<ReturnType<typeof getCurrentUser>>}={}) {
+export async function PublicHeader({user:providedUser,documentNavigation=false}:{user?:Awaited<ReturnType<typeof getCurrentUser>>;documentNavigation?:boolean}={}) {
   const user = providedUser===undefined?await getCurrentUser():providedUser;
   const capabilities=user?providerWorkspaceCapabilities(user):null;
   const navUser:SiteNavigationUser|null=user?{
@@ -19,8 +19,8 @@ export async function PublicHeader({user:providedUser}:{user?:Awaited<ReturnType
   }:null;
   return (
     <>
-      <SiteTopbar user={navUser}/>
-      <PublicMobileNav user={navUser}/>
+      <SiteTopbar user={navUser} documentNavigation={documentNavigation}/>
+      <PublicMobileNav user={navUser} documentNavigation={documentNavigation}/>
     </>
   );
 }

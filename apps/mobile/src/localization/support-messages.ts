@@ -45,7 +45,7 @@ const rows = [
  ['Open or share PDF','PDF ክፈት ወይም አጋራ','PDF bani ykn qoodi'],
  ['Open, save or share a copy using an app on your phone. Only share it with people you trust.','በስልክዎ ባለ መተግበሪያ ቅጂ ይክፈቱ፣ ያስቀምጡ ወይም ያጋሩ። ለሚያምኗቸው ሰዎች ብቻ ያጋሩ።','Appii bilbila keessanii fayyadamuun garagalcha banaa, kuusaa ykn qoodaa. Namoota amantan qofatti qoodaa.'],
 ] as const;
-export const supportMessages:Record<Locale,Messages>={en:{},am:{},om:{}};
+export const supportMessages:Record<Locale,Messages>={en:{},so:{},am:{},om:{}};
 for(const [key,am,om] of rows){
  supportMessages.am[key]=am;supportMessages.om[key]=om;
 }

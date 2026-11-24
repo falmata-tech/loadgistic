@@ -24,7 +24,7 @@ function AccountPreview({provider,walkthrough,fallbackTime,onClose}:{provider:an
       <div className="featured-truck-dialog-visual"><ProviderIdentity provider={provider} size="large"/></div>
       <div className="featured-truck-dialog-copy"><small><Text message="Transport Provider"/></small><h3 id="featured-truck-dialog-title">{provider.name}</h3><p>@{provider.handle}</p><p><Truck aria-hidden="true"/>{provider.fleet_size} <Text message={provider.fleet_size===1?'vehicle':'vehicles'}/></p>{provider.base_place?<p><MapPin aria-hidden="true"/>{provider.base_place}</p>:null}</div>
       <div className="featured-truck-dialog-time"><Clock3 aria-hidden="true"/><span><small><Text message="Programme time"/></small><strong>{featuredRangeLabel(walkthrough?.label)||fallbackTime}</strong></span></div>
-      <div className="expo-dialog-actions"><Link className="button" href={`/@${encodeURIComponent(provider.handle)}`}><Building2 aria-hidden="true"/><Text message="Transporter profile"/></Link>{provider.public_capacity_available&&provider.map_href?<Link className="button secondary" href={provider.map_href}><Truck aria-hidden="true"/><Text message="View available vehicles"/></Link>:null}</div>
+      <div className="expo-dialog-actions"><a className="button" href={`/@${encodeURIComponent(provider.handle)}`}><Building2 aria-hidden="true"/><Text message="Transporter profile"/></a>{provider.public_capacity_available&&provider.map_href?<Link className="button secondary" href={provider.map_href}><Truck aria-hidden="true"/><Text message="View available vehicles"/></Link>:null}</div>
     </article>
   </dialog>;
 }

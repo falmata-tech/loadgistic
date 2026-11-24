@@ -140,13 +140,14 @@ test('broker creates a pending load and shares link/code before a provider conne
   await page.getByRole('checkbox',{name:'Include approximate location when the provider has enabled it.',exact:true}).check();
   await page.getByRole('button',{name:'Create Tracking link',exact:true}).click();const issuedResponse=await issued;expect(issuedResponse.status()).toBe(201);const link=(await issuedResponse.json()).data.link;
   await expect(page.getByLabel('Tracking link',{exact:true})).toHaveValue(link.url);await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue(link.code);
+  await expect(page.getByRole('button',{name:'Copy tracking ID',exact:true})).toBeVisible();
   await page.getByLabel('Truck number, driver or provider').fill(truckNumber);
   const picker=page.locator('section').filter({has:page.getByRole('heading',{name:'Request a vehicle',exact:true})}).last();
   await picker.getByRole('button',{name:'Search',exact:true}).click();
   await picker.getByRole('button',{name:/^Request tracking/}).click();
   await expect(picker.getByText(/Requested vehicle/)).toBeVisible({timeout:15000});
   const options={baseURL:info.project.use.baseURL,viewport:page.viewportSize()!,isMobile:Boolean(info.project.use.isMobile),hasTouch:Boolean(info.project.use.hasTouch)};
-  mark('GUEST_PENDING_OPEN');guestContext=await browser.newContext(options);const guest=await guestContext.newPage(),shared=await openTrackingFixtureLink(guest,link);
+  mark('GUEST_PENDING_OPEN');guestContext=await browser.newContext(options);const guest=await guestContext.newPage(),shared=await openTrackingFixtureLink(guest,link,info.project.use.isMobile?'id':'link');
   expect(shared.id).toBe(sessionId);expect(shared.state).toBe('PENDING_PROVIDER');expect(shared.brokerReference).toBeUndefined();expect(shared.tracking).toBeNull();await expect(guest.locator('.tracking-truck-marker')).toHaveCount(0);
   mark('PROVIDER_SIGN_IN');providerContext=await browser.newContext({...options,geolocation:{latitude:9.031234,longitude:38.741234,accuracy:3}});
   await providerContext.grantPermissions(['geolocation'],{origin:new URL(info.project.use.baseURL!).origin});

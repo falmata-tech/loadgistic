@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ScrollView,Text,View} from 'react-native';
-import {useLocalSearchParams} from 'expo-router';
+import {router,useLocalSearchParams} from 'expo-router';
 import {useTrackingSession} from '../session/tracking-session-provider';
 import {useLanguage} from '../localization/provider';
 import {Button,Copy,ErrorText,Field,LoadingSpinner,palette} from '../components/ui';
@@ -14,14 +14,21 @@ export default function VisitorTracking(){const {linkToken}=useLocalSearchParams
 export function TrackingLinkAccess(props:{linkToken?:string;sessionId?:string}){return <TrackingLinkAccessView key={`${props.linkToken||''}:${props.sessionId||''}`} {...props}/>;}
 function TrackingLinkAccessView({linkToken,sessionId}:{linkToken?:string;sessionId?:string}){
  const {controller,snapshot}=useTrackingSession(),{t}=useLanguage(),lock=useRef(false);
- const [link,setLink]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [id,setId]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const matchingLink=!linkToken||controller.matchesLink(linkToken),view=matchingLink&&snapshot.session&&(!sessionId||snapshot.session.id===sessionId)?snapshot.session:null;
  useEffect(()=>{if(linkToken&&!controller.matchesLink(linkToken))void controller.clear();},[linkToken,controller]);
- async function open(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await controller.open(linkToken||link,code);setCode('');setLink('');}catch{setError('This Tracking link or code is unavailable. Check both and try again.');}finally{lock.current=false;setBusy(false);}}
+ async function open(){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await controller.open(linkToken||id,code);setId('');setCode('');}catch{setError(linkToken?'This Tracking link or code is unavailable. Check both and try again.':'This tracking ID or code is unavailable. Check both and try again.');}finally{lock.current=false;setBusy(false);}}
  if(view)return <TrackingGuestView/>;
  if(matchingLink&&snapshot.sessionId&&!snapshot.foreground)return <TrackingEntrySurface><Copy message="Private access is paused while the app is in the background."/></TrackingEntrySurface>;
  if(matchingLink&&snapshot.sessionId&&snapshot.needsRead)return <TrackingEntrySurface><LoadingSpinner/><Copy message="Checking Tracking access"/><Button secondary message="Refresh updates" onPress={()=>void controller.read(snapshot.sessionId!).catch(()=>setError('Could not refresh Tracking. Please try again.'))}/><ErrorText message={error||snapshot.notice}/></TrackingEntrySurface>;
- return <TrackingEntrySurface><Text accessibilityRole="header" style={{fontSize:24,fontWeight:'700',color:palette.ink}}>{t('Follow your shipment')}</Text><Copy message={linkToken?"Enter the code you received with this link.":"Enter the tracking link and code you received."}/>{!!snapshot.notice&&<Copy>{t(snapshot.notice)}</Copy>}{!linkToken&&<Field message="Tracking link" value={link} onChangeText={setLink} autoCapitalize="none" autoComplete="off" maxLength={2048} editable={!busy}/>}<Field message="Tracking code" value={code} onChangeText={value=>setCode(value.toUpperCase())} autoCapitalize="characters" autoComplete="off" maxLength={9} placeholder="XXXX-XXXX" editable={!busy}/><Copy message="The link and code open this load only."/><ErrorText message={error}/><Button message="Open tracking" busy={busy} onPress={()=>void open()}/></TrackingEntrySurface>;
+ return <TrackingEntrySurface>
+  <Text accessibilityRole="header" style={{fontSize:24,fontWeight:'700',color:palette.ink}}>{t('Follow your shipment')}</Text>
+  <Copy message={linkToken?'Enter the code you received with this link.':'Enter the tracking ID and code you received.'}/>
+  {!!snapshot.notice&&<Copy>{t(snapshot.notice)}</Copy>}
+  {!linkToken?<Field message="Tracking ID" value={id} onChangeText={setId} autoCapitalize="none" autoComplete="off" maxLength={2048} editable={!busy}/>:null}
+  <Field message="Tracking code" value={code} onChangeText={value=>setCode(value.toUpperCase())} autoCapitalize="characters" autoComplete="off" maxLength={9} placeholder="XXXX-XXXX" editable={!busy}/><Copy message={linkToken?'The link and code open this shipment only.':'Tracking access is for one shipment.'}/><ErrorText message={error}/><Button message="Open tracking" busy={busy} onPress={()=>void open()}/>
+  {!linkToken?<Button secondary message="Sign in to view your shipments" onPress={()=>router.push('/account')}/>:null}
+ </TrackingEntrySurface>;
 }
 function TrackingEntrySurface({children}:{children:import('react').ReactNode}){
  return <View style={{flex:1,minHeight:300}}><View style={{position:'absolute',top:0,left:0,right:0,bottom:0}}><Map style={{flex:1}} mapStyle={mapStyle} attribution><Camera initialViewState={{center:[39.5,9],zoom:5}}/></Map></View><ScrollView keyboardShouldPersistTaps="handled" pointerEvents="box-none" style={{flexGrow:0,maxHeight:'100%'}} contentContainerStyle={{padding:18,paddingBottom:40}}><View style={{padding:20,borderRadius:16,backgroundColor:'#fff',gap:14}}>{children}</View></ScrollView></View>;

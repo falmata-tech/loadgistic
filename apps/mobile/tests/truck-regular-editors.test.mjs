@@ -1,3 +1,6 @@
+import {capacityJourneyInput,capacityJourneyWindow} from '../../../src/lib/capacity-journey.js';
+import {capacityCoverageLabel} from '../../../src/lib/capacity-coverage-label.js';
+import {localizedSavedUpdate} from '../../../src/lib/i18n/update-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -12,7 +15,7 @@ import {capacityMapData,capacityStatuses,capacityColors,capacitySourceIds,capaci
 import {capacityDetailFrame} from '../src/map/capacity-detail-frame.ts';
 import {capacityMapColors,capacityStatusPresentation} from '../src/theme/capacity-status-presentation.ts';
 import {locationRadiusMinimumZoom} from '../../../src/lib/map-signal-offset.js';
-import {reportedSpacePercent} from '../../../src/lib/capacity-space-estimate.js';
+import {availableSpacePercent,emptyShipmentPreferenceLabel} from '../../../src/lib/capacity-space-estimate.js';
 import {cargoPhotoCollectionPath} from '../src/api/cargo-space-photo-path.ts';
 import {capacityLoadExplanation} from '../../../src/lib/capacity-load-preferences.js';
 import {translateMessage} from '../../../src/lib/i18n/core.js';
@@ -44,7 +47,7 @@ const place=label=>({placeRef:label,label,coordinate:[38.7,9.0]});
 const service=(vehicleId=vehicleA,driverId=driverA)=>({id:vehicleId,vehicleId,driverId,geometry:'ROUTE',route:[place('Adama'),place('Addis Ababa')],center:place('Adama'),boundary:[]});
 const native=Object.fromEntries(['ActivityIndicator','Redirect','Page','Title','Copy','Card','Button','ErrorText','Choices','Cities','PlacePicker','View','Text','Pressable','ScrollView','Modal','SafeAreaView','Switch','Image','Field','WorkspaceSection','WorkspaceAction','WorkspaceTaskHeader','WorkspaceFact','TrackingMap','Map','Camera','AppIcon','AppLink','TruckLocationSource','CargoSpacePhoto'].map(name=>[name,name]));
 const t=(message,values={})=>message.replace(/\{(\w+)\}/g,(match,key)=>String(values[key]??match));
-const common={...native,cargoPhotoCollectionPath,reportedSpacePercent,capacityMapColors,currentCapacityLocation,locationSourceKind,locationSourceLabel,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
+const common={capacityJourneyInput,capacityJourneyWindow,JourneyTimeFields:'JourneyTimeFields',capacityCoverageLabel,localizedSavedUpdate,CapacityCoverageIndicators:'CoverageIndicators',...native,cargoPhotoCollectionPath,availableSpacePercent,emptyShipmentPreferenceLabel,capacityMapColors,currentCapacityLocation,locationSourceKind,locationSourceLabel,capacityStatusPresentation,WorkspaceTaskPane:({active,children})=>active?{type:'View',props:{children}}:null,workspaceCapabilities,currentDrivingTruck,PublicImage:'PublicImage',useLanguage:()=>({t,locale:'en'}),StyleSheet:{create:value=>value,absoluteFill:{}},emptyPlace:()=>({placeRef:'',label:'',coordinate:null}),CoveragePreview:'CoveragePreview',palette:{blue:'#155eef',ink:'#0b1d3a',muted:'#526375',border:'#cbd5e1'},useFocusEffect(){},useForegroundRefresh(){},locationAreaLabel:area=>area,capacitySharingLabel:value=>value,capacityLoadLabel:value=>value,capacityLoadExplanation:value=>value,AppState:{currentState:'active',addEventListener:()=>({remove(){}})},mapStyle:{}};
 
 function regular(){
  const view=renderer(),requests=[],paths=[];let data={services:[service(),service(vehicleB,driverB),{...service(),vehicleId:'',driverId:'',id:'legacy'}]},saved=0;
@@ -55,27 +58,27 @@ function regular(){
 
 test('native regular editor sends the selected truck and current driver on save and remove',async()=>{
  const view=regular();let tree=view.render();assert.equal(view.paths[0],`/api/mobile/regular-service?vehicleId=${vehicleA}&expectedDriverId=${driverA}`);
- find(tree,'Button',node=>node.props.message==='Edit preferred corridor').props.onPress();tree=view.render();find(tree,'Cities').props.onChange([place('Bahir Dar'),place('Gondar')]);tree=view.render();find(tree,'Button',node=>node.props.message==='Save preferred corridor').props.onPress();await settle();
+ find(tree,'Button',node=>node.props.message==='Edit preferred route').props.onPress();tree=view.render();find(tree,'Cities').props.onChange([place('Bahir Dar'),place('Gondar')]);tree=view.render();find(tree,'Button',node=>node.props.message==='Save preferred route').props.onPress();await settle();
  assert.equal(view.requests.length,1);assert.deepEqual(view.requests[0].body,{action:'SAVE',vehicleId:vehicleA,expectedDriverId:driverA,replaceId:vehicleA,geometry:'ROUTE',routePlaces:[{placeRef:'Bahir Dar'},{placeRef:'Gondar'}],areaCenterPlaceRef:'Adama',areaBoundaryPlaces:[]});
- tree=view.render();find(tree,'Button',node=>node.props.message==='Remove preferred corridor').props.onPress();tree=view.render();assert.equal(view.requests.length,1,'opening confirmation must not remove the route');find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=view.render();assert.equal(find(tree,'Button',node=>node.props.message==='Remove'),undefined);assert.ok(find(tree,'Button',node=>node.props.message==='Edit preferred corridor'));
- find(tree,'Button',node=>node.props.message==='Remove preferred corridor').props.onPress();tree=view.render();find(tree,'Button',node=>node.props.message==='Remove').props.onPress();await settle();assert.deepEqual(view.requests[1].body,{action:'REMOVE',vehicleId:vehicleA,expectedDriverId:driverA,id:vehicleA,confirm:true});assert.equal(view.saved(),2);
+ tree=view.render();find(tree,'Button',node=>node.props.message==='Remove preferred route').props.onPress();tree=view.render();assert.equal(view.requests.length,1,'opening confirmation must not remove the route');find(tree,'Button',node=>node.props.message==='Cancel').props.onPress();tree=view.render();assert.equal(find(tree,'Button',node=>node.props.message==='Remove'),undefined);assert.ok(find(tree,'Button',node=>node.props.message==='Edit preferred route'));
+ find(tree,'Button',node=>node.props.message==='Remove preferred route').props.onPress();tree=view.render();find(tree,'Button',node=>node.props.message==='Remove').props.onPress();await settle();assert.deepEqual(view.requests[1].body,{action:'REMOVE',vehicleId:vehicleA,expectedDriverId:driverA,id:vehicleA,confirm:true});assert.equal(view.saved(),2);
 });
 
 test('native regular removal failure retains the confirmed route and requires a successful refresh',async()=>{
- const view=regular();view.request(async()=>{throw Error('Truck assignment changed.');});let tree=view.render();find(tree,'Button',node=>node.props.message==='Remove preferred corridor').props.onPress();tree=view.render();find(tree,'Button',node=>node.props.message==='Remove').props.onPress();await settle();tree=view.render();assert.equal(view.saved(),0);assert.ok(find(tree,'CoveragePreview'),'a failed command must not optimistically remove saved geometry');assert.equal(find(tree,'ErrorText',node=>Boolean(node.props.message)).props.message,'Truck assignment changed.');assert.ok(find(tree,'Copy',node=>node.props.message==='Refresh to check your saved preferred corridor before trying again.'));assert.ok(find(tree,'Button',node=>node.props.message==='Cancel'));assert.equal(find(tree,'Button',node=>node.props.message==='Remove').props.busy,false);
+ const view=regular();view.request(async()=>{throw Error('Truck assignment changed.');});let tree=view.render();find(tree,'Button',node=>node.props.message==='Remove preferred route').props.onPress();tree=view.render();find(tree,'Button',node=>node.props.message==='Remove').props.onPress();await settle();tree=view.render();assert.equal(view.saved(),0);assert.ok(find(tree,'CoveragePreview'),'a failed command must not optimistically remove saved geometry');assert.equal(find(tree,'ErrorText',node=>Boolean(node.props.message)).props.message,'Truck assignment changed.');assert.ok(find(tree,'Copy',node=>node.props.message==='Refresh to check your saved preferred route before trying again.'));assert.ok(find(tree,'Button',node=>node.props.message==='Cancel'));assert.equal(find(tree,'Button',node=>node.props.message==='Remove').props.busy,false);
 });
 
 test('native regular editor never guesses an unscoped route and resets draft state per pair',()=>{
  const view=regular();let tree=view.render({vehicleId:'',expectedDriverId:''});assert.equal(view.paths.length,0,'a missing pair cannot fetch a provider-global route');assert.equal(find(tree,'Redirect').props.href,'/fleet');
- tree=view.render();find(tree,'Button',node=>node.props.message==='Edit preferred corridor').props.onPress();tree=view.render();find(tree,'Cities').props.onChange([place('Unsaved A'),place('Unsaved B')]);
- tree=view.render({vehicleId:vehicleB,expectedDriverId:driverB});find(tree,'Button',node=>node.props.message==='Edit preferred corridor').props.onPress();tree=view.render({vehicleId:vehicleB,expectedDriverId:driverB});assert.deepEqual(find(tree,'Cities').props.items,service(vehicleB,driverB).route,'another pair does not inherit the draft');
- view.data({services:[{...service(),vehicleId:'',driverId:'',id:'legacy'},service(vehicleA,driverB)]});tree=view.render();assert.equal(find(tree,'Button',node=>node.props.message==='Remove preferred corridor'),undefined,'ambiguous or other-driver routes cannot be edited as this pair');
+ tree=view.render();find(tree,'Button',node=>node.props.message==='Edit preferred route').props.onPress();tree=view.render();find(tree,'Cities').props.onChange([place('Unsaved A'),place('Unsaved B')]);
+ tree=view.render({vehicleId:vehicleB,expectedDriverId:driverB});find(tree,'Button',node=>node.props.message==='Edit preferred route').props.onPress();tree=view.render({vehicleId:vehicleB,expectedDriverId:driverB});assert.deepEqual(find(tree,'Cities').props.items,service(vehicleB,driverB).route,'another pair does not inherit the draft');
+ view.data({services:[{...service(),vehicleId:'',driverId:'',id:'legacy'},service(vehicleA,driverB)]});tree=view.render();assert.equal(find(tree,'Button',node=>node.props.message==='Remove preferred route'),undefined,'ambiguous or other-driver routes cannot be edited as this pair');
 });
 
 test('company-driver Home displays only its authorized pair regular overlay and keeps owner-only editing',()=>{
  const view=renderer(),paths=[],truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service(),service(vehicleB,driverB),{...service(),driverId:driverB}]};
  const screen=compileDriverHome(view,{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'COMPANY_DRIVER'}}}),useAccountQuery:path=>{paths.push(path);return{data:{vehicles:[truck],canPublish:false},error:'',reload:async()=>{}};},useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
- const tree=view.render(screen);assert.equal(find(tree,'TrackingMap').props.regular.length,1);assert.deepEqual(find(tree,'TrackingMap').props.regular[0].places,service().route);assert.ok(!nodes(tree).some(node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Manage preferred corridor or service area'),'a fleet driver cannot open the owner-only corridor editor');assert.deepEqual(paths,['/api/mobile/capacity',cargoPhotoCollectionPath(vehicleA)]);
+ const tree=view.render(screen);assert.equal(find(tree,'TrackingMap').props.regular.length,1);assert.deepEqual(find(tree,'TrackingMap').props.regular[0].places,service().route);assert.ok(!nodes(tree).some(node=>node.type==='Pressable'&&node.props.accessibilityLabel==='Update preferred coverage'),'a fleet driver cannot open the owner-only corridor editor');assert.deepEqual(paths,['/api/mobile/capacity',cargoPhotoCollectionPath(vehicleA)]);
 });
 
 test('driver Home shows saved Planned and Preferred coverage without inventing reported location',()=>{
@@ -93,7 +96,7 @@ test('driver Home shows saved Planned and Preferred coverage without inventing r
 test('Home discards an open regular editor when the active driver assignment changes',()=>{
  const view=renderer(),truck={id:vehicleA,driverId:driverA,driver:'Assigned driver',label:'Assigned truck',plate:'LOCAL',canLocate:false,publishedLocationSource:'GPS',selectedLocationSource:'GPS',location:{coordinate:[38.7,9],radius:20,area:'Adama',updatedAt:'2026-10-13'},current:null,regularServices:[service()]};
  const screen=compileDriverHome(view,{...common,useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'DRIVER',operatingModel:'OWNER_OPERATOR',currentDriverId:driverA,currentDrivenVehicleId:vehicleA}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:'',shareLocation(){}}),RegularService:'RegularService',CapacityEditor:'CapacityEditor'});
- let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage preferred corridor or service area').props.onPress();tree=view.render(screen);assert.equal(find(tree,'RegularService').props.expectedDriverId,driverA);assert.equal(find(tree,'Modal').props.visible,true);
+ let tree=view.render(screen);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update preferred coverage').props.onPress();tree=view.render(screen);assert.equal(find(tree,'RegularService').props.expectedDriverId,driverA);assert.equal(find(tree,'Modal').props.visible,true);
  truck.driverId=driverB;tree=view.render(screen);assert.equal(find(tree,'RegularService'),undefined,'a new active pair must not inherit the previous open editor');assert.equal(find(tree,'Modal'),undefined);assert.equal(find(tree,'TrackingMap'),undefined,'a stale session cannot display the new driver’s job as the owner’s own');assert.ok(find(tree,'Copy',node=>node.props.message==='Choose the vehicle you drive under Manage vehicles.'));
 });
 
@@ -118,10 +121,10 @@ test('selected fleet capacity exposes Usual routes only for the selected assigne
  const screen=view.compile('../src/screens/manage-capacity.tsx',{...common,RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:operatingModel==='COMPANY_DRIVER'?'DRIVER':'TRANSPORTER',operatingModel,ownsProviderAccount:operatingModel!=='COMPANY_DRIVER',canManageFleet:operatingModel!=='COMPANY_DRIVER'}}}),useAccountQuery:()=>({data:{vehicles,canPublish:false,profilePublished:true},error:'',reload:async()=>{}}),useCapacityLocation:()=>({busy:false,error:''}),capacitySharingMode:()=> 'PUBLIC',CAPACITY_SHARING_CHOICES:[],CAPACITY_LOAD_CHOICES:[],privacyRadii:[20]}).default;
  let tree=view.render(screen,{embedded:true,vehicleId:vehicleB});
  assert.equal(find(tree,'RegularService'),undefined,'opening a vehicle does not expose a second, duplicate route editor');
- find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage preferred corridor or service area').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleB});
+ find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update preferred coverage').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleB});
  assert.equal(find(tree,'Modal').props.visible,true);const routeEditor=find(tree,'RegularService');assert.equal(routeEditor.props.vehicleId,vehicleB);assert.equal(routeEditor.props.expectedDriverId,driverB);
  assert.equal(find(tree,'AppLink',node=>node.props.href==='/regular-service'),undefined,'the fleet entry cannot open an unscoped editor');
- find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleB});operatingModel='COMPANY_DRIVER';tree=view.render(screen,{embedded:true,vehicleId:vehicleB});assert.equal(find(tree,'RegularService'),undefined,'assigned company drivers retain location/duty controls without regular mutations');assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Manage preferred corridor or service area'),undefined);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update duty status').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleB});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor'));
+ find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleB});operatingModel='COMPANY_DRIVER';tree=view.render(screen,{embedded:true,vehicleId:vehicleB});assert.equal(find(tree,'RegularService'),undefined,'assigned company drivers retain location/duty controls without regular mutations');assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update preferred coverage'),undefined);find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update duty status').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleB});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor'));
  operatingModel='FLEET_OWNER';vehicles=[truck(vehicleB,'')];tree=view.render(screen,{embedded:true,vehicleId:vehicleB});assert.equal(find(tree,'RegularService'),undefined,'an unassigned truck cannot own a new regular route');
 });
 
@@ -142,11 +145,11 @@ test('selected Fleet capacity keeps its map in first use and provides four focus
  const screen=view.compile('../src/screens/manage-capacity.tsx',{...common,RegularService:'RegularService',ProfileSetup:'ProfileSetup',useAccount:()=>({session:{state:'ACTIVE',user:{id:driverA,role:'TRANSPORTER',ownsProviderAccount:true,canManageFleet:true}}}),useAccountQuery:()=>({data:{vehicles:[truck],canPublish:true,profilePublished:false},error:'',reload:async()=>{}}),useCapacityLocation:(_truck,paused)=>{pauses.push(paused);return{busy:false,error:''};},capacitySharingMode:()=> 'PUBLIC',CAPACITY_SHARING_CHOICES:[],CAPACITY_LOAD_CHOICES:[],privacyRadii:[20]}).default;
  let tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:false});assert.equal(pauses.at(-1),true);
  let map=find(tree,'TrackingMap');assert.ok(map,'first use still renders the map');assert.equal(map.props.fill,true);assert.equal(map.props.location,null,'no device fix is invented');assert.equal(map.props.vehicleConfiguration,'Box truck');assert.equal(map.props.regular.length,0);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('No signal on the map yet')));assert.equal(find(tree,'ProfileSetup'),undefined,'account setup does not leak into a vehicle task');
- for(const label of ['Update planned capacity','Update sharing settings','Manage preferred corridor or service area','Set vehicle location'])assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel===label),`${label} is reachable from the map`);
+ for(const label of ['Update planned capacity','Update sharing settings','Update preferred coverage','Set vehicle location'])assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel===label),`${label} is reachable from the map`);
  assert.equal(find(tree,'Field'),undefined,'opening Fleet does not start editing');
  tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(pauses.at(-1),false);
  find(tree,'Pressable',node=>node.props.accessibilityLabel==='Update planned capacity').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,true);assert.ok(find(tree,'TrackingMap'),'the selected map stays mounted underneath the editor');assert.ok(find(tree,'Button',node=>node.props.message==='Save planned capacity'));assert.ok(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor'));
- for(const heading of ['Planned capacity','Load type','Where is this vehicle available?'])assert.ok(find(tree,'Text',node=>node.props.children===heading||(Array.isArray(node.props.children)&&node.props.children.includes(heading))),`${heading} gives the capacity task a clear place in the workflow`);
+ for(const heading of ['Planned capacity','Shipments accepted','Planned route'])assert.ok(find(tree,'Text',node=>node.props.children===heading||(Array.isArray(node.props.children)&&node.props.children.includes(heading))),`${heading} gives the capacity task a clear place in the workflow`);
  for(const icon of ['truck','boxes','route'])assert.ok(find(tree,'AppIcon',node=>node.props.name===icon),`${icon} identifies a capacity section`);
  find(tree,'Pressable',node=>node.props.accessibilityLabel==='Close capacity editor').props.onPress();tree=view.render(screen,{embedded:true,vehicleId:vehicleA,active:true});assert.equal(find(tree,'Modal').props.visible,false);assert.ok(find(tree,'TrackingMap'));
 });
@@ -169,26 +172,52 @@ function capacityEditor(current,locale='en',changes={}){
 }
 const currentChoice=(tree,label)=>find(tree,'Pressable',node=>node.props.accessibilityRole==='radio'&&node.props.accessibilityLabel===label);
 
-test('native new Planned capacity uses the Planned area default',()=>{
- const editor=capacityEditor(null),tree=editor.render();assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);assert.equal(currentChoice(tree,'Planned route')?.props.accessibilityState.checked,false);assert.ok(find(tree,'TaskHeading',node=>node.props.message==='Planned capacity')||nodes(tree).some(node=>node.type==='Text'&&node.props.children.includes('Planned capacity')));
+test('native new Planned capacity groups optional times with route cities',()=>{
+ const tree=capacityEditor(null).render();
+ assert.equal(currentChoice(tree,'Planned area'),undefined);
+ assert.ok(find(tree,'JourneyTimeFields'));
 });
 
-test('native Empty to Partial keeps Area and submits the saved area without changing reported position',async()=>{
- const editor=capacityEditor(currentArea('EMPTY'));let tree=editor.render();currentChoice(tree,'Partial').props.onPress();tree=editor.render();
- assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);assert.ok(find(tree,'PlacePicker',node=>node.props.label==='Area center'));
+test('native report of Partial space pairs saved cities with normalized journey times',async()=>{
+ const editor=capacityEditor({...currentArea('EMPTY'),availabilityGeometry:'ROUTE'});
+ let tree=editor.render();currentChoice(tree,'Partial').props.onPress();tree=editor.render();
  const submit=()=>find(tree,'Button',node=>node.props.message==='Save planned capacity').props.onPress();
  const estimate=()=>find(tree,'Field',node=>node.props.message==='Available space');
  submit();await settle();tree=editor.render();
  assert.equal(editor.requests.length,0);
  assert.equal(find(tree,'ErrorText').props.message,'Enter 1% to 99% of space still free.');
- estimate().props.onChangeText('100');tree=editor.render();submit();await settle();tree=editor.render();
- assert.equal(editor.requests.length,0,'a pasted 100 must not become 10');
- estimate().props.onChangeText('65');tree=editor.render();submit();await settle();
- assert.equal(editor.requests.length,1);const {path,body}=editor.requests[0];assert.equal(path,'/api/mobile/capacity');assert.equal(body.status,'PARTIAL');assert.equal(body.availablePercent,65);assert.equal(body.availabilityGeometry,'RADIUS');assert.equal(body.capacityAreaCenterPlaceRef,'Addis Ababa');assert.deepEqual(body.capacityAreaBoundaryPlaces,[{placeRef:'Sululta'},{placeRef:'Bishoftu'},{placeRef:'Sebeta'}]);assert.equal(body.acceptsMultiPick,true);assert.equal(body.acceptedLoads,'PTL');assert.equal(Object.hasOwn(body,'approximateLat'),false);
+ estimate().props.onChangeText('100');tree=editor.render();submit();await settle();
+ assert.equal(editor.requests.length,0);
+ tree=editor.render();estimate().props.onChangeText('65');
+ find(tree,'JourneyTimeFields').props.onDeparture('2027-02-03 07:30');
+ find(tree,'JourneyTimeFields').props.onArrival('2027-02-03 11:00');
+ tree=editor.render();submit();await settle();
+ const {body}=editor.requests[0];assert.equal(body.availablePercent,65);assert.equal(body.availabilityGeometry,'ROUTE');
+ assert.deepEqual(body.currentRoutePlaces,[{placeRef:'Addis Ababa'},{placeRef:'Adama'}]);
+ assert.equal(body.journeyStartAt,'2027-02-03T04:30:00.000Z');
+ assert.equal(body.journeyEndAt,'2027-02-03T08:00:00.000Z');
+ assert.equal(Object.hasOwn(body,'approximateLat'),false);
 });
 
-test('native saved Partial Area reopens and status changes do not replace an explicit Route',()=>{
- const editor=capacityEditor(currentArea('PARTIAL'));let tree=editor.render();assert.equal(currentChoice(tree,'Planned area')?.props.accessibilityState.checked,true);currentChoice(tree,'Planned route').props.onPress();tree=editor.render();currentChoice(tree,'Empty').props.onPress();tree=editor.render();assert.equal(currentChoice(tree,'Planned route')?.props.accessibilityState.checked,true);
+test('native Partial sharing requires a planned route with distinct cities',async()=>{
+ const editor=capacityEditor({...currentArea('PARTIAL'),availabilityGeometry:'ROUTE',route:[place('Adama')],availablePercent:45,availablePercentReportedAt:'2026-10-26'});
+ const render=()=>editor.render({section:'SHARING'});
+ let tree=render();
+ const submit=()=>find(tree,'Button',node=>node.props.message==='Save sharing settings').props.onPress();
+ const fields=()=>find(tree,'Cities');
+ assert.deepEqual(fields().props.items.map(item=>item.placeRef),['Adama','']);
+ submit();await settle();tree=render();
+ assert.equal(editor.requests.length,0);
+ assert.equal(find(tree,'ErrorText').props.message,'Choose the cities for a planned route.');
+ fields().props.onChange([place('Adama'),place('Adama')]);
+ tree=render();submit();await settle();tree=render();
+ assert.equal(editor.requests.length,0);
+ assert.equal(find(tree,'ErrorText').props.message,'Choose each city only once in this route or area.');
+ fields().props.onChange([place('Adama'),place('Addis Ababa')]);
+ tree=render();submit();await settle();
+ assert.deepEqual(editor.requests[0].body.currentRoutePlaces,[{placeRef:'Adama'},{placeRef:'Addis Ababa'}]);
+ assert.equal(editor.requests[0].body.journeyStartAt,null);
+ assert.equal(editor.requests[0].body.journeyEndAt,null);
 });
 
 test('native saved Preferred Area uses area actions and submits unnumbered town facts',async()=>{
@@ -198,7 +227,7 @@ test('native saved Preferred Area uses area actions and submits unnumbered town 
  find(tree,'Button',node=>node.props.message==='Edit preferred area').props.onPress();const draft=view.render();assert.equal(find(draft,'Choices').props.value,'RADIUS');find(draft,'Button',node=>node.props.message==='Save preferred area').props.onPress();await settle();assert.equal(view.requests[0].body.geometry,'RADIUS');assert.equal(view.requests[0].body.areaCenterPlaceRef,area.center.placeRef);assert.deepEqual(view.requests[0].body.areaBoundaryPlaces,area.boundary.map(place=>({placeRef:place.placeRef})));
 });
 
-test('native Preferred corridor shows saved stop order and both-way direction',()=>{
+test('native Preferred route shows saved stop order and both-way direction',()=>{
  const view=regular(),tree=view.render();const facts=nodes(tree).filter(node=>node.type==='Copy'||node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string'||typeof value==='number');
  assert.deepEqual(facts.filter(value=>[1,2,'Adama','Addis Ababa','↔'].includes(value)),[1,'Adama','↔',2,'Addis Ababa']);
 });
@@ -215,13 +244,13 @@ function publicMap(locale='en',overrides={}){
  return{item,t,translated,render:selected=>view.render(component,{items:[item],selected,onSelect(){},onDeselect(){}})};
 }
 
-const freshnessCases=[{name:'days',capacity:'Capacity updated 2 days ago',location:'Location updated 1 day ago',capacityKey:'Capacity updated {days} days ago',locationKey:'Location updated {days} day ago'},
- {name:'absent',capacity:undefined,location:'',capacityKey:'Capacity update unavailable',locationKey:'Location update unavailable'}];
+const freshnessCases=[{name:'days',capacity:'Capacity updated 2 days ago',location:'Location updated 1 day ago',ageKey:'{days}d ago'},
+ {name:'absent',capacity:undefined,location:'',ageKey:'Time unknown'}];
 const renderedStrings=tree=>nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]).filter(value=>typeof value==='string');
 for(const locale of ['am','om'])for(const entry of freshnessCases){
  test(`native map freshness labels localize ${locale} ${entry.name}`,()=>{
-  const h=publicMap(locale,{latitude:9,longitude:38,capacityAge:entry.capacity,locationAge:entry.location}),expectedCapacity=h.t(entry.capacityKey,{days:2}),expectedLocation=h.t(entry.locationKey,{days:1});
-  let tree=h.render(h.item);find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Planned area')).props.onPress();tree=h.render(h.item);const capacity=renderedStrings(tree);
+  const h=publicMap(locale,{geometry:'ROUTE',latitude:9,longitude:38,capacityAge:entry.capacity,locationAge:entry.location}),expectedCapacity=h.t('Capacity updated: {age}',{age:h.t(entry.ageKey,{days:2})}),expectedLocation=h.t('Location updated: {age}',{age:h.t(entry.ageKey,{days:1})});
+  let tree=h.render(h.item);find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Planned route')).props.onPress();tree=h.render(h.item);const capacity=renderedStrings(tree);
   find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Close map signal details')).props.onPress();tree=h.render(h.item);find(tree,'Pressable',node=>node.props.accessibilityLabel===h.t('Approximate location')).props.onPress();tree=h.render(h.item);const location=renderedStrings(tree);
   assert.deepEqual([capacity.includes(expectedCapacity),location.includes(expectedLocation)],[true,true]);assert.ok(!h.translated.includes('Sululta'),'catalog place labels remain records');
  });
@@ -229,17 +258,20 @@ for(const locale of ['am','om'])for(const entry of freshnessCases){
   const view=renderer(),catalog=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),translated=[],t=(message,values)=>{translated.push(message);return translateMessage(catalog,message,values);};
   const screen=view.compile('../src/components/capacity-truck-details.tsx',{...common,localizedUpdateLabel,useLanguage:()=>({t,locale}),TruckAuthorityBadges:'TruckAuthorityBadges',PublicCardImage:'PublicCardImage',apiOrigin:'https://local.invalid',vehicleConfigurationImage:()=>'/truck.png'}).CapacityTruckDetails;
   const truck={provider:'Capacity updated today',driver:'Location updated today',truck:'Record vehicle',configuration:'Pickup truck',status:'PARTIAL',driverKind:'Company driver',driverPhone:'',providerPhone:'',handle:'',portrait:'',sharingMode:'',ownerDocumentsLabel:'Owner documents',ownerBadges:[],driverBadges:[],truckBadges:[],currentVisible:true,capacityAge:entry.capacity,locationAge:entry.location};
-  let tree=view.render(screen,{truck}),text=renderedStrings(tree);assert.deepEqual([text.includes(t(entry.capacityKey,{days:2})),text.includes(t(entry.locationKey,{days:1}))],[true,true]);assert.ok(text.includes(truck.provider)&&text.includes(truck.driver));assert.ok(!translated.includes(truck.provider)&&!translated.includes(truck.driver),'only owned freshness fields use the formatter');
-  tree=view.render(screen,{truck:{...truck,currentVisible:false}});assert.ok(!renderedStrings(tree).includes(t(entry.locationKey,{days:1})),'hidden location freshness stays hidden');
+  let tree=view.render(screen,{truck}),text=renderedStrings(tree);assert.deepEqual([text.includes(t('Capacity updated: {age}',{age:t(entry.ageKey,{days:2})})),text.includes(t('Location updated: {age}',{age:t(entry.ageKey,{days:1})}))],[true,true]);assert.ok(text.includes(truck.provider)&&text.includes(truck.driver));assert.ok(!translated.includes(truck.provider)&&!translated.includes(truck.driver),'only owned freshness fields use the formatter');
+  tree=view.render(screen,{truck:{...truck,currentVisible:false}});assert.ok(!renderedStrings(tree).includes(t('Location updated: {age}',{age:t(entry.ageKey,{days:1})})),'hidden location freshness stays hidden');
  });
 }
-test('native selected Partial Area retains the saved outline, planned coverage color and town facts without a fabricated location',()=>{
- const h=publicMap();let tree=h.render(h.item);const source=find(tree,'GeoJSONSource',node=>node.props.id==='selected-signals');assert.equal(source.props.data.features.length,1);const feature=source.props.data.features[0];assert.equal(feature.properties.kind,'current');assert.deepEqual(feature.geometry.coordinates[0],feature.geometry.coordinates.at(-1));assert.equal(find(tree,'Layer',node=>node.props.id==='current-route').props.paint['line-color'],capacityMapColors.planned);assert.equal(find(tree,'Marker'),undefined);
- const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Planned area');assert.ok(action);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Approximate location'),undefined);action.props.onPress();tree=h.render(h.item);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Sululta')));assert.equal(find(tree,'Text',node=>node.props.children?.includes?.('↓')),undefined);assert.ok(find(tree,'Text',node=>node.props.children?.includes?.('Partial capacity')));
+test('native selected legacy Planned area hides its layer without inventing a location',()=>{
+ const h=publicMap(),tree=h.render(h.item);
+ const source=find(tree,'GeoJSONSource',node=>node.props.id==='selected-signals');
+ assert.equal(source?.props.data.features.length||0,0);
+ assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Planned area'),undefined);
+ assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Approximate location'),undefined);
 });
 test('native overview exposes a compact expandable map key for the same status and geometry vocabulary',()=>{
  const h=publicMap();let tree=h.render(null);const action=find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key');assert.ok(action);assert.equal(action.props.accessibilityState.expanded,false);action.props.onPress();tree=h.render(null);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key').props.accessibilityState.expanded,true);
- const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]);for(const label of ['Empty','Partial','Planned area','Planned route','Preferred area','Preferred corridor','Approximate location'])assert.ok(text.includes(label),label);
+ const text=nodes(tree).filter(node=>node.type==='Text').flatMap(node=>node.props.children||[]);for(const label of ['Empty','Partial','Planned route','Preferred area','Preferred route','Approximate location'])assert.ok(text.includes(label),label);
  tree=h.render(h.item);assert.equal(find(tree,'Pressable',node=>node.props.accessibilityLabel==='Map key'),undefined,'selected signal controls take over without duplicating the overview key');
 });
 

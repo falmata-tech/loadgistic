@@ -63,7 +63,9 @@ test('public Tracking requires a per-load link and separate code without email o
   const root=process.cwd();
   const trackingForm=fs.readFileSync(path.join(root,'src/components/tracking-unlock-form.tsx'),'utf8');
   const reviewPage=fs.readFileSync(path.join(root,'src/app/track/[id]/page.tsx'),'utf8');
-  assert.match(trackingForm,/trackingLinkToken\(linkToken\|\|link/);
+  assert.match(trackingForm,/trackingLinkToken\(linkToken\|\|id,/);
+  assert.match(trackingForm,/name="trackingId"/);
+  assert.doesNotMatch(trackingForm,/name="trackingLink"/);
   assert.match(trackingForm,/trackingAccessCode\(code\)/);
   assert.match(trackingForm,/JSON\.stringify\(\{linkToken:token,code:secret\}\)/);
   assert.match(trackingForm,/maxLength=\{9\} placeholder="XXXX-XXXX"/);

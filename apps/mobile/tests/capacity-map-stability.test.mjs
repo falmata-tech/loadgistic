@@ -69,16 +69,16 @@ function cameraCallbacks(platform){
  }
  visit(source);assert.ok(observer&&initialCenter,'exercise the actual map observer and initial completion effect');
  const code=ts.transpileModule(`const observeView=${observer.getText(source)};const centerInitially=${initialCenter.getText(source)};return{observeView,centerInitially};`,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
- const intent=createCapacityCameraIntent(),moves=[],fanClears=[],fitted={current:false},ports={Platform:{OS:platform},latestView:{current:{center:[39.5,9],zoom:5,bearing:0,pitch:0}},cameraIntent:{current:intent},camera:{current:{jumpTo:value=>moves.push(value)}},setFan:value=>fanClears.push(value),initialCamera:{longitude:40,latitude:10,zoom:6},ready:true,loading:false,selected:null,fitted};
- return{...new Function(...Object.keys(ports),code)(...Object.values(ports)),intent,moves,fanClears,fitted};
+ const intent=createCapacityCameraIntent(),moves=[],pickerClears=[],fitted={current:false},ports={Platform:{OS:platform},latestView:{current:{center:[39.5,9],zoom:5,bearing:0,pitch:0}},cameraIntent:{current:intent},camera:{current:{jumpTo:value=>moves.push(value)}},setPicker:value=>pickerClears.push(value),initialCamera:{longitude:40,latitude:10,zoom:6},ready:true,loading:false,selected:null,fitted};
+ return{...new Function(...Object.keys(ports),code)(...Object.values(ports)),intent,moves,pickerClears,fitted};
 }
 for(const platform of ['android','ios']){
  test(`${platform} camera pan suppresses delayed initial fit without depending on parent touch delivery`,()=>{
   const h=cameraCallbacks(platform);h.observeView({center:[39.6,9.1],zoom:6,bearing:0,pitch:0},true);h.centerInitially();
-  assert.equal(h.intent.canCenterInitially(),false);assert.deepEqual(h.moves,[]);assert.deepEqual(h.fanClears,[null],'panning removes screen-only spread markers');
+  assert.equal(h.intent.canCenterInitially(),false);assert.deepEqual(h.moves,[]);assert.deepEqual(h.pickerClears,[null],'panning closes a stale cluster picker');
  });
  test(`${platform} non-user camera movement still allows exactly one initial completed-data fit`,()=>{
   const h=cameraCallbacks(platform);h.observeView({center:[39.6,9.1],zoom:6,bearing:0,pitch:0},false);h.centerInitially();h.centerInitially();
-  assert.deepEqual(h.moves,[{center:[40,10],zoom:6}]);assert.equal(h.fitted.current,true);assert.deepEqual(h.fanClears,[null]);
+  assert.deepEqual(h.moves,[{center:[40,10],zoom:6}]);assert.equal(h.fitted.current,true);assert.deepEqual(h.pickerClears,[null]);
  });
 }

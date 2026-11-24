@@ -12,9 +12,9 @@ async function currentProfileSignal(page:any,predicate:(item:any)=>boolean){
  throw Error('CURRENT_TRUCK_PROFILE_FIXTURE_REQUIRED');
 }
 
-test('truck modal groups identity, contacts, updates and readable phone document rows',async({page}:{page:any},info:any)=>{
- test.setTimeout(90000);
- const truck=await currentProfileSignal(page,item=>Boolean(item.assigned_driver_first_name)&&item.owner_verification_badges?.length>0);
+test('vehicle overview fits without scrolling and keeps both document groups reachable',async({page}:{page:any},info:any)=>{
+ test.setTimeout(150000);
+ const truck=await currentProfileSignal(page,item=>Boolean(item.assigned_driver_first_name)&&item.driver_verification_badges?.length>0&&item.owner_verification_badges?.length>0);
  await page.goto(`/?status=PARTIAL&truck=${encodeURIComponent(truck.id)}`);
  await page.locator('.map-info-bubble.truck').click({timeout:30000});
  const modal=page.locator('dialog.capacity-info-card.truck'),sheet=modal.locator('.truck-inspection');
@@ -25,15 +25,21 @@ test('truck modal groups identity, contacts, updates and readable phone document
  const phone=truck.assigned_driver_phone||truck.contact_phone;
  if(phone)await expect(sheet.locator('a[href^="tel:"]')).toHaveAttribute('href',`tel:${phone}`);
  await page.evaluate(()=>document.fonts.ready);
- const narrow=(page.viewportSize()?.width||1280)<=480;
+ await expect(sheet.locator('.truck-document-summary')).toHaveCount(2);
+ await expect(sheet.getByText(/^(Owner|Transport Provider) documents$/)).toHaveCount(0);
  // Font readiness does not guarantee the asynchronously loaded stylesheet has
  // completed layout. Keep the exact geometry contract and wait for that state.
  await expect.poll(()=>sheet.evaluate((el:HTMLElement)=>{
   const people=[...el.querySelectorAll('.truck-inspection-person')].map(el=>el.getBoundingClientRect());
   const docs=[...el.querySelectorAll('.truck-document-summary')].map(el=>el.getBoundingClientRect());
   const content=el.closest('.capacity-info-content')!;
-  return {peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,peopleStacked:people[0].bottom<=people[1].top&&Math.abs(people[0].left-people[1].left)<1,docsSideBySide:docs.every(rect=>Math.abs(rect.top-docs[0].top)<1),docsStacked:docs[0].bottom<=docs[1].top&&docs[1].bottom<=docs[2].top,horizontalOverflow:content.scrollWidth-content.clientWidth};
- })).toEqual({peopleSideBySide:!narrow,peopleStacked:narrow,docsSideBySide:!narrow,docsStacked:narrow,horizontalOverflow:0});
+  return {
+   peopleSideBySide:Math.abs(people[0].top-people[1].top)<1&&people[0].right<=people[1].left,
+   docsSideBySide:docs.length===2&&Math.abs(docs[0].top-docs[1].top)<1&&docs[0].right<=docs[1].left,
+   horizontalOverflow:content.scrollWidth-content.clientWidth,
+   verticalOverflow:content.scrollHeight-content.clientHeight,
+  };
+ })).toEqual({peopleSideBySide:true,docsSideBySide:true,horizontalOverflow:0,verticalOverflow:0});
  for(const link of await sheet.locator('a').all()){const box=await link.boundingBox();expect(box.height).toBeGreaterThanOrEqual(44);expect(box.width).toBeGreaterThanOrEqual(44);}
  await page.screenshot({path:info.outputPath('truck-profile.png')});
  const documents=sheet.locator('.truck-document-summary').first();await documents.locator(':scope>summary').click();
@@ -54,8 +60,11 @@ test('truck modal groups identity, contacts, updates and readable phone document
  await page.locator('.language-picker select').selectOption('en');
  await page.locator('.map-info-bubble.truck').click();
  if(info.project.name.includes('mobile')){
-  await page.setViewportSize({width:320,height:740});
-  expect(await sheet.evaluate((el:HTMLElement)=>{const content=el.closest('.capacity-info-content')!;return content.scrollWidth<=content.clientWidth;})).toBe(true);
+  await page.setViewportSize({width:320,height:640});
+  await expect.poll(()=>sheet.evaluate((el:HTMLElement)=>{
+   const content=el.closest('.capacity-info-content')!;
+   return content.scrollWidth<=content.clientWidth&&content.scrollHeight<=content.clientHeight;
+  })).toBe(true);
   await page.screenshot({path:info.outputPath('truck-profile-small-phone.png')});
  }
  await page.getByRole('dialog').getByRole('button',{name:'Close map signal details'}).click();
@@ -111,6 +120,7 @@ test('long truck profiles stay bounded and a fallback phone belongs to the trans
  await expect(sheet.locator('.transporter a[href^="tel:"]')).toHaveAttribute('href',`tel:${companyPhone}`);
  await expect(sheet.locator('.driver a[href^="tel:"]')).toHaveCount(0);await expect(sheet.locator('.driver')).toContainText('Phone not published');
  expect(await content.evaluate((el:HTMLElement)=>el.scrollWidth-el.clientWidth)).toBe(0);
- expect(await content.evaluate((el:HTMLElement)=>el.scrollHeight>el.clientHeight)).toBe(true);
+ await sheet.locator('.truck-document-summary').last().scrollIntoViewIfNeeded();
+ await expect(sheet.locator('.truck-document-summary').last()).toBeInViewport();
  await page.getByRole('button',{name:'Close map signal details'}).click();await expect(page.locator('.capacity-truck-map-marker.selected')).toBeVisible();
 });

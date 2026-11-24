@@ -54,7 +54,7 @@ test('selected truck feedback stays readable through location denial and refresh
   await openCapacityFilters(page);await page.getByRole('button',{name:'Use my location',exact:true}).click();
   await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
   await closeCapacityFilters(page);await selectVisibleVehicle(page);
-  const selectedTitle=await page.locator('.capacity-truck-map-marker.selected').getAttribute('title');expect(selectedTitle).toBeTruthy();
+  const selectedTitle=await page.locator('.capacity-truck-map-marker.selected').getAttribute('aria-label');expect(selectedTitle).toBeTruthy();
   const captures=info.outputPath('map-feedback');
   mkdirSync(captures,{recursive:true});
   const widths=info.project.name.includes('mobile')?[[760,900],[390,844],[320,640]]:[[761,900],[1024,768],[1280,720]];
@@ -84,7 +84,7 @@ test('selected truck feedback stays readable through location denial and refresh
     await expect.poll(()=>Boolean(release)).toBe(true);
     release!();
     await expect(page.getByTestId('capacity-feed-state')).toContainText('Capacity could not be loaded');
-    await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',selectedTitle!);
+    await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('aria-label',selectedTitle!);
     await assertReadableFeedback(page,true);
     const retry=page.getByRole('button',{name:'Try again',exact:true});
     await expect(retry).toBeVisible();
@@ -97,7 +97,7 @@ test('selected truck feedback stays readable through location denial and refresh
     await page.mouse.move(0,0);
     await expect(page.getByTestId('capacity-feed-state')).toHaveCount(0,{timeout:15000});
     await expect(page.getByTestId('visitor-location-state')).toContainText('Location permission is blocked');
-    await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('title',selectedTitle!);
+    await expect(page.locator('.capacity-truck-map-marker.selected')).toHaveAttribute('aria-label',selectedTitle!);
     await assertReadableFeedback(page);
 
     await page.locator('.map-info-bubble.truck').click();
@@ -111,5 +111,41 @@ test('selected truck feedback stays readable through location denial and refresh
   }finally{
     release?.();
     await page.unroute('**/api/public/capacity?**');
+  }
+});
+
+test('an open Map key leaves the map clear during a viewport refresh',async({page},info)=>{
+  test.setTimeout(90000);
+  await page.goto('/');
+  const legend=page.locator('.public-map-legend');
+  await expect(legend).toBeVisible();
+  await expect(page.locator('.public-feed-overlay.loading')).toHaveCount(0,{timeout:30000});
+  let resume!:()=>void;
+  const blocked=new Promise<void>(resolve=>{resume=resolve;});
+  const routePattern='**/api/public/capacity?**';
+  await page.route(routePattern,async route=>{
+    const response=await route.fetch();
+    await blocked;
+    await route.fulfill({response});
+  });
+  try{
+    await legend.locator('summary').click();
+    await expect(legend.locator('.public-map-legend-items')).toBeVisible();
+    await page.locator('.leaflet-control-zoom-in').click();
+    const feedback=page.locator('.public-feed-overlay.loading');
+    await expect(feedback).toBeVisible({timeout:15000});
+    await expect(feedback).toHaveCSS('backdrop-filter','none');
+    const frame=await page.locator('.public-map-shell').boundingBox();
+    const progress=await feedback.boundingBox();
+    expect(frame&&progress).toBeTruthy();
+    expect(progress!.height).toBeLessThanOrEqual(4);
+    expect(Math.abs(progress!.y-frame!.y)).toBeLessThanOrEqual(2);
+    await expect(legend.locator('.public-map-legend-items')).toBeVisible();
+    await page.screenshot({path:info.outputPath('clear-map-with-open-key.png'),scale:'css'});
+    resume();
+    await expect(feedback).toHaveCount(0,{timeout:30000});
+  }finally{
+    resume();
+    await page.unroute(routePattern);
   }
 });

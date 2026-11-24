@@ -131,10 +131,13 @@ test('invalid middle points cannot fabricate a shortcut route or reshaped servic
   assert.equal(markerLocation(truck),null);assert.deepEqual(signalPaths(truck,12),[]);
  }
 });
-test('coincident closed areas are separated and remain closed',()=>{
- const ring=[{lat:9,lng:38},{lat:9,lng:39},{lat:10,lng:39},{lat:10,lng:38}],truck=parse({...raw,availability_geometry:'RADIUS',capacity_area_boundary:ring,recurring_corridors:[{geometry:'RADIUS',area_boundary:ring}]});
- const paths=signalPaths(truck,12),a=paths.find(p=>p.kind==='current').points,b=paths.find(p=>p.kind==='regular').points;
- assert.deepEqual(a[0],a.at(-1));assert.deepEqual(b[0],b.at(-1));assert.notDeepEqual(a,b);
+test('legacy Planned area stays hidden while Preferred area remains closed',()=>{
+ const ring=[{lat:9,lng:38},{lat:9,lng:39},{lat:10,lng:39},{lat:10,lng:38}],truck=parse({...raw,
+  availability_geometry:'RADIUS',capacity_area_boundary:ring,recurring_corridors:[{geometry:'RADIUS',area_boundary:ring}]});
+ const paths=signalPaths(truck,12);
+ assert.equal(paths.find(path=>path.kind==='current'),undefined);
+ const preferred=paths.find(path=>path.kind==='regular').points;
+ assert.deepEqual(preferred[0],preferred.at(-1));
 });
 test('world zoom cannot move route lanes into another country or alter reported geometry',()=>{
  const distanceToPath=(point,path)=>Math.min(...path.slice(1).map((b,i)=>{

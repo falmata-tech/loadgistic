@@ -1,4 +1,5 @@
 import type {Locale,Messages} from './controller';
+import {somaliMessages} from './somali-messages.ts';
 import {supportMessages} from './support-messages.ts';
 import {navigationMessages} from './navigation-messages.ts';
 import {workflowRows as workflows} from './workflow-messages.ts';
@@ -7,6 +8,7 @@ const workflowMessages=(column:number):Messages=>Object.fromEntries(workflows.ma
 // Native-only navigation/copy. Shared web messages are loaded separately.
 export const nativeMessages:Record<Locale,Messages>={
  en:{},
+ so:somaliMessages,
  am:{
  "Enter a YouTube video link or clear the field to remove the cover video.":"የዩቲዩብ ቪዲዮ ማገናኛ ያስገቡ። የሽፋን ቪዲዮውን ለማስወገድ መስኩን ባዶ ይተዉ።",
   "Next sponsor":"ቀጣዩ ስፖንሰር",

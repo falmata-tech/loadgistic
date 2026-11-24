@@ -12,7 +12,7 @@ export type CapacitySignal = {
   driverPhone:string;providerPhone:string;driverKind:string;ownerDocumentsLabel:'Owner documents'|'Transport Provider documents';
   ownerBadges:PublicBadge[];driverBadges:PublicBadge[];truckBadges:PublicBadge[];
   acceptedLoads: CapacityLoadPreference | null; sharingMode: string;
-  availablePercent:number|null;availablePercentReportedAt:string;
+  availablePercent:number|null;availablePercentReportedAt:string;journeyStartAt?:string;journeyEndAt?:string;
   latitude: number | null; longitude: number | null;
   capacityAge: string; locationAge: string; configuration:string; locationSource?:'GPS'|'MOBILE'|null;locationIsDemo?:boolean;
   geometry:'ROUTE'|'RADIUS'|null; currentVisible:boolean; currentPoints:SignalPoint[];
@@ -75,9 +75,11 @@ export function parseCapacityPage(value: unknown): CapacityPage {
       availablePercentReportedAt:publicDate(row.available_percent_reported_at),
       latitude,longitude,locationIsDemo:currentVisible&&latitude!==null&&longitude!==null&&row.location_is_demo===true,
       capacityAge: text(row.capacity_updated_label), locationAge:locationSource?text(row.location_updated_label):'',locationSource,
-      configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':row.availability_geometry==='RADIUS'?'RADIUS':null,
+      configuration:text(row.cargo_configuration),geometry:row.availability_geometry==='ROUTE'?'ROUTE':null,
+      journeyStartAt:currentVisible&&row.availability_geometry==='ROUTE'?publicDate(row.journey_start_at):'',
+      journeyEndAt:currentVisible&&row.availability_geometry==='ROUTE'?publicDate(row.journey_end_at):'',
       currentVisible,
-      currentPoints:currentVisible?points(row.availability_geometry==='ROUTE'?row.current_route_points:row.capacity_area_boundary):[],
+      currentPoints:currentVisible&&row.availability_geometry==='ROUTE'?points(row.current_route_points):[],
       precisionKm:typeof row.location_precision_km==='number'&&Number.isFinite(row.location_precision_km)&&row.location_precision_km>0?row.location_precision_km:20,
       regular:Array.isArray(row.recurring_corridors)?row.recurring_corridors.slice(0,1).flatMap(raw=>{
        if(!raw||typeof raw!=='object')return[];const recurring=raw as Record<string,unknown>;

@@ -83,7 +83,7 @@ function candidateKey(candidate){
 
 function decorateCandidate(raw){
   const candidate=raw?.payload||raw||{};const signal=candidate.regular_signal;
-  const corridor=signal?.geometry==='RADIUS'
+  const preferredCoverageLabel=signal?.geometry==='RADIUS'
     ?[signal.area_center_label,...(signal.area_boundary||[]).map(point=>point.label)].filter(Boolean).join(' · ')
     :(signal?.route_points||[]).map(point=>point.label).filter(Boolean).join('–');
   const provider_key=candidateKey(candidate);
@@ -92,7 +92,7 @@ function decorateCandidate(raw){
     profile_image_url:candidate.has_profile_image
       ?`/api/public/providers/${encodeURIComponent(candidate.handle)}/image?v=${encodeURIComponent(candidate.profile_image_updated_at||'1')}`
       :seededPortrait(candidate.profile_image_preset),
-    corridors:corridor?[corridor]:[],reasons:candidate.eligible?[]:['Public profile or required document review is incomplete']};
+    corridors:preferredCoverageLabel?[preferredCoverageLabel]:[],reasons:candidate.eligible?[]:['Public profile or required document review is incomplete']};
 }
 
 function scheduleValue(value,fallback){

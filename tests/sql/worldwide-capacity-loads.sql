@@ -64,6 +64,18 @@ begin
  perform decide_account_connection(broker_id,connection_id,'ACCEPT');
  perform grant_account_capacity_access(owner_id,connection_id,truck_id);
  perform set_provider_capacity_sharing(owner_id,truck_id,'BOTH');
+ select count(*) into capacity_count from capacities where vehicle_id=truck_id;
+ begin
+  perform publish_provider_capacity(owner_id,jsonb_build_object(
+   'vehicle_id',truck_id,'status','EMPTY','availability_geometry','ROUTE','sharing_mode','BOTH',
+   'current_route_places',route_points,'location_source','PRESERVE_DRIVER'));
+  raise exception 'EMPTY_CAPACITY_ACCEPTED_WITHOUT_PREFERENCE';
+ exception when raise_exception then
+  if sqlerrm<>'ACCEPTED_LOADS_REQUIRED' then raise;end if;
+ end;
+ if (select count(*) from capacities where vehicle_id=truck_id)<>capacity_count then
+  raise exception 'INVALID_PREFERENCE_CHANGED_CAPACITY';
+ end if;
  foreach preference in array array['FTL','PTL','BOTH'] loop
   full_expected:=preference in ('FTL','BOTH');shared_expected:=preference in ('PTL','BOTH');
   saved_id:=publish_provider_capacity(owner_id,jsonb_build_object('vehicle_id',truck_id,'status','EMPTY','availability_geometry','ROUTE','sharing_mode','BOTH','accepted_loads',preference,'current_route_places',route_points,'location_source','PRESERVE_DRIVER','accepts_multi_pick',true,'accepts_multi_drop',false));

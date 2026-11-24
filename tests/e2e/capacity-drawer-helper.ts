@@ -26,12 +26,17 @@ export async function closeCapacityFilters(page:any){
 }
 
 
-export async function openCapacityFilterDialog(page:any){
+export async function openCapacityFilterDialog(page:any,group?:'vehicle'|'availability'|'location'|'more'){
  const dialog=page.locator('.capacity-filter-dialog');
  if(!await dialog.isVisible()){
   await page.locator('.capacity-map-controls .capacity-filter-trigger').click();
  }
- await expect(dialog).toBeVisible();return dialog;
+ await expect(dialog).toBeVisible();
+ if(group){
+  const section=dialog.locator(`details[data-filter-section="${group}"]`);
+  if(!await section.evaluate((element:HTMLDetailsElement)=>element.open))await section.locator(':scope > summary').click();
+ }
+ return dialog;
 }
 
 export async function chooseTruckConfiguration(dialog:any,name:string|string[]){

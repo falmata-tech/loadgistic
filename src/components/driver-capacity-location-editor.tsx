@@ -5,6 +5,7 @@ import {Save,Smartphone} from 'lucide-react';
 import {capacityPrivacyRadii,nextCapacityPrivacyRadius} from '@/lib/location-privacy.js';
 import {readDriverLocation,saveDriverLocation,type DriverLocation} from '@/lib/capacity-editor-client';
 import {locationSourceLabel} from '@/lib/location-source.js';
+import {localizedSavedUpdate} from '@/lib/i18n/update-label.js';
 import {parseDriverLocationSelection,type DriverLocationSelection,type LocationSource} from '@/lib/telematics-workspace';
 import {Text,useTranslation} from './localization';
 type SourceSnapshot=DriverLocationSelection;
@@ -73,7 +74,7 @@ export function DriverCapacityLocationEditor({vehicleId,location,publishedSource
    {loading?<p role="status" className="meta"><Text message="Loading location choice…"/></p>:null}
    {snapshot?<>
     <p className="meta"><Text message="Selected source"/>: <strong><Text message={current}/></strong></p>
-    <p className="meta"><Text message="Last map report"/>: {visibleLocation?<><Text message={mapSource}/> · {visibleLocation.updatedAt?new Date(visibleLocation.updatedAt).toLocaleString():t('Not reported yet')}</>:<Text message="Not reported yet"/>}</p>
+    <p className="meta">{visibleLocation?<><Text message={mapSource}/> · {localizedSavedUpdate(visibleLocation.updatedAt,t,'location')}</>:<Text message="No driver location shared yet"/>}</p>
     <fieldset disabled={busy||!snapshot.canSetPhoneLocation||!snapshot.canChangeLocationSource} className="capacity-signal-group"><legend><Text message="Capacity map location"/></legend>
      <div className="segmented-control capacity-visibility-choices">
       {snapshot.canSetPhoneLocation&&snapshot.canChangeLocationSource?<button type="button" aria-pressed={mode==='MOBILE'} onClick={()=>setMode('MOBILE')}><Smartphone aria-hidden="true"/><strong><Text message="Use my phone"/></strong></button>:null}

@@ -47,17 +47,22 @@ export async function issueTrackingFixtureLink(page:any,sessionId:string,allowLo
  return link;
 }
 
-export async function openTrackingFixtureLink(page:any,link:{url:string;code:string}){
+export async function openTrackingFixtureLink(page:any,link:{url:string;code:string},entry:"link"|"id"="link"){
  const url=new URL(link.url);
  if(url.protocol!=='http:'||!['127.0.0.1','localhost'].includes(url.hostname)||!['3100','3101'].includes(url.port))throw Error('LOCAL_TRACKING_LINK_REQUIRED');
- await page.goto(url.pathname,{waitUntil:'domcontentloaded'});
+ await page.goto(entry==='id'?'/track':url.pathname,{waitUntil:'domcontentloaded'});
  await expect(page.getByLabel('Email',{exact:true})).toHaveCount(0);
+ await expect(page.getByLabel('Tracking link',{exact:true})).toHaveCount(0);
+ const id=page.getByLabel('Tracking ID',{exact:true});
+ if(entry==='id')await id.fill(url.pathname.split('/').at(-1)!);
+ else await expect(id).toHaveCount(0);
  await page.getByLabel('Tracking code',{exact:true}).fill(link.code);
  const opened=page.waitForResponse((response:any)=>new URL(response.url()).pathname==='/api/tracking/access'&&response.request().method()==='POST');
  await page.getByRole('button',{name:'Open tracking',exact:true}).click();const response=await opened;expect(response.status()).toBe(200);
  const value=await response.json();expect(value.ok).toBe(true);expect(value.data.session.workspaceId).toBeNull();expect(value.data.session.links).toEqual([]);
  expect(Object.values(value.data.session.capabilities).some(Boolean)).toBe(false);
  await expect(page.getByRole('button',{name:'Close Tracking',exact:true})).toBeVisible();
+ await expect(page).toHaveURL(/\/track\/[A-Za-z0-9_-]{43}$/);
  return value.data.session;
 }
 

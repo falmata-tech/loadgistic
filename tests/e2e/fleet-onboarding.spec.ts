@@ -238,7 +238,7 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await expect(capacity).toBeVisible();
     await expect(capacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await capacity.getByRole('button',{name:'Empty',exact:true}).click();
-    await capacity.getByRole('button',{name:'Route',exact:true}).click();
+    await expect(capacity.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
     await selectPlace(driverPage,'City 1','Addis Ababa');
     await selectPlace(driverPage,'City 2','Sebeta');
     await capacity.getByRole('button',{name:'Use my location',exact:true}).click();
@@ -250,9 +250,9 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     const stored=await service.from('capacities').select('market_status,visibility,vehicle_id,updated_by').eq('vehicle_id',truckId).order('updated_at',{ascending:false}).limit(1).single();
     expect(stored.error).toBeNull();
     expect(stored.data).toMatchObject({market_status:'EMPTY',visibility:'PRIVATE',vehicle_id:truckId,updated_by:identity.data!.id});
-    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeVisible();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeVisible();
     await expect(driverPage.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();
-    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
+    await expect(driverPage.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled();
     if(info.project.name.includes('mobile'))await driverPage.setViewportSize(page.viewportSize()!);
     await expect(driverPage.locator('.capacity-location-map img.leaflet-tile-loaded').first()).toBeVisible({timeout:15000});
     await driverPage.screenshot({path:info.outputPath('new-driver-published-capacity.png')});
@@ -323,11 +323,11 @@ test('fleet assigns an unverified driver, then email-code login unlocks the same
     await page.getByRole('button',{name:/^Edit planned capacity:/}).click();
     await expect(ownerCapacity.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
     await ownerCapacity.getByRole('button',{name:'Empty',exact:true}).click();
-    await ownerCapacity.getByRole('button',{name:'Route',exact:true}).click();
+    await expect(ownerCapacity.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
     await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
     await ownerCapacity.getByRole('button',{name:'Save',exact:true}).click();
     await expect(ownerCapacity).toHaveCount(0);
-    await expect(page.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
+    await expect(page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled();
     const ownerSignal=await service.from('capacities').select('updated_by,market_status,visibility,location_lat,location_lng').eq('vehicle_id',secondId).order('updated_at',{ascending:false}).limit(1).single();
     expect(ownerSignal.error).toBeNull();expect(ownerSignal.data).toMatchObject({updated_by:owner.data!.id,market_status:'EMPTY',visibility:'PRIVATE',location_lat:firstFix.data!.latitude,location_lng:firstFix.data!.longitude});
     await expect.poll(async()=>{
@@ -485,7 +485,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    const dialog=page.getByRole('dialog',{name:'Planned capacity',exact:true});
    await expect(dialog.getByRole('button',{name:'Off Duty',exact:true})).toHaveAttribute('aria-pressed','true');
    await dialog.getByRole('button',{name:'Empty',exact:true}).click();
-   await dialog.getByRole('button',{name:'Route',exact:true}).click();
+   await expect(dialog.getByRole('heading',{name:'Planned route',exact:true})).toBeVisible();
    await selectPlace(page,'City 1','Addis Ababa');await selectPlace(page,'City 2','Sebeta');
    // A denied sensor is a recoverable draft error; it must never publish.
    await context.clearPermissions();
@@ -496,7 +496,7 @@ for(const useBasis of ['OWNED','PERMISSION']){
    await page.evaluate(()=>(window as any).restoreGps());await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:9.03,longitude:38.76});
    await dialog.getByRole('button',{name:'Use my location',exact:true}).click();await expect(dialog.getByText(/Location ready/)).toBeVisible();
    await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
-   await expect(page.getByRole('button',{name:'Edit planned capacity: Empty'})).toBeEnabled();
+   await expect(page.getByRole('button',{name:'Edit planned capacity: Available space: 100%',exact:true})).toBeEnabled();
    const published=await service.from('capacities').select('updated_by,visibility,location_lat,location_precision_km').eq('vehicle_id',vehicleId).order('updated_at',{ascending:false}).limit(1).single();
    expect(published.error).toBeNull();expect(published.data).toMatchObject({updated_by:userId,visibility:'PRIVATE',location_precision_km:10});expect(published.data!.location_lat).not.toBe(9.03);
    await expect(page.getByTestId('capacity-summary').locator('.leaflet-container')).toBeVisible();

@@ -55,25 +55,27 @@ const settle=async()=>{for(let index=0;index<5;index++)await Promise.resolve();}
 
 const trackingId='16000000-0000-4000-8000-000000000001',shipmentId='16000000-0000-4000-8000-000000000002',linkToken='a'.repeat(43);
 const trackingView=()=>({id:trackingId,reference:'Synthetic load',state:'CONNECTED',revision:0,workspaceId:null,shipmentId,route:[{placeRef:'A',label:'A',coordinate:[38,9]},{placeRef:'B',label:'B',coordinate:[39,10]}],cargoSummary:'Synthetic cargo',pickupDate:'',deliveryDate:'',capabilities:{canIssueLink:false,canRevokeLink:false,canAcceptProvider:false},links:[],tracking:{shipmentId,code:'Reference',status:'IN_TRANSIT',updatedAt:'',trackingMode:'STATUS_ONLY',location:null,events:[]}});
-function trackingEntry(){
+function trackingEntry(token){
  const render=renderer(),requests=[];let failure=false;
  const port={now:()=>1800000000000,changed(){},request:async(path,options)=>{requests.push({path,options});if(failure)throw Object.assign(Error('Synthetic denied'),{status:401});return path==='/api/tracking/access'&&options?.body?{ok:true,data:{session:trackingView(),grant:'private.grant',expiresAt:new Date(1800000300000).toISOString()}}:{ok:true,data:trackingView()};}};
  const controller=createTrackingSessionController(port);
  const screen=render.compile('../src/screens/visitor-tracking.tsx',{
-  'react-native':native,'expo-router':{useLocalSearchParams:()=>({})},'../session/tracking-session-provider':{useTrackingSession:()=>({controller,snapshot:controller.snapshot()})},'../localization/provider':language,
+  'react-native':native,'expo-router':{useLocalSearchParams:()=>({linkToken:token})},'../session/tracking-session-provider':{useTrackingSession:()=>({controller,snapshot:controller.snapshot()})},'../localization/provider':language,
   '../components/ui':ui,'../api/tracking':{statusLabel:value=>value},'../components/tracking-workspace':{TrackingWorkspace:'TrackingWorkspace'},'../components/tracking-map':{TrackingMap:'TrackingMap'},
   '../components/map-platform':{Map:'Map',Camera:'Camera'},'../components/map-style':{mapStyle:{}},'../../../../src/lib/tracking-refresh-policy.js':refreshPolicy
  });
  return{controller,requests,port,queries:()=>requests.filter(request=>request.path.startsWith('/api/tracking/sessions/')).length,fail:()=>{failure=true;},recover:()=>{failure=false;},render:()=>render.render(screen.default)};
 }
 
-test('locked Tracking has a full empty basemap behind the separate link and code controls',()=>{
+test('public Track offers Tracking ID and code over an empty basemap',()=>{
  const entry=trackingEntry(),tree=entry.render(),map=find(tree,item=>item.type==='Map');
  assert.ok(map,'entry must display the basemap before authorization');assert.equal(map.props.attribution,true);
  const mapHost=nodes(tree).find(({node})=>node===map).ancestors.at(-1);
  assert.deepEqual(style(mapHost),{position:'absolute',top:0,left:0,right:0,bottom:0});
- assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking link'));
+ assert.equal(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking link'),undefined);
+ assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking ID'));
  assert.ok(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking code'));
+ assert.ok(find(tree,item=>item.type==='Button'&&item.props.message==='Sign in to view your shipments'));
  assert.equal(find(tree,item=>item.type==='Field'&&item.props.message==='Your email'),undefined);
  assert.equal(nodes(map).filter(({node})=>node.type==='Marker'||node.type==='GeoJSONSource').length,0);
  assert.equal(entry.queries(),0);assert.equal(entry.requests.length,0);
@@ -82,8 +84,8 @@ test('locked Tracking has a full empty basemap behind the separate link and code
 });
 
 test('both credentials and retry remain usable over the empty map without an email or private list request',async()=>{
- const entry=trackingEntry();let tree=entry.render();
- find(tree,item=>item.type==='Field'&&item.props.message==='Tracking link').props.onChangeText(linkToken);
+ const entry=trackingEntry(linkToken);let tree=entry.render();
+ assert.equal(find(tree,item=>item.type==='Field'&&item.props.message==='Tracking ID'),undefined);
  find(tree,item=>item.type==='Field'&&item.props.message==='Tracking code').props.onChangeText('ABCD-EF23');entry.fail();
  tree=entry.render();find(tree,item=>item.type==='Button'&&item.props.message==='Open tracking').props.onPress();await settle();
  assert.deepEqual(entry.requests[0],{path:'/api/tracking/access',options:{body:{linkToken,code:'ABCDEF23'}}});

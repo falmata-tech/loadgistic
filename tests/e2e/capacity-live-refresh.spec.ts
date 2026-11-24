@@ -34,7 +34,7 @@ test('selected Capacity follows a new publication and disappears when sharing be
   await page.goto(`/?provider=live-refresh-${actor.suffix}`,{waitUntil:'domcontentloaded'});
   const standardMarker=page.locator('.capacity-truck-map-marker').filter({has:page.locator('.vehicle-marker-space',{hasText:/^80%$/})});
   await expect(standardMarker).toBeVisible({timeout:30_000});
-  await expect(standardMarker).toHaveAttribute('title',/Available space: 80%/);
+  await expect(standardMarker).toHaveAccessibleName(/Available space: 80%/);
   await page.screenshot({path:info.outputPath('market-percent-marker.png')});
   await standardMarker.click();
   const marker=page.locator('.capacity-truck-map-marker.selected'),card=page.locator('.capacity-info-card');

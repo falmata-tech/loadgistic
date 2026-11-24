@@ -44,7 +44,7 @@ test('shared native/preview transport admits only exact methods, IDs and bounded
 });
 
 test('explicit development extracts only maintained loopback links and production still rejects them',()=>{
- for(const host of ['127.0.0.1','localhost'])for(const port of ['3100','3101','8084']){const link=`http://${host}:${port}/track/${token}`;assert.equal(trackingLinkToken(link,true),token);assert.equal(trackingLinkToken(link),null);assert.equal(trackingLinkToken(link,false),null);}
+ for(const host of ['127.0.0.1','localhost'])for(const port of ['3100','3101','3112','3114','8084']){const link=`http://${host}:${port}/track/${token}`;assert.equal(trackingLinkToken(link,true),token);assert.equal(trackingLinkToken(link),null);assert.equal(trackingLinkToken(link,false),null);}
  for(const link of [`http://localhost:9999/track/${token}`,`http://localhost.evil.test:3101/track/${token}`,`http://127.0.0.2:3101/track/${token}`,`https://localhost:3101/track/${token}`,`http://user:password@localhost:3101/track/${token}`,`http://localhost:3101/track/${token}?code=ABCD-EF23`,`http://localhost:3101/track/${token}#private`])assert.equal(trackingLinkToken(link,true),null);
 });
 test('native shipment reference search accepts only the exact POST without URL parameters',()=>{

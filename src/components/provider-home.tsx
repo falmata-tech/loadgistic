@@ -32,7 +32,7 @@ export async function ProviderHome({requested,searchParams}:{requested?:'vehicle
   const workspace=await getProviderCapacityWorkspace(user);
   const vehicles=workspace.vehicles.filter((vehicle:any)=>(!capabilities.currentDrivenVehicleId||vehicle.id===capabilities.currentDrivenVehicleId)&&vehicle.assigned_driver?.id===(capabilities.currentDriverId||user.id));
   const ids=new Set(vehicles.map((vehicle:any)=>vehicle.id));
-  body=<DriverCapacityHome vehicles={plain(vehicles)} capacities={plain(workspace.capacities.filter((capacity:any)=>ids.has(capacity.vehicle_id)))} corridors={plain(workspace.corridors.filter((corridor:any)=>ids.has(corridor.vehicle_id)))} access={plain(workspace.access)} ownsFleet={capabilities.canManageFleet} canUploadPhoto={user.role==='DRIVER'} query={query as Record<string,string|undefined>} renderedAt={Date.now()}/>;
+  body=<DriverCapacityHome vehicles={plain(vehicles)} capacities={plain(workspace.capacities.filter((capacity:any)=>ids.has(capacity.vehicle_id)))} preferredCoverage={plain(workspace.preferredCoverage.filter((signal:any)=>ids.has(signal.vehicle_id)))} access={plain(workspace.access)} ownsFleet={capabilities.canManageFleet} canUploadPhoto={user.role==='DRIVER'} query={query as Record<string,string|undefined>} renderedAt={Date.now()}/>;
  }else if(selected==='vehicles'){
   body=<FleetWorkspace searchParams={Promise.resolve(query as Record<string,string|undefined>)} basePath={tabPath.vehicles} embedded/>;
  }else{

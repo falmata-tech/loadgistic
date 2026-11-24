@@ -32,7 +32,7 @@ test('mobile Featured recovers from unavailable and malformed responses without 
  await page.getByRole('button',{name:'View schedule',exact:true}).click();
  await expect(page.getByRole('button',{name:'Hide schedule',exact:true})).toBeVisible();
  await page.screenshot({path:info.outputPath('featured-restored.png')});
- await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
+ await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in to view your shipments'})).toBeVisible();await expect(page.getByLabel('Tracking ID',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
  await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toBeVisible();
  expect(errors).toEqual([]);
 });
@@ -60,7 +60,7 @@ for(const [name,message] of [['empty',''],['whitespace',' \t\n ']]){
   await page.screenshot({path:info.outputPath(`featured-${name}-refresh-restored.png`)});
   state='failed';await refresh();
   await expect(page.getByRole('alert')).toHaveText('Please try again.');
-  await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
+  await page.getByRole('tab',{name:'Track',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in to view your shipments'})).toBeVisible();await expect(page.getByLabel('Tracking ID',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();await expect(page.getByLabel('Your email',{exact:true})).toHaveCount(0);
   await page.getByRole('tab',{name:'Capacity',exact:true}).click();await expect(page.getByRole('tab',{name:'Open Market',exact:true})).toBeVisible();
   expect(errors).toEqual([]);
  });
@@ -113,7 +113,7 @@ test('mobile link and code open one load, survive recoverable reads and clear on
   await page.unroute(detail);await page.getByRole('button',{name:'Refresh updates',exact:true}).click();
   await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close Tracking',exact:true}).click();
-  await expect(page.getByLabel('Tracking link',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue('');
+  await expect(page.getByLabel('Tracking ID',{exact:true})).toBeVisible();await expect(page.getByLabel('Tracking code',{exact:true})).toHaveValue('');
   await expect(page.getByText('Synthetic shipment runtime check',{exact:true})).toHaveCount(0);
   const featured=page.getByRole('tab',{name:'Featured',exact:true});
   await featured.click();await expect(featured).toHaveAttribute('aria-selected','true');

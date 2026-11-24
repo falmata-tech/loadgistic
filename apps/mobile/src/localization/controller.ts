@@ -1,11 +1,9 @@
-export const languages = [
-  {code:'en',name:'English'}, {code:'am',name:'አማርኛ'},
-  {code:'om',name:'Afaan Oromo'},
-] as const;
+import {LANGUAGES as languages,supportedLocale} from '../../../../src/lib/i18n/core.js';
+export {languages};
 export type Locale = typeof languages[number]['code'];
 export type Messages = Record<string,string>;
 type Port = {read:()=>Promise<string|null>;write:(locale:Locale)=>Promise<void>;load:(locale:Locale)=>Promise<Messages>;changed:()=>void};
-export function localeCode(value:unknown):Locale { return languages.some(item=>item.code===value)?value as Locale:'en'; }
+export const localeCode=supportedLocale;
 export function createLanguageController(port:Port) {
   let locale:Locale='en',messages:Messages={},error='',busy=false,epoch=0;
   const select=async(value:Locale)=>{

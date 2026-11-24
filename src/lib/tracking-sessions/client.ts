@@ -6,7 +6,7 @@ export function trackingLinkToken(value:unknown,development=false):string|null{
  try{
   const relative=input.startsWith('/')&&!input.startsWith('//'),url=new URL(input,'https://loadgistic.com');
   const canonical=url.protocol==='https:'&&['loadgistic.com','www.loadgistic.com'].includes(url.hostname)&&!url.port;
-  const local=development===true&&url.protocol==='http:'&&['127.0.0.1','localhost'].includes(url.hostname)&&['3100','3101','8084'].includes(url.port);
+  const local=development===true&&url.protocol==='http:'&&['127.0.0.1','localhost'].includes(url.hostname)&&['3100','3101','3112','3114','8084'].includes(url.port);
   if(url.username||url.password||url.search||url.hash||!relative&&!canonical&&!local)return null;
   const match=url.pathname.match(/^\/track\/([A-Za-z0-9_-]{43})\/?$/);return match?.[1]||null;
  }catch{return null;}

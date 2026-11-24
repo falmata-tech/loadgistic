@@ -140,7 +140,7 @@ test('search and place lookups show activity while preserving editable inputs',a
   const placeReady=new Promise<void>(resolve=>{releasePlace=resolve;});
   await page.route('**/api/places?q=**',async(route:any)=>{await placeReady;await route.continue();});
   try{
-    await openCapacityFilterDialog(page);
+    await openCapacityFilterDialog(page,'availability');
     await page.getByRole('button',{name:'Route',exact:true}).click();
     const origin=page.locator('#capacity-route-origin');
     await origin.fill('Addis');

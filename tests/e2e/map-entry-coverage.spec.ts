@@ -67,7 +67,7 @@ test('private Tracking identifies the site to the tile provider without sharing 
   await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content','no-referrer');
 });
 
-test('locked Tracking keeps an empty basemap behind its working link and code form',async({page,context},info)=>{
+test('Tracking accepts a copied ID or an opened link over the same empty map',async({page,context},info)=>{
   test.setTimeout(90_000);
   await context.setExtraHTTPHeaders({'x-forwarded-for':info.project.name.includes('mobile')?'127.0.0.246':'127.0.0.245'});
   const privateRequests:string[]=[];
@@ -85,7 +85,17 @@ test('locked Tracking keeps an empty basemap behind its working link and code fo
       const nav=document.querySelector('.public-mobile-nav')!.getBoundingClientRect();
       return {mapBehindForm:map.left<=form.left&&map.right>=form.right&&map.top<=form.top&&map.bottom>=form.bottom,fillsAvailableSpace:map.bottom<=footer.top+1&&footer.top-map.bottom<=10,footerClear:innerWidth>760?footer.bottom<=innerHeight+1:footer.bottom<=nav.top+1,noOverflow:document.documentElement.scrollWidth<=innerWidth&&document.documentElement.scrollHeight<=innerHeight};
     })).toEqual({mapBehindForm:true,fillsAvailableSpace:true,footerClear:true,noOverflow:true});
-    await page.getByLabel('Tracking link',{exact:true}).fill('https://loadgistic.com/track/'+'a'.repeat(43));await page.getByLabel('Tracking code',{exact:true}).fill('ABCD-EF23');
+    await expect(page.getByLabel('Tracking link',{exact:true})).toHaveCount(0);
+    await expect(page.getByLabel('Tracking ID',{exact:true})).toBeVisible();
+    await expect(page.getByLabel('Tracking code',{exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Sign in to view your shipments'})).toHaveAttribute('href','/login?from=tracking');
+    if(width===(phone?320:1024)){
+      await page.goto('/track/'+'a'.repeat(43));await basemapReady(page,'.tracking-entry-map .leaflet-container');
+      await expect(page.getByLabel('Tracking ID',{exact:true})).toHaveCount(0);
+    }else{
+      await page.getByLabel('Tracking ID',{exact:true}).fill('a'.repeat(43));
+    }
+    await page.getByLabel('Tracking code',{exact:true}).fill('ABCD-EF23');
     await clearTouchTargets(page,'.tracking-entry-map .leaflet-control-zoom a,.tracking-entry-map .leaflet-control-attribution a,.public-mobile-nav a');
     await page.getByRole('button',{name:'Open tracking',exact:true}).click({trial:true});
     await page.screenshot({path:info.outputPath(`tracking-entry-basemap-${width}.png`),scale:'css'});
@@ -101,5 +111,5 @@ test('locked Tracking keeps an empty basemap behind its working link and code fo
     await page.screenshot({path:info.outputPath('tracking-entry-short-viewport.png'),scale:'css'});
   }
   await page.getByLabel('Tracking code',{exact:true}).fill('ABCD-EF24');
-  await expect(page.getByLabel('Tracking link',{exact:true})).toBeEditable();await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();expect(privateRequests).toEqual([]);
+  await expect(page.getByLabel('Tracking link',{exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Open tracking',exact:true})).toBeEnabled();expect(privateRequests).toEqual([]);
 });

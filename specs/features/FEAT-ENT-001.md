@@ -11,6 +11,14 @@ rollout: Confirm the interface and open commercial decisions, implement additive
 
 # October18 business workspace plan
 
+## Broker and shipper profile presentation
+
+Given a broker or shipper opens their signed-in Account page, the header shows
+the workspace name, kind, handle and office city when available. The desktop
+Edit workspace details action uses the existing permission and save workflow.
+Network cards present the same authorized identity and retain connection actions.
+This is a presentation change to existing scoped reads and edits.
+
 ## November17 Tracking cutover — current implementation in progress
 
 FEAT-TRK-001 / ADR-089 replace anonymous email-wide Tracking with per-load

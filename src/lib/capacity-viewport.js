@@ -41,6 +41,8 @@ export function capacityDatabaseFilters(filters={},places=[]){
   capacity_id:filters.capacityId||filters.truck||null,provider:filters.provider||null,status:selections.status||null,geometry:filters.geometry||null,
   vehicle_category:selections.vehicleCategory||null,load_type:selections.loadType||null,stop_option:selections.stopOption||null,freshness:selections.freshness||null,
   location_source:selections.locationSource||null,q:filters.q||null,
+  ...(selections.departAfter?{depart_after:selections.departAfter}:{}),
+  ...(selections.arriveBy?{arrive_by:selections.arriveBy}:{}),
   ...(selections.minAvailablePercent?{min_available_percent:Number(selections.minAvailablePercent)}:{}),
   origin_lat:origin?.center_lat??null,origin_lng:origin?.center_lng??null,origin_radius_km:radius(filters.originRadiusKm),
   destination_lat:destination?.center_lat??null,destination_lng:destination?.center_lng??null,destination_radius_km:radius(filters.destinationRadiusKm),

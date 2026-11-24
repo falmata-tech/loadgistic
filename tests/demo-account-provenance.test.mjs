@@ -1,19 +1,22 @@
+import {capacityCoverageLabel} from '../src/lib/capacity-coverage-label.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import * as jsxRuntime from 'react/jsx-runtime';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {capacityLoadPreference,capacityLoadLabel} from '../src/lib/capacity-load-preferences.js';
+import {capacityLoadPreference} from '../src/lib/capacity-load-preferences.js';
+import * as capacitySpace from '../src/lib/capacity-space-estimate.js';
 import {localizedUpdateLabel} from '../src/lib/i18n/update-label.js';
 
 const t=(message,values={})=>message.replace(/\{([^}]+)\}/g,(_,key)=>String(values[key]??''));
 const dependencies={
+ '@/lib/capacity-coverage-label.js':{capacityCoverageLabel},'./capacity-coverage-indicators':{CapacityCoverageIndicators:()=>null},
  'react/jsx-runtime':jsxRuntime,'next/link':{__esModule:true,default:'a'},
  'lucide-react':{Building2:()=>null,CalendarClock:()=>null,MapPinned:()=>null,Phone:()=>null},
  './localization':{Text:({message,values})=>t(message,values),useTranslation:()=>({t})},
  '@/lib/capacity-sharing':{capacitySharingLabel:()=>''},'@/lib/i18n/update-label.js':{localizedUpdateLabel},
- '@/lib/capacity-load-preferences':{capacityLoadPreference,capacityLoadLabel},
+ '@/lib/capacity-load-preferences':{capacityLoadPreference},'@/lib/capacity-space-estimate.js':capacitySpace,
  './truck-document-summary':{TruckDocumentSummary:()=>null},
  '@/lib/vehicle-configurations':{vehicleConfigurationImage:()=>'/vehicle-configurations/cargo-van.jpg'},
  './public-truck-presentation.module.css':{__esModule:true,default:{summary:'summary'}},

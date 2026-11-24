@@ -14,19 +14,23 @@ test('language choice supersedes late restore and failed storage keeps the usabl
  assert.equal(c.snapshot().locale,'am');assert.deepEqual(saved,['am']);
  fail=true;await c.select('om');assert.equal(c.snapshot().locale,'am');assert.ok(c.snapshot().error);
  assert.equal(localeCode('invalid'),'en');
- assert.equal(localeCode('so'),'en');
+ assert.equal(localeCode('so'),'so');
  assert.equal(localeCode('ti'),'en');
- assert.deepEqual(languages.map(item=>item.code),['en','am','om']);
+ assert.deepEqual(languages.map(item=>item.code),['en','am','om','so']);
+ fail=false;await c.select('so');
+ assert.equal(c.snapshot().locale,'so');assert.deepEqual(saved,['am','so']);
 });
-test('native navigation additions have matching nonempty keys in both supported catalogs',()=>{
+test('native navigation keeps existing key parity and each catalog has nonempty values',()=>{
  const expected=Object.keys(nativeMessages.am).sort();
  for(const locale of ['am','om']) {
   assert.deepEqual(Object.keys(nativeMessages[locale]).sort(),expected);
   assert.ok(Object.values(nativeMessages[locale]).every(value=>value.trim()));
  }
+ assert.ok(Object.keys(nativeMessages.so).length>100);
+ assert.ok(Object.values(nativeMessages.so).every(value=>value.trim()));
 });
 test('map cluster status uses compact shared translations while details retain their full meaning',()=>{
- for(const locale of ['am','om']){
+ for(const locale of ['am','om','so']){
   const shared=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
   const messages={...shared,...nativeMessages[locale]};
   const label=translateMessage(messages,'Partial');
@@ -67,19 +71,19 @@ test('visible fixed JSX copy does not bypass localization',()=>{
 });
 test('public and role-aware navigation have copy in every supported language',async()=>{
  const {publicDestinations,workspaceDestinations}=await import('../src/navigation/destinations.ts');
- const keys=new Set(['Account details','Your driver photo','Email and account security','Transporter profile','Preferred corridor','Preferred service area','Manage preferred corridor or service area','Documents','On-duty Vehicles','Active Tracking','Published Reviews','Completed Tracking','Recent tracking','Back','Dashboard','Language','Open menu','Close menu','Menu','Your workspace','Explore','Finish account setup','Sign out','Sign-out could not finish. Please try again.','Your driving workspace','Your transport workspace','Close vehicle details','Close transporter results','Transporters','Partial capacity']);
+ const keys=new Set(['Account details','Your driver photo','Email and account security','Transporter profile','Preferred route','Preferred service area','Manage preferred route or service area','Documents','On-duty Vehicles','Active Tracking','Published Reviews','Completed Tracking','Recent tracking','Back','Dashboard','Language','Open menu','Close menu','Menu','Your workspace','Explore','Finish account setup','Sign out','Sign-out could not finish. Please try again.','Your driving workspace','Your transport workspace','Close vehicle details','Close transporter results','Transporters','Partial capacity']);
  for(const role of ['TRANSPORTER','DRIVER'])for(const operatingModel of ['COMPANY_DRIVER','OWNER_OPERATOR','SELF_MANAGED_DRIVER'])for(const granted of [true,false]){
   const session={state:'ACTIVE',user:{role,operatingModel},access:{granted}};
   for(const item of [...publicDestinations,...workspaceDestinations(session)])keys.add(item.label);
  }
  for(const locale of ['am','om']){const messages={...JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8')),...nativeMessages[locale]};for(const key of keys)assert.ok(messages[key]?.trim(),`${locale}: ${key}`);}
 });
-test('preferred corridor and area labels preserve their meaning in Amharic and Oromo',()=>{
+test('preferred route and area labels preserve their meaning in Amharic and Oromo',()=>{
  for(const [locale,preferred,route,area] of [['am','ተመራጭ','መስመር','አካባቢ'],['om','filatam','Daandii','Naannoo']]){
   const messages=JSON.parse(readFileSync(new URL(`../../../src/lib/i18n/messages/${locale}.json`,import.meta.url),'utf8'));
-  assert.ok(messages['Preferred corridor'].includes(preferred)&&messages['Preferred corridor'].includes(route),`${locale}: preferred route meaning`);
+  assert.ok(messages['Preferred route'].includes(preferred)&&messages['Preferred route'].includes(route),`${locale}: preferred route meaning`);
   assert.ok(messages['Preferred service area'].includes(preferred)&&messages['Preferred service area'].includes(area),`${locale}: preferred area meaning`);
-  assert.notEqual(messages['Preferred corridor'],messages['Capacity route'],`${locale}: saved preference differs from current capacity`);
+  assert.notEqual(messages['Preferred route'],messages['Capacity route'],`${locale}: saved preference differs from current capacity`);
  }
 });
 test('About uses existing nonempty catalog messages in every supported language',()=>{

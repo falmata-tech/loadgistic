@@ -2,8 +2,9 @@ import {readFileSync,readdirSync} from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import {loadEffectiveWebCatalogs} from './lib/effective-i18n-catalogs.mjs';
+import {LANGUAGES} from '../src/lib/i18n/core.js';
 // A static coverage inventory, not proof of natural wording or dynamic-copy coverage.
-const languages=['am','om'];
+const languages=LANGUAGES.map(({code})=>code).filter(code=>code!=='en');
 const catalogs=await loadEffectiveWebCatalogs();
 const messages=new Map(),unmarked=[],dynamic=[],dynamicCopy=new Map();
 function record(message,file,node,source){
