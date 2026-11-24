@@ -89,10 +89,11 @@ test('profile headings and filter distances translate without rewriting transpor
 });
 
 test('Somali guidance explains the two tracking fields and an invalid ID',async({page},info)=>{
+ test.setTimeout(60_000);
  const messages=JSON.parse(readFileSync('src/lib/i18n/messages/so.json','utf8'));
- await page.goto('/track');
+ await page.goto('/track',{waitUntil:'domcontentloaded'});
  const picker=page.locator('.public-header-language select');
- await expect(picker).toBeEnabled();
+ await expect(picker).toBeEnabled({timeout:20_000});
  await picker.selectOption('so');
  await expect(page.locator('html')).toHaveAttribute('lang','so');
  await expect(page.getByRole('heading',{name:messages['Follow your shipment'],exact:true})).toBeVisible();

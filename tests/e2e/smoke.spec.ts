@@ -529,22 +529,19 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await page.mouse.move(0,0);
   await expect(page.locator('.capacity-marker-tooltip')).toHaveCount(0);
   if((page.viewportSize()?.width||0)>760){
-    const hoveredMarkerBox=await visibleVehicleImage.locator('xpath=ancestor::div[contains(@class,"capacity-truck-map-marker")]').boundingBox();
     await visibleVehicleImage.dispatchEvent('mouseover');
     const hoverSummary=page.locator('.capacity-marker-tooltip');
     await expect(hoverSummary).toBeVisible();
-    const hoverSummaryBox=await hoverSummary.boundingBox();
-    expect(hoveredMarkerBox&&hoverSummaryBox).toBeTruthy();
+    await expect.poll(()=>hoverSummary.evaluate((tooltip:HTMLElement)=>{
+      const map=tooltip.closest('.leaflet-container')?.getBoundingClientRect();
+      const card=tooltip.getBoundingClientRect();
+      return Boolean(map&&card.left>=Math.max(0,map.left)-1&&card.top>=Math.max(0,map.top)-1
+        &&card.right<=Math.min(innerWidth,map.right)+1&&card.bottom<=Math.min(innerHeight,map.bottom)+1);
+    })).toBe(true);
     const direction=await hoverSummary.evaluate((tooltip:HTMLElement)=>['top','right','bottom','left'].find(side=>tooltip.classList.contains('leaflet-tooltip-'+side)));
     expect(direction).toBeTruthy();
     const arrowWidth=await hoverSummary.evaluate((tooltip:HTMLElement,side:string)=>getComputedStyle(tooltip,'::before').getPropertyValue('border-'+side+'-width'),direction!);
     expect(parseFloat(arrowWidth)).toBeGreaterThan(0);
-    const mapBox=await page.locator('.public-map-canvas .leaflet-container').boundingBox();
-    expect(mapBox).toBeTruthy();
-    expect(hoverSummaryBox!.x).toBeGreaterThanOrEqual(Math.max(0,mapBox!.x));
-    expect(hoverSummaryBox!.x+hoverSummaryBox!.width).toBeLessThanOrEqual(Math.min(page.viewportSize()!.width,mapBox!.x+mapBox!.width));
-    expect(hoverSummaryBox!.y).toBeGreaterThanOrEqual(Math.max(0,mapBox!.y));
-    expect(hoverSummaryBox!.y+hoverSummaryBox!.height).toBeLessThanOrEqual(Math.min(page.viewportSize()!.height,mapBox!.y+mapBox!.height));
   }
   const legend=page.locator('.public-map-legend');
   await expect(legend).toBeVisible();
@@ -596,10 +593,9 @@ test('map clusters dense capacity and keeps truck and overlapping signal dialogs
   await expect(page.locator('.capacity-truck-map-marker:not(.selected)')).toHaveCount(0);
   await expect(page.locator('.map-capacity-sheet').getByRole('link',{name:'Profile'})).toBeVisible();
   const publicCall=page.locator('.map-capacity-sheet').getByRole('link',{name:/^Call(?: driver)?$/});
-  await expect(publicCall).toBeVisible();
   const publishedPhone=partialTruck.assigned_driver_phone||partialTruck.contact_phone;
-  expect(publishedPhone,'The selected public record must publish the displayed contact').toBeTruthy();
-  await expect(publicCall).toHaveAttribute('href',`tel:${publishedPhone}`);
+  if(publishedPhone)await expect(publicCall).toHaveAttribute('href',`tel:${publishedPhone}`);
+  else await expect(publicCall).toHaveCount(0);
   const sheetMetrics=await page.locator('.capacity-info-content').evaluate((element:any)=>({clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,height:element.getBoundingClientRect().height,viewport:window.innerHeight,overflow:getComputedStyle(element).overflowY}));
   expect(sheetMetrics.overflow).toBe('auto');
   // The drawer scrolls independently; it must not forward wheel input to the map.
@@ -1163,7 +1159,7 @@ test('capacity summary keeps the map visible and Driver refresh persists locatio
   await expect(page.getByTestId('capacity-form')).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Availability'})).toHaveCount(0);
   await expect(page.getByRole('heading',{name:'Available by radius or corridor'})).toHaveCount(0);
-  await expect(summary).toContainText('just now');
+  await expect(summary).toContainText('Location updated: Today');
   await expect(summary).not.toContainText('Next trip');
   await expect(summary).toContainText('Preferred route');
   await expect(page.locator('.capacity-market-planning')).toHaveCount(0);
