@@ -92,7 +92,8 @@ test('Somali guidance explains the two tracking fields and an invalid ID',async(
  test.setTimeout(60_000);
  const messages=JSON.parse(readFileSync('src/lib/i18n/messages/so.json','utf8'));
  await page.goto('/track',{waitUntil:'domcontentloaded'});
- const picker=page.locator('.public-header-language select');
+ await expect(page.getByLabel('Tracking ID',{exact:true})).toBeEnabled({timeout:20_000});
+ const picker=page.getByRole('banner').getByRole('combobox',{name:'Language',exact:true});
  await expect(picker).toBeEnabled({timeout:20_000});
  await picker.selectOption('so');
  await expect(page.locator('html')).toHaveAttribute('lang','so');
