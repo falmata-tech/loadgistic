@@ -155,7 +155,7 @@ let createdRouteId=null;
 const createdRouteIds=[];
 try{
   if(originalPairRoutes.length)await service.from('profile_routes').delete().in('id',originalPairRoutes.map(route=>route.id)).throwOnError();
-  const source=originalRoutes?.[0]||selfWorkspace.corridors[0];
+  const source=originalRoutes?.[0]||selfWorkspace.preferredCoverage[0];
   if(!source)throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_FIXTURE_MISSING');
   const input=source.geometry==='RADIUS'?{
     ...regularScope,geometry:'RADIUS',areaCenterPlaceRef:source.area_center_place_ref,
@@ -165,17 +165,17 @@ try{
   };
   createdRouteId=await addProviderRegularCapacity(selfDriver,input);
   createdRouteIds.push(createdRouteId);
-  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_ADD_FAILED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_ADD_FAILED');
   await expectRejected(()=>addProviderRegularCapacity(transporter,input,createdRouteId),'NOT_FOUND');
   await expectRejected(()=>addProviderRegularCapacity(selfDriver,{...regularScope,geometry:'ROUTE',routePlaces:[]},createdRouteId),'CAPACITY_ROUTE_POINTS_REQUIRED');
-  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_ROLLBACK_FAILED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_ROLLBACK_FAILED');
   const {error:anonReplaceError}=await anon.rpc('replace_provider_regular_capacity',{actor_user_id:selfDriver.id,target_route_id:createdRouteId,command:{}});
   if(!anonReplaceError)throw new Error('SUPABASE_REGULAR_REPLACE_ANONYMOUS_ALLOWED');
   createdRouteId=await addProviderRegularCapacity(selfDriver,input,createdRouteId);
   createdRouteIds.push(createdRouteId);
-  if(!(await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_FAILED');
+  if(!(await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_REGULAR_REPLACE_FAILED');
   await removeProviderRegularCapacity(selfDriver,createdRouteId,regularScope);
-  if((await getProviderCapacityWorkspace(selfDriver)).corridors.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_REMOVE_FAILED');
+  if((await getProviderCapacityWorkspace(selfDriver)).preferredCoverage.some(route=>route.id===createdRouteId))throw new Error('SUPABASE_PROVIDER_CAPACITY_REGULAR_REMOVE_FAILED');
 }finally{
   if(createdRouteIds.length){
     await service.from('profile_routes').delete().in('id',createdRouteIds);
